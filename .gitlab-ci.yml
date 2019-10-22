@@ -13,7 +13,7 @@ stages:
     - apk add make
 
     - make REGISTRY=${CI_REGISTRY_IMAGE} ${OS} 
-    - make REGISTRY=${CI_REGISTRY_IMAGE} push-${OS}
+    - make REGISTRY=${CI_REGISTRY_IMAGE} push${OS}
   artifacts:
     expire_in: 1 week
     paths:
