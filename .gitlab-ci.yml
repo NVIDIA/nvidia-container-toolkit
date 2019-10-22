@@ -12,26 +12,26 @@ stages:
     paths:
       - dist/
 
-amd64:amzn1
+amd64:amzn1:
   <<: *build_definition
 
-amd64:amzn2
+amd64:amzn2:
   <<: *build_definition
 
 amd64:centos7:
   <<: *build_definition
 
-amd64:opensuse-leap15.1
+amd64:opensuse-leap15.1:
   <<: *build_definition
 
-amd64:debian9
+amd64:debian9:
   <<: *build_definition
 
-amd64:debian10
+amd64:debian10:
   <<: *build_definition
 
-amd64:ubuntu16.04
+amd64:ubuntu16.04:
   <<: *build_definition
 
-amd64:ubuntu18.04
+amd64:ubuntu18.04:
   <<: *build_definition
