@@ -1,0 +1,9 @@
+#! /bin/bash
+
+set -e
+
+sed -i "s;@SECTION@;${SECTION:+$SECTION/};g" debian/control
+
+if [ -n "$DISTRIB" ]; then
+    sed -i "s;UNRELEASED;$DISTRIB;" debian/changelog
+fi

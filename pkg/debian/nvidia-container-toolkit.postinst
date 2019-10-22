@@ -1,0 +1,28 @@
+#!/bin/sh
+
+set -e
+
+NVIDIA_CONTAINER_RUNTIME_HOOK=/usr/bin/nvidia-container-runtime-hook
+NVIDIA_CONTAINER_TOOLKIT=/usr/bin/nvidia-container-toolkit
+
+case "$1" in
+    configure)
+        if [ -f "${NVIDIA_CONTAINER_TOOLKIT}" ]; then
+		if [ ! -e "${NVIDIA_CONTAINER_RUNTIME_HOOK}" ]; then
+			ln -s ${NVIDIA_CONTAINER_TOOLKIT} ${NVIDIA_CONTAINER_RUNTIME_HOOK}
+		fi
+        fi
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0

@@ -1,0 +1,61 @@
+ARG VERSION_ID
+FROM centos:${VERSION_ID}
+
+RUN yum install -y \
+        ca-certificates \
+        wget \
+        git \
+        rpm-build && \
+    rm -rf /var/cache/yum/*
+
+ARG GOLANG_VERSION=0.0.0
+RUN set -eux; \
+    \
+    arch="$(uname -m)"; \
+    case "${arch##*-}" in \
+        x86_64 | amd64) ARCH='amd64' ;; \
+        ppc64el | ppc64le) ARCH='ppc64le' ;; \
+        aarch64) ARCH='arm64' ;; \
+        *) echo "unsupported architecture"; exit 1 ;; \
+    esac; \
+    wget -nv -O - https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz \
+    | tar -C /usr/local -xz
+
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+
+# packaging
+ARG PKG_VERS
+ARG PKG_REV
+
+ENV VERSION $PKG_VERS
+ENV RELEASE $PKG_REV
+
+# output directory
+ENV DIST_DIR=/tmp/nvidia-container-toolkit-$PKG_VERS/SOURCES
+RUN mkdir -p $DIST_DIR /dist
+
+# nvidia-container-toolkit
+COPY nvidia-container-toolkit/ $GOPATH/src/nvidia-container-toolkit
+
+RUN go get -ldflags "-s -w" -v nvidia-container-toolkit && \
+    mv $GOPATH/bin/nvidia-container-toolkit $DIST_DIR/nvidia-container-toolkit
+
+COPY config/config.toml.centos $DIST_DIR/config.toml
+
+# Hook for Project Atomic's fork of Docker: https://github.com/projectatomic/docker/tree/docker-1.13.1-rhel#add-dockerhooks-exec-custom-hooks-for-prestartpoststop-containerspatch
+COPY oci-nvidia-hook $DIST_DIR/oci-nvidia-hook
+
+# Hook for libpod/CRI-O: https://github.com/containers/libpod/blob/v0.8.5/pkg/hooks/docs/oci-hooks.5.md
+COPY oci-nvidia-hook.json $DIST_DIR/oci-nvidia-hook.json
+
+WORKDIR $DIST_DIR/..
+COPY pkg/rpm .
+
+CMD arch=$(uname -m) && \
+    rpmbuild --clean --target=$arch -bb \
+             -D "_topdir $PWD" \
+             -D "version $VERSION" \
+             -D "release $RELEASE" \
+             SPECS/nvidia-container-toolkit.spec && \
+    mv RPMS/$arch/*.rpm /dist

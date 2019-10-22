@@ -1,0 +1,24 @@
+#!/bin/sh
+
+set -e
+
+NVIDIA_CONTAINER_RUNTIME_HOOK=/usr/bin/nvidia-container-runtime-hook
+NVIDIA_CONTAINER_TOOLKIT=/usr/bin/nvidia-container-toolkit
+
+case "$1" in
+    purge)
+        [ -L "${NVIDIA_CONTAINER_RUNTIME_HOOK}" ] && rm ${NVIDIA_CONTAINER_RUNTIME_HOOK}
+    ;;
+
+    upgrade|failed-upgrade|remove|abort-install|abort-upgrade|disappear)
+    ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0

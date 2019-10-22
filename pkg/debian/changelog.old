@@ -1,0 +1,21 @@
+nvidia-container-runtime-hook (1.4.0-1) UNRELEASED; urgency=medium
+
+  * 2f562d5 Add support for the --no-cgroups argument
+  * 25bd7c4 Add flag to specify configuration file
+  * 300aaf9 Add support for the --user argument
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Thu, 21 Jun 2018 18:15:20 +0000
+
+nvidia-container-runtime-hook (1.3.0-1) UNRELEASED; urgency=medium
+
+  * b4d7682 Search for nvidia-container-cli in the custom root directory
+  * 6e589e0 Add support for display capability
+  * b406749 Add support for Ubuntu 14.04, Debian Jessie and Amazon Linux 2
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Thu, 08 Mar 2018 04:17:34 +0000
+
+nvidia-container-runtime-hook (1.2.1-1) UNRELEASED; urgency=medium
+
+  * Extract hook from nvidia-container-runtime package
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Wed, 07 Mar 2018 02:43:03 +0000

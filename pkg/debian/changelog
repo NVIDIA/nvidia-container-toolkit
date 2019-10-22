@@ -1,0 +1,5 @@
+nvidia-container-toolkit (@VERSION@) UNRELEASED; urgency=medium
+
+  * Initial release. Replaces older package nvidia-container-runtime-hook. (Closes: #XXXXXX)
+
+ -- Rajat Chopra <rajatc@nvidia.com>  Wed, 10 Jul 2019 11:31:11 -0700

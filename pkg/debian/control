@@ -1,0 +1,17 @@
+Source: nvidia-container-toolkit
+Section: @SECTION@utils
+Priority: optional
+Maintainer: NVIDIA CORPORATION <cudatools@nvidia.com>
+Standards-Version: 3.9.8
+Homepage: https://github.com/NVIDIA/nvidia-container-runtime/wiki
+Vcs-Git: https://github.com/NVIDIA/nvidia-container-runtime
+Vcs-Browser: https://github.com/NVIDIA/nvidia-container-runtime
+Build-Depends: debhelper (>= 9)
+
+Package: nvidia-container-toolkit
+Architecture: any
+Depends: ${misc:Depends}, libnvidia-container-tools (>= 0.1.0), libnvidia-container-tools (<< 2.0.0)
+Breaks: nvidia-container-runtime (<< 2.0.0), nvidia-container-runtime-hook
+Replaces: nvidia-container-runtime (<< 2.0.0), nvidia-container-runtime-hook
+Description: NVIDIA container runtime hook
+ Provides a OCI hook to enable GPU support in containers.
