@@ -13,14 +13,17 @@ import (
 var envSwarmGPU *string
 
 const (
+	envCUDAVersion          = "CUDA_VERSION"
 	envNVRequirePrefix      = "NVIDIA_REQUIRE_"
-	envLegacyCUDAVersion    = "CUDA_VERSION"
 	envNVRequireCUDA        = envNVRequirePrefix + "CUDA"
-	envNVGPU                = "NVIDIA_VISIBLE_DEVICES"
-	envNVDriverCapabilities = "NVIDIA_DRIVER_CAPABILITIES"
-	defaultCapability       = "utility"
-	allCapabilities         = "compute,compat32,graphics,utility,video,display"
 	envNVDisableRequire     = "NVIDIA_DISABLE_REQUIRE"
+	envNVVisibleDevices     = "NVIDIA_VISIBLE_DEVICES"
+	envNVDriverCapabilities = "NVIDIA_DRIVER_CAPABILITIES"
+)
+
+const (
+	allCapabilities   = "compute,compat32,graphics,utility,video,display"
+	defaultCapability = "utility"
 )
 
 type nvidiaConfig struct {
@@ -111,7 +114,7 @@ func loadSpec(path string) (spec *Spec) {
 }
 
 func getDevices(env map[string]string) *string {
-	gpuVars := []string{envNVGPU}
+	gpuVars := []string{envNVVisibleDevices}
 	if envSwarmGPU != nil {
 		// The Swarm resource has higher precedence.
 		gpuVars = append([]string{*envSwarmGPU}, gpuVars...)
@@ -177,7 +180,7 @@ func getNvidiaConfigLegacy(env map[string]string) *nvidiaConfig {
 
 	requirements := getRequirements(env)
 
-	vmaj, vmin, _ := parseCudaVersion(env[envLegacyCUDAVersion])
+	vmaj, vmin, _ := parseCudaVersion(env[envCUDAVersion])
 	cudaRequire := fmt.Sprintf("cuda>=%d.%d", vmaj, vmin)
 	requirements = append(requirements, cudaRequire)
 
@@ -193,7 +196,7 @@ func getNvidiaConfigLegacy(env map[string]string) *nvidiaConfig {
 }
 
 func getNvidiaConfig(env map[string]string) *nvidiaConfig {
-	legacyCudaVersion := env[envLegacyCUDAVersion]
+	legacyCudaVersion := env[envCUDAVersion]
 	cudaRequire := env[envNVRequireCUDA]
 	if len(legacyCudaVersion) > 0 && len(cudaRequire) == 0 {
 		// Legacy CUDA image detected.
