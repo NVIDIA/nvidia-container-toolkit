@@ -22,15 +22,15 @@ const (
 )
 
 const (
-	allCapabilities   = "compute,compat32,graphics,utility,video,display"
-	defaultCapability = "utility"
+	allDriverCapabilities     = "compute,compat32,graphics,utility,video,display"
+	defaultDriverCapabilities = "utility"
 )
 
 type nvidiaConfig struct {
-	Devices        string
-	Capabilities   string
-	Requirements   []string
-	DisableRequire bool
+	Devices            string
+	DriverCapabilities string
+	Requirements       []string
+	DisableRequire     bool
 }
 
 type containerConfig struct {
@@ -128,7 +128,7 @@ func getDevices(env map[string]string) *string {
 	return nil
 }
 
-func getCapabilities(env map[string]string) *string {
+func getDriverCapabilities(env map[string]string) *string {
 	if capabilities, ok := env[envNVDriverCapabilities]; ok {
 		return &capabilities
 	}
@@ -163,19 +163,19 @@ func getNvidiaConfigLegacy(env map[string]string) *nvidiaConfig {
 		devices = ""
 	}
 
-	var capabilities string
-	if c := getCapabilities(env); c == nil {
+	var driverCapabilities string
+	if c := getDriverCapabilities(env); c == nil {
 		// Environment variable unset: default to "all".
-		capabilities = allCapabilities
+		driverCapabilities = allDriverCapabilities
 	} else if len(*c) == 0 {
 		// Environment variable empty: use default capability.
-		capabilities = defaultCapability
+		driverCapabilities = defaultDriverCapabilities
 	} else {
 		// Environment variable non-empty.
-		capabilities = *c
+		driverCapabilities = *c
 	}
-	if capabilities == "all" {
-		capabilities = allCapabilities
+	if driverCapabilities == "all" {
+		driverCapabilities = allDriverCapabilities
 	}
 
 	requirements := getRequirements(env)
@@ -188,10 +188,10 @@ func getNvidiaConfigLegacy(env map[string]string) *nvidiaConfig {
 	disableRequire, _ := strconv.ParseBool(env[envNVDisableRequire])
 
 	return &nvidiaConfig{
-		Devices:        devices,
-		Capabilities:   capabilities,
-		Requirements:   requirements,
-		DisableRequire: disableRequire,
+		Devices:            devices,
+		DriverCapabilities: driverCapabilities,
+		Requirements:       requirements,
+		DisableRequire:     disableRequire,
 	}
 }
 
@@ -215,16 +215,16 @@ func getNvidiaConfig(env map[string]string) *nvidiaConfig {
 		devices = ""
 	}
 
-	var capabilities string
-	if c := getCapabilities(env); c == nil || len(*c) == 0 {
+	var driverCapabilities string
+	if c := getDriverCapabilities(env); c == nil || len(*c) == 0 {
 		// Environment variable unset or set but empty: use default capability.
-		capabilities = defaultCapability
+		driverCapabilities = defaultDriverCapabilities
 	} else {
 		// Environment variable set and non-empty.
-		capabilities = *c
+		driverCapabilities = *c
 	}
-	if capabilities == "all" {
-		capabilities = allCapabilities
+	if driverCapabilities == "all" {
+		driverCapabilities = allDriverCapabilities
 	}
 
 	requirements := getRequirements(env)
@@ -233,10 +233,10 @@ func getNvidiaConfig(env map[string]string) *nvidiaConfig {
 	disableRequire, _ := strconv.ParseBool(env[envNVDisableRequire])
 
 	return &nvidiaConfig{
-		Devices:        devices,
-		Capabilities:   capabilities,
-		Requirements:   requirements,
-		DisableRequire: disableRequire,
+		Devices:            devices,
+		DriverCapabilities: driverCapabilities,
+		Requirements:       requirements,
+		DisableRequire:     disableRequire,
 	}
 }
 
