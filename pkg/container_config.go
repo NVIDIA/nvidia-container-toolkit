@@ -26,6 +26,10 @@ const (
 	defaultDriverCapabilities = "utility"
 )
 
+const (
+	capSysAdmin = "CAP_SYS_ADMIN"
+)
+
 type nvidiaConfig struct {
 	Devices            string
 	DriverCapabilities string
@@ -47,7 +51,17 @@ type Root struct {
 
 // github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L30-L57
 type Process struct {
-	Env []string `json:"env,omitempty"`
+	Env          []string           `json:"env,omitempty"`
+	Capabilities *LinuxCapabilities `json:"capabilities,omitempty" platform:"linux"`
+}
+
+// https://github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L61
+type LinuxCapabilities struct {
+	Bounding    []string `json:"bounding,omitempty" platform:"linux"`
+	Effective   []string `json:"effective,omitempty" platform:"linux"`
+	Inheritable []string `json:"inheritable,omitempty" platform:"linux"`
+	Permitted   []string `json:"permitted,omitempty" platform:"linux"`
+	Ambient     []string `json:"ambient,omitempty" platform:"linux"`
 }
 
 // We use pointers to structs, similarly to the latest version of runtime-spec:
@@ -124,6 +138,31 @@ func loadSpec(path string) (spec *Spec) {
 	return
 }
 
+func isPrivileged(caps *LinuxCapabilities) bool {
+	if caps == nil {
+		return false
+	}
+
+	hasCapSysAdmin := func(caps []string) bool {
+		for _, c := range caps {
+			if c == capSysAdmin {
+				return true
+			}
+		}
+		return false
+	}
+
+	// We only make sure that the bounding capabibility set has
+	// CAP_SYS_ADMIN. This allows us to make sure that the container was
+	// actually started as '--privileged', but also allow non-root users to
+	// access the priviliged NVIDIA capabilities.
+	if !hasCapSysAdmin(caps.Bounding) {
+		return false
+	}
+
+	return true
+}
+
 func getDevices(env map[string]string) *string {
 	gpuVars := []string{envNVVisibleDevices}
 	if envSwarmGPU != nil {
@@ -158,7 +197,7 @@ func getRequirements(env map[string]string) []string {
 }
 
 // Mimic the new CUDA images if no capabilities or devices are specified.
-func getNvidiaConfigLegacy(env map[string]string) *nvidiaConfig {
+func getNvidiaConfigLegacy(env map[string]string, privileged bool) *nvidiaConfig {
 	var devices string
 	if d := getDevices(env); d == nil {
 		// Environment variable unset: default to "all".
@@ -200,18 +239,20 @@ func getNvidiaConfigLegacy(env map[string]string) *nvidiaConfig {
 
 	return &nvidiaConfig{
 		Devices:            devices,
+		MigConfigDevices:   migConfigDevices,
+		MigMonitorDevices:  migMonitorDevices,
 		DriverCapabilities: driverCapabilities,
 		Requirements:       requirements,
 		DisableRequire:     disableRequire,
 	}
 }
 
-func getNvidiaConfig(env map[string]string) *nvidiaConfig {
+func getNvidiaConfig(env map[string]string, privileged bool) *nvidiaConfig {
 	legacyCudaVersion := env[envCUDAVersion]
 	cudaRequire := env[envNVRequireCUDA]
 	if len(legacyCudaVersion) > 0 && len(cudaRequire) == 0 {
 		// Legacy CUDA image detected.
-		return getNvidiaConfigLegacy(env)
+		return getNvidiaConfigLegacy(env, privileged)
 	}
 
 	var devices string
@@ -266,11 +307,12 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 	s := loadSpec(path.Join(b, "config.json"))
 
 	env := getEnvMap(s.Process.Env, hook.NvidiaContainerCLI)
+	privileged := isPrivileged(s.Process.Capabilities)
 	envSwarmGPU = hook.SwarmResource
 	return containerConfig{
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,
 		Env:    env,
-		Nvidia: getNvidiaConfig(env),
+		Nvidia: getNvidiaConfig(env, privileged),
 	}
 }
