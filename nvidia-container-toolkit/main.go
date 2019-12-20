@@ -124,7 +124,7 @@ func doPrestart() {
 		args = append(args, fmt.Sprintf("--device=%s", nvidia.Devices))
 	}
 
-	for _, cap := range strings.Split(nvidia.Capabilities, ",") {
+	for _, cap := range strings.Split(nvidia.DriverCapabilities, ",") {
 		if len(cap) == 0 {
 			break
 		}
