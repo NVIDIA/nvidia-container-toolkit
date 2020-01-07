@@ -53,3 +53,7 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Fri May 15 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.1.0-1
+ - Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*
+ - Extend fields we inspect in the runc spec to include linux capabilities
+ - Add support for MIG

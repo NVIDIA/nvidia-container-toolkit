@@ -1,4 +1,12 @@
-nvidia-container-toolkit (@VERSION@) UNRELEASED; urgency=medium
+nvidia-container-toolkit (1.1.0-1) UNRELEASED; urgency=medium
+
+  * Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_* (Closes: #XXXXXX)
+  * Extend fields we inspect in the runc spec to include linux capabilities (Closes: #XXXXXX)
+  * Add support for MIG (Closes: #XXXXXX)
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Wed, 07 Mar 2018 05:47:37 +0000
+
+nvidia-container-toolkit (1.0.5-1) UNRELEASED; urgency=medium
 
   * Initial release. Replaces older package nvidia-container-runtime-hook. (Closes: #XXXXXX)
 
