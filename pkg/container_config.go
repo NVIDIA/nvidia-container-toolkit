@@ -82,7 +82,7 @@ func parseCudaVersion(cudaVersion string) (vmaj, vmin, vpatch uint32) {
 	return
 }
 
-func getEnvMap(e []string) (m map[string]string) {
+func getEnvMap(e []string, config CLIConfig) (m map[string]string) {
 	m = make(map[string]string)
 	for _, s := range e {
 		p := strings.SplitN(s, "=", 2)
@@ -90,6 +90,17 @@ func getEnvMap(e []string) (m map[string]string) {
 			log.Panicln("environment error")
 		}
 		m[p[0]] = p[1]
+	}
+	if config.AlphaMergeVisibleDevicesEnvvars {
+		var mergable []string
+		for k, v := range m {
+			if strings.HasPrefix(k, envNVVisibleDevices+"_") {
+				mergable = append(mergable, v)
+			}
+		}
+		if len(mergable) > 0 {
+			m[envNVVisibleDevices] = strings.Join(mergable, ",")
+		}
 	}
 	return
 }
@@ -254,7 +265,7 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 
 	s := loadSpec(path.Join(b, "config.json"))
 
-	env := getEnvMap(s.Process.Env)
+	env := getEnvMap(s.Process.Env, hook.NvidiaContainerCLI)
 	envSwarmGPU = hook.SwarmResource
 	return containerConfig{
 		Pid:    h.Pid,
