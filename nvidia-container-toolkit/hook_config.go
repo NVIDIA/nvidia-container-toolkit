@@ -26,6 +26,7 @@ type CLIConfig struct {
 	Debug       *string  `toml:"debug"`
 	Ldcache     *string  `toml:"ldcache"`
 	LoadKmods   bool     `toml:"load-kmods"`
+	NoPivot     bool     `toml:"no-pivot"`
 	NoCgroups   bool     `toml:"no-cgroups"`
 	User        *string  `toml:"user"`
 	Ldconfig    *string  `toml:"ldconfig"`
@@ -49,6 +50,7 @@ func getDefaultHookConfig() (config HookConfig) {
 			Debug:       nil,
 			Ldcache:     nil,
 			LoadKmods:   true,
+			NoPivot:     false,
 			NoCgroups:   false,
 			User:        nil,
 			Ldconfig:    nil,
