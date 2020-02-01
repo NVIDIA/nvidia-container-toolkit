@@ -101,6 +101,9 @@ func doPrestart() {
 	if cli.LoadKmods {
 		args = append(args, "--load-kmods")
 	}
+	if cli.NoPivot {
+		args = append(args, "--no-pivot")
+	}
 	if *debugflag {
 		args = append(args, "--debug=/dev/stderr")
 	} else if cli.Debug != nil {
