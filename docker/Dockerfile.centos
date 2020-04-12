@@ -5,6 +5,7 @@ RUN yum install -y \
         ca-certificates \
         wget \
         git \
+        make \
         rpm-build && \
     rm -rf /var/cache/yum/*
 
@@ -36,10 +37,11 @@ ENV DIST_DIR=/tmp/nvidia-container-toolkit-$PKG_VERS/SOURCES
 RUN mkdir -p $DIST_DIR /dist
 
 # nvidia-container-toolkit
-COPY nvidia-container-toolkit/ $GOPATH/src/nvidia-container-toolkit
+WORKDIR $GOPATH/src/nvidia-container-toolkit
+COPY . .
 
-RUN go get -ldflags "-s -w" -v nvidia-container-toolkit && \
-    mv $GOPATH/bin/nvidia-container-toolkit $DIST_DIR/nvidia-container-toolkit
+RUN make binary && \
+    mv ./nvidia-container-toolkit $DIST_DIR/nvidia-container-toolkit
 
 COPY config/config.toml.centos $DIST_DIR/config.toml
 
@@ -50,7 +52,7 @@ COPY oci-nvidia-hook $DIST_DIR/oci-nvidia-hook
 COPY oci-nvidia-hook.json $DIST_DIR/oci-nvidia-hook.json
 
 WORKDIR $DIST_DIR/..
-COPY pkg/rpm .
+COPY packaging/rpm .
 
 CMD arch=$(uname -m) && \
     rpmbuild --clean --target=$arch -bb \

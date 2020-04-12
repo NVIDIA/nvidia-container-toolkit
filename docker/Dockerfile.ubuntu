@@ -42,15 +42,16 @@ ENV DIST_DIR=/tmp/nvidia-container-toolkit-$PKG_VERS
 RUN mkdir -p $DIST_DIR /dist
 
 # nvidia-container-toolkit
-COPY nvidia-container-toolkit/ $GOPATH/src/nvidia-container-toolkit
+WORKDIR $GOPATH/src/nvidia-container-toolkit
+COPY . .
 
-RUN go get -ldflags "-s -w" -v nvidia-container-toolkit && \
-    mv $GOPATH/bin/nvidia-container-toolkit $DIST_DIR/nvidia-container-toolkit
+RUN make binary && \
+    mv ./nvidia-container-toolkit $DIST_DIR/nvidia-container-toolkit
 
 COPY config/config.toml.ubuntu $DIST_DIR/config.toml
 
 WORKDIR $DIST_DIR
-COPY pkg/debian ./debian
+COPY packaging/debian ./debian
 
 RUN sed -i "s;@VERSION@;${REVISION};" debian/changelog && \
     if [ "$REVISION" != "$(dpkg-parsechangelog --show-field=Version)" ]; then exit 1; fi
