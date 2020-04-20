@@ -37,6 +37,7 @@ type containerConfig struct {
 	Pid    int
 	Rootfs string
 	Env    map[string]string
+	User   string
 	Nvidia *nvidiaConfig
 }
 
@@ -47,7 +48,14 @@ type Root struct {
 
 // github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L30-L57
 type Process struct {
-	Env []string `json:"env,omitempty"`
+	Env  []string `json:"env,omitempty"`
+	User User     `json:"user"`
+}
+
+// User specifies specific user (and group) information for the container process.
+type User struct {
+	UID uint32 `json:"uid"`
+	GID uint32 `json:"gid"`
 }
 
 // We use pointers to structs, similarly to the latest version of runtime-spec:
@@ -260,6 +268,7 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,
 		Env:    env,
+		User:   fmt.Sprintf("%d:%d", s.Process.User.UID, s.Process.User.GID),
 		Nvidia: getNvidiaConfig(env),
 	}
 }

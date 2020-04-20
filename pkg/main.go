@@ -112,9 +112,14 @@ func doPrestart() {
 	if cli.Ldcache != nil {
 		args = append(args, fmt.Sprintf("--ldcache=%s", *cli.Ldcache))
 	}
+
+	// The CLI user has a higher priority than the OCI config user
+	user := container.User
 	if cli.User != nil {
-		args = append(args, fmt.Sprintf("--user=%s", *cli.User))
+		user = *cli.User
 	}
+	args = append(args, fmt.Sprintf("--user=%s", user))
+
 	args = append(args, "configure")
 
 	if cli.Ldconfig != nil {
