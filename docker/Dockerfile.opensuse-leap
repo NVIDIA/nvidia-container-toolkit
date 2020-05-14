@@ -1,5 +1,5 @@
-ARG VERSION_ID
-FROM opensuse/leap:${VERSION_ID}
+ARG BASEIMAGE
+FROM ${BASEIMAGE}
 
 RUN zypper install -y \
     ca-certificates \
