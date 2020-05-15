@@ -126,6 +126,12 @@ func doPrestart() {
 	if len(nvidia.Devices) > 0 {
 		args = append(args, fmt.Sprintf("--device=%s", nvidia.Devices))
 	}
+	if len(nvidia.MigConfigDevices) > 0 {
+		args = append(args, fmt.Sprintf("--mig-config=%s", nvidia.MigConfigDevices))
+	}
+	if len(nvidia.MigMonitorDevices) > 0 {
+		args = append(args, fmt.Sprintf("--mig-monitor=%s", nvidia.MigMonitorDevices))
+	}
 
 	for _, cap := range strings.Split(nvidia.DriverCapabilities, ",") {
 		if len(cap) == 0 {
