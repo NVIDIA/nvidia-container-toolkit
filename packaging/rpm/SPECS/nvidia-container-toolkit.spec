@@ -54,6 +54,7 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 
 %changelog
 * Fri May 15 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.1.0-1
- - Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*
- - Extend fields we inspect in the runc spec to include linux capabilities
- - Add support for MIG
+- 4e4de762 Update build system to support multi-arch builds
+- fcc1d116 Add support for MIG (Multi-Instance GPUs)
+- d4ff0416 Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_* 
+- 60f165ad Add no-pivot option to toolkit
