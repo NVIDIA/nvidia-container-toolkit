@@ -1,3 +1,9 @@
+nvidia-container-toolkit (1.1.1-1) UNRELEASED; urgency=medium
+
+  * d202aded Update dependence to libnvidia-container 1.1.1
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Tue, 19 May 2020 12:05:32 -0700
+
 nvidia-container-toolkit (1.1.0-1) UNRELEASED; urgency=medium
 
   * 4e4de762 Update build system to support multi-arch builds

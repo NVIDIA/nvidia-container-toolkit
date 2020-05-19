@@ -18,7 +18,7 @@ Source4: LICENSE
 
 Obsoletes: nvidia-container-runtime < 2.0.0, nvidia-container-runtime-hook
 Provides: nvidia-container-runtime-hook
-Requires: libnvidia-container-tools >= 0.1.0, libnvidia-container-tools < 2.0.0
+Requires: libnvidia-container-tools >= 1.1.1, libnvidia-container-tools < 2.0.0
 
 %description
 Provides a OCI hook to enable GPU support in containers.
@@ -53,6 +53,9 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Tue May 19 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.1.1-1
+- d202aded Update dependence to libnvidia-container 1.1.1
+
 * Fri May 15 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.1.0-1
 - 4e4de762 Update build system to support multi-arch builds
 - fcc1d116 Add support for MIG (Multi-Instance GPUs)
