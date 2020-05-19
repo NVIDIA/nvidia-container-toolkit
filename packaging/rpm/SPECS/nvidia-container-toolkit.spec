@@ -53,6 +53,9 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Tue May 19 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.1.1-1
+- d202aded Update dependence to libnvidia-container 1.1.1
+
 * Fri May 15 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.1.0-1
 - 4e4de762 Update build system to support multi-arch builds
 - fcc1d116 Add support for MIG (Multi-Instance GPUs)
