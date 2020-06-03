@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"encoding/json"
 )
 
 func TestParseCudaVersionValid(t *testing.T) {
@@ -56,5 +57,87 @@ func TestParseCudaVersionInvalid(t *testing.T) {
 			t.Logf("parseCudaVersion(%s)", c)
 			parseCudaVersion(c)
 		})
+	}
+}
+
+func TestIsPrivileged(t *testing.T) {
+	var tests = []struct {
+		spec     string
+		expected bool
+	}{
+		{
+			`
+			{
+				"ociVersion": "1.0.0",
+				"process": {
+					"capabilities": {
+						"bounding": [ "CAP_SYS_ADMIN" ]
+					}
+				}
+			}
+			`,
+			true,
+		},
+		{
+			`
+			{
+				"ociVersion": "1.0.0",
+				"process": {
+					"capabilities": {
+						"bounding": [ "CAP_SYS_OTHER" ]
+					}
+				}
+			}
+			`,
+			false,
+		},
+		{
+			`
+			{
+				"ociVersion": "1.0.0",
+				"process": {}
+			}
+			`,
+			false,
+		},
+		{
+			`
+			{
+				"ociVersion": "1.0.0-rc2-dev",
+				"process": {
+					"capabilities": [ "CAP_SYS_ADMIN" ]
+				}
+			}
+			`,
+			true,
+		},
+		{
+			`
+			{
+				"ociVersion": "1.0.0-rc2-dev",
+				"process": {
+					"capabilities": [ "CAP_SYS_OTHER" ]
+				}
+			}
+			`,
+			false,
+		},
+		{
+			`
+			{
+				"ociVersion": "1.0.0-rc2-dev",
+				"process": {}
+			}
+			`,
+			false,
+		},
+	}
+	for _, tc := range tests {
+		var spec Spec
+		_ = json.Unmarshal([]byte(tc.spec), &spec)
+		privileged := isPrivileged(&spec)
+		if privileged != tc.expected {
+			t.Errorf("isPrivileged() returned unexpectred value (privileged: %v, tc.expected: %v)", privileged, tc.expected)
+		}
 	}
 }
