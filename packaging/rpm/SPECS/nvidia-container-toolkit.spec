@@ -53,6 +53,9 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Wed Jun 03 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.1.2-1
+- c32237f3 Add support for parsing Linux Capabilities for older OCI specs
+
 * Tue May 19 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.1.1-1
 - d202aded Update dependence to libnvidia-container 1.1.1
 
