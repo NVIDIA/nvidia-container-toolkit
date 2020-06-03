@@ -1,3 +1,9 @@
+nvidia-container-toolkit (1.1.2-1) UNRELEASED; urgency=medium
+
+  * c32237f3 Add support for parsing Linux Capabilities for older OCI specs
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Wed, 03 Jun 2020 12:05:32 -0700
+
 nvidia-container-toolkit (1.1.1-1) UNRELEASED; urgency=medium
 
   * d202aded Update dependence to libnvidia-container 1.1.1
