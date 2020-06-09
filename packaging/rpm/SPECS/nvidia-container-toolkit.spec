@@ -8,7 +8,7 @@ Packager: NVIDIA CORPORATION <cudatools@nvidia.com>
 
 Summary: NVIDIA container runtime hook
 URL: https://github.com/NVIDIA/nvidia-container-runtime
-License: BSD
+License: Apache-2.0
 
 Source0: nvidia-container-toolkit
 Source1: config.toml
