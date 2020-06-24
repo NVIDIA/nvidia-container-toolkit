@@ -18,6 +18,8 @@ func capabilityToCLI(cap string) string {
 		return "--video"
 	case "display":
 		return "--display"
+	case "ngx":
+		return "--ngx"
 	default:
 		log.Panicln("unknown driver capability:", cap)
 	}
