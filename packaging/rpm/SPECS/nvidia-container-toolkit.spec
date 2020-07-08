@@ -18,7 +18,7 @@ Source4: LICENSE
 
 Obsoletes: nvidia-container-runtime < 2.0.0, nvidia-container-runtime-hook
 Provides: nvidia-container-runtime-hook
-Requires: libnvidia-container-tools >= 1.1.1, libnvidia-container-tools < 2.0.0
+Requires: libnvidia-container-tools >= 1.2.0, libnvidia-container-tools < 2.0.0
 
 %description
 Provides a OCI hook to enable GPU support in containers.
@@ -53,6 +53,13 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Wed Jul 08 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.2.0-1
+- 8e0aab46 Fix repo listed in changelog for debian distributions
+- 320bb6e4 Update dependence on libnvidia-container to 1.2.0
+- 6cfc8097 Update package license to match source license
+- e7dc3cbb Fix debian copyright file
+- d3aee3e0 Add the 'ngx' driver capability
+
 * Wed Jun 03 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.1.2-1
 - c32237f3 Add support for parsing Linux Capabilities for older OCI specs
 
