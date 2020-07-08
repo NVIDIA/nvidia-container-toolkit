@@ -1,3 +1,13 @@
+nvidia-container-toolkit (1.2.0-1) UNRELEASED; urgency=medium
+
+  *  8e0aab46 Fix repo listed in changelog for debian distributions
+  *  320bb6e4 Update dependence on libnvidia-container to 1.2.0
+  *  6cfc8097 Update package license to match source license
+  *  e7dc3cbb Fix debian copyright file
+  *  d3aee3e0 Add the 'ngx' driver capability
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Wed, 08 Jul 2020 18:11:19 -0700
+
 nvidia-container-toolkit (1.1.2-1) UNRELEASED; urgency=medium
 
   * c32237f3 Add support for parsing Linux Capabilities for older OCI specs
