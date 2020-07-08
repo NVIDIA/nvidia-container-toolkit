@@ -64,6 +64,6 @@ COPY packaging/debian ./debian
 RUN sed -i "s;@VERSION@;${REVISION};" debian/changelog && \
     if [ "$REVISION" != "$(dpkg-parsechangelog --show-field=Version)" ]; then exit 1; fi
 
-CMD export DISTRIB="unstable" && \
+CMD export DISTRIB="$(lsb_release -cs)" && \
     debuild -eDISTRIB -eSECTION --dpkg-buildpackage-hook='sh debian/prepare' -i -us -uc -b && \
     mv /tmp/nvidia-container-toolkit_*.deb /dist
