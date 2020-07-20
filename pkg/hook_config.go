@@ -20,17 +20,16 @@ var defaultPaths = [...]string{
 
 // CLIConfig : options for nvidia-container-cli.
 type CLIConfig struct {
-	Root                            *string  `toml:"root"`
-	Path                            *string  `toml:"path"`
-	Environment                     []string `toml:"environment"`
-	Debug                           *string  `toml:"debug"`
-	Ldcache                         *string  `toml:"ldcache"`
-	LoadKmods                       bool     `toml:"load-kmods"`
-	NoPivot                         bool     `toml:"no-pivot"`
-	NoCgroups                       bool     `toml:"no-cgroups"`
-	User                            *string  `toml:"user"`
-	Ldconfig                        *string  `toml:"ldconfig"`
-	AlphaMergeVisibleDevicesEnvvars bool     `toml:"alpha-merge-visible-devices-envvars"`
+	Root        *string  `toml:"root"`
+	Path        *string  `toml:"path"`
+	Environment []string `toml:"environment"`
+	Debug       *string  `toml:"debug"`
+	Ldcache     *string  `toml:"ldcache"`
+	LoadKmods   bool     `toml:"load-kmods"`
+	NoPivot     bool     `toml:"no-pivot"`
+	NoCgroups   bool     `toml:"no-cgroups"`
+	User        *string  `toml:"user"`
+	Ldconfig    *string  `toml:"ldconfig"`
 }
 
 // HookConfig : options for the nvidia-container-toolkit.
@@ -46,17 +45,16 @@ func getDefaultHookConfig() (config HookConfig) {
 		DisableRequire: false,
 		SwarmResource:  nil,
 		NvidiaContainerCLI: CLIConfig{
-			Root:                            nil,
-			Path:                            nil,
-			Environment:                     []string{},
-			Debug:                           nil,
-			Ldcache:                         nil,
-			LoadKmods:                       true,
-			NoPivot:                         false,
-			NoCgroups:                       false,
-			User:                            nil,
-			Ldconfig:                        nil,
-			AlphaMergeVisibleDevicesEnvvars: false,
+			Root:        nil,
+			Path:        nil,
+			Environment: []string{},
+			Debug:       nil,
+			Ldcache:     nil,
+			LoadKmods:   true,
+			NoPivot:     false,
+			NoCgroups:   false,
+			User:        nil,
+			Ldconfig:    nil,
 		},
 	}
 }

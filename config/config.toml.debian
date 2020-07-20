@@ -11,7 +11,6 @@ load-kmods = true
 #no-cgroups = false
 #user = "root:video"
 ldconfig = "@/sbin/ldconfig"
-#alpha-merge-visible-devices-envvars = false
 
 [nvidia-container-runtime]
 #debug = "/var/log/nvidia-container-runtime.log"
