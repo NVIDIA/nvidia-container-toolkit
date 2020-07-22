@@ -1,5 +1,7 @@
 disable-require = false
 #swarm-resource = "DOCKER_RESOURCE_GPU"
+#accept-nvidia-visible-devices-envvar-when-unprivileged = true
+#look-for-nvidia-visible-devices-as-volume-mounts-under = "/var/run/nvidia-container-devices"
 
 [nvidia-container-cli]
 #root = "/run/nvidia/driver"

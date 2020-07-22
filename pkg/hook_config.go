@@ -13,6 +13,10 @@ const (
 	driverPath = "/run/nvidia/driver"
 )
 
+const (
+	defaultDeviceListVolumeMount = "/var/run/nvidia-container-devices"
+)
+
 var defaultPaths = [...]string{
 	path.Join(driverPath, configPath),
 	configPath,
@@ -34,16 +38,20 @@ type CLIConfig struct {
 
 // HookConfig : options for the nvidia-container-toolkit.
 type HookConfig struct {
-	DisableRequire bool    `toml:"disable-require"`
-	SwarmResource  *string `toml:"swarm-resource"`
+	DisableRequire           bool    `toml:"disable-require"`
+	SwarmResource            *string `toml:"swarm-resource"`
+	AcceptEnvvarUnprivileged bool    `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
+	DeviceListVolumeMount    *string `toml:"look-for-nvidia-visible-devices-as-volume-mounts-under"`
 
 	NvidiaContainerCLI CLIConfig `toml:"nvidia-container-cli"`
 }
 
 func getDefaultHookConfig() (config HookConfig) {
 	return HookConfig{
-		DisableRequire: false,
-		SwarmResource:  nil,
+		DisableRequire:           false,
+		SwarmResource:            nil,
+		AcceptEnvvarUnprivileged: true,
+		DeviceListVolumeMount:    &[]string{defaultDeviceListVolumeMount}[0],
 		NvidiaContainerCLI: CLIConfig{
 			Root:        nil,
 			Path:        nil,
