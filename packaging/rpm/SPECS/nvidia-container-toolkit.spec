@@ -48,7 +48,7 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 %files
 %license LICENSE
 %{_bindir}/nvidia-container-toolkit
-/etc/nvidia-container-runtime/config.toml
+%config /etc/nvidia-container-runtime/config.toml
 /usr/libexec/oci/hooks.d/oci-nvidia-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
