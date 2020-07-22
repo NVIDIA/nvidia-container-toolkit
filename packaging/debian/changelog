@@ -1,3 +1,10 @@
+nvidia-container-toolkit (1.2.1-1) UNRELEASED; urgency=medium
+
+  * 4e6e0ed4 Add 'ngx' to list of *all* driver capabilities
+  * 2f4af743 List config.toml as a config file in the RPM SPEC
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Wed, 22 Jul 2020 15:36:12 -0700
+
 nvidia-container-toolkit (1.2.0-1) UNRELEASED; urgency=medium
 
   *  8e0aab46 Fix repo listed in changelog for debian distributions
