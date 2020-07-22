@@ -53,6 +53,10 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Wed Jul 22 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.2.1-1
+- 4e6e0ed4 Add 'ngx' to list of *all* driver capabilities
+- 2f4af743 List config.toml as a config file in the RPM SPEC
+
 * Wed Jul 08 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.2.0-1
 - 8e0aab46 Fix repo listed in changelog for debian distributions
 - 320bb6e4 Update dependence on libnvidia-container to 1.2.0
