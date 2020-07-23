@@ -240,7 +240,25 @@ func getDevicesFromMounts(root string, mounts []Mount) *string {
 }
 
 func getDevices(hookConfig *HookConfig, env map[string]string, mounts []Mount, privileged bool, legacyImage bool) *string {
-	return getDevicesFromEnvvar(env, legacyImage)
+	// Try and get the device list from mount volumes first
+	devices := getDevicesFromMounts(*hookConfig.DeviceListVolumeMount, mounts)
+	if devices != nil {
+		return devices
+	}
+
+	// Fallback to reading from the environment variable if privileges are correct
+	devices = getDevicesFromEnvvar(env, legacyImage)
+	if devices == nil {
+		return nil
+	}
+	if privileged || hookConfig.AcceptEnvvarUnprivileged {
+		return devices
+	}
+
+	// Error out otherwise
+	log.Panicln("insufficient privileges to read device list from NVIDIA_VISIBLE_DEVICES envvar")
+
+	return nil
 }
 
 func getMigConfigDevices(env map[string]string) *string {
