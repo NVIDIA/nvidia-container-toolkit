@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGetNvidiaConfig(t *testing.T) {
+func TestGetNvidiaConfigEnvvar(t *testing.T) {
 	var tests = []struct {
 		description    string
 		env            map[string]string
@@ -407,7 +407,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			// Wrap the call to getNvidiaConfig() in a closure.
 			var config *nvidiaConfig
 			getConfig := func() {
-				config = getNvidiaConfig(tc.env, tc.privileged)
+				config = getNvidiaConfig(tc.env, nil, tc.privileged)
 			}
 
 			// For any tests that are expected to panic, make sure they do.

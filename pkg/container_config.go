@@ -73,6 +73,15 @@ type LinuxCapabilities struct {
 	Ambient     []string `json:"ambient,omitempty" platform:"linux"`
 }
 
+// Mount from OCI runtime spec
+// https://github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L103
+type Mount struct {
+	Destination string   `json:"destination"`
+	Type        string   `json:"type,omitempty" platform:"linux,solaris"`
+	Source      string   `json:"source,omitempty"`
+	Options     []string `json:"options,omitempty"`
+}
+
 // Spec from OCI runtime spec
 // We use pointers to structs, similarly to the latest version of runtime-spec:
 // https://github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L5-L28
@@ -80,6 +89,7 @@ type Spec struct {
 	Version *string  `json:"ociVersion"`
 	Process *Process `json:"process,omitempty"`
 	Root    *Root    `json:"root,omitempty"`
+	Mounts  []Mount  `json:"mounts,omitempty"`
 }
 
 // HookState holds state information about the hook
@@ -285,7 +295,7 @@ func getRequirements(env map[string]string, legacyImage bool) []string {
 	return requirements
 }
 
-func getNvidiaConfig(env map[string]string, privileged bool) *nvidiaConfig {
+func getNvidiaConfig(env map[string]string, mounts []Mount, privileged bool) *nvidiaConfig {
 	legacyImage := isLegacyCUDAImage(env)
 
 	var devices string
@@ -353,6 +363,6 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,
 		Env:    env,
-		Nvidia: getNvidiaConfig(env, privileged),
+		Nvidia: getNvidiaConfig(env, s.Mounts, privileged),
 	}
 }
