@@ -407,7 +407,8 @@ func TestGetNvidiaConfigEnvvar(t *testing.T) {
 			// Wrap the call to getNvidiaConfig() in a closure.
 			var config *nvidiaConfig
 			getConfig := func() {
-				config = getNvidiaConfig(tc.env, nil, tc.privileged)
+				hookConfig := getDefaultHookConfig()
+				config = getNvidiaConfig(&hookConfig, tc.env, nil, tc.privileged)
 			}
 
 			// For any tests that are expected to panic, make sure they do.
