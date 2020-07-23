@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -236,7 +237,40 @@ func getDevicesFromEnvvar(env map[string]string, legacyImage bool) *string {
 }
 
 func getDevicesFromMounts(root string, mounts []Mount) *string {
-	return nil
+	var devices []string
+	for _, m := range mounts {
+		root := filepath.Clean(root)
+		source := filepath.Clean(m.Source)
+		destination := filepath.Clean(m.Destination)
+
+		// Only consider mounts who's host volume is /dev/null
+		if source != "/dev/null" {
+			continue
+		}
+		// Only consider container mount points that begin with 'root'
+		if len(destination) < len(root) {
+			continue
+		}
+		if destination[:len(root)] != root {
+			continue
+		}
+		// Grab the full path beyond 'root' and add it to the list of devices
+		device := destination[len(root):]
+		if len(device) > 0 && device[0] == '/' {
+			device = device[1:]
+		}
+		if len(device) == 0 {
+			continue
+		}
+		devices = append(devices, device)
+	}
+
+	if devices == nil {
+		return nil
+	}
+
+	ret := strings.Join(devices, ",")
+	return &ret
 }
 
 func getDevices(hookConfig *HookConfig, env map[string]string, mounts []Mount, privileged bool, legacyImage bool) *string {
