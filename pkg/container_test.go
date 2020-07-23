@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGetNvidiaConfigEnvvar(t *testing.T) {
+func TestGetNvidiaConfig(t *testing.T) {
 	var tests = []struct {
 		description    string
 		env            map[string]string

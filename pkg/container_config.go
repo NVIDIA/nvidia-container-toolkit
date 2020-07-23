@@ -197,7 +197,7 @@ func isLegacyCUDAImage(env map[string]string) bool {
 	return len(legacyCudaVersion) > 0 && len(cudaRequire) == 0
 }
 
-func getDevices(hookConfig *HookConfig, env map[string]string, mounts []Mount, privileged bool, legacyImage bool) *string {
+func getDevicesFromEnvvar(env map[string]string, legacyImage bool) *string {
 	// Build a list of envvars to consider.
 	envVars := []string{envNVVisibleDevices}
 	if envSwarmGPU != nil {
@@ -233,6 +233,10 @@ func getDevices(hookConfig *HookConfig, env map[string]string, mounts []Mount, p
 
 	// Any other value.
 	return devices
+}
+
+func getDevices(hookConfig *HookConfig, env map[string]string, mounts []Mount, privileged bool, legacyImage bool) *string {
+	return getDevicesFromEnvvar(env, legacyImage)
 }
 
 func getMigConfigDevices(env map[string]string) *string {
