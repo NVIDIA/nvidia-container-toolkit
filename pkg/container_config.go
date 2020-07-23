@@ -214,21 +214,15 @@ func getDevices(env map[string]string) *string {
 }
 
 func getMigConfigDevices(env map[string]string) *string {
-	gpuVars := []string{envNVMigConfigDevices}
-	for _, gpuVar := range gpuVars {
-		if devices, ok := env[gpuVar]; ok {
-			return &devices
-		}
+	if devices, ok := env[envNVMigConfigDevices]; ok {
+		return &devices
 	}
 	return nil
 }
 
 func getMigMonitorDevices(env map[string]string) *string {
-	gpuVars := []string{envNVMigMonitorDevices}
-	for _, gpuVar := range gpuVars {
-		if devices, ok := env[gpuVar]; ok {
-			return &devices
-		}
+	if devices, ok := env[envNVMigMonitorDevices]; ok {
+		return &devices
 	}
 	return nil
 }
