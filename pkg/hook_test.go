@@ -1,8 +1,8 @@
 package main
 
 import (
-	"testing"
 	"encoding/json"
+	"testing"
 )
 
 func TestParseCudaVersionValid(t *testing.T) {
