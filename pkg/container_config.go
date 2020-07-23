@@ -235,6 +235,10 @@ func getDevicesFromEnvvar(env map[string]string, legacyImage bool) *string {
 	return devices
 }
 
+func getDevicesFromMounts(root string, mounts []Mount) *string {
+	return nil
+}
+
 func getDevices(hookConfig *HookConfig, env map[string]string, mounts []Mount, privileged bool, legacyImage bool) *string {
 	return getDevicesFromEnvvar(env, legacyImage)
 }
