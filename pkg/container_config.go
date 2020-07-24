@@ -50,17 +50,20 @@ type containerConfig struct {
 	Nvidia *nvidiaConfig
 }
 
+// Root from OCI runtime spec
 // github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L94-L100
 type Root struct {
 	Path string `json:"path"`
 }
 
+// Process from OCI runtime spec
 // github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L30-L57
 type Process struct {
 	Env          []string         `json:"env,omitempty"`
 	Capabilities *json.RawMessage `json:"capabilities,omitempty" platform:"linux"`
 }
 
+// LinuxCapabilities from OCI runtime spec
 // https://github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L61
 type LinuxCapabilities struct {
 	Bounding    []string `json:"bounding,omitempty" platform:"linux"`
@@ -70,6 +73,7 @@ type LinuxCapabilities struct {
 	Ambient     []string `json:"ambient,omitempty" platform:"linux"`
 }
 
+// Spec from OCI runtime spec
 // We use pointers to structs, similarly to the latest version of runtime-spec:
 // https://github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L5-L28
 type Spec struct {
@@ -78,6 +82,7 @@ type Spec struct {
 	Root    *Root    `json:"root,omitempty"`
 }
 
+// HookState holds state information about the hook
 type HookState struct {
 	Pid int `json:"pid,omitempty"`
 	// After 17.06, runc is using the runtime spec:
@@ -174,7 +179,7 @@ func isPrivileged(s *Spec) bool {
 		// We only make sure that the bounding capabibility set has
 		// CAP_SYS_ADMIN. This allows us to make sure that the container was
 		// actually started as '--privileged', but also allow non-root users to
-		// access the priviliged NVIDIA capabilities.
+		// access the privileged NVIDIA capabilities.
 		caps = lc.Bounding
 	}
 
@@ -316,13 +321,15 @@ func getNvidiaConfig(env map[string]string, privileged bool) *nvidiaConfig {
 	}
 
 	var devices string
-	if d := getDevices(env); d == nil || len(*d) == 0 || *d == "void" {
+	d := getDevices(env)
+	if d == nil || len(*d) == 0 || *d == "void" {
 		// Environment variable unset or empty or "void": not a GPU container.
 		return nil
-	} else {
-		// Environment variable non-empty and not "void".
-		devices = *d
 	}
+
+	// Environment variable non-empty and not "void".
+	devices = *d
+
 	if devices == "none" {
 		devices = ""
 	}
