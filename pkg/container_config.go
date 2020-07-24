@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -73,6 +74,15 @@ type LinuxCapabilities struct {
 	Ambient     []string `json:"ambient,omitempty" platform:"linux"`
 }
 
+// Mount from OCI runtime spec
+// https://github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L103
+type Mount struct {
+	Destination string   `json:"destination"`
+	Type        string   `json:"type,omitempty" platform:"linux,solaris"`
+	Source      string   `json:"source,omitempty"`
+	Options     []string `json:"options,omitempty"`
+}
+
 // Spec from OCI runtime spec
 // We use pointers to structs, similarly to the latest version of runtime-spec:
 // https://github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L5-L28
@@ -80,6 +90,7 @@ type Spec struct {
 	Version *string  `json:"ociVersion"`
 	Process *Process `json:"process,omitempty"`
 	Root    *Root    `json:"root,omitempty"`
+	Mounts  []Mount  `json:"mounts,omitempty"`
 }
 
 // HookState holds state information about the hook
@@ -108,7 +119,7 @@ func parseCudaVersion(cudaVersion string) (vmaj, vmin, vpatch uint32) {
 	return
 }
 
-func getEnvMap(e []string, config CLIConfig) (m map[string]string) {
+func getEnvMap(e []string) (m map[string]string) {
 	m = make(map[string]string)
 	for _, s := range e {
 		p := strings.SplitN(s, "=", 2)
@@ -116,17 +127,6 @@ func getEnvMap(e []string, config CLIConfig) (m map[string]string) {
 			log.Panicln("environment error")
 		}
 		m[p[0]] = p[1]
-	}
-	if config.AlphaMergeVisibleDevicesEnvvars {
-		var mergable []string
-		for k, v := range m {
-			if strings.HasPrefix(k, envNVVisibleDevices+"_") {
-				mergable = append(mergable, v)
-			}
-		}
-		if len(mergable) > 0 {
-			m[envNVVisibleDevices] = strings.Join(mergable, ",")
-		}
 	}
 	return
 }
@@ -198,7 +198,7 @@ func isLegacyCUDAImage(env map[string]string) bool {
 	return len(legacyCudaVersion) > 0 && len(cudaRequire) == 0
 }
 
-func getDevices(env map[string]string, legacyImage bool) *string {
+func getDevicesFromEnvvar(env map[string]string, legacyImage bool) *string {
 	// Build a list of envvars to consider.
 	envVars := []string{envNVVisibleDevices}
 	if envSwarmGPU != nil {
@@ -234,6 +234,65 @@ func getDevices(env map[string]string, legacyImage bool) *string {
 
 	// Any other value.
 	return devices
+}
+
+func getDevicesFromMounts(root string, mounts []Mount) *string {
+	var devices []string
+	for _, m := range mounts {
+		root := filepath.Clean(root)
+		source := filepath.Clean(m.Source)
+		destination := filepath.Clean(m.Destination)
+
+		// Only consider mounts who's host volume is /dev/null
+		if source != "/dev/null" {
+			continue
+		}
+		// Only consider container mount points that begin with 'root'
+		if len(destination) < len(root) {
+			continue
+		}
+		if destination[:len(root)] != root {
+			continue
+		}
+		// Grab the full path beyond 'root' and add it to the list of devices
+		device := destination[len(root):]
+		if len(device) > 0 && device[0] == '/' {
+			device = device[1:]
+		}
+		if len(device) == 0 {
+			continue
+		}
+		devices = append(devices, device)
+	}
+
+	if devices == nil {
+		return nil
+	}
+
+	ret := strings.Join(devices, ",")
+	return &ret
+}
+
+func getDevices(hookConfig *HookConfig, env map[string]string, mounts []Mount, privileged bool, legacyImage bool) *string {
+	// Try and get the device list from mount volumes first
+	devices := getDevicesFromMounts(*hookConfig.DeviceListVolumeMount, mounts)
+	if devices != nil {
+		return devices
+	}
+
+	// Fallback to reading from the environment variable if privileges are correct
+	devices = getDevicesFromEnvvar(env, legacyImage)
+	if devices == nil {
+		return nil
+	}
+	if privileged || hookConfig.AcceptEnvvarUnprivileged {
+		return devices
+	}
+
+	// Error out otherwise
+	log.Panicln("insufficient privileges to read device list from NVIDIA_VISIBLE_DEVICES envvar")
+
+	return nil
 }
 
 func getMigConfigDevices(env map[string]string) *string {
@@ -296,11 +355,11 @@ func getRequirements(env map[string]string, legacyImage bool) []string {
 	return requirements
 }
 
-func getNvidiaConfig(env map[string]string, privileged bool) *nvidiaConfig {
+func getNvidiaConfig(hookConfig *HookConfig, env map[string]string, mounts []Mount, privileged bool) *nvidiaConfig {
 	legacyImage := isLegacyCUDAImage(env)
 
 	var devices string
-	if d := getDevices(env, legacyImage); d != nil {
+	if d := getDevices(hookConfig, env, mounts, privileged, legacyImage); d != nil {
 		devices = *d
 	} else {
 		// 'nil' devices means this is not a GPU container.
@@ -357,13 +416,13 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 
 	s := loadSpec(path.Join(b, "config.json"))
 
-	env := getEnvMap(s.Process.Env, hook.NvidiaContainerCLI)
+	env := getEnvMap(s.Process.Env)
 	privileged := isPrivileged(s)
 	envSwarmGPU = hook.SwarmResource
 	return containerConfig{
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,
 		Env:    env,
-		Nvidia: getNvidiaConfig(env, privileged),
+		Nvidia: getNvidiaConfig(&hook, env, s.Mounts, privileged),
 	}
 }
