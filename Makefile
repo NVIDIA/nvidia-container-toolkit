@@ -6,6 +6,7 @@ DIST_DIR ?= $(CURDIR)/dist
 
 LIB_NAME := nvidia-container-toolkit
 LIB_VERSION := 1.2.1
+LIB_TAG ?=
 
 GOLANG_VERSION := 1.14.2
 GOLANG_PKG_PATH := github.com/NVIDIA/nvidia-container-toolkit/pkg
