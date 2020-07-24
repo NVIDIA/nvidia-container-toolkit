@@ -8,7 +8,7 @@ LIB_NAME := nvidia-container-toolkit
 LIB_VERSION := 1.2.1
 
 GOLANG_VERSION := 1.14.2
-GOLANG_PKG_PATH := github.com/NVIDIA/container-toolkit/pkg
+GOLANG_PKG_PATH := github.com/NVIDIA/nvidia-container-toolkit/pkg
 
 # By default run all native docker-based targets
 docker-native:

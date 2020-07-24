@@ -1,4 +1,4 @@
-module github.com/NVIDIA/container-toolkit
+module github.com/NVIDIA/nvidia-container-toolkit
 
 go 1.14
 
