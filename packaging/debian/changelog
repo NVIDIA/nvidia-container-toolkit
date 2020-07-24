@@ -1,3 +1,14 @@
+nvidia-container-toolkit (1.3.0~rc.1-1) UNRELEASED; urgency=medium
+
+  * b50d86c1 Update build system to accept a TAG variable for things like rc.x
+  * fe65573b Add common CI tests for things like golint, gofmt, unit tests, etc.
+  * da6fbb34 Revert "Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*"
+  * a7fb3330 Flip build-all targets to run automatically on merge requests
+  * 8b248b66 Rename github.com/NVIDIA/container-toolkit to nvidia-container-toolkit
+  * da36874e Add new config options to pull device list from mounted files instead of ENVVAR
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Fri, 24 Jul 2020 22:21:49 -0700
+
 nvidia-container-toolkit (1.2.1-1) UNRELEASED; urgency=medium
 
   * 4e6e0ed4 Add 'ngx' to list of *all* driver capabilities

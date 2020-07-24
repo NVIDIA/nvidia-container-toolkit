@@ -53,6 +53,14 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Wed Jul 24 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.3.0-0.1.rc.1
+- b50d86c1 Update build system to accept a TAG variable for things like rc.x
+- fe65573b Add common CI tests for things like golint, gofmt, unit tests, etc.
+- da6fbb34 Revert "Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*"
+- a7fb3330 Flip build-all targets to run automatically on merge requests
+- 8b248b66 Rename github.com/NVIDIA/container-toolkit to nvidia-container-toolkit
+- da36874e Add new config options to pull device list from mounted files instead of ENVVAR
+
 * Wed Jul 22 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.2.1-1
 - 4e6e0ed4 Add 'ngx' to list of *all* driver capabilities
 - 2f4af743 List config.toml as a config file in the RPM SPEC
