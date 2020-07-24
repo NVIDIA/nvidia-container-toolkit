@@ -11,9 +11,13 @@ stages:
   rules:
     - when: always
 
+  variables:
+    GITHUB_ROOT: "github.com/NVIDIA"
+    PROJECT_GOPATH: "${GITHUB_ROOT}/nvidia-container-toolkit"
+
   before_script:
-    - mkdir -p ${GOPATH}/src/github.com/NVIDIA/
-    - ln -s ${CI_PROJECT_DIR} ${GOPATH}/src/github.com/NVIDIA/${CI_PROJECT_NAME}
+    - mkdir -p ${GOPATH}/src/${GITHUB_ROOT}
+    - ln -s ${CI_PROJECT_DIR} ${GOPATH}/src/${PROJECT_GOPATH}
 
 .build-setup: &build-setup
   image: docker:19.03.8
@@ -34,19 +38,19 @@ lint:
   stage: tests
   script:
     - go get -u golang.org/x/lint/golint
-    - golint -set_exit_status github.com/NVIDIA/${CI_PROJECT_NAME}/pkg
+    - golint -set_exit_status ${PROJECT_GOPATH}/pkg
 
 vet:
   <<: *tests-setup
   stage: tests
   script:
-    - go vet github.com/NVIDIA/${CI_PROJECT_NAME}/pkg
+    - go vet ${PROJECT_GOPATH}/pkg
 
 unit_test:
   <<: *tests-setup
   stage: tests
   script:
-    - go test github.com/NVIDIA/${CI_PROJECT_NAME}/pkg
+    - go test ${PROJECT_GOPATH}/pkg
 
 fmt:
   <<: *tests-setup
