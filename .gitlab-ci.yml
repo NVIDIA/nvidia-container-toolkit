@@ -47,7 +47,7 @@ stages:
     - if: $CI_COMMIT_TAG
       when: always
     - if: $CI_MERGE_REQUEST_ID
-      when: manual
+      when: always
 
   variables:
     ARTIFACTS_NAME: "${CI_PROJECT_NAME}-${CI_COMMIT_REF_SLUG}-${CI_JOB_NAME}-artifacts-${CI_PIPELINE_ID}"
