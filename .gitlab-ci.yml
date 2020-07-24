@@ -52,7 +52,7 @@ fmt:
   <<: *tests-setup
   stage: tests
   script:
-    - res=$(gofmt -l *.go)
+    - res=$(gofmt -l pkg/*.go)
     - echo "$res"
     - test -z "$res"
 
