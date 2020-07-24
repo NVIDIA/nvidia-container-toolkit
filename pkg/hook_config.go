@@ -18,7 +18,7 @@ var defaultPaths = [...]string{
 	configPath,
 }
 
-// CLIConfig: options for nvidia-container-cli.
+// CLIConfig : options for nvidia-container-cli.
 type CLIConfig struct {
 	Root                            *string  `toml:"root"`
 	Path                            *string  `toml:"path"`
@@ -33,6 +33,7 @@ type CLIConfig struct {
 	AlphaMergeVisibleDevicesEnvvars bool     `toml:"alpha-merge-visible-devices-envvars"`
 }
 
+// HookConfig : options for the nvidia-container-toolkit.
 type HookConfig struct {
 	DisableRequire bool    `toml:"disable-require"`
 	SwarmResource  *string `toml:"swarm-resource"`
