@@ -587,6 +587,42 @@ func TestDeviceListSourcePriority(t *testing.T) {
 			acceptMounts:       true,
 			expectedDevices:    &[]string{"GPU0,GPU1"}[0],
 		},
+		{
+			description: "Mount devices, unprivileged, accept unprivileged, no accept mounts",
+			mountDevices: []Mount{
+				{
+					Source:      "/dev/null",
+					Destination: filepath.Join(deviceListAsVolumeMountsRoot, "GPU0"),
+				},
+				{
+					Source:      "/dev/null",
+					Destination: filepath.Join(deviceListAsVolumeMountsRoot, "GPU1"),
+				},
+			},
+			envvarDevices:      "GPU2,GPU3",
+			privileged:         false,
+			acceptUnprivileged: true,
+			acceptMounts:       false,
+			expectedDevices:    &[]string{"GPU2,GPU3"}[0],
+		},
+		{
+			description: "Mount devices, unprivileged, no accept unprivileged, no accept mounts",
+			mountDevices: []Mount{
+				{
+					Source:      "/dev/null",
+					Destination: filepath.Join(deviceListAsVolumeMountsRoot, "GPU0"),
+				},
+				{
+					Source:      "/dev/null",
+					Destination: filepath.Join(deviceListAsVolumeMountsRoot, "GPU1"),
+				},
+			},
+			envvarDevices:      "GPU2,GPU3",
+			privileged:         false,
+			acceptUnprivileged: false,
+			acceptMounts:       false,
+			expectedPanic:      true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
