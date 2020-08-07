@@ -35,6 +35,10 @@ const (
 	capSysAdmin = "CAP_SYS_ADMIN"
 )
 
+const (
+	deviceListAsVolumeMountsRoot = "/var/run/nvidia-container-devices"
+)
+
 type nvidiaConfig struct {
 	Devices            string
 	MigConfigDevices   string
@@ -236,10 +240,10 @@ func getDevicesFromEnvvar(env map[string]string, legacyImage bool) *string {
 	return devices
 }
 
-func getDevicesFromMounts(root string, mounts []Mount) *string {
+func getDevicesFromMounts(mounts []Mount) *string {
 	var devices []string
 	for _, m := range mounts {
-		root := filepath.Clean(root)
+		root := filepath.Clean(deviceListAsVolumeMountsRoot)
 		source := filepath.Clean(m.Source)
 		destination := filepath.Clean(m.Destination)
 
@@ -274,14 +278,16 @@ func getDevicesFromMounts(root string, mounts []Mount) *string {
 }
 
 func getDevices(hookConfig *HookConfig, env map[string]string, mounts []Mount, privileged bool, legacyImage bool) *string {
-	// Try and get the device list from mount volumes first
-	devices := getDevicesFromMounts(*hookConfig.DeviceListVolumeMount, mounts)
-	if devices != nil {
-		return devices
+	// If enabled, try and get the device list from volume mounts first
+	if hookConfig.AcceptDeviceListAsVolumeMounts {
+		devices := getDevicesFromMounts(mounts)
+		if devices != nil {
+			return devices
+		}
 	}
 
 	// Fallback to reading from the environment variable if privileges are correct
-	devices = getDevicesFromEnvvar(env, legacyImage)
+	devices := getDevicesFromEnvvar(env, legacyImage)
 	if devices == nil {
 		return nil
 	}
