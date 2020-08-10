@@ -1,4 +1,11 @@
-nvidia-container-toolkit (1.3.0~rc.1-1) UNRELEASED; urgency=medium
+nvidia-container-toolkit (1.3.0~rc.2-1) experimental; urgency=medium
+
+  * 2c180947 Add more tests for new semantics with device list from volume mounts
+  * 7c003857 Refactor accepting device lists from volume mounts as a boolean
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Mon, 10 Aug 2020 15:05:34 -0700
+
+nvidia-container-toolkit (1.3.0~rc.1-1) experimental; urgency=medium
 
   * b50d86c1 Update build system to accept a TAG variable for things like rc.x
   * fe65573b Add common CI tests for things like golint, gofmt, unit tests, etc.
