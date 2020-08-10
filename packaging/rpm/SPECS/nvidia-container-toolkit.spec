@@ -53,7 +53,11 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
-* Wed Jul 24 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.3.0-0.1.rc.1
+* Mon Aug 10 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.3.0-0.1.rc.2
+- 2c180947 Add more tests for new semantics with device list from volume mounts
+- 7c003857 Refactor accepting device lists from volume mounts as a boolean
+
+* Fri Jul 24 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.3.0-0.1.rc.1
 - b50d86c1 Update build system to accept a TAG variable for things like rc.x
 - fe65573b Add common CI tests for things like golint, gofmt, unit tests, etc.
 - da6fbb34 Revert "Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*"
