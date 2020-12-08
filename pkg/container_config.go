@@ -28,7 +28,7 @@ const (
 
 const (
 	allDriverCapabilities     = "compute,compat32,graphics,utility,video,display,ngx"
-	defaultDriverCapabilities = "utility"
+	defaultDriverCapabilities = "utility,compute"
 )
 
 const (
