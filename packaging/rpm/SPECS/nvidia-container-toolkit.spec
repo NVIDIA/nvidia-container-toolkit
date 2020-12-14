@@ -53,6 +53,10 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Fri Dec 11 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.4.0-1
+- Add 'compute' capability to list of defaults
+- Add dependence on libnvidia-container-tools >= 1.3.1
+
 * Wed Sep 16 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.3.0-1
 - Promote 1.3.0-0.1.rc.2 to 1.3.0-1
 - Add dependence on libnvidia-container-tools >= 1.3.0
