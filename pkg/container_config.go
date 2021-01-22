@@ -295,8 +295,7 @@ func getDevices(hookConfig *HookConfig, env map[string]string, mounts []Mount, p
 		return devices
 	}
 
-	// Error out otherwise
-	log.Panicln("insufficient privileges to read device list from NVIDIA_VISIBLE_DEVICES envvar")
+	log.Printf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES (privileged=%v, config.accept-nvidia-visible-devices-envvar-when-unprivileged=%v) ", privileged, hookConfig.AcceptEnvvarUnprivileged)
 
 	return nil
 }

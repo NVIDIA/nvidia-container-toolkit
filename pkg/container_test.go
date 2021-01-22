@@ -540,7 +540,6 @@ func TestDeviceListSourcePriority(t *testing.T) {
 		acceptUnprivileged bool
 		acceptMounts       bool
 		expectedDevices    *string
-		expectedPanic      bool
 	}{
 		{
 			description: "Mount devices, unprivileged, no accept unprivileged",
@@ -567,7 +566,7 @@ func TestDeviceListSourcePriority(t *testing.T) {
 			privileged:         false,
 			acceptUnprivileged: false,
 			acceptMounts:       true,
-			expectedPanic:      true,
+			expectedDevices:    nil,
 		},
 		{
 			description:        "No mount devices, privileged, no accept unprivileged",
@@ -621,7 +620,7 @@ func TestDeviceListSourcePriority(t *testing.T) {
 			privileged:         false,
 			acceptUnprivileged: false,
 			acceptMounts:       false,
-			expectedPanic:      true,
+			expectedDevices:    nil,
 		},
 	}
 	for _, tc := range tests {
@@ -636,12 +635,6 @@ func TestDeviceListSourcePriority(t *testing.T) {
 				hookConfig.AcceptEnvvarUnprivileged = tc.acceptUnprivileged
 				hookConfig.AcceptDeviceListAsVolumeMounts = tc.acceptMounts
 				devices = getDevices(&hookConfig, env, tc.mountDevices, tc.privileged, false)
-			}
-
-			// For any tests that are expected to panic, make sure they do.
-			if tc.expectedPanic {
-				mustPanic(t, getDevices)
-				return
 			}
 
 			// For all other tests, just grab the devices and check the results
