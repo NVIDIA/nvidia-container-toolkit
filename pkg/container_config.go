@@ -295,7 +295,8 @@ func getDevices(hookConfig *HookConfig, env map[string]string, mounts []Mount, p
 		return devices
 	}
 
-	log.Printf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES (privileged=%v, config.accept-nvidia-visible-devices-envvar-when-unprivileged=%v) ", privileged, hookConfig.AcceptEnvvarUnprivileged)
+	configName := hookConfig.getConfigOption("AcceptEnvvarUnprivileged")
+	log.Printf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES (privileged=%v, %v=%v) ", privileged, configName, hookConfig.AcceptEnvvarUnprivileged)
 
 	return nil
 }
