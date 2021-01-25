@@ -18,7 +18,7 @@ Source4: LICENSE
 
 Obsoletes: nvidia-container-runtime < 2.0.0, nvidia-container-runtime-hook
 Provides: nvidia-container-runtime-hook
-Requires: libnvidia-container-tools >= 1.3.0, libnvidia-container-tools < 2.0.0
+Requires: libnvidia-container-tools >= 1.3.2, libnvidia-container-tools < 2.0.0
 
 %description
 Provides a OCI hook to enable GPU support in containers.
@@ -53,6 +53,10 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Mon Jan 25 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.4.1-1
+- Ignore NVIDIA_VISIBLE_DEVICES for containers with insufficent privileges
+- Add dependence on libnvidia-container-tools >= 1.3.2
+
 * Fri Dec 11 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.4.0-1
 - Add 'compute' capability to list of defaults
 - Add dependence on libnvidia-container-tools >= 1.3.1
