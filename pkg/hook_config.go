@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"reflect"
 
 	"github.com/BurntSushi/toml"
 )
@@ -85,4 +86,19 @@ func getHookConfig() (config HookConfig) {
 	}
 
 	return config
+}
+
+// getConfigOption returns the toml config option associated with the
+// specified struct field.
+func (c HookConfig) getConfigOption(fieldName string) string {
+	t := reflect.TypeOf(c)
+	f, ok := t.FieldByName(fieldName)
+	if !ok {
+		return fieldName
+	}
+	v, ok := f.Tag.Lookup("toml")
+	if !ok {
+		return fieldName
+	}
+	return v
 }
