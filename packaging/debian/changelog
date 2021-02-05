@@ -1,3 +1,9 @@
+nvidia-container-toolkit (1.4.2-1) UNRELEASED; urgency=medium
+
+  * Add dependence on libnvidia-container-tools >= 1.3.3
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Fri, 05 Feb 2021 02:24:36 -0700
+
 nvidia-container-toolkit (1.4.1-1) UNRELEASED; urgency=medium
 
   * Ignore NVIDIA_VISIBLE_DEVICES for containers with insufficent privileges

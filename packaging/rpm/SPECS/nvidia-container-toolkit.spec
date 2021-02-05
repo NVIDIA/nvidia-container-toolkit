@@ -53,6 +53,9 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Fri Feb 05 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.4.2-1
+- Add dependence on libnvidia-container-tools >= 1.3.3
+
 * Mon Jan 25 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.4.1-1
 - Ignore NVIDIA_VISIBLE_DEVICES for containers with insufficent privileges
 - Add dependence on libnvidia-container-tools >= 1.3.2
