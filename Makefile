@@ -29,3 +29,39 @@ include $(CURDIR)/docker/docker.mk
 
 binary:
 	go build -ldflags "-s -w" -o "$(LIB_NAME)" $(GOLANG_PKG_PATH)
+
+# Define the check targets for the Golang codebase
+MODULE := .
+.PHONY: check fmt assert-fmt ineffassign lint misspell vet
+check: assert-fmt lint misspell vet
+fmt:
+	go list -f '{{.Dir}}' $(MODULE)/... \
+		| xargs gofmt -s -l -w
+
+assert-fmt:
+	go list -f '{{.Dir}}' $(MODULE)/... \
+		| xargs gofmt -s -l > fmt.out
+	@if [ -s fmt.out ]; then \
+		echo "\nERROR: The following files are not formatted:\n"; \
+		cat fmt.out; \
+		rm fmt.out; \
+		exit 1; \
+	else \
+		rm fmt.out; \
+	fi
+
+ineffassign:
+	ineffassign $(MODULE)/...
+
+lint:
+	# We use `go list -f '{{.Dir}}' $(GOLANG_PKG_PATH)/...` to skip the `vendor` folder.
+	go list -f '{{.Dir}}' $(MODULE)/... | xargs golint -set_exit_status
+
+misspell:
+	misspell $(MODULE)/...
+
+vet:
+	go vet $(MODULE)/...
+
+test:
+	go test $(MODULE)/...

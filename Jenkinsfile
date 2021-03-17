@@ -14,21 +14,53 @@
 # limitations under the License.
 */
 
-def getBuildClosure(def architecture, def makeCommand, def makeTarget) {
-    return {
-        container('docker') {
-            stage(architecture) {
-                sh "${makeCommand} ${makeTarget}"
+podTemplate (cloud:'sw-gpu-cloudnative',
+    containers: [
+    containerTemplate(name: 'docker', image: 'docker:dind', ttyEnabled: true, privileged: true),
+    containerTemplate(name: 'golang', image: 'golang:1.14.2', ttyEnabled: true)
+  ]) {
+    node(POD_LABEL) {
+        stage('checkout') {
+            checkout scm
+        }
+        stage('dependencies') {
+            container('golang') {
+                sh 'GO111MODULE=off go get -u github.com/client9/misspell/cmd/misspell'
+                sh 'GO111MODULE=off go get -u github.com/gordonklaus/ineffassign'
+                sh 'GO111MODULE=off go get -u golang.org/x/lint/golint'
             }
+            container('docker') {
+                sh 'apk add --no-cache make bash'
+            }
+        }
+        stage('check') {
+            parallel (
+                getGolangStages(["assert-fmt", "lint", "vet", "ineffassign", "misspell"])
+            )
+        }
+        stage('test') {
+            parallel (
+                getGolangStages(["test"])
+            )
+        }
+        stage('build-one') {
+            parallel (
+                getSingleBuildForArchitectures(["amd64", "ppc64le", "arm64"])
+            )
+        }
+        stage('build-all') {
+            parallel (
+                getAllBuildForArchitectures(["amd64", "ppc64le", "arm64", "x86_64", "aarch64"])
+            )
         }
     }
 }
 
-def getBuildStagesForArchitectures(def architectures, def makeCommand, def makeTargetPrefix) {
+def getGolangStages(def targets) {
     stages = [:]
 
-    for (a in architectures) {
-        stages[a] = getBuildClosure(a, makeCommand, "${makeTargetPrefix}-${a}")
+    for (t in targets) {
+        stages[t] = getLintClosure(t)
     }
 
     return stages
@@ -43,28 +75,32 @@ def getAllBuildForArchitectures(def architectures) {
     return getBuildStagesForArchitectures(architectures, "echo make", "docker")
 }
 
-podTemplate (cloud:'sw-gpu-cloudnative',
-    containers: [
-    containerTemplate(name: 'docker', image: 'docker:dind', ttyEnabled: true, privileged: true)
-  ]) {
-    node(POD_LABEL) {
-        stage('checkout') {
-            checkout scm
-        }
-        stage('dependencies') {
-            container('docker') {
-                sh 'apk add --no-cache make bash'
+def getBuildStagesForArchitectures(def architectures, def makeCommand, def makeTargetPrefix) {
+    stages = [:]
+
+    for (a in architectures) {
+        stages[a] = getBuildClosure(a, makeCommand, "${makeTargetPrefix}-${a}")
+    }
+
+    return stages
+}
+
+def getBuildClosure(def architecture, def makeCommand, def makeTarget) {
+    return {
+        container('docker') {
+            stage(architecture) {
+                sh "${makeCommand} ${makeTarget}"
             }
         }
-        stage('build-one') {
-            parallel (
-                getSingleBuildForArchitectures(["amd64", "ppc64le", "arm64"])
-            )
-        }
-        stage('build-all') {
-            parallel (
-                getAllBuildForArchitectures(["amd64", "ppc64le", "arm64", "x86_64", "aarch64"])
-            )
+    }
+}
+
+def getLintClosure(def target) {
+    return {
+        container('golang') {
+            stage(target) {
+                sh "make ${target}"
+            }
         }
     }
 }
