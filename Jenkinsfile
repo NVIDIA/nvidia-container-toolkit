@@ -17,7 +17,7 @@
 podTemplate (cloud:'sw-gpu-cloudnative',
     containers: [
     containerTemplate(name: 'docker', image: 'docker:dind', ttyEnabled: true, privileged: true),
-    containerTemplate(name: 'golang', image: 'golang:1.14.2', ttyEnabled: true)
+    containerTemplate(name: 'golang', image: 'golang:1.16.3', ttyEnabled: true)
   ]) {
     node(POD_LABEL) {
         def scmInfo
