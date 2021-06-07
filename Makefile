@@ -63,5 +63,9 @@ misspell:
 vet:
 	go vet $(MODULE)/...
 
+COVERAGE_FILE := coverage.out
 test:
-	go test $(MODULE)/...
+	go test -coverprofile=$(COVERAGE_FILE) $(MODULE)/...
+
+coverage: test
+	go tool cover -func=$(COVERAGE_FILE)
