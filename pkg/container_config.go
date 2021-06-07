@@ -216,6 +216,7 @@ func getDevicesFromEnvvar(env map[string]string, legacyImage bool) *string {
 	for _, envVar := range envVars {
 		if devs, ok := env[envVar]; ok {
 			devices = &devs
+			break
 		}
 	}
 
