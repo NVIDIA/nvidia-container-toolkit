@@ -2,8 +2,9 @@ package main
 
 import (
 	"path/filepath"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetNvidiaConfig(t *testing.T) {
@@ -414,7 +415,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 
 			// For any tests that are expected to panic, make sure they do.
 			if tc.expectedPanic {
-				mustPanic(t, getConfig)
+				require.Panics(t, getConfig)
 				return
 			}
 
@@ -422,31 +423,20 @@ func TestGetNvidiaConfig(t *testing.T) {
 			getConfig()
 
 			// And start comparing the test results to the expected results.
-			if config == nil && tc.expectedConfig == nil {
+			if tc.expectedConfig == nil {
+				require.Nil(t, config, tc.description)
 				return
 			}
-			if config != nil && tc.expectedConfig != nil {
-				if !reflect.DeepEqual(config.Devices, tc.expectedConfig.Devices) {
-					t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
-				}
-				if !reflect.DeepEqual(config.MigConfigDevices, tc.expectedConfig.MigConfigDevices) {
-					t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
-				}
-				if !reflect.DeepEqual(config.MigMonitorDevices, tc.expectedConfig.MigMonitorDevices) {
-					t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
-				}
-				if !reflect.DeepEqual(config.DriverCapabilities, tc.expectedConfig.DriverCapabilities) {
-					t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
-				}
-				if !elementsMatch(config.Requirements, tc.expectedConfig.Requirements) {
-					t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
-				}
-				if !reflect.DeepEqual(config.DisableRequire, tc.expectedConfig.DisableRequire) {
-					t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
-				}
-				return
-			}
-			t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
+
+			require.NotNil(t, config, tc.description)
+
+			require.Equal(t, tc.expectedConfig.Devices, config.Devices)
+			require.Equal(t, tc.expectedConfig.MigConfigDevices, config.MigConfigDevices)
+			require.Equal(t, tc.expectedConfig.MigMonitorDevices, config.MigMonitorDevices)
+			require.Equal(t, tc.expectedConfig.DriverCapabilities, config.DriverCapabilities)
+
+			require.ElementsMatch(t, tc.expectedConfig.Requirements, config.Requirements)
+			require.Equal(t, tc.expectedConfig.DisableRequire, config.DisableRequire)
 		})
 	}
 }
@@ -524,9 +514,7 @@ func TestGetDevicesFromMounts(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			devices := getDevicesFromMounts(tc.mounts)
-			if !reflect.DeepEqual(devices, tc.expectedDevices) {
-				t.Errorf("Unexpected devices (got: %v, wanted: %v)", *devices, *tc.expectedDevices)
-			}
+			require.Equal(t, tc.expectedDevices, devices)
 		})
 	}
 }
@@ -639,36 +627,8 @@ func TestDeviceListSourcePriority(t *testing.T) {
 
 			// For all other tests, just grab the devices and check the results
 			getDevices()
-			if !reflect.DeepEqual(devices, tc.expectedDevices) {
-				t.Errorf("Unexpected devices (got: %v, wanted: %v)", *devices, *tc.expectedDevices)
-			}
+
+			require.Equal(t, tc.expectedDevices, devices)
 		})
 	}
-}
-
-func elementsMatch(slice0, slice1 []string) bool {
-	map0 := make(map[string]int)
-	map1 := make(map[string]int)
-
-	for _, e := range slice0 {
-		map0[e]++
-	}
-
-	for _, e := range slice1 {
-		map1[e]++
-	}
-
-	for k0, v0 := range map0 {
-		if map1[k0] != v0 {
-			return false
-		}
-	}
-
-	for k1, v1 := range map1 {
-		if map0[k1] != v1 {
-			return false
-		}
-	}
-
-	return true
 }

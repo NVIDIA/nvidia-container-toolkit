@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseCudaVersionValid(t *testing.T) {
@@ -16,22 +18,13 @@ func TestParseCudaVersionValid(t *testing.T) {
 		{"9.0.116", [3]uint32{9, 0, 116}},
 		{"4294967295.4294967295.4294967295", [3]uint32{4294967295, 4294967295, 4294967295}},
 	}
-	for _, c := range tests {
+	for i, c := range tests {
 		vmaj, vmin, vpatch := parseCudaVersion(c.version)
-		if vmaj != c.expected[0] || vmin != c.expected[1] || vpatch != c.expected[2] {
-			t.Errorf("parseCudaVersion(%s): %d.%d.%d (expected: %v)", c.version, vmaj, vmin, vpatch, c.expected)
-		}
+
+		version := [3]uint32{vmaj, vmin, vpatch}
+
+		require.Equal(t, c.expected, version, "%d: %v", i, c)
 	}
-}
-
-func mustPanic(t *testing.T, f func()) {
-	defer func() {
-		if err := recover(); err == nil {
-			t.Error("Test didn't panic!")
-		}
-	}()
-
-	f()
 }
 
 func TestParseCudaVersionInvalid(t *testing.T) {
@@ -53,10 +46,9 @@ func TestParseCudaVersionInvalid(t *testing.T) {
 		"-9.-1.-116",
 	}
 	for _, c := range tests {
-		mustPanic(t, func() {
-			t.Logf("parseCudaVersion(%s)", c)
+		require.Panics(t, func() {
 			parseCudaVersion(c)
-		})
+		}, "parseCudaVersion(%v)", c)
 	}
 }
 
@@ -132,12 +124,11 @@ func TestIsPrivileged(t *testing.T) {
 			false,
 		},
 	}
-	for _, tc := range tests {
+	for i, tc := range tests {
 		var spec Spec
 		_ = json.Unmarshal([]byte(tc.spec), &spec)
 		privileged := isPrivileged(&spec)
-		if privileged != tc.expected {
-			t.Errorf("isPrivileged() returned unexpectred value (privileged: %v, tc.expected: %v)", privileged, tc.expected)
-		}
+
+		require.Equal(t, tc.expected, privileged, "%d: %v", i, tc)
 	}
 }
