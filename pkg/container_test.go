@@ -2,8 +2,9 @@ package main
 
 import (
 	"path/filepath"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetNvidiaConfig(t *testing.T) {
@@ -414,7 +415,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 
 			// For any tests that are expected to panic, make sure they do.
 			if tc.expectedPanic {
-				mustPanic(t, getConfig)
+				require.Panics(t, getConfig)
 				return
 			}
 
@@ -422,31 +423,20 @@ func TestGetNvidiaConfig(t *testing.T) {
 			getConfig()
 
 			// And start comparing the test results to the expected results.
-			if config == nil && tc.expectedConfig == nil {
+			if tc.expectedConfig == nil {
+				require.Nil(t, config, tc.description)
 				return
 			}
-			if config != nil && tc.expectedConfig != nil {
-				if !reflect.DeepEqual(config.Devices, tc.expectedConfig.Devices) {
-					t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
-				}
-				if !reflect.DeepEqual(config.MigConfigDevices, tc.expectedConfig.MigConfigDevices) {
-					t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
-				}
-				if !reflect.DeepEqual(config.MigMonitorDevices, tc.expectedConfig.MigMonitorDevices) {
-					t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
-				}
-				if !reflect.DeepEqual(config.DriverCapabilities, tc.expectedConfig.DriverCapabilities) {
-					t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
-				}
-				if !elementsMatch(config.Requirements, tc.expectedConfig.Requirements) {
-					t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
-				}
-				if !reflect.DeepEqual(config.DisableRequire, tc.expectedConfig.DisableRequire) {
-					t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
-				}
-				return
-			}
-			t.Errorf("Unexpected nvidiaConfig (got: %v, wanted: %v)", config, tc.expectedConfig)
+
+			require.NotNil(t, config, tc.description)
+
+			require.Equal(t, tc.expectedConfig.Devices, config.Devices)
+			require.Equal(t, tc.expectedConfig.MigConfigDevices, config.MigConfigDevices)
+			require.Equal(t, tc.expectedConfig.MigMonitorDevices, config.MigMonitorDevices)
+			require.Equal(t, tc.expectedConfig.DriverCapabilities, config.DriverCapabilities)
+
+			require.ElementsMatch(t, tc.expectedConfig.Requirements, config.Requirements)
+			require.Equal(t, tc.expectedConfig.DisableRequire, config.DisableRequire)
 		})
 	}
 }
@@ -524,9 +514,7 @@ func TestGetDevicesFromMounts(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			devices := getDevicesFromMounts(tc.mounts)
-			if !reflect.DeepEqual(devices, tc.expectedDevices) {
-				t.Errorf("Unexpected devices (got: %v, wanted: %v)", *devices, *tc.expectedDevices)
-			}
+			require.Equal(t, tc.expectedDevices, devices)
 		})
 	}
 }
@@ -639,36 +627,198 @@ func TestDeviceListSourcePriority(t *testing.T) {
 
 			// For all other tests, just grab the devices and check the results
 			getDevices()
-			if !reflect.DeepEqual(devices, tc.expectedDevices) {
-				t.Errorf("Unexpected devices (got: %v, wanted: %v)", *devices, *tc.expectedDevices)
-			}
+
+			require.Equal(t, tc.expectedDevices, devices)
 		})
 	}
 }
 
-func elementsMatch(slice0, slice1 []string) bool {
-	map0 := make(map[string]int)
-	map1 := make(map[string]int)
+func TestGetDevicesFromEnvvar(t *testing.T) {
+	all := "all"
+	empty := ""
+	envDockerResourceGPUs := "DOCKER_RESOURCE_GPUS"
+	gpuID := "GPU-12345"
+	anotherGPUID := "GPU-67890"
 
-	for _, e := range slice0 {
-		map0[e]++
+	var tests = []struct {
+		description     string
+		envSwarmGPU     *string
+		env             map[string]string
+		legacyImage     bool
+		expectedDevices *string
+	}{
+		{
+			description: "empty env returns nil for non-legacy image",
+		},
+		{
+			description: "blank NVIDIA_VISIBLE_DEVICES returns nil for non-legacy image",
+			env: map[string]string{
+				envNVVisibleDevices: "",
+			},
+		},
+		{
+			description: "'void' NVIDIA_VISIBLE_DEVICES returns nil for non-legacy image",
+			env: map[string]string{
+				envNVVisibleDevices: "void",
+			},
+		},
+		{
+			description: "'none' NVIDIA_VISIBLE_DEVICES returns empty for non-legacy image",
+			env: map[string]string{
+				envNVVisibleDevices: "none",
+			},
+			expectedDevices: &empty,
+		},
+		{
+			description: "NVIDIA_VISIBLE_DEVICES set returns value for non-legacy image",
+			env: map[string]string{
+				envNVVisibleDevices: gpuID,
+			},
+			expectedDevices: &gpuID,
+		},
+		{
+			description: "NVIDIA_VISIBLE_DEVICES set returns value for legacy image",
+			env: map[string]string{
+				envNVVisibleDevices: gpuID,
+			},
+			legacyImage:     true,
+			expectedDevices: &gpuID,
+		},
+		{
+			description:     "empty env returns all for legacy image",
+			legacyImage:     true,
+			expectedDevices: &all,
+		},
+		// Add the `DOCKER_RESOURCE_GPUS` envvar and ensure that this is ignored when
+		// not enabled
+		{
+			description: "missing NVIDIA_VISIBLE_DEVICES returns nil for non-legacy image",
+			env: map[string]string{
+				envDockerResourceGPUs: anotherGPUID,
+			},
+		},
+		{
+			description: "blank NVIDIA_VISIBLE_DEVICES returns nil for non-legacy image",
+			env: map[string]string{
+				envNVVisibleDevices:   "",
+				envDockerResourceGPUs: anotherGPUID,
+			},
+		},
+		{
+			description: "'void' NVIDIA_VISIBLE_DEVICES returns nil for non-legacy image",
+			env: map[string]string{
+				envNVVisibleDevices:   "void",
+				envDockerResourceGPUs: anotherGPUID,
+			},
+		},
+		{
+			description: "'none' NVIDIA_VISIBLE_DEVICES returns empty for non-legacy image",
+			env: map[string]string{
+				envNVVisibleDevices:   "none",
+				envDockerResourceGPUs: anotherGPUID,
+			},
+			expectedDevices: &empty,
+		},
+		{
+			description: "NVIDIA_VISIBLE_DEVICES set returns value for non-legacy image",
+			env: map[string]string{
+				envNVVisibleDevices:   gpuID,
+				envDockerResourceGPUs: anotherGPUID,
+			},
+			expectedDevices: &gpuID,
+		},
+		{
+			description: "NVIDIA_VISIBLE_DEVICES set returns value for legacy image",
+			env: map[string]string{
+				envNVVisibleDevices:   gpuID,
+				envDockerResourceGPUs: anotherGPUID,
+			},
+			legacyImage:     true,
+			expectedDevices: &gpuID,
+		},
+		{
+			description: "empty env returns all for legacy image",
+			env: map[string]string{
+				envDockerResourceGPUs: anotherGPUID,
+			},
+			legacyImage:     true,
+			expectedDevices: &all,
+		},
+		// Add the `DOCKER_RESOURCE_GPUS` envvar and ensure that this is selected when
+		// enabled
+		{
+			description: "empty env returns nil for non-legacy image",
+			envSwarmGPU: &envDockerResourceGPUs,
+		},
+		{
+			description: "blank DOCKER_RESOURCE_GPUS returns nil for non-legacy image",
+			envSwarmGPU: &envDockerResourceGPUs,
+			env: map[string]string{
+				envDockerResourceGPUs: "",
+			},
+		},
+		{
+			description: "'void' DOCKER_RESOURCE_GPUS returns nil for non-legacy image",
+			envSwarmGPU: &envDockerResourceGPUs,
+			env: map[string]string{
+				envDockerResourceGPUs: "void",
+			},
+		},
+		{
+			description: "'none' DOCKER_RESOURCE_GPUS returns empty for non-legacy image",
+			envSwarmGPU: &envDockerResourceGPUs,
+			env: map[string]string{
+				envDockerResourceGPUs: "none",
+			},
+			expectedDevices: &empty,
+		},
+		{
+			description: "DOCKER_RESOURCE_GPUS set returns value for non-legacy image",
+			envSwarmGPU: &envDockerResourceGPUs,
+			env: map[string]string{
+				envDockerResourceGPUs: gpuID,
+			},
+			expectedDevices: &gpuID,
+		},
+		{
+			description: "DOCKER_RESOURCE_GPUS set returns value for legacy image",
+			envSwarmGPU: &envDockerResourceGPUs,
+			env: map[string]string{
+				envDockerResourceGPUs: gpuID,
+			},
+			legacyImage:     true,
+			expectedDevices: &gpuID,
+		},
+		{
+			description: "DOCKER_RESOURCE_GPUS is selected if present",
+			envSwarmGPU: &envDockerResourceGPUs,
+			env: map[string]string{
+				envDockerResourceGPUs: anotherGPUID,
+			},
+			expectedDevices: &anotherGPUID,
+		},
+		{
+			description: "DOCKER_RESOURCE_GPUS overrides NVIDIA_VISIBLE_DEVICES if present",
+			envSwarmGPU: &envDockerResourceGPUs,
+			env: map[string]string{
+				envNVVisibleDevices:   gpuID,
+				envDockerResourceGPUs: anotherGPUID,
+			},
+			expectedDevices: &anotherGPUID,
+		},
 	}
 
-	for _, e := range slice1 {
-		map1[e]++
-	}
+	for i, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			envSwarmGPU = tc.envSwarmGPU
+			devices := getDevicesFromEnvvar(tc.env, tc.legacyImage)
+			if tc.expectedDevices == nil {
+				require.Nil(t, devices, "%d: %v", i, tc)
+				return
+			}
 
-	for k0, v0 := range map0 {
-		if map1[k0] != v0 {
-			return false
-		}
+			require.NotNil(t, devices, "%d: %v", i, tc)
+			require.Equal(t, *tc.expectedDevices, *devices, "%d: %v", i, tc)
+		})
 	}
-
-	for k1, v1 := range map1 {
-		if map0[k1] != v1 {
-			return false
-		}
-	}
-
-	return true
 }
