@@ -21,17 +21,16 @@ LIB_VERSION := 1.5.0
 LIB_TAG ?=
 
 GOLANG_VERSION := 1.16.3
-GOLANG_PKG_PATH := github.com/NVIDIA/nvidia-container-toolkit/pkg
+MODULE := github.com/NVIDIA/nvidia-container-toolkit
 
 # By default run all native docker-based targets
 docker-native:
 include $(CURDIR)/docker/docker.mk
 
 binary:
-	go build -ldflags "-s -w" -o "$(LIB_NAME)" $(GOLANG_PKG_PATH)
+	go build -ldflags "-s -w" -o "$(LIB_NAME)" $(MODULE)/cmd/$(LIB_NAME)
 
 # Define the check targets for the Golang codebase
-MODULE := .
 .PHONY: check fmt assert-fmt ineffassign lint misspell vet
 check: assert-fmt lint misspell vet
 fmt:
