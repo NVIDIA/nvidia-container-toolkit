@@ -66,6 +66,12 @@ unit_test:
   script:
     - make test
 
+coverage:
+  <<: *tests-setup
+  stage: tests
+  script:
+    - make coverage
+
 fmt:
   <<: *tests-setup
   stage: tests
