@@ -27,8 +27,10 @@ MODULE := github.com/NVIDIA/nvidia-container-toolkit
 docker-native:
 include $(CURDIR)/docker/docker.mk
 
+GOOS ?= linux
+
 binary:
-	go build -ldflags "-s -w" -o "$(LIB_NAME)" $(MODULE)/cmd/$(LIB_NAME)
+	GOOS=$(GOOS) go build -ldflags "-s -w" -o "$(LIB_NAME)" $(MODULE)/cmd/$(LIB_NAME)
 
 # Define the check targets for the Golang codebase
 .PHONY: check fmt assert-fmt ineffassign lint misspell vet
