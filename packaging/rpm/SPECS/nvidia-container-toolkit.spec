@@ -53,6 +53,14 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Mon Jun 14 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.5.1-1
+
+- Fix bug where Docker Swarm device selection is ignored if NVIDIA_VISIBLE_DEVICES is also set
+- Improve unit testing by using require package and adding coverage reports
+- Remove unneeded go dependencies by running go mod tidy
+- Move contents of pkg directory to cmd for CLI tools
+- Ensure make binary target explicitly sets GOOS
+
 * Thu Apr 29 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.5.0-1
 - Add dependence on libnvidia-container-tools >= 1.4.0
 - Add golang check targets to Makefile
@@ -106,5 +114,5 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 * Fri May 15 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.1.0-1
 - 4e4de762 Update build system to support multi-arch builds
 - fcc1d116 Add support for MIG (Multi-Instance GPUs)
-- d4ff0416 Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_* 
+- d4ff0416 Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*
 - 60f165ad Add no-pivot option to toolkit
