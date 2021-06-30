@@ -19,8 +19,8 @@ package filter
 import (
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/discover"
 )
 
 func TestDeviceByID(t *testing.T) {

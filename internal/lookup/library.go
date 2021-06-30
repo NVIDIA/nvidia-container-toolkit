@@ -19,8 +19,8 @@ package lookup
 import (
 	"fmt"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/internal/ldcache"
 )
 
 type library struct {

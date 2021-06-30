@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/internal/lookup"
 )
 
 func TestMountsReturnsErrorForNoLookup(t *testing.T) {

@@ -16,7 +16,7 @@
 
 package filter
 
-import "gitlab.com/nvidia/cloud-native/container-toolkit/pkg/discover"
+import "github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
 
 type standardDevice struct{}
 

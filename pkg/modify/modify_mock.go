@@ -4,7 +4,7 @@
 package modify
 
 import (
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/oci"
 	"sync"
 )
 

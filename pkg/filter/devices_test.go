@@ -19,10 +19,10 @@ package filter
 import (
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
 	log "github.com/sirupsen/logrus"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/discover"
 )
 
 func TestConstructor(t *testing.T) {

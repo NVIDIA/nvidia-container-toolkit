@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/discover"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/oci"
 )
 
 // Device is an alias to discover.Device that allows for addition of a Modify method

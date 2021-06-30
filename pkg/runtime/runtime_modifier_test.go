@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/modify"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/oci"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/modify"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/oci"
 )
 
 func TestRuntimeModifier(t *testing.T) {

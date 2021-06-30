@@ -19,10 +19,10 @@ package discover
 import (
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvml"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/proc"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/internal/nvml"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/internal/proc"
 )
 
 const (

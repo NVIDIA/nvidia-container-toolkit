@@ -19,9 +19,9 @@ package modify
 import (
 	"fmt"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/oci"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/discover"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/oci"
 )
 
 type discoverModifier struct {

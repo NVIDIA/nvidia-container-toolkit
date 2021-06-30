@@ -20,9 +20,9 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/filter"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/discover"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/filter"
 )
 
 func main() {

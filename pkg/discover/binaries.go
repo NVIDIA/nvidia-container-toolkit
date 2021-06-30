@@ -17,8 +17,8 @@
 package discover
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/internal/lookup"
 )
 
 // NewBinaryMounts creates a discoverer for binaries using the specified root

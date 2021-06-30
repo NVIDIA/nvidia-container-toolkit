@@ -4,7 +4,7 @@
 package filter
 
 import (
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
 	"sync"
 )
 

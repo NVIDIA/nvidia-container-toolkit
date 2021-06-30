@@ -20,15 +20,15 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/ensure"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/filter"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/modify"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/runtime"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/discover"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/ensure"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/filter"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/modify"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/oci"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/runtime"
 
-	"gitlab.com/nvidia/cloud-native/container-toolkit/cmd/nvidia-container-runtime.experimental/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-container-runtime.experimental/config"
 )
 
 const (

@@ -19,9 +19,9 @@ package runtime
 import (
 	"fmt"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/modify"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/oci"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/modify"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/oci"
 )
 
 type modifyingRuntimeWrapper struct {

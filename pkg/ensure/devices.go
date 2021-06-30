@@ -23,9 +23,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/internal/lookup"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/discover"
 )
 
 type ensureDevices struct {

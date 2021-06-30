@@ -17,8 +17,8 @@
 package filter
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/discover"
 )
 
 const (

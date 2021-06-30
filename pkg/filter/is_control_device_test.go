@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/discover"
 )
 
 func TestControlDevice(t *testing.T) {

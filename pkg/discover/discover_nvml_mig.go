@@ -19,7 +19,7 @@ package discover
 import (
 	"fmt"
 
-	"gitlab.com/nvidia/cloud-native/container-toolkit/internal/nvcaps"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 )
 
 // getMigCaps returns a mapping of MIG capability path to device nodes

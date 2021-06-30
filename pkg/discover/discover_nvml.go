@@ -21,9 +21,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvml"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/proc"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/internal/nvml"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/internal/proc"
 )
 
 const (

@@ -19,8 +19,8 @@ package discover
 import (
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/internal/nvcaps"
 )
 
 func TestGetMigCaps(t *testing.T) {

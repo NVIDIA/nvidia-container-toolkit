@@ -19,8 +19,8 @@ package discover
 import (
 	"fmt"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/internal/lookup"
 )
 
 // NewLibraries constructs discoverer for libraries

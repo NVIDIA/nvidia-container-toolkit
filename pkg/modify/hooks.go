@@ -21,10 +21,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/discover"
-	"gitlab.com/nvidia/cloud-native/container-toolkit/pkg/oci"
 )
 
 // Hook is an alias to discover.Hook that allows for addition of a Modify method
