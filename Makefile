@@ -58,7 +58,7 @@ $(EXAMPLE_TARGETS): example-%:
 	GOOS=$(GOOS) go build ./examples/$(*)
 
 all: check test build binary
-check: assert-fmt lint vet
+check: $(CHECK_TARGETS)
 
 # Apply go fmt to the codebase
 fmt:

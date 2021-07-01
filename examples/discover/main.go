@@ -28,6 +28,10 @@ func main() {
 	log.Infof("Starting device discovery with NVML")
 
 	d, err := discover.NewNVMLServer("")
+	if err != nil {
+		log.Errorf("Error creating NVML Server: %v", err)
+		return
+	}
 
 	devices, err := d.Devices()
 	if err != nil {
