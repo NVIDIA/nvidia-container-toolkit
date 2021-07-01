@@ -37,7 +37,8 @@ BUILDIMAGE ?= $(IMAGE):$(IMAGE_TAG)-devel
 EXAMPLES := $(patsubst ./examples/%/,%,$(sort $(dir $(wildcard ./examples/*/))))
 EXAMPLE_TARGETS := $(patsubst %,example-%, $(EXAMPLES))
 
-MAKE_TARGETS := binary build all check fmt assert-fmt lint lint-internal vet test examples coverage generate
+CHECK_TARGETS := assert-fmt vet lint ineffassign misspell
+MAKE_TARGETS := binary build all check fmt lint-internal test examples coverage generate $(CHECK_TARGETS)
 
 TARGETS := $(MAKE_TARGETS) $(EXAMPLE_TARGETS)
 

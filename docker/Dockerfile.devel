@@ -16,3 +16,5 @@ FROM golang:${GOLANG_VERSION}
 
 RUN go get -u golang.org/x/lint/golint
 RUN go get -u github.com/matryer/moq
+RUN go get -u github.com/gordonklaus/ineffassign
+RUN go get -u github.com/client9/misspell/cmd/misspell
