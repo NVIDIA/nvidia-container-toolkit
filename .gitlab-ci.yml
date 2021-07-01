@@ -26,7 +26,7 @@ stages:
   - build-one
   - build-all
 
-.build-setup: &build-setup
+.build-setup:
   before_script:
   - apk update
   - apk upgrade
@@ -39,11 +39,12 @@ stages:
 # that we can successfully build packages on all of our architectures for a
 # single OS. They are triggered on any change to an MR. No artifacts are
 # produced as part of build-one jobs.
-.build-one-setup: &build-one-setup
-  <<: *build-setup
+.build-one-setup:
+  extends:
+    - .build-setup
   stage: build-one
-  only:
-    - merge_requests
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
 
 # build-all jobs build packages for every OS / ARCH combination we support.
 #
@@ -55,8 +56,9 @@ stages:
 # OS / ARCH combinations, so this is optimized to only run once per MR
 # (assuming it all passes). A full set of artifacts including the packages
 # built for each OS / ARCH are produced as a result of these jobs.
-.build-all-setup: &build-all-setup
-  <<: *build-setup
+.build-all-setup:
+  extends:
+    - .build-setup
   stage: build-all
   timeout: 2h 30m
   rules:
@@ -78,43 +80,53 @@ stages:
 # The full set of build-one jobs organizes to build
 # ubuntu18.04 in parallel on each of our supported ARCHs.
 build-one-amd64:
-  <<: *build-one-setup
+  extends:
+    - .build-one-setup
   script:
     - make ubuntu18.04-amd64
+  rules:
+    - when: always
 
 build-one-ppc64le:
-  <<: *build-one-setup
+  extends:
+    - .build-one-setup
   script:
     - make ubuntu18.04-ppc64le
 
 build-one-arm64:
-  <<: *build-one-setup
+  extends:
+    - .build-one-setup
   script:
     - make ubuntu18.04-arm64
 
 # The full set of build-all jobs organized to
 # have builds for each ARCH run in parallel.
 build-all-amd64:
-  <<: *build-all-setup
+  extends:
+    - .build-all-setup
   script:
     - make docker-amd64
 
 build-all-x86_64:
-  <<: *build-all-setup
+  extends:
+    - .build-all-setup
   script:
     - make docker-x86_64
 
 build-all-ppc64le:
-  <<: *build-all-setup
+  extends:
+    - .build-all-setup
   script:
     - make docker-ppc64le
 
 build-all-arm64:
-  <<: *build-all-setup
+  extends:
+    - .build-all-setup
   script:
     - make docker-arm64
 
 build-all-aarch64:
-  <<: *build-all-setup
+  extends:
+    - .build-all-setup
   script:
     - make docker-aarch64
