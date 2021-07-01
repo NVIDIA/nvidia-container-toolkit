@@ -12,85 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Build packages for all supported OS / ARCH combinations
+include:
+  - .common-ci.yml
 
 stages:
-  - tests
+  - image
+  - go-checks
+  - go-build
+  - unit-tests
+  - test
+  - scan
+  - release
   - build-one
   - build-all
 
-.tests-setup: &tests-setup
-  image: golang:1.14.4
-
-  rules:
-    - when: always
-
-  variables:
-    GITHUB_ROOT: "github.com/NVIDIA"
-    PROJECT_GOPATH: "${GITHUB_ROOT}/nvidia-container-toolkit"
-
-  before_script:
-    - mkdir -p ${GOPATH}/src/${GITHUB_ROOT}
-    - ln -s ${CI_PROJECT_DIR} ${GOPATH}/src/${PROJECT_GOPATH}
-
 .build-setup: &build-setup
-  image: docker:19.03.8
-
-  services:
-    - name: docker:19.03.8-dind
-      command: ["--experimental"]
-
   before_script:
   - apk update
   - apk upgrade
   - apk add coreutils build-base sed git bash make
   - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes -c yes
-
-# Run a series of sanity-check tests over the code
-lint:
-  <<: *tests-setup
-  stage: tests
-  script:
-    - GO111MODULE=off go get -u golang.org/x/lint/golint
-    - make lint
-
-vet:
-  <<: *tests-setup
-  stage: tests
-  script:
-    - make vet
-
-unit_test:
-  <<: *tests-setup
-  stage: tests
-  script:
-    - make test
-
-coverage:
-  <<: *tests-setup
-  stage: tests
-  script:
-    - make coverage
-
-fmt:
-  <<: *tests-setup
-  stage: tests
-  script:
-    - make assert-fmt
-
-ineffassign:
-  <<: *tests-setup
-  stage: tests
-  script:
-    - GO111MODULE=off go get -u github.com/gordonklaus/ineffassign
-    - make ineffassign
-
-misspell:
-  <<: *tests-setup
-  stage: tests
-  script:
-    - GO111MODULE=off go get -u github.com/client9/misspell/cmd/misspell
-    - make misspell
 
 # build-one jobs build packages for a single OS / ARCH combination.
 #
