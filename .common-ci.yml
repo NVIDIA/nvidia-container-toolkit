@@ -1,0 +1,91 @@
+# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+default:
+  image: docker:stable
+  services:
+    - name: docker:stable-dind
+      command: ["--experimental"]
+
+variables:
+  IMAGE: "${CI_REGISTRY_IMAGE}"
+  IMAGE_TAG: "${CI_COMMIT_REF_SLUG}"
+
+build-dev-image:
+  stage: image
+  before_script:
+    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
+  script:
+    - apk --no-cache add make bash
+    - make .build-image
+    - make .push-build-image
+
+.requires-build-image:
+  variables:
+    SKIP_IMAGE_BUILD: "yes"
+  before_script:
+    - apk --no-cache add make bash
+    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
+    - make .pull-build-image
+
+.go-check:
+  extends:
+    - .requires-build-image
+  stage: go-checks
+
+fmt:
+  extends:
+    - .go-check
+  script:
+    - make docker-assert-fmt
+
+vet:
+  extends:
+    - .go-check
+  script:
+    - make docker-vet
+
+lint:
+  extends:
+    - .go-check
+  script:
+    - make docker-lint
+  allow_failure: true
+
+ineffassign:
+  extends:
+    - .go-check
+  script:
+    - make docker-ineffassign
+  allow_failure: true
+
+misspell:
+  extends:
+    - .go-check
+  script:
+    - make docker-misspell
+
+go-build:
+  extends:
+    - .requires-build-image
+  stage: go-build
+  script:
+    - make docker-build
+
+unit-tests:
+  extends:
+    - .requires-build-image
+  stage: unit-tests
+  script:
+    - make docker-coverage
+
