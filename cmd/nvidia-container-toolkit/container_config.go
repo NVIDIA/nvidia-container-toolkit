@@ -23,6 +23,7 @@ const (
 	envNVVisibleDevices     = "NVIDIA_VISIBLE_DEVICES"
 	envNVMigConfigDevices   = "NVIDIA_MIG_CONFIG_DEVICES"
 	envNVMigMonitorDevices  = "NVIDIA_MIG_MONITOR_DEVICES"
+	envNVFabricDevices      = "NVIDIA_FABRIC_DEVICES"
 	envNVDriverCapabilities = "NVIDIA_DRIVER_CAPABILITIES"
 )
 
@@ -43,6 +44,7 @@ type nvidiaConfig struct {
 	Devices            string
 	MigConfigDevices   string
 	MigMonitorDevices  string
+	FabricDevices      string
 	DriverCapabilities string
 	Requirements       []string
 	DisableRequire     bool
@@ -316,6 +318,13 @@ func getMigMonitorDevices(env map[string]string) *string {
 	return nil
 }
 
+func getFabricDevices(env map[string]string) *string {
+	if devices, ok := env[envNVFabricDevices]; ok {
+		return &devices
+	}
+	return nil
+}
+
 func getDriverCapabilities(env map[string]string, legacyImage bool) *string {
 	// Grab a reference to the capabilities from the envvar
 	// if it actually exists in the environment.
@@ -394,6 +403,11 @@ func getNvidiaConfig(hookConfig *HookConfig, env map[string]string, mounts []Mou
 		driverCapabilities = *c
 	}
 
+	var nvFabricDevices string
+	if d := getFabricDevices(env); d != nil {
+		nvFabricDevices = *d
+	}
+
 	requirements := getRequirements(env, legacyImage)
 
 	// Don't fail on invalid values.
@@ -403,6 +417,7 @@ func getNvidiaConfig(hookConfig *HookConfig, env map[string]string, mounts []Mou
 		Devices:            devices,
 		MigConfigDevices:   migConfigDevices,
 		MigMonitorDevices:  migMonitorDevices,
+		FabricDevices:      nvFabricDevices,
 		DriverCapabilities: driverCapabilities,
 		Requirements:       requirements,
 		DisableRequire:     disableRequire,
