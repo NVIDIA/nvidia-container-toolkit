@@ -403,6 +403,30 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged:    false,
 			expectedPanic: true,
 		},
+		{
+			description: "fabric devices selected",
+			env: map[string]string{
+				envNVVisibleDevices: "all",
+				envNVFabricDevices:  "all",
+			},
+			expectedConfig: &nvidiaConfig{
+				Devices:            "all",
+				FabricDevices:      "all",
+				DriverCapabilities: defaultDriverCapabilities,
+			},
+		},
+		{
+			description: "fabric devices selected empty",
+			env: map[string]string{
+				envNVVisibleDevices: "all",
+				envNVFabricDevices:  "",
+			},
+			expectedConfig: &nvidiaConfig{
+				Devices:            "all",
+				FabricDevices:      "",
+				DriverCapabilities: defaultDriverCapabilities,
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
