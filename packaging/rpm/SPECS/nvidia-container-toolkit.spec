@@ -18,7 +18,7 @@ Source4: LICENSE
 
 Obsoletes: nvidia-container-runtime < 2.0.0, nvidia-container-runtime-hook
 Provides: nvidia-container-runtime-hook
-Requires: libnvidia-container-tools >= 1.4.0, libnvidia-container-tools < 2.0.0
+Requires: libnvidia-container-tools >= 1.5.0-0.1.rc.1, libnvidia-container-tools < 2.0.0
 
 %description
 Provides a OCI hook to enable GPU support in containers.
@@ -53,8 +53,10 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
-* Mon Jun 14 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.5.1-1
+* Fri Aug 13 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.1
+- Add support for NVIDIA_FABRIC_DEVICES to select nvlink and nvswitch devices
 
+* Mon Jun 14 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.5.1-1
 - Fix bug where Docker Swarm device selection is ignored if NVIDIA_VISIBLE_DEVICES is also set
 - Improve unit testing by using require package and adding coverage reports
 - Remove unneeded go dependencies by running go mod tidy
