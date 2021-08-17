@@ -37,18 +37,26 @@ BUILDIMAGE ?= $(IMAGE):$(IMAGE_TAG)-devel
 EXAMPLES := $(patsubst ./examples/%/,%,$(sort $(dir $(wildcard ./examples/*/))))
 EXAMPLE_TARGETS := $(patsubst %,example-%, $(EXAMPLES))
 
-CHECK_TARGETS := assert-fmt vet lint ineffassign misspell
-MAKE_TARGETS := binary build all check fmt lint-internal test examples coverage generate $(CHECK_TARGETS)
+CMDS := $(patsubst ./cmd/%/,%,$(sort $(dir $(wildcard ./cmd/*/))))
+CMD_TARGETS := $(patsubst %,cmd-%, $(CMDS))
 
-TARGETS := $(MAKE_TARGETS) $(EXAMPLE_TARGETS)
+$(info CMD_TARGETS=$(CMD_TARGETS))
+
+CHECK_TARGETS := assert-fmt vet lint ineffassign misspell
+MAKE_TARGETS := binary build all check fmt lint-internal test examples cmds coverage generate $(CHECK_TARGETS)
+
+TARGETS := $(MAKE_TARGETS) $(EXAMPLE_TARGETS) $(CMD_TARGETS)
 
 DOCKER_TARGETS := $(patsubst %,docker-%, $(TARGETS))
 .PHONY: $(TARGETS) $(DOCKER_TARGETS)
 
 GOOS ?= linux
 
-binary:
-	GOOS=$(GOOS) go build -ldflags "-s -w" -o "$(LIB_NAME)" $(MODULE)/cmd/$(LIB_NAME)
+binary: cmd-nvidia-container-toolkit
+
+cmds: $(CMD_TARGETS)
+$(CMD_TARGETS): cmd-%:
+	GOOS=$(GOOS) go build -ldflags "-s -w" $(MODULE)/cmd/$(*)
 
 build:
 	GOOS=$(GOOS) go build ./...
@@ -95,7 +103,7 @@ vet:
 	go vet $(MODULE)/...
 
 COVERAGE_FILE := coverage.out
-test: build
+test: build cmds
 	go test -v -coverprofile=$(COVERAGE_FILE) $(MODULE)/...
 
 coverage: test
