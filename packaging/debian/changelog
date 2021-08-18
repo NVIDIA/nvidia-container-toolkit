@@ -1,9 +1,3 @@
-nvidia-container-toolkit (1.6.0~rc.1-1) UNRELEASED; urgency=medium
-
-  * Add support for NVIDIA_FABRIC_DEVICES to select nvlink and nvswitch devices
-
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Fri, 13 Aug 2021 09:00:00 -0700
-
 nvidia-container-toolkit (1.5.1-1) UNRELEASED; urgency=medium
 
   * Fix bug where Docker Swarm device selection is ignored if
