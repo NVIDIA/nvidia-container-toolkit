@@ -2,3 +2,4 @@ dist
 *.swp
 *.swo
 /coverage.out
+/test/output/
