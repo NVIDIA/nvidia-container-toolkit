@@ -48,9 +48,7 @@ RUN mkdir -p $DIST_DIR /dist
 WORKDIR $GOPATH/src/nvidia-container-toolkit
 COPY . .
 
-RUN make cmds && \
-    mv ./nvidia-container-toolkit $DIST_DIR/nvidia-container-toolkit && \
-    mv ./nvidia-container-runtime $DIST_DIR/nvidia-container-runtime
+RUN make PREFIX=${DIST_DIR} cmds
 
 COPY config/config.toml.debian $DIST_DIR/config.toml
 
