@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-runtime/internal/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
 const (
