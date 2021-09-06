@@ -11,24 +11,34 @@ URL: https://github.com/NVIDIA/nvidia-container-runtime
 License: Apache-2.0
 
 Source0: nvidia-container-toolkit
-Source1: config.toml
-Source2: oci-nvidia-hook
-Source3: oci-nvidia-hook.json
-Source4: LICENSE
+Source1: nvidia-container-runtime
+Source2: config.toml
+Source3: oci-nvidia-hook
+Source4: oci-nvidia-hook.json
+Source5: LICENSE
 
-Obsoletes: nvidia-container-runtime < 2.0.0, nvidia-container-runtime-hook
+Obsoletes: nvidia-container-runtime <= 3.5.0, nvidia-container-runtime-hook
+Provides: nvidia-container-runtime
 Provides: nvidia-container-runtime-hook
 Requires: libnvidia-container-tools >= 1.4.0, libnvidia-container-tools < 2.0.0
+
+%if 0%{?suse_version}
+Requires: libseccomp2
+Requires: libapparmor1
+%else
+Requires: libseccomp
+%endif
 
 %description
 Provides a OCI hook to enable GPU support in containers.
 
 %prep
-cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} .
+cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} .
 
 %install
 mkdir -p %{buildroot}%{_bindir}
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-toolkit
+install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime
 
 mkdir -p %{buildroot}/etc/nvidia-container-runtime
 install -m 644 -t %{buildroot}/etc/nvidia-container-runtime config.toml
@@ -48,12 +58,15 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 %files
 %license LICENSE
 %{_bindir}/nvidia-container-toolkit
+%{_bindir}/nvidia-container-runtime
 %config /etc/nvidia-container-runtime/config.toml
 /usr/libexec/oci/hooks.d/oci-nvidia-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
 * Mon Sep 06 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.5.2-0.1.rc.1
+
+- Include nvidia-container-runtime into nvidia-container-toolkit package
 
 * Mon Jun 14 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.5.1-1
 
