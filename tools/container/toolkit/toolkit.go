@@ -33,7 +33,7 @@ const (
 	DefaultNvidiaDriverRoot = "/run/nvidia/driver"
 
 	nvidiaContainerCliSource         = "/usr/bin/nvidia-container-cli"
-	nvidiaContainerRuntimeHookSource = "/usr/bin/nvidia-container-toolkit"
+	nvidiaContainerRuntimeHookSource = "/usr/bin/nvidia-container-runtime-hook"
 
 	nvidiaContainerToolkitConfigSource = "/etc/nvidia-container-runtime/config.toml"
 	configFilename                     = "config.toml"
@@ -319,8 +319,8 @@ func installRuntimeHook(toolkitDir string, configFilePath string) (string, error
 	e := executable{
 		source: nvidiaContainerRuntimeHookSource,
 		target: executableTarget{
-			dotfileName: "nvidia-container-toolkit.real",
-			wrapperName: "nvidia-container-toolkit",
+			dotfileName: "nvidia-container-runtime-hook.real",
+			wrapperName: "nvidia-container-runtime-hook",
 		},
 		argLines: argLines,
 	}
@@ -330,7 +330,7 @@ func installRuntimeHook(toolkitDir string, configFilePath string) (string, error
 		return "", fmt.Errorf("error installing NVIDIA container runtime hook: %v", err)
 	}
 
-	err = installSymlink(toolkitDir, "nvidia-container-runtime-hook", installedPath)
+	err = installSymlink(toolkitDir, "nvidia-container-toolkit", installedPath)
 	if err != nil {
 		return "", fmt.Errorf("error installing symlink to NVIDIA container runtime hook: %v", err)
 	}

@@ -35,14 +35,15 @@ testing::toolkit::install() {
 	test -e "$(${READLINK} -f "${shared_dir}/usr/local/nvidia/toolkit/libnvidia-container-go.so.1")"
 
 	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-cli"
-	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-toolkit"
+	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime-hook"
+	test -L "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-toolkit"
 	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime"
 
 	grep -q -E "nvidia driver modules are not yet loaded, invoking runc directly" "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime"
 	grep -q -E "exec runc \".@\"" "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime"
 
 	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-cli.real"
-	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-toolkit.real"
+	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime-hook.real"
 	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime.real"
 
 	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime.experimental"
