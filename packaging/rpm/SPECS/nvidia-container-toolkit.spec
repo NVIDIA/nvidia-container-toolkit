@@ -53,6 +53,8 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Mon Sep 06 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.5.2-0.1.rc.1
+
 * Mon Jun 14 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.5.1-1
 
 - Fix bug where Docker Swarm device selection is ignored if NVIDIA_VISIBLE_DEVICES is also set

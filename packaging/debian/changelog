@@ -1,3 +1,7 @@
+nvidia-container-toolkit (1.5.2~rc.1-1) experimental; urgency=medium
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Mon, 06 Sep 2021 12:24:05 +0200
+
 nvidia-container-toolkit (1.5.1-1) UNRELEASED; urgency=medium
 
   * Fix bug where Docker Swarm device selection is ignored if
