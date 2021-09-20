@@ -2,3 +2,6 @@ dist
 *.swp
 *.swo
 /coverage.out
+/test/output/
+/nvidia-container-runtime
+/nvidia-container-toolkit
