@@ -17,7 +17,7 @@ MKDIR    ?= mkdir
 DIST_DIR ?= $(CURDIR)/dist
 
 LIB_NAME := nvidia-container-toolkit
-LIB_VERSION := 1.5.2
+LIB_VERSION := 1.6.0
 LIB_TAG ?= rc.1
 
 GOLANG_VERSION := 1.16.3
