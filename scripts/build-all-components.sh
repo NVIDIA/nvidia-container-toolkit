@@ -47,7 +47,7 @@ echo "Building ${TARGET} for all packages to ${DIST_DIR}"
 : ${NVIDIA_DOCKER_ROOT:=${PROJECT_ROOT}/third_party/nvidia-docker}
 
 
-${SCRIPTS_DIR}/get-versions.sh
+${SCRIPTS_DIR}/get-component-versions.sh
 
 # Build libnvidia-container
 make -C ${LIBNVIDIA_CONTAINER_ROOT} -f mk/docker.mk ${TARGET}

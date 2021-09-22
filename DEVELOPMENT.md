@@ -13,7 +13,7 @@ The `nvidia-container-toolkit` resides in this repo directly.
 
 In oder to build the packages, the following command is executed
 ```sh
-./scripts/build-all.sh TARGET
+./scripts/build-all-components.sh TARGET
 ```
 where `TARGET` is a make target that is valid for each of the sub-components.
 
