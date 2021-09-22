@@ -46,14 +46,22 @@ echo "Building ${TARGET} for all packages to ${DIST_DIR}"
 : ${NVIDIA_CONTAINER_RUNTIME_ROOT:=${PROJECT_ROOT}/third_party/nvidia-container-runtime}
 : ${NVIDIA_DOCKER_ROOT:=${PROJECT_ROOT}/third_party/nvidia-docker}
 
+
+${SCRIPTS_DIR}/get-versions.sh
+
 # Build libnvidia-container
 make -C ${LIBNVIDIA_CONTAINER_ROOT} -f mk/docker.mk ${TARGET}
 
 # Build nvidia-container-toolkit
 make -C ${NVIDIA_CONTAINER_TOOLKIT_ROOT} ${TARGET}
 
+# We set the TOOLKIT_VERSION for the nvidia-container-runtime and nvidia-docker targets
+# TODO: This is not yet enabled in the makefiles below
+: ${PREVIOUS_TOOLKIT_VERSION:=1.5.1}
+echo "Using TOOLKIT_VERSION=${PREVIOUS_TOOLKIT_VERSION} as previous nvidia-container-toolkit version"
+
 # Build nvidia-container-runtime
-make -C ${NVIDIA_CONTAINER_RUNTIME_ROOT} ${TARGET}
+make -C ${NVIDIA_CONTAINER_RUNTIME_ROOT} TOOLKIT_VERSION=${PREVIOUS_TOOLKIT_VERSION} ${TARGET}
 
 # Build nvidia-docker2
-make -C ${NVIDIA_DOCKER_ROOT} ${TARGET}
+make -C ${NVIDIA_DOCKER_ROOT} TOOLKIT_VERSION=${PREVIOUS_TOOLKIT_VERSION} ${TARGET}

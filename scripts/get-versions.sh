@@ -53,7 +53,10 @@ nvidia_docker_tag=$(grep -m 1 "^LIB_TAG .= " ${NVIDIA_DOCKER_ROOT}/Makefile | se
 nvidia_docker_version="${nvidia_docker_version}${nvidia_docker_tag:+~${nvidia_docker_tag}}"
 
 
-echo "libnvidia-container version=${libnvidia_container_version}"
-echo "nvidia-container-toolkit version=${nvidia_container_toolkit_version}"
-echo "nvidia-container-runtime version=${nvidia_container_runtime_version}"
-echo "nvidia-docker version=${nvidia_docker_version}"
+echo "LIBNVIDIA_CONTAINER_VERSION=${libnvidia_container_version}"
+echo "NVIDIA_CONTAINER_TOOLKIT_VERSION=${nvidia_container_toolkit_version}"
+if [[ "${libnvidia_container_version}" != "${nvidia_container_toolkit_version}" ]]; then
+    >&2 echo "WARNING: The libnvidia-container and nvidia-container-toolkit versions do not match"
+fi
+echo "NVIDIA_CONTAINER_RUNTIME_VERSION=${nvidia_container_runtime_version}"
+echo "NVIDIA_DOCKER_VERSION=${nvidia_docker_version}"
