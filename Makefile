@@ -43,7 +43,7 @@ CMD_TARGETS := $(patsubst %,cmd-%, $(CMDS))
 $(info CMD_TARGETS=$(CMD_TARGETS))
 
 CHECK_TARGETS := assert-fmt vet lint ineffassign misspell
-MAKE_TARGETS := binaries build all check fmt lint-internal test examples cmds coverage generate $(CHECK_TARGETS)
+MAKE_TARGETS := binaries build check fmt lint-internal test examples cmds coverage generate $(CHECK_TARGETS)
 
 TARGETS := $(MAKE_TARGETS) $(EXAMPLE_TARGETS) $(CMD_TARGETS)
 
