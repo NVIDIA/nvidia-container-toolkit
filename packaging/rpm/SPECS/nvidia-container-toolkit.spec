@@ -17,7 +17,7 @@ Source3: oci-nvidia-hook
 Source4: oci-nvidia-hook.json
 Source5: LICENSE
 
-Obsoletes: nvidia-container-runtime <= 3.5.0, nvidia-container-runtime-hook
+Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook
 Provides: nvidia-container-runtime
 Provides: nvidia-container-runtime-hook
 Requires: libnvidia-container-tools >= 1.4.0, libnvidia-container-tools < 2.0.0
