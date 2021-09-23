@@ -67,11 +67,11 @@ apt-get update
 ### Centos
 
 ```
-    docker run --rm -it \
-        -v $(pwd):/work \
-        -v $(pwd)/dist/centos8/x86_64:/local-repository \
-        -w /work \
-            centos:8
+docker run --rm -it \
+    -v $(pwd):/work \
+    -v $(pwd)/dist/centos8/x86_64:/local-repository \
+    -w /work \
+        centos:8
 ```
 
 ```
