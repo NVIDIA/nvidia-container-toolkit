@@ -20,7 +20,7 @@ Source5: LICENSE
 Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook
 Provides: nvidia-container-runtime
 Provides: nvidia-container-runtime-hook
-Requires: libnvidia-container-tools >= 1.4.0, libnvidia-container-tools < 2.0.0
+Requires: libnvidia-container-tools >= %{libnvidia_container_version}, libnvidia-container-tools < 2.0.0
 
 %if 0%{?suse_version}
 Requires: libseccomp2
