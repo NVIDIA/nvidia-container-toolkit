@@ -19,11 +19,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/oci"
 )
 
 const (
@@ -70,17 +69,11 @@ func newOCISpec(argv []string) (oci.Spec, error) {
 
 // newRuncRuntime locates the runc binary and wraps it in a SyscallExecRuntime
 func newRuncRuntime() (oci.Runtime, error) {
-	runtimePath, err := findRunc()
-	if err != nil {
-		return nil, fmt.Errorf("error locating runtime: %v", err)
-	}
-
-	runc, err := oci.NewSyscallExecRuntimeWithLogger(logger.Logger, runtimePath)
-	if err != nil {
-		return nil, fmt.Errorf("error constructing runtime: %v", err)
-	}
-
-	return runc, nil
+	return oci.NewLowLevelRuntimeWithLogger(
+		logger.Logger,
+		dockerRuncExecutableName,
+		runcExecutableName,
+	)
 }
 
 // getBundlePath checks the specified slice of strings (argv) for a 'bundle' flag as allowed by runc.
@@ -118,31 +111,6 @@ func getBundlePath(argv []string) (string, error) {
 	}
 
 	return bundlePath, nil
-}
-
-// findRunc locates runc in the path, returning the full path to the
-// binary or an error.
-func findRunc() (string, error) {
-	runtimeCandidates := []string{
-		dockerRuncExecutableName,
-		runcExecutableName,
-	}
-
-	return findRuntime(runtimeCandidates)
-}
-
-func findRuntime(runtimeCandidates []string) (string, error) {
-	for _, candidate := range runtimeCandidates {
-		logger.Infof("Looking for runtime binary '%v'", candidate)
-		runcPath, err := exec.LookPath(candidate)
-		if err == nil {
-			logger.Infof("Found runtime binary '%v'", runcPath)
-			return runcPath, nil
-		}
-		logger.Warnf("Runtime binary '%v' not found: %v", candidate, err)
-	}
-
-	return "", fmt.Errorf("no runtime binary found from candidate list: %v", runtimeCandidates)
 }
 
 func isBundleFlag(arg string) bool {
