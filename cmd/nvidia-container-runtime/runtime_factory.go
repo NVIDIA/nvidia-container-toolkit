@@ -18,9 +18,6 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
@@ -53,15 +50,15 @@ func newRuntime(argv []string) (oci.Runtime, error) {
 
 // newOCISpec constructs an OCI spec for the provided arguments
 func newOCISpec(argv []string) (oci.Spec, error) {
-	bundlePath, err := getBundlePath(argv)
+	bundleDir, err := oci.GetBundleDir(argv)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing command line arguments: %v", err)
 	}
+	logger.Infof("Using bundle directory: %v", bundleDir)
 
-	ociSpecPath, err := getOCISpecFilePath(bundlePath)
-	if err != nil {
-		return nil, fmt.Errorf("error getting OCI specification file path: %v", err)
-	}
+	ociSpecPath := oci.GetSpecFilePath(bundleDir)
+	logger.Infof("Using OCI specification file path: %v", ociSpecPath)
+
 	ociSpec := oci.NewSpecFromFile(ociSpecPath)
 
 	return ociSpec, nil
@@ -74,71 +71,4 @@ func newRuncRuntime() (oci.Runtime, error) {
 		dockerRuncExecutableName,
 		runcExecutableName,
 	)
-}
-
-// getBundlePath checks the specified slice of strings (argv) for a 'bundle' flag as allowed by runc.
-// The following are supported:
-// --bundle{{SEP}}BUNDLE_PATH
-// -bundle{{SEP}}BUNDLE_PATH
-// -b{{SEP}}BUNDLE_PATH
-// where {{SEP}} is either ' ' or '='
-func getBundlePath(argv []string) (string, error) {
-	var bundlePath string
-
-	for i := 0; i < len(argv); i++ {
-		param := argv[i]
-
-		parts := strings.SplitN(param, "=", 2)
-		if !isBundleFlag(parts[0]) {
-			continue
-		}
-
-		// The flag has the format --bundle=/path
-		if len(parts) == 2 {
-			bundlePath = parts[1]
-			continue
-		}
-
-		// The flag has the format --bundle /path
-		if i+1 < len(argv) {
-			bundlePath = argv[i+1]
-			i++
-			continue
-		}
-
-		// --bundle / -b was the last element of argv
-		return "", fmt.Errorf("bundle option requires an argument")
-	}
-
-	return bundlePath, nil
-}
-
-func isBundleFlag(arg string) bool {
-	if !strings.HasPrefix(arg, "-") {
-		return false
-	}
-
-	trimmed := strings.TrimLeft(arg, "-")
-	return trimmed == "b" || trimmed == "bundle"
-}
-
-// getOCISpecFilePath returns the expected path to the OCI specification file for the given
-// bundle directory or the current working directory if not specified.
-func getOCISpecFilePath(bundleDir string) (string, error) {
-	if bundleDir == "" {
-		logger.Infof("Bundle directory path is empty, using working directory.")
-		workingDirectory, err := os.Getwd()
-		if err != nil {
-			return "", fmt.Errorf("error getting working directory: %v", err)
-		}
-		bundleDir = workingDirectory
-	}
-
-	logger.Infof("Using bundle directory: %v", bundleDir)
-
-	OCISpecFilePath := filepath.Join(bundleDir, ociSpecFileName)
-
-	logger.Infof("Using OCI specification file path: %v", OCISpecFilePath)
-
-	return OCISpecFilePath, nil
 }

@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -27,35 +26,6 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
-
-func TestArgsGetConfigFilePath(t *testing.T) {
-	wd, err := os.Getwd()
-	require.NoError(t, err)
-
-	testCases := []struct {
-		bundleDir   string
-		ociSpecPath string
-	}{
-		{
-			ociSpecPath: fmt.Sprintf("%v/config.json", wd),
-		},
-		{
-			bundleDir:   "/foo/bar",
-			ociSpecPath: "/foo/bar/config.json",
-		},
-		{
-			bundleDir:   "/foo/bar/",
-			ociSpecPath: "/foo/bar/config.json",
-		},
-	}
-
-	for i, tc := range testCases {
-		cp, err := getOCISpecFilePath(tc.bundleDir)
-
-		require.NoErrorf(t, err, "%d: %v", i, tc)
-		require.Equalf(t, tc.ociSpecPath, cp, "%d: %v", i, tc)
-	}
-}
 
 func TestAddNvidiaHook(t *testing.T) {
 	logger, logHook := testlog.NewNullLogger()
