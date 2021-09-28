@@ -39,8 +39,7 @@ RUN mkdir -p $DIST_DIR /dist
 WORKDIR $GOPATH/src/nvidia-container-toolkit
 COPY . .
 
-RUN make binary && \
-    mv ./nvidia-container-toolkit $DIST_DIR/nvidia-container-toolkit
+RUN make PREFIX=${DIST_DIR} cmds
 
 # Hook for Project Atomic's fork of Docker: https://github.com/projectatomic/docker/tree/docker-1.13.1-rhel#add-dockerhooks-exec-custom-hooks-for-prestartpoststop-containerspatch
 COPY oci-nvidia-hook $DIST_DIR/oci-nvidia-hook

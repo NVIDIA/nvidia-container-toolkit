@@ -40,8 +40,7 @@ RUN mkdir -p $DIST_DIR /dist
 WORKDIR $GOPATH/src/nvidia-container-toolkit
 COPY . .
 
-RUN make binary && \
-    mv ./nvidia-container-toolkit $DIST_DIR/nvidia-container-toolkit
+RUN make PREFIX=${DIST_DIR} cmds
 
 COPY config/config.toml.centos $DIST_DIR/config.toml
 

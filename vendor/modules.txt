@@ -23,6 +23,11 @@ github.com/sirupsen/logrus/hooks/test
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
+# github.com/tsaikd/KDGoLib v0.0.0-20191001134900-7f3cf518e07d
+## explicit
+github.com/tsaikd/KDGoLib/errutil
+github.com/tsaikd/KDGoLib/logrusutil
+github.com/tsaikd/KDGoLib/runtimecaller
 # golang.org/x/mod v0.3.0
 ## explicit
 golang.org/x/mod/semver
