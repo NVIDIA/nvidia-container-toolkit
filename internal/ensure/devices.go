@@ -23,8 +23,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
 	log "github.com/sirupsen/logrus"
 )
 

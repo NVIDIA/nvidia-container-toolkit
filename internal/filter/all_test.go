@@ -19,7 +19,7 @@ package filter
 import (
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/stretchr/testify/require"
 )
 

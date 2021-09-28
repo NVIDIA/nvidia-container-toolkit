@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/filter"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/filter"
 	log "github.com/sirupsen/logrus"
 )
 

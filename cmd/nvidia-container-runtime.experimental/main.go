@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/ensure"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/filter"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/modify"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/oci"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/runtime"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/ensure"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/filter"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/modify"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/runtime"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-container-runtime.experimental/config"

@@ -16,7 +16,7 @@
 
 package ensure
 
-import "github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
+import "github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 
 // Ensure is an alias for Discover
 type Ensure discover.Discover

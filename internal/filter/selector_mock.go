@@ -4,7 +4,7 @@
 package filter
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"sync"
 )
 

@@ -16,7 +16,7 @@
 
 package filter
 
-import "github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
+import "github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 
 type standardDevice struct{}
 

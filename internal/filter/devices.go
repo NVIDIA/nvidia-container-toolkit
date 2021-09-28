@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	log "github.com/sirupsen/logrus"
 )
 

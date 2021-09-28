@@ -19,8 +19,8 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/modify"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/modify"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	log "github.com/sirupsen/logrus"
 )
 

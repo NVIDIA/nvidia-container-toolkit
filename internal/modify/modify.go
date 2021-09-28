@@ -17,7 +17,7 @@
 package modify
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
 //go:generate moq -stub -out modify_mock.go . Modifier

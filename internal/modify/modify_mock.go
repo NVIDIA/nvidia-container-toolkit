@@ -4,7 +4,7 @@
 package modify
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"sync"
 )
 
