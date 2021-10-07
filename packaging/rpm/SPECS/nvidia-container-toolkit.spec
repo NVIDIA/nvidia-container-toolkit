@@ -17,10 +17,10 @@ Source3: oci-nvidia-hook
 Source4: oci-nvidia-hook.json
 Source5: LICENSE
 
-Obsoletes: nvidia-container-runtime <= 3.5.0, nvidia-container-runtime-hook
+Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook
 Provides: nvidia-container-runtime
 Provides: nvidia-container-runtime-hook
-Requires: libnvidia-container-tools >= 1.4.0, libnvidia-container-tools < 2.0.0
+Requires: libnvidia-container-tools >= %{libnvidia_container_version}, libnvidia-container-tools < 2.0.0
 
 %if 0%{?suse_version}
 Requires: libseccomp2
@@ -64,7 +64,7 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
-* Mon Sep 06 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.5.2-0.1.rc.1
+* Mon Sep 06 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.1
 
 - Include nvidia-container-runtime into nvidia-container-toolkit package
 

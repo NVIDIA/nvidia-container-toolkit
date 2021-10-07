@@ -97,11 +97,11 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 
 # private centos target
 --centos%: OS := centos
---centos%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),2)
+--centos%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
 # private amazonlinux target
 --amazonlinux%: OS := amazonlinux
---amazonlinux%: PKG_REV = $(if $(LIB_TAG),0.1.$(LIB_TAG).amzn$(VERSION),2.amzn$(VERSION))
+--amazonlinux%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
 # private opensuse-leap target
 --opensuse-leap%: OS = opensuse-leap
@@ -110,7 +110,7 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 
 # private rhel target (actually built on centos)
 --rhel%: OS := centos
---rhel%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),2)
+--rhel%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 --rhel%: VERSION = $(patsubst rhel%-$(ARCH),%,$(TARGET_PLATFORM))
 --rhel%: ARTIFACTS_DIR = $(DIST_DIR)/rhel$(VERSION)/$(ARCH)
 

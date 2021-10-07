@@ -1,0 +1,9 @@
+[submodule "third_party/libnvidia-container"]
+	path = third_party/libnvidia-container
+	url = https://gitlab.com/nvidia/container-toolkit/libnvidia-container.git
+[submodule "third_party/nvidia-container-runtime"]
+	path = third_party/nvidia-container-runtime
+	url = https://gitlab.com/nvidia/container-toolkit/container-runtime.git
+[submodule "third_party/nvidia-docker"]
+	path = third_party/nvidia-docker
+	url = https://gitlab.com/nvidia/container-toolkit/nvidia-docker.git

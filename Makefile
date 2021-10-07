@@ -17,7 +17,7 @@ MKDIR    ?= mkdir
 DIST_DIR ?= $(CURDIR)/dist
 
 LIB_NAME := nvidia-container-toolkit
-LIB_VERSION := 1.5.2
+LIB_VERSION := 1.6.0
 LIB_TAG ?= rc.1
 
 GOLANG_VERSION := 1.16.3
@@ -43,7 +43,7 @@ CMD_TARGETS := $(patsubst %,cmd-%, $(CMDS))
 $(info CMD_TARGETS=$(CMD_TARGETS))
 
 CHECK_TARGETS := assert-fmt vet lint ineffassign misspell
-MAKE_TARGETS := binaries build all check fmt lint-internal test examples cmds coverage generate $(CHECK_TARGETS)
+MAKE_TARGETS := binaries build check fmt lint-internal test examples cmds coverage generate $(CHECK_TARGETS)
 
 TARGETS := $(MAKE_TARGETS) $(EXAMPLE_TARGETS) $(CMD_TARGETS)
 
