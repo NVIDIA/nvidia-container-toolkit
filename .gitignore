@@ -5,3 +5,4 @@ dist
 /test/output/
 /nvidia-container-runtime
 /nvidia-container-toolkit
+/shared-*
