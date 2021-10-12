@@ -27,12 +27,13 @@ MODULE := github.com/NVIDIA/nvidia-container-toolkit
 docker-native:
 include $(CURDIR)/docker/docker.mk
 
-ifeq ($(IMAGE),)
+ifeq ($(IMAGE_NAME),)
 REGISTRY ?= nvidia
-IMAGE=$(REGISTRY)/container-toolkit
+IMAGE_NAME = $(REGISTRY)/container-toolkit
 endif
-IMAGE_TAG ?= $(GOLANG_VERSION)
-BUILDIMAGE ?= $(IMAGE):$(IMAGE_TAG)-devel
+
+BUILDIMAGE_TAG ?= golang$(GOLANG_VERSION)
+BUILDIMAGE ?= $(IMAGE_NAME)-build:$(BUILDIMAGE_TAG)
 
 EXAMPLES := $(patsubst ./examples/%/,%,$(sort $(dir $(wildcard ./examples/*/))))
 EXAMPLE_TARGETS := $(patsubst %,example-%, $(EXAMPLES))
