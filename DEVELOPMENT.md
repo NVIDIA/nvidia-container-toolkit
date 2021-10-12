@@ -19,8 +19,7 @@ where `TARGET` is a make target that is valid for each of the sub-components.
 
 These include:
 * `ubuntu18.04-amd64`
-* `docker-all`
-with the later generating for all supported distribution and platform combinations.
+* `centos8-x86_64`
 
 The packages are generated in the `dist` folder.
 
@@ -33,62 +32,14 @@ environment variables.
 
 ## Testing packages locally
 
-### Ubuntu
-
-Launch a docker container:
-
-```
-docker run --rm -it \
-    -v $(pwd):/work \
-    -v $(pwd)/dist/ubuntu18.04/amd64:/local-repository \
-    -w /work \
-        ubuntu:18.04
-```
+The [test/release](./test/release/) folder contains documentation on how the installation of local or staged packages can be tested.
 
 
-```
-apt-get update && apt-get install -y apt-utils
-```
+## Releasing
 
+A utility script [`scripts/release.sh`](./scripts/release.sh) is provided to build
+packages required for release. If run without arguments, all supported distribution-architecture combinations are built. A specific distribution-architecture pair can also be provided
+```sh
+./scripts/release.sh ubuntu18.04-amd64
 ```
-echo "deb [trusted=yes] file:/local-repository/ ./" > /etc/apt/sources.list.d/local.list
-```
-
-```
-cd /local-repository && apt-ftparchive packages . > Packages
-```
-
-```
-apt-get update
-```
-
-
-
-### Centos
-
-```
-docker run --rm -it \
-    -v $(pwd):/work \
-    -v $(pwd)/dist/centos8/x86_64:/local-repository \
-    -w /work \
-        centos:8
-```
-
-```
-yum install -y createrepo
-```
-
-```
-createrepo /local-repository
-```
-
-```
-cat >/etc/yum.repos.d/local.repo <<EOL
-[local]
-name=NVIDIA Container Toolkit Local Packages
-baseurl=file:///local-repository
-enabled=1
-gpgcheck=0
-protect=1
-EOL
-```
+where the `amd64` builds for `ubuntu18.04` are provided as an example.
