@@ -18,8 +18,7 @@ default:
       command: ["--experimental"]
 
 variables:
-  IMAGE: "${CI_REGISTRY_IMAGE}"
-  IMAGE_TAG: "${CI_COMMIT_REF_SLUG}"
+  GIT_SUBMODULE_STRATEGY: recursive
   BUILDIMAGE: "${CI_REGISTRY_IMAGE}/build:${CI_COMMIT_SHORT_SHA}"
 
 stages:
@@ -28,10 +27,12 @@ stages:
   - go-checks
   - go-build
   - unit-tests
-  - build
-  - build-long
+  - package-build
+  - image-build
+  - test
   - scan
   - release
+  - build-all
 
 build-dev-image:
   stage: image
@@ -95,3 +96,314 @@ unit-tests:
   script:
     - make coverage
 
+
+# Define the distribution targets
+.dist-centos7:
+  variables:
+    DIST: centos7
+
+.dist-centos8:
+  variables:
+    DIST: centos8
+
+.dist-ubi8:
+  variables:
+    DIST: ubi8
+
+.dist-ubuntu18.04:
+  variables:
+    DIST: ubuntu18.04
+
+.arch-aarch64:
+  variables:
+    ARCH: aarch64
+
+.arch-amd64:
+  variables:
+    ARCH: amd64
+
+.arch-arm64:
+  variables:
+    ARCH: arm64
+
+.arch-ppc64le:
+  variables:
+    ARCH: ppc64le
+
+.arch-x86_64:
+  variables:
+    ARCH: x86_64
+
+# Define the package build helpers
+.multi-arch-build:
+  before_script:
+    - apk add --no-cache coreutils build-base sed git bash make
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes -c yes
+
+.package-artifacts:
+  variables:
+    ARTIFACTS_NAME: "${CI_PROJECT_NAME}-${CI_COMMIT_REF_SLUG}-${CI_JOB_NAME}-artifacts-${CI_PIPELINE_ID}"
+    ARTIFACTS_ROOT: "${CI_PROJECT_NAME}-${CI_COMMIT_REF_SLUG}-artifacts-${CI_PIPELINE_ID}"
+    DIST_DIR: "${CI_PROJECT_DIR}/${ARTIFACTS_ROOT}"
+
+.package-build:
+  extends:
+    - .multi-arch-build
+    - .package-artifacts
+  stage: package-build
+  script:
+    - ./scripts/release.sh ${DIST}-${ARCH}
+
+  artifacts:
+    name: ${ARTIFACTS_NAME}
+    paths:
+      - ${ARTIFACTS_ROOT}
+
+# Define the package build targets
+package-ubuntu18.04-amd64:
+  extends:
+    - .package-build
+    - .dist-ubuntu18.04
+    - .arch-amd64
+
+package-ubuntu18.04-arm64:
+  extends:
+    - .package-build
+    - .dist-ubuntu18.04
+    - .arch-arm64
+
+package-ubuntu18.04-ppc64le:
+  extends:
+    - .package-build
+    - .dist-ubuntu18.04
+    - .arch-ppc64le
+
+package-centos7-x86_64:
+  extends:
+    - .package-build
+    - .dist-centos7
+    - .arch-x86_64
+
+package-centos8-x86_64:
+  extends:
+    - .package-build
+    - .dist-centos8
+    - .arch-x86_64
+
+# Define the image build targets
+.image-build:
+  stage: image-build
+  variables:
+    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
+    VERSION: "${CI_COMMIT_SHORT_SHA}"
+  before_script:
+    - apk add --no-cache bash make
+    - 'echo "Logging in to CI registry ${CI_REGISTRY}"'
+    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
+
+image-centos7:
+  extends:
+    - .image-build
+    - .package-artifacts
+    - .dist-centos7
+  needs:
+    - package-centos7-x86_64
+  script:
+    - make -f build/container/Makefile build-${DIST}
+    - make -f build/container/Makefile push-${DIST}
+
+image-centos8:
+  extends:
+    - .image-build
+    - .package-artifacts
+    - .dist-centos8
+  needs:
+    - package-centos8-x86_64
+  script:
+    - make -f build/container/Makefile build-${DIST}
+    - make -f build/container/Makefile push-${DIST}
+
+image-ubi8:
+  extends:
+    - .image-build
+    - .package-artifacts
+    - .dist-ubi8
+  needs:
+    # Note: The ubi8 image currently uses the centos7 packages
+    - package-centos7-x86_64
+  script:
+    - make -f build/container/Makefile build-${DIST}
+    - make -f build/container/Makefile push-${DIST}
+
+image-ubuntu18.04:
+  extends:
+    - .image-build
+    - .package-artifacts
+    - .dist-ubuntu18.04
+  needs:
+    - package-ubuntu18.04-amd64
+    # TODO: These will be required once we generate multi-arch images
+    # - package-ubuntu18.04-arm64
+    # - package-ubuntu18.04-ppc64le
+  script:
+    - make -f build/container/Makefile build-${DIST}
+    - make -f build/container/Makefile push-${DIST}
+
+# Define test helpers
+.integration:
+  stage: test
+  variables:
+    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
+    VERSION: "${CI_COMMIT_SHORT_SHA}"
+  before_script:
+    - apk add --no-cache make bash jq
+    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
+    - docker pull "${IMAGE_NAME}:${VERSION}-${DIST}"
+  script:
+    - make -f build/container/Makefile test-${DIST}
+
+.test:toolkit:
+  extends:
+    - .integration
+  variables:
+    TEST_CASES: "toolkit"
+
+.test:docker:
+  extends:
+    - .integration
+  variables:
+    TEST_CASES: "docker"
+
+.test:containerd:
+  # TODO: The containerd tests fail due to issues with SIGHUP.
+  # Until this is resolved with retry up to twice and allow failure here.
+  retry: 2
+  allow_failure: true
+  extends:
+    - .integration
+  variables:
+    TEST_CASES: "containerd"
+
+.test:crio:
+  extends:
+    - .integration
+  variables:
+    TEST_CASES: "crio"
+
+# Define the test targets
+test-toolkit-ubuntu18.04:
+  extends:
+    - .test:toolkit
+    - .dist-ubuntu18.04
+  needs:
+    - image-ubuntu18.04
+
+test-containerd-ubuntu18.04:
+  extends:
+    - .test:containerd
+    - .dist-ubuntu18.04
+  needs:
+    - image-ubuntu18.04
+
+test-crio-ubuntu18.04:
+  extends:
+    - .test:crio
+    - .dist-ubuntu18.04
+  needs:
+    - image-ubuntu18.04
+
+test-docker-ubuntu18.04:
+  extends:
+    - .test:docker
+    - .dist-ubuntu18.04
+  needs:
+    - image-ubuntu18.04
+
+# .release forms the base of the deployment jobs which push images to the CI registry.
+# This is extended with the version to be deployed (e.g. the SHA or TAG) and the
+# target os.
+.release:
+  stage:
+    release
+  variables:
+    # Define the source image for the release
+    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
+    VERSION: "${CI_COMMIT_SHORT_SHA}"
+    # OUT_IMAGE_VERSION is overridden for external releases
+    OUT_IMAGE_VERSION: "${CI_COMMIT_SHORT_SHA}"
+  stage: release
+  before_script:
+    # We ensure that the OUT_IMAGE_VERSION is set
+    - 'echo Version: ${OUT_IMAGE_VERSION} ; [[ -n "${OUT_IMAGE_VERSION}" ]] || exit 1'
+
+    # In the case where we are deploying a different version to the CI_COMMIT_SHA, we
+    # need to tag the image.
+    # Note: a leading 'v' is stripped from the version if present
+    - apk add --no-cache make bash
+    - 'echo "Logging in to CI registry ${CI_REGISTRY}"'
+    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
+    - docker pull "${IMAGE_NAME}:${VERSION}-${DIST}"
+  script:
+    - docker tag "${IMAGE_NAME}:${VERSION}-${DIST}" "${OUT_IMAGE_NAME}:${OUT_IMAGE_VERSION}-${DIST}"
+    # Log in to the "output" registry, tag the image and push the image
+    - 'echo "Logging in to output registry ${OUT_REGISTRY}"'
+    - docker logout
+    - docker login -u "${OUT_REGISTRY_USER}" -p "${OUT_REGISTRY_TOKEN}" "${OUT_REGISTRY}"
+    - make IMAGE_NAME=${OUT_IMAGE_NAME} VERSION=${OUT_IMAGE_VERSION} -f build/container/Makefile push-${DIST}
+
+# Define a staging release step that pushes an image to an internal "staging" repository
+# This is triggered for all pipelines (i.e. not only tags) to test the pipeline steps
+# outside of the release process.
+.release:staging:
+  extends:
+    - .release
+  variables:
+    OUT_REGISTRY_USER: "${CI_REGISTRY_USER}"
+    OUT_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
+    OUT_REGISTRY: "${CI_REGISTRY}"
+    OUT_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/staging/container-toolkit"
+
+# Define an external release step that pushes an image to an external repository.
+# This includes a devlopment image off master.
+.release:external:
+  extends:
+    - .release
+  rules:
+    - if: $CI_COMMIT_TAG
+      variables:
+        OUT_IMAGE_VERSION: "${CI_COMMIT_TAG}"
+    - if: $CI_COMMIT_BRANCH == $RELEASE_DEVEL_BRANCH
+      variables:
+        OUT_IMAGE_VERSION: "${DEVEL_RELEASE_IMAGE_VERSION}"
+
+# Define the release jobs
+release:staging-centos7:
+  extends:
+    - .release:staging
+    - .dist-centos7
+  needs:
+    - image-centos7
+
+release:staging-centos8:
+  extends:
+    - .release:staging
+    - .dist-centos8
+  needs:
+    - image-centos8
+
+release:staging-ubi8:
+  extends:
+    - .release:staging
+    - .dist-ubi8
+  needs:
+    - image-ubi8
+
+release:staging-ubuntu18.04:
+  extends:
+    - .release:staging
+    - .dist-ubuntu18.04
+  needs:
+    - test-toolkit-ubuntu18.04
+    - test-containerd-ubuntu18.04
+    - test-crio-ubuntu18.04
+    - test-docker-ubuntu18.04

@@ -29,14 +29,15 @@ ARG GOPATH=/artifacts
 # Install the experiemental nvidia-container-runtime
 # NOTE: This will be integrated into the nvidia-container-toolkit package / repo
 ARG NVIDIA_CONTAINER_RUNTIME_EXPERIMENTAL_VERSION=experimental
-RUN go install github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-container-runtime.experimental@${NVIDIA_CONTAINER_RUNTIME_EXPERIMENTAL_VERSION}
+RUN GOPATH=/artifacts go install github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-container-runtime.experimental@${NVIDIA_CONTAINER_RUNTIME_EXPERIMENTAL_VERSION}
 
+WORKDIR /build
 COPY . .
 
 # NOTE: Until the config utilities are properly integrated into the
 # nvidia-container-toolkit repository, these are built from the `tools` folder
 # and not `cmd`.
-RUN go install -ldflags="-s -w -X 'main.Version=${VERSION}'" ./tools/...
+RUN GOPATH=/artifacts go install -ldflags="-s -w -X 'main.Version=${VERSION}'" ./tools/...
 
 
 FROM nvidia/cuda:${CUDA_VERSION}-base-${BASE_DIST}
@@ -54,7 +55,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=utility
 WORKDIR /artifacts/packages
 
 ARG ARTIFACTS_DIR
-COPY ${ARTIFACTS_DIR}/* /artifacts/packages
+COPY ${ARTIFACTS_DIR}/* /artifacts/packages/
 
 ARG PACKAGE_VERSION
 RUN dpkg -i \
@@ -64,7 +65,7 @@ RUN dpkg -i \
 
 WORKDIR /work
 
-COPY --from=build /artifacts/bin /work
+COPY --from=build /artifacts/bin /work/
 
 ENV PATH=/work:$PATH
 

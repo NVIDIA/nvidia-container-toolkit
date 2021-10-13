@@ -40,7 +40,7 @@ DEFAULT_PUSH_TARGET := ubuntu18.04
 TARGETS := ubuntu20.04 ubuntu18.04 ubi8 centos7 centos8
 
 BUILD_TARGETS := $(patsubst %, build-%, $(TARGETS))
-# PUSH_TARGETS := $(patsubst %, push-%, $(TARGETS))
+PUSH_TARGETS := $(patsubst %, push-%, $(TARGETS))
 TEST_TARGETS := $(patsubst %, test-%, $(TARGETS))
 
 .PHONY: $(TARGETS) $(PUSH_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
@@ -76,8 +76,10 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_DIR)
 		$(CURDIR)
 
 
+ARTIFACTS_ROOT ?= $(shell realpath --relative-to=$(CURDIR) $(DIST_DIR))
+
 build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
-build-ubuntu%: ARTIFACTS_DIR = dist/$(*)/amd64
+build-ubuntu%: ARTIFACTS_DIR = $(ARTIFACTS_ROOT)/$(*)/amd64
 build-ubuntu%: PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
 
 build-ubuntu18.04: BASE_DIST := ubuntu18.04
@@ -85,12 +87,12 @@ build-ubuntu20.04: BASE_DIST := ubuntu20.04
 
 build-ubi8: DOCKERFILE_SUFFIX := centos
 # TODO: Update this to use the centos8 packages
-build-ubi8: ARTIFACTS_DIR = dist/centos7/x86_64
+build-ubi8: ARTIFACTS_DIR = $(ARTIFACTS_ROOT)/centos7/x86_64
 build-ubi8: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 build-ubi8: BASE_DIST := ubi8
 
 build-centos%: DOCKERFILE_SUFFIX := centos
-build-centos%: ARTIFACTS_DIR = dist/$(*)/x86_64
+build-centos%: ARTIFACTS_DIR = $(ARTIFACTS_ROOT)/$(*)/x86_64
 build-centos%: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
 build-centos7: BASE_DIST := centos7
