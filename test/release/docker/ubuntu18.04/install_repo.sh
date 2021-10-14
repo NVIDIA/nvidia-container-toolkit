@@ -19,16 +19,7 @@
 # as well as the components included in the third_party folder.
 # All required packages are generated in the specified dist folder.
 
-: ${LOCAL_REPO_DIRECTORY:=/local-repository}
-if [[ -d ${LOCAL_REPO_DIRECTORY} ]]; then
-    echo "Setting up local-repository"
-    echo "deb [trusted=yes] file:/local-repository ./" > /etc/apt/sources.list.d/local.list
-    $(cd /local-repository && apt-ftparchive packages . > Packages)
-elif [[ -n ${TEST_REPO} ]]; then
-    ./install_repo.sh ${TEST_REPO}
-else
-    echo "Skipping repo setup"
-fi
-apt-get update
-
-exec bash $@
+test_repo=$1
+echo "Setting up TEST repo: ${test_repo}"
+sed -i -e "s#nvidia\.github\.io/libnvidia-container#${test_repo}/libnvidia-container#g" /etc/apt/sources.list.d/nvidia-docker.list
+sed -i -e '/experimental/ s/^#//g' /etc/apt/sources.list.d/nvidia-docker.list
