@@ -40,11 +40,11 @@ RUN fpm -s empty \
 
 
 ARG WORKFLOW=nvidia-docker
-ARG TEST_REPO=nvidia.github.io
 RUN curl -s -L https://nvidia.github.io/${WORKFLOW}/gpgkey | apt-key add - \
    && curl -s -L https://nvidia.github.io/${WORKFLOW}/ubuntu18.04/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list \
    && apt-get update
 
 COPY entrypoint.sh /
+COPY install_repo.sh /
 
 ENTRYPOINT [ "/entrypoint.sh" ]
