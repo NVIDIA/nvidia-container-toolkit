@@ -4,6 +4,8 @@ This repository contains tools that allow docker, containerd, or cri-o to be con
 
 *Note*: These were copied from the [`container-config` repository](https://gitlab.com/nvidia/container-toolkit/container-config/-/tree/383587f766a55177ede0e39e3810a974043e503e) are being migrated to commands installed with the NVIDIA Container Toolkit.
 
+These will be migrated into an upcoming `nvidia-ctk` CLI as required.
+
 ### Docker
 
 After building the `docker` binary, run:
