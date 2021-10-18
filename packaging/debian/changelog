@@ -1,4 +1,4 @@
-nvidia-container-toolkit (1.5.2~rc.1-1) experimental; urgency=medium
+nvidia-container-toolkit (1.6.0~rc.1-1) experimental; urgency=medium
 
   * Include nvidia-container-runtime into nvidia-container-toolkit package
 

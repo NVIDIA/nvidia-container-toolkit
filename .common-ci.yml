@@ -20,23 +20,29 @@ default:
 variables:
   IMAGE: "${CI_REGISTRY_IMAGE}"
   IMAGE_TAG: "${CI_COMMIT_REF_SLUG}"
+  BUILDIMAGE: "${CI_REGISTRY_IMAGE}/build:${CI_COMMIT_SHORT_SHA}"
+
+stages:
+  - image
+  - lint
+  - go-checks
+  - go-build
+  - unit-tests
+  - build
+  - build-long
+  - scan
+  - release
 
 build-dev-image:
   stage: image
-  before_script:
-    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
   script:
     - apk --no-cache add make bash
     - make .build-image
+    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
     - make .push-build-image
 
 .requires-build-image:
-  variables:
-    SKIP_IMAGE_BUILD: "yes"
-  before_script:
-    - apk --no-cache add make bash
-    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
-    - make .pull-build-image
+  image: "${BUILDIMAGE}"
 
 .go-check:
   extends:
@@ -47,45 +53,45 @@ fmt:
   extends:
     - .go-check
   script:
-    - make docker-assert-fmt
+    - make assert-fmt
 
 vet:
   extends:
     - .go-check
   script:
-    - make docker-vet
+    - make vet
 
 lint:
   extends:
     - .go-check
   script:
-    - make docker-lint
+    - make lint
   allow_failure: true
 
 ineffassign:
   extends:
     - .go-check
   script:
-    - make docker-ineffassign
+    - make ineffassign
   allow_failure: true
 
 misspell:
   extends:
     - .go-check
   script:
-    - make docker-misspell
+    - make misspell
 
 go-build:
   extends:
     - .requires-build-image
   stage: go-build
   script:
-    - make docker-build
+    - make build
 
 unit-tests:
   extends:
     - .requires-build-image
   stage: unit-tests
   script:
-    - make docker-coverage
+    - make coverage
 
