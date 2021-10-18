@@ -3,10 +3,12 @@ FROM ${BASEIMAGE}
 
 RUN yum install -y \
         ca-certificates \
-        wget \
+        gcc \
         git \
         make \
-        rpm-build && \
+        rpm-build \
+        wget \
+        && \
     rm -rf /var/cache/yum/*
 
 ARG GOLANG_VERSION=0.0.0
@@ -57,6 +59,7 @@ CMD arch=$(uname -m) && \
     rpmbuild --clean --target=$arch -bb \
              -D "_topdir $PWD" \
              -D "version $VERSION" \
+             -D "libnvidia_container_version ${VERSION}-${RELEASE}" \
              -D "release $RELEASE" \
              SPECS/nvidia-container-toolkit.spec && \
     mv RPMS/$arch/*.rpm /dist

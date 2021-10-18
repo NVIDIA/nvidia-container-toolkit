@@ -3,6 +3,7 @@
 set -e
 
 sed -i "s;@SECTION@;${SECTION:+$SECTION/};g" debian/control
+sed -i "s;@LIBNVIDIA_CONTAINER_VERSION@;${LIBNVIDIA_CONTAINER_VERSION:+$LIBNVIDIA_CONTAINER_VERSION};g" debian/control
 
 if [ -n "$DISTRIB" ]; then
     sed -i "s;UNRELEASED;$DISTRIB;" debian/changelog
