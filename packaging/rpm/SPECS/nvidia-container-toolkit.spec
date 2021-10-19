@@ -66,6 +66,7 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 %changelog
 * Mon Sep 06 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.1
 
+- Add AARCH64 package for Amazon Linux 2
 - Include nvidia-container-runtime into nvidia-container-toolkit package
 
 * Mon Jun 14 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.5.1-1

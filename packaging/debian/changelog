@@ -1,5 +1,6 @@
 nvidia-container-toolkit (1.6.0~rc.1-1) experimental; urgency=medium
 
+  * Add AARCH64 package for Amazon Linux 2
   * Include nvidia-container-runtime into nvidia-container-toolkit package
 
  -- NVIDIA CORPORATION <cudatools@nvidia.com>  Mon, 06 Sep 2021 12:24:05 +0200
