@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -29,15 +28,12 @@ import (
 )
 
 func TestArgsGetConfigFilePath(t *testing.T) {
-	wd, err := os.Getwd()
-	require.NoError(t, err)
-
 	testCases := []struct {
 		bundleDir   string
 		ociSpecPath string
 	}{
 		{
-			ociSpecPath: fmt.Sprintf("%v/config.json", wd),
+			ociSpecPath: "config.json",
 		},
 		{
 			bundleDir:   "/foo/bar",

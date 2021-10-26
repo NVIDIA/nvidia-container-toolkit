@@ -1,5 +1,7 @@
 nvidia-container-toolkit (1.6.0~rc.2-1) experimental; urgency=medium
 
+  * Use relative path to OCI specification file (config.json) if bundle path is not specified as an argument to the nvidia-container-runtime
+
  -- NVIDIA CORPORATION <cudatools@nvidia.com>  Tue, 26 Oct 2021 12:24:05 +0200
 
 nvidia-container-toolkit (1.6.0~rc.1-1) experimental; urgency=medium
