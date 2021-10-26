@@ -161,7 +161,9 @@ func getOCISpecFilePath(bundleDir string) (string, error) {
 		logger.Infof("Bundle directory path is empty, using working directory.")
 		workingDirectory, err := os.Getwd()
 		if err != nil {
-			return "", fmt.Errorf("error getting working directory: %v", err)
+			// don't return error here, the later oci.spec.load for 'runc create' will raise it.
+			logger.Errorf("error getting working directory: %v", err)
+			return "", nil
 		}
 		bundleDir = workingDirectory
 	}
