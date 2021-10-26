@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -157,17 +156,9 @@ func isBundleFlag(arg string) bool {
 // getOCISpecFilePath returns the expected path to the OCI specification file for the given
 // bundle directory or the current working directory if not specified.
 func getOCISpecFilePath(bundleDir string) (string, error) {
-	if bundleDir == "" {
-		logger.Infof("Bundle directory path is empty, using working directory.")
-		workingDirectory, err := os.Getwd()
-		if err != nil {
-			return "", fmt.Errorf("error getting working directory: %v", err)
-		}
-		bundleDir = workingDirectory
-	}
-
 	logger.Infof("Using bundle directory: %v", bundleDir)
 
+	// if bundleDir not specified, use "config.json" directly as cwd will always be the bundle path
 	OCISpecFilePath := filepath.Join(bundleDir, ociSpecFileName)
 
 	logger.Infof("Using OCI specification file path: %v", OCISpecFilePath)
