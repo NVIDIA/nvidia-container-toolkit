@@ -154,11 +154,10 @@ func isBundleFlag(arg string) bool {
 }
 
 // getOCISpecFilePath returns the expected path to the OCI specification file for the given
-// bundle directory or the current working directory if not specified.
+// bundle directory. If the bundle directory is empty, only `config.json` is returned.
 func getOCISpecFilePath(bundleDir string) (string, error) {
 	logger.Infof("Using bundle directory: %v", bundleDir)
 
-	// if bundleDir not specified, use "config.json" directly as cwd will always be the bundle path
 	OCISpecFilePath := filepath.Join(bundleDir, ociSpecFileName)
 
 	logger.Infof("Using OCI specification file path: %v", OCISpecFilePath)

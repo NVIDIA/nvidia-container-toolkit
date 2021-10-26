@@ -21,7 +21,7 @@ DIST_DIR ?= $(CURDIR)/dist
 # TODO: These should be defined ONCE and currently duplicate the version in the
 # toolkit makefile.
 LIB_VERSION := 1.6.0
-LIB_TAG := rc.1
+LIB_TAG := rc.2
 
 VERSION ?= $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))
 

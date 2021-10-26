@@ -64,6 +64,11 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+
+* Tue Oct 26 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.2
+
+- Use relative path to OCI specification file (config.json) if bundle path is not specified as an argument to the nvidia-container-runtime
+
 * Mon Sep 06 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.1
 
 - Add AARCH64 package for Amazon Linux 2
