@@ -1,0 +1,82 @@
+# Copyright (c) 2019-2021, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+ARG BASE_DIST
+ARG CUDA_VERSION
+ARG GOLANG_VERSION=x.x.x
+ARG VERSION="N/A"
+
+# NOTE: In cases where the libc version is a concern, we would have to use an
+# image based on the target OS to build the golang executables here -- especially
+# if cgo code is included.
+FROM golang:${GOLANG_VERSION} as build
+
+# We override the GOPATH to ensure that the binaries are installed to
+# /artifacts/bin
+ARG GOPATH=/artifacts
+
+# Install the experiemental nvidia-container-runtime
+# NOTE: This will be integrated into the nvidia-container-toolkit package / repo
+ARG NVIDIA_CONTAINER_RUNTIME_EXPERIMENTAL_VERSION=experimental
+RUN GOPATH=/artifacts go install github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-container-runtime.experimental@${NVIDIA_CONTAINER_RUNTIME_EXPERIMENTAL_VERSION}
+
+WORKDIR /build
+COPY . .
+
+# NOTE: Until the config utilities are properly integrated into the
+# nvidia-container-toolkit repository, these are built from the `tools` folder
+# and not `cmd`.
+RUN GOPATH=/artifacts go install -ldflags="-s -w -X 'main.Version=${VERSION}'" ./tools/...
+
+
+FROM nvidia/cuda:${CUDA_VERSION}-base-${BASE_DIST}
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libcap2 \
+        && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV NVIDIA_DISABLE_REQUIRE="true"
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=utility
+
+WORKDIR /artifacts/packages
+
+ARG ARTIFACTS_DIR
+COPY ${ARTIFACTS_DIR}/* /artifacts/packages/
+
+ARG PACKAGE_VERSION
+RUN dpkg -i \
+    libnvidia-container1_${PACKAGE_VERSION}*.deb \
+    libnvidia-container-tools_${PACKAGE_VERSION}*.deb \
+    nvidia-container-toolkit_${PACKAGE_VERSION}*.deb
+
+WORKDIR /work
+
+COPY --from=build /artifacts/bin /work/
+
+ENV PATH=/work:$PATH
+
+LABEL io.k8s.display-name="NVIDIA Container Runtime Config"
+LABEL name="NVIDIA Container Runtime Config"
+LABEL vendor="NVIDIA"
+LABEL version="${VERSION}"
+LABEL release="N/A"
+LABEL summary="Automatically Configure your Container Runtime for GPU support."
+LABEL description="See summary"
+
+COPY ./LICENSE /licenses/LICENSE
+
+ENTRYPOINT ["/work/nvidia-toolkit"]

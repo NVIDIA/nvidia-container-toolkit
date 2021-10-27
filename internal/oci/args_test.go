@@ -1,16 +1,12 @@
 package oci
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetBundleDir(t *testing.T) {
-	defaultBundleDir, err := os.Getwd()
-	require.NoError(t, err)
-
 	type expected struct {
 		bundle  string
 		isError bool
@@ -22,13 +18,13 @@ func TestGetBundleDir(t *testing.T) {
 		{
 			argv: []string{},
 			expected: expected{
-				bundle: defaultBundleDir,
+				bundle: "",
 			},
 		},
 		{
 			argv: []string{"create"},
 			expected: expected{
-				bundle: defaultBundleDir,
+				bundle: "",
 			},
 		},
 		{
@@ -52,13 +48,13 @@ func TestGetBundleDir(t *testing.T) {
 		{
 			argv: []string{"--not-bundle", "/foo/bar"},
 			expected: expected{
-				bundle: defaultBundleDir,
+				bundle: "",
 			},
 		},
 		{
 			argv: []string{"--"},
 			expected: expected{
-				bundle: defaultBundleDir,
+				bundle: "",
 			},
 		},
 		{
@@ -128,16 +124,6 @@ func TestGetBundleDir(t *testing.T) {
 
 		require.Equalf(t, tc.expected.bundle, bundle, "%d: %v", i, tc)
 	}
-}
-
-func TestGetDefaultBundleDir(t *testing.T) {
-	defaultBundleDir, err := os.Getwd()
-	require.NoError(t, err)
-
-	bundleDir, err := GetDefaultBundleDir()
-
-	require.NoError(t, err)
-	require.Equal(t, defaultBundleDir, bundleDir)
 }
 
 func TestGetSpecFilePathAppendsFilename(t *testing.T) {

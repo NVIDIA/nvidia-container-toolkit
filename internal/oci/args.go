@@ -18,7 +18,6 @@ package oci
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -35,16 +34,7 @@ func GetBundleDir(args []string) (string, error) {
 		return "", fmt.Errorf("error getting bundle dir from args: %v", err)
 	}
 
-	if bundleDir != "" {
-		return bundleDir, nil
-	}
-
-	defaultBundleDir, err := GetDefaultBundleDir()
-	if err != nil {
-		return "", fmt.Errorf("error getting default bundle dir: %v", err)
-	}
-
-	return defaultBundleDir, nil
+	return bundleDir, nil
 }
 
 // GetBundleDirFromArgs checks the specified slice of strings (argv) for a 'bundle' flag as allowed by runc.
@@ -82,16 +72,6 @@ func GetBundleDirFromArgs(args []string) (string, error) {
 	}
 
 	return bundleDir, nil
-}
-
-// GetDefaultBundleDir returns the bundle directory that is to be used if no alternative is
-// specified via the command line, for example.
-func GetDefaultBundleDir() (string, error) {
-	workingDirectory, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("error getting working directory: %v", err)
-	}
-	return workingDirectory, nil
 }
 
 // GetSpecFilePath returns the expected path to the OCI specification file for the given

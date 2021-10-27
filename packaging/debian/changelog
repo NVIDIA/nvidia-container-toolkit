@@ -1,5 +1,12 @@
+nvidia-container-toolkit (1.6.0~rc.2-1) experimental; urgency=medium
+
+  * Use relative path to OCI specification file (config.json) if bundle path is not specified as an argument to the nvidia-container-runtime
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Tue, 26 Oct 2021 12:24:05 +0200
+
 nvidia-container-toolkit (1.6.0~rc.1-1) experimental; urgency=medium
 
+  * Add AARCH64 package for Amazon Linux 2
   * Include nvidia-container-runtime into nvidia-container-toolkit package
 
  -- NVIDIA CORPORATION <cudatools@nvidia.com>  Mon, 06 Sep 2021 12:24:05 +0200
