@@ -50,8 +50,8 @@ $(PUSH_TARGETS): push-%:
 
 # For the default push target we also push a short tag equal to the version.
 # We skip this for the development release
-RELEASE_DEVEL_TAG ?= devel
-ifneq ($(strip $(VERSION)),$(RELEASE_DEVEL_TAG))
+DEVEL_RELEASE_IMAGE_VERSION ?= devel
+ifneq ($(strip $(VERSION)),$(DEVEL_RELEASE_IMAGE_VERSION))
 push-$(DEFAULT_PUSH_TARGET): push-short
 endif
 push-short:
