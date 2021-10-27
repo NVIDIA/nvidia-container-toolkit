@@ -1,0 +1,167 @@
+# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+include:
+  - local: '.common-ci.yml'
+
+default:
+  tags:
+    - cnt
+    - container-dev
+    - docker/multi-arch
+    - docker/privileged
+    - os/linux
+    - type/docker
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  # Release "devel"-tagged images off the master branch
+  RELEASE_DEVEL_BRANCH: "master"
+  RELEASE_DEVEL_TAG: "devel"
+  # On the multi-arch builder we don't need the qemu setup.
+  SKIP_QEMU_SETUP: "1"
+
+# We skip the integration tests for the internal CI:
+.integration:
+  stage: test
+  before_script:
+    - echo "Skipped in internal CI"
+  script:
+    - echo "Skipped in internal CI"
+
+# The .scan step forms the base of the image scan operation performed before releasing
+# images.
+.scan:
+  stage: scan
+  variables:
+    IMAGE: "${CI_REGISTRY_IMAGE}/container-toolkit:${CI_COMMIT_SHORT_SHA}-${DIST}"
+    # SCAN_IMAGE must be a local image
+    SCAN_IMAGE: "container-toolkit:${CI_COMMIT_SHORT_SHA}-${DIST}"
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip[ _-]scans?\]/i
+      when: never
+    - if: $SKIP_SCANS
+      when: never
+    - if: $CI_COMMIT_TAG == null && $CI_COMMIT_BRANCH != $RELEASE_DEVEL_BRANCH
+      allow_failure: true
+  before_script:
+    - apk add --no-cache git
+    - apk add --no-cache python3 python3-dev py3-pip py3-wheel libmagic
+    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
+    # TODO: We should specify the architecture here and scan all architectures
+    - docker pull "${IMAGE}"
+    - docker tag "${IMAGE}" "${SCAN_IMAGE}"
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab-master.nvidia.com/sectooling/scanning/contamer.git
+    - pip3 install -r contamer/requirements.txt
+  script:
+    - cd contamer
+    - python3 contamer.py -ls --fail-on-non-os ${CONTAMER_SUPPRESS_VULNS:+--suppress-vulns ${CONTAMER_SUPPRESS_VULNS}} -- "${SCAN_IMAGE}"
+
+
+# Define the scan targets
+scan-centos7:
+  extends:
+    - .scan
+    - .dist-centos7
+  needs:
+    - image-centos7
+
+scan-centos8:
+  extends:
+    - .scan
+    - .dist-centos8
+  needs:
+    - image-centos8
+
+scan-ubuntu18.04:
+  extends:
+    - .scan
+    - .dist-ubuntu18.04
+  needs:
+    - image-ubuntu18.04
+
+scan-ubi8:
+  extends:
+    - .scan
+    - .dist-ubi8
+  needs:
+    - image-ubi8
+
+# Define external release helpers
+.release:ngc:
+  extends:
+    - .release:external
+  variables:
+    OUT_REGISTRY_USER: "${NGC_REGISTRY_USER}"
+    OUT_REGISTRY_TOKEN: "${NGC_REGISTRY_TOKEN}"
+    OUT_REGISTRY: "${NGC_REGISTRY}"
+    OUT_IMAGE_NAME: "${NGC_REGISTRY_IMAGE}"
+    # TODO: For now we disable external releases
+    DOCKER: echo
+
+.release:dockerhub:
+  extends:
+    - .release:external
+  variables:
+    OUT_REGISTRY_USER: "${REGISTRY_USER}"
+    OUT_REGISTRY_TOKEN: "${REGISTRY_TOKEN}"
+    OUT_REGISTRY: "${DOCKERHUB_REGISTRY}"
+    OUT_IMAGE_NAME: "${REGISTRY_IMAGE}"
+
+    # TODO: For now we disable external releases
+    DOCKER: echo
+
+# Define the external release targets
+# Release to NGC
+release:ngc-centos7:
+  extends:
+    - .release:ngc
+    - .dist-centos7
+
+release:ngc-centos8:
+  extends:
+    - .release:ngc
+    - .dist-centos8
+
+release:ngc-ubuntu18:
+  extends:
+    - .release:ngc
+    - .dist-ubuntu18.04
+
+release:ngc-ubi8:
+  extends:
+    - .release:ngc
+    - .dist-ubi8
+
+# Release to Dockerhub
+release:dockerhub-centos7:
+  extends:
+    - .release:dockerhub
+    - .dist-centos7
+
+release:dockerhub-centos8:
+  extends:
+    - .release:dockerhub
+    - .dist-centos8
+
+release:dockerhub-ubuntu18:
+  extends:
+    - .release:dockerhub
+    - .dist-ubuntu18.04
+
+release:dockerhub-ubi8:
+  extends:
+    - .release:dockerhub
+    - .dist-ubi8
