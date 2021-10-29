@@ -17,19 +17,22 @@
 package oci
 
 import (
-	oci "github.com/opencontainers/runtime-spec/specs-go"
+	"fmt"
+	"os"
+	"syscall"
 )
 
-// SpecModifier is a function that accepts a pointer to an OCI Srec and returns an
-// error. The intention is that the function would modify the spec in-place.
-type SpecModifier func(*oci.Spec) error
+type syscallExec struct{}
 
-//go:generate moq -stub -out spec_mock.go . Spec
+var _ Runtime = (*syscallExec)(nil)
 
-// Spec defines the operations to be performed on an OCI specification
-type Spec interface {
-	Load() error
-	Flush() error
-	Modify(SpecModifier) error
-	LookupEnv(string) (string, bool)
+func (r syscallExec) Exec(args []string) error {
+	err := syscall.Exec(args[0], args, os.Environ())
+	if err != nil {
+		return fmt.Errorf("could not exec '%v': %v", args[0], err)
+	}
+
+	// syscall.Exec is not expected to return. This is an error state regardless of whether
+	// err is nil or not.
+	return fmt.Errorf("unexpected return from exec '%v'", args[0])
 }
