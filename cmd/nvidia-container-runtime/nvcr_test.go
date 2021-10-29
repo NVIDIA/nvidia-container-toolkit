@@ -27,32 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestArgsGetConfigFilePath(t *testing.T) {
-	testCases := []struct {
-		bundleDir   string
-		ociSpecPath string
-	}{
-		{
-			ociSpecPath: "config.json",
-		},
-		{
-			bundleDir:   "/foo/bar",
-			ociSpecPath: "/foo/bar/config.json",
-		},
-		{
-			bundleDir:   "/foo/bar/",
-			ociSpecPath: "/foo/bar/config.json",
-		},
-	}
-
-	for i, tc := range testCases {
-		cp, err := getOCISpecFilePath(tc.bundleDir)
-
-		require.NoErrorf(t, err, "%d: %v", i, tc)
-		require.Equalf(t, tc.ociSpecPath, cp, "%d: %v", i, tc)
-	}
-}
-
 func TestAddNvidiaHook(t *testing.T) {
 	logger, logHook := testlog.NewNullLogger()
 	shim := nvidiaContainerRuntime{
@@ -181,9 +155,14 @@ func TestNvidiaContainerRuntime(t *testing.T) {
 		tc.shim.logger = logger
 		hook.Reset()
 
-		spec := &specs.Spec{}
-		ociMock := oci.NewMockSpec(spec, tc.writeError, tc.modifyError)
-
+		ociMock := &oci.SpecMock{
+			ModifyFunc: func(specModifier oci.SpecModifier) error {
+				return tc.modifyError
+			},
+			FlushFunc: func() error {
+				return tc.writeError
+			},
+		}
 		require.Equal(t, tc.shouldModify, tc.shim.modificationRequired(tc.args), "%d: %v", i, tc)
 
 		tc.shim.ociSpec = ociMock
@@ -197,18 +176,16 @@ func TestNvidiaContainerRuntime(t *testing.T) {
 		}
 
 		if tc.shouldModify {
-			require.Equal(t, 1, ociMock.MockModify.Callcount, "%d: %v", i, tc)
-			require.Equal(t, 1, nvidiaHookCount(spec.Hooks), "%d: %v", i, tc)
+			require.Equal(t, 1, len(ociMock.ModifyCalls()), "%d: %v", i, tc)
 		} else {
-			require.Equal(t, 0, ociMock.MockModify.Callcount, "%d: %v", i, tc)
-			require.Nil(t, spec.Hooks, "%d: %v", i, tc)
+			require.Equal(t, 0, len(ociMock.ModifyCalls()), "%d: %v", i, tc)
 		}
 
 		writeExpected := tc.shouldModify && tc.modifyError == nil
 		if writeExpected {
-			require.Equal(t, 1, ociMock.MockFlush.Callcount, "%d: %v", i, tc)
+			require.Equal(t, 1, len(ociMock.FlushCalls()), "%d: %v", i, tc)
 		} else {
-			require.Equal(t, 0, ociMock.MockFlush.Callcount, "%d: %v", i, tc)
+			require.Equal(t, 0, len(ociMock.FlushCalls()), "%d: %v", i, tc)
 		}
 	}
 }

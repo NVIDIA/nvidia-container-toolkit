@@ -18,9 +18,6 @@ package main
 
 import (
 	"fmt"
-	"os/exec"
-	"path/filepath"
-	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
@@ -53,15 +50,15 @@ func newRuntime(argv []string) (oci.Runtime, error) {
 
 // newOCISpec constructs an OCI spec for the provided arguments
 func newOCISpec(argv []string) (oci.Spec, error) {
-	bundlePath, err := getBundlePath(argv)
+	bundleDir, err := oci.GetBundleDir(argv)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing command line arguments: %v", err)
 	}
+	logger.Infof("Using bundle directory: %v", bundleDir)
 
-	ociSpecPath, err := getOCISpecFilePath(bundlePath)
-	if err != nil {
-		return nil, fmt.Errorf("error getting OCI specification file path: %v", err)
-	}
+	ociSpecPath := oci.GetSpecFilePath(bundleDir)
+	logger.Infof("Using OCI specification file path: %v", ociSpecPath)
+
 	ociSpec := oci.NewSpecFromFile(ociSpecPath)
 
 	return ociSpec, nil
@@ -69,98 +66,9 @@ func newOCISpec(argv []string) (oci.Spec, error) {
 
 // newRuncRuntime locates the runc binary and wraps it in a SyscallExecRuntime
 func newRuncRuntime() (oci.Runtime, error) {
-	runtimePath, err := findRunc()
-	if err != nil {
-		return nil, fmt.Errorf("error locating runtime: %v", err)
-	}
-
-	runc, err := oci.NewSyscallExecRuntimeWithLogger(logger.Logger, runtimePath)
-	if err != nil {
-		return nil, fmt.Errorf("error constructing runtime: %v", err)
-	}
-
-	return runc, nil
-}
-
-// getBundlePath checks the specified slice of strings (argv) for a 'bundle' flag as allowed by runc.
-// The following are supported:
-// --bundle{{SEP}}BUNDLE_PATH
-// -bundle{{SEP}}BUNDLE_PATH
-// -b{{SEP}}BUNDLE_PATH
-// where {{SEP}} is either ' ' or '='
-func getBundlePath(argv []string) (string, error) {
-	var bundlePath string
-
-	for i := 0; i < len(argv); i++ {
-		param := argv[i]
-
-		parts := strings.SplitN(param, "=", 2)
-		if !isBundleFlag(parts[0]) {
-			continue
-		}
-
-		// The flag has the format --bundle=/path
-		if len(parts) == 2 {
-			bundlePath = parts[1]
-			continue
-		}
-
-		// The flag has the format --bundle /path
-		if i+1 < len(argv) {
-			bundlePath = argv[i+1]
-			i++
-			continue
-		}
-
-		// --bundle / -b was the last element of argv
-		return "", fmt.Errorf("bundle option requires an argument")
-	}
-
-	return bundlePath, nil
-}
-
-// findRunc locates runc in the path, returning the full path to the
-// binary or an error.
-func findRunc() (string, error) {
-	runtimeCandidates := []string{
+	return oci.NewLowLevelRuntimeWithLogger(
+		logger.Logger,
 		dockerRuncExecutableName,
 		runcExecutableName,
-	}
-
-	return findRuntime(runtimeCandidates)
-}
-
-func findRuntime(runtimeCandidates []string) (string, error) {
-	for _, candidate := range runtimeCandidates {
-		logger.Infof("Looking for runtime binary '%v'", candidate)
-		runcPath, err := exec.LookPath(candidate)
-		if err == nil {
-			logger.Infof("Found runtime binary '%v'", runcPath)
-			return runcPath, nil
-		}
-		logger.Warnf("Runtime binary '%v' not found: %v", candidate, err)
-	}
-
-	return "", fmt.Errorf("no runtime binary found from candidate list: %v", runtimeCandidates)
-}
-
-func isBundleFlag(arg string) bool {
-	if !strings.HasPrefix(arg, "-") {
-		return false
-	}
-
-	trimmed := strings.TrimLeft(arg, "-")
-	return trimmed == "b" || trimmed == "bundle"
-}
-
-// getOCISpecFilePath returns the expected path to the OCI specification file for the given
-// bundle directory. If the bundle directory is empty, only `config.json` is returned.
-func getOCISpecFilePath(bundleDir string) (string, error) {
-	logger.Infof("Using bundle directory: %v", bundleDir)
-
-	OCISpecFilePath := filepath.Join(bundleDir, ociSpecFileName)
-
-	logger.Infof("Using OCI specification file path: %v", OCISpecFilePath)
-
-	return OCISpecFilePath, nil
+	)
 }
