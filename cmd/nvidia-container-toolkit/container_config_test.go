@@ -12,6 +12,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 		description    string
 		env            map[string]string
 		privileged     bool
+		hookConfig     *HookConfig
 		expectedConfig *nvidiaConfig
 		expectedPanic  bool
 	}{
@@ -35,7 +36,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
-				DriverCapabilities: allDriverCapabilities,
+				DriverCapabilities: allDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -49,7 +50,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
-				DriverCapabilities: allDriverCapabilities,
+				DriverCapabilities: allDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -81,7 +82,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "",
-				DriverCapabilities: allDriverCapabilities,
+				DriverCapabilities: allDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -95,7 +96,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: allDriverCapabilities,
+				DriverCapabilities: allDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -110,7 +111,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: defaultDriverCapabilities,
+				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -125,7 +126,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: allDriverCapabilities,
+				DriverCapabilities: allDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -135,12 +136,12 @@ func TestGetNvidiaConfig(t *testing.T) {
 			env: map[string]string{
 				envCUDAVersion:          "9.0",
 				envNVVisibleDevices:     "gpu0,gpu1",
-				envNVDriverCapabilities: "cap0,cap1",
+				envNVDriverCapabilities: "video,display",
 			},
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: "cap0,cap1",
+				DriverCapabilities: "video,display",
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -150,14 +151,14 @@ func TestGetNvidiaConfig(t *testing.T) {
 			env: map[string]string{
 				envCUDAVersion:              "9.0",
 				envNVVisibleDevices:         "gpu0,gpu1",
-				envNVDriverCapabilities:     "cap0,cap1",
+				envNVDriverCapabilities:     "video,display",
 				envNVRequirePrefix + "REQ0": "req0=true",
 				envNVRequirePrefix + "REQ1": "req1=false",
 			},
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: "cap0,cap1",
+				DriverCapabilities: "video,display",
 				Requirements:       []string{"cuda>=9.0", "req0=true", "req1=false"},
 				DisableRequire:     false,
 			},
@@ -167,7 +168,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			env: map[string]string{
 				envCUDAVersion:              "9.0",
 				envNVVisibleDevices:         "gpu0,gpu1",
-				envNVDriverCapabilities:     "cap0,cap1",
+				envNVDriverCapabilities:     "video,display",
 				envNVRequirePrefix + "REQ0": "req0=true",
 				envNVRequirePrefix + "REQ1": "req1=false",
 				envNVDisableRequire:         "true",
@@ -175,7 +176,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: "cap0,cap1",
+				DriverCapabilities: "video,display",
 				Requirements:       []string{"cuda>=9.0", "req0=true", "req1=false"},
 				DisableRequire:     true,
 			},
@@ -206,7 +207,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
-				DriverCapabilities: defaultDriverCapabilities,
+				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -238,7 +239,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "",
-				DriverCapabilities: defaultDriverCapabilities,
+				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -252,7 +253,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: defaultDriverCapabilities,
+				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -267,7 +268,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: defaultDriverCapabilities,
+				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -282,7 +283,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: allDriverCapabilities,
+				DriverCapabilities: allDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -292,12 +293,12 @@ func TestGetNvidiaConfig(t *testing.T) {
 			env: map[string]string{
 				envNVRequireCUDA:        "cuda>=9.0",
 				envNVVisibleDevices:     "gpu0,gpu1",
-				envNVDriverCapabilities: "cap0,cap1",
+				envNVDriverCapabilities: "video,display",
 			},
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: "cap0,cap1",
+				DriverCapabilities: "video,display",
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -307,14 +308,14 @@ func TestGetNvidiaConfig(t *testing.T) {
 			env: map[string]string{
 				envNVRequireCUDA:            "cuda>=9.0",
 				envNVVisibleDevices:         "gpu0,gpu1",
-				envNVDriverCapabilities:     "cap0,cap1",
+				envNVDriverCapabilities:     "video,display",
 				envNVRequirePrefix + "REQ0": "req0=true",
 				envNVRequirePrefix + "REQ1": "req1=false",
 			},
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: "cap0,cap1",
+				DriverCapabilities: "video,display",
 				Requirements:       []string{"cuda>=9.0", "req0=true", "req1=false"},
 				DisableRequire:     false,
 			},
@@ -324,7 +325,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			env: map[string]string{
 				envNVRequireCUDA:            "cuda>=9.0",
 				envNVVisibleDevices:         "gpu0,gpu1",
-				envNVDriverCapabilities:     "cap0,cap1",
+				envNVDriverCapabilities:     "video,display",
 				envNVRequirePrefix + "REQ0": "req0=true",
 				envNVRequirePrefix + "REQ1": "req1=false",
 				envNVDisableRequire:         "true",
@@ -332,7 +333,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: "cap0,cap1",
+				DriverCapabilities: "video,display",
 				Requirements:       []string{"cuda>=9.0", "req0=true", "req1=false"},
 				DisableRequire:     true,
 			},
@@ -346,7 +347,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
-				DriverCapabilities: defaultDriverCapabilities,
+				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{},
 				DisableRequire:     false,
 			},
@@ -362,7 +363,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
 				MigConfigDevices:   "mig0,mig1",
-				DriverCapabilities: defaultDriverCapabilities,
+				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -388,7 +389,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
 				MigMonitorDevices:  "mig0,mig1",
-				DriverCapabilities: defaultDriverCapabilities,
+				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 				DisableRequire:     false,
 			},
@@ -403,14 +404,62 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged:    false,
 			expectedPanic: true,
 		},
+		{
+			description: "Hook config set as driver-capabilities-all",
+			env: map[string]string{
+				envNVVisibleDevices:     "all",
+				envNVDriverCapabilities: "all",
+			},
+			privileged: true,
+			hookConfig: &HookConfig{
+				SupportedDriverCapabilities: "video,display",
+			},
+			expectedConfig: &nvidiaConfig{
+				Devices:            "all",
+				DriverCapabilities: "video,display",
+			},
+		},
+		{
+			description: "Hook config set, envvar sets driver-capabilities",
+			env: map[string]string{
+				envNVVisibleDevices:     "all",
+				envNVDriverCapabilities: "video,display",
+			},
+			privileged: true,
+			hookConfig: &HookConfig{
+				SupportedDriverCapabilities: "video,display,compute,utility",
+			},
+			expectedConfig: &nvidiaConfig{
+				Devices:            "all",
+				DriverCapabilities: "video,display",
+			},
+		},
+		{
+			description: "Hook config set, envvar unset sets default driver-capabilities",
+			env: map[string]string{
+				envNVVisibleDevices: "all",
+			},
+			privileged: true,
+			hookConfig: &HookConfig{
+				SupportedDriverCapabilities: "video,display,utility,compute",
+			},
+			expectedConfig: &nvidiaConfig{
+				Devices:            "all",
+				DriverCapabilities: defaultDriverCapabilities.String(),
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			// Wrap the call to getNvidiaConfig() in a closure.
 			var config *nvidiaConfig
 			getConfig := func() {
-				hookConfig := getDefaultHookConfig()
-				config = getNvidiaConfig(&hookConfig, tc.env, nil, tc.privileged)
+				hookConfig := tc.hookConfig
+				if hookConfig == nil {
+					defaultConfig := getDefaultHookConfig()
+					hookConfig = &defaultConfig
+				}
+				config = getNvidiaConfig(hookConfig, tc.env, nil, tc.privileged)
 			}
 
 			// For any tests that are expected to panic, make sure they do.
@@ -819,6 +868,122 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 
 			require.NotNil(t, devices, "%d: %v", i, tc)
 			require.Equal(t, *tc.expectedDevices, *devices, "%d: %v", i, tc)
+		})
+	}
+}
+
+func TestGetDriverCapabilities(t *testing.T) {
+
+	supportedCapabilities := "compute,utility,display,video"
+
+	testCases := []struct {
+		description           string
+		env                   map[string]string
+		legacyImage           bool
+		supportedCapabilities string
+		expectedPanic         bool
+		expectedCapabilities  string
+	}{
+		{
+			description: "Env is set for legacy image",
+			env: map[string]string{
+				envNVDriverCapabilities: "display,video",
+			},
+			legacyImage:           true,
+			supportedCapabilities: supportedCapabilities,
+			expectedCapabilities:  "display,video",
+		},
+		{
+			description: "Env is all for legacy image",
+			env: map[string]string{
+				envNVDriverCapabilities: "all",
+			},
+			legacyImage:           true,
+			supportedCapabilities: supportedCapabilities,
+			expectedCapabilities:  supportedCapabilities,
+		},
+		{
+			description: "Env is empty for legacy image",
+			env: map[string]string{
+				envNVDriverCapabilities: "",
+			},
+			legacyImage:           true,
+			supportedCapabilities: supportedCapabilities,
+			expectedCapabilities:  defaultDriverCapabilities.String(),
+		},
+		{
+			description:           "Env unset for legacy image is 'all'",
+			env:                   map[string]string{},
+			legacyImage:           true,
+			supportedCapabilities: supportedCapabilities,
+			expectedCapabilities:  supportedCapabilities,
+		},
+		{
+			description: "Env is set for modern image",
+			env: map[string]string{
+				envNVDriverCapabilities: "display,video",
+			},
+			legacyImage:           false,
+			supportedCapabilities: supportedCapabilities,
+			expectedCapabilities:  "display,video",
+		},
+		{
+			description:           "Env unset for modern image is default",
+			env:                   map[string]string{},
+			legacyImage:           false,
+			supportedCapabilities: supportedCapabilities,
+			expectedCapabilities:  defaultDriverCapabilities.String(),
+		},
+		{
+			description: "Env is all for modern image",
+			env: map[string]string{
+				envNVDriverCapabilities: "all",
+			},
+			legacyImage:           false,
+			supportedCapabilities: supportedCapabilities,
+			expectedCapabilities:  supportedCapabilities,
+		},
+		{
+			description: "Env is empty for modern image",
+			env: map[string]string{
+				envNVDriverCapabilities: "",
+			},
+			legacyImage:           false,
+			supportedCapabilities: supportedCapabilities,
+			expectedCapabilities:  defaultDriverCapabilities.String(),
+		},
+		{
+			description: "Invalid capabilities panic",
+			env: map[string]string{
+				envNVDriverCapabilities: "compute,utility",
+			},
+			supportedCapabilities: "not-compute,not-utility",
+			expectedPanic:         true,
+		},
+		{
+			description:           "Default is restricted for modern image",
+			legacyImage:           false,
+			supportedCapabilities: "compute",
+			expectedCapabilities:  "compute",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			var capabilites DriverCapabilities
+
+			getDriverCapabilities := func() {
+				supportedCapabilities := DriverCapabilities(tc.supportedCapabilities)
+				capabilites = getDriverCapabilities(tc.env, supportedCapabilities, tc.legacyImage)
+			}
+
+			if tc.expectedPanic {
+				require.Panics(t, getDriverCapabilities)
+				return
+			}
+
+			getDriverCapabilities()
+			require.EqualValues(t, tc.expectedCapabilities, capabilites)
 		})
 	}
 }

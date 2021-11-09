@@ -66,6 +66,7 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 %changelog
 * Mon Nov 15 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.3
 
+- Add supported-driver-capabilities config option to the nvidia-container-toolkit
 - Move OCI and command line checks for runtime to internal oci package
 
 * Fri Nov 05 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.2
