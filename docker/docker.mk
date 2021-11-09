@@ -85,6 +85,7 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 --%: docker-build-%
 	@
 
+CONFIG_TOML_SUFFIX = $(OS)
 # private ubuntu target
 --ubuntu%: OS := ubuntu
 --ubuntu%: LIB_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
@@ -124,6 +125,7 @@ docker-build-%:
 	    --build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
 	    --build-arg PKG_VERS="$(LIB_VERSION)" \
 	    --build-arg PKG_REV="$(PKG_REV)" \
+	    --build-arg CONFIG_TOML_SUFFIX="$(CONFIG_TOML_SUFFIX)" \
 	    --tag $(BUILDIMAGE) \
 	    --file $(DOCKERFILE) .
 	$(DOCKER) run \
