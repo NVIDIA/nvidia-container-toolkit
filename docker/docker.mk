@@ -85,7 +85,6 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 --%: docker-build-%
 	@
 
-CONFIG_TOML_SUFFIX = $(OS)
 # private ubuntu target
 --ubuntu%: OS := ubuntu
 --ubuntu%: LIB_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
@@ -114,6 +113,9 @@ CONFIG_TOML_SUFFIX = $(OS)
 --rhel%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 --rhel%: VERSION = $(patsubst rhel%-$(ARCH),%,$(TARGET_PLATFORM))
 --rhel%: ARTIFACTS_DIR = $(DIST_DIR)/rhel$(VERSION)/$(ARCH)
+
+# We allow the CONFIG_TOML_SUFFIX to be overridden.
+CONFIG_TOML_SUFFIX ?= $(OS)
 
 docker-build-%:
 	@echo "Building for $(TARGET_PLATFORM)"
