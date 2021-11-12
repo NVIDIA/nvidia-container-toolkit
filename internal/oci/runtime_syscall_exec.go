@@ -14,17 +14,25 @@
 # limitations under the License.
 */
 
-package main
+package oci
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
+	"fmt"
+	"os"
+	"syscall"
 )
 
-func TestConstructor(t *testing.T) {
-	shim, err := newRuntime([]string{})
+type syscallExec struct{}
 
-	require.NoError(t, err)
-	require.NotNil(t, shim)
+var _ Runtime = (*syscallExec)(nil)
+
+func (r syscallExec) Exec(args []string) error {
+	err := syscall.Exec(args[0], args, os.Environ())
+	if err != nil {
+		return fmt.Errorf("could not exec '%v': %v", args[0], err)
+	}
+
+	// syscall.Exec is not expected to return. This is an error state regardless of whether
+	// err is nil or not.
+	return fmt.Errorf("unexpected return from exec '%v'", args[0])
 }

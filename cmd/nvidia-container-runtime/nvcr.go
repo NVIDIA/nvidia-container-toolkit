@@ -66,22 +66,9 @@ func (r nvidiaContainerRuntime) Exec(args []string) error {
 // modificationRequired checks the intput arguments to determine whether a modification
 // to the OCI spec is required.
 func (r nvidiaContainerRuntime) modificationRequired(args []string) bool {
-	var previousWasBundle bool
-	for _, a := range args {
-		// We check for '--bundle create' explicitly to ensure that we
-		// don't inadvertently trigger a modification if the bundle directory
-		// is specified as `create`
-		if !previousWasBundle && isBundleFlag(a) {
-			previousWasBundle = true
-			continue
-		}
-
-		if !previousWasBundle && a == "create" {
-			r.logger.Infof("'create' command detected; modification required")
-			return true
-		}
-
-		previousWasBundle = false
+	if oci.HasCreateSubcommand(args) {
+		r.logger.Infof("'create' command detected; modification required")
+		return true
 	}
 
 	r.logger.Infof("No modification required")
