@@ -51,6 +51,10 @@ else
     targets=${all[@]}
 fi
 
+eval $(${SCRIPTS_DIR}/get-component-versions.sh)
+export NVIDIA_CONTAINER_TOOLKIT_VERSION
+export NVIDIA_CONTAINER_TOOLKIT_TAG
+
 for target in ${targets[@]}; do
     ${SCRIPTS_DIR}/build-all-components.sh ${target}
 done

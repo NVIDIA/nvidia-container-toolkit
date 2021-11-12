@@ -55,13 +55,19 @@ make -C ${LIBNVIDIA_CONTAINER_ROOT} -f mk/docker.mk ${TARGET}
 # Build nvidia-container-toolkit
 make -C ${NVIDIA_CONTAINER_TOOLKIT_ROOT} ${TARGET}
 
-# We set the TOOLKIT_VERSION for the nvidia-container-runtime and nvidia-docker targets
-# TODO: This is not yet enabled in the makefiles below
-: ${PREVIOUS_TOOLKIT_VERSION:=1.5.1}
-echo "Using TOOLKIT_VERSION=${PREVIOUS_TOOLKIT_VERSION} as previous nvidia-container-toolkit version"
+if [[ -z ${NVIDIA_CONTAINER_TOOLKIT_VERSION} ]]; then
+eval $(${SCRIPTS_DIR}/get-component-versions.sh)
+fi
 
+# We set the TOOLKIT_VERSION for the nvidia-container-runtime and nvidia-docker targets
 # Build nvidia-container-runtime
-make -C ${NVIDIA_CONTAINER_RUNTIME_ROOT} TOOLKIT_VERSION=${PREVIOUS_TOOLKIT_VERSION} ${TARGET}
+make -C ${NVIDIA_CONTAINER_RUNTIME_ROOT} \
+    TOOLKIT_VERSION="${NVIDIA_CONTAINER_TOOLKIT_VERSION}" \
+    TOOLKIT_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
+        ${TARGET}
 
 # Build nvidia-docker2
-make -C ${NVIDIA_DOCKER_ROOT} TOOLKIT_VERSION=${PREVIOUS_TOOLKIT_VERSION} ${TARGET}
+make -C ${NVIDIA_DOCKER_ROOT} \
+    TOOLKIT_VERSION="${NVIDIA_CONTAINER_TOOLKIT_VERSION}" \
+    TOOLKIT_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
+        ${TARGET}
