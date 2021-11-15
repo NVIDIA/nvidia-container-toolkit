@@ -64,8 +64,11 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Mon Nov 15 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.3
 
-* Tue Oct 26 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.2
+- Move OCI and command line checks for runtime to internal oci package
+
+* Fri Nov 05 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.2
 
 - Use relative path to OCI specification file (config.json) if bundle path is not specified as an argument to the nvidia-container-runtime
 
