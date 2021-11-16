@@ -19,24 +19,7 @@
 # as well as the components included in the third_party folder.
 # All required packages are generated in the specified dist folder.
 
-: ${LOCAL_REPO_DIRECTORY:=/local-repository}
-if [[ -d ${LOCAL_REPO_DIRECTORY} ]]; then
-    echo "Setting up local-repository"
-    createrepo /local-repository
-
-    cat >/etc/yum.repos.d/local.repo <<EOL
-[local-repository]
-name=NVIDIA Container Toolkit Local Packages
-baseurl=file:///local-repository
-enabled=0
-gpgcheck=0
-protect=1
-EOL
-    yum-config-manager --enable local-repository
-elif [[ -n ${TEST_REPO} ]]; then
-    ./install_repo.sh ${TEST_REPO}
-else
-    echo "Skipping repo setup"
-fi
-
-exec bash $@
+test_repo=$1
+echo "Setting up TEST repo: ${test_repo}"
+sed -i -e "s#nvidia\.github\.io/libnvidia-container#${test_repo}/libnvidia-container#g" /etc/yum.repos.d/nvidia-docker.repo
+yum-config-manager --enable libnvidia-container-experimental

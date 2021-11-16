@@ -13,7 +13,6 @@
 # limitations under the License.
 
 WORKFLOW ?= nvidia-docker
-TEST_REPO ?= elezar.github.io
 
 DISTRIBUTIONS := ubuntu18.04 centos8
 
@@ -30,7 +29,6 @@ images: $(IMAGE_TARGETS)
 $(IMAGE_TARGETS): image-%:
 	docker build \
     --build-arg WORKFLOW="$(WORKFLOW)" \
-    --build-arg TEST_REPO="$(TEST_REPO)" \
     -t nvidia-container-toolkit-repo-test:$(*) \
     -f $(DOCKERFILE) \
     $(shell dirname $(DOCKERFILE))
