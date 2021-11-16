@@ -21,21 +21,23 @@ RUN_TARGETS := $(patsubst %,run-%, $(DISTRIBUTIONS))
 RELEASE_TARGETS := $(patsubst %,release-%, $(DISTRIBUTIONS))
 LOCAL_TARGETS := $(patsubst %,local-%, $(DISTRIBUTIONS))
 
-.PHONY: $(IMAGE_TARGETS)
+.PHONY: $(IMAGE_TARGETS) $(RUN_TARGETS)
 
 image-%: DOCKERFILE = docker/$(*)/Dockerfile
 
 images: $(IMAGE_TARGETS)
-$(IMAGE_TARGETS): image-%:
-	docker build \
+$(IMAGE_TARGETS): image-%: $(DOCKERFILE)
+	docker build ${PLATFORM_ARGS} \
     --build-arg WORKFLOW="$(WORKFLOW)" \
     -t nvidia-container-toolkit-repo-test:$(*) \
     -f $(DOCKERFILE) \
     $(shell dirname $(DOCKERFILE))
 
 
-%-ubuntu18.04: ARCH = amd64
-%-centos8: ARCH = x86_64
+%-ubuntu18.04: ARCH ?= amd64
+%-centos8: ARCH ?= x86_64
+
+PLATFORM_ARGS = --platform=linux/${ARCH}
 
 RELEASE_TEST_DIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 PROJECT_ROOT := $(RELEASE_TEST_DIR)/../..
@@ -47,8 +49,8 @@ local-%: LOCAL_REPO_ARGS = -v $(LOCAL_PACKAGE_ROOT)/$(DIST)/$(ARCH):/local-repos
 $(LOCAL_TARGETS): local-%: release-% run-% | release-%
 
 run-%: DIST = $(*)
-$(RUN_TARGETS): run-%:
-	docker run --rm -ti  \
+$(RUN_TARGETS): run-%: image-%
+	docker run ${PLATFORM_ARGS} --rm -ti  \
     $(LOCAL_REPO_ARGS) \
     nvidia-container-toolkit-repo-test:$(*)
 
