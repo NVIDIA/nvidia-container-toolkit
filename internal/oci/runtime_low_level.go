@@ -32,7 +32,7 @@ func NewLowLevelRuntime(candidates ...string) (Runtime, error) {
 
 // NewLowLevelRuntimeWithLogger creates a Runtime as with NewLowLevelRuntime using the specified logger.
 func NewLowLevelRuntimeWithLogger(logger *log.Logger, candidates ...string) (Runtime, error) {
-	runtimePath, err := findRuntime(candidates)
+	runtimePath, err := findRuntime(logger, candidates)
 	if err != nil {
 		return nil, fmt.Errorf("error locating runtime: %v", err)
 	}
@@ -42,19 +42,19 @@ func NewLowLevelRuntimeWithLogger(logger *log.Logger, candidates ...string) (Run
 
 // findRuntime checks elements in a list of supplied candidates for a matching executable in the PATH.
 // The absolute path to the first match is returned.
-func findRuntime(candidates []string) (string, error) {
+func findRuntime(logger *log.Logger, candidates []string) (string, error) {
 	if len(candidates) == 0 {
 		return "", fmt.Errorf("at least one runtime candidate must be specified")
 	}
 
 	for _, candidate := range candidates {
-		log.Infof("Looking for runtime binary '%v'", candidate)
+		logger.Infof("Looking for runtime binary '%v'", candidate)
 		runcPath, err := exec.LookPath(candidate)
 		if err == nil {
-			log.Infof("Found runtime binary '%v'", runcPath)
+			logger.Infof("Found runtime binary '%v'", runcPath)
 			return runcPath, nil
 		}
-		log.Warnf("Runtime binary '%v' not found: %v", candidate, err)
+		logger.Warnf("Runtime binary '%v' not found: %v", candidate, err)
 	}
 
 	return "", fmt.Errorf("no runtime binary found from candidate list: %v", candidates)

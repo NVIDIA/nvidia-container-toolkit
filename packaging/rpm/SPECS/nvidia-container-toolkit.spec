@@ -64,6 +64,10 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Wed Nov 17 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 3.6.0-1
+- Promote 1.6.0-0.1.rc.3 to 1.6.0-1
+- Fix unnecessary logging to stderr instead of configured nvidia-container-runtime log file
+
 * Mon Nov 15 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.3
 
 - Move OCI and command line checks for runtime to internal oci package
