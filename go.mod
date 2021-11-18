@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/containerd/containerd v1.5.7
+	github.com/containerd/containerd v1.5.8
 	github.com/containers/podman/v2 v2.2.1
 	github.com/opencontainers/runtime-spec v1.0.3-0.20211101234015-a3c33d663ebc
 	github.com/pelletier/go-toml v1.9.3
