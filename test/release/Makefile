@@ -46,7 +46,7 @@ LOCAL_PACKAGE_ROOT := $(PROJECT_ROOT)/dist
 
 local-%: DIST = $(*)
 local-%: LOCAL_REPO_ARGS = -v $(LOCAL_PACKAGE_ROOT)/$(DIST)/$(ARCH):/local-repository
-$(LOCAL_TARGETS): local-%: release-% run-% | release-%
+$(LOCAL_TARGETS): local-%: run-%
 
 run-%: DIST = $(*)
 $(RUN_TARGETS): run-%: image-%
