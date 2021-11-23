@@ -58,22 +58,26 @@ build-%: DOCKERFILE = $(CURDIR)/build/container/Dockerfile.$(DOCKERFILE_SUFFIX)
 
 # Use a generic build target to build the relevant images
 $(BUILD_TARGETS): build-%: $(ARTIFACTS_DIR)
-	$(DOCKER) build --pull \
+	DOCKER_BUILDKIT=1 \
+		$(DOCKER) build --platform=linux/amd64 --pull \
 		--tag $(IMAGE) \
 		--build-arg ARTIFACTS_DIR="$(ARTIFACTS_DIR)" \
 		--build-arg BASE_DIST="$(BASE_DIST)" \
 		--build-arg CUDA_VERSION="$(CUDA_VERSION)" \
 		--build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
 		--build-arg PACKAGE_VERSION="$(PACKAGE_VERSION)" \
+		--build-arg PACKAGE_ARCH="$(PACKAGE_ARCH)" \
 		--build-arg VERSION="$(VERSION)" \
 		-f $(DOCKERFILE) \
 		$(CURDIR)
 
 
 ARTIFACTS_ROOT ?= $(shell realpath --relative-to=$(CURDIR) $(DIST_DIR))
+ARTIFACTS_DIR = $(ARTIFACTS_ROOT)/$(*)
+
+PACKAGE_ARCH = amd64
 
 build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
-build-ubuntu%: ARTIFACTS_DIR = $(ARTIFACTS_ROOT)/$(*)/amd64
 build-ubuntu%: PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
 
 build-ubuntu18.04: BASE_DIST := ubuntu18.04
@@ -81,13 +85,14 @@ build-ubuntu20.04: BASE_DIST := ubuntu20.04
 
 build-ubi8: DOCKERFILE_SUFFIX := centos
 # TODO: Update this to use the centos8 packages
-build-ubi8: ARTIFACTS_DIR = $(ARTIFACTS_ROOT)/centos7/x86_64
+build-ubi8: ARTIFACTS_DIR = $(ARTIFACTS_ROOT)/centos7
 build-ubi8: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 build-ubi8: BASE_DIST := ubi8
+build-ubi8: PACKAGE_ARCH := x86_64
 
 build-centos%: DOCKERFILE_SUFFIX := centos
-build-centos%: ARTIFACTS_DIR = $(ARTIFACTS_ROOT)/$(*)/x86_64
 build-centos%: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
+build-centos%: PACKAGE_ARCH := x86_64
 
 build-centos7: BASE_DIST := centos7
 build-centos8: BASE_DIST := centos8

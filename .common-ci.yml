@@ -242,9 +242,8 @@ image-ubuntu18.04:
     - .dist-ubuntu18.04
   needs:
     - package-ubuntu18.04-amd64
-    # TODO: These will be required once we generate multi-arch images
-    # - package-ubuntu18.04-arm64
-    # - package-ubuntu18.04-ppc64le
+    - package-ubuntu18.04-arm64
+    - package-ubuntu18.04-ppc64le
   script:
     - make -f build/container/Makefile build-${DIST}
     - make -f build/container/Makefile push-${DIST}
