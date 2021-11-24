@@ -35,10 +35,11 @@ type CLIConfig struct {
 
 // HookConfig : options for the nvidia-container-toolkit.
 type HookConfig struct {
-	DisableRequire                 bool    `toml:"disable-require"`
-	SwarmResource                  *string `toml:"swarm-resource"`
-	AcceptEnvvarUnprivileged       bool    `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
-	AcceptDeviceListAsVolumeMounts bool    `toml:"accept-nvidia-visible-devices-as-volume-mounts"`
+	DisableRequire                 bool               `toml:"disable-require"`
+	SwarmResource                  *string            `toml:"swarm-resource"`
+	AcceptEnvvarUnprivileged       bool               `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
+	AcceptDeviceListAsVolumeMounts bool               `toml:"accept-nvidia-visible-devices-as-volume-mounts"`
+	SupportedDriverCapabilities    DriverCapabilities `toml:"supported-driver-capabilities"`
 
 	NvidiaContainerCLI CLIConfig `toml:"nvidia-container-cli"`
 }
@@ -49,6 +50,7 @@ func getDefaultHookConfig() (config HookConfig) {
 		SwarmResource:                  nil,
 		AcceptEnvvarUnprivileged:       true,
 		AcceptDeviceListAsVolumeMounts: false,
+		SupportedDriverCapabilities:    allDriverCapabilities,
 		NvidiaContainerCLI: CLIConfig{
 			Root:        nil,
 			Path:        nil,
@@ -83,6 +85,15 @@ func getHookConfig() (config HookConfig) {
 				log.Panicln("couldn't open default configuration file:", err)
 			}
 		}
+	}
+
+	if config.SupportedDriverCapabilities == all {
+		config.SupportedDriverCapabilities = allDriverCapabilities
+	}
+	// We ensure that the supported-driver-capabilites option is a subset of allDriverCapabilities
+	if intersection := allDriverCapabilities.Intersection(config.SupportedDriverCapabilities); intersection != config.SupportedDriverCapabilities {
+		configName := config.getConfigOption("SupportedDriverCapabilities")
+		log.Panicf("Invalid value for config option '%v'; %v (supported: %v)\n", configName, config.SupportedDriverCapabilities, allDriverCapabilities)
 	}
 
 	return config

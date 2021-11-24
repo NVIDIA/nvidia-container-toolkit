@@ -27,11 +27,6 @@ const (
 )
 
 const (
-	allDriverCapabilities     = "compute,compat32,graphics,utility,video,display,ngx"
-	defaultDriverCapabilities = "utility,compute"
-)
-
-const (
 	capSysAdmin = "CAP_SYS_ADMIN"
 )
 
@@ -316,33 +311,27 @@ func getMigMonitorDevices(env map[string]string) *string {
 	return nil
 }
 
-func getDriverCapabilities(env map[string]string, legacyImage bool) *string {
-	// Grab a reference to the capabilities from the envvar
-	// if it actually exists in the environment.
-	var capabilities *string
-	if caps, ok := env[envNVDriverCapabilities]; ok {
-		capabilities = &caps
+func getDriverCapabilities(env map[string]string, supportedDriverCapabilities DriverCapabilities, legacyImage bool) DriverCapabilities {
+	// We use the default driver capabilities by default. This is filtered to only include the
+	// supported capabilities
+	capabilities := supportedDriverCapabilities.Intersection(defaultDriverCapabilities)
+
+	capsEnv, capsEnvSpecified := env[envNVDriverCapabilities]
+
+	if !capsEnvSpecified && legacyImage {
+		// Environment variable unset with legacy image: set all capabilities.
+		return supportedDriverCapabilities
 	}
 
-	// Environment variable unset with legacy image: set all capabilities.
-	if capabilities == nil && legacyImage {
-		allCaps := allDriverCapabilities
-		return &allCaps
+	if capsEnvSpecified && len(capsEnv) > 0 {
+		// If the envvironment variable is specified and is non-empty, use the capabilities value
+		envCapabilities := DriverCapabilities(capsEnv)
+		capabilities = supportedDriverCapabilities.Intersection(envCapabilities)
+		if envCapabilities != all && capabilities != envCapabilities {
+			log.Panicln(fmt.Errorf("unsupported capabilities found in '%v' (allowed '%v')", envCapabilities, capabilities))
+		}
 	}
 
-	// Environment variable unset or set but empty: set default capabilities.
-	if capabilities == nil || len(*capabilities) == 0 {
-		defaultCaps := defaultDriverCapabilities
-		return &defaultCaps
-	}
-
-	// Environment variable set to "all": set all capabilities.
-	if *capabilities == "all" {
-		allCaps := allDriverCapabilities
-		return &allCaps
-	}
-
-	// Any other value
 	return capabilities
 }
 
@@ -389,10 +378,7 @@ func getNvidiaConfig(hookConfig *HookConfig, env map[string]string, mounts []Mou
 		log.Panicln("cannot set MIG_MONITOR_DEVICES in non privileged container")
 	}
 
-	var driverCapabilities string
-	if c := getDriverCapabilities(env, legacyImage); c != nil {
-		driverCapabilities = *c
-	}
+	driverCapabilities := getDriverCapabilities(env, hookConfig.SupportedDriverCapabilities, legacyImage).String()
 
 	requirements := getRequirements(env, legacyImage)
 

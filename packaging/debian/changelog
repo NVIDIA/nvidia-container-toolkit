@@ -13,6 +13,7 @@ nvidia-container-toolkit (1.6.0-1) UNRELEASED; urgency=medium
 
 nvidia-container-toolkit (1.6.0~rc.3-1) experimental; urgency=medium
 
+  * Add supported-driver-capabilities config option to the nvidia-container-toolkit
   * Move OCI and command line checks for runtime to internal oci package
 
  -- NVIDIA CORPORATION <cudatools@nvidia.com>  Mon, 15 Nov 2021 13:02:23 +0100
