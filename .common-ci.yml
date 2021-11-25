@@ -98,6 +98,14 @@ unit-tests:
 
 
 # Define the distribution targets
+.dist-amazonlinux1:
+  variables:
+    DIST: amazonlinux1
+
+.dist-amazonlinux2:
+  variables:
+    DIST: amazonlinux2
+
 .dist-centos7:
   variables:
     DIST: centos7
@@ -106,14 +114,35 @@ unit-tests:
   variables:
     DIST: centos8
 
+.dist-debian10:
+  variables:
+    DIST: debian10
+
+.dist-debian9:
+  variables:
+    DIST: debian9
+
+.dist-opensuse-leap15.1:
+  variables:
+    DIST: opensuse-leap15.1
+
 .dist-ubi8:
   variables:
     DIST: ubi8
+
+.dist-ubuntu16.04:
+  variables:
+    DIST: ubuntu16.04
 
 .dist-ubuntu18.04:
   variables:
     DIST: ubuntu18.04
 
+.dist-packaging:
+  variables:
+    DIST: packaging
+
+# Define architecture targets
 .arch-aarch64:
   variables:
     ARCH: aarch64
@@ -160,6 +189,84 @@ unit-tests:
       - ${ARTIFACTS_ROOT}
 
 # Define the package build targets
+package-amazonlinux1-x86_64:
+  extends:
+    - .package-build
+    - .dist-amazonlinux1
+    - .arch-x86_64
+
+package-amazonlinux2-aarch64:
+  extends:
+    - .package-build
+    - .dist-amazonlinux2
+    - .arch-aarch64
+
+package-amazonlinux2-x86_64:
+  extends:
+    - .package-build
+    - .dist-amazonlinux2
+    - .arch-x86_64
+
+package-centos7-ppc64le:
+  extends:
+    - .package-build
+    - .dist-centos7
+    - .arch-ppc64le
+
+package-centos7-x86_64:
+  extends:
+    - .package-build
+    - .dist-centos7
+    - .arch-x86_64
+
+package-centos8-aarch64:
+  extends:
+    - .package-build
+    - .dist-centos8
+    - .arch-aarch64
+
+package-centos8-ppc64le:
+  extends:
+    - .package-build
+    - .dist-centos8
+    - .arch-ppc64le
+
+package-centos8-x86_64:
+  extends:
+    - .package-build
+    - .dist-centos8
+    - .arch-x86_64
+
+package-debian10-amd64:
+  extends:
+    - .package-build
+    - .dist-debian10
+    - .arch-amd64
+
+package-debian9-amd64:
+  extends:
+    - .package-build
+    - .dist-debian9
+    - .arch-amd64
+
+package-opensuse-leap15.1-x86_64:
+  extends:
+    - .package-build
+    - .dist-opensuse-leap15.1
+    - .arch-x86_64
+
+package-ubuntu16.04-amd64:
+  extends:
+    - .package-build
+    - .dist-ubuntu16.04
+    - .arch-amd64
+
+package-ubuntu16.04-ppc64le:
+  extends:
+    - .package-build
+    - .dist-ubuntu16.04
+    - .arch-ppc64le
+
 package-ubuntu18.04-amd64:
   extends:
     - .package-build
@@ -178,18 +285,6 @@ package-ubuntu18.04-ppc64le:
     - .dist-ubuntu18.04
     - .arch-ppc64le
 
-package-centos7-x86_64:
-  extends:
-    - .package-build
-    - .dist-centos7
-    - .arch-x86_64
-
-package-centos8-x86_64:
-  extends:
-    - .package-build
-    - .dist-centos8
-    - .arch-x86_64
-
 # Define the image build targets
 .image-build:
   stage: image-build
@@ -200,6 +295,9 @@ package-centos8-x86_64:
     - apk add --no-cache bash make
     - 'echo "Logging in to CI registry ${CI_REGISTRY}"'
     - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
+  script:
+    - make -f build/container/Makefile build-${DIST}
+    - make -f build/container/Makefile push-${DIST}
 
 image-centos7:
   extends:
@@ -207,10 +305,8 @@ image-centos7:
     - .package-artifacts
     - .dist-centos7
   needs:
+    - package-centos7-ppc64le
     - package-centos7-x86_64
-  script:
-    - make -f build/container/Makefile build-${DIST}
-    - make -f build/container/Makefile push-${DIST}
 
 image-centos8:
   extends:
@@ -218,10 +314,9 @@ image-centos8:
     - .package-artifacts
     - .dist-centos8
   needs:
+    - package-centos8-aarch64
     - package-centos8-x86_64
-  script:
-    - make -f build/container/Makefile build-${DIST}
-    - make -f build/container/Makefile push-${DIST}
+    - package-centos8-ppc64le
 
 image-ubi8:
   extends:
@@ -230,10 +325,8 @@ image-ubi8:
     - .dist-ubi8
   needs:
     # Note: The ubi8 image currently uses the centos7 packages
+    - package-centos7-ppc64le
     - package-centos7-x86_64
-  script:
-    - make -f build/container/Makefile build-${DIST}
-    - make -f build/container/Makefile push-${DIST}
 
 image-ubuntu18.04:
   extends:
@@ -244,9 +337,31 @@ image-ubuntu18.04:
     - package-ubuntu18.04-amd64
     - package-ubuntu18.04-arm64
     - package-ubuntu18.04-ppc64le
-  script:
-    - make -f build/container/Makefile build-${DIST}
-    - make -f build/container/Makefile push-${DIST}
+
+# The DIST=packaging target creates an image containing all built packages
+image-packaging:
+  extends:
+    - .image-build
+    - .package-artifacts
+    - .dist-packaging
+  needs:
+    - package-amazonlinux1-x86_64
+    - package-amazonlinux2-aarch64
+    - package-amazonlinux2-x86_64
+    - package-centos7-ppc64le
+    - package-centos7-x86_64
+    - package-centos8-aarch64
+    - package-centos8-ppc64le
+    - package-centos8-x86_64
+    - package-debian10-amd64
+    - package-debian9-amd64
+    - package-opensuse-leap15.1-x86_64
+    - package-ubuntu16.04-amd64
+    - package-ubuntu16.04-ppc64le
+    - package-ubuntu18.04-amd64
+    - package-ubuntu18.04-arm64
+    - package-ubuntu18.04-ppc64le
+
 
 # Define test helpers
 .integration:
@@ -406,3 +521,10 @@ release:staging-ubuntu18.04:
     - test-containerd-ubuntu18.04
     - test-crio-ubuntu18.04
     - test-docker-ubuntu18.04
+
+release:staging-packaging:
+  extends:
+    - .release:staging
+    - .dist-packaging
+  needs:
+    - image-packaging
