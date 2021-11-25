@@ -64,8 +64,9 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
-* Fri Nov 19 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.7.0-0.1.rc.1
-- [Placeholder for 1.7.0-0.1.rc.1 development]
+* Thu Nov 25 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.7.0-0.1.rc.1
+- Specify containerd runtime type as string in config tools to remove dependency on containerd package
+- Add supported-driver-capabilities config option to allow for a subset of all driver capabilities to be specified
 
 * Wed Nov 17 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-1
 - Promote 1.6.0-0.1.rc.3 to 1.6.0-1
