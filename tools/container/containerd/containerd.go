@@ -25,7 +25,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/containerd/containerd/plugin"
 	toml "github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
@@ -44,7 +43,7 @@ const (
 	defaultConfig        = "/etc/containerd/config.toml"
 	defaultSocket        = "/run/containerd/containerd.sock"
 	defaultRuntimeClass  = "nvidia"
-	defaultRuntmeType    = plugin.RuntimeRuncV2
+	defaultRuntmeType    = "io.containerd.runc.v2"
 	defaultSetAsDefault  = true
 	defaultRestartMode   = restartModeSignal
 	defaultHostRootMount = "/host"
