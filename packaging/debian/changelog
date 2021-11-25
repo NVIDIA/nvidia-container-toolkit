@@ -1,8 +1,9 @@
 nvidia-container-toolkit (1.7.0~rc.1-1) experimental; urgency=medium
 
-  * [Placeholder for 1.7.0~rc.1-1 development]
+  * Specify containerd runtime type as string in config tools to remove dependency on containerd package
+  * Add supported-driver-capabilities config option to allow for a subset of all driver capabilities to be specified
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Fri, 19 Nov 2021 15:02:16 +0100
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Thu, 25 Nov 2021 11:36:29 +0100
 
 nvidia-container-toolkit (1.6.0-1) UNRELEASED; urgency=medium
 
