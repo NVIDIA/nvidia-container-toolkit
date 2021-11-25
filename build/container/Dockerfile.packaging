@@ -27,6 +27,3 @@ COPY ${ARTIFACTS_DIR}/ /artifacts/packages/
 WORKDIR /artifacts/packages
 
 COPY ./LICENSE /licenses/LICENSE
-
-# This container is not intended to be run
-ENTRYPOINT ["exit", "1"]

@@ -433,6 +433,13 @@ test-docker-ubuntu18.04:
   needs:
     - image-ubuntu18.04
 
+test-packaging:
+  extends:
+    - .integration
+    - .dist-packaging
+  needs:
+    - image-packaging
+
 # .release forms the base of the deployment jobs which push images to the CI registry.
 # This is extended with the version to be deployed (e.g. the SHA or TAG) and the
 # target os.
@@ -527,4 +534,4 @@ release:staging-packaging:
     - .release:staging
     - .dist-packaging
   needs:
-    - image-packaging
+    - test-packaging
