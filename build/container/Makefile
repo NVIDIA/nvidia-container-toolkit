@@ -31,14 +31,15 @@ IMAGE = $(IMAGE_NAME):$(IMAGE_TAG)
 
 ##### Public rules #####
 DEFAULT_PUSH_TARGET := ubuntu18.04
-TARGETS := ubuntu20.04 ubuntu18.04 ubi8 centos7 centos8
+TARGETS := ubuntu20.04 ubuntu18.04 ubi8 centos7 centos8 packaging
 
 BUILD_TARGETS := $(patsubst %, build-%, $(TARGETS))
 PUSH_TARGETS := $(patsubst %, push-%, $(TARGETS))
-TEST_TARGETS := $(patsubst %, test-%, $(TARGETS))
+TEST_TARGETS := $(patsubst %, test-%, $(filter-out packaging,$(TARGETS)))
 
 .PHONY: $(TARGETS) $(PUSH_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
 
+push-%: DIST = $(*)
 $(PUSH_TARGETS): push-%:
 	$(DOCKER) push "$(IMAGE_NAME):$(IMAGE_TAG)"
 
@@ -96,6 +97,10 @@ build-centos%: PACKAGE_ARCH := x86_64
 
 build-centos7: BASE_DIST := centos7
 build-centos8: BASE_DIST := centos8
+
+build-packaging: BASE_DIST := ubuntu20.04
+build-packaging: DOCKERFILE_SUFFIX := packaging
+build-packaging: ARTIFACTS_DIR = $(ARTIFACTS_ROOT)
 
 # Test targets
 test-%: DIST = $(*)
