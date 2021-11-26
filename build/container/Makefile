@@ -31,11 +31,13 @@ IMAGE = $(IMAGE_NAME):$(IMAGE_TAG)
 
 ##### Public rules #####
 DEFAULT_PUSH_TARGET := ubuntu18.04
-TARGETS := ubuntu20.04 ubuntu18.04 ubi8 centos7 centos8 packaging
+TARGETS := ubuntu20.04 ubuntu18.04 ubi8 centos7 centos8
 
-BUILD_TARGETS := $(patsubst %, build-%, $(TARGETS))
-PUSH_TARGETS := $(patsubst %, push-%, $(TARGETS))
-TEST_TARGETS := $(patsubst %, test-%, $(filter-out packaging,$(TARGETS)))
+META_TARGETS := packaging
+
+BUILD_TARGETS := $(patsubst %,build-%,$(TARGETS) $(META_TARGETS))
+PUSH_TARGETS := $(patsubst %,push-%,$(TARGETS) $(META_TARGETS))
+TEST_TARGETS := $(patsubst %,test-%, $(TARGETS))
 
 .PHONY: $(TARGETS) $(PUSH_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
 
@@ -57,15 +59,19 @@ push-short:
 build-%: DIST = $(*)
 build-%: DOCKERFILE = $(CURDIR)/build/container/Dockerfile.$(DOCKERFILE_SUFFIX)
 
+ARTIFACTS_ROOT ?= $(shell realpath --relative-to=$(CURDIR) $(DIST_DIR))
+
 # Use a generic build target to build the relevant images
-$(BUILD_TARGETS): build-%: $(ARTIFACTS_DIR)
+$(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 	DOCKER_BUILDKIT=1 \
-		$(DOCKER) build --platform=linux/amd64 --pull \
+		$(DOCKER) build --pull \
+		--platform=linux/amd64 \
 		--tag $(IMAGE) \
-		--build-arg ARTIFACTS_DIR="$(ARTIFACTS_DIR)" \
+		--build-arg ARTIFACTS_ROOT="$(ARTIFACTS_ROOT)" \
 		--build-arg BASE_DIST="$(BASE_DIST)" \
 		--build-arg CUDA_VERSION="$(CUDA_VERSION)" \
 		--build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
+		--build-arg PACKAGE_DIST="$(PACKAGE_DIST)" \
 		--build-arg PACKAGE_VERSION="$(PACKAGE_VERSION)" \
 		--build-arg PACKAGE_ARCH="$(PACKAGE_ARCH)" \
 		--build-arg VERSION="$(VERSION)" \
@@ -73,34 +79,30 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_DIR)
 		$(CURDIR)
 
 
-ARTIFACTS_ROOT ?= $(shell realpath --relative-to=$(CURDIR) $(DIST_DIR))
-ARTIFACTS_DIR = $(ARTIFACTS_ROOT)/$(*)
-
-PACKAGE_ARCH = amd64
-
+build-ubuntu%: BASE_DIST = $(*)
 build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
+build-ubuntu%: PACKAGE_ARCH := amd64
+build-ubuntu%: PACKAGE_DIST = $(BASE_DIST)
 build-ubuntu%: PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
 
-build-ubuntu18.04: BASE_DIST := ubuntu18.04
-build-ubuntu20.04: BASE_DIST := ubuntu20.04
-
-build-ubi8: DOCKERFILE_SUFFIX := centos
 # TODO: Update this to use the centos8 packages
-build-ubi8: ARTIFACTS_DIR = $(ARTIFACTS_ROOT)/centos7
-build-ubi8: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 build-ubi8: BASE_DIST := ubi8
+build-ubi8: DOCKERFILE_SUFFIX := centos
 build-ubi8: PACKAGE_ARCH := x86_64
+build-ubi8: PACKAGE_DIST = centos7
+build-ubi8: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
+build-centos%: BASE_DIST = $(*)
 build-centos%: DOCKERFILE_SUFFIX := centos
-build-centos%: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 build-centos%: PACKAGE_ARCH := x86_64
-
-build-centos7: BASE_DIST := centos7
-build-centos8: BASE_DIST := centos8
+build-centos%: PACKAGE_DIST = $(BASE_DIST)
+build-centos%: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
 build-packaging: BASE_DIST := ubuntu20.04
 build-packaging: DOCKERFILE_SUFFIX := packaging
-build-packaging: ARTIFACTS_DIR = $(ARTIFACTS_ROOT)
+build-packaging: PACKAGE_ARCH := amd64
+build-packaging: PACKAGE_DIST = all
+build-packaging: PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))
 
 # Test targets
 test-%: DIST = $(*)

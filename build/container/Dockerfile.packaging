@@ -21,8 +21,8 @@ FROM nvidia/cuda:${CUDA_VERSION}-base-${BASE_DIST}
 
 ENV NVIDIA_CONTAINER_TOOLKIT_VERSION="${VERSION}"
 
-ARG ARTIFACTS_DIR
-COPY ${ARTIFACTS_DIR}/ /artifacts/packages/
+ARG ARTIFACTS_ROOT
+COPY ${ARTIFACTS_ROOT} /artifacts/packages/
 
 WORKDIR /artifacts/packages
 

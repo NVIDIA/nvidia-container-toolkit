@@ -16,7 +16,7 @@
 
 function assert_usage() {
     echo "Incorrect arguments: $*"
-    echo "$(basename ${BASH_SOURCE[0]}) ROOT PACKAGE_NAME BUILD_VERSION"
+    echo "$(basename ${BASH_SOURCE[0]}) IMAGE DIST_DIR"
     exit 1
 }
 
@@ -25,36 +25,34 @@ set -e -x
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 PROJECT_ROOT="$( cd ${SCRIPTS_DIR}/.. && pwd )"
 
-if [[ $# -ne 0 ]]; then
+if [[ $# -ne 2 ]]; then
     assert_usage $*
 fi
 
-function pull_package_files() {
-    local image=$1
-    local dist_dir=$2
-    echo "Copying package files from ${image} to ${dist_dir}"
-    mkdir -p ${dist_dir}
-    docker run \
-        --rm \
-        --entrypoint="bash" \
-        -v $(pwd):$(pwd) \
-        -w $(pwd) \
-        -u $(id -u):$(id -g) \
-            ${image} \
-            -c "cp -R /artifacts/packages/* ${dist_dir}"
-}
-
-if [[ -z ${VERSION} ]]; then
-eval $(${SCRIPTS_DIR}/get-component-versions.sh)
-VERSION=${NVIDIA_CONTAINER_TOOLKIT_VERSION}${NVIDIA_CONTAINER_TOOLKIT_TAG:+-${NVIDIA_CONTAINER_TOOLKIT_TAG}}
-fi
+IMAGE=$1
+DIST_DIR=$2
 
 if [[ -z ${IMAGE} ]]; then
-: ${REGISTRY:=""}
-: ${IMAGE_NAME:="nvidia/container-toolkit"}
-image_tag=${VERSION}-packaging
-IMAGE=${REGISTRY:+${REGISTRY}/}${IMAGE_NAME}:${image_tag}
+    echo "ERROR: IMAGE must be non-empty"
+    exit 1
 fi
-: ${DIST_DIR:="dist-test"}
 
-pull_package_files ${IMAGE} ${DIST_DIR}
+if [[ -z ${DIST_DIR} ]]; then
+    echo "ERROR: DIST_DIR must be non-empty"
+    exit 1
+fi
+
+if [[ -e ${DIST_DIR} ]]; then
+    echo "ERROR: The specified DIST_DIR ${DIST_DIR} exists."
+    exit 1
+fi
+
+echo "Copying package files from ${IMAGE} to ${DIST_DIR}"
+mkdir -p ${DIST_DIR}
+docker run --rm \
+    -v $(pwd):$(pwd) \
+    -w $(pwd) \
+    -u $(id -u):$(id -g) \
+    --entrypoint="bash" \
+        ${IMAGE} \
+        -c "cp -R /artifacts/packages/* ${DIST_DIR}"
