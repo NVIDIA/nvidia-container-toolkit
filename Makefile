@@ -16,15 +16,8 @@ DOCKER   ?= docker
 MKDIR    ?= mkdir
 DIST_DIR ?= $(CURDIR)/dist
 
-LIB_NAME := nvidia-container-toolkit
-LIB_VERSION := 1.7.0
-LIB_TAG := rc.2
+include $(CURDIR)/versions.mk
 
-# Specify the nvidia-docker2 and nvidia-container-runtime package versions
-NVIDIA_DOCKER_VERSION := 2.8.0
-NVIDIA_CONTAINER_RUNTIME_VERSION := 3.6.0
-
-GOLANG_VERSION := 1.16.3
 MODULE := github.com/NVIDIA/nvidia-container-toolkit
 
 # By default run all native docker-based targets
