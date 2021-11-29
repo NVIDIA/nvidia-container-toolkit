@@ -25,11 +25,10 @@ RUN fpm -s empty \
 
 
 ARG WORKFLOW=nvidia-docker
-ARG TEST_REPO=nvidia.github.io
-ENV TEST_REPO ${TEST_REPO}
 RUN curl -s -L https://nvidia.github.io/${WORKFLOW}/centos8/nvidia-docker.repo \
     | tee /etc/yum.repos.d/nvidia-docker.repo
 
 COPY entrypoint.sh /
+COPY install_repo.sh /
 
 ENTRYPOINT [ "/entrypoint.sh" ]
