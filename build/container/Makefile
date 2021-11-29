@@ -19,7 +19,6 @@ DIST_DIR ?= $(CURDIR)/dist
 ##### Global variables #####
 include $(CURDIR)/versions.mk
 
-GOLANG_VERSION := 1.16.4
 ifeq ($(IMAGE_NAME),)
 REGISTRY ?= nvidia
 IMAGE_NAME := $(REGISTRY)/container-toolkit
