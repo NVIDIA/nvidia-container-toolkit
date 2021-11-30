@@ -17,20 +17,14 @@ MKDIR    ?= mkdir
 DIST_DIR ?= $(CURDIR)/dist
 
 ##### Global variables #####
+include $(CURDIR)/versions.mk
 
-# TODO: These should be defined ONCE and currently duplicate the version in the
-# toolkit makefile.
-LIB_VERSION := 1.7.0
-LIB_TAG := rc.1
-
-VERSION ?= $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))
-
-CUDA_VERSION ?= 11.4.2
-GOLANG_VERSION ?= 1.16.4
 ifeq ($(IMAGE_NAME),)
 REGISTRY ?= nvidia
 IMAGE_NAME := $(REGISTRY)/container-toolkit
 endif
+
+VERSION ?= $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))
 
 IMAGE_TAG ?= $(VERSION)-$(DIST)
 IMAGE = $(IMAGE_NAME):$(IMAGE_TAG)

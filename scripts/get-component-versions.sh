@@ -28,30 +28,30 @@ set -e
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 PROJECT_ROOT="$( cd ${SCRIPTS_DIR}/.. && pwd )"
 
-: ${LIBNVIDIA_CONTAINER_ROOT:=${PROJECT_ROOT}/third_party/libnvidia-container}
-: ${NVIDIA_CONTAINER_TOOLKIT_ROOT:=${PROJECT_ROOT}}
-: ${NVIDIA_CONTAINER_RUNTIME_ROOT:=${PROJECT_ROOT}/third_party/nvidia-container-runtime}
-: ${NVIDIA_DOCKER_ROOT:=${PROJECT_ROOT}/third_party/nvidia-docker}
+LIBNVIDIA_CONTAINER_ROOT=${PROJECT_ROOT}/third_party/libnvidia-container
+NVIDIA_CONTAINER_TOOLKIT_ROOT=${PROJECT_ROOT}
+NVIDIA_CONTAINER_RUNTIME_ROOT=${PROJECT_ROOT}/third_party/nvidia-container-runtime
+NVIDIA_DOCKER_ROOT=${PROJECT_ROOT}/third_party/nvidia-docker
 
 # Get version for libnvidia-container
 libnvidia_container_version_tag=$(grep "#define NVC_VERSION" ${LIBNVIDIA_CONTAINER_ROOT}/src/nvc.h \
     | sed -e 's/#define NVC_VERSION[[:space:]]"\(.*\)"/\1/')
 
+versions_makefile=${NVIDIA_CONTAINER_TOOLKIT_ROOT}/versions.mk
 # Get version for nvidia-container-toolit
-nvidia_container_toolkit_version=$(grep -m 1 "^LIB_VERSION := " ${NVIDIA_CONTAINER_TOOLKIT_ROOT}/Makefile | sed -e 's/LIB_VERSION :=[[:space:]]\(.*\)[[:space:]]*/\1/')
-nvidia_container_toolkit_tag=$(grep -m 1 "^LIB_TAG .= " ${NVIDIA_CONTAINER_TOOLKIT_ROOT}/Makefile | sed -e 's/LIB_TAG .=[[:space:]]\(.*\)[[:space:]]*/\1/')
+nvidia_container_toolkit_version=$(grep -m 1 "^LIB_VERSION := " ${versions_makefile} | sed -e 's/LIB_VERSION :=[[:space:]]\(.*\)[[:space:]]*/\1/')
+nvidia_container_toolkit_tag=$(grep -m 1 "^LIB_TAG .= " ${versions_makefile} | sed -e 's/LIB_TAG .=[[:space:]]\(.*\)[[:space:]]*/\1/')
 nvidia_container_toolkit_version_tag="${nvidia_container_toolkit_version}${nvidia_container_toolkit_tag:+~${nvidia_container_toolkit_tag}}"
 
 # Get version for nvidia-container-runtime
-nvidia_container_runtime_version=$(grep -m 1 "^LIB_VERSION := " ${NVIDIA_CONTAINER_RUNTIME_ROOT}/Makefile | sed -e 's/LIB_VERSION :=[[:space:]]\(.*\)[[:space:]]*/\1/')
-nvidia_container_runtime_tag=$(grep -m 1 "^LIB_TAG .= " ${NVIDIA_CONTAINER_RUNTIME_ROOT}/Makefile | sed -e 's/LIB_TAG .=[[:space:]]\(.*\)[[:space:]]*/\1/')
+nvidia_container_runtime_version=$(grep -m 1 "^NVIDIA_CONTAINER_RUNTIME_VERSION := " ${versions_makefile} | sed -e 's/NVIDIA_CONTAINER_RUNTIME_VERSION :=[[:space:]]\(.*\)[[:space:]]*/\1/')
+nvidia_container_runtime_tag=${nvidia_container_toolkit_tag}
 nvidia_container_runtime_version_tag="${nvidia_container_runtime_version}${nvidia_container_runtime_tag:+~${nvidia_container_runtime_tag}}"
 
 # Get version for nvidia-docker
-nvidia_docker_version=$(grep -m 1 "^LIB_VERSION := " ${NVIDIA_DOCKER_ROOT}/Makefile | sed -e 's/LIB_VERSION :=[[:space:]]\(.*\)[[:space:]]*/\1/')
-nvidia_docker_tag=$(grep -m 1 "^LIB_TAG .= " ${NVIDIA_DOCKER_ROOT}/Makefile | sed -e 's/LIB_TAG .=[[:space:]]\(.*\)[[:space:]]*/\1/')
+nvidia_docker_version=$(grep -m 1 "^NVIDIA_DOCKER_VERSION := " ${versions_makefile} | sed -e 's/NVIDIA_DOCKER_VERSION :=[[:space:]]\(.*\)[[:space:]]*/\1/')
+nvidia_docker_tag=${nvidia_container_toolkit_tag}
 nvidia_docker_version_tag="${nvidia_docker_version}${nvidia_docker_tag:+~${nvidia_docker_tag}}"
-
 
 echo "LIBNVIDIA_CONTAINER_VERSION=${libnvidia_container_version_tag}"
 echo "NVIDIA_CONTAINER_TOOLKIT_VERSION=${nvidia_container_toolkit_version}"

@@ -16,11 +16,8 @@ DOCKER   ?= docker
 MKDIR    ?= mkdir
 DIST_DIR ?= $(CURDIR)/dist
 
-LIB_NAME := nvidia-container-toolkit
-LIB_VERSION := 1.7.0
-LIB_TAG := rc.1
+include $(CURDIR)/versions.mk
 
-GOLANG_VERSION := 1.16.3
 MODULE := github.com/NVIDIA/nvidia-container-toolkit
 
 # By default run all native docker-based targets
