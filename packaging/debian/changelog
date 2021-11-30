@@ -1,6 +1,9 @@
-nvidia-container-toolkit (1.7.0~rc.2-1) experimental; urgency=medium
+nvidia-container-toolkit (1.7.0-1) UNRELEASED; urgency=medium
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Mon, 29 Nov 2021 10:06:53 +0100
+  * Promote 1.7.0~rc.1-1 to 1.7.0-1
+  * Bump Golang version to 1.16.4
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Tue, 30 Nov 2021 14:11:55 +0100
 
 nvidia-container-toolkit (1.7.0~rc.1-1) experimental; urgency=medium
 

@@ -64,8 +64,9 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
-* Mon Nov 29 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.7.0-0.1.rc.2
-- [Placeholder]
+* Tue Nov 30 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.7.0-1
+- Promote 1.7.0~rc.1-1 to 1.7.0-1
+- Bump Golang version to 1.16.4
 
 * Thu Nov 25 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.7.0-0.1.rc.1
 - Specify containerd runtime type as string in config tools to remove dependency on containerd package
