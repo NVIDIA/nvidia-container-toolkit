@@ -172,8 +172,6 @@ scan-ubi8:
     OUT_REGISTRY_TOKEN: "${NGC_REGISTRY_TOKEN}"
     OUT_REGISTRY: "${NGC_REGISTRY}"
     OUT_IMAGE_NAME: "${NGC_REGISTRY_IMAGE}"
-    # TODO: For now we disable external releases
-    DOCKER: echo
 
 .release:dockerhub:
   extends:
@@ -183,9 +181,6 @@ scan-ubi8:
     OUT_REGISTRY_TOKEN: "${REGISTRY_TOKEN}"
     OUT_REGISTRY: "${DOCKERHUB_REGISTRY}"
     OUT_IMAGE_NAME: "${REGISTRY_IMAGE}"
-
-    # TODO: For now we disable external releases
-    DOCKER: echo
 
 release:staging-ubuntu18.04:
   extends:
