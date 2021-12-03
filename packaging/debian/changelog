@@ -1,3 +1,9 @@
+nvidia-container-toolkit (1.8.0~rc.1-1) experimental; urgency=medium
+
+  * Relase toolkit-container images from nvidia-container-toolkit repository
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com> Fri, 03 Dec 2021 15:06:04 +0100
+
 nvidia-container-toolkit (1.7.0-1) UNRELEASED; urgency=medium
 
   * Promote 1.7.0~rc.1-1 to 1.7.0-1
