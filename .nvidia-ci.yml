@@ -32,6 +32,63 @@ variables:
   DEVEL_RELEASE_IMAGE_VERSION: "devel"
   # On the multi-arch builder we don't need the qemu setup.
   SKIP_QEMU_SETUP: "1"
+  # Define the public staging registry
+  STAGING_REGISTRY: registry.gitlab.com/nvidia/container-toolkit/container-toolkit/staging
+  STAGING_VERSION: ${CI_COMMIT_SHORT_SHA}
+
+.image-pull:
+  stage: image-build
+  variables:
+    IN_REGISTRY: "${STAGING_REGISTRY}"
+    IN_IMAGE_NAME: container-toolkit
+    IN_VERSION: "${STAGING_VERSION}"
+    OUT_REGISTRY_USER: "${CI_REGISTRY_USER}"
+    OUT_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
+    OUT_REGISTRY: "${CI_REGISTRY}"
+    OUT_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
+  # We delay the job start to allow the public pipeline to generate the required images.
+  when: delayed
+  start_in: 30 minutes
+  timeout: 30 minutes
+  retry:
+    max: 2
+    when:
+      - job_execution_timeout
+      - stuck_or_timeout_failure
+  before_script:
+    - >
+      docker pull ${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} > /dev/null && echo "${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST}" || ( echo "${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} does not exist" && sleep infinity )
+  script:
+    - docker pull ${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST}
+    - docker tag ${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} ${OUT_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-${DIST}
+    - docker login -u "${OUT_REGISTRY_USER}" -p "${OUT_REGISTRY_TOKEN}" "${OUT_REGISTRY}"
+    - docker push ${OUT_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-${DIST}
+
+image-centos7:
+  extends:
+    - .image-pull
+    - .dist-centos7
+
+image-centos8:
+  extends:
+    - .image-pull
+    - .dist-centos8
+
+image-ubi8:
+  extends:
+    - .image-pull
+    - .dist-ubi8
+
+image-ubuntu18.04:
+  extends:
+    - .image-pull
+    - .dist-ubuntu18.04
+
+# The DIST=packaging target creates an image containing all built packages
+image-packaging:
+  extends:
+    - .image-pull
+    - .dist-packaging
 
 # We skip the integration tests for the internal CI:
 .integration:
@@ -129,6 +186,13 @@ scan-ubi8:
 
     # TODO: For now we disable external releases
     DOCKER: echo
+
+release:staging-ubuntu18.04:
+  extends:
+    - .release:staging
+    - .dist-ubuntu18.04
+  needs:
+    - image-ubuntu18.04
 
 # Define the external release targets
 # Release to NGC
