@@ -75,6 +75,7 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 		--build-arg PACKAGE_VERSION="$(PACKAGE_VERSION)" \
 		--build-arg PACKAGE_ARCH="$(PACKAGE_ARCH)" \
 		--build-arg VERSION="$(VERSION)" \
+		--build-arg CVE_UPDATES="$(CVE_UPDATES)" \
 		-f $(DOCKERFILE) \
 		$(CURDIR)
 
