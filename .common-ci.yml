@@ -46,6 +46,7 @@ stages:
 .dist-centos7:
   variables:
     DIST: centos7
+    CVE_UPDATES: "nss"
 
 .dist-centos8:
   variables:
