@@ -52,16 +52,18 @@ ENV NVIDIA_DISABLE_REQUIRE="true"
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=utility
 
+ARG ARTIFACTS_ROOT
+ARG PACKAGE_DIST
+COPY ${ARTIFACTS_ROOT}/${PACKAGE_DIST} /artifacts/packages/${PACKAGE_DIST}
+
 WORKDIR /artifacts/packages
 
-ARG ARTIFACTS_DIR
-COPY ${ARTIFACTS_DIR}/* /artifacts/packages/
-
 ARG PACKAGE_VERSION
+ARG PACKAGE_ARCH
 RUN dpkg -i \
-    libnvidia-container1_${PACKAGE_VERSION}*.deb \
-    libnvidia-container-tools_${PACKAGE_VERSION}*.deb \
-    nvidia-container-toolkit_${PACKAGE_VERSION}*.deb
+    ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container1_${PACKAGE_VERSION}*.deb \
+    ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container-tools_${PACKAGE_VERSION}*.deb \
+    ${PACKAGE_DIST}/${PACKAGE_ARCH}/nvidia-container-toolkit_${PACKAGE_VERSION}*.deb
 
 WORKDIR /work
 

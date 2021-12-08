@@ -1,5 +1,34 @@
+nvidia-container-toolkit (1.8.0~rc.1-1) experimental; urgency=medium
+
+  * [libnvidia-container] Add support for cgroupv2
+  * Release toolkit-container images from nvidia-container-toolkit repository
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com> Wed, 08 Dec 2021 12:56:49 +010
+
+nvidia-container-toolkit (1.7.0-1) UNRELEASED; urgency=medium
+
+  * Promote 1.7.0~rc.1-1 to 1.7.0-1
+  * Bump Golang version to 1.16.4
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Tue, 30 Nov 2021 14:11:55 +0100
+
+nvidia-container-toolkit (1.7.0~rc.1-1) experimental; urgency=medium
+
+  * Specify containerd runtime type as string in config tools to remove dependency on containerd package
+  * Add supported-driver-capabilities config option to allow for a subset of all driver capabilities to be specified
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Thu, 25 Nov 2021 11:36:29 +0100
+
+nvidia-container-toolkit (1.6.0-1) UNRELEASED; urgency=medium
+
+  * Promote 1.6.0~rc.3-1 to 1.6.0-1
+  * Fix unnecessary logging to stderr instead of configured nvidia-container-runtime log file
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Wed, 17 Nov 2021 09:25:15 +0100
+
 nvidia-container-toolkit (1.6.0~rc.3-1) experimental; urgency=medium
 
+  * Add supported-driver-capabilities config option to the nvidia-container-toolkit
   * Move OCI and command line checks for runtime to internal oci package
 
  -- NVIDIA CORPORATION <cudatools@nvidia.com>  Mon, 15 Nov 2021 13:02:23 +0100

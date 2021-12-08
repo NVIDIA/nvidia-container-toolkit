@@ -32,6 +32,63 @@ variables:
   DEVEL_RELEASE_IMAGE_VERSION: "devel"
   # On the multi-arch builder we don't need the qemu setup.
   SKIP_QEMU_SETUP: "1"
+  # Define the public staging registry
+  STAGING_REGISTRY: registry.gitlab.com/nvidia/container-toolkit/container-toolkit/staging
+  STAGING_VERSION: ${CI_COMMIT_SHORT_SHA}
+
+.image-pull:
+  stage: image-build
+  variables:
+    IN_REGISTRY: "${STAGING_REGISTRY}"
+    IN_IMAGE_NAME: container-toolkit
+    IN_VERSION: "${STAGING_VERSION}"
+    OUT_REGISTRY_USER: "${CI_REGISTRY_USER}"
+    OUT_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
+    OUT_REGISTRY: "${CI_REGISTRY}"
+    OUT_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
+  # We delay the job start to allow the public pipeline to generate the required images.
+  when: delayed
+  start_in: 30 minutes
+  timeout: 30 minutes
+  retry:
+    max: 2
+    when:
+      - job_execution_timeout
+      - stuck_or_timeout_failure
+  before_script:
+    - >
+      docker pull ${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} > /dev/null && echo "${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST}" || ( echo "${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} does not exist" && sleep infinity )
+  script:
+    - docker pull ${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST}
+    - docker tag ${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} ${OUT_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-${DIST}
+    - docker login -u "${OUT_REGISTRY_USER}" -p "${OUT_REGISTRY_TOKEN}" "${OUT_REGISTRY}"
+    - docker push ${OUT_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-${DIST}
+
+image-centos7:
+  extends:
+    - .image-pull
+    - .dist-centos7
+
+image-centos8:
+  extends:
+    - .image-pull
+    - .dist-centos8
+
+image-ubi8:
+  extends:
+    - .image-pull
+    - .dist-ubi8
+
+image-ubuntu18.04:
+  extends:
+    - .image-pull
+    - .dist-ubuntu18.04
+
+# The DIST=packaging target creates an image containing all built packages
+image-packaging:
+  extends:
+    - .image-pull
+    - .dist-packaging
 
 # We skip the integration tests for the internal CI:
 .integration:
@@ -49,13 +106,9 @@ variables:
   variables:
     IMAGE: "${CI_REGISTRY_IMAGE}/container-toolkit:${CI_COMMIT_SHORT_SHA}-${DIST}"
     IMAGE_ARCHIVE: "container-toolkit.tar"
-  rules:
-    - if: $CI_COMMIT_MESSAGE =~ /\[skip[ _-]scans?\]/i
-      when: never
-    - if: $SKIP_SCANS
-      when: never
-    - if: $CI_COMMIT_TAG == null && $CI_COMMIT_BRANCH != $RELEASE_DEVEL_BRANCH
-      allow_failure: true
+  except:
+    variables:
+      - $SKIP_SCANS && $SKIP_SCANS == "yes"
   before_script:
     - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
     # TODO: We should specify the architecture here and scan all architectures
@@ -66,7 +119,7 @@ variables:
       export SSA_TOKEN=$(curl --request POST --header "Authorization: Basic $AuthHeader" --header "Content-Type: application/x-www-form-urlencoded" ${SSA_ISSUER_URL} | jq ".access_token" |  tr -d '"')
     - if [ -z "$SSA_TOKEN" ]; then exit 1; else echo "SSA_TOKEN set!"; fi
   script:
-    - pulse-cli -n $NSPECT_ID --pss $PSS_URL --ssa $SSA_TOKEN scan -i $IMAGE_ARCHIVE -p $CONTAINER_POLICY -o
+    - pulse-cli -n $NSPECT_ID --ssa $SSA_TOKEN scan -i $IMAGE_ARCHIVE -p $CONTAINER_POLICY -o
   artifacts:
     when: always
     expire_in: 1 week
@@ -115,8 +168,6 @@ scan-ubi8:
     OUT_REGISTRY_TOKEN: "${NGC_REGISTRY_TOKEN}"
     OUT_REGISTRY: "${NGC_REGISTRY}"
     OUT_IMAGE_NAME: "${NGC_REGISTRY_IMAGE}"
-    # TODO: For now we disable external releases
-    DOCKER: echo
 
 .release:dockerhub:
   extends:
@@ -127,8 +178,12 @@ scan-ubi8:
     OUT_REGISTRY: "${DOCKERHUB_REGISTRY}"
     OUT_IMAGE_NAME: "${REGISTRY_IMAGE}"
 
-    # TODO: For now we disable external releases
-    DOCKER: echo
+release:staging-ubuntu18.04:
+  extends:
+    - .release:staging
+    - .dist-ubuntu18.04
+  needs:
+    - image-ubuntu18.04
 
 # Define the external release targets
 # Release to NGC

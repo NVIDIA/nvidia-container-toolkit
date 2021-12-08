@@ -44,7 +44,9 @@ COPY . .
 
 RUN make PREFIX=${DIST_DIR} cmds
 
-COPY config/config.toml.amzn $DIST_DIR/config.toml
+ARG CONFIG_TOML_SUFFIX
+ENV CONFIG_TOML_SUFFIX ${CONFIG_TOML_SUFFIX}
+COPY config/config.toml.${CONFIG_TOML_SUFFIX} $DIST_DIR/config.toml
 
 # Hook for Project Atomic's fork of Docker: https://github.com/projectatomic/docker/tree/docker-1.13.1-rhel#add-dockerhooks-exec-custom-hooks-for-prestartpoststop-containerspatch
 # This might not be useful on Amazon Linux, but it's simpler to keep the RHEL

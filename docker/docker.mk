@@ -114,6 +114,9 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 --rhel%: VERSION = $(patsubst rhel%-$(ARCH),%,$(TARGET_PLATFORM))
 --rhel%: ARTIFACTS_DIR = $(DIST_DIR)/rhel$(VERSION)/$(ARCH)
 
+# We allow the CONFIG_TOML_SUFFIX to be overridden.
+CONFIG_TOML_SUFFIX ?= $(OS)
+
 docker-build-%:
 	@echo "Building for $(TARGET_PLATFORM)"
 	docker pull --platform=linux/$(ARCH) $(BASEIMAGE)
@@ -124,6 +127,7 @@ docker-build-%:
 	    --build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
 	    --build-arg PKG_VERS="$(LIB_VERSION)" \
 	    --build-arg PKG_REV="$(PKG_REV)" \
+	    --build-arg CONFIG_TOML_SUFFIX="$(CONFIG_TOML_SUFFIX)" \
 	    --tag $(BUILDIMAGE) \
 	    --file $(DOCKERFILE) .
 	$(DOCKER) run \

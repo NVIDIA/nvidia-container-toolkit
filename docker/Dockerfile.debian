@@ -50,7 +50,9 @@ COPY . .
 
 RUN make PREFIX=${DIST_DIR} cmds
 
-COPY config/config.toml.debian $DIST_DIR/config.toml
+ARG CONFIG_TOML_SUFFIX
+ENV CONFIG_TOML_SUFFIX ${CONFIG_TOML_SUFFIX}
+COPY config/config.toml.${CONFIG_TOML_SUFFIX} $DIST_DIR/config.toml
 
 # Debian Jessie still had ldconfig.real
 RUN if [ "$(lsb_release -cs)" = "jessie" ]; then \

@@ -46,16 +46,18 @@ ENV NVIDIA_DISABLE_REQUIRE="true"
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=utility
 
+ARG ARTIFACTS_ROOT
+ARG PACKAGE_DIST
+COPY ${ARTIFACTS_ROOT}/${PACKAGE_DIST} /artifacts/packages/${PACKAGE_DIST}
+
 WORKDIR /artifacts/packages
 
-ARG ARTIFACTS_DIR
-COPY ${ARTIFACTS_DIR}/* /artifacts/packages/
-
 ARG PACKAGE_VERSION
+ARG PACKAGE_ARCH
 RUN yum localinstall -y \
-    libnvidia-container1-${PACKAGE_VERSION}*.rpm \
-    libnvidia-container-tools-${PACKAGE_VERSION}*.rpm \
-    nvidia-container-toolkit-${PACKAGE_VERSION}*.rpm
+    ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container1-${PACKAGE_VERSION}*.rpm \
+    ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container-tools-${PACKAGE_VERSION}*.rpm \
+    ${PACKAGE_DIST}/${PACKAGE_ARCH}/nvidia-container-toolkit-${PACKAGE_VERSION}*.rpm
 
 WORKDIR /work
 
@@ -72,5 +74,12 @@ LABEL summary="Automatically Configure your Container Runtime for GPU support."
 LABEL description="See summary"
 
 COPY ./LICENSE /licenses/LICENSE
+
+# Install / upgrade packages here that are required to resolve CVEs
+ARG CVE_UPDATES
+RUN if [ -n "${CVE_UPDATES}" ]; then \
+        yum update -y ${CVE_UPDATES} && \
+        rm -rf /var/cache/yum/*; \
+    fi
 
 ENTRYPOINT ["/work/nvidia-toolkit"]

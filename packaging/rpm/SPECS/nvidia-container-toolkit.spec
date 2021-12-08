@@ -64,8 +64,25 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Wed Dec 08 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.8.0-0.1.rc.1
+- [libnvidia-container] Add support for cgroupv2
+- Release toolkit-container images from nvidia-container-toolkit repository
+
+* Tue Nov 30 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.7.0-1
+- Promote 1.7.0~rc.1-1 to 1.7.0-1
+- Bump Golang version to 1.16.4
+
+* Thu Nov 25 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.7.0-0.1.rc.1
+- Specify containerd runtime type as string in config tools to remove dependency on containerd package
+- Add supported-driver-capabilities config option to allow for a subset of all driver capabilities to be specified
+
+* Wed Nov 17 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-1
+- Promote 1.6.0-0.1.rc.3 to 1.6.0-1
+- Fix unnecessary logging to stderr instead of configured nvidia-container-runtime log file
+
 * Mon Nov 15 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.3
 
+- Add supported-driver-capabilities config option to the nvidia-container-toolkit
 - Move OCI and command line checks for runtime to internal oci package
 
 * Fri Nov 05 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.6.0-0.1.rc.2

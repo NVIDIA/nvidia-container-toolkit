@@ -54,16 +54,8 @@ fi
 eval $(${SCRIPTS_DIR}/get-component-versions.sh)
 export NVIDIA_CONTAINER_TOOLKIT_VERSION
 export NVIDIA_CONTAINER_TOOLKIT_TAG
-
-if [[ "${NVIDIA_CONTAINER_TOOLKIT_TAG}" != "${NVIDIA_CONTAINER_RUNTIME_TAG}" ]]; then
-    echo "ERROR: The nvidia-container-runtime and nvidia-container-toolkit version tags do not match"
-    exit  1
-fi
-
-if [[ "${NVIDIA_CONTAINER_TOOLKIT_TAG}" != "${NVIDIA_DOCKER_TAG}" ]]; then
-    echo "ERROR: The nvidia-docker and nvidia-container-toolkit version tags do not match"
-    exit 1
-fi
+export NVIDIA_CONTAINER_RUNTIME_VERSION
+export NVIDIA_DOCKER_VERSION
 
 for target in ${targets[@]}; do
     ${SCRIPTS_DIR}/build-all-components.sh ${target}
