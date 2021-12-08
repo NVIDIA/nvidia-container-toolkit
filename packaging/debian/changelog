@@ -1,8 +1,9 @@
 nvidia-container-toolkit (1.8.0~rc.1-1) experimental; urgency=medium
 
-  * Relase toolkit-container images from nvidia-container-toolkit repository
+  * [libnvidia-container] Add support for cgroupv2
+  * Release toolkit-container images from nvidia-container-toolkit repository
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com> Fri, 03 Dec 2021 15:06:04 +0100
+ -- NVIDIA CORPORATION <cudatools@nvidia.com> Wed, 08 Dec 2021 12:56:49 +010
 
 nvidia-container-toolkit (1.7.0-1) UNRELEASED; urgency=medium
 
