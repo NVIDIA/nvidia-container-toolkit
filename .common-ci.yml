@@ -35,10 +35,6 @@ stages:
   - build-all
 
 # Define the distribution targets
-.dist-amazonlinux1:
-  variables:
-    DIST: amazonlinux1
-
 .dist-amazonlinux2:
   variables:
     DIST: amazonlinux2
