@@ -103,12 +103,6 @@ unit-tests:
       - ${ARTIFACTS_ROOT}
 
 # Define the package build targets
-package-amazonlinux1-x86_64:
-  extends:
-    - .package-build
-    - .dist-amazonlinux1
-    - .arch-x86_64
-
 package-amazonlinux2-aarch64:
   extends:
     - .package-build
@@ -259,7 +253,6 @@ image-packaging:
     - .package-artifacts
     - .dist-packaging
   needs:
-    - package-amazonlinux1-x86_64
     - package-amazonlinux2-aarch64
     - package-amazonlinux2-x86_64
     - package-centos7-ppc64le

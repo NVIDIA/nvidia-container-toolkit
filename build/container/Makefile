@@ -119,7 +119,6 @@ $(TEST_TARGETS): test-%:
 test-packaging: DIST = packaging
 test-packaging:
 	@echo "Testing package image contents"
-	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/amazonlinux1/x86_64" || echo "Missing amazonlinux1/x86_64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/amazonlinux2/aarch64" || echo "Missing amazonlinux2/aarch64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/amazonlinux2/x86_64" || echo "Missing amazonlinux2/x86_64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos7/ppc64le" || echo "Missing centos7/ppc64le"
