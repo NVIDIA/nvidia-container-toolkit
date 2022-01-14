@@ -87,32 +87,42 @@ func TestUpdateFromReader(t *testing.T) {
 				LogLevel:      "info",
 			},
 		},
+		{
+			description: "log-level is set",
+			lines:       []string{"nvidia-container-runtime.log-level=\"trace\""},
+			expected: &Config{
+				DebugFilePath: "/dev/null",
+				LogLevel:      "trace",
+			},
+		},
 	}
 
-	for i, tc := range testCases {
-		cfg := getDefaultConfig()
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			cfg := getDefaultConfig()
 
-		c := tomlConfig{
-			logger: logger,
-			sections: []tomlSection{
-				{section: nvidiaContainerRuntimeConfigSection},
-			},
-		}
-		var reader io.Reader
-		if tc.readerError {
-			reader = iotest.ErrReader(fmt.Errorf("error"))
-		} else {
-			reader = strings.NewReader(strings.Join(tc.lines, "\n"))
-		}
+			c := tomlConfig{
+				logger: logger,
+				sections: []tomlSection{
+					{section: nvidiaContainerRuntimeConfigSection},
+				},
+			}
+			var reader io.Reader
+			if tc.readerError {
+				reader = iotest.ErrReader(fmt.Errorf("error"))
+			} else {
+				reader = strings.NewReader(strings.Join(tc.lines, "\n"))
+			}
 
-		err := c.updateFromReader(cfg, reader)
+			err := c.updateFromReader(cfg, reader)
 
-		if tc.expectedError {
-			require.Error(t, err, "%d: %v", i, tc.description)
-		} else {
-			require.NoError(t, err, "%d: %v", i, tc.description)
-		}
-		require.EqualValues(t, tc.expected, cfg, "%d: %v", i, tc.description)
+			if tc.expectedError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			require.EqualValues(t, tc.expected, cfg)
+		})
 	}
 }
 
