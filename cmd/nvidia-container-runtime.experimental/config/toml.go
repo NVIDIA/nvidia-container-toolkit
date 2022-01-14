@@ -117,7 +117,7 @@ func (c tomlConfig) updateFromReader(cfg *Config, reader io.Reader) error {
 		}
 
 		if v, ok := section.GetStringFrom(toml, "log-level"); ok {
-			cfg.Root = v
+			cfg.LogLevel = v
 		}
 	}
 	return nil
