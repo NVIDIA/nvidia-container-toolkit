@@ -1,0 +1,228 @@
+/**
+# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/
+
+package docker
+
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestUpdateConfigDefaultRuntime(t *testing.T) {
+	testCases := []struct {
+		config                     map[string]interface{}
+		defaultRuntime             string
+		runtimeName                string
+		expectedDefaultRuntimeName interface{}
+	}{
+		{
+			defaultRuntime:             "",
+			expectedDefaultRuntimeName: nil,
+		},
+		{
+			defaultRuntime:             "NAME",
+			expectedDefaultRuntimeName: "NAME",
+		},
+		{
+			config: map[string]interface{}{
+				"default-runtime": "ALREADY_SET",
+			},
+			defaultRuntime:             "",
+			expectedDefaultRuntimeName: "ALREADY_SET",
+		},
+		{
+			config: map[string]interface{}{
+				"default-runtime": "ALREADY_SET",
+			},
+			defaultRuntime:             "NAME",
+			expectedDefaultRuntimeName: "NAME",
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("test case %d", i), func(t *testing.T) {
+			if tc.config == nil {
+				tc.config = make(map[string]interface{})
+			}
+			err := UpdateConfig(tc.config, tc.defaultRuntime, nil)
+			require.NoError(t, err)
+
+			defaultRuntimeName := tc.config["default-runtime"]
+			require.EqualValues(t, tc.expectedDefaultRuntimeName, defaultRuntimeName)
+		})
+	}
+}
+
+func TestUpdateConfigRuntimes(t *testing.T) {
+	testCases := []struct {
+		config         map[string]interface{}
+		runtimes       map[string]interface{}
+		expectedConfig map[string]interface{}
+	}{
+		{
+			config: map[string]interface{}{},
+			runtimes: map[string]interface{}{
+				"runtime1": map[string]interface{}{
+					"path": "/test/runtime/dir/runtime1",
+					"args": []string{},
+				},
+				"runtime2": map[string]interface{}{
+					"path": "/test/runtime/dir/runtime2",
+					"args": []string{},
+				},
+			},
+			expectedConfig: map[string]interface{}{
+				"runtimes": map[string]interface{}{
+					"runtime1": map[string]interface{}{
+						"path": "/test/runtime/dir/runtime1",
+						"args": []string{},
+					},
+					"runtime2": map[string]interface{}{
+						"path": "/test/runtime/dir/runtime2",
+						"args": []string{},
+					},
+				},
+			},
+		},
+		{
+			config: map[string]interface{}{
+				"runtimes": map[string]interface{}{
+					"runtime1": map[string]interface{}{
+						"path": "runtime1",
+						"args": []string{},
+					},
+				},
+			},
+			runtimes: map[string]interface{}{
+				"runtime1": map[string]interface{}{
+					"path": "/test/runtime/dir/runtime1",
+					"args": []string{},
+				},
+				"runtime2": map[string]interface{}{
+					"path": "/test/runtime/dir/runtime2",
+					"args": []string{},
+				},
+			},
+			expectedConfig: map[string]interface{}{
+				"runtimes": map[string]interface{}{
+					"runtime1": map[string]interface{}{
+						"path": "/test/runtime/dir/runtime1",
+						"args": []string{},
+					},
+					"runtime2": map[string]interface{}{
+						"path": "/test/runtime/dir/runtime2",
+						"args": []string{},
+					},
+				},
+			},
+		},
+		{
+			config: map[string]interface{}{
+				"runtimes": map[string]interface{}{
+					"not-nvidia": map[string]interface{}{
+						"path": "some-other-path",
+						"args": []string{},
+					},
+				},
+			},
+			runtimes: map[string]interface{}{
+				"runtime1": map[string]interface{}{
+					"path": "/test/runtime/dir/runtime1",
+					"args": []string{},
+				},
+			},
+			expectedConfig: map[string]interface{}{
+				"runtimes": map[string]interface{}{
+					"not-nvidia": map[string]interface{}{
+						"path": "some-other-path",
+						"args": []string{},
+					},
+					"runtime1": map[string]interface{}{
+						"path": "/test/runtime/dir/runtime1",
+						"args": []string{},
+					},
+				},
+			},
+		},
+		{
+			config: map[string]interface{}{
+				"exec-opts":  []string{"native.cgroupdriver=systemd"},
+				"log-driver": "json-file",
+				"log-opts": map[string]string{
+					"max-size": "100m",
+				},
+				"storage-driver": "overlay2",
+			},
+			runtimes: map[string]interface{}{
+				"runtime1": map[string]interface{}{
+					"path": "/test/runtime/dir/runtime1",
+					"args": []string{},
+				},
+			},
+			expectedConfig: map[string]interface{}{
+				"exec-opts":  []string{"native.cgroupdriver=systemd"},
+				"log-driver": "json-file",
+				"log-opts": map[string]string{
+					"max-size": "100m",
+				},
+				"storage-driver": "overlay2",
+				"runtimes": map[string]interface{}{
+					"runtime1": map[string]interface{}{
+						"path": "/test/runtime/dir/runtime1",
+						"args": []string{},
+					},
+				},
+			},
+		},
+		{
+			config: map[string]interface{}{
+				"exec-opts":  []string{"native.cgroupdriver=systemd"},
+				"log-driver": "json-file",
+				"log-opts": map[string]string{
+					"max-size": "100m",
+				},
+				"storage-driver": "overlay2",
+			},
+			expectedConfig: map[string]interface{}{
+				"exec-opts":  []string{"native.cgroupdriver=systemd"},
+				"log-driver": "json-file",
+				"log-opts": map[string]string{
+					"max-size": "100m",
+				},
+				"storage-driver": "overlay2",
+			},
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("test case %d", i), func(t *testing.T) {
+			err := UpdateConfig(tc.config, "", tc.runtimes)
+			require.NoError(t, err)
+
+			configContent, err := json.MarshalIndent(tc.config, "", "    ")
+			require.NoError(t, err)
+
+			expectedContent, err := json.MarshalIndent(tc.expectedConfig, "", "    ")
+			require.NoError(t, err)
+
+			require.EqualValues(t, string(expectedContent), string(configContent))
+		})
+
+	}
+}
