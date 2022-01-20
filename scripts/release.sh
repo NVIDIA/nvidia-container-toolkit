@@ -53,6 +53,16 @@ else
 fi
 
 eval $(${SCRIPTS_DIR}/get-component-versions.sh)
+
+if [[ "${NVIDIA_CONTAINER_TOOLKIT_VERSION}${NVIDIA_CONTAINER_TOOLKIT_TAG:+~${NVIDIA_CONTAINER_TOOLKIT_TAG}}" != "${LIBNVIDIA_CONTAINER_VERSION}" ]]; then
+    set +x
+    echo "The libnvidia-container and nvidia-container-toolkit versions do not match."
+    echo "lib: '${LIBNVIDIA_CONTAINER_VERSION}'"
+    echo "toolkit: '${NVIDIA_CONTAINER_TOOLKIT_VERSION}${NVIDIA_CONTAINER_TOOLKIT_TAG:+~${NVIDIA_CONTAINER_TOOLKIT_TAG}}'"
+    set -x
+    [[ ${ALLOW_VERSION_MISMATCH} == "true" ]] || exit 1
+fi
+
 export NVIDIA_CONTAINER_TOOLKIT_VERSION
 export NVIDIA_CONTAINER_TOOLKIT_TAG
 export NVIDIA_CONTAINER_RUNTIME_VERSION
