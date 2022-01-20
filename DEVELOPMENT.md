@@ -39,9 +39,23 @@ The [test/release](./test/release/) folder contains documentation on how the ins
 
 ## Releasing
 
-A utility script [`scripts/release.sh`](./scripts/release.sh) is provided to build
-packages required for release. If run without arguments, all supported distribution-architecture combinations are built. A specific distribution-architecture pair can also be provided
-```sh
-./scripts/release.sh ubuntu18.04-amd64
+In order to release packages required for a release, a utility script
+[`scripts/release-packages.sh`](./scripts/release-packages.sh) is provided.
+This script can be executed as follows:
+
+```bash
+GPG_LOCAL_USER="GPG_USER" \
+MASTER_KEY_PATH=/path/to/gpg-master.key \
+SUB_KEY_PATH=/path/to/gpg-subkey.key \
+    ./scripts/release-packages.sh REPO PACKAGE_REPO_ROOT [REFERENCE]
 ```
-where the `amd64` builds for `ubuntu18.04` are provided as an example.
+
+Where `REPO` is one of `stable` or `experimental`, `PACKAGE_REPO_ROOT` is the local path to the `libnvidia-container` repository checked out to the `gh-pages` branch, and `REFERENCE` is the git SHA that is to be released. If reference is not specified `HEAD` is assumed.
+
+This scripts performs the following basic functions:
+* Pulls the package image defined by the `REFERENCE` git SHA from the staging registry,
+* Copies the required packages to the package repository at `PACKAGE_REPO_ROOT/REPO`,
+* Signs the packages using the specified GPG keys
+
+While the last two are performed, commits are added to the package repository. These can be pushed to the relevant repository.
+
