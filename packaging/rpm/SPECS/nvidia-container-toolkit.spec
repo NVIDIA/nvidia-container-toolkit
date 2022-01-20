@@ -64,6 +64,8 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Thu Jan 20 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.8.0-0.1.rc.2
+
 * Wed Dec 08 2021 NVIDIA CORPORATION <cudatools@nvidia.com> 1.8.0-0.1.rc.1
 - [libnvidia-container] Add support for cgroupv2
 - Release toolkit-container images from nvidia-container-toolkit repository
