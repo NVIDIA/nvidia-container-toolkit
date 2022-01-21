@@ -31,6 +31,8 @@ testing::toolkit::install() {
 
 	test -L "${shared_dir}/usr/local/nvidia/toolkit/libnvidia-container.so.1"
 	test -e "$(${READLINK} -f "${shared_dir}/usr/local/nvidia/toolkit/libnvidia-container.so.1")"
+	test -L "${shared_dir}/usr/local/nvidia/toolkit/libnvidia-container-go.so.1"
+	test -e "$(${READLINK} -f "${shared_dir}/usr/local/nvidia/toolkit/libnvidia-container-go.so.1")"
 
 	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-cli"
 	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-toolkit"
