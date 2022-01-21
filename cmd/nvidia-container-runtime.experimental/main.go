@@ -45,7 +45,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if cfg.DebugFilePath != "" && cfg.DebugFilePath != "/dev/nul" {
+	if cfg.DebugFilePath != "" && cfg.DebugFilePath != "/dev/null" {
 		logFile, err := os.OpenFile(cfg.DebugFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			logger.Errorf("Error opening debug log file: %v", err)
