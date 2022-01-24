@@ -28,7 +28,6 @@ PROJECT_ROOT="$( cd ${SCRIPTS_DIR}/.. && pwd )"
 # to the relevant repositories. This targets forwarded to the build-all-components script
 # can be overridden by specifying command line arguments.
 all=(
-    amazonlinux1-x86_64
     amazonlinux2-aarch64
     amazonlinux2-x86_64
     centos7-ppc64le
