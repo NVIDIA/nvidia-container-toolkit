@@ -13,13 +13,15 @@ The `nvidia-container-toolkit` resides in this repo directly.
 
 In oder to build the packages, the following command is executed
 ```sh
-./scripts/build-all-components.sh TARGET
+./scripts/build-packages.sh TARGET
 ```
 where `TARGET` is a make target that is valid for each of the sub-components.
 
 These include:
 * `ubuntu18.04-amd64`
 * `centos8-x86_64`
+
+If no `TARGET` is specified, all valid release targets are built.
 
 The packages are generated in the `dist` folder.
 
