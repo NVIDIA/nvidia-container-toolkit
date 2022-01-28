@@ -54,12 +54,16 @@ nvidia_docker_tag=${nvidia_container_toolkit_tag}
 nvidia_docker_version_tag="${nvidia_docker_version}${nvidia_docker_tag:+~${nvidia_docker_tag}}"
 
 echo "LIBNVIDIA_CONTAINER_VERSION=${libnvidia_container_version_tag}"
+echo "LIBNVIDIA_CONTAINER_PACKAGE_VERSION=${libnvidia_container_version_tag//\~/-}"
 echo "NVIDIA_CONTAINER_TOOLKIT_VERSION=${nvidia_container_toolkit_version}"
 echo "NVIDIA_CONTAINER_TOOLKIT_TAG=${nvidia_container_toolkit_tag}"
+echo "NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION=${nvidia_container_toolkit_version_tag//\~/-}"
 if [[ "${libnvidia_container_version_tag}" != "${nvidia_container_toolkit_version_tag}" ]]; then
     >&2 echo "WARNING: The libnvidia-container and nvidia-container-toolkit versions do not match"
 fi
 echo "NVIDIA_CONTAINER_RUNTIME_VERSION=${nvidia_container_runtime_version}"
 echo "NVIDIA_CONTAINER_RUNTIME_TAG=${nvidia_container_runtime_tag}"
+echo "NVIDIA_CONTAINER_RUNTIME_PACKAGE_VERSION=${nvidia_container_runtime_version_tag//\~/-}"
 echo "NVIDIA_DOCKER_VERSION=${nvidia_docker_version}"
 echo "NVIDIA_DOCKER_TAG=${nvidia_docker_tag}"
+echo "NVIDIA_DOCKER_PACKAGE_VERSION=${nvidia_docker_version_tag//\~/-}"
