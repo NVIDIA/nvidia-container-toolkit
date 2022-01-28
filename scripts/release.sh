@@ -51,6 +51,14 @@ else
     targets=${all[@]}
 fi
 
+echo "Updating components"
+${SCRIPTS_DIR}/update-components.sh
+if [[ -n $(git status -s third_party) && ${ALLOW_LOCAL_COMPONENT_CHANGES} != "true" ]]; then
+    echo "ERROR: Building with local component changes."
+    echo "Commit pending changes or rerun with ALLOW_LOCAL_COMPONENT_CHANGES='true'"
+    exit 1
+fi
+
 eval $(${SCRIPTS_DIR}/get-component-versions.sh)
 
 if [[ "${NVIDIA_CONTAINER_TOOLKIT_VERSION}${NVIDIA_CONTAINER_TOOLKIT_TAG:+~${NVIDIA_CONTAINER_TOOLKIT_TAG}}" != "${LIBNVIDIA_CONTAINER_VERSION}" ]]; then
