@@ -1,9 +1,15 @@
-nvidia-container-toolkit (1.8.0~rc.1-1) experimental; urgency=medium
+nvidia-container-toolkit (1.8.0~rc.2-1) UNRELEASED; urgency=medium
+
+  * Remove support for building amazonlinux1 packages
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com> Thu, 20 Jan 2022 13:38:48 +0100
+
+nvidia-container-toolkit (1.8.0~rc.1-1) UNRELEASED; urgency=medium
 
   * [libnvidia-container] Add support for cgroupv2
   * Release toolkit-container images from nvidia-container-toolkit repository
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com> Wed, 08 Dec 2021 12:56:49 +010
+ -- NVIDIA CORPORATION <cudatools@nvidia.com> Wed, 08 Dec 2021 12:56:49 +0100
 
 nvidia-container-toolkit (1.7.0-1) UNRELEASED; urgency=medium
 

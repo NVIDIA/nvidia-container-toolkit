@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LIB_NAME := nvidia-container-toolkit
-LIB_VERSION := 1.8.0
-LIB_TAG := rc.2
+set -e -x
 
-# Specify the nvidia-docker2 and nvidia-container-runtime package versions
-NVIDIA_DOCKER_VERSION := 2.9.0
-NVIDIA_CONTAINER_RUNTIME_VERSION := 3.8.0
+SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
+PROJECT_ROOT="$( cd ${SCRIPTS_DIR}/.. && pwd )"
 
-CUDA_VERSION := 11.6.0
-GOLANG_VERSION := 1.16.4
+git submodule update --init
+
+echo "Component status before update"
+git submodule status
+
+# We update all submodules from their respective remotes
+# NOTE: Appending `-- [PATH]` will limit the update to a specific component
+git submodule update --remote
+
+if [[ -z $(git status -s third_party) ]]; then
+    echo "Components already up to date"
+else
+    echo "Components updated"
+    git submodule status
+fi
