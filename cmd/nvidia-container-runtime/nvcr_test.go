@@ -29,9 +29,8 @@ import (
 
 func TestAddNvidiaHook(t *testing.T) {
 	logger, logHook := testlog.NewNullLogger()
-	shim := nvidiaContainerRuntime{
-		logger: logger,
-	}
+
+	mockRuntime := &oci.RuntimeMock{}
 
 	testCases := []struct {
 		spec         *specs.Spec
@@ -75,7 +74,16 @@ func TestAddNvidiaHook(t *testing.T) {
 			numPrestartHooks = len(tc.spec.Hooks.Prestart)
 		}
 
-		err := shim.addNVIDIAHook(tc.spec)
+		shim, err := newNvidiaContainerRuntime(
+			logger,
+			mockRuntime,
+			oci.NewMemorySpec(tc.spec),
+		)
+
+		require.NoError(t, err)
+
+		err = shim.Exec([]string{"runtime", "create"})
+		require.NoError(t, err)
 
 		if tc.errorPrefix == "" {
 			require.NoErrorf(t, err, "%d: %v", i, tc)
@@ -106,45 +114,39 @@ func TestAddNvidiaHook(t *testing.T) {
 func TestNvidiaContainerRuntime(t *testing.T) {
 	logger, hook := testlog.NewNullLogger()
 
+	mockRuntime := &oci.RuntimeMock{}
+
 	testCases := []struct {
-		shim         nvidiaContainerRuntime
 		shouldModify bool
 		args         []string
 		modifyError  error
 		writeError   error
 	}{
 		{
-			shim:         nvidiaContainerRuntime{},
 			shouldModify: false,
 		},
 		{
-			shim:         nvidiaContainerRuntime{},
 			args:         []string{"create"},
 			shouldModify: true,
 		},
 		{
-			shim:         nvidiaContainerRuntime{},
 			args:         []string{"--bundle=create"},
 			shouldModify: false,
 		},
 		{
-			shim:         nvidiaContainerRuntime{},
 			args:         []string{"--bundle", "create"},
 			shouldModify: false,
 		},
 		{
-			shim:         nvidiaContainerRuntime{},
 			args:         []string{"create"},
 			shouldModify: true,
 		},
 		{
-			shim:         nvidiaContainerRuntime{},
 			args:         []string{"create"},
 			modifyError:  fmt.Errorf("error modifying"),
 			shouldModify: true,
 		},
 		{
-			shim:         nvidiaContainerRuntime{},
 			args:         []string{"create"},
 			writeError:   fmt.Errorf("error writing"),
 			shouldModify: true,
@@ -152,10 +154,8 @@ func TestNvidiaContainerRuntime(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		tc.shim.logger = logger
 		hook.Reset()
-
-		ociMock := &oci.SpecMock{
+		specMock := &oci.SpecMock{
 			ModifyFunc: func(specModifier oci.SpecModifier) error {
 				return tc.modifyError
 			},
@@ -163,12 +163,11 @@ func TestNvidiaContainerRuntime(t *testing.T) {
 				return tc.writeError
 			},
 		}
-		require.Equal(t, tc.shouldModify, tc.shim.modificationRequired(tc.args), "%d: %v", i, tc)
 
-		tc.shim.ociSpec = ociMock
-		tc.shim.runtime = &MockShim{}
+		shim, err := newNvidiaContainerRuntime(logger, mockRuntime, specMock)
+		require.NoError(t, err)
 
-		err := tc.shim.Exec(tc.args)
+		err = shim.Exec(tc.args)
 		if tc.modifyError != nil || tc.writeError != nil {
 			require.Error(t, err, "%d: %v", i, tc)
 		} else {
@@ -176,28 +175,16 @@ func TestNvidiaContainerRuntime(t *testing.T) {
 		}
 
 		if tc.shouldModify {
-			require.Equal(t, 1, len(ociMock.ModifyCalls()), "%d: %v", i, tc)
+			require.Equal(t, 1, len(specMock.ModifyCalls()), "%d: %v", i, tc)
 		} else {
-			require.Equal(t, 0, len(ociMock.ModifyCalls()), "%d: %v", i, tc)
+			require.Equal(t, 0, len(specMock.ModifyCalls()), "%d: %v", i, tc)
 		}
 
 		writeExpected := tc.shouldModify && tc.modifyError == nil
 		if writeExpected {
-			require.Equal(t, 1, len(ociMock.FlushCalls()), "%d: %v", i, tc)
+			require.Equal(t, 1, len(specMock.FlushCalls()), "%d: %v", i, tc)
 		} else {
-			require.Equal(t, 0, len(ociMock.FlushCalls()), "%d: %v", i, tc)
+			require.Equal(t, 0, len(specMock.FlushCalls()), "%d: %v", i, tc)
 		}
 	}
-}
-
-type MockShim struct {
-	called      bool
-	args        []string
-	returnError error
-}
-
-func (m *MockShim) Exec(args []string) error {
-	m.called = true
-	m.args = args
-	return m.returnError
 }

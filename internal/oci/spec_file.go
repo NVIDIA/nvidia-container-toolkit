@@ -21,37 +21,21 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
-	oci "github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
 type fileSpec struct {
-	*oci.Spec
+	memorySpec
 	path string
 }
 
 var _ Spec = (*fileSpec)(nil)
 
-// NewSpecFromArgs creates fileSpec based on the command line arguments passed to the
-// application
-func NewSpecFromArgs(args []string) (Spec, string, error) {
-	bundleDir, err := GetBundleDir(args)
-	if err != nil {
-		return nil, "", fmt.Errorf("error getting bundle directory: %v", err)
-	}
-
-	ociSpecPath := GetSpecFilePath(bundleDir)
-
-	ociSpec := NewSpecFromFile(ociSpecPath)
-
-	return ociSpec, bundleDir, nil
-}
-
-// NewSpecFromFile creates an object that encapsulates a file-backed OCI spec.
+// NewFileSpec creates an object that encapsulates a file-backed OCI spec.
 // This can be used to read from the file, modify the spec, and write to the
 // same file.
-func NewSpecFromFile(filepath string) Spec {
+func NewFileSpec(filepath string) Spec {
 	oci := fileSpec{
 		path: filepath,
 	}
@@ -68,29 +52,31 @@ func (s *fileSpec) Load() error {
 	}
 	defer specFile.Close()
 
-	return s.loadFrom(specFile)
-}
-
-// loadFrom reads the contents of the OCI spec from the specified io.Reader.
-func (s *fileSpec) loadFrom(reader io.Reader) error {
-	decoder := json.NewDecoder(reader)
-
-	var spec oci.Spec
-	err := decoder.Decode(&spec)
+	spec, err := loadFrom(specFile)
 	if err != nil {
-		return fmt.Errorf("error reading OCI specification: %v", err)
+		return fmt.Errorf("error loading OCI specification from file: %v", err)
 	}
-
-	s.Spec = &spec
+	s.Spec = spec
 	return nil
 }
 
-// Modify applies the specified SpecModifier to the stored OCI specification.
-func (s *fileSpec) Modify(f SpecModifier) error {
-	if s.Spec == nil {
-		return fmt.Errorf("no spec loaded for modification")
+// loadFrom reads the contents of the OCI spec from the specified io.Reader.
+func loadFrom(reader io.Reader) (*specs.Spec, error) {
+	decoder := json.NewDecoder(reader)
+
+	var spec specs.Spec
+
+	err := decoder.Decode(&spec)
+	if err != nil {
+		return nil, fmt.Errorf("error reading OCI specification: %v", err)
 	}
-	return f(s.Spec)
+
+	return &spec, nil
+}
+
+// Modify applies the specified SpecModifier to the stored OCI specification.
+func (s *fileSpec) Modify(m SpecModifier) error {
+	return s.memorySpec.Modify(m)
 }
 
 // Flush writes the stored OCI specification to the filepath specifed by the path member.
@@ -106,48 +92,20 @@ func (s fileSpec) Flush() error {
 	}
 	defer specFile.Close()
 
-	return s.flushTo(specFile)
+	return flushTo(s.Spec, specFile)
 }
 
 // flushTo writes the stored OCI specification to the specified io.Writer.
-func (s fileSpec) flushTo(writer io.Writer) error {
-	if s.Spec == nil {
+func flushTo(spec *specs.Spec, writer io.Writer) error {
+	if spec == nil {
 		return nil
 	}
 	encoder := json.NewEncoder(writer)
 
-	err := encoder.Encode(s.Spec)
+	err := encoder.Encode(spec)
 	if err != nil {
 		return fmt.Errorf("error writing OCI specification: %v", err)
 	}
 
 	return nil
-}
-
-// LookupEnv mirrors os.LookupEnv for the OCI specification. It
-// retrieves the value of the environment variable named
-// by the key. If the variable is present in the environment the
-// value (which may be empty) is returned and the boolean is true.
-// Otherwise the returned value will be empty and the boolean will
-// be false.
-func (s fileSpec) LookupEnv(key string) (string, bool) {
-	if s.Spec == nil || s.Spec.Process == nil {
-		return "", false
-	}
-
-	for _, env := range s.Spec.Process.Env {
-		if !strings.HasPrefix(env, key) {
-			continue
-		}
-
-		parts := strings.SplitN(env, "=", 2)
-		if parts[0] == key {
-			if len(parts) < 2 {
-				return "", true
-			}
-			return parts[1], true
-		}
-	}
-
-	return "", false
 }

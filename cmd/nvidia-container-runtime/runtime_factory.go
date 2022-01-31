@@ -23,52 +23,27 @@ import (
 )
 
 const (
-	ociSpecFileName          = "config.json"
 	dockerRuncExecutableName = "docker-runc"
 	runcExecutableName       = "runc"
 )
 
 // newRuntime is a factory method that constructs a runtime based on the selected configuration.
 func newRuntime(argv []string) (oci.Runtime, error) {
-	ociSpec, err := newOCISpec(argv)
+	ociSpec, err := oci.NewSpec(logger.Logger, argv)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing OCI specification: %v", err)
 	}
 
-	runc, err := newRuncRuntime()
+	lowLevelRuntimeCandidates := []string{dockerRuncExecutableName, runcExecutableName}
+	lowLevelRuntime, err := oci.NewLowLevelRuntime(logger.Logger, lowLevelRuntimeCandidates)
 	if err != nil {
-		return nil, fmt.Errorf("error constructing runc runtime: %v", err)
+		return nil, fmt.Errorf("error constructing low-level runtime: %v", err)
 	}
 
-	r, err := newNvidiaContainerRuntimeWithLogger(logger.Logger, runc, ociSpec)
+	r, err := newNvidiaContainerRuntime(logger.Logger, lowLevelRuntime, ociSpec)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing NVIDIA Container Runtime: %v", err)
 	}
 
 	return r, nil
-}
-
-// newOCISpec constructs an OCI spec for the provided arguments
-func newOCISpec(argv []string) (oci.Spec, error) {
-	bundleDir, err := oci.GetBundleDir(argv)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing command line arguments: %v", err)
-	}
-	logger.Infof("Using bundle directory: %v", bundleDir)
-
-	ociSpecPath := oci.GetSpecFilePath(bundleDir)
-	logger.Infof("Using OCI specification file path: %v", ociSpecPath)
-
-	ociSpec := oci.NewSpecFromFile(ociSpecPath)
-
-	return ociSpec, nil
-}
-
-// newRuncRuntime locates the runc binary and wraps it in a SyscallExecRuntime
-func newRuncRuntime() (oci.Runtime, error) {
-	return oci.NewLowLevelRuntimeWithLogger(
-		logger.Logger,
-		dockerRuncExecutableName,
-		runcExecutableName,
-	)
 }

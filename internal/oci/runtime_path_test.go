@@ -24,19 +24,21 @@ import (
 )
 
 func TestPathRuntimeConstructor(t *testing.T) {
-	r, err := NewRuntimeForPath("////an/invalid/path")
+	logger, _ := testlog.NewNullLogger()
+
+	r, err := NewRuntimeForPath(logger, "////an/invalid/path")
 	require.Error(t, err)
 	require.Nil(t, r)
 
-	r, err = NewRuntimeForPath("/tmp")
+	r, err = NewRuntimeForPath(logger, "/tmp")
 	require.Error(t, err)
 	require.Nil(t, r)
 
-	r, err = NewRuntimeForPath("/dev/null")
+	r, err = NewRuntimeForPath(logger, "/dev/null")
 	require.Error(t, err)
 	require.Nil(t, r)
 
-	r, err = NewRuntimeForPath("/bin/sh")
+	r, err = NewRuntimeForPath(logger, "/bin/sh")
 	require.NoError(t, err)
 
 	f, ok := r.(*pathRuntime)

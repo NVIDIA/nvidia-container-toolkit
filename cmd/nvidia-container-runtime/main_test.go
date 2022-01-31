@@ -167,11 +167,11 @@ func TestDuplicateHook(t *testing.T) {
 	require.Equal(t, 1, nvidiaHookCount(spec.Hooks), "exactly one nvidia prestart hook should be inserted correctly into config.json")
 }
 
-// addNVIDIAHook is a basic wrapper for nvidiaContainerRunime.addNVIDIAHook that is used for
+// addNVIDIAHook is a basic wrapper for an addHookModifier that is used for
 // testing.
 func addNVIDIAHook(spec *specs.Spec) error {
-	r := nvidiaContainerRuntime{logger: logger.Logger}
-	return r.addNVIDIAHook(spec)
+	m := addHookModifier{logger: logger.Logger}
+	return m.Modify(spec)
 }
 
 func (c testConfig) getRuntimeSpec() (specs.Spec, error) {

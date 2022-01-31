@@ -17,88 +17,41 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/runtime"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	log "github.com/sirupsen/logrus"
 )
 
-// nvidiaContainerRuntime encapsulates the NVIDIA Container Runtime. It wraps the specified runtime, conditionally
-// modifying the specified OCI specification before invoking the runtime.
-type nvidiaContainerRuntime struct {
-	logger  *log.Logger
-	runtime oci.Runtime
-	ociSpec oci.Spec
+// newNvidiaContainerRuntime is a constructor for a standard runtime shim. This uses
+// a ModifyingRuntimeWrapper to apply the required modifications before execing to the
+// specified low-level runtime
+func newNvidiaContainerRuntime(logger *log.Logger, lowlevelRuntime oci.Runtime, ociSpec oci.Spec) (oci.Runtime, error) {
+	modifier := addHookModifier{logger: logger}
+
+	r := runtime.NewModifyingRuntimeWrapper(
+		logger,
+		lowlevelRuntime,
+		ociSpec,
+		modifier,
+	)
+
+	return r, nil
 }
 
-var _ oci.Runtime = (*nvidiaContainerRuntime)(nil)
-
-// newNvidiaContainerRuntime is a constructor for a standard runtime shim.
-func newNvidiaContainerRuntimeWithLogger(logger *log.Logger, runtime oci.Runtime, ociSpec oci.Spec) (oci.Runtime, error) {
-	r := nvidiaContainerRuntime{
-		logger:  logger,
-		runtime: runtime,
-		ociSpec: ociSpec,
-	}
-
-	return &r, nil
+// addHookModifier modifies an OCI spec inplace, inserting the nvidia-container-runtime-hook as a
+// prestart hook. If the hook is already present, no modification is made.
+type addHookModifier struct {
+	logger *log.Logger
 }
 
-// Exec defines the entrypoint for the NVIDIA Container Runtime. A check is performed to see whether modifications
-// to the OCI spec are required -- and applicable modifcations applied. The supplied arguments are then
-// forwarded to the underlying runtime's Exec method.
-func (r nvidiaContainerRuntime) Exec(args []string) error {
-	if r.modificationRequired(args) {
-		err := r.modifyOCISpec()
-		if err != nil {
-			return fmt.Errorf("error modifying OCI spec: %v", err)
-		}
-	}
-
-	r.logger.Println("Forwarding command to runtime")
-	return r.runtime.Exec(args)
-}
-
-// modificationRequired checks the intput arguments to determine whether a modification
-// to the OCI spec is required.
-func (r nvidiaContainerRuntime) modificationRequired(args []string) bool {
-	if oci.HasCreateSubcommand(args) {
-		r.logger.Infof("'create' command detected; modification required")
-		return true
-	}
-
-	r.logger.Infof("No modification required")
-	return false
-}
-
-// modifyOCISpec loads and modifies the OCI spec specified in the nvidiaContainerRuntime
-// struct. The spec is modified in-place and written to the same file as the input after
-// modifcationas are applied.
-func (r nvidiaContainerRuntime) modifyOCISpec() error {
-	err := r.ociSpec.Load()
-	if err != nil {
-		return fmt.Errorf("error loading OCI specification for modification: %v", err)
-	}
-
-	err = r.ociSpec.Modify(r.addNVIDIAHook)
-	if err != nil {
-		return fmt.Errorf("error injecting NVIDIA Container Runtime hook: %v", err)
-	}
-
-	err = r.ociSpec.Flush()
-	if err != nil {
-		return fmt.Errorf("error writing modified OCI specification: %v", err)
-	}
-	return nil
-}
-
-// addNVIDIAHook modifies the specified OCI specification in-place, inserting a
-// prestart hook.
-func (r nvidiaContainerRuntime) addNVIDIAHook(spec *specs.Spec) error {
+// Modify applies the required modification to the incoming OCI spec, inserting the nvidia-container-runtime-hook
+// as a prestart hook.
+func (m addHookModifier) Modify(spec *specs.Spec) error {
 	path, err := exec.LookPath("nvidia-container-runtime-hook")
 	if err != nil {
 		path = hookDefaultFilePath
@@ -108,7 +61,7 @@ func (r nvidiaContainerRuntime) addNVIDIAHook(spec *specs.Spec) error {
 		}
 	}
 
-	r.logger.Printf("prestart hook path: %s\n", path)
+	m.logger.Printf("prestart hook path: %s\n", path)
 
 	args := []string{path}
 	if spec.Hooks == nil {
@@ -118,7 +71,7 @@ func (r nvidiaContainerRuntime) addNVIDIAHook(spec *specs.Spec) error {
 			if !strings.Contains(hook.Path, "nvidia-container-runtime-hook") {
 				continue
 			}
-			r.logger.Println("existing nvidia prestart hook in OCI spec file")
+			m.logger.Println("existing nvidia prestart hook in OCI spec file")
 			return nil
 		}
 	}

@@ -25,111 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLookupEnv(t *testing.T) {
-	const envName = "TEST_ENV"
-	testCases := []struct {
-		spec          *specs.Spec
-		expectedValue string
-		expectedExits bool
-	}{
-		{
-			// nil spec
-			spec:          nil,
-			expectedValue: "",
-			expectedExits: false,
-		},
-		{
-			// nil process
-			spec:          &specs.Spec{},
-			expectedValue: "",
-			expectedExits: false,
-		},
-		{
-			// nil env
-			spec: &specs.Spec{
-				Process: &specs.Process{},
-			},
-			expectedValue: "",
-			expectedExits: false,
-		},
-		{
-			// empty env
-			spec: &specs.Spec{
-				Process: &specs.Process{Env: []string{}},
-			},
-			expectedValue: "",
-			expectedExits: false,
-		},
-		{
-			// different env set
-			spec: &specs.Spec{
-				Process: &specs.Process{Env: []string{"SOMETHING_ELSE=foo"}},
-			},
-			expectedValue: "",
-			expectedExits: false,
-		},
-		{
-			// same prefix
-			spec: &specs.Spec{
-				Process: &specs.Process{Env: []string{"TEST_ENV_BUT_NOT=foo"}},
-			},
-			expectedValue: "",
-			expectedExits: false,
-		},
-		{
-			// same suffix
-			spec: &specs.Spec{
-				Process: &specs.Process{Env: []string{"NOT_TEST_ENV=foo"}},
-			},
-			expectedValue: "",
-			expectedExits: false,
-		},
-		{
-			// set blank
-			spec: &specs.Spec{
-				Process: &specs.Process{Env: []string{"TEST_ENV="}},
-			},
-			expectedValue: "",
-			expectedExits: true,
-		},
-		{
-			// set no-equals
-			spec: &specs.Spec{
-				Process: &specs.Process{Env: []string{"TEST_ENV"}},
-			},
-			expectedValue: "",
-			expectedExits: true,
-		},
-		{
-			// set value
-			spec: &specs.Spec{
-				Process: &specs.Process{Env: []string{"TEST_ENV=something"}},
-			},
-			expectedValue: "something",
-			expectedExits: true,
-		},
-		{
-			// set with equals
-			spec: &specs.Spec{
-				Process: &specs.Process{Env: []string{"TEST_ENV=something=somethingelse"}},
-			},
-			expectedValue: "something=somethingelse",
-			expectedExits: true,
-		},
-	}
-
-	for i, tc := range testCases {
-		spec := fileSpec{
-			Spec: tc.spec,
-		}
-
-		value, exists := spec.LookupEnv(envName)
-
-		require.Equal(t, tc.expectedValue, value, "%d: %v", i, tc)
-		require.Equal(t, tc.expectedExits, exists, "%d: %v", i, tc)
-	}
-}
-
 func TestLoadFrom(t *testing.T) {
 	testCases := []struct {
 		contents []byte
@@ -148,8 +43,8 @@ func TestLoadFrom(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		spec := fileSpec{}
-		err := spec.loadFrom(bytes.NewReader(tc.contents))
+		var spec *specs.Spec
+		spec, err := loadFrom(bytes.NewReader(tc.contents))
 
 		if tc.isError {
 			require.Error(t, err, "%d: %v", i, tc)
@@ -158,9 +53,9 @@ func TestLoadFrom(t *testing.T) {
 		}
 
 		if tc.spec == nil {
-			require.Nil(t, spec.Spec, "%d: %v", i, tc)
+			require.Nil(t, spec, "%d: %v", i, tc)
 		} else {
-			require.EqualValues(t, tc.spec, spec.Spec, "%d: %v", i, tc)
+			require.EqualValues(t, tc.spec, spec, "%d: %v", i, tc)
 		}
 	}
 }
@@ -183,8 +78,7 @@ func TestFlushTo(t *testing.T) {
 	for i, tc := range testCases {
 		buffer := bytes.Buffer{}
 
-		spec := fileSpec{Spec: tc.spec}
-		err := spec.flushTo(&buffer)
+		err := flushTo(tc.spec, &buffer)
 
 		if tc.isError {
 			require.Error(t, err, "%d: %v", i, tc)
@@ -196,51 +90,8 @@ func TestFlushTo(t *testing.T) {
 	}
 
 	// Add a simple test for a writer that returns an error when writing
-	spec := fileSpec{Spec: &specs.Spec{}}
-	err := spec.flushTo(errorWriter{})
+	err := flushTo(&specs.Spec{}, errorWriter{})
 	require.Error(t, err)
-}
-
-func TestModify(t *testing.T) {
-
-	testCases := []struct {
-		spec          *specs.Spec
-		modifierError error
-	}{
-		{
-			spec: nil,
-		},
-		{
-			spec: &specs.Spec{},
-		},
-		{
-			spec:          &specs.Spec{},
-			modifierError: fmt.Errorf("error in modifier"),
-		},
-	}
-
-	for i, tc := range testCases {
-		spec := fileSpec{Spec: tc.spec}
-
-		modifier := func(spec *specs.Spec) error {
-			if tc.modifierError == nil {
-				spec.Version = "updated"
-			}
-			return tc.modifierError
-		}
-
-		err := spec.Modify(modifier)
-
-		if tc.spec == nil {
-			require.Error(t, err, "%d: %v", i, tc)
-		} else if tc.modifierError != nil {
-			require.EqualError(t, err, tc.modifierError.Error(), "%d: %v", i, tc)
-			require.EqualValues(t, &specs.Spec{}, spec.Spec, "%d: %v", i, tc)
-		} else {
-			require.NoError(t, err, "%d: %v", i, tc)
-			require.Equal(t, "updated", spec.Spec.Version, "%d: %v", i, tc)
-		}
-	}
 }
 
 // errorWriter implements the io.Writer interface, always returning an error when

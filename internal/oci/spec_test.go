@@ -20,7 +20,7 @@ func TestMaintainSpec(t *testing.T) {
 	for _, f := range files {
 		inputSpecPath := filepath.Join(moduleRoot, "test/input", f)
 
-		spec := NewSpecFromFile(inputSpecPath).(*fileSpec)
+		spec := NewFileSpec(inputSpecPath).(*fileSpec)
 
 		spec.Load()
 
