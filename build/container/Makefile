@@ -32,9 +32,15 @@ IMAGE_NAME := $(REGISTRY)/container-toolkit
 endif
 
 VERSION ?= $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))
+IMAGE_VERSION := $(VERSION)
 
 IMAGE_TAG ?= $(VERSION)-$(DIST)
 IMAGE = $(IMAGE_NAME):$(IMAGE_TAG)
+
+OUT_IMAGE_NAME ?= $(IMAGE_NAME)
+OUT_IMAGE_VERSION ?= $(IMAGE_VERSION)
+OUT_IMAGE_TAG = $(OUT_IMAGE_VERSION)-$(DIST)
+OUT_IMAGE = $(OUT_IMAGE_NAME):$(OUT_IMAGE_TAG)
 
 ##### Public rules #####
 DEFAULT_PUSH_TARGET := ubuntu18.04
@@ -48,15 +54,11 @@ TEST_TARGETS := $(patsubst %,test-%, $(DISTRIBUTIONS))
 
 .PHONY: $(DISTRIBUTIONS) $(PUSH_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
 
-push-%: DIST = $(*)
-ifeq ($(BUILD_MULTI_ARCH_IMAGES),true)
-# For multi-arch images we use buildx and set push=true, invoking the build
-# target directly
-push-%: DOCKER_BUILD_OPTIONS = --output=type=image,push=true
-$(PUSH_TARGETS): push-%: build-%
+ifneq ($(BUILD_MULTI_ARCH_IMAGES),true)
+include $(CURDIR)/build/container/native-only.mk
 else
-$(PUSH_TARGETS): push-%:
-	$(DOCKER) push "$(IMAGE_NAME):$(IMAGE_TAG)"
+include $(CURDIR)/build/container/multi-arch.mk
+endif
 
 # For the default push target we also push a short tag equal to the version.
 # We skip this for the development release
@@ -64,27 +66,19 @@ DEVEL_RELEASE_IMAGE_VERSION ?= devel
 ifneq ($(strip $(VERSION)),$(DEVEL_RELEASE_IMAGE_VERSION))
 push-$(DEFAULT_PUSH_TARGET): push-short
 endif
-push-short:
-	$(DOCKER) tag "$(IMAGE_NAME):$(VERSION)-$(DEFAULT_PUSH_TARGET)" "$(IMAGE_NAME):$(VERSION)"
-	$(DOCKER) push "$(IMAGE_NAME):$(VERSION)"
-endif
+
+push-%: DIST = $(*)
+push-short: DIST = $(DEFAULT_PUSH_TARGET)
 
 build-%: DIST = $(*)
 build-%: DOCKERFILE = $(CURDIR)/build/container/Dockerfile.$(DOCKERFILE_SUFFIX)
 
 ARTIFACTS_ROOT ?= $(shell realpath --relative-to=$(CURDIR) $(DIST_DIR))
 
-# TODO: This should be distribution dependand
-DOCKER_BUILD_PLATFORM_OPTIONS = --platform=linux/amd64
-
-ifeq ($(BUILD_MULTI_ARCH_IMAGES),true)
-DOCKER_BUILD_OPTIONS = --output=type=image,push=false
-endif
-
 # Use a generic build target to build the relevant images
 $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 	DOCKER_BUILDKIT=1 \
-		$(DOCKER) build --pull \
+		$(DOCKER) $(BUILDX) build --pull \
 		$(DOCKER_BUILD_OPTIONS) \
 		$(DOCKER_BUILD_PLATFORM_OPTIONS) \
 		--tag $(IMAGE) \
@@ -107,10 +101,9 @@ build-ubuntu%: PACKAGE_DIST = ubuntu18.04
 build-ubuntu%: PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
 build-ubuntu%: LIBNVIDIA_CONTAINER0_DEPENDENCY=$(LIBNVIDIA_CONTAINER0_VERSION)
 
-# TODO: Update this to use the centos8 packages
 build-ubi8: BASE_DIST := ubi8
 build-ubi8: DOCKERFILE_SUFFIX := centos
-build-ubi8: PACKAGE_DIST = centos7
+build-ubi8: PACKAGE_DIST = centos8
 build-ubi8: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
 build-centos%: BASE_DIST = $(*)
@@ -123,8 +116,6 @@ build-packaging: DOCKERFILE_SUFFIX := packaging
 build-packaging: PACKAGE_ARCH := amd64
 build-packaging: PACKAGE_DIST = all
 build-packaging: PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))
-# We only generate a single image for packaging targets
-build-packaging: DOCKER_BUILD_PLATFORM_OPTIONS = --platform=linux/amd64
 
 # Test targets
 test-%: DIST = $(*)

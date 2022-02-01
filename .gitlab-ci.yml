@@ -233,9 +233,10 @@ image-ubi8:
     - .package-artifacts
     - .dist-ubi8
   needs:
-    # Note: The ubi8 image currently uses the centos7 packages
-    - package-centos7-ppc64le
-    - package-centos7-x86_64
+    # Note: The ubi8 image uses the centos8 packages
+    - package-centos8-aarch64
+    - package-centos8-x86_64
+    - package-centos8-ppc64le
 
 image-ubuntu18.04:
   extends:
