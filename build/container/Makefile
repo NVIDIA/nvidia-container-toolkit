@@ -12,7 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DOCKER   ?= docker
+BUILD_MULTI_ARCH_IMAGES ?= false
+DOCKER ?= docker
+
+BUILDX =
+ifeq ($(BUILD_MULTI_ARCH_IMAGES),true)
+BUILDX = buildx
+endif
+
 MKDIR    ?= mkdir
 DIST_DIR ?= $(CURDIR)/dist
 
@@ -42,6 +49,12 @@ TEST_TARGETS := $(patsubst %,test-%, $(DISTRIBUTIONS))
 .PHONY: $(DISTRIBUTIONS) $(PUSH_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
 
 push-%: DIST = $(*)
+ifeq ($(BUILD_MULTI_ARCH_IMAGES),true)
+# For multi-arch images we use buildx and set push=true, invoking the build
+# target directly
+push-%: DOCKER_BUILD_OPTIONS = --output=type=image,push=true
+$(PUSH_TARGETS): push-%: build-%
+else
 $(PUSH_TARGETS): push-%:
 	$(DOCKER) push "$(IMAGE_NAME):$(IMAGE_TAG)"
 
@@ -54,26 +67,34 @@ endif
 push-short:
 	$(DOCKER) tag "$(IMAGE_NAME):$(VERSION)-$(DEFAULT_PUSH_TARGET)" "$(IMAGE_NAME):$(VERSION)"
 	$(DOCKER) push "$(IMAGE_NAME):$(VERSION)"
-
+endif
 
 build-%: DIST = $(*)
 build-%: DOCKERFILE = $(CURDIR)/build/container/Dockerfile.$(DOCKERFILE_SUFFIX)
 
 ARTIFACTS_ROOT ?= $(shell realpath --relative-to=$(CURDIR) $(DIST_DIR))
 
+# TODO: This should be distribution dependand
+DOCKER_BUILD_PLATFORM_OPTIONS = --platform=linux/amd64
+
+ifeq ($(BUILD_MULTI_ARCH_IMAGES),true)
+DOCKER_BUILD_OPTIONS = --output=type=image,push=false
+endif
+
 # Use a generic build target to build the relevant images
 $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 	DOCKER_BUILDKIT=1 \
 		$(DOCKER) build --pull \
-		--platform=linux/amd64 \
+		$(DOCKER_BUILD_OPTIONS) \
+		$(DOCKER_BUILD_PLATFORM_OPTIONS) \
 		--tag $(IMAGE) \
 		--build-arg ARTIFACTS_ROOT="$(ARTIFACTS_ROOT)" \
 		--build-arg BASE_DIST="$(BASE_DIST)" \
 		--build-arg CUDA_VERSION="$(CUDA_VERSION)" \
 		--build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
+		--build-arg LIBNVIDIA_CONTAINER0_VERSION="$(LIBNVIDIA_CONTAINER0_DEPENDENCY)" \
 		--build-arg PACKAGE_DIST="$(PACKAGE_DIST)" \
 		--build-arg PACKAGE_VERSION="$(PACKAGE_VERSION)" \
-		--build-arg PACKAGE_ARCH="$(PACKAGE_ARCH)" \
 		--build-arg VERSION="$(VERSION)" \
 		--build-arg CVE_UPDATES="$(CVE_UPDATES)" \
 		-f $(DOCKERFILE) \
@@ -82,20 +103,18 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 
 build-ubuntu%: BASE_DIST = $(*)
 build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
-build-ubuntu%: PACKAGE_ARCH := amd64
 build-ubuntu%: PACKAGE_DIST = ubuntu18.04
 build-ubuntu%: PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
+build-ubuntu%: LIBNVIDIA_CONTAINER0_DEPENDENCY=$(LIBNVIDIA_CONTAINER0_VERSION)
 
 # TODO: Update this to use the centos8 packages
 build-ubi8: BASE_DIST := ubi8
 build-ubi8: DOCKERFILE_SUFFIX := centos
-build-ubi8: PACKAGE_ARCH := x86_64
 build-ubi8: PACKAGE_DIST = centos7
 build-ubi8: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
 build-centos%: BASE_DIST = $(*)
 build-centos%: DOCKERFILE_SUFFIX := centos
-build-centos%: PACKAGE_ARCH := x86_64
 build-centos%: PACKAGE_DIST = $(BASE_DIST)
 build-centos%: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
@@ -104,6 +123,8 @@ build-packaging: DOCKERFILE_SUFFIX := packaging
 build-packaging: PACKAGE_ARCH := amd64
 build-packaging: PACKAGE_DIST = all
 build-packaging: PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))
+# We only generate a single image for packaging targets
+build-packaging: DOCKER_BUILD_PLATFORM_OPTIONS = --platform=linux/amd64
 
 # Test targets
 test-%: DIST = $(*)

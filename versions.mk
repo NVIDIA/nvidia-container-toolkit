@@ -21,5 +21,8 @@ LIB_TAG := rc.1
 NVIDIA_DOCKER_VERSION := 2.10.0
 NVIDIA_CONTAINER_RUNTIME_VERSION := 3.9.0
 
+# Specify the expected libnvidia-container0 version for arm64-based ubuntu builds.
+LIBNVIDIA_CONTAINER0_VERSION := 0.10.0+jetpack
+
 CUDA_VERSION := 11.6.0
 GOLANG_VERSION := 1.16.4
