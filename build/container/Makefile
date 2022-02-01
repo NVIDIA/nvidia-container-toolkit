@@ -31,15 +31,15 @@ IMAGE = $(IMAGE_NAME):$(IMAGE_TAG)
 
 ##### Public rules #####
 DEFAULT_PUSH_TARGET := ubuntu18.04
-TARGETS := ubuntu20.04 ubuntu18.04 ubi8 centos7 centos8
+DISTRIBUTIONS := ubuntu20.04 ubuntu18.04 ubi8 centos7 centos8
 
 META_TARGETS := packaging
 
-BUILD_TARGETS := $(patsubst %,build-%,$(TARGETS) $(META_TARGETS))
-PUSH_TARGETS := $(patsubst %,push-%,$(TARGETS) $(META_TARGETS))
-TEST_TARGETS := $(patsubst %,test-%, $(TARGETS))
+BUILD_TARGETS := $(patsubst %,build-%,$(DISTRIBUTIONS) $(META_TARGETS))
+PUSH_TARGETS := $(patsubst %,push-%,$(DISTRIBUTIONS) $(META_TARGETS))
+TEST_TARGETS := $(patsubst %,test-%, $(DISTRIBUTIONS))
 
-.PHONY: $(TARGETS) $(PUSH_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
+.PHONY: $(DISTRIBUTIONS) $(PUSH_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
 
 push-%: DIST = $(*)
 $(PUSH_TARGETS): push-%:
