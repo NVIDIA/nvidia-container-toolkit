@@ -42,6 +42,15 @@ RUN GOPATH=/artifacts go install -ldflags="-s -w -X 'main.Version=${VERSION}'" .
 
 FROM nvidia/cuda:${CUDA_VERSION}-base-${BASE_DIST}
 
+ARG BASE_DIST
+# See https://www.centos.org/centos-linux-eol/
+# and https://stackoverflow.com/a/70930049
+RUN [[ "${BASE_DIST}" != "centos8" ]] || \
+    ( \
+      sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-* && \
+      sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-* \
+    )
+
 ENV NVIDIA_DISABLE_REQUIRE="true"
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=utility
