@@ -194,19 +194,33 @@ package-ubuntu18.04-ppc64le:
     - .dist-ubuntu18.04
     - .arch-ppc64le
 
+.buildx-setup:
+  before_script:
+    -  export BUILDX_VERSION=v0.6.3
+    -  apk add --no-cache curl
+    -  mkdir -p ~/.docker/cli-plugins
+    -  curl -sSLo ~/.docker/cli-plugins/docker-buildx "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64"
+    -  chmod a+x ~/.docker/cli-plugins/docker-buildx
+
+    -  docker buildx create --use --platform=linux/amd64,linux/arm64
+
+    -  '[[ -n "${SKIP_QEMU_SETUP}" ]] || docker run --rm --privileged multiarch/qemu-user-static --reset -p yes'
+
 # Define the image build targets
 .image-build:
   stage: image-build
   variables:
     IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
     VERSION: "${CI_COMMIT_SHORT_SHA}"
+    PUSH_ON_BUILD: "true"
   before_script:
+    - !reference [.buildx-setup, before_script]
+
     - apk add --no-cache bash make
     - 'echo "Logging in to CI registry ${CI_REGISTRY}"'
     - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
   script:
     - make -f build/container/Makefile build-${DIST}
-    - make -f build/container/Makefile push-${DIST}
 
 image-centos7:
   extends:
