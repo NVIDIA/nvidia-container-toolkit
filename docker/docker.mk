@@ -122,6 +122,7 @@ docker-build-%:
 	docker pull --platform=linux/$(ARCH) $(BASEIMAGE)
 	DOCKER_BUILDKIT=1 \
 	$(DOCKER) build \
+	    --platform=linux/$(ARCH) \
 	    --progress=plain \
 	    --build-arg BASEIMAGE="$(BASEIMAGE)" \
 	    --build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
@@ -131,6 +132,7 @@ docker-build-%:
 	    --tag $(BUILDIMAGE) \
 	    --file $(DOCKERFILE) .
 	$(DOCKER) run \
+	    --platform=linux/$(ARCH) \
 	    -e DISTRIB \
 	    -e SECTION \
 	    -v $(ARTIFACTS_DIR):/dist \
