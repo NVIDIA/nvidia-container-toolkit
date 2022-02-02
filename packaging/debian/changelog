@@ -1,3 +1,9 @@
+nvidia-container-toolkit (1.8.0~rc.3-1) UNRELEASED; urgency=medium
+
+ * Placeholder for 1.8.0-rc.3 release
+
+ -- NVIDIA CORPORATION <cudatools@nvidia.com> Wed, 02 Feb 2022 13:42:18 +0100
+
 nvidia-container-toolkit (1.8.0~rc.2-1) UNRELEASED; urgency=medium
 
   * Remove support for building amazonlinux1 packages
