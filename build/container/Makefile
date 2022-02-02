@@ -83,7 +83,7 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 build-ubuntu%: BASE_DIST = $(*)
 build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
 build-ubuntu%: PACKAGE_ARCH := amd64
-build-ubuntu%: PACKAGE_DIST = $(BASE_DIST)
+build-ubuntu%: PACKAGE_DIST = ubuntu18.04
 build-ubuntu%: PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
 
 # TODO: Update this to use the centos8 packages
