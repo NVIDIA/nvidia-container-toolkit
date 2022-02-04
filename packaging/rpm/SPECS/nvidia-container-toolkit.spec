@@ -64,8 +64,8 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
-* Wed Feb 02 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.8.0-0.1.rc.3
-- Placeholder for 1.8.0-rc.3 release
+* Fri Feb 04 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.8.0-0.1.rc.3
+- Promote 1.8.0-0.1.rc.2 to 1.8.0-1
 
 * Thu Jan 20 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.8.0-0.1.rc.2
 - Remove support for building amazonlinux1 packages
