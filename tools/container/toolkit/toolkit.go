@@ -422,6 +422,7 @@ func findLibrary(root string, libName string) (string, error) {
 	candidateDirs := []string{
 		"/usr/lib64",
 		"/usr/lib/x86_64-linux-gnu",
+		"/usr/lib/aarch64-linux-gnu",
 	}
 
 	for _, d := range candidateDirs {
