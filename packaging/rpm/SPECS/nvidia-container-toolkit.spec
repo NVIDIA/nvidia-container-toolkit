@@ -64,7 +64,9 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
-* Fri Feb 04 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.8.0-0.1.rc.3
+* Wed Feb 09 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.8.1-1
+- [libnvidia-container] Fix permission issue when determining cgroup version
+
 * Fri Feb 04 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.8.0-1
 - Promote 1.8.0-0.1.rc.2 to 1.8.0-1
 
