@@ -1,8 +1,9 @@
 nvidia-container-toolkit (1.8.1-1) UNRELEASED; urgency=medium
 
+ * [libnvidia-container] Fix bug in determining cgroup root when running in nested containers
  * [libnvidia-container] Fix permission issue when determining cgroup version
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com> Wed, 09 Feb 2022 13:42:52 +0100
+ -- NVIDIA CORPORATION <cudatools@nvidia.com> Mon, 14 Feb 2022 09:53:26 +0100
 
 nvidia-container-toolkit (1.8.0-1) UNRELEASED; urgency=medium
 
