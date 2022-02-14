@@ -1,4 +1,14 @@
-FROM centos:8
+ARG BASEIMAGE=centos:8
+FROM ${BASEIMAGE}
+
+ARG BASEIMAGE
+# See https://www.centos.org/centos-linux-eol/
+# and https://stackoverflow.com/a/70930049
+RUN [[ "${BASEIMAGE}" != "centos:8" ]] || \
+    ( \
+      sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-* && \
+      sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-* \
+    )
 
 RUN yum install -y \
     yum-utils \
