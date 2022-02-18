@@ -144,7 +144,7 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:        "restart-mode",
-			Usage:       "Specify how docker should be restarted; If NONE is selected, docker will not be restarted [signal | none]",
+			Usage:       "Specify how docker should be restarted; If 'none' is selected it will not be restarted [signal | none]",
 			Value:       defaultRestartMode,
 			Destination: &options.restartMode,
 			EnvVars:     []string{"DOCKER_RESTART_MODE"},
