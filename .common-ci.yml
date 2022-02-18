@@ -32,7 +32,6 @@ stages:
   - test
   - scan
   - release
-  - build-all
 
 # Define the distribution targets
 .dist-amazonlinux2:
