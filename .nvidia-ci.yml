@@ -112,7 +112,7 @@ image-packaging:
   before_script:
     - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
     # TODO: We should specify the architecture here and scan all architectures
-    - docker pull "${IMAGE}"
+    - docker pull --platform="${PLATFORM}" "${IMAGE}"
     - docker save "${IMAGE}" -o "${IMAGE_ARCHIVE}"
     - AuthHeader=$(echo -n $SSA_CLIENT_ID:$SSA_CLIENT_SECRET | base64 -w0)
     - >
@@ -131,33 +131,73 @@ image-packaging:
       - policy_evaluation.json
 
 # Define the scan targets
-scan-centos7:
+scan-centos7-amd64:
   extends:
     - .scan
     - .dist-centos7
+    - .platform-amd64
   needs:
     - image-centos7
 
-scan-centos8:
+scan-centos7-arm64:
+  extends:
+    - .scan
+    - .dist-centos7
+    - .platform-arm64
+  needs:
+    - image-centos7
+    - scan-centos7-amd64
+
+scan-centos8-amd64:
   extends:
     - .scan
     - .dist-centos8
+    - .platform-amd64
   needs:
     - image-centos8
 
-scan-ubuntu18.04:
+scan-centos8-arm64:
+  extends:
+    - .scan
+    - .dist-centos8
+    - .platform-arm64
+  needs:
+    - image-centos8
+    - scan-centos8-amd64
+
+scan-ubuntu18.04-amd64:
   extends:
     - .scan
     - .dist-ubuntu18.04
+    - .platform-amd64
   needs:
     - image-ubuntu18.04
 
-scan-ubi8:
+scan-ubuntu18.04-arm64:
+  extends:
+    - .scan
+    - .dist-ubuntu18.04
+    - .platform-arm64
+  needs:
+    - image-ubuntu18.04
+    - scan-ubuntu18.04-amd64
+
+scan-ubi8-amd64:
   extends:
     - .scan
     - .dist-ubi8
+    - .platform-amd64
   needs:
     - image-ubi8
+
+scan-ubi8-arm64:
+  extends:
+    - .scan
+    - .dist-ubi8
+    - .platform-arm64
+  needs:
+    - image-ubi8
+    - scan-ubi8-amd64
 
 # Define external release helpers
 .release:ngc:

@@ -97,6 +97,15 @@ stages:
   variables:
     ARCH: x86_64
 
+# Define the platform targets
+.platform-amd64:
+  variables:
+    PLATFORM: linux/amd64
+
+.platform-arm64:
+  variables:
+    PLATFORM: linux/arm64
+
 # Define test helpers
 .integration:
   stage: test
