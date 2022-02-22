@@ -31,7 +31,7 @@ func main() {
 
 // run is an entry point that allows for idiomatic handling of errors
 // when calling from the main function.
-func run(argv []string) (err error) {
+func run(argv []string) (rerr error) {
 	cfg, err := getConfig()
 	if err != nil {
 		return fmt.Errorf("error loading config: %v", err)
@@ -43,8 +43,8 @@ func run(argv []string) (err error) {
 	}
 	defer func() {
 		// We capture and log a returning error before closing the log file.
-		if err != nil {
-			logger.Errorf("Error running %v: %v", argv, err)
+		if rerr != nil {
+			logger.Errorf("Error running %v: %v", argv, rerr)
 		}
 		logger.CloseFile()
 	}()
@@ -54,7 +54,6 @@ func run(argv []string) (err error) {
 		return fmt.Errorf("error creating runtime: %v", err)
 	}
 
-	logger.Printf("Running %s\n", argv[0])
 	return r.Exec(argv)
 }
 
