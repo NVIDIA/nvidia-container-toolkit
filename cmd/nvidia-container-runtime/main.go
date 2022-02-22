@@ -11,8 +11,6 @@ import (
 const (
 	configOverride = "XDG_CONFIG_HOME"
 	configFilePath = "nvidia-container-runtime/config.toml"
-
-	hookDefaultFilePath = "/usr/bin/nvidia-container-runtime-hook"
 )
 
 var (
@@ -49,7 +47,7 @@ func run(argv []string) (rerr error) {
 		logger.CloseFile()
 	}()
 
-	r, err := newRuntime(argv)
+	r, err := newNVIDIAContainerRuntime(logger.Logger, cfg, argv)
 	if err != nil {
 		return fmt.Errorf("error creating runtime: %v", err)
 	}

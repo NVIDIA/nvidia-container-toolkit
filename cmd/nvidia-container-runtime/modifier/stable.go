@@ -14,7 +14,7 @@
 # limitations under the License.
 */
 
-package main
+package modifier
 
 import (
 	"os"
@@ -22,36 +22,31 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/runtime"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
-// newNvidiaContainerRuntime is a constructor for a standard runtime shim. This uses
-// a ModifyingRuntimeWrapper to apply the required modifications before execing to the
-// specified low-level runtime
-func newNvidiaContainerRuntime(logger *log.Logger, lowlevelRuntime oci.Runtime, ociSpec oci.Spec) (oci.Runtime, error) {
-	modifier := addHookModifier{logger: logger}
+const (
+	hookDefaultFilePath = "/usr/bin/nvidia-container-runtime-hook"
+)
 
-	r := runtime.NewModifyingRuntimeWrapper(
-		logger,
-		lowlevelRuntime,
-		ociSpec,
-		modifier,
-	)
+// NewStableRuntimeModifier creates an OCI spec modifier that inserts the NVIDIA Container Runtime Hook into an OCI
+// spec. The specified logger is used to capture log output.
+func NewStableRuntimeModifier(logger *logrus.Logger) oci.SpecModifier {
+	m := stableRuntimeModifier{logger: logger}
 
-	return r, nil
+	return &m
 }
 
-// addHookModifier modifies an OCI spec inplace, inserting the nvidia-container-runtime-hook as a
+// stableRuntimeModifier modifies an OCI spec inplace, inserting the nvidia-container-runtime-hook as a
 // prestart hook. If the hook is already present, no modification is made.
-type addHookModifier struct {
-	logger *log.Logger
+type stableRuntimeModifier struct {
+	logger *logrus.Logger
 }
 
 // Modify applies the required modification to the incoming OCI spec, inserting the nvidia-container-runtime-hook
 // as a prestart hook.
-func (m addHookModifier) Modify(spec *specs.Spec) error {
+func (m stableRuntimeModifier) Modify(spec *specs.Spec) error {
 	path, err := exec.LookPath("nvidia-container-runtime-hook")
 	if err != nil {
 		path = hookDefaultFilePath
@@ -61,18 +56,17 @@ func (m addHookModifier) Modify(spec *specs.Spec) error {
 		}
 	}
 
-	m.logger.Printf("prestart hook path: %s\n", path)
+	m.logger.Infof("Using prestart hook path: %s", path)
 
 	args := []string{path}
 	if spec.Hooks == nil {
 		spec.Hooks = &specs.Hooks{}
 	} else if len(spec.Hooks.Prestart) != 0 {
 		for _, hook := range spec.Hooks.Prestart {
-			if !strings.Contains(hook.Path, "nvidia-container-runtime-hook") {
-				continue
+			if strings.Contains(hook.Path, "nvidia-container-runtime-hook") {
+				m.logger.Infof("existing nvidia prestart hook found in OCI spec")
+				return nil
 			}
-			m.logger.Println("existing nvidia prestart hook in OCI spec file")
-			return nil
 		}
 	}
 

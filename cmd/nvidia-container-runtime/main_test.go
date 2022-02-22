@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-container-runtime/modifier"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/stretchr/testify/require"
@@ -170,7 +171,7 @@ func TestDuplicateHook(t *testing.T) {
 // addNVIDIAHook is a basic wrapper for an addHookModifier that is used for
 // testing.
 func addNVIDIAHook(spec *specs.Spec) error {
-	m := addHookModifier{logger: logger.Logger}
+	m := modifier.NewStableRuntimeModifier(logger.Logger)
 	return m.Modify(spec)
 }
 
