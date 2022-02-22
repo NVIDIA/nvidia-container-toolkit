@@ -33,7 +33,7 @@ import (
 const (
 	restartModeSignal  = "signal"
 	restartModeSystemd = "systemd"
-	restartModeNone    = "NONE"
+	restartModeNone    = "none"
 
 	nvidiaRuntimeName               = "nvidia"
 	nvidiaRuntimeBinary             = "nvidia-container-runtime"
@@ -154,7 +154,7 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:        "restart-mode",
-			Usage:       "Specify how containerd should be restarted; [signal | systemd]",
+			Usage:       "Specify how containerd should be restarted;  If 'none' is selected, it will not be restarted [signal | systemd | none]",
 			Value:       defaultRestartMode,
 			Destination: &options.restartMode,
 			EnvVars:     []string{"CONTAINERD_RESTART_MODE"},

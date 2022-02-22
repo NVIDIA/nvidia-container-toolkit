@@ -91,7 +91,7 @@ testing::containerd::toolkit::test_config() {
 		"${toolkit_container_image}" -c "containerd setup \
 			--config=${output_config} \
 			--socket=${containerd_dind_containerd_dir}/containerd.sock \
-			--restart-mode=NONE \
+			--restart-mode=none \
 				/usr/local/nvidia/toolkit"
 
 	# As a basic test we check that the config has changed
@@ -107,7 +107,7 @@ testing::containerd::toolkit::test_config() {
 		"${toolkit_container_image}" -c "containerd cleanup \
 					--config=${output_config} \
 			--socket=${containerd_dind_containerd_dir}/containerd.sock \
-			--restart-mode=NONE \
+			--restart-mode=none \
 				/usr/local/nvidia/toolkit"
 
 	if [[ -s "${input_config}" ]]; then

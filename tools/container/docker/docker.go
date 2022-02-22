@@ -32,6 +32,9 @@ import (
 )
 
 const (
+	restartModeSignal = "signal"
+	restartModeNone   = "none"
+
 	nvidiaRuntimeName               = "nvidia"
 	nvidiaRuntimeBinary             = "nvidia-container-runtime"
 	nvidiaExperimentalRuntimeName   = "nvidia-experimental"
@@ -42,6 +45,7 @@ const (
 	defaultSetAsDefault = true
 	// defaultRuntimeName specifies the NVIDIA runtime to be use as the default runtime if setting the default runtime is enabled
 	defaultRuntimeName = nvidiaRuntimeName
+	defaultRestartMode = restartModeSignal
 
 	reloadBackoff     = 5 * time.Second
 	maxReloadAttempts = 6
@@ -63,6 +67,7 @@ type options struct {
 	runtimeName  string
 	setAsDefault bool
 	runtimeDir   string
+	restartMode  string
 }
 
 func main() {
@@ -137,6 +142,13 @@ func main() {
 			EnvVars:     []string{"DOCKER_SET_AS_DEFAULT"},
 			Hidden:      true,
 		},
+		&cli.StringFlag{
+			Name:        "restart-mode",
+			Usage:       "Specify how docker should be restarted; If 'none' is selected it will not be restarted [signal | none]",
+			Value:       defaultRestartMode,
+			Destination: &options.restartMode,
+			EnvVars:     []string{"DOCKER_RESTART_MODE"},
+		},
 	}
 
 	// Update the subcommand flags with the common subcommand flags
@@ -175,9 +187,9 @@ func Setup(c *cli.Context, o *options) error {
 		return fmt.Errorf("unable to flush config: %v", err)
 	}
 
-	err = SignalDocker(o.socket)
+	err = RestartDocker(o)
 	if err != nil {
-		return fmt.Errorf("unable to signal docker: %v", err)
+		return fmt.Errorf("unable to restart docker: %v", err)
 	}
 
 	log.Infof("Completed 'setup' for %v", c.App.Name)
@@ -209,7 +221,7 @@ func Cleanup(c *cli.Context, o *options) error {
 		return fmt.Errorf("unable to flush config: %v", err)
 	}
 
-	err = SignalDocker(o.socket)
+	err = RestartDocker(o)
 	if err != nil {
 		return fmt.Errorf("unable to signal docker: %v", err)
 	}
@@ -336,6 +348,23 @@ func FlushConfig(cfg map[string]interface{}, config string) error {
 	}
 
 	log.Infof("Successfully flushed config")
+
+	return nil
+}
+
+// RestartDocker restarts docker depending on the value of restartModeFlag
+func RestartDocker(o *options) error {
+	switch o.restartMode {
+	case restartModeNone:
+		log.Warnf("Skipping sending signal to docker due to --restart-mode=%v", o.restartMode)
+	case restartModeSignal:
+		err := SignalDocker(o.socket)
+		if err != nil {
+			return fmt.Errorf("unable to signal docker: %v", err)
+		}
+	default:
+		return fmt.Errorf("invalid restart mode specified: %v", o.restartMode)
+	}
 
 	return nil
 }
