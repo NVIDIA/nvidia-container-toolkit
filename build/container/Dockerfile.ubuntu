@@ -45,6 +45,7 @@ FROM nvidia/cuda:${CUDA_VERSION}-base-${BASE_DIST}
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcap2 \
+    curl \
         && \
     rm -rf /var/lib/apt/lists/*
 
@@ -59,7 +60,17 @@ COPY ${ARTIFACTS_ROOT}/${PACKAGE_DIST} /artifacts/packages/${PACKAGE_DIST}
 WORKDIR /artifacts/packages
 
 ARG PACKAGE_VERSION
-ARG PACKAGE_ARCH
+ARG TARGETARCH
+ENV PACKAGE_ARCH ${TARGETARCH}
+
+ARG LIBNVIDIA_CONTAINER_REPO="https://nvidia.github.io/libnvidia-container"
+ARG LIBNVIDIA_CONTAINER0_VERSION
+RUN if [ "${PACKAGE_ARCH}" = "arm64" ]; then \
+        curl -L ${LIBNVIDIA_CONTAINER_REPO}/${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container0_${LIBNVIDIA_CONTAINER0_VERSION}_${PACKAGE_ARCH}.deb \
+            --output ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container0_${LIBNVIDIA_CONTAINER0_VERSION}_${PACKAGE_ARCH}.deb && \
+        dpkg -i ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container0_${LIBNVIDIA_CONTAINER0_VERSION}_${PACKAGE_ARCH}.deb; \
+    fi
+
 RUN dpkg -i \
     ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container1_${PACKAGE_VERSION}*.deb \
     ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container-tools_${PACKAGE_VERSION}*.deb \

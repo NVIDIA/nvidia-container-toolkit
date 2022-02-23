@@ -20,6 +20,7 @@ default:
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
   BUILDIMAGE: "${CI_REGISTRY_IMAGE}/build:${CI_COMMIT_SHORT_SHA}"
+  BUILD_MULTI_ARCH_IMAGES: "true"
 
 stages:
   - image
@@ -96,6 +97,15 @@ stages:
   variables:
     ARCH: x86_64
 
+# Define the platform targets
+.platform-amd64:
+  variables:
+    PLATFORM: linux/amd64
+
+.platform-arm64:
+  variables:
+    PLATFORM: linux/arm64
+
 # Define test helpers
 .integration:
   stage: test
@@ -117,20 +127,30 @@ test-packaging:
   needs:
     - image-packaging
 
+# Download the regctl binary for use in the release steps
+.regctl-setup:
+  before_script:
+    - export REGCTL_VERSION=v0.3.10
+    - apk add --no-cache curl
+    - mkdir -p bin
+    - curl -sSLo bin/regctl https://github.com/regclient/regclient/releases/download/${REGCTL_VERSION}/regctl-linux-amd64
+    - chmod a+x bin/regctl
+    - export PATH=$(pwd)/bin:${PATH}
+
 # .release forms the base of the deployment jobs which push images to the CI registry.
 # This is extended with the version to be deployed (e.g. the SHA or TAG) and the
 # target os.
 .release:
-  stage:
-    release
+  stage: release
   variables:
     # Define the source image for the release
     IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
     VERSION: "${CI_COMMIT_SHORT_SHA}"
     # OUT_IMAGE_VERSION is overridden for external releases
     OUT_IMAGE_VERSION: "${CI_COMMIT_SHORT_SHA}"
-  stage: release
   before_script:
+    - !reference [.regctl-setup, before_script]
+
     # We ensure that the OUT_IMAGE_VERSION is set
     - 'echo Version: ${OUT_IMAGE_VERSION} ; [[ -n "${OUT_IMAGE_VERSION}" ]] || exit 1'
 
@@ -138,16 +158,16 @@ test-packaging:
     # need to tag the image.
     # Note: a leading 'v' is stripped from the version if present
     - apk add --no-cache make bash
-    - 'echo "Logging in to CI registry ${CI_REGISTRY}"'
-    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
-    - docker pull "${IMAGE_NAME}:${VERSION}-${DIST}"
   script:
-    - docker tag "${IMAGE_NAME}:${VERSION}-${DIST}" "${OUT_IMAGE_NAME}:${OUT_IMAGE_VERSION}-${DIST}"
     # Log in to the "output" registry, tag the image and push the image
-    - 'echo "Logging in to output registry ${OUT_REGISTRY}"'
-    - docker logout
-    - docker login -u "${OUT_REGISTRY_USER}" -p "${OUT_REGISTRY_TOKEN}" "${OUT_REGISTRY}"
-    - make IMAGE_NAME=${OUT_IMAGE_NAME} VERSION=${OUT_IMAGE_VERSION} -f build/container/Makefile push-${DIST}
+    - 'echo "Logging in to CI registry ${CI_REGISTRY}"'
+    - regctl registry login "${CI_REGISTRY}" -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}"
+    - '[ ${CI_REGISTRY} = ${OUT_REGISTRY} ] || echo "Logging in to output registry ${OUT_REGISTRY}"'
+    - '[ ${CI_REGISTRY} = ${OUT_REGISTRY} ] || regctl registry login "${OUT_REGISTRY}" -u "${OUT_REGISTRY_USER}" -p "${OUT_REGISTRY_TOKEN}"'
+
+    # Since OUT_IMAGE_NAME and OUT_IMAGE_VERSION are set, this will push the CI image to the
+    # Target
+    - make -f build/container/Makefile push-${DIST}
 
 # Define a staging release step that pushes an image to an internal "staging" repository
 # This is triggered for all pipelines (i.e. not only tags) to test the pipeline steps

@@ -1,4 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LIB_NAME := nvidia-container-toolkit
-LIB_VERSION := 1.9.0
-LIB_TAG := rc.1
+DOCKER_BUILD_PLATFORM_OPTIONS = --platform=linux/amd64
 
-# Specify the nvidia-docker2 and nvidia-container-runtime package versions.
-# Note: The tag is automatically specified to match LIB_TAG.
-NVIDIA_DOCKER_VERSION := 2.10.0
-NVIDIA_CONTAINER_RUNTIME_VERSION := 3.9.0
+$(PUSH_TARGETS): push-%:
+	$(DOCKER) tag "$(IMAGE)" "$(OUT_IMAGE)"
+	$(DOCKER) push "$(OUT_IMAGE)"
 
-# Specify the expected libnvidia-container0 version for arm64-based ubuntu builds.
-LIBNVIDIA_CONTAINER0_VERSION := 0.10.0+jetpack
-
-CUDA_VERSION := 11.6.0
-GOLANG_VERSION := 1.16.4
+push-short:
+	$(DOCKER) tag "$(IMAGE_NAME):$(VERSION)-$(DEFAULT_PUSH_TARGET)" "$(OUT_IMAGE_NAME):$(OUT_IMAGE_VERSION)"
+	$(DOCKER) push "$(OUT_IMAGE_NAME):$(OUT_IMAGE_VERSION)"

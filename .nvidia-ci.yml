@@ -46,6 +46,7 @@ variables:
     OUT_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
     OUT_REGISTRY: "${CI_REGISTRY}"
     OUT_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
+    PUSH_MULTIPLE_TAGS: "false"
   # We delay the job start to allow the public pipeline to generate the required images.
   when: delayed
   start_in: 30 minutes
@@ -56,13 +57,13 @@ variables:
       - job_execution_timeout
       - stuck_or_timeout_failure
   before_script:
+    - !reference [.regctl-setup, before_script]
+    - apk add --no-cache make bash
     - >
-      docker pull ${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} > /dev/null && echo "${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST}" || ( echo "${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} does not exist" && sleep infinity )
+      regctl manifest get ${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} --list > /dev/null && echo "${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST}" || ( echo "${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} does not exist" && sleep infinity )
   script:
-    - docker pull ${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST}
-    - docker tag ${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} ${OUT_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-${DIST}
-    - docker login -u "${OUT_REGISTRY_USER}" -p "${OUT_REGISTRY_TOKEN}" "${OUT_REGISTRY}"
-    - docker push ${OUT_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-${DIST}
+    - regctl registry login "${OUT_REGISTRY}" -u "${OUT_REGISTRY_USER}" -p "${OUT_REGISTRY_TOKEN}"
+    - make -f build/container/Makefile IMAGE=${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} OUT_IMAGE=${OUT_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-${DIST} push-${DIST}
 
 image-centos7:
   extends:
@@ -112,7 +113,7 @@ image-packaging:
   before_script:
     - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
     # TODO: We should specify the architecture here and scan all architectures
-    - docker pull "${IMAGE}"
+    - docker pull --platform="${PLATFORM}" "${IMAGE}"
     - docker save "${IMAGE}" -o "${IMAGE_ARCHIVE}"
     - AuthHeader=$(echo -n $SSA_CLIENT_ID:$SSA_CLIENT_SECRET | base64 -w0)
     - >
@@ -131,33 +132,73 @@ image-packaging:
       - policy_evaluation.json
 
 # Define the scan targets
-scan-centos7:
+scan-centos7-amd64:
   extends:
     - .scan
     - .dist-centos7
+    - .platform-amd64
   needs:
     - image-centos7
 
-scan-centos8:
+scan-centos7-arm64:
+  extends:
+    - .scan
+    - .dist-centos7
+    - .platform-arm64
+  needs:
+    - image-centos7
+    - scan-centos7-amd64
+
+scan-centos8-amd64:
   extends:
     - .scan
     - .dist-centos8
+    - .platform-amd64
   needs:
     - image-centos8
 
-scan-ubuntu18.04:
+scan-centos8-arm64:
+  extends:
+    - .scan
+    - .dist-centos8
+    - .platform-arm64
+  needs:
+    - image-centos8
+    - scan-centos8-amd64
+
+scan-ubuntu18.04-amd64:
   extends:
     - .scan
     - .dist-ubuntu18.04
+    - .platform-amd64
   needs:
     - image-ubuntu18.04
 
-scan-ubi8:
+scan-ubuntu18.04-arm64:
+  extends:
+    - .scan
+    - .dist-ubuntu18.04
+    - .platform-arm64
+  needs:
+    - image-ubuntu18.04
+    - scan-ubuntu18.04-amd64
+
+scan-ubi8-amd64:
   extends:
     - .scan
     - .dist-ubi8
+    - .platform-amd64
   needs:
     - image-ubi8
+
+scan-ubi8-arm64:
+  extends:
+    - .scan
+    - .dist-ubi8
+    - .platform-arm64
+  needs:
+    - image-ubi8
+    - scan-ubi8-amd64
 
 # Define external release helpers
 .release:ngc:

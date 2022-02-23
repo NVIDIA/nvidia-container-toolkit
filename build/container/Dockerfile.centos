@@ -63,8 +63,10 @@ COPY ${ARTIFACTS_ROOT}/${PACKAGE_DIST} /artifacts/packages/${PACKAGE_DIST}
 WORKDIR /artifacts/packages
 
 ARG PACKAGE_VERSION
-ARG PACKAGE_ARCH
-RUN yum localinstall -y \
+ARG TARGETARCH
+ENV PACKAGE_ARCH ${TARGETARCH}
+RUN PACKAGE_ARCH=${PACKAGE_ARCH/amd64/x86_64} && PACKAGE_ARCH=${PACKAGE_ARCH/arm64/aarch64} && \
+    yum localinstall -y \
     ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container1-${PACKAGE_VERSION}*.rpm \
     ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container-tools-${PACKAGE_VERSION}*.rpm \
     ${PACKAGE_DIST}/${PACKAGE_ARCH}/nvidia-container-toolkit-${PACKAGE_VERSION}*.rpm

@@ -12,7 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DOCKER   ?= docker
+BUILD_MULTI_ARCH_IMAGES ?= false
+DOCKER ?= docker
+
+BUILDX =
+ifeq ($(BUILD_MULTI_ARCH_IMAGES),true)
+BUILDX = buildx
+endif
+
 MKDIR    ?= mkdir
 DIST_DIR ?= $(CURDIR)/dist
 
@@ -25,36 +32,47 @@ IMAGE_NAME := $(REGISTRY)/container-toolkit
 endif
 
 VERSION ?= $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))
+IMAGE_VERSION := $(VERSION)
 
 IMAGE_TAG ?= $(VERSION)-$(DIST)
 IMAGE = $(IMAGE_NAME):$(IMAGE_TAG)
 
+OUT_IMAGE_NAME ?= $(IMAGE_NAME)
+OUT_IMAGE_VERSION ?= $(IMAGE_VERSION)
+OUT_IMAGE_TAG = $(OUT_IMAGE_VERSION)-$(DIST)
+OUT_IMAGE = $(OUT_IMAGE_NAME):$(OUT_IMAGE_TAG)
+
 ##### Public rules #####
 DEFAULT_PUSH_TARGET := ubuntu18.04
-TARGETS := ubuntu20.04 ubuntu18.04 ubi8 centos7 centos8
+DISTRIBUTIONS := ubuntu20.04 ubuntu18.04 ubi8 centos7 centos8
 
 META_TARGETS := packaging
 
-BUILD_TARGETS := $(patsubst %,build-%,$(TARGETS) $(META_TARGETS))
-PUSH_TARGETS := $(patsubst %,push-%,$(TARGETS) $(META_TARGETS))
-TEST_TARGETS := $(patsubst %,test-%, $(TARGETS))
+BUILD_TARGETS := $(patsubst %,build-%,$(DISTRIBUTIONS) $(META_TARGETS))
+PUSH_TARGETS := $(patsubst %,push-%,$(DISTRIBUTIONS) $(META_TARGETS))
+TEST_TARGETS := $(patsubst %,test-%, $(DISTRIBUTIONS))
 
-.PHONY: $(TARGETS) $(PUSH_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
+.PHONY: $(DISTRIBUTIONS) $(PUSH_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
 
-push-%: DIST = $(*)
-$(PUSH_TARGETS): push-%:
-	$(DOCKER) push "$(IMAGE_NAME):$(IMAGE_TAG)"
+ifneq ($(BUILD_MULTI_ARCH_IMAGES),true)
+include $(CURDIR)/build/container/native-only.mk
+else
+include $(CURDIR)/build/container/multi-arch.mk
+endif
 
 # For the default push target we also push a short tag equal to the version.
 # We skip this for the development release
 DEVEL_RELEASE_IMAGE_VERSION ?= devel
-ifneq ($(strip $(VERSION)),$(DEVEL_RELEASE_IMAGE_VERSION))
+PUSH_MULTIPLE_TAGS ?= true
+ifeq ($(strip $(OUT_IMAGE_VERSION)),$(DEVEL_RELEASE_IMAGE_VERSION))
+PUSH_MULTIPLE_TAGS = false
+endif
+ifeq ($(PUSH_MULTIPLE_TAGS),true)
 push-$(DEFAULT_PUSH_TARGET): push-short
 endif
-push-short:
-	$(DOCKER) tag "$(IMAGE_NAME):$(VERSION)-$(DEFAULT_PUSH_TARGET)" "$(IMAGE_NAME):$(VERSION)"
-	$(DOCKER) push "$(IMAGE_NAME):$(VERSION)"
 
+push-%: DIST = $(*)
+push-short: DIST = $(DEFAULT_PUSH_TARGET)
 
 build-%: DIST = $(*)
 build-%: DOCKERFILE = $(CURDIR)/build/container/Dockerfile.$(DOCKERFILE_SUFFIX)
@@ -64,16 +82,17 @@ ARTIFACTS_ROOT ?= $(shell realpath --relative-to=$(CURDIR) $(DIST_DIR))
 # Use a generic build target to build the relevant images
 $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 	DOCKER_BUILDKIT=1 \
-		$(DOCKER) build --pull \
-		--platform=linux/amd64 \
+		$(DOCKER) $(BUILDX) build --pull \
+		$(DOCKER_BUILD_OPTIONS) \
+		$(DOCKER_BUILD_PLATFORM_OPTIONS) \
 		--tag $(IMAGE) \
 		--build-arg ARTIFACTS_ROOT="$(ARTIFACTS_ROOT)" \
 		--build-arg BASE_DIST="$(BASE_DIST)" \
 		--build-arg CUDA_VERSION="$(CUDA_VERSION)" \
 		--build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
+		--build-arg LIBNVIDIA_CONTAINER0_VERSION="$(LIBNVIDIA_CONTAINER0_DEPENDENCY)" \
 		--build-arg PACKAGE_DIST="$(PACKAGE_DIST)" \
 		--build-arg PACKAGE_VERSION="$(PACKAGE_VERSION)" \
-		--build-arg PACKAGE_ARCH="$(PACKAGE_ARCH)" \
 		--build-arg VERSION="$(VERSION)" \
 		--build-arg CVE_UPDATES="$(CVE_UPDATES)" \
 		-f $(DOCKERFILE) \
@@ -82,20 +101,17 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 
 build-ubuntu%: BASE_DIST = $(*)
 build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
-build-ubuntu%: PACKAGE_ARCH := amd64
-build-ubuntu%: PACKAGE_DIST = $(BASE_DIST)
+build-ubuntu%: PACKAGE_DIST = ubuntu18.04
 build-ubuntu%: PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
+build-ubuntu%: LIBNVIDIA_CONTAINER0_DEPENDENCY=$(LIBNVIDIA_CONTAINER0_VERSION)
 
-# TODO: Update this to use the centos8 packages
 build-ubi8: BASE_DIST := ubi8
 build-ubi8: DOCKERFILE_SUFFIX := centos
-build-ubi8: PACKAGE_ARCH := x86_64
-build-ubi8: PACKAGE_DIST = centos7
+build-ubi8: PACKAGE_DIST = centos8
 build-ubi8: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
 build-centos%: BASE_DIST = $(*)
 build-centos%: DOCKERFILE_SUFFIX := centos
-build-centos%: PACKAGE_ARCH := x86_64
 build-centos%: PACKAGE_DIST = $(BASE_DIST)
 build-centos%: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
