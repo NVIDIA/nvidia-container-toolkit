@@ -65,6 +65,12 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 
 %changelog
 * Fri Feb 18 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.9.0-0.1.rc.1
+- [libnvidia-container] Add additional check for Tegra in /sys/.../family file in CLI
+- [libnvidia-container] Update jetpack-specific CLI option to only load Base CSV files by default
+- [libnvidia-container] Fix bug (from 1.8.0) when mounting GSP firmware into containers without /lib to /usr/lib symlinks
+- [libnvidia-container] Update nvml.h to CUDA 11.6.1 nvML_DEV 11.6.55
+- [libnvidia-container] Update switch statement to include new brands from latest nvml.h
+- [libnvidia-container] Process all --require flags on Jetson platforms
 - [libnvidia-container] Fix long-standing issue with running ldconfig on Debian systems
 
 * Mon Feb 14 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.8.1-1
