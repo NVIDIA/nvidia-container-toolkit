@@ -22,25 +22,23 @@ import (
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 )
 
-type hook discover.Hook
+type device discover.Device
 
-// toEdits converts a discovered hook to CDI Container Edits.
-func (d hook) toEdits() *cdi.ContainerEdits {
+// toEdits converts a discovered device to CDI Container Edits.
+func (d device) toEdits() *cdi.ContainerEdits {
 	e := cdi.ContainerEdits{
 		ContainerEdits: &specs.ContainerEdits{
-			Hooks: []*specs.Hook{d.toSpec()},
+			DeviceNodes: []*specs.DeviceNode{d.toSpec()},
 		},
 	}
 	return &e
 }
 
-// toSpec converts a discovered Hook to a CDI Spec Hook. Note
-// that missing info is filled in when edits are applied by querying the Hook node.
-func (d hook) toSpec() *specs.Hook {
-	s := specs.Hook{
-		HookName: d.Lifecycle,
-		Path:     d.Path,
-		Args:     d.Args,
+// toSpec converts a discovered Device to a CDI Spec Device. Note
+// that missing info is filled in when edits are applied by querying the Device node.
+func (d device) toSpec() *specs.DeviceNode {
+	s := specs.DeviceNode{
+		Path: d.Path,
 	}
 
 	return &s

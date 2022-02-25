@@ -22,25 +22,31 @@ import (
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 )
 
-type hook discover.Hook
+type mount discover.Mount
 
-// toEdits converts a discovered hook to CDI Container Edits.
-func (d hook) toEdits() *cdi.ContainerEdits {
+// toEdits converts a discovered mount to CDI Container Edits.
+func (d mount) toEdits() *cdi.ContainerEdits {
 	e := cdi.ContainerEdits{
 		ContainerEdits: &specs.ContainerEdits{
-			Hooks: []*specs.Hook{d.toSpec()},
+			Mounts: []*specs.Mount{d.toSpec()},
 		},
 	}
 	return &e
 }
 
-// toSpec converts a discovered Hook to a CDI Spec Hook. Note
-// that missing info is filled in when edits are applied by querying the Hook node.
-func (d hook) toSpec() *specs.Hook {
-	s := specs.Hook{
-		HookName: d.Lifecycle,
-		Path:     d.Path,
-		Args:     d.Args,
+// toSpec converts a discovered Mount to a CDI Spec Mount. Note
+// that missing info is filled in when edits are applied by querying the Mount node.
+func (d mount) toSpec() *specs.Mount {
+	s := specs.Mount{
+		HostPath: d.Path,
+		// TODO: We need to update the container path
+		ContainerPath: d.Path,
+		Options: []string{
+			"ro",
+			"nosuid",
+			"nodev",
+			"bind",
+		},
 	}
 
 	return &s

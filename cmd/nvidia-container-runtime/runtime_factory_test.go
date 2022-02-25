@@ -17,9 +17,13 @@
 package main
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/opencontainers/runtime-spec/specs-go"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
@@ -30,7 +34,7 @@ func TestFactoryMethod(t *testing.T) {
 	testCases := []struct {
 		description   string
 		cfg           *config.Config
-		argv          []string
+		spec          *specs.Spec
 		expectedError bool
 	}{
 		{
@@ -39,11 +43,35 @@ func TestFactoryMethod(t *testing.T) {
 				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{},
 			},
 		},
+		{
+			description: "experimental flag supported",
+			cfg: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Experimental: true,
+					DiscoverMode: "legacy",
+				},
+			},
+			spec: &specs.Spec{
+				Process: &specs.Process{
+					Env: []string{
+						"NVIDIA_VISIBLE_DEVICES=all",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			_, err := newNVIDIAContainerRuntime(logger, tc.cfg, tc.argv)
+			bundleDir := t.TempDir()
+
+			specFile, err := os.Create(filepath.Join(bundleDir, "config.json"))
+			require.NoError(t, err)
+			require.NoError(t, json.NewEncoder(specFile).Encode(tc.spec))
+
+			argv := []string{"--bundle", bundleDir}
+
+			_, err = newNVIDIAContainerRuntime(logger, tc.cfg, argv)
 			if tc.expectedError {
 				require.Error(t, err)
 			} else {
