@@ -1,0 +1,9 @@
+   dev   , /dev/target 
+lib,      /lib/target
+
+dir,/lib/target   
+
+sym, /source
+
+       
+

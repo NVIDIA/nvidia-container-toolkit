@@ -1,0 +1,6 @@
+lib,/lib/target
+dir,/lib/target
+dev,/dev/null
+dev,full
+dev,/dev/target
+sym,/source
