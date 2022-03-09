@@ -20,6 +20,9 @@ var _ Discover = &DiscoverMock{}
 // 			HooksFunc: func() ([]Hook, error) {
 // 				panic("mock out the Hooks method")
 // 			},
+// 			MountsFunc: func() ([]Mount, error) {
+// 				panic("mock out the Mounts method")
+// 			},
 // 		}
 //
 // 		// use mockedDiscover in code that requires Discover
@@ -30,13 +33,20 @@ type DiscoverMock struct {
 	// HooksFunc mocks the Hooks method.
 	HooksFunc func() ([]Hook, error)
 
+	// MountsFunc mocks the Mounts method.
+	MountsFunc func() ([]Mount, error)
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// Hooks holds details about calls to the Hooks method.
 		Hooks []struct {
 		}
+		// Mounts holds details about calls to the Mounts method.
+		Mounts []struct {
+		}
 	}
-	lockHooks sync.RWMutex
+	lockHooks  sync.RWMutex
+	lockMounts sync.RWMutex
 }
 
 // Hooks calls HooksFunc.
@@ -66,5 +76,35 @@ func (mock *DiscoverMock) HooksCalls() []struct {
 	mock.lockHooks.RLock()
 	calls = mock.calls.Hooks
 	mock.lockHooks.RUnlock()
+	return calls
+}
+
+// Mounts calls MountsFunc.
+func (mock *DiscoverMock) Mounts() ([]Mount, error) {
+	callInfo := struct {
+	}{}
+	mock.lockMounts.Lock()
+	mock.calls.Mounts = append(mock.calls.Mounts, callInfo)
+	mock.lockMounts.Unlock()
+	if mock.MountsFunc == nil {
+		var (
+			mountsOut []Mount
+			errOut    error
+		)
+		return mountsOut, errOut
+	}
+	return mock.MountsFunc()
+}
+
+// MountsCalls gets all the calls that were made to Mounts.
+// Check the length with:
+//     len(mockedDiscover.MountsCalls())
+func (mock *DiscoverMock) MountsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockMounts.RLock()
+	calls = mock.calls.Mounts
+	mock.lockMounts.RUnlock()
 	return calls
 }

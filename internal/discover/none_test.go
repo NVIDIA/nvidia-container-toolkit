@@ -1,5 +1,5 @@
 /*
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,21 +16,16 @@
 
 package discover
 
-// Mount represents a discovered mount.
-type Mount struct {
-	Path string
-}
+import (
+	"testing"
 
-// Hook represents a discovered hook.
-type Hook struct {
-	Lifecycle string
-	Path      string
-	Args      []string
-}
+	"github.com/stretchr/testify/require"
+)
 
-//go:generate moq -stub -out discover_mock.go . Discover
-// Discover defines an interface for discovering the hooks and mounts available on a system
-type Discover interface {
-	Mounts() ([]Mount, error)
-	Hooks() ([]Hook, error)
+func TestNone(t *testing.T) {
+	d := None{}
+
+	mounts, err := d.Mounts()
+	require.NoError(t, err)
+	require.Empty(t, mounts)
 }

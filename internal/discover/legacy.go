@@ -23,6 +23,7 @@ import (
 )
 
 type legacy struct {
+	None
 	logger *logrus.Logger
 	lookup lookup.Locator
 }

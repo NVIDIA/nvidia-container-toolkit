@@ -1,5 +1,5 @@
-/*
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+/**
+# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,25 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-*/
+**/
 
 package discover
-
-// Mount represents a discovered mount.
-type Mount struct {
-	Path string
-}
-
-// Hook represents a discovered hook.
-type Hook struct {
-	Lifecycle string
-	Path      string
-	Args      []string
-}
-
-//go:generate moq -stub -out discover_mock.go . Discover
-// Discover defines an interface for discovering the hooks and mounts available on a system
-type Discover interface {
-	Mounts() ([]Mount, error)
-	Hooks() ([]Hook, error)
-}
