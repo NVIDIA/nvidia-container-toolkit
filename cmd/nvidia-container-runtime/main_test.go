@@ -3,15 +3,14 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +34,7 @@ func TestMain(m *testing.M) {
 	// TEST SETUP
 	// Determine the module root and the test binary path
 	var err error
-	moduleRoot, err := getModuleRoot()
+	moduleRoot, err := test.GetModuleRoot()
 	if err != nil {
 		logger.Fatalf("error in test setup: could not get module root: %v", err)
 	}
@@ -43,7 +42,7 @@ func TestMain(m *testing.M) {
 	testInputPath := filepath.Join(moduleRoot, "test", "input")
 
 	// Set the environment variables for the test
-	os.Setenv("PATH", prependToPath(testBinPath, moduleRoot))
+	os.Setenv("PATH", test.PrependToPath(testBinPath, moduleRoot))
 	os.Setenv("XDG_CONFIG_HOME", testInputPath)
 
 	// Confirm that the environment is configured correctly
@@ -69,31 +68,6 @@ func TestMain(m *testing.M) {
 	os.Remove(specFile)
 
 	os.Exit(exitCode)
-}
-
-func getModuleRoot() (string, error) {
-	_, filename, _, _ := runtime.Caller(0)
-
-	return hasGoMod(filename)
-}
-
-func hasGoMod(dir string) (string, error) {
-	if dir == "" || dir == "/" {
-		return "", fmt.Errorf("module root not found")
-	}
-
-	_, err := os.Stat(filepath.Join(dir, "go.mod"))
-	if err != nil {
-		return hasGoMod(filepath.Dir(dir))
-	}
-	return dir, nil
-}
-
-func prependToPath(additionalPaths ...string) string {
-	paths := strings.Split(os.Getenv("PATH"), ":")
-	paths = append(additionalPaths, paths...)
-
-	return strings.Join(paths, ":")
 }
 
 // case 1) nvidia-container-runtime run --bundle

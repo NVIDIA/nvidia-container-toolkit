@@ -1,17 +1,16 @@
 package oci
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestMaintainSpec(t *testing.T) {
-	moduleRoot, err := getModuleRoot()
+	moduleRoot, err := test.GetModuleRoot()
 	require.NoError(t, err)
 
 	files := []string{
@@ -37,22 +36,4 @@ func TestMaintainSpec(t *testing.T) {
 
 		require.JSONEq(t, string(inputContents), string(outputContents))
 	}
-}
-
-func getModuleRoot() (string, error) {
-	_, filename, _, _ := runtime.Caller(0)
-
-	return hasGoMod(filename)
-}
-
-func hasGoMod(dir string) (string, error) {
-	if dir == "" || dir == "/" {
-		return "", fmt.Errorf("module root not found")
-	}
-
-	_, err := os.Stat(filepath.Join(dir, "go.mod"))
-	if err != nil {
-		return hasGoMod(filepath.Dir(dir))
-	}
-	return dir, nil
 }
