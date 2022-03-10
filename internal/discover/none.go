@@ -22,6 +22,11 @@ type None struct{}
 
 var _ Discover = (*None)(nil)
 
+// Devices returns an empty list of devices
+func (e None) Devices() ([]Device, error) {
+	return []Device{}, nil
+}
+
 // Mounts returns an empty list of mounts
 func (e None) Mounts() ([]Mount, error) {
 	return []Mount{}, nil

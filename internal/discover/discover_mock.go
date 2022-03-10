@@ -17,6 +17,9 @@ var _ Discover = &DiscoverMock{}
 //
 // 		// make and configure a mocked Discover
 // 		mockedDiscover := &DiscoverMock{
+// 			DevicesFunc: func() ([]Device, error) {
+// 				panic("mock out the Devices method")
+// 			},
 // 			HooksFunc: func() ([]Hook, error) {
 // 				panic("mock out the Hooks method")
 // 			},
@@ -30,6 +33,9 @@ var _ Discover = &DiscoverMock{}
 //
 // 	}
 type DiscoverMock struct {
+	// DevicesFunc mocks the Devices method.
+	DevicesFunc func() ([]Device, error)
+
 	// HooksFunc mocks the Hooks method.
 	HooksFunc func() ([]Hook, error)
 
@@ -38,6 +44,9 @@ type DiscoverMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// Devices holds details about calls to the Devices method.
+		Devices []struct {
+		}
 		// Hooks holds details about calls to the Hooks method.
 		Hooks []struct {
 		}
@@ -45,8 +54,39 @@ type DiscoverMock struct {
 		Mounts []struct {
 		}
 	}
-	lockHooks  sync.RWMutex
-	lockMounts sync.RWMutex
+	lockDevices sync.RWMutex
+	lockHooks   sync.RWMutex
+	lockMounts  sync.RWMutex
+}
+
+// Devices calls DevicesFunc.
+func (mock *DiscoverMock) Devices() ([]Device, error) {
+	callInfo := struct {
+	}{}
+	mock.lockDevices.Lock()
+	mock.calls.Devices = append(mock.calls.Devices, callInfo)
+	mock.lockDevices.Unlock()
+	if mock.DevicesFunc == nil {
+		var (
+			devicesOut []Device
+			errOut     error
+		)
+		return devicesOut, errOut
+	}
+	return mock.DevicesFunc()
+}
+
+// DevicesCalls gets all the calls that were made to Devices.
+// Check the length with:
+//     len(mockedDiscover.DevicesCalls())
+func (mock *DiscoverMock) DevicesCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockDevices.RLock()
+	calls = mock.calls.Devices
+	mock.lockDevices.RUnlock()
+	return calls
 }
 
 // Hooks calls HooksFunc.

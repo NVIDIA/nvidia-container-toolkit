@@ -27,6 +27,21 @@ type list struct {
 
 var _ Discover = (*list)(nil)
 
+// Devices returns all devices from the included discoverers
+func (d list) Devices() ([]Device, error) {
+	var allDevices []Device
+
+	for i, di := range d.discoverers {
+		devices, err := di.Devices()
+		if err != nil {
+			return nil, fmt.Errorf("error discovering devices for discoverer %v: %v", i, err)
+		}
+		allDevices = append(allDevices, devices...)
+	}
+
+	return allDevices, nil
+}
+
 // Mounts returns all mounts from the included discoverers
 func (d list) Mounts() ([]Mount, error) {
 	var allMounts []Mount

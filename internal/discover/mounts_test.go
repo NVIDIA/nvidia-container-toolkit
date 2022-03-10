@@ -26,6 +26,14 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+func TestMountsReturnsEmptyDevices(t *testing.T) {
+	d := mounts{}
+	devices, err := d.Devices()
+
+	require.NoError(t, err)
+	require.Empty(t, devices)
+}
+
 func TestMounts(t *testing.T) {
 	logger, logHook := testlog.NewNullLogger()
 

@@ -54,39 +54,67 @@ func NewFromCSV(logger *logrus.Logger, csvRoot string, root string) (Discover, e
 	locators[csv.MountSpecSym] = symlinkLocator
 
 	var discoverers []Discover
-	// Create a discoverer for each file-kind combination
-	for _, file := range files {
-		targets, err := csv.ParseFile(logger, file)
+	for _, filename := range files {
+		d, err := NewFromCSVFile(logger, locators, filename)
 		if err != nil {
-			logger.Warnf("Skipping failed CSV file %v: %v", file, err)
+			logger.Warnf("Skipping CSV file %v: %v", filename, err)
 			continue
 		}
-		if len(targets) == 0 {
-			logger.Warnf("Skipping empty CSV file %v", file)
-			continue
-		}
-
-		candidatesByType := make(map[csv.MountSpecType][]string)
-		for _, t := range targets {
-			candidatesByType[t.Type] = append(candidatesByType[t.Type], t.Path)
-		}
-
-		for t, candidates := range candidatesByType {
-			d := csvDiscoverer{
-				filename:  file,
-				mountType: t,
-				mounts: mounts{
-					logger:   logger,
-					lookup:   locators[t],
-					required: candidates,
-				},
-			}
-			discoverers = append(discoverers, &d)
-		}
-
+		discoverers = append(discoverers, d)
 	}
 
 	return &list{discoverers: discoverers}, nil
+}
+
+// NewFromCSVFile creates a discoverer for the CSV file. A logger is also supplied.
+func NewFromCSVFile(logger *logrus.Logger, locators map[csv.MountSpecType]lookup.Locator, filename string) (Discover, error) {
+	// Create a discoverer for each file-kind combination
+	targets, err := csv.ParseFile(logger, filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse CSV file: %v", err)
+	}
+	if len(targets) == 0 {
+		return nil, fmt.Errorf("CSV file is empty")
+	}
+
+	csvDiscoverers, err := newFromMountSpecs(logger, locators, targets)
+	if err != nil {
+		return nil, err
+	}
+	var discoverers []Discover
+	for _, d := range csvDiscoverers {
+		d.filename = filename
+		discoverers = append(discoverers, d)
+	}
+
+	return &list{discoverers: discoverers}, nil
+}
+
+// newFromMountSpecs creates a discoverer for the CSV file. A logger is also supplied.
+func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]lookup.Locator, targets []*csv.MountSpec) ([]*csvDiscoverer, error) {
+	var discoverers []*csvDiscoverer
+	candidatesByType := make(map[csv.MountSpecType][]string)
+	for _, t := range targets {
+		candidatesByType[t.Type] = append(candidatesByType[t.Type], t.Path)
+	}
+
+	for t, candidates := range candidatesByType {
+		locator, exists := locators[t]
+		if !exists {
+			return nil, fmt.Errorf("no locator defined for '%v'", t)
+		}
+		d := csvDiscoverer{
+			mounts: mounts{
+				logger:   logger,
+				lookup:   locator,
+				required: candidates,
+			},
+			mountType: t,
+		}
+		discoverers = append(discoverers, &d)
+	}
+
+	return discoverers, nil
 }
 
 func (d csvDiscoverer) Mounts() ([]Mount, error) {
@@ -95,4 +123,22 @@ func (d csvDiscoverer) Mounts() ([]Mount, error) {
 	}
 
 	return d.mounts.Mounts()
+}
+
+func (d csvDiscoverer) Devices() ([]Device, error) {
+	if d.mountType != csv.MountSpecDev {
+		return d.None.Devices()
+	}
+
+	mounts, err := d.mounts.Mounts()
+	if err != nil {
+		return nil, err
+	}
+	var devices []Device
+	for _, mount := range mounts {
+		device := Device(mount)
+		devices = append(devices, device)
+	}
+
+	return devices, nil
 }
