@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/sirupsen/logrus"
 )
 
 var logger = NewLogger()
@@ -37,6 +38,12 @@ func run(argv []string) (rerr error) {
 		}
 		logger.CloseFile()
 	}()
+
+	if logLevel, err := logrus.ParseLevel(cfg.NVIDIAContainerRuntimeConfig.LogLevel); err == nil {
+		logger.SetLevel(logLevel)
+	} else {
+		logger.Warnf("Invalid log-level '%v'; using '%v'", cfg.NVIDIAContainerRuntimeConfig.LogLevel, logger.Level.String())
+	}
 
 	runtime, err := newNVIDIAContainerRuntime(logger.Logger, cfg, argv)
 	if err != nil {

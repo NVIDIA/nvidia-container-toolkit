@@ -64,6 +64,7 @@ func TestGetConfig(t *testing.T) {
 					DebugFilePath: "/dev/null",
 					Experimental:  false,
 					DiscoverMode:  "auto",
+					LogLevel:      "info",
 				},
 				NVIDIACTKConfig: CTKConfig{
 					Path: "nvidia-ctk",
@@ -77,6 +78,7 @@ func TestGetConfig(t *testing.T) {
 				"nvidia-container-runtime.debug = \"/foo/bar\"",
 				"nvidia-container-runtime.experimental = true",
 				"nvidia-container-runtime.discover-mode = \"not-legacy\"",
+				"nvidia-container-runtime.log-level = \"debug\"",
 				"nvidia-ctk.path = \"/foo/bar/nvidia-ctk\"",
 			},
 			expectedConfig: &Config{
@@ -87,6 +89,7 @@ func TestGetConfig(t *testing.T) {
 					DebugFilePath: "/foo/bar",
 					Experimental:  true,
 					DiscoverMode:  "not-legacy",
+					LogLevel:      "debug",
 				},
 				NVIDIACTKConfig: CTKConfig{
 					Path: "/foo/bar/nvidia-ctk",
@@ -102,6 +105,7 @@ func TestGetConfig(t *testing.T) {
 				"debug = \"/foo/bar\"",
 				"experimental = true",
 				"discover-mode = \"not-legacy\"",
+				"log-level = \"debug\"",
 				"[nvidia-ctk]",
 				"path = \"/foo/bar/nvidia-ctk\"",
 			},
@@ -113,6 +117,7 @@ func TestGetConfig(t *testing.T) {
 					DebugFilePath: "/foo/bar",
 					Experimental:  true,
 					DiscoverMode:  "not-legacy",
+					LogLevel:      "debug",
 				},
 				NVIDIACTKConfig: CTKConfig{
 					Path: "/foo/bar/nvidia-ctk",
