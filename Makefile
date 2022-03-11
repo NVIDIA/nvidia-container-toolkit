@@ -90,11 +90,7 @@ ineffassign:
 
 lint:
 # We use `go list -f '{{.Dir}}' $(MODULE)/...` to skip the `vendor` folder.
-	go list -f '{{.Dir}}' $(MODULE)/... | grep -v /internal/ | xargs golint -set_exit_status
-
-lint-internal:
-# We use `go list -f '{{.Dir}}' $(MODULE)/...` to skip the `vendor` folder.
-	go list -f '{{.Dir}}' $(MODULE)/internal/... | xargs golint -set_exit_status
+	go list -f '{{.Dir}}' $(MODULE)/... | xargs golint -set_exit_status
 
 misspell:
 	misspell $(MODULE)/...
