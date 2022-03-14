@@ -27,6 +27,15 @@ type list struct {
 
 var _ Discover = (*list)(nil)
 
+// NewList creates a discoverer that is the composite of a list of discoveres.
+func NewList(d ...Discover) Discover {
+	l := list{
+		discoverers: d,
+	}
+
+	return &l
+}
+
 // Devices returns all devices from the included discoverers
 func (d list) Devices() ([]Device, error) {
 	var allDevices []Device

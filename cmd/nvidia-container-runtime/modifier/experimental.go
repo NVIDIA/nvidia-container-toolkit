@@ -59,13 +59,16 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec 
 	}
 	logger.Infof("Constructing modifier from config: %+v", cfg)
 
-	root := cfg.NVIDIAContainerCLIConfig.Root
+	config := &discover.Config{
+		Root:                                    cfg.NVIDIAContainerCLIConfig.Root,
+		NVIDIAContainerToolkitCLIExecutablePath: cfg.NVIDIACTKConfig.Path,
+	}
 
 	var d discover.Discover
 
 	switch resolveAutoDiscoverMode(logger, cfg.NVIDIAContainerRuntimeConfig.DiscoverMode) {
 	case "legacy":
-		legacyDiscoverer, err := discover.NewLegacyDiscoverer(logger, root)
+		legacyDiscoverer, err := discover.NewLegacyDiscoverer(logger, config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create legacy discoverer: %v", err)
 		}
@@ -81,11 +84,17 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec 
 			csvFiles = csv.BaseFilesOnly(csvFiles)
 		}
 
-		csvDiscoverer, err := discover.NewFromCSVFiles(logger, csvFiles, root)
+		csvDiscoverer, err := discover.NewFromCSVFiles(logger, csvFiles, config.Root)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
 		}
-		d = csvDiscoverer
+
+		hooks, err := discover.NewLDCacheUpdateHook(logger, csvDiscoverer, config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create hook discoverer: %v", err)
+		}
+
+		d = discover.NewList(csvDiscoverer, hooks)
 	default:
 		return nil, fmt.Errorf("invalid discover mode: %v", cfg.NVIDIAContainerRuntimeConfig.DiscoverMode)
 	}

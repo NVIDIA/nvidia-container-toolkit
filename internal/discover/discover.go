@@ -16,6 +16,12 @@
 
 package discover
 
+// Config represents the configuration options for discovery
+type Config struct {
+	Root                                    string
+	NVIDIAContainerToolkitCLIExecutablePath string
+}
+
 // Device represents a discovered character device.
 type Device struct {
 	Path string

@@ -23,10 +23,10 @@ import (
 )
 
 // NewLegacyDiscoverer creates a discoverer for the experimental runtime
-func NewLegacyDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
+func NewLegacyDiscoverer(logger *logrus.Logger, cfg *Config) (Discover, error) {
 	d := legacy{
 		logger: logger,
-		lookup: lookup.NewExecutableLocator(logger, root),
+		lookup: lookup.NewExecutableLocator(logger, cfg.Root),
 	}
 
 	return &d, nil

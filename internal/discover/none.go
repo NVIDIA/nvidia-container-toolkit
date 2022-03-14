@@ -32,7 +32,7 @@ func (e None) Mounts() ([]Mount, error) {
 	return []Mount{}, nil
 }
 
-// Hooks returns and empty list of hooks
+// Hooks returns an empty list of hooks
 func (e None) Hooks() ([]Hook, error) {
 	return []Hook{}, nil
 }
