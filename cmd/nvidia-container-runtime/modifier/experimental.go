@@ -68,7 +68,17 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec 
 		}
 		d = legacyDiscoverer
 	case "csv":
-		csvDiscoverer, err := discover.NewFromCSV(logger, csv.DefaultRoot, "")
+		csvFiles, err := csv.GetFileList(csv.DefaultRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get list of CSV files: %v", err)
+		}
+
+		nvidiaRequireJetpack, _ := ociSpec.LookupEnv(nvidiaRequireJetpackEnvvar)
+		if nvidiaRequireJetpack != "csv-mounts=all" {
+			csvFiles = csv.BaseFilesOnly(csvFiles)
+		}
+
+		csvDiscoverer, err := discover.NewFromCSVFiles(logger, csvFiles, root)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
 		}

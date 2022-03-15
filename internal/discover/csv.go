@@ -40,8 +40,15 @@ func NewFromCSV(logger *logrus.Logger, csvRoot string, root string) (Discover, e
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CSV file from %v: %v", csvRoot, err)
 	}
+	return NewFromCSVFiles(logger, files, root)
+}
+
+// NewFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
+// The constructed discoverer is comprised of a list, with each element in the list being associated with a
+// single CSV files.
+func NewFromCSVFiles(logger *logrus.Logger, files []string, root string) (Discover, error) {
 	if len(files) == 0 {
-		logger.Warnf("No CSV files found in %v", csvRoot)
+		logger.Warnf("No CSV files specified")
 		return None{}, nil
 	}
 
@@ -66,7 +73,9 @@ func NewFromCSV(logger *logrus.Logger, csvRoot string, root string) (Discover, e
 	return &list{discoverers: discoverers}, nil
 }
 
-// NewFromCSVFile creates a discoverer for the CSV file. A logger is also supplied.
+// NewFromCSVFile creates a discoverer for the specified CSV file. A logger is also supplied.
+// The constructed discoverer is comprised of a list, with each element in the list being associated with a particular
+// MountSpecType.
 func NewFromCSVFile(logger *logrus.Logger, locators map[csv.MountSpecType]lookup.Locator, filename string) (Discover, error) {
 	// Create a discoverer for each file-kind combination
 	targets, err := csv.ParseFile(logger, filename)
@@ -91,6 +100,7 @@ func NewFromCSVFile(logger *logrus.Logger, locators map[csv.MountSpecType]lookup
 }
 
 // newFromMountSpecs creates a discoverer for the CSV file. A logger is also supplied.
+// A list of csvDiscoverers is returned, with each being associated with a single MountSpecType.
 func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]lookup.Locator, targets []*csv.MountSpec) ([]*csvDiscoverer, error) {
 	var discoverers []*csvDiscoverer
 	candidatesByType := make(map[csv.MountSpecType][]string)
@@ -117,6 +127,8 @@ func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]loo
 	return discoverers, nil
 }
 
+// Mounts returns the discovered mounts for the csvDiscoverer.
+// Note that if the discoverer is for the device MountSpecType, the list of mounts is empty.
 func (d csvDiscoverer) Mounts() ([]Mount, error) {
 	if d.mountType == csv.MountSpecDev {
 		return d.None.Mounts()
@@ -125,6 +137,8 @@ func (d csvDiscoverer) Mounts() ([]Mount, error) {
 	return d.mounts.Mounts()
 }
 
+// Devices returns the discovered devices for the csvDiscoverer.
+// Note that if the discoverer is not for the device MountSpecType, the list of devices is empty.
 func (d csvDiscoverer) Devices() ([]Device, error) {
 	if d.mountType != csv.MountSpecDev {
 		return d.None.Devices()

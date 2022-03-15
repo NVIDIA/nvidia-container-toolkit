@@ -62,6 +62,25 @@ func GetFileList(root string) ([]string, error) {
 	return csvFilePaths, nil
 }
 
+// BaseFilesOnly filters out non-base CSV files from the list of CSV files.
+func BaseFilesOnly(filenames []string) []string {
+	filter := map[string]bool{
+		"l4t.csv":     true,
+		"drivers.csv": true,
+		"devices.csv": true,
+	}
+
+	var selected []string
+	for _, file := range filenames {
+		base := filepath.Base(file)
+		if filter[base] {
+			selected = append(selected, file)
+		}
+	}
+
+	return selected
+}
+
 // ParseFile parses the specified file and returns a list of required jetson mounts
 func ParseFile(logger *logrus.Logger, filename string) ([]*MountSpec, error) {
 	csvFile, err := os.Open(filename)
