@@ -19,6 +19,7 @@ package main
 import (
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
@@ -28,13 +29,13 @@ func TestFactoryMethod(t *testing.T) {
 
 	testCases := []struct {
 		description   string
-		config        config
+		config        config.RuntimeConfig
 		argv          []string
 		expectedError bool
 	}{
 		{
 			description: "empty config no error",
-			config:      config{},
+			config:      config.RuntimeConfig{},
 		},
 	}
 
