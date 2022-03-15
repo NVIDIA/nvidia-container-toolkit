@@ -22,21 +22,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type stable struct {
+type legacy struct {
 	logger *logrus.Logger
 	lookup lookup.Locator
 }
 
 const (
-	nvidiaContainerRuntimeHookExecuable = "nvidia-container-runtime-hook"
-	hookDefaultFilePath                 = "/usr/bin/nvidia-container-runtime-hook"
+	nvidiaContainerRuntimeHookExecutable = "nvidia-container-runtime-hook"
+	hookDefaultFilePath                  = "/usr/bin/nvidia-container-runtime-hook"
 )
 
-var _ Discover = (*stable)(nil)
+var _ Discover = (*legacy)(nil)
 
-// NewStableDiscoverer creates a discoverer for the stable runtime
-func NewStableDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
-	d := stable{
+// NewLegacyDiscoverer creates a discoverer for the legacy runtime
+func NewLegacyDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
+	d := legacy{
 		logger: logger,
 		lookup: lookup.NewPathLocator(logger, root),
 	}
@@ -44,18 +44,20 @@ func NewStableDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
 	return &d, nil
 }
 
-// Hooks returns the "stable" NVIDIA Container Runtime hook
-func (d stable) Hooks() ([]Hook, error) {
+// Hooks returns the "legacy" NVIDIA Container Runtime hook. This hook calls out
+// to the nvidia-container-cli to make modifications to the container as defined
+// in libnvidia-container.
+func (d legacy) Hooks() ([]Hook, error) {
 	var hooks []Hook
 
 	hookPath := hookDefaultFilePath
-	targets, err := d.lookup.Locate(nvidiaContainerRuntimeHookExecuable)
+	targets, err := d.lookup.Locate(nvidiaContainerRuntimeHookExecutable)
 	if err != nil {
-		d.logger.Warnf("Failed to locate %v: %v", nvidiaContainerRuntimeHookExecuable, err)
+		d.logger.Warnf("Failed to locate %v: %v", nvidiaContainerRuntimeHookExecutable, err)
 	} else if len(targets) == 0 {
-		d.logger.Warnf("%v not found", nvidiaContainerRuntimeHookExecuable)
+		d.logger.Warnf("%v not found", nvidiaContainerRuntimeHookExecutable)
 	} else {
-		d.logger.Debugf("Found %v candidates: %v", nvidiaContainerRuntimeHookExecuable, targets)
+		d.logger.Debugf("Found %v candidates: %v", nvidiaContainerRuntimeHookExecutable, targets)
 		hookPath = targets[0]
 	}
 	d.logger.Debugf("Using NVIDIA Container Runtime Hook path %v", hookPath)

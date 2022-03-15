@@ -39,7 +39,7 @@ func run(argv []string) (rerr error) {
 
 	runtime, err := newNVIDIAContainerRuntime(logger.Logger, cfg, argv)
 	if err != nil {
-		return fmt.Errorf("error creating runtime: %v", err)
+		return fmt.Errorf("failed to create NVIDIA Container Runtime: %v", err)
 	}
 
 	return runtime.Exec(argv)

@@ -58,15 +58,21 @@ func TestGerRuntimeConfig(t *testing.T) {
 			description: "empty config is default",
 			expectedConfig: &RuntimeConfig{
 				DebugFilePath: "/dev/null",
+				Experimental:  false,
+				DiscoverMode:  "legacy",
 			},
 		},
 		{
 			description: "config options set inline",
 			contents: []string{
 				"nvidia-container-runtime.debug = \"/foo/bar\"",
+				"nvidia-container-runtime.experimental = true",
+				"nvidia-container-runtime.discover-mode = \"not-legacy\"",
 			},
 			expectedConfig: &RuntimeConfig{
 				DebugFilePath: "/foo/bar",
+				Experimental:  true,
+				DiscoverMode:  "not-legacy",
 			},
 		},
 		{
@@ -74,9 +80,13 @@ func TestGerRuntimeConfig(t *testing.T) {
 			contents: []string{
 				"[nvidia-container-runtime]",
 				"debug = \"/foo/bar\"",
+				"experimental = true",
+				"discover-mode = \"not-legacy\"",
 			},
 			expectedConfig: &RuntimeConfig{
 				DebugFilePath: "/foo/bar",
+				Experimental:  true,
+				DiscoverMode:  "not-legacy",
 			},
 		},
 	}

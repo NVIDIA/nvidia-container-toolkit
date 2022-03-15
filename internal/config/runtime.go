@@ -38,6 +38,7 @@ var (
 type RuntimeConfig struct {
 	DebugFilePath string
 	Experimental  bool
+	DiscoverMode  string
 }
 
 // GetRuntimeConfig sets up the config struct. Values are read from a toml file
@@ -74,6 +75,7 @@ func getRuntimeConfigFrom(reader io.Reader) (*RuntimeConfig, error) {
 
 	cfg.DebugFilePath = toml.GetDefault("nvidia-container-runtime.debug", cfg.DebugFilePath).(string)
 	cfg.Experimental = toml.GetDefault("nvidia-container-runtime.experimental", cfg.Experimental).(bool)
+	cfg.DiscoverMode = toml.GetDefault("nvidia-container-runtime.discover-mode", cfg.DiscoverMode).(string)
 
 	return cfg, nil
 }
@@ -83,6 +85,7 @@ func getDefaultRuntimeConfig() *RuntimeConfig {
 	c := RuntimeConfig{
 		DebugFilePath: "/dev/null",
 		Experimental:  false,
+		DiscoverMode:  "legacy",
 	}
 
 	return &c
