@@ -22,20 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type legacy struct {
-	None
-	logger *logrus.Logger
-	lookup lookup.Locator
-}
-
-const (
-	nvidiaContainerRuntimeHookExecutable = "nvidia-container-runtime-hook"
-	hookDefaultFilePath                  = "/usr/bin/nvidia-container-runtime-hook"
-)
-
-var _ Discover = (*legacy)(nil)
-
-// NewLegacyDiscoverer creates a discoverer for the legacy runtime
+// NewLegacyDiscoverer creates a discoverer for the experimental runtime
 func NewLegacyDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
 	d := legacy{
 		logger: logger,
@@ -45,13 +32,23 @@ func NewLegacyDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
 	return &d, nil
 }
 
-// Hooks returns the "legacy" NVIDIA Container Runtime hook. This hook calls out
-// to the nvidia-container-cli to make modifications to the container as defined
-// in libnvidia-container.
-func (d legacy) Hooks() ([]Hook, error) {
-	var hooks []Hook
+type legacy struct {
+	None
+	logger *logrus.Logger
+	lookup lookup.Locator
+}
 
-	hookPath := hookDefaultFilePath
+var _ Discover = (*legacy)(nil)
+
+const (
+	nvidiaContainerRuntimeHookExecutable      = "nvidia-container-runtime-hook"
+	nvidiaContainerRuntimeHookDefaultFilePath = "/usr/bin/nvidia-container-runtime-hook"
+)
+
+// Hooks returns the "legacy" NVIDIA Container Runtime hook. This mirrors the behaviour of the stable
+// modifier.
+func (d legacy) Hooks() ([]Hook, error) {
+	hookPath := nvidiaContainerRuntimeHookDefaultFilePath
 	targets, err := d.lookup.Locate(nvidiaContainerRuntimeHookExecutable)
 	if err != nil {
 		d.logger.Warnf("Failed to locate %v: %v", nvidiaContainerRuntimeHookExecutable, err)
@@ -64,11 +61,11 @@ func (d legacy) Hooks() ([]Hook, error) {
 	d.logger.Debugf("Using NVIDIA Container Runtime Hook path %v", hookPath)
 
 	args := []string{hookPath, "prestart"}
-	legacyHook := Hook{
+	h := Hook{
 		Lifecycle: cdi.PrestartHook,
 		Path:      hookPath,
 		Args:      args,
 	}
-	hooks = append(hooks, legacyHook)
-	return hooks, nil
+
+	return []Hook{h}, nil
 }
