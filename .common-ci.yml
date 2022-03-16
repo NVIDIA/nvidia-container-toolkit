@@ -42,11 +42,12 @@ stages:
 .dist-centos7:
   variables:
     DIST: centos7
-    CVE_UPDATES: "nss"
+    CVE_UPDATES: "cyrus-sasl-lib"
 
 .dist-centos8:
   variables:
     DIST: centos8
+    CVE_UPDATES: "cyrus-sasl-lib"
 
 .dist-debian10:
   variables:
@@ -63,6 +64,7 @@ stages:
 .dist-ubi8:
   variables:
     DIST: ubi8
+    CVE_UPDATES: "cyrus-sasl-lib"
 
 .dist-ubuntu16.04:
   variables:
@@ -71,6 +73,7 @@ stages:
 .dist-ubuntu18.04:
   variables:
     DIST: ubuntu18.04
+    CVE_UPDATES: "libsasl2-2 libsasl2-modules-db"
 
 .dist-packaging:
   variables:
