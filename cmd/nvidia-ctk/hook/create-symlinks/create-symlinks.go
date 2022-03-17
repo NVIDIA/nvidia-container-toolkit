@@ -1,0 +1,209 @@
+/**
+# Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+**/
+
+package symlinks
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
+)
+
+type command struct {
+	logger *logrus.Logger
+}
+
+type config struct {
+	hostRoot      string
+	filenames     cli.StringSlice
+	containerSpec string
+}
+
+// NewCommand constructs a hook command with the specified logger
+func NewCommand(logger *logrus.Logger) *cli.Command {
+	c := command{
+		logger: logger,
+	}
+	return c.build()
+}
+
+// build
+func (m command) build() *cli.Command {
+	cfg := config{}
+
+	// Create the '' command
+	c := cli.Command{
+		Name:  "create-symlinks",
+		Usage: "A hook to create symlinks in the container. This can be used to proces CSV mount specs",
+		Action: func(c *cli.Context) error {
+			return m.run(c, &cfg)
+		},
+	}
+
+	c.Flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:        "host-root",
+			Usage:       "The root on the host filesystem to use to resolve symlinks",
+			Destination: &cfg.hostRoot,
+		},
+		&cli.StringSliceFlag{
+			Name:        "csv-filenames",
+			Aliases:     []string{"f"},
+			Usage:       "Specify the (CSV) filenames to process",
+			Destination: &cfg.filenames,
+		},
+		&cli.StringFlag{
+			Name:        "container-spec",
+			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
+			Destination: &cfg.containerSpec,
+		},
+	}
+
+	return &c
+}
+
+func (m command) run(c *cli.Context, cfg *config) error {
+	s, err := oci.LoadContainerState(cfg.containerSpec)
+	if err != nil {
+		return fmt.Errorf("failed to load container state: %v", err)
+	}
+
+	spec, err := s.LoadSpec()
+	if err != nil {
+		return fmt.Errorf("failed to load OCI spec: %v", err)
+	}
+
+	var containerRoot string
+	if spec.Root != nil {
+		containerRoot = spec.Root.Path
+	}
+
+	csvFiles := cfg.filenames.Value()
+
+	chainLocator := lookup.NewSymlinkChainLocator(m.logger, cfg.hostRoot)
+
+	var candidates []string
+	for _, file := range csvFiles {
+		mountSpecs, err := csv.ParseFile(m.logger, file)
+		if err != nil {
+			m.logger.Debugf("Skipping CSV file %v: %v", file, err)
+			continue
+		}
+
+		for _, ms := range mountSpecs {
+			if ms.Type != csv.MountSpecSym {
+				continue
+			}
+			targets, err := chainLocator.Locate(ms.Path)
+			if err != nil {
+				m.logger.Warnf("Failed to locate symlink %v", ms.Path)
+			}
+			candidates = append(candidates, targets...)
+		}
+	}
+
+	created := make(map[string]bool)
+	// candidates is a list of absolute paths to symlinks in a chain, or the final target of the chain.
+	for _, candidate := range candidates {
+		targets, err := m.Locate(candidate)
+		if err != nil {
+			m.logger.Debugf("Skipping invalid link: %v", err)
+			continue
+		} else if len(targets) != 1 {
+			m.logger.Debugf("Unexepected number of targets: %v", targets)
+			continue
+		} else if targets[0] == candidate {
+			m.logger.Debugf("%v is not a symlink", candidate)
+			continue
+		}
+		target, err := changeRoot(cfg.hostRoot, "/", targets[0])
+		if err != nil {
+			m.logger.Warnf("Failed to resolve path for target %v relative to %v: %v", target, cfg.hostRoot, err)
+			continue
+		}
+
+		linkPath, err := changeRoot(cfg.hostRoot, containerRoot, candidate)
+		if err != nil {
+			m.logger.Warnf("Failed to resolve path for link %v relative to %v: %v", candidate, cfg.hostRoot, err)
+			continue
+		}
+
+		if created[linkPath] {
+			m.logger.Debugf("Link %v already created", linkPath)
+			continue
+		}
+		m.logger.Infof("Symlinking %v to %v", linkPath, target)
+		err = os.MkdirAll(filepath.Dir(linkPath), 0755)
+		if err != nil {
+			m.logger.Warnf("Faild to create directory: %v", err)
+			continue
+		}
+		err = os.Symlink(target, linkPath)
+		if err != nil {
+			m.logger.Warnf("Failed to create symlink: %v", err)
+			continue
+		}
+		created[linkPath] = true
+	}
+
+	return nil
+
+}
+
+func changeRoot(current string, new string, path string) (string, error) {
+	if !filepath.IsAbs(path) {
+		return path, nil
+	}
+
+	relative := path
+	if current != "" {
+		r, err := filepath.Rel(current, path)
+		if err != nil {
+			return "", err
+		}
+		relative = r
+	}
+
+	return filepath.Join(new, relative), nil
+}
+
+// Locate returns the link target of the specified filename or an empty slice if the
+// specified filename is not a symlink.
+func (m command) Locate(filename string) ([]string, error) {
+	info, err := os.Lstat(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file info: %v", info)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		m.logger.Debugf("%v is not a symlink", filename)
+		return nil, nil
+	}
+
+	target, err := os.Readlink(filename)
+	if err != nil {
+		return nil, fmt.Errorf("error checking symlink: %v", err)
+	}
+
+	m.logger.Debugf("Resolved link: '%v' => '%v'", filename, target)
+
+	return []string{target}, nil
+}

@@ -63,7 +63,6 @@ func main() {
 		if config.Debug {
 			logLevel = log.DebugLevel
 		}
-
 		logger.SetLevel(logLevel)
 		return nil
 	}
