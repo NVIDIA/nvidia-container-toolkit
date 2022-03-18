@@ -85,6 +85,11 @@ image-ubuntu18.04:
     - .image-pull
     - .dist-ubuntu18.04
 
+image-ubuntu20.04:
+  extends:
+    - .image-pull
+    - .dist-ubuntu20.04
+
 # The DIST=packaging target creates an image containing all built packages
 image-packaging:
   extends:
@@ -183,6 +188,23 @@ scan-ubuntu18.04-arm64:
     - image-ubuntu18.04
     - scan-ubuntu18.04-amd64
 
+scan-ubuntu20.04-amd64:
+  extends:
+    - .scan
+    - .dist-ubuntu20.04
+    - .platform-amd64
+  needs:
+    - image-ubuntu20.04
+
+scan-ubuntu20.04-arm64:
+  extends:
+    - .scan
+    - .dist-ubuntu20.04
+    - .platform-arm64
+  needs:
+    - image-ubuntu20.04
+    - scan-ubuntu20.04-amd64
+
 scan-ubi8-amd64:
   extends:
     - .scan
@@ -226,6 +248,13 @@ release:staging-ubuntu18.04:
   needs:
     - image-ubuntu18.04
 
+release:staging-ubuntu20.04:
+  extends:
+    - .release:staging
+    - .dist-ubuntu20.04
+  needs:
+    - image-ubuntu20.04
+
 # Define the external release targets
 # Release to NGC
 release:ngc-centos7:
@@ -238,10 +267,15 @@ release:ngc-centos8:
     - .release:ngc
     - .dist-centos8
 
-release:ngc-ubuntu18:
+release:ngc-ubuntu18.04:
   extends:
     - .release:ngc
     - .dist-ubuntu18.04
+
+release:ngc-ubuntu20.04:
+  extends:
+    - .release:ngc
+    - .dist-ubuntu20.04
 
 release:ngc-ubi8:
   extends:
@@ -259,10 +293,15 @@ release:dockerhub-centos8:
     - .release:dockerhub
     - .dist-centos8
 
-release:dockerhub-ubuntu18:
+release:dockerhub-ubuntu18.04:
   extends:
     - .release:dockerhub
     - .dist-ubuntu18.04
+
+release:dockerhub-ubuntu20.04:
+  extends:
+    - .release:dockerhub
+    - .dist-ubuntu20.04
 
 release:dockerhub-ubi8:
   extends:

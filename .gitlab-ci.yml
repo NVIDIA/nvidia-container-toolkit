@@ -262,6 +262,16 @@ image-ubuntu18.04:
     - package-ubuntu18.04-arm64
     - package-ubuntu18.04-ppc64le
 
+image-ubuntu20.04:
+  extends:
+    - .image-build
+    - .package-artifacts
+    - .dist-ubuntu20.04
+  needs:
+    - package-ubuntu18.04-amd64
+    - package-ubuntu18.04-arm64
+    - package-ubuntu18.04-ppc64le
+
 # The DIST=packaging target creates an image containing all built packages
 image-packaging:
   extends:
@@ -342,4 +352,32 @@ test-docker-ubuntu18.04:
     - .dist-ubuntu18.04
   needs:
     - image-ubuntu18.04
+
+test-toolkit-ubuntu20.04:
+  extends:
+    - .test:toolkit
+    - .dist-ubuntu20.04
+  needs:
+    - image-ubuntu20.04
+
+test-containerd-ubuntu20.04:
+  extends:
+    - .test:containerd
+    - .dist-ubuntu20.04
+  needs:
+    - image-ubuntu20.04
+
+test-crio-ubuntu20.04:
+  extends:
+    - .test:crio
+    - .dist-ubuntu20.04
+  needs:
+    - image-ubuntu20.04
+
+test-docker-ubuntu20.04:
+  extends:
+    - .test:docker
+    - .dist-ubuntu20.04
+  needs:
+    - image-ubuntu20.04
 
