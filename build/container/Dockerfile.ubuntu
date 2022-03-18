@@ -40,7 +40,7 @@ COPY . .
 RUN GOPATH=/artifacts go install -ldflags="-s -w -X 'main.Version=${VERSION}'" ./tools/...
 
 
-FROM nvidia/cuda:${CUDA_VERSION}-base-${BASE_DIST}
+FROM nvcr.io/nvidia/cuda:${CUDA_VERSION}-base-${BASE_DIST}
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
