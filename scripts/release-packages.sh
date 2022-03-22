@@ -16,7 +16,8 @@
 
 function assert_usage() {
     echo "Incorrect arguments: $*"
-    echo "$(basename ${BASH_SOURCE[0]}) REPO PACKAGE_REPO_ROOT [SHA]"
+    echo "$(basename ${BASH_SOURCE[0]}) PACKAGE_REPO_ROOT [SHA]"
+    echo "\tPACKAGE_REPO_ROOT: The path to the libnvidia-container repository"
     echo "\tSHA: The SHA / reference to release. [Default: HEAD]"
     exit 1
 }
@@ -146,9 +147,22 @@ all=(
 
 targets=${all[@]}
 
-: ${UPSTREAM_REFERENCE:="upstream/gh-pages"}
+_current_branch=$(git -C ${PACKAGE_REPO_ROOT} rev-parse --abbrev-ref HEAD)
+if [[ x"${_current_branch}" != x"gh-pages" ]]; then
+    echo "It is expected that the gh-pages branch be checked out"
+    exit 1
+fi
+
+: ${UPSTREAM_REMOTE:="origin"}
+_remote_name=$( git remote -v | grep "git@gitlab.com:nvidia/container-toolkit/libnvidia-container.git (push)" | cut -d$'\t' -f1 )
+if [[ x"${_remote_name}" != x"${UPSTREAM_REMOTE}" ]]; then
+    echo "Identified ${_remote_name} as git@gitlab.com:nvidia/container-toolkit/libnvidia-container.git remote."
+    echo "Set UPSTREAM_REMOTE=${_remote_name} instead of ${UPSTREAM_REMOTE}"
+fi
+
+: ${UPSTREAM_REFERENCE:="${UPSTREAM_REMOTE}/gh-pages"}
 git -C ${PACKAGE_REPO_ROOT} reset --hard ${UPSTREAM_REFERENCE}
-git -C ${PACKAGE_REPO_ROOT} clean -fdx
+git -C ${PACKAGE_REPO_ROOT} clean -fdx ${REPO}
 
 for target in ${targets[@]}; do
     sync ${target} ${PACKAGE_CACHE} ${PACKAGE_REPO_ROOT}/${REPO}
