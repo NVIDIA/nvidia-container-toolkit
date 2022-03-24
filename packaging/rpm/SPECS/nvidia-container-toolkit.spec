@@ -64,6 +64,9 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Thu Mar 24 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.10.0-0.1.rc.1
+- Dummy entry
+
 * Fri Mar 18 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.9.0-1
 - [libnvidia-container] Add additional check for Tegra in /sys/.../family file in CLI
 - [libnvidia-container] Update jetpack-specific CLI option to only load Base CSV files by default
