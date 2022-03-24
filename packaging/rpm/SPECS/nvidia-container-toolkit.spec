@@ -65,7 +65,7 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 
 %changelog
 * Thu Mar 24 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.10.0-0.1.rc.1
-- Dummy entry
+- Add experimental option to NVIDIA Container Runtime
 
 * Fri Mar 18 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.9.0-1
 - [libnvidia-container] Add additional check for Tegra in /sys/.../family file in CLI

@@ -47,16 +47,17 @@ func run(argv []string) (rerr error) {
 		logger.CloseFile()
 	}()
 
-	r, err := newNVIDIAContainerRuntime(logger.Logger, cfg, argv)
+	runtime, err := newNVIDIAContainerRuntime(logger.Logger, cfg, argv)
 	if err != nil {
 		return fmt.Errorf("error creating runtime: %v", err)
 	}
 
-	return r.Exec(argv)
+	return runtime.Exec(argv)
 }
 
 type config struct {
 	debugFilePath string
+	Experimental  bool
 }
 
 // getConfig sets up the config struct. Values are read from a toml file
@@ -81,6 +82,7 @@ func getConfig() (*config, error) {
 	}
 
 	cfg.debugFilePath = toml.GetDefault("nvidia-container-runtime.debug", "/dev/null").(string)
+	cfg.Experimental = toml.GetDefault("nvidia-container-runtime.experimental", false).(bool)
 
 	return cfg, nil
 }

@@ -1,6 +1,6 @@
 nvidia-container-toolkit (1.10.0~rc.1-1) experimental; urgency=medium
 
-  * Dummy entry
+  * Add experimental option to NVIDIA Container Runtime
 
  -- NVIDIA CORPORATION <cudatools@nvidia.com>  Thu, 24 Mar 2022 13:22:24 +0200
 

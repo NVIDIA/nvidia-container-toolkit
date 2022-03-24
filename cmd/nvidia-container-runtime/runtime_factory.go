@@ -43,7 +43,11 @@ func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config, argv []string
 		return nil, fmt.Errorf("error constructing low-level runtime: %v", err)
 	}
 
-	specModifier := modifier.NewStableRuntimeModifier(logger)
+	var specModifier oci.SpecModifier
+	if cfg.Experimental {
+		return nil, fmt.Errorf("experimental mode is not supported")
+	}
+	specModifier = modifier.NewStableRuntimeModifier(logger)
 
 	// Create the wrapping runtime with the specified modifier
 	r := runtime.NewModifyingRuntimeWrapper(
