@@ -29,19 +29,21 @@ func TestFactoryMethod(t *testing.T) {
 
 	testCases := []struct {
 		description   string
-		config        config.RuntimeConfig
+		cfg           *config.Config
 		argv          []string
 		expectedError bool
 	}{
 		{
 			description: "empty config no error",
-			config:      config.RuntimeConfig{},
+			cfg: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{},
+			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			_, err := newNVIDIAContainerRuntime(logger, &tc.config, tc.argv)
+			_, err := newNVIDIAContainerRuntime(logger, tc.cfg, tc.argv)
 			if tc.expectedError {
 				require.Error(t, err)
 			} else {

@@ -32,25 +32,31 @@ func TestConstructor(t *testing.T) {
 
 	testCases := []struct {
 		description   string
-		cfg           *config.RuntimeConfig
+		cfg           *config.Config
 		expectedError error
 	}{
 		{
-			description:   "empty config raises error",
-			cfg:           &config.RuntimeConfig{},
+			description: "empty config raises error",
+			cfg: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{},
+			},
 			expectedError: fmt.Errorf("invalid discover mode"),
 		},
 		{
 			description: "non-legacy discover mode raises error",
-			cfg: &config.RuntimeConfig{
-				DiscoverMode: "non-legacy",
+			cfg: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					DiscoverMode: "non-legacy",
+				},
 			},
 			expectedError: fmt.Errorf("invalid discover mode"),
 		},
 		{
 			description: "legacy discover mode returns modifier",
-			cfg: &config.RuntimeConfig{
-				DiscoverMode: "legacy",
+			cfg: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					DiscoverMode: "legacy",
+				},
 			},
 		},
 	}

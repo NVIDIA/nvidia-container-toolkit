@@ -36,14 +36,13 @@ type experimental struct {
 
 // NewExperimentalModifier creates a modifier that applied the experimental
 // modications to an OCI spec if required by the runtime wrapper.
-func NewExperimentalModifier(logger *logrus.Logger, cfg *config.RuntimeConfig) (oci.SpecModifier, error) {
+func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config) (oci.SpecModifier, error) {
 	logger.Infof("Constructing modifier from config: %+v", cfg)
 
-	// TODO: We need to specify the root
-	root := ""
+	root := cfg.NVIDIAContainerCLIConfig.Root
 
 	var d discover.Discover
-	switch cfg.DiscoverMode {
+	switch cfg.NVIDIAContainerRuntimeConfig.DiscoverMode {
 	case "legacy":
 		legacyDiscoverer, err := discover.NewLegacyDiscoverer(logger, root)
 		if err != nil {
@@ -51,7 +50,7 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.RuntimeConfig) (
 		}
 		d = legacyDiscoverer
 	default:
-		return nil, fmt.Errorf("invalid discover mode: %v", cfg.DiscoverMode)
+		return nil, fmt.Errorf("invalid discover mode: %v", cfg.NVIDIAContainerRuntimeConfig.DiscoverMode)
 	}
 
 	return newExperimentalModifierFromDiscoverer(logger, d)

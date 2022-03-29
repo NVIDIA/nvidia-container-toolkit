@@ -20,12 +20,12 @@ func main() {
 // run is an entry point that allows for idiomatic handling of errors
 // when calling from the main function.
 func run(argv []string) (rerr error) {
-	cfg, err := config.GetRuntimeConfig()
+	cfg, err := config.GetConfig()
 	if err != nil {
 		return fmt.Errorf("error loading config: %v", err)
 	}
 
-	err = logger.LogToFile(cfg.DebugFilePath)
+	err = logger.LogToFile(cfg.NVIDIAContainerRuntimeConfig.DebugFilePath)
 	if err != nil {
 		return fmt.Errorf("error opening debug log file: %v", err)
 	}

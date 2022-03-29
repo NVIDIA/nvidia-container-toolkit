@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGerRuntimeConfigWithCustomConfig(t *testing.T) {
+func TestGetConfigWithCustomConfig(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
@@ -42,24 +42,29 @@ func TestGerRuntimeConfigWithCustomConfig(t *testing.T) {
 
 	defer func() { require.NoError(t, os.RemoveAll(testDir)) }()
 
-	cfg, err := GetRuntimeConfig()
+	cfg, err := GetConfig()
 	require.NoError(t, err)
-	require.Equal(t, cfg.DebugFilePath, "/nvidia-container-toolkit.log")
+	require.Equal(t, cfg.NVIDIAContainerRuntimeConfig.DebugFilePath, "/nvidia-container-toolkit.log")
 }
 
-func TestGerRuntimeConfig(t *testing.T) {
+func TestGetConfig(t *testing.T) {
 	testCases := []struct {
 		description    string
 		contents       []string
 		expectedError  error
-		expectedConfig *RuntimeConfig
+		expectedConfig *Config
 	}{
 		{
 			description: "empty config is default",
-			expectedConfig: &RuntimeConfig{
-				DebugFilePath: "/dev/null",
-				Experimental:  false,
-				DiscoverMode:  "legacy",
+			expectedConfig: &Config{
+				NVIDIAContainerCLIConfig: CLIConfig{
+					Root: "",
+				},
+				NVIDIAContainerRuntimeConfig: RuntimeConfig{
+					DebugFilePath: "/dev/null",
+					Experimental:  false,
+					DiscoverMode:  "legacy",
+				},
 			},
 		},
 		{
@@ -69,10 +74,15 @@ func TestGerRuntimeConfig(t *testing.T) {
 				"nvidia-container-runtime.experimental = true",
 				"nvidia-container-runtime.discover-mode = \"not-legacy\"",
 			},
-			expectedConfig: &RuntimeConfig{
-				DebugFilePath: "/foo/bar",
-				Experimental:  true,
-				DiscoverMode:  "not-legacy",
+			expectedConfig: &Config{
+				NVIDIAContainerCLIConfig: CLIConfig{
+					Root: "",
+				},
+				NVIDIAContainerRuntimeConfig: RuntimeConfig{
+					DebugFilePath: "/foo/bar",
+					Experimental:  true,
+					DiscoverMode:  "not-legacy",
+				},
 			},
 		},
 		{
@@ -83,10 +93,15 @@ func TestGerRuntimeConfig(t *testing.T) {
 				"experimental = true",
 				"discover-mode = \"not-legacy\"",
 			},
-			expectedConfig: &RuntimeConfig{
-				DebugFilePath: "/foo/bar",
-				Experimental:  true,
-				DiscoverMode:  "not-legacy",
+			expectedConfig: &Config{
+				NVIDIAContainerCLIConfig: CLIConfig{
+					Root: "",
+				},
+				NVIDIAContainerRuntimeConfig: RuntimeConfig{
+					DebugFilePath: "/foo/bar",
+					Experimental:  true,
+					DiscoverMode:  "not-legacy",
+				},
 			},
 		},
 	}
@@ -95,7 +110,7 @@ func TestGerRuntimeConfig(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			reader := strings.NewReader(strings.Join(tc.contents, "\n"))
 
-			cfg, err := loadRuntimeConfigFrom(reader)
+			cfg, err := loadConfigFrom(reader)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 			} else {

@@ -17,21 +17,7 @@
 package config
 
 import (
-	"fmt"
-	"io"
-	"os"
-	"path"
-
 	"github.com/pelletier/go-toml"
-)
-
-const (
-	configOverride = "XDG_CONFIG_HOME"
-	configFilePath = "nvidia-container-runtime/config.toml"
-)
-
-var (
-	configDir = "/etc/"
 )
 
 // RuntimeConfig stores the config options for the NVIDIA Container Runtime
@@ -39,39 +25,6 @@ type RuntimeConfig struct {
 	DebugFilePath string
 	Experimental  bool
 	DiscoverMode  string
-}
-
-// GetRuntimeConfig sets up the config struct. Values are read from a toml file
-// or set via the environment.
-func GetRuntimeConfig() (*RuntimeConfig, error) {
-	if XDGConfigDir := os.Getenv(configOverride); len(XDGConfigDir) != 0 {
-		configDir = XDGConfigDir
-	}
-
-	configFilePath := path.Join(configDir, configFilePath)
-
-	tomlFile, err := os.Open(configFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open config file %v: %v", configFilePath, err)
-	}
-	defer tomlFile.Close()
-
-	cfg, err := loadRuntimeConfigFrom(tomlFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config values: %v", err)
-	}
-
-	return cfg, nil
-}
-
-// loadRuntimeConfigFrom reads the config from the specified Reader
-func loadRuntimeConfigFrom(reader io.Reader) (*RuntimeConfig, error) {
-	toml, err := toml.LoadReader(reader)
-	if err != nil {
-		return nil, err
-	}
-
-	return getRuntimeConfigFrom(toml), nil
 }
 
 // getRuntimeConfigFrom reads the nvidia container runtime config from the specified toml Tree.

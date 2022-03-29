@@ -32,7 +32,7 @@ const (
 )
 
 // newNVIDIAContainerRuntime is a factory method that constructs a runtime based on the selected configuration and specified logger
-func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.RuntimeConfig, argv []string) (oci.Runtime, error) {
+func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.Config, argv []string) (oci.Runtime, error) {
 	ociSpec, err := oci.NewSpec(logger, argv)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing OCI specification: %v", err)
@@ -45,7 +45,7 @@ func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.RuntimeConfig,
 	}
 
 	var specModifier oci.SpecModifier
-	if cfg.Experimental {
+	if cfg.NVIDIAContainerRuntimeConfig.Experimental {
 		specModifier, err = modifier.NewExperimentalModifier(logger, cfg)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct experimental modifier: %v", err)
