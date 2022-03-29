@@ -34,13 +34,8 @@ type pathRuntime struct {
 
 var _ Runtime = (*pathRuntime)(nil)
 
-// NewRuntimeForPath creates a Runtime for the specified path with the standard logger
-func NewRuntimeForPath(path string) (Runtime, error) {
-	return NewRuntimeForPathWithLogger(log.StandardLogger(), path)
-}
-
-// NewRuntimeForPathWithLogger creates a Runtime for the specified logger and path
-func NewRuntimeForPathWithLogger(logger *log.Logger, path string) (Runtime, error) {
+// NewRuntimeForPath creates a Runtime for the specified logger and path
+func NewRuntimeForPath(logger *log.Logger, path string) (Runtime, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, fmt.Errorf("invalid path '%v': %v", path, err)

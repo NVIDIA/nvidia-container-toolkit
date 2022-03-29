@@ -142,3 +142,15 @@ $(DOCKER_TARGETS): docker-%: .build-image
 		--user $$(id -u):$$(id -g) \
 		$(BUILDIMAGE) \
 			make $(*)
+
+# Start an interactive shell using the development image.
+PHONY: .shell
+.shell:
+	$(DOCKER) run \
+		--rm \
+		-ti \
+		-e GOCACHE=/tmp/.cache \
+		-v $(PWD):$(PWD) \
+		-w $(PWD) \
+		--user $$(id -u):$$(id -g) \
+		$(BUILDIMAGE)

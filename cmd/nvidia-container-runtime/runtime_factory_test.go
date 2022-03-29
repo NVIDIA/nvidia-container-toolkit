@@ -19,12 +19,33 @@ package main
 import (
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
 
-func TestConstructor(t *testing.T) {
-	shim, err := newRuntime([]string{})
+func TestFactoryMethod(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
 
-	require.NoError(t, err)
-	require.NotNil(t, shim)
+	testCases := []struct {
+		description   string
+		config        config
+		argv          []string
+		expectedError bool
+	}{
+		{
+			description: "empty config no error",
+			config:      config{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			_, err := newNVIDIAContainerRuntime(logger, &tc.config, tc.argv)
+			if tc.expectedError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

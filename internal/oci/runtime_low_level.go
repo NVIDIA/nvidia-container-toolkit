@@ -25,19 +25,14 @@ import (
 
 // NewLowLevelRuntime creates a Runtime that wraps a low-level runtime executable.
 // The executable specified is taken from the list of supplied candidates, with the first match
-// present in the PATH being selected.
-func NewLowLevelRuntime(candidates ...string) (Runtime, error) {
-	return NewLowLevelRuntimeWithLogger(log.StandardLogger(), candidates...)
-}
-
-// NewLowLevelRuntimeWithLogger creates a Runtime as with NewLowLevelRuntime using the specified logger.
-func NewLowLevelRuntimeWithLogger(logger *log.Logger, candidates ...string) (Runtime, error) {
+// present in the PATH being selected. A logger is also specified.
+func NewLowLevelRuntime(logger *log.Logger, candidates []string) (Runtime, error) {
 	runtimePath, err := findRuntime(logger, candidates)
 	if err != nil {
 		return nil, fmt.Errorf("error locating runtime: %v", err)
 	}
 
-	return NewRuntimeForPathWithLogger(logger, runtimePath)
+	return NewRuntimeForPath(logger, runtimePath)
 }
 
 // findRuntime checks elements in a list of supplied candidates for a matching executable in the PATH.
