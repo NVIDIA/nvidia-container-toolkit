@@ -98,6 +98,7 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 # private centos target
 --centos%: OS := centos
 --centos%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
+--centos8%: BASEIMAGE = quay.io/centos/centos:stream8
 
 # private amazonlinux target
 --amazonlinux%: OS := amazonlinux
@@ -113,6 +114,7 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 --rhel%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 --rhel%: VERSION = $(patsubst rhel%-$(ARCH),%,$(TARGET_PLATFORM))
 --rhel%: ARTIFACTS_DIR = $(DIST_DIR)/rhel$(VERSION)/$(ARCH)
+--rhel8%: BASEIMAGE = quay.io/centos/centos:stream8
 
 # We allow the CONFIG_TOML_SUFFIX to be overridden.
 CONFIG_TOML_SUFFIX ?= $(OS)
