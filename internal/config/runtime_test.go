@@ -95,7 +95,7 @@ func TestGerRuntimeConfig(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			reader := strings.NewReader(strings.Join(tc.contents, "\n"))
 
-			cfg, err := getRuntimeConfigFrom(reader)
+			cfg, err := loadRuntimeConfigFrom(reader)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 			} else {

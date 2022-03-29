@@ -56,7 +56,7 @@ func GetRuntimeConfig() (*RuntimeConfig, error) {
 	}
 	defer tomlFile.Close()
 
-	cfg, err := getRuntimeConfigFrom(tomlFile)
+	cfg, err := loadRuntimeConfigFrom(tomlFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config values: %v", err)
 	}
@@ -64,20 +64,29 @@ func GetRuntimeConfig() (*RuntimeConfig, error) {
 	return cfg, nil
 }
 
-// getRuntimeConfigFrom reads the config from the specified Reader
-func getRuntimeConfigFrom(reader io.Reader) (*RuntimeConfig, error) {
+// loadRuntimeConfigFrom reads the config from the specified Reader
+func loadRuntimeConfigFrom(reader io.Reader) (*RuntimeConfig, error) {
 	toml, err := toml.LoadReader(reader)
 	if err != nil {
 		return nil, err
 	}
 
+	return getRuntimeConfigFrom(toml), nil
+}
+
+// getRuntimeConfigFrom reads the nvidia container runtime config from the specified toml Tree.
+func getRuntimeConfigFrom(toml *toml.Tree) *RuntimeConfig {
 	cfg := getDefaultRuntimeConfig()
+
+	if toml == nil {
+		return cfg
+	}
 
 	cfg.DebugFilePath = toml.GetDefault("nvidia-container-runtime.debug", cfg.DebugFilePath).(string)
 	cfg.Experimental = toml.GetDefault("nvidia-container-runtime.experimental", cfg.Experimental).(bool)
 	cfg.DiscoverMode = toml.GetDefault("nvidia-container-runtime.discover-mode", cfg.DiscoverMode).(string)
 
-	return cfg, nil
+	return cfg
 }
 
 // getDefaultRuntimeConfig defines the default values for the config
