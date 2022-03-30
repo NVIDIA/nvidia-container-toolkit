@@ -18,7 +18,6 @@ package modifier
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
@@ -69,9 +68,9 @@ func newExperimentalModifierFromDiscoverer(logger *logrus.Logger, d discover.Dis
 // Modify applies the required modifications to the incomming OCI spec. These modifications
 // are applied in-place.
 func (m experimental) Modify(spec *specs.Spec) error {
-	err := m.assertSpecIsCompatible(spec)
+	err := nvidiaContainerRuntimeHookRemover{m.logger}.Modify(spec)
 	if err != nil {
-		return fmt.Errorf("OCI specification cannot be modified: %v", err)
+		return fmt.Errorf("failed to remove existing hooks: %v", err)
 	}
 
 	specEdits, err := edits.NewSpecEdits(m.logger, m.discoverer)
@@ -80,39 +79,4 @@ func (m experimental) Modify(spec *specs.Spec) error {
 	}
 
 	return specEdits.Modify(spec)
-}
-
-func (m experimental) assertSpecIsCompatible(spec *specs.Spec) error {
-	if spec == nil {
-		return nil
-	}
-
-	if spec.Hooks == nil {
-		return nil
-	}
-
-	if hookPath := findStableHook(spec.Hooks.Prestart); hookPath != "" {
-		return fmt.Errorf("spec already contains required 'prestart' hook: %v", hookPath)
-	}
-
-	return nil
-}
-
-// findStableHook checks the list of OCI hooks for the nvidia-container-runtime-hook
-// or nvidia-container-toolkit hook. These are included, for example, by the non-experimental
-// nvidia-container-runtime or docker when specifying the --gpus flag.
-func findStableHook(hooks []specs.Hook) string {
-	lookFor := map[string]bool{
-		nvidiaContainerRuntimeHookExecuable: true,
-		nvidiaContainerToolkitExecutable:    true,
-	}
-
-	for _, h := range hooks {
-		base := filepath.Base(h.Path)
-		if lookFor[base] {
-			return h.Path
-		}
-	}
-
-	return ""
 }
