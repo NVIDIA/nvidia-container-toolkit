@@ -12,7 +12,7 @@ var logger = NewLogger()
 func main() {
 	err := run(os.Args)
 	if err != nil {
-		logger.Errorf("Error running %v: %v", os.Args, err)
+		logger.Errorf("%v", err)
 		os.Exit(1)
 	}
 }
@@ -20,6 +20,7 @@ func main() {
 // run is an entry point that allows for idiomatic handling of errors
 // when calling from the main function.
 func run(argv []string) (rerr error) {
+	logger.Debugf("Running %v", argv)
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return fmt.Errorf("error loading config: %v", err)
@@ -32,7 +33,7 @@ func run(argv []string) (rerr error) {
 	defer func() {
 		// We capture and log a returning error before closing the log file.
 		if rerr != nil {
-			logger.Errorf("Error running %v: %v", argv, rerr)
+			logger.Errorf("%v", rerr)
 		}
 		logger.CloseFile()
 	}()
