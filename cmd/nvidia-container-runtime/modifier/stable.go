@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	nvidiaContainerRuntimeHookExecuable   = "nvidia-container-runtime-hook"
+	nvidiaContainerRuntimeHookExecutable  = "nvidia-container-runtime-hook"
 	nvidiaContainerRuntimeHookDefaultPath = "/usr/bin/nvidia-container-runtime-hook"
 
 	nvidiaContainerToolkitExecutable = "nvidia-container-toolkit"
@@ -50,7 +50,7 @@ type stableRuntimeModifier struct {
 // Modify applies the required modification to the incoming OCI spec, inserting the nvidia-container-runtime-hook
 // as a prestart hook.
 func (m stableRuntimeModifier) Modify(spec *specs.Spec) error {
-	path, err := exec.LookPath(nvidiaContainerRuntimeHookExecuable)
+	path, err := exec.LookPath(nvidiaContainerRuntimeHookExecutable)
 	if err != nil {
 		path = nvidiaContainerRuntimeHookDefaultPath
 		_, err = os.Stat(path)
@@ -66,7 +66,7 @@ func (m stableRuntimeModifier) Modify(spec *specs.Spec) error {
 		spec.Hooks = &specs.Hooks{}
 	} else if len(spec.Hooks.Prestart) != 0 {
 		for _, hook := range spec.Hooks.Prestart {
-			if strings.Contains(hook.Path, nvidiaContainerRuntimeHookExecuable) {
+			if strings.Contains(hook.Path, nvidiaContainerRuntimeHookExecutable) {
 				m.logger.Infof("existing nvidia prestart hook found in OCI spec")
 				return nil
 			}

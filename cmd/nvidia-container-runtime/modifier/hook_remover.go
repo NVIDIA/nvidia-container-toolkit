@@ -70,8 +70,8 @@ func (m nvidiaContainerRuntimeHookRemover) Modify(spec *specs.Spec) error {
 // nvidia-container-runtime or docker when specifying the --gpus flag.
 func isNVIDIAContainerRuntimeHook(hook *specs.Hook) bool {
 	lookFor := map[string]bool{
-		nvidiaContainerRuntimeHookExecuable: true,
-		nvidiaContainerToolkitExecutable:    true,
+		nvidiaContainerRuntimeHookExecutable: true,
+		nvidiaContainerToolkitExecutable:     true,
 	}
 	base := filepath.Base(hook.Path)
 
