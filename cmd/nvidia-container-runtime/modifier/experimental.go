@@ -33,7 +33,7 @@ type experimental struct {
 	discoverer discover.Discover
 }
 
-// NewExperimentalModifier creates a modifier that applied the experimental
+// NewExperimentalModifier creates a modifier that applies the experimental
 // modications to an OCI spec if required by the runtime wrapper.
 func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config) (oci.SpecModifier, error) {
 	logger.Infof("Constructing modifier from config: %+v", cfg)
