@@ -35,8 +35,8 @@ type executable struct {
 	file
 }
 
-// NewExecutaleLocator creates a locator to fine executable files in the path. A logger can also be specified.
-func NewExecutaleLocator(logger *log.Logger, root string) Locator {
+// NewExecutableLocator creates a locator to fine executable files in the path. A logger can also be specified.
+func NewExecutableLocator(logger *log.Logger, root string) Locator {
 	pathEnv := os.Getenv(envPath)
 	paths := filepath.SplitList(pathEnv)
 
