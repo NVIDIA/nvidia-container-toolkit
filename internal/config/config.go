@@ -37,8 +37,8 @@ var (
 // Config represents the contents of the config.toml file for the NVIDIA Container Toolkit
 // Note: This is currently duplicated by the HookConfig in cmd/nvidia-container-toolkit/hook_config.go
 type Config struct {
-	NVIDIAContainerCLIConfig     CLIConfig     `toml:"nvidia-container-cli"`
-	NVIDIAContainerRuntimeConfig RuntimeConfig `toml:"nvidia-container-runtime"`
+	NVIDIAContainerCLIConfig     ContainerCLIConfig `toml:"nvidia-container-cli"`
+	NVIDIAContainerRuntimeConfig RuntimeConfig      `toml:"nvidia-container-runtime"`
 }
 
 // GetConfig sets up the config struct. Values are read from a toml file
@@ -82,7 +82,7 @@ func getConfigFrom(toml *toml.Tree) *Config {
 		return cfg
 	}
 
-	cfg.NVIDIAContainerCLIConfig = *getCLIConfigFrom(toml)
+	cfg.NVIDIAContainerCLIConfig = *getContainerCLIConfigFrom(toml)
 	cfg.NVIDIAContainerRuntimeConfig = *getRuntimeConfigFrom(toml)
 
 	return cfg
@@ -91,7 +91,7 @@ func getConfigFrom(toml *toml.Tree) *Config {
 // getDefaultConfig defines the default values for the config
 func getDefaultConfig() *Config {
 	c := Config{
-		NVIDIAContainerCLIConfig:     *getDefaultCLIConfig(),
+		NVIDIAContainerCLIConfig:     *getDefaultContainerCLIConfig(),
 		NVIDIAContainerRuntimeConfig: *getDefaultRuntimeConfig(),
 	}
 

@@ -57,7 +57,7 @@ func TestGetConfig(t *testing.T) {
 		{
 			description: "empty config is default",
 			expectedConfig: &Config{
-				NVIDIAContainerCLIConfig: CLIConfig{
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root: "",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
@@ -75,7 +75,7 @@ func TestGetConfig(t *testing.T) {
 				"nvidia-container-runtime.discover-mode = \"not-legacy\"",
 			},
 			expectedConfig: &Config{
-				NVIDIAContainerCLIConfig: CLIConfig{
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root: "",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
@@ -94,7 +94,7 @@ func TestGetConfig(t *testing.T) {
 				"discover-mode = \"not-legacy\"",
 			},
 			expectedConfig: &Config{
-				NVIDIAContainerCLIConfig: CLIConfig{
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root: "",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{

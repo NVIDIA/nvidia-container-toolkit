@@ -20,14 +20,14 @@ import (
 	"github.com/pelletier/go-toml"
 )
 
-// CLIConfig stores the options for the nvidia-container-cli
-type CLIConfig struct {
+// ContainerCLIConfig stores the options for the nvidia-container-cli
+type ContainerCLIConfig struct {
 	Root string
 }
 
-// getCLIConfigFrom reads the nvidia container runtime config from the specified toml Tree.
-func getCLIConfigFrom(toml *toml.Tree) *CLIConfig {
-	cfg := getDefaultCLIConfig()
+// getContainerCLIConfigFrom reads the nvidia container runtime config from the specified toml Tree.
+func getContainerCLIConfigFrom(toml *toml.Tree) *ContainerCLIConfig {
+	cfg := getDefaultContainerCLIConfig()
 
 	if toml == nil {
 		return cfg
@@ -38,9 +38,9 @@ func getCLIConfigFrom(toml *toml.Tree) *CLIConfig {
 	return cfg
 }
 
-// getDefaultCLIConfig defines the default values for the config
-func getDefaultCLIConfig() *CLIConfig {
-	c := CLIConfig{
+// getDefaultContainerCLIConfig defines the default values for the config
+func getDefaultContainerCLIConfig() *ContainerCLIConfig {
+	c := ContainerCLIConfig{
 		Root: "",
 	}
 
