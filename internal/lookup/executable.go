@@ -31,12 +31,12 @@ const (
 
 var defaultPaths = []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"}
 
-type path struct {
+type executable struct {
 	file
 }
 
-// NewPathLocator creates a locator to fine executable files in the path. A logger can also be specified.
-func NewPathLocator(logger *log.Logger, root string) Locator {
+// NewExecutaleLocator creates a locator to fine executable files in the path. A logger can also be specified.
+func NewExecutaleLocator(logger *log.Logger, root string) Locator {
 	pathEnv := os.Getenv(envPath)
 	paths := filepath.SplitList(pathEnv)
 
@@ -48,7 +48,7 @@ func NewPathLocator(logger *log.Logger, root string) Locator {
 	for _, dir := range paths {
 		prefixes = append(prefixes, filepath.Join(root, dir))
 	}
-	l := path{
+	l := executable{
 		file: file{
 			logger:   logger,
 			prefixes: prefixes,
@@ -58,10 +58,10 @@ func NewPathLocator(logger *log.Logger, root string) Locator {
 	return &l
 }
 
-var _ Locator = (*path)(nil)
+var _ Locator = (*executable)(nil)
 
 // Locate finds executable files in the path. If a relative or absolute path is specified, the prefix paths are not considered.
-func (p path) Locate(filename string) ([]string, error) {
+func (p executable) Locate(filename string) ([]string, error) {
 	// For absolute paths we ensure that it is executable
 	if strings.Contains(filename, "/") {
 		err := assertExecutable(filename)

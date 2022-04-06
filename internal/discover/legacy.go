@@ -38,7 +38,7 @@ var _ Discover = (*legacy)(nil)
 func NewLegacyDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
 	d := legacy{
 		logger: logger,
-		lookup: lookup.NewPathLocator(logger, root),
+		lookup: lookup.NewExecutaleLocator(logger, root),
 	}
 
 	return &d, nil
