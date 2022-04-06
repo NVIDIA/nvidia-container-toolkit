@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/BurntSushi/toml"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 )
 
 const (
@@ -41,10 +42,11 @@ type HookConfig struct {
 	AcceptDeviceListAsVolumeMounts bool               `toml:"accept-nvidia-visible-devices-as-volume-mounts"`
 	SupportedDriverCapabilities    DriverCapabilities `toml:"supported-driver-capabilities"`
 
-	NvidiaContainerCLI CLIConfig `toml:"nvidia-container-cli"`
+	NvidiaContainerCLI     CLIConfig            `toml:"nvidia-container-cli"`
+	NVIDIAContainerRuntime config.RuntimeConfig `toml:"nvidia-container-runtime"`
 }
 
-func getDefaultHookConfig() (config HookConfig) {
+func getDefaultHookConfig() HookConfig {
 	return HookConfig{
 		DisableRequire:                 false,
 		SwarmResource:                  nil,
@@ -63,6 +65,7 @@ func getDefaultHookConfig() (config HookConfig) {
 			User:        nil,
 			Ldconfig:    nil,
 		},
+		NVIDIAContainerRuntime: *config.GetDefaultRuntimeConfig(),
 	}
 }
 
