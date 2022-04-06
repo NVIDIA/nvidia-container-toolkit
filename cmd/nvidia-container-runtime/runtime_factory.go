@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-container-runtime/modifier"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/runtime"
 	"github.com/sirupsen/logrus"
@@ -31,7 +32,7 @@ const (
 )
 
 // newNVIDIAContainerRuntime is a factory method that constructs a runtime based on the selected configuration and specified logger
-func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config, argv []string) (oci.Runtime, error) {
+func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.Config, argv []string) (oci.Runtime, error) {
 	ociSpec, err := oci.NewSpec(logger, argv)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing OCI specification: %v", err)
@@ -43,7 +44,10 @@ func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config, argv []string
 		return nil, fmt.Errorf("error constructing low-level runtime: %v", err)
 	}
 
-	specModifier := modifier.NewStableRuntimeModifier(logger)
+	specModifier, err := newSpecModifier(logger, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct OCI spec modifier: %v", err)
+	}
 
 	// Create the wrapping runtime with the specified modifier
 	r := runtime.NewModifyingRuntimeWrapper(
@@ -54,4 +58,13 @@ func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config, argv []string
 	)
 
 	return r, nil
+}
+
+// newSpecModifier is a factory method that creates constructs an OCI spec modifer based on the provided config.
+func newSpecModifier(logger *logrus.Logger, cfg *config.Config) (oci.SpecModifier, error) {
+	if !cfg.NVIDIAContainerRuntimeConfig.Experimental {
+		return modifier.NewStableRuntimeModifier(logger), nil
+	}
+
+	return modifier.NewExperimentalModifier(logger, cfg)
 }

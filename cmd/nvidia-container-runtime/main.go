@@ -3,18 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
-	"path"
 
-	"github.com/pelletier/go-toml"
-)
-
-const (
-	configOverride = "XDG_CONFIG_HOME"
-	configFilePath = "nvidia-container-runtime/config.toml"
-)
-
-var (
-	configDir = "/etc/"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 )
 
 var logger = NewLogger()
@@ -22,7 +12,7 @@ var logger = NewLogger()
 func main() {
 	err := run(os.Args)
 	if err != nil {
-		logger.Errorf("Error running %v: %v", os.Args, err)
+		logger.Errorf("%v", err)
 		os.Exit(1)
 	}
 }
@@ -30,57 +20,28 @@ func main() {
 // run is an entry point that allows for idiomatic handling of errors
 // when calling from the main function.
 func run(argv []string) (rerr error) {
-	cfg, err := getConfig()
+	logger.Debugf("Running %v", argv)
+	cfg, err := config.GetConfig()
 	if err != nil {
 		return fmt.Errorf("error loading config: %v", err)
 	}
 
-	err = logger.LogToFile(cfg.debugFilePath)
+	err = logger.LogToFile(cfg.NVIDIAContainerRuntimeConfig.DebugFilePath)
 	if err != nil {
 		return fmt.Errorf("error opening debug log file: %v", err)
 	}
 	defer func() {
 		// We capture and log a returning error before closing the log file.
 		if rerr != nil {
-			logger.Errorf("Error running %v: %v", argv, rerr)
+			logger.Errorf("%v", rerr)
 		}
 		logger.CloseFile()
 	}()
 
-	r, err := newNVIDIAContainerRuntime(logger.Logger, cfg, argv)
+	runtime, err := newNVIDIAContainerRuntime(logger.Logger, cfg, argv)
 	if err != nil {
-		return fmt.Errorf("error creating runtime: %v", err)
+		return fmt.Errorf("failed to create NVIDIA Container Runtime: %v", err)
 	}
 
-	return r.Exec(argv)
-}
-
-type config struct {
-	debugFilePath string
-}
-
-// getConfig sets up the config struct. Values are read from a toml file
-// or set via the environment.
-func getConfig() (*config, error) {
-	cfg := &config{}
-
-	if XDGConfigDir := os.Getenv(configOverride); len(XDGConfigDir) != 0 {
-		configDir = XDGConfigDir
-	}
-
-	configFilePath := path.Join(configDir, configFilePath)
-
-	tomlContent, err := os.ReadFile(configFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	toml, err := toml.Load(string(tomlContent))
-	if err != nil {
-		return nil, err
-	}
-
-	cfg.debugFilePath = toml.GetDefault("nvidia-container-runtime.debug", "/dev/null").(string)
-
-	return cfg, nil
+	return runtime.Exec(argv)
 }

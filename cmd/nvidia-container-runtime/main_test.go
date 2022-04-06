@@ -245,24 +245,3 @@ func nvidiaHookCount(hooks *specs.Hooks) int {
 	}
 	return count
 }
-
-func TestGetConfigWithCustomConfig(t *testing.T) {
-	wd, err := os.Getwd()
-	require.NoError(t, err)
-
-	// By default debug is disabled
-	contents := []byte("[nvidia-container-runtime]\ndebug = \"/nvidia-container-toolkit.log\"")
-	testDir := filepath.Join(wd, "test")
-	filename := filepath.Join(testDir, configFilePath)
-
-	os.Setenv(configOverride, testDir)
-
-	require.NoError(t, os.MkdirAll(filepath.Dir(filename), 0766))
-	require.NoError(t, ioutil.WriteFile(filename, contents, 0766))
-
-	defer func() { require.NoError(t, os.RemoveAll(testDir)) }()
-
-	cfg, err := getConfig()
-	require.NoError(t, err)
-	require.Equal(t, cfg.debugFilePath, "/nvidia-container-toolkit.log")
-}

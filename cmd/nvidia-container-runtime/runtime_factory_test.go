@@ -19,6 +19,7 @@ package main
 import (
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
@@ -28,19 +29,21 @@ func TestFactoryMethod(t *testing.T) {
 
 	testCases := []struct {
 		description   string
-		config        config
+		cfg           *config.Config
 		argv          []string
 		expectedError bool
 	}{
 		{
 			description: "empty config no error",
-			config:      config{},
+			cfg: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{},
+			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			_, err := newNVIDIAContainerRuntime(logger, &tc.config, tc.argv)
+			_, err := newNVIDIAContainerRuntime(logger, tc.cfg, tc.argv)
 			if tc.expectedError {
 				require.Error(t, err)
 			} else {
