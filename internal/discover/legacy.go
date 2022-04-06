@@ -60,7 +60,7 @@ func (d legacy) Hooks() ([]Hook, error) {
 	}
 	d.logger.Debugf("Using NVIDIA Container Runtime Hook path %v", hookPath)
 
-	args := []string{hookPath, "prestart"}
+	args := []string{hookPath, "--force", "prestart"}
 	h := Hook{
 		Lifecycle: cdi.PrestartHook,
 		Path:      hookPath,
