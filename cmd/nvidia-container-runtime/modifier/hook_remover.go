@@ -46,24 +46,10 @@ func (m nvidiaContainerRuntimeHookRemover) Modify(spec *specs.Spec) error {
 		return nil
 	}
 
-	var updateRequired bool
-	newPrestart := make([]specs.Hook, 0, len(spec.Hooks.Prestart))
-
 	for _, hook := range spec.Hooks.Prestart {
 		if isNVIDIAContainerRuntimeHook(&hook) {
-			m.logger.Warnf("Found existing NVIDIA Container Runtime Hook: %v", hook)
-			updateRequired = true
-			continue
+			return fmt.Errorf("spec already contains required 'prestart' hook")
 		}
-		newPrestart = append(newPrestart, hook)
-	}
-
-	if updateRequired {
-		// TODO: Once we have updated the hook implementation to give an error if invoked incorrectly, we will update the spec hooks here instead of just logging.
-		// We can then also use a boolean to track whether this is required instead of storing the removed hooks
-		// spec.Hooks.Prestart = newPrestart
-		m.logger.Debugf("Updating 'prestart' hooks to %v", newPrestart)
-		return fmt.Errorf("spec already contains required 'prestart' hook")
 	}
 
 	return nil
