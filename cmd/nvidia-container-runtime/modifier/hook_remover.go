@@ -17,7 +17,6 @@
 package modifier
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
@@ -46,10 +45,19 @@ func (m nvidiaContainerRuntimeHookRemover) Modify(spec *specs.Spec) error {
 		return nil
 	}
 
+	var newPrestart []specs.Hook
+
 	for _, hook := range spec.Hooks.Prestart {
 		if isNVIDIAContainerRuntimeHook(&hook) {
-			return fmt.Errorf("spec already contains required 'prestart' hook")
+			m.logger.Debugf("Removing hook %v", hook)
+			continue
 		}
+		newPrestart = append(newPrestart, hook)
+	}
+
+	if len(newPrestart) != len(spec.Hooks.Prestart) {
+		m.logger.Debugf("Updating 'prestart' hooks to %v", newPrestart)
+		spec.Hooks.Prestart = newPrestart
 	}
 
 	return nil
