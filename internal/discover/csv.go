@@ -32,17 +32,6 @@ type csvDiscoverer struct {
 
 var _ Discover = (*csvDiscoverer)(nil)
 
-// NewFromCSV creates a discoverer for the CSV files at the specified root. A logger is also supplied.
-func NewFromCSV(logger *logrus.Logger, csvRoot string, root string) (Discover, error) {
-	logger.Debugf("Loading CSV files from: %v", csvRoot)
-
-	files, err := csv.GetFileList(csvRoot)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get CSV file from %v: %v", csvRoot, err)
-	}
-	return NewFromCSVFiles(logger, files, root)
-}
-
 // NewFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
 // The constructed discoverer is comprised of a list, with each element in the list being associated with a
 // single CSV files.
