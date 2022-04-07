@@ -41,13 +41,14 @@ func NewFromCSVFiles(logger *logrus.Logger, files []string, root string) (Discov
 		return None{}, nil
 	}
 
-	locators := make(map[csv.MountSpecType]lookup.Locator)
-	locators[csv.MountSpecDev] = lookup.NewCharDeviceLocator(logger, root)
-	locators[csv.MountSpecDir] = lookup.NewDirectoryLocator(logger, root)
-	// Libraries and symlinks are handled in the same way
 	symlinkLocator := lookup.NewSymlinkLocator(logger, root)
-	locators[csv.MountSpecLib] = symlinkLocator
-	locators[csv.MountSpecSym] = symlinkLocator
+	locators := map[csv.MountSpecType]lookup.Locator{
+		csv.MountSpecDev: lookup.NewCharDeviceLocator(logger, root),
+		csv.MountSpecDir: lookup.NewDirectoryLocator(logger, root),
+		// Libraries and symlinks are handled in the same way
+		csv.MountSpecLib: symlinkLocator,
+		csv.MountSpecSym: symlinkLocator,
+	}
 
 	var discoverers []Discover
 	for _, filename := range files {
