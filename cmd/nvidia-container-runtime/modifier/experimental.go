@@ -68,7 +68,7 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec 
 		}
 		d = legacyDiscoverer
 	case "csv":
-		csvFiles, err := csv.GetFileList(csv.DefaultRoot)
+		csvFiles, err := csv.GetFileList(csv.DefaultMountSpecPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get list of CSV files: %v", err)
 		}
