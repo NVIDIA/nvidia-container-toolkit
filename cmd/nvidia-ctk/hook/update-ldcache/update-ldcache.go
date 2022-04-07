@@ -66,7 +66,7 @@ func (m command) build() *cli.Command {
 			Destination: &cfg.folders,
 		},
 		&cli.StringFlag{
-			Name:        "containerSpec",
+			Name:        "container-spec",
 			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
 			Destination: &cfg.containerSpec,
 		},
