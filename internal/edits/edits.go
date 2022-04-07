@@ -34,12 +34,30 @@ type edits struct {
 // NewSpecEdits creates a SpecModifier that defines the required OCI spec edits (as CDI ContainerEdits) from the specified
 // discoverer.
 func NewSpecEdits(logger *logrus.Logger, d discover.Discover) (oci.SpecModifier, error) {
+	devices, err := d.Devices()
+	if err != nil {
+		return nil, fmt.Errorf("failed to discover devices: %v", err)
+	}
+
+	mounts, err := d.Mounts()
+	if err != nil {
+		return nil, fmt.Errorf("failed to discover mounts: %v", err)
+	}
+
 	hooks, err := d.Hooks()
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover hooks: %v", err)
 	}
 
 	c := cdi.ContainerEdits{}
+	for _, d := range devices {
+		c.Append(device(d).toEdits())
+	}
+
+	for _, m := range mounts {
+		c.Append(mount(m).toEdits())
+	}
+
 	for _, h := range hooks {
 		c.Append(hook(h).toEdits())
 	}
@@ -58,9 +76,18 @@ func (e *edits) Modify(spec *ociSpecs.Spec) error {
 		return nil
 	}
 
+	e.logger.Info("Mounts:")
+	for _, mount := range e.Mounts {
+		e.logger.Infof("Mounting %v at %v", mount.HostPath, mount.ContainerPath)
+	}
+	e.logger.Infof("Devices:")
+	for _, device := range e.DeviceNodes {
+		e.logger.Infof("Injecting %v", device.Path)
+	}
 	e.logger.Infof("Hooks:")
 	for _, hook := range e.Hooks {
 		e.logger.Infof("Injecting %v", hook.Args)
 	}
+
 	return e.Apply(spec)
 }

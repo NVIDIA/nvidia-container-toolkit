@@ -21,6 +21,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
@@ -33,9 +34,27 @@ type experimental struct {
 	discoverer discover.Discover
 }
 
+const (
+	visibleDevicesEnvvar = "NVIDIA_VISIBLE_DEVICES"
+	visibleDevicesVoid   = "void"
+
+	nvidiaRequireJetpackEnvvar = "NVIDIA_REQUIRE_JETPACK"
+)
+
 // NewExperimentalModifier creates a modifier that applies the experimental
 // modications to an OCI spec if required by the runtime wrapper.
-func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config) (oci.SpecModifier, error) {
+func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
+	if err := ociSpec.Load(); err != nil {
+		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
+	}
+
+	// In experimental mode, we check whether a modification is required at all and return the lowlevelRuntime directly
+	// if no modification is required.
+	visibleDevices, exists := ociSpec.LookupEnv(visibleDevicesEnvvar)
+	if !exists || visibleDevices == "" || visibleDevices == visibleDevicesVoid {
+		logger.Infof("No modification required: %v=%v (exists=%v)", visibleDevicesEnvvar, visibleDevices, exists)
+		return nil, nil
+	}
 	logger.Infof("Constructing modifier from config: %+v", cfg)
 
 	root := cfg.NVIDIAContainerCLIConfig.Root
@@ -48,6 +67,22 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config) (oci.Spe
 			return nil, fmt.Errorf("failed to create legacy discoverer: %v", err)
 		}
 		d = legacyDiscoverer
+	case "csv":
+		csvFiles, err := csv.GetFileList(csv.DefaultMountSpecPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get list of CSV files: %v", err)
+		}
+
+		nvidiaRequireJetpack, _ := ociSpec.LookupEnv(nvidiaRequireJetpackEnvvar)
+		if nvidiaRequireJetpack != "csv-mounts=all" {
+			csvFiles = csv.BaseFilesOnly(csvFiles)
+		}
+
+		csvDiscoverer, err := discover.NewFromCSVFiles(logger, csvFiles, root)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
+		}
+		d = csvDiscoverer
 	default:
 		return nil, fmt.Errorf("invalid discover mode: %v", cfg.NVIDIAContainerRuntimeConfig.DiscoverMode)
 	}

@@ -16,6 +16,16 @@
 
 package discover
 
+// Device represents a discovered character device.
+type Device struct {
+	Path string
+}
+
+// Mount represents a discovered mount.
+type Mount struct {
+	Path string
+}
+
 // Hook represents a discovered hook.
 type Hook struct {
 	Lifecycle string
@@ -26,5 +36,7 @@ type Hook struct {
 //go:generate moq -stub -out discover_mock.go . Discover
 // Discover defines an interface for discovering the devices, mounts, and hooks available on a system
 type Discover interface {
+	Devices() ([]Device, error)
+	Mounts() ([]Mount, error)
 	Hooks() ([]Hook, error)
 }

@@ -18,6 +18,7 @@ experimental = true
 When this setting is enabled, the modifications made to the OCI specification are controlled by the `nvidia-container-runtime.discover-mode` option, with the following mode supported:
 
 * `"legacy"`: This mode mirrors the behaviour of the standard mode, inserting the NVIDIA Container Runtime Hook as a `prestart` hook into the container's OCI specification.
+* `"csv"`: This mode uses CSV files at `/etc/nvidia-container-runtime/host-files-for-container.d` to define the devices and mounts that are to be injected into a container when it is created.
 
 ### Notes on using the docker CLI
 
