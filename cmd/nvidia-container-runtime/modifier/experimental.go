@@ -18,6 +18,8 @@ package modifier
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
@@ -60,7 +62,8 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec 
 	root := cfg.NVIDIAContainerCLIConfig.Root
 
 	var d discover.Discover
-	switch cfg.NVIDIAContainerRuntimeConfig.DiscoverMode {
+
+	switch resolveAutoDiscoverMode(logger, cfg.NVIDIAContainerRuntimeConfig.DiscoverMode) {
 	case "legacy":
 		legacyDiscoverer, err := discover.NewLegacyDiscoverer(logger, root)
 		if err != nil {
@@ -114,4 +117,48 @@ func (m experimental) Modify(spec *specs.Spec) error {
 	}
 
 	return specEdits.Modify(spec)
+}
+
+// resolveAutoDiscoverMode determines the correct discover mode for the specified platform if set to "auto"
+func resolveAutoDiscoverMode(logger *logrus.Logger, mode string) (rmode string) {
+	if mode != "auto" {
+		return mode
+	}
+	defer func() {
+		logger.Infof("Auto-detected discover mode as '%v'", rmode)
+	}()
+
+	isTegra, reason := isTegraSystem()
+	logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
+
+	if isTegra {
+		return "csv"
+	}
+
+	return "legacy"
+}
+
+// isTegraSystem returns true if the system is detected as a Tegra-based system
+func isTegraSystem() (bool, string) {
+	const tegraReleaseFile = "/etc/nv_tegra_release"
+	const tegraFamilyFile = "/sys/devices/soc0/family"
+
+	if info, err := os.Stat(tegraReleaseFile); err == nil && !info.IsDir() {
+		return true, fmt.Sprintf("%v found", tegraReleaseFile)
+	}
+
+	if info, err := os.Stat(tegraFamilyFile); err != nil || !info.IsDir() {
+		return false, fmt.Sprintf("%v not found", tegraFamilyFile)
+	}
+
+	contents, err := os.ReadFile(tegraFamilyFile)
+	if err != nil {
+		return false, fmt.Sprintf("could not read %v", tegraFamilyFile)
+	}
+
+	if strings.HasPrefix(strings.ToLower(string(contents)), "tegra") {
+		return true, fmt.Sprintf("%v has 'tegra' prefix", tegraFamilyFile)
+	}
+
+	return false, fmt.Sprintf("%v has no 'tegra' prefix", tegraFamilyFile)
 }

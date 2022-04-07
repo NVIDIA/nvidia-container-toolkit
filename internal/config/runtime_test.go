@@ -63,7 +63,7 @@ func TestGetConfig(t *testing.T) {
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/dev/null",
 					Experimental:  false,
-					DiscoverMode:  "legacy",
+					DiscoverMode:  "auto",
 				},
 			},
 		},

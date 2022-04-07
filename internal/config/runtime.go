@@ -47,7 +47,7 @@ func getDefaultRuntimeConfig() *RuntimeConfig {
 	c := RuntimeConfig{
 		DebugFilePath: "/dev/null",
 		Experimental:  false,
-		DiscoverMode:  "legacy",
+		DiscoverMode:  "auto",
 	}
 
 	return &c

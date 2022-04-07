@@ -320,3 +320,32 @@ func TestExperimentalModifier(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveDiscoverMode(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	testCases := []struct {
+		description  string
+		mode         string
+		expectedMode string
+	}{
+		{
+			description:  "non-auto resolves to input",
+			mode:         "not-auto",
+			expectedMode: "not-auto",
+		},
+		// TODO: The following test is brittle in that it will break on Tegra-based systems.
+		// {
+		// 	description:  "auto resolves to legacy",
+		// 	mode:         "auto",
+		// 	expectedMode: "legacy",
+		// },
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			mode := resolveAutoDiscoverMode(logger, tc.mode)
+			require.EqualValues(t, tc.expectedMode, mode)
+		})
+	}
+}
