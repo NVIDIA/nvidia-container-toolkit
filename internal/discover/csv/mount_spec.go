@@ -55,17 +55,18 @@ func NewMountSpecFromLine(line string) (*MountSpec, error) {
 
 // NewMountSpec creates a MountSpec with the specified type and path. An error is returned if the type is invalid.
 func NewMountSpec(mountType string, path string) (*MountSpec, error) {
-	switch mountType {
-	case "dev", "lib", "sym", "dir":
+	mt := MountSpecType(mountType)
+	switch mt {
+	case MountSpecDev, MountSpecLib, MountSpecSym, MountSpecDir:
 	default:
-		return nil, fmt.Errorf("unexpected mount type: %v", mountType)
+		return nil, fmt.Errorf("unexpected mount type: %v", mt)
 	}
 	if path == "" {
 		return nil, fmt.Errorf("invalid path: %v", path)
 	}
 
 	mount := MountSpec{
-		Type: MountSpecType(mountType),
+		Type: mt,
 		Path: path,
 	}
 
