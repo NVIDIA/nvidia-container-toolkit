@@ -39,7 +39,7 @@ func (d mount) toEdits() *cdi.ContainerEdits {
 func (d mount) toSpec() *specs.Mount {
 	s := specs.Mount{
 		HostPath: d.Path,
-		// TODO: We need to update the container path
+		// TODO: We need to allow the container path to be customised
 		ContainerPath: d.Path,
 		Options: []string{
 			"ro",
