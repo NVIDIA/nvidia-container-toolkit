@@ -84,12 +84,16 @@ func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]loo
 	}
 
 	var discoverers []Discover
+	var mountSpecTypes []csv.MountSpecType
 	candidatesByType := make(map[csv.MountSpecType][]string)
 	for _, t := range targets {
+		if _, exists := candidatesByType[t.Type]; !exists {
+			mountSpecTypes = append(mountSpecTypes, t.Type)
+		}
 		candidatesByType[t.Type] = append(candidatesByType[t.Type], t.Path)
 	}
 
-	for t, candidates := range candidatesByType {
+	for _, t := range mountSpecTypes {
 		locator, exists := locators[t]
 		if !exists {
 			return nil, fmt.Errorf("no locator defined for '%v'", t)
@@ -98,7 +102,7 @@ func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]loo
 		m := &mounts{
 			logger:   logger,
 			lookup:   locator,
-			required: candidates,
+			required: candidatesByType[t],
 		}
 
 		switch t {
