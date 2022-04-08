@@ -31,6 +31,14 @@ const (
 )
 
 var (
+	// DefaultExecutableDir specifies the default path to use for executables if they cannot be located in the path.
+	DefaultExecutableDir = "/usr/bin"
+
+	// NVIDIAContainerRuntimeHookExecutable is the executable name for the NVIDIA Container Runtime Hook
+	NVIDIAContainerRuntimeHookExecutable = "nvidia-container-runtime-hook"
+	// NVIDIAContainerToolkitExecutable is the executable name for the NVIDIA Container Toolkit (an alias for the NVIDIA Container Runtime Hook)
+	NVIDIAContainerToolkitExecutable = "nvidia-container-toolkit"
+
 	configDir = "/etc/"
 )
 

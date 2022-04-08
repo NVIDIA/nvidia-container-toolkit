@@ -17,6 +17,9 @@
 package discover
 
 import (
+	"path/filepath"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/sirupsen/logrus"
@@ -40,22 +43,18 @@ type legacy struct {
 
 var _ Discover = (*legacy)(nil)
 
-const (
-	nvidiaContainerRuntimeHookExecutable      = "nvidia-container-runtime-hook"
-	nvidiaContainerRuntimeHookDefaultFilePath = "/usr/bin/nvidia-container-runtime-hook"
-)
-
-// Hooks returns the "legacy" NVIDIA Container Runtime hook. This mirrors the behaviour of the stable
-// modifier.
+// Hooks returns the "legacy" NVIDIA Container Runtime hook. This hook calls out
+// to the nvidia-container-cli to make modifications to the container as defined
+// in libnvidia-container.
 func (d legacy) Hooks() ([]Hook, error) {
-	hookPath := nvidiaContainerRuntimeHookDefaultFilePath
-	targets, err := d.lookup.Locate(nvidiaContainerRuntimeHookExecutable)
+	hookPath := filepath.Join(config.DefaultExecutableDir, config.NVIDIAContainerRuntimeHookExecutable)
+	targets, err := d.lookup.Locate(config.NVIDIAContainerRuntimeHookExecutable)
 	if err != nil {
-		d.logger.Warnf("Failed to locate %v: %v", nvidiaContainerRuntimeHookExecutable, err)
+		d.logger.Warnf("Failed to locate %v: %v", config.NVIDIAContainerRuntimeHookExecutable, err)
 	} else if len(targets) == 0 {
-		d.logger.Warnf("%v not found", nvidiaContainerRuntimeHookExecutable)
+		d.logger.Warnf("%v not found", config.NVIDIAContainerRuntimeHookExecutable)
 	} else {
-		d.logger.Debugf("Found %v candidates: %v", nvidiaContainerRuntimeHookExecutable, targets)
+		d.logger.Debugf("Found %v candidates: %v", config.NVIDIAContainerRuntimeHookExecutable, targets)
 		hookPath = targets[0]
 	}
 	d.logger.Debugf("Using NVIDIA Container Runtime Hook path %v", hookPath)

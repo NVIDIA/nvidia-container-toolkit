@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
@@ -60,8 +61,8 @@ func (m nvidiaContainerRuntimeHookRemover) Modify(spec *specs.Spec) error {
 // nvidia-container-runtime or docker when specifying the --gpus flag.
 func isNVIDIAContainerRuntimeHook(hook *specs.Hook) bool {
 	bins := map[string]struct{}{
-		nvidiaContainerRuntimeHookExecutable: {},
-		nvidiaContainerToolkitExecutable:     {},
+		config.NVIDIAContainerRuntimeHookExecutable: {},
+		config.NVIDIAContainerToolkitExecutable:     {},
 	}
 
 	_, exists := bins[filepath.Base(hook.Path)]
