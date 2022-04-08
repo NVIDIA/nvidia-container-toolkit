@@ -24,13 +24,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type csvDiscoverer struct {
-	mounts
-	filename  string
-	mountType csv.MountSpecType
-}
+// charDevices is a discover for a list of character devices
+type charDevices mounts
 
-var _ Discover = (*csvDiscoverer)(nil)
+var _ Discover = (*charDevices)(nil)
 
 // NewFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
 // The constructed discoverer is comprised of a list, with each element in the list being associated with a
@@ -76,23 +73,17 @@ func NewFromCSVFile(logger *logrus.Logger, locators map[csv.MountSpecType]lookup
 		return nil, fmt.Errorf("CSV file is empty")
 	}
 
-	csvDiscoverers, err := newFromMountSpecs(logger, locators, targets)
-	if err != nil {
-		return nil, err
-	}
-	var discoverers []Discover
-	for _, d := range csvDiscoverers {
-		d.filename = filename
-		discoverers = append(discoverers, d)
-	}
-
-	return &list{discoverers: discoverers}, nil
+	return newFromMountSpecs(logger, locators, targets)
 }
 
 // newFromMountSpecs creates a discoverer for the CSV file. A logger is also supplied.
 // A list of csvDiscoverers is returned, with each being associated with a single MountSpecType.
-func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]lookup.Locator, targets []*csv.MountSpec) ([]*csvDiscoverer, error) {
-	var discoverers []*csvDiscoverer
+func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]lookup.Locator, targets []*csv.MountSpec) (Discover, error) {
+	if len(targets) == 0 {
+		return &None{}, nil
+	}
+
+	var discoverers []Discover
 	candidatesByType := make(map[csv.MountSpecType][]string)
 	for _, t := range targets {
 		candidatesByType[t.Type] = append(candidatesByType[t.Type], t.Path)
@@ -103,45 +94,41 @@ func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]loo
 		if !exists {
 			return nil, fmt.Errorf("no locator defined for '%v'", t)
 		}
-		d := csvDiscoverer{
-			mounts: mounts{
-				logger:   logger,
-				lookup:   locator,
-				required: candidates,
-			},
-			mountType: t,
+
+		m := &mounts{
+			logger:   logger,
+			lookup:   locator,
+			required: candidates,
 		}
-		discoverers = append(discoverers, &d)
+
+		switch t {
+		case csv.MountSpecDev:
+			// For device mount specs, we insert a charDevices into the list of discoverers.
+			discoverers = append(discoverers, (*charDevices)(m))
+		default:
+			discoverers = append(discoverers, m)
+		}
 	}
 
-	return discoverers, nil
+	return &list{discoverers: discoverers}, nil
 }
 
-// Mounts returns the discovered mounts for the csvDiscoverer.
-// Note that if the discoverer is for the device MountSpecType, the list of mounts is empty.
-func (d *csvDiscoverer) Mounts() ([]Mount, error) {
-	if d.mountType == csv.MountSpecDev {
-		return d.None.Mounts()
-	}
-
-	return d.mounts.Mounts()
+// Mounts returns the discovered mounts for the charDevices. Since this explicitly specifies a
+// device list, the mounts are nil.
+func (d *charDevices) Mounts() ([]Mount, error) {
+	return nil, nil
 }
 
-// Devices returns the discovered devices for the csvDiscoverer.
-// Note that if the discoverer is not for the device MountSpecType, the list of devices is empty.
-func (d *csvDiscoverer) Devices() ([]Device, error) {
-	if d.mountType != csv.MountSpecDev {
-		return d.None.Devices()
-	}
-
-	mounts, err := d.mounts.Mounts()
+// Devices returns the discovered devices for the charDevices. Here the device nodes are first
+// discovered as mounts and these are converted to devices.
+func (d *charDevices) Devices() ([]Device, error) {
+	devicesAsMounts, err := (*mounts)(d).Mounts()
 	if err != nil {
 		return nil, err
 	}
 	var devices []Device
-	for _, mount := range mounts {
-		device := Device(mount)
-		devices = append(devices, device)
+	for _, mount := range devicesAsMounts {
+		devices = append(devices, Device(mount))
 	}
 
 	return devices, nil
