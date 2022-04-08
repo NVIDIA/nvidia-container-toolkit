@@ -87,6 +87,8 @@ func ParseFile(logger *logrus.Logger, filename string) ([]*MountSpec, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open %v for reading: %v", filename, err)
 	}
+	defer csvFile.Close()
+
 	return parseCSVFromReader(logger, csvFile), nil
 }
 
