@@ -33,8 +33,13 @@ type modifyingRuntimeWrapper struct {
 var _ oci.Runtime = (*modifyingRuntimeWrapper)(nil)
 
 // NewModifyingRuntimeWrapper creates a runtime wrapper that applies the specified modifier to the OCI specification
-// before invoking the wrapped runtime.
+// before invoking the wrapped runtime. If the modifier is nil, the input runtime is returned.
 func NewModifyingRuntimeWrapper(logger *log.Logger, runtime oci.Runtime, spec oci.Spec, modifier oci.SpecModifier) oci.Runtime {
+	if modifier == nil {
+		logger.Infof("Using low-level runtime with no modification")
+		return runtime
+	}
+
 	rt := modifyingRuntimeWrapper{
 		logger:   logger,
 		runtime:  runtime,
