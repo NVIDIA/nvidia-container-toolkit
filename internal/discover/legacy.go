@@ -17,6 +17,9 @@
 package discover
 
 import (
+	"path/filepath"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/sirupsen/logrus"
@@ -41,14 +44,13 @@ type legacy struct {
 var _ Discover = (*legacy)(nil)
 
 const (
-	nvidiaContainerRuntimeHookExecutable      = "nvidia-container-runtime-hook"
-	nvidiaContainerRuntimeHookDefaultFilePath = "/usr/bin/nvidia-container-runtime-hook"
+	nvidiaContainerRuntimeHookExecutable = "nvidia-container-runtime-hook"
 )
 
 // Hooks returns the "legacy" NVIDIA Container Runtime hook. This mirrors the behaviour of the stable
 // modifier.
 func (d legacy) Hooks() ([]Hook, error) {
-	hookPath := nvidiaContainerRuntimeHookDefaultFilePath
+	hookPath := filepath.Join(config.DefaultExecutableDir, nvidiaContainerRuntimeHookExecutable)
 	targets, err := d.lookup.Locate(nvidiaContainerRuntimeHookExecutable)
 	if err != nil {
 		d.logger.Warnf("Failed to locate %v: %v", nvidiaContainerRuntimeHookExecutable, err)

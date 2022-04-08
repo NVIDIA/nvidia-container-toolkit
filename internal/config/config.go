@@ -31,6 +31,9 @@ const (
 )
 
 var (
+	// DefaultExecutableDir specifies the default path to use for executables if they cannot be located in the path.
+	DefaultExecutableDir = "/usr/bin"
+
 	configDir = "/etc/"
 )
 

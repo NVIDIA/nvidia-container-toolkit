@@ -19,18 +19,18 @@ package modifier
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	nvidiaContainerRuntimeHookExecutable  = "nvidia-container-runtime-hook"
-	nvidiaContainerRuntimeHookDefaultPath = "/usr/bin/nvidia-container-runtime-hook"
-
-	nvidiaContainerToolkitExecutable = "nvidia-container-toolkit"
+	nvidiaContainerRuntimeHookExecutable = "nvidia-container-runtime-hook"
+	nvidiaContainerToolkitExecutable     = "nvidia-container-toolkit"
 )
 
 // NewStableRuntimeModifier creates an OCI spec modifier that inserts the NVIDIA Container Runtime Hook into an OCI
@@ -52,7 +52,7 @@ type stableRuntimeModifier struct {
 func (m stableRuntimeModifier) Modify(spec *specs.Spec) error {
 	path, err := exec.LookPath(nvidiaContainerRuntimeHookExecutable)
 	if err != nil {
-		path = nvidiaContainerRuntimeHookDefaultPath
+		path = filepath.Join(config.DefaultExecutableDir, nvidiaContainerRuntimeHookExecutable)
 		_, err = os.Stat(path)
 		if err != nil {
 			return err
