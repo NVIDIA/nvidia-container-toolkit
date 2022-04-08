@@ -81,19 +81,39 @@ func BaseFilesOnly(filenames []string) []string {
 	return selected
 }
 
-// ParseFile parses the specified file and returns a list of required jetson mounts
-func ParseFile(logger *logrus.Logger, filename string) ([]*MountSpec, error) {
-	csvFile, err := os.Open(filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open %v for reading: %v", filename, err)
-	}
-	defer csvFile.Close()
-
-	return parseCSVFromReader(logger, csvFile), nil
+// Parser specifies an interface for parsing MountSpecs
+type Parser interface {
+	Parse() ([]*MountSpec, error)
 }
 
-// parseCSVFromReader parses the specified file and returns a list of required jetson mounts
-func parseCSVFromReader(logger *logrus.Logger, reader io.Reader) []*MountSpec {
+type csv struct {
+	logger   *logrus.Logger
+	filename string
+}
+
+// NewCSVFileParser creates a new parser for reading MountSpecs from the specified CSV file
+func NewCSVFileParser(logger *logrus.Logger, filename string) Parser {
+	p := csv{
+		logger:   logger,
+		filename: filename,
+	}
+
+	return &p
+}
+
+// Parse parses the csv file and returns a list of MountSpecs in the file
+func (p csv) Parse() ([]*MountSpec, error) {
+	reader, err := os.Open(p.filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %v for reading: %v", p.filename, err)
+	}
+	defer reader.Close()
+
+	return p.parseFromReader(reader), nil
+}
+
+// parseFromReader parses the specified file and returns a list of required jetson mounts
+func (p csv) parseFromReader(reader io.Reader) []*MountSpec {
 	var targets []*MountSpec
 
 	scanner := bufio.NewScanner(reader)
@@ -101,7 +121,7 @@ func parseCSVFromReader(logger *logrus.Logger, reader io.Reader) []*MountSpec {
 		line := scanner.Text()
 		target, err := NewMountSpecFromLine(line)
 		if err != nil {
-			logger.Debugf("Skipping invalid mount spec '%v': %v", line, err)
+			p.logger.Debugf("Skipping invalid mount spec '%v': %v", line, err)
 			continue
 		}
 		targets = append(targets, target)
