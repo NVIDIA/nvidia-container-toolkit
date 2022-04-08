@@ -26,12 +26,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCSVDiscoverer(t *testing.T) {
+func TestCharDevices(t *testing.T) {
 	logger, logHook := testlog.NewNullLogger()
 
 	testCases := []struct {
 		description          string
-		input                *csvDiscoverer
+		input                *charDevices
 		expectedMounts       []Mount
 		expectedMountsError  error
 		expectedDevicesError error
@@ -39,8 +39,8 @@ func TestCSVDiscoverer(t *testing.T) {
 	}{
 		{
 			description: "dev mounts are empty",
-			input: &csvDiscoverer{
-				mounts: mounts{
+			input: (*charDevices)(
+				&mounts{
 					lookup: &lookup.LocatorMock{
 						LocateFunc: func(string) ([]string, error) {
 							return []string{"located"}, nil
@@ -48,38 +48,13 @@ func TestCSVDiscoverer(t *testing.T) {
 					},
 					required: []string{"required"},
 				},
-				mountType: "dev",
-			},
+			),
 			expectedDevices: []Device{{Path: "located"}},
 		},
 		{
-			description: "dev devices returns error for nil lookup",
-			input: &csvDiscoverer{
-				mountType: "dev",
-			},
+			description:          "dev devices returns error for nil lookup",
+			input:                &charDevices{},
 			expectedDevicesError: fmt.Errorf("no lookup defined"),
-		},
-		{
-			description: "lib devices are empty",
-			input: &csvDiscoverer{
-				mounts: mounts{
-					lookup: &lookup.LocatorMock{
-						LocateFunc: func(string) ([]string, error) {
-							return []string{"located"}, nil
-						},
-					},
-					required: []string{"required"},
-				},
-				mountType: "lib",
-			},
-			expectedMounts: []Mount{{Path: "located"}},
-		},
-		{
-			description: "lib mounts returns error for nil lookup",
-			input: &csvDiscoverer{
-				mountType: "lib",
-			},
-			expectedMountsError: fmt.Errorf("no lookup defined"),
 		},
 	}
 
@@ -117,13 +92,14 @@ func TestNewFromMountSpec(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description            string
-		targets                []*csv.MountSpec
-		expectedError          error
-		expectedCSVDiscoverers []*csvDiscoverer
+		description        string
+		targets            []*csv.MountSpec
+		expectedError      error
+		expectedDiscoverer Discover
 	}{
 		{
-			description: "empty targets returns empyt list",
+			description:        "empty targets returns None discoverer list",
+			expectedDiscoverer: &None{},
 		},
 		{
 			description: "unexpected locator returns error",
@@ -151,18 +127,16 @@ func TestNewFromMountSpec(t *testing.T) {
 					Path: "dev1",
 				},
 			},
-			expectedCSVDiscoverers: []*csvDiscoverer{
-				{
-					mountType: "dev",
-					mounts: mounts{
-						logger:   logger,
-						lookup:   locators["dev"],
-						required: []string{"dev0", "dev1"},
-					},
-				},
-				{
-					mountType: "lib",
-					mounts: mounts{
+			expectedDiscoverer: &list{
+				discoverers: []Discover{
+					(*charDevices)(
+						&mounts{
+							logger:   logger,
+							lookup:   locators["dev"],
+							required: []string{"dev0", "dev1"},
+						},
+					),
+					&mounts{
 						logger:   logger,
 						lookup:   locators["lib"],
 						required: []string{"lib0"},
@@ -174,13 +148,13 @@ func TestNewFromMountSpec(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			discoverers, err := newFromMountSpecs(logger, locators, tc.targets)
+			discoverer, err := newFromMountSpecs(logger, locators, tc.targets)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
-			require.ElementsMatch(t, tc.expectedCSVDiscoverers, discoverers)
+			require.EqualValues(t, tc.expectedDiscoverer, discoverer)
 		})
 	}
 }
