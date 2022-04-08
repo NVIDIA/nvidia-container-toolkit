@@ -103,7 +103,7 @@ func getDefaultConfig() *Config {
 	c := Config{
 		NVIDIAContainerCLIConfig:     *getDefaultContainerCLIConfig(),
 		NVIDIACTKConfig:              *getDefaultCTKConfig(),
-		NVIDIAContainerRuntimeConfig: *getDefaultRuntimeConfig(),
+		NVIDIAContainerRuntimeConfig: *GetDefaultRuntimeConfig(),
 	}
 
 	return &c

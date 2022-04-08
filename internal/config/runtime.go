@@ -29,7 +29,7 @@ type RuntimeConfig struct {
 
 // getRuntimeConfigFrom reads the nvidia container runtime config from the specified toml Tree.
 func getRuntimeConfigFrom(toml *toml.Tree) *RuntimeConfig {
-	cfg := getDefaultRuntimeConfig()
+	cfg := GetDefaultRuntimeConfig()
 
 	if toml == nil {
 		return cfg
@@ -42,8 +42,8 @@ func getRuntimeConfigFrom(toml *toml.Tree) *RuntimeConfig {
 	return cfg
 }
 
-// getDefaultRuntimeConfig defines the default values for the config
-func getDefaultRuntimeConfig() *RuntimeConfig {
+// GetDefaultRuntimeConfig defines the default values for the config
+func GetDefaultRuntimeConfig() *RuntimeConfig {
 	c := RuntimeConfig{
 		DebugFilePath: "/dev/null",
 		Experimental:  false,

@@ -17,6 +17,7 @@ import (
 
 var (
 	debugflag  = flag.Bool("debug", false, "enable debug output")
+	forceflag  = flag.Bool("force", false, "force execution of prestart hook in experimental mode")
 	configflag = flag.String("config", "", "configuration file")
 
 	defaultPATH = []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"}
@@ -84,6 +85,10 @@ func doPrestart() {
 
 	hook := getHookConfig()
 	cli := hook.NvidiaContainerCLI
+
+	if hook.NVIDIAContainerRuntime.Experimental && !*forceflag {
+		log.Panicln("invoking the NVIDIA Container Runtime Hook directly (e.g. specifying the docker --gpus flag) is not supported. Please use the NVIDIA Container Runtime instead.")
+	}
 
 	container := getContainerConfig(hook)
 	nvidia := container.Nvidia

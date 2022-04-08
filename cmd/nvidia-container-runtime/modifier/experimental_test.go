@@ -231,7 +231,7 @@ func TestExperimentalModifier(t *testing.T) {
 			},
 		},
 		{
-			description: "modification fails for existing nvidia-container-runtime-hook",
+			description: "modification removes existing nvidia-container-runtime-hook",
 			spec: &specs.Spec{
 				Hooks: &specs.Hooks{
 					Prestart: []specs.Hook{
@@ -254,20 +254,19 @@ func TestExperimentalModifier(t *testing.T) {
 					return hooks, nil
 				},
 			},
-			expectedError: fmt.Errorf("nvidia-container-runtime-hook already exists"),
 			expectedSpec: &specs.Spec{
 				Hooks: &specs.Hooks{
 					Prestart: []specs.Hook{
 						{
-							Path: "/path/to/nvidia-container-runtime-hook",
-							Args: []string{"/path/to/nvidia-container-runtime-hook", "prestart"},
+							Path: "/hook/b",
+							Args: []string{"/hook/b", "argb"},
 						},
 					},
 				},
 			},
 		},
 		{
-			description: "modification fails for existing nvidia-container-toolkit",
+			description: "modification removes existing nvidia-container-toolkit",
 			spec: &specs.Spec{
 				Hooks: &specs.Hooks{
 					Prestart: []specs.Hook{
@@ -290,13 +289,12 @@ func TestExperimentalModifier(t *testing.T) {
 					return hooks, nil
 				},
 			},
-			expectedError: fmt.Errorf("nvidia-container-toolkit already exists"),
 			expectedSpec: &specs.Spec{
 				Hooks: &specs.Hooks{
 					Prestart: []specs.Hook{
 						{
-							Path: "/path/to/nvidia-container-toolkit",
-							Args: []string{"/path/to/nvidia-container-toolkit", "prestart"},
+							Path: "/hook/b",
+							Args: []string{"/hook/b", "argb"},
 						},
 					},
 				},
