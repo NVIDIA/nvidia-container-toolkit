@@ -89,12 +89,17 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec 
 			return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
 		}
 
-		hooks, err := discover.NewLDCacheUpdateHook(logger, csvDiscoverer, config)
+		ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(logger, csvDiscoverer, config)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create hook discoverer: %v", err)
+			return nil, fmt.Errorf("failed to create ldcach update hook discoverer: %v", err)
 		}
 
-		d = discover.NewList(csvDiscoverer, hooks)
+		createSymlinksHook, err := discover.NewCreateSymlinksHook(logger, csvFiles, config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create symlink hook discoverer: %v", err)
+		}
+
+		d = discover.NewList(csvDiscoverer, ldcacheUpdateHook, createSymlinksHook)
 	default:
 		return nil, fmt.Errorf("invalid discover mode: %v", cfg.NVIDIAContainerRuntimeConfig.DiscoverMode)
 	}

@@ -17,14 +17,12 @@
 package ldcache
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"syscall"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -76,31 +74,12 @@ func (m command) build() *cli.Command {
 }
 
 func (m command) run(c *cli.Context, cfg *config) error {
-	var s specs.State
-
-	inputReader := os.Stdin
-	if cfg.containerSpec != "" && cfg.containerSpec != "-" {
-		inputFile, err := os.Open(cfg.containerSpec)
-		if err != nil {
-			return fmt.Errorf("failed to open intput: %v", err)
-		}
-		defer inputFile.Close()
-		inputReader = inputFile
-	}
-
-	d := json.NewDecoder(inputReader)
-	if err := d.Decode(&s); err != nil {
-		return fmt.Errorf("failed to decode container state: %v", err)
-	}
-
-	specFilePath := oci.GetSpecFilePath(s.Bundle)
-	specFile, err := os.Open(specFilePath)
+	s, err := oci.LoadContainerState(cfg.containerSpec)
 	if err != nil {
-		return fmt.Errorf("failed to open OCI spec file: %v", err)
+		return fmt.Errorf("failed to load container state: %v", err)
 	}
-	defer specFile.Close()
 
-	spec, err := oci.LoadFrom(specFile)
+	spec, err := s.LoadSpec()
 	if err != nil {
 		return fmt.Errorf("failed to load OCI spec: %v", err)
 	}
