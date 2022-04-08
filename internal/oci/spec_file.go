@@ -52,7 +52,7 @@ func (s *fileSpec) Load() error {
 	}
 	defer specFile.Close()
 
-	spec, err := loadFrom(specFile)
+	spec, err := LoadFrom(specFile)
 	if err != nil {
 		return fmt.Errorf("error loading OCI specification from file: %v", err)
 	}
@@ -60,8 +60,8 @@ func (s *fileSpec) Load() error {
 	return nil
 }
 
-// loadFrom reads the contents of the OCI spec from the specified io.Reader.
-func loadFrom(reader io.Reader) (*specs.Spec, error) {
+// LoadFrom reads the contents of the OCI spec from the specified io.Reader.
+func LoadFrom(reader io.Reader) (*specs.Spec, error) {
 	decoder := json.NewDecoder(reader)
 
 	var spec specs.Spec

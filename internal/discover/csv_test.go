@@ -31,7 +31,7 @@ func TestCSVDiscoverer(t *testing.T) {
 
 	testCases := []struct {
 		description          string
-		input                csvDiscoverer
+		input                *csvDiscoverer
 		expectedMounts       []Mount
 		expectedMountsError  error
 		expectedDevicesError error
@@ -39,7 +39,7 @@ func TestCSVDiscoverer(t *testing.T) {
 	}{
 		{
 			description: "dev mounts are empty",
-			input: csvDiscoverer{
+			input: &csvDiscoverer{
 				mounts: mounts{
 					lookup: &lookup.LocatorMock{
 						LocateFunc: func(string) ([]string, error) {
@@ -54,14 +54,14 @@ func TestCSVDiscoverer(t *testing.T) {
 		},
 		{
 			description: "dev devices returns error for nil lookup",
-			input: csvDiscoverer{
+			input: &csvDiscoverer{
 				mountType: "dev",
 			},
 			expectedDevicesError: fmt.Errorf("no lookup defined"),
 		},
 		{
 			description: "lib devices are empty",
-			input: csvDiscoverer{
+			input: &csvDiscoverer{
 				mounts: mounts{
 					lookup: &lookup.LocatorMock{
 						LocateFunc: func(string) ([]string, error) {
@@ -76,7 +76,7 @@ func TestCSVDiscoverer(t *testing.T) {
 		},
 		{
 			description: "lib mounts returns error for nil lookup",
-			input: csvDiscoverer{
+			input: &csvDiscoverer{
 				mountType: "lib",
 			},
 			expectedMountsError: fmt.Errorf("no lookup defined"),

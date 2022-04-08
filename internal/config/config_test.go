@@ -65,42 +65,57 @@ func TestGetConfig(t *testing.T) {
 					Experimental:  false,
 					DiscoverMode:  "auto",
 				},
+				NVIDIACTKConfig: CTKConfig{
+					Path: "nvidia-ctk",
+				},
 			},
 		},
 		{
 			description: "config options set inline",
 			contents: []string{
+				"nvidia-container-cli.root = \"/bar/baz\"",
 				"nvidia-container-runtime.debug = \"/foo/bar\"",
 				"nvidia-container-runtime.experimental = true",
 				"nvidia-container-runtime.discover-mode = \"not-legacy\"",
+				"nvidia-ctk.path = \"/foo/bar/nvidia-ctk\"",
 			},
 			expectedConfig: &Config{
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
-					Root: "",
+					Root: "/bar/baz",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/foo/bar",
 					Experimental:  true,
 					DiscoverMode:  "not-legacy",
+				},
+				NVIDIACTKConfig: CTKConfig{
+					Path: "/foo/bar/nvidia-ctk",
 				},
 			},
 		},
 		{
 			description: "config options set in section",
 			contents: []string{
+				"[nvidia-container-cli]",
+				"root = \"/bar/baz\"",
 				"[nvidia-container-runtime]",
 				"debug = \"/foo/bar\"",
 				"experimental = true",
 				"discover-mode = \"not-legacy\"",
+				"[nvidia-ctk]",
+				"path = \"/foo/bar/nvidia-ctk\"",
 			},
 			expectedConfig: &Config{
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
-					Root: "",
+					Root: "/bar/baz",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/foo/bar",
 					Experimental:  true,
 					DiscoverMode:  "not-legacy",
+				},
+				NVIDIACTKConfig: CTKConfig{
+					Path: "/foo/bar/nvidia-ctk",
 				},
 			},
 		},

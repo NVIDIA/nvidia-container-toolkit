@@ -41,16 +41,17 @@ func TestMounts(t *testing.T) {
 		description    string
 		expectedError  error
 		expectedMounts []Mount
-		input          mounts
+		input          *mounts
 	}{
 		{
 			description:   "nill lookup returns error",
 			expectedError: fmt.Errorf("no lookup defined"),
+			input:         &mounts{},
 		},
 		{
 			description:   "empty required returns no mounts",
 			expectedError: nil,
-			input: mounts{
+			input: &mounts{
 				lookup: &lookup.LocatorMock{
 					LocateFunc: func(string) ([]string, error) {
 						return []string{"located"}, nil
@@ -61,7 +62,7 @@ func TestMounts(t *testing.T) {
 		{
 			description:   "required returns located",
 			expectedError: nil,
-			input: mounts{
+			input: &mounts{
 				lookup: &lookup.LocatorMock{
 					LocateFunc: func(string) ([]string, error) {
 						return []string{"located"}, nil
@@ -74,7 +75,7 @@ func TestMounts(t *testing.T) {
 		{
 			description:   "mounts removes located duplicates",
 			expectedError: nil,
-			input: mounts{
+			input: &mounts{
 				lookup: &lookup.LocatorMock{
 					LocateFunc: func(string) ([]string, error) {
 						return []string{"located"}, nil
@@ -86,7 +87,7 @@ func TestMounts(t *testing.T) {
 		},
 		{
 			description: "mounts skips located errors",
-			input: mounts{
+			input: &mounts{
 				lookup: &lookup.LocatorMock{
 					LocateFunc: func(s string) ([]string, error) {
 						if s == "error" {
@@ -101,7 +102,7 @@ func TestMounts(t *testing.T) {
 		},
 		{
 			description: "mounts skips unlocated",
-			input: mounts{
+			input: &mounts{
 				lookup: &lookup.LocatorMock{
 					LocateFunc: func(s string) ([]string, error) {
 						if s == "empty" {
@@ -116,7 +117,7 @@ func TestMounts(t *testing.T) {
 		},
 		{
 			description: "mounts skips unlocated",
-			input: mounts{
+			input: &mounts{
 				lookup: &lookup.LocatorMock{
 					LocateFunc: func(s string) ([]string, error) {
 						if s == "multiple" {

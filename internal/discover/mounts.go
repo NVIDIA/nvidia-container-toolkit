@@ -18,6 +18,7 @@ package discover
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/sirupsen/logrus"
@@ -31,14 +32,24 @@ type mounts struct {
 	logger   *logrus.Logger
 	lookup   lookup.Locator
 	required []string
+	sync.Mutex
+	cache []Mount
 }
 
 var _ Discover = (*mounts)(nil)
 
-func (d mounts) Mounts() ([]Mount, error) {
+func (d *mounts) Mounts() ([]Mount, error) {
 	if d.lookup == nil {
 		return nil, fmt.Errorf("no lookup defined")
 	}
+
+	if d.cache != nil {
+		d.logger.Debugf("returning cached mounts")
+		return d.cache, nil
+	}
+
+	d.Lock()
+	defer d.Unlock()
 
 	paths := make(map[string]bool)
 
@@ -67,6 +78,8 @@ func (d mounts) Mounts() ([]Mount, error) {
 		}
 		mounts = append(mounts, mount)
 	}
+
+	d.cache = mounts
 
 	return mounts, nil
 }

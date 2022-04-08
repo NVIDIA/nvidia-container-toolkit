@@ -119,7 +119,7 @@ func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]loo
 
 // Mounts returns the discovered mounts for the csvDiscoverer.
 // Note that if the discoverer is for the device MountSpecType, the list of mounts is empty.
-func (d csvDiscoverer) Mounts() ([]Mount, error) {
+func (d *csvDiscoverer) Mounts() ([]Mount, error) {
 	if d.mountType == csv.MountSpecDev {
 		return d.None.Mounts()
 	}
@@ -129,7 +129,7 @@ func (d csvDiscoverer) Mounts() ([]Mount, error) {
 
 // Devices returns the discovered devices for the csvDiscoverer.
 // Note that if the discoverer is not for the device MountSpecType, the list of devices is empty.
-func (d csvDiscoverer) Devices() ([]Device, error) {
+func (d *csvDiscoverer) Devices() ([]Device, error) {
 	if d.mountType != csv.MountSpecDev {
 		return d.None.Devices()
 	}

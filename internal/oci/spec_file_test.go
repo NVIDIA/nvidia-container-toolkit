@@ -44,7 +44,7 @@ func TestLoadFrom(t *testing.T) {
 
 	for i, tc := range testCases {
 		var spec *specs.Spec
-		spec, err := loadFrom(bytes.NewReader(tc.contents))
+		spec, err := LoadFrom(bytes.NewReader(tc.contents))
 
 		if tc.isError {
 			require.Error(t, err, "%d: %v", i, tc)

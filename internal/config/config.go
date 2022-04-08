@@ -38,6 +38,7 @@ var (
 // Note: This is currently duplicated by the HookConfig in cmd/nvidia-container-toolkit/hook_config.go
 type Config struct {
 	NVIDIAContainerCLIConfig     ContainerCLIConfig `toml:"nvidia-container-cli"`
+	NVIDIACTKConfig              CTKConfig          `toml:"nvidia-ctk"`
 	NVIDIAContainerRuntimeConfig RuntimeConfig      `toml:"nvidia-container-runtime"`
 }
 
@@ -83,6 +84,7 @@ func getConfigFrom(toml *toml.Tree) *Config {
 	}
 
 	cfg.NVIDIAContainerCLIConfig = *getContainerCLIConfigFrom(toml)
+	cfg.NVIDIACTKConfig = *getCTKConfigFrom(toml)
 	cfg.NVIDIAContainerRuntimeConfig = *getRuntimeConfigFrom(toml)
 
 	return cfg
@@ -92,6 +94,7 @@ func getConfigFrom(toml *toml.Tree) *Config {
 func getDefaultConfig() *Config {
 	c := Config{
 		NVIDIAContainerCLIConfig:     *getDefaultContainerCLIConfig(),
+		NVIDIACTKConfig:              *getDefaultCTKConfig(),
 		NVIDIAContainerRuntimeConfig: *getDefaultRuntimeConfig(),
 	}
 
