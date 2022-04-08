@@ -103,7 +103,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 
 	var candidates []string
 	for _, file := range csvFiles {
-		mountSpecs, err := csv.ParseFile(m.logger, file)
+		mountSpecs, err := csv.NewCSVFileParser(m.logger, file).Parse()
 		if err != nil {
 			m.logger.Debugf("Skipping CSV file %v: %v", file, err)
 			continue
