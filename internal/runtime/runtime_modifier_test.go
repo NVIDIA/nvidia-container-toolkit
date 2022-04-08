@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/opencontainers/runtime-spec/specs-go"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
@@ -30,41 +31,60 @@ func TestExec(t *testing.T) {
 
 	testCases := []struct {
 		description   string
+		shouldLoad    bool
 		shouldModify  bool
 		shouldFlush   bool
 		shouldForward bool
 		args          []string
 		modifyError   error
 		writeError    error
+		modifer       oci.SpecModifier
 	}{
 		{
 			description:   "no args forwards",
+			shouldLoad:    false,
 			shouldModify:  false,
 			shouldFlush:   false,
 			shouldForward: true,
+			modifer:       &modiferMock{},
 		},
 		{
 			description:   "create modifies",
 			args:          []string{"create"},
+			shouldLoad:    true,
 			shouldModify:  true,
 			shouldFlush:   true,
 			shouldForward: true,
+			modifer:       &modiferMock{},
 		},
 		{
 			description:   "modify error does not write or forward",
 			args:          []string{"create"},
 			modifyError:   fmt.Errorf("error modifying"),
+			shouldLoad:    true,
 			shouldModify:  true,
 			shouldFlush:   false,
 			shouldForward: false,
+			modifer:       &modiferMock{},
 		},
 		{
 			description:   "write error does not forward",
 			args:          []string{"create"},
 			writeError:    fmt.Errorf("error writing"),
+			shouldLoad:    true,
 			shouldModify:  true,
 			shouldFlush:   true,
 			shouldForward: false,
+			modifer:       &modiferMock{},
+		},
+		{
+			description:   "nil modifier forwards on create",
+			args:          []string{"create"},
+			shouldLoad:    false,
+			shouldModify:  false,
+			shouldFlush:   false,
+			shouldForward: true,
+			modifer:       nil,
 		},
 	}
 
@@ -87,7 +107,8 @@ func TestExec(t *testing.T) {
 				runtimeMock,
 				specMock,
 				// TODO: We should test the interactions with the SpecModifier too
-				nil)
+				tc.modifer,
+			)
 
 			err := shim.Exec(tc.args)
 			if tc.modifyError != nil || tc.writeError != nil {
@@ -96,6 +117,11 @@ func TestExec(t *testing.T) {
 				require.NoError(t, err)
 			}
 
+			if tc.shouldLoad {
+				require.Equal(t, 1, len(specMock.LoadCalls()))
+			} else {
+				require.Equal(t, 0, len(specMock.LoadCalls()))
+			}
 			if tc.shouldModify {
 				require.Equal(t, 1, len(specMock.ModifyCalls()))
 			} else {
@@ -113,4 +139,26 @@ func TestExec(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNilModiferReturnsRuntime(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	runtimeMock := &oci.RuntimeMock{}
+	specMock := &oci.SpecMock{}
+
+	shim := NewModifyingRuntimeWrapper(
+		logger,
+		runtimeMock,
+		specMock,
+		nil,
+	)
+
+	require.Equal(t, runtimeMock, shim)
+}
+
+type modiferMock struct{}
+
+func (m modiferMock) Modify(*specs.Spec) error {
+	return nil
 }
