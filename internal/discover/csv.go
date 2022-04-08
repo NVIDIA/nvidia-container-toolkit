@@ -68,7 +68,7 @@ func NewFromCSVFiles(logger *logrus.Logger, files []string, root string) (Discov
 // MountSpecType.
 func NewFromCSVFile(logger *logrus.Logger, locators map[csv.MountSpecType]lookup.Locator, filename string) (Discover, error) {
 	// Create a discoverer for each file-kind combination
-	targets, err := csv.ParseFile(logger, filename)
+	targets, err := csv.NewCSVFileParser(logger, filename).Parse()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse CSV file: %v", err)
 	}
