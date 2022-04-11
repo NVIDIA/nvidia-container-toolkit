@@ -16,3 +16,4 @@ ldconfig = "@/sbin/ldconfig.real"
 
 [nvidia-container-runtime]
 #debug = "/var/log/nvidia-container-runtime.log"
+#experimental = false
