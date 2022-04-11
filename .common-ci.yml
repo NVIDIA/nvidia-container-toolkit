@@ -200,8 +200,8 @@ test-packaging:
       when: never
     - if: '$DRYRUN_RELEASE'
       variables:
-        DOCKER: echo docker
-        REGCTL: echo regctl
+        DOCKER: echo
+        REGCTL: echo
     - if: $CI_COMMIT_TAG
       variables:
         OUT_IMAGE_VERSION: "${CI_COMMIT_TAG}"
