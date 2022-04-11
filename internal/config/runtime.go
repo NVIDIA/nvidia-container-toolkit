@@ -18,6 +18,7 @@ package config
 
 import (
 	"github.com/pelletier/go-toml"
+	"github.com/sirupsen/logrus"
 )
 
 // RuntimeConfig stores the config options for the NVIDIA Container Runtime
@@ -25,6 +26,8 @@ type RuntimeConfig struct {
 	DebugFilePath string
 	Experimental  bool
 	DiscoverMode  string
+	// LogLevel defines the logging level for the application
+	LogLevel string
 }
 
 // getRuntimeConfigFrom reads the nvidia container runtime config from the specified toml Tree.
@@ -38,6 +41,7 @@ func getRuntimeConfigFrom(toml *toml.Tree) *RuntimeConfig {
 	cfg.DebugFilePath = toml.GetDefault("nvidia-container-runtime.debug", cfg.DebugFilePath).(string)
 	cfg.Experimental = toml.GetDefault("nvidia-container-runtime.experimental", cfg.Experimental).(bool)
 	cfg.DiscoverMode = toml.GetDefault("nvidia-container-runtime.discover-mode", cfg.DiscoverMode).(string)
+	cfg.LogLevel = toml.GetDefault("nvidia-container-runtime.log-level", cfg.LogLevel).(string)
 
 	return cfg
 }
@@ -48,6 +52,7 @@ func GetDefaultRuntimeConfig() *RuntimeConfig {
 		DebugFilePath: "/dev/null",
 		Experimental:  false,
 		DiscoverMode:  "auto",
+		LogLevel:      logrus.InfoLevel.String(),
 	}
 
 	return &c
