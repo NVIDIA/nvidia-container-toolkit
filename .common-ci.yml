@@ -191,24 +191,16 @@ test-packaging:
 
 # Define an external release step that pushes an image to an external repository.
 # This includes a devlopment image off master.
-# NOTE: job is skipped if OUT_REGISTRY is null or empty. Can be used to disable release(s) with CI/CD env.
 .release:external:
   extends:
     - .release
   rules:
-    - if: '$OUT_REGISTRY == null || $OUT_REGISTRY == "" || $SKIP_RELEASE'
-      when: never
-    - if: '$DRYRUN_RELEASE'
-      variables:
-        DOCKER: echo
-        REGCTL: echo
     - if: $CI_COMMIT_TAG
       variables:
         OUT_IMAGE_VERSION: "${CI_COMMIT_TAG}"
     - if: $CI_COMMIT_BRANCH == $RELEASE_DEVEL_BRANCH
       variables:
         OUT_IMAGE_VERSION: "${DEVEL_RELEASE_IMAGE_VERSION}"
-    - when: on_success
 
 # Define the release jobs
 release:staging-centos7:
