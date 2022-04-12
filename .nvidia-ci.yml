@@ -27,8 +27,8 @@ default:
 variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: "/certs"
-  # Release "devel"-tagged images off the master branch
-  RELEASE_DEVEL_BRANCH: "master"
+  # Release "devel"-tagged images off the main branch
+  RELEASE_DEVEL_BRANCH: "main"
   DEVEL_RELEASE_IMAGE_VERSION: "devel"
   # On the multi-arch builder we don't need the qemu setup.
   SKIP_QEMU_SETUP: "1"
