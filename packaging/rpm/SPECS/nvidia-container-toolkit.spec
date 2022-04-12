@@ -67,6 +67,9 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
+* Tue Apr 12 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.10.0-0.1.rc.2
+- Dummy entry
+
 * Thu Mar 24 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.10.0-0.1.rc.1
 - Include nvidia-ctk CLI in installed binaries
 - Add experimental option to NVIDIA Container Runtime
