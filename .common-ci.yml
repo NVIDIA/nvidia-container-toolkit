@@ -190,7 +190,7 @@ test-packaging:
     OUT_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/staging/container-toolkit"
 
 # Define an external release step that pushes an image to an external repository.
-# This includes a devlopment image off master.
+# This includes a devlopment image off main.
 .release:external:
   extends:
     - .release

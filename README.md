@@ -1,6 +1,6 @@
 # NVIDIA Container Toolkit
 
-[![GitHub license](https://img.shields.io/github/license/NVIDIA/nvidia-container-toolkit?style=flat-square)](https://raw.githubusercontent.com/NVIDIA/nvidia-container-toolkit/master/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/NVIDIA/nvidia-container-toolkit?style=flat-square)](https://raw.githubusercontent.com/NVIDIA/nvidia-container-toolkit/main/LICENSE)
 [![Documentation](https://img.shields.io/badge/documentation-wiki-blue.svg?style=flat-square)](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/overview.html)
 [![Package repository](https://img.shields.io/badge/packages-repository-b956e8.svg?style=flat-square)](https://nvidia.github.io/libnvidia-container)
 
