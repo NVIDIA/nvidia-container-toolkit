@@ -8,9 +8,7 @@ github.com/blang/semver
 ## explicit
 github.com/container-orchestrated-devices/container-device-interface/pkg/cdi
 github.com/container-orchestrated-devices/container-device-interface/specs-go
-# github.com/containers/podman/v2 v2.2.1
-## explicit
-# github.com/containers/podman/v4 v4.0.1
+# github.com/containers/podman/v4 v4.0.3
 ## explicit
 github.com/containers/podman/v4/pkg/hooks/1.0.0
 # github.com/cpuguy83/go-md2man/v2 v2.0.1
