@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/BurntSushi/toml v1.0.0
 	github.com/container-orchestrated-devices/container-device-interface v0.3.1-0.20220224133719-e5457123010b
-	github.com/containers/podman/v4 v4.0.1
+	github.com/containers/podman/v4 v4.0.3
 	github.com/opencontainers/runtime-spec v1.0.3-0.20211214071223-8958f93039ab
 	github.com/pelletier/go-toml v1.9.4
 	github.com/sirupsen/logrus v1.8.1
