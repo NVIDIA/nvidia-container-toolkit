@@ -232,15 +232,6 @@ scan-ubi8-arm64:
     OUT_REGISTRY: "${NGC_REGISTRY}"
     OUT_IMAGE_NAME: "${NGC_REGISTRY_IMAGE}"
 
-.release:dockerhub:
-  extends:
-    - .release:external
-  variables:
-    OUT_REGISTRY_USER: "${REGISTRY_USER}"
-    OUT_REGISTRY_TOKEN: "${REGISTRY_TOKEN}"
-    OUT_REGISTRY: "${DOCKERHUB_REGISTRY}"
-    OUT_IMAGE_NAME: "${REGISTRY_IMAGE}"
-
 release:staging-ubuntu18.04:
   extends:
     - .release:staging
@@ -280,30 +271,4 @@ release:ngc-ubuntu20.04:
 release:ngc-ubi8:
   extends:
     - .release:ngc
-    - .dist-ubi8
-
-# Release to Dockerhub
-release:dockerhub-centos7:
-  extends:
-    - .release:dockerhub
-    - .dist-centos7
-
-release:dockerhub-centos8:
-  extends:
-    - .release:dockerhub
-    - .dist-centos8
-
-release:dockerhub-ubuntu18.04:
-  extends:
-    - .release:dockerhub
-    - .dist-ubuntu18.04
-
-release:dockerhub-ubuntu20.04:
-  extends:
-    - .release:dockerhub
-    - .dist-ubuntu20.04
-
-release:dockerhub-ubi8:
-  extends:
-    - .release:dockerhub
     - .dist-ubi8
