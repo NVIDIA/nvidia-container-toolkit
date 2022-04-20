@@ -56,4 +56,4 @@ $(RUN_TARGETS): run-%: image-%
 
 # Ensure that the local package root exists
 $(RELEASE_TARGETS): release-%: $(LOCAL_PACKAGE_ROOT)/$(*)/$(ARCH)
-	$(PROJECT_ROOT)/scripts/release.sh $(*)-$(ARCH)
+	$(PROJECT_ROOT)/scripts/build-packages.sh $(*)-$(ARCH)
