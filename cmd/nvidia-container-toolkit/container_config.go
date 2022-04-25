@@ -104,18 +104,31 @@ type HookState struct {
 	BundlePath string `json:"bundlePath"`
 }
 
-func parseCudaVersion(cudaVersion string) (vmaj, vmin, vpatch uint32) {
-	if _, err := fmt.Sscanf(cudaVersion, "%d.%d.%d\n", &vmaj, &vmin, &vpatch); err != nil {
-		vpatch = 0
-		if _, err := fmt.Sscanf(cudaVersion, "%d.%d\n", &vmaj, &vmin); err != nil {
-			vmin = 0
-			if _, err := fmt.Sscanf(cudaVersion, "%d\n", &vmaj); err != nil {
-				log.Panicln("invalid CUDA version:", cudaVersion)
-			}
-		}
+func parseCudaVersion(cudaVersion string) (uint32, uint32) {
+	major, minor, err := parseMajorMinorVersion(cudaVersion)
+	if err != nil {
+		log.Panicln("invalid CUDA Version", cudaVersion, err)
+	}
+	return major, minor
+}
+
+func parseMajorMinorVersion(version string) (uint32, uint32, error) {
+	if !semver.IsValid("v" + version) {
+		return 0, 0, fmt.Errorf("invalid version string")
 	}
 
-	return
+	majorMinor := strings.TrimPrefix(semver.MajorMinor("v"+version), "v")
+	parts := strings.Split(majorMinor, ".")
+
+	major, err := strconv.ParseUint(parts[0], 10, 32)
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid major version")
+	}
+	minor, err := strconv.ParseUint(parts[1], 10, 32)
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid minor version")
+	}
+	return uint32(major), uint32(minor), nil
 }
 
 func getEnvMap(e []string) (m map[string]string) {
@@ -344,7 +357,7 @@ func getRequirements(env map[string]string, legacyImage bool) []string {
 		}
 	}
 	if legacyImage {
-		vmaj, vmin, _ := parseCudaVersion(env[envCUDAVersion])
+		vmaj, vmin := parseCudaVersion(env[envCUDAVersion])
 		cudaRequire := fmt.Sprintf("cuda>=%d.%d", vmaj, vmin)
 		requirements = append(requirements, cudaRequire)
 	}

@@ -10,18 +10,18 @@ import (
 func TestParseCudaVersionValid(t *testing.T) {
 	var tests = []struct {
 		version  string
-		expected [3]uint32
+		expected [2]uint32
 	}{
-		{"0", [3]uint32{0, 0, 0}},
-		{"8", [3]uint32{8, 0, 0}},
-		{"7.5", [3]uint32{7, 5, 0}},
-		{"9.0.116", [3]uint32{9, 0, 116}},
-		{"4294967295.4294967295.4294967295", [3]uint32{4294967295, 4294967295, 4294967295}},
+		{"0", [2]uint32{0, 0}},
+		{"8", [2]uint32{8, 0}},
+		{"7.5", [2]uint32{7, 5}},
+		{"9.0.116", [2]uint32{9, 0}},
+		{"4294967295.4294967295.4294967295", [2]uint32{4294967295, 4294967295}},
 	}
 	for i, c := range tests {
-		vmaj, vmin, vpatch := parseCudaVersion(c.version)
+		vmaj, vmin := parseCudaVersion(c.version)
 
-		version := [3]uint32{vmaj, vmin, vpatch}
+		version := [2]uint32{vmaj, vmin}
 
 		require.Equal(t, c.expected, version, "%d: %v", i, c)
 	}
