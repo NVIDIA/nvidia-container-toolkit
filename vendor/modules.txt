@@ -2,6 +2,9 @@
 ## explicit
 github.com/BurntSushi/toml
 github.com/BurntSushi/toml/internal
+# github.com/NVIDIA/go-nvml v0.11.6-0
+## explicit
+github.com/NVIDIA/go-nvml/pkg/dl
 # github.com/blang/semver v3.5.1+incompatible
 github.com/blang/semver
 # github.com/container-orchestrated-devices/container-device-interface v0.3.1-0.20220224133719-e5457123010b
