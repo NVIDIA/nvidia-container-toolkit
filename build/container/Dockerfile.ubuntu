@@ -42,6 +42,9 @@ RUN GOPATH=/artifacts go install -ldflags="-s -w -X 'main.Version=${VERSION}'" .
 
 FROM nvcr.io/nvidia/cuda:${CUDA_VERSION}-base-${BASE_DIST}
 
+# Remove the CUDA repository configurations to avoid issues with rotated GPG keys
+RUN rm -f /etc/apt/sources.list.d/cuda.list
+
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcap2 \
