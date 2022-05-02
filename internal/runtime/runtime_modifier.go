@@ -68,7 +68,7 @@ func (r *modifyingRuntimeWrapper) Exec(args []string) error {
 
 // modify loads, modifies, and flushes the OCI specification using the defined Modifier
 func (r *modifyingRuntimeWrapper) modify() error {
-	err := r.ociSpec.Load()
+	_, err := r.ociSpec.Load()
 	if err != nil {
 		return fmt.Errorf("error loading OCI specification for modification: %v", err)
 	}

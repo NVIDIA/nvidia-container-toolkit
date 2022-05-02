@@ -46,7 +46,8 @@ const (
 // NewExperimentalModifier creates a modifier that applies the experimental
 // modications to an OCI spec if required by the runtime wrapper.
 func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
-	if err := ociSpec.Load(); err != nil {
+	_, err := ociSpec.Load()
+	if err != nil {
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
 	}
 

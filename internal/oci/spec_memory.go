@@ -37,8 +37,8 @@ func NewMemorySpec(spec *specs.Spec) Spec {
 }
 
 // Load is a no-op for the memorySpec spec
-func (s *memorySpec) Load() error {
-	return nil
+func (s *memorySpec) Load() (*specs.Spec, error) {
+	return s.Spec, nil
 }
 
 // Flush is a no-op for the memorySpec spec

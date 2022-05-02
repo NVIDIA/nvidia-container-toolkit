@@ -4,6 +4,7 @@
 package oci
 
 import (
+	"github.com/opencontainers/runtime-spec/specs-go"
 	"sync"
 )
 
@@ -20,7 +21,7 @@ var _ Spec = &SpecMock{}
 // 			FlushFunc: func() error {
 // 				panic("mock out the Flush method")
 // 			},
-// 			LoadFunc: func() error {
+// 			LoadFunc: func() (*specs.Spec, error) {
 // 				panic("mock out the Load method")
 // 			},
 // 			LookupEnvFunc: func(s string) (string, bool) {
@@ -40,7 +41,7 @@ type SpecMock struct {
 	FlushFunc func() error
 
 	// LoadFunc mocks the Load method.
-	LoadFunc func() error
+	LoadFunc func() (*specs.Spec, error)
 
 	// LookupEnvFunc mocks the LookupEnv method.
 	LookupEnvFunc func(s string) (string, bool)
@@ -103,7 +104,7 @@ func (mock *SpecMock) FlushCalls() []struct {
 }
 
 // Load calls LoadFunc.
-func (mock *SpecMock) Load() error {
+func (mock *SpecMock) Load() (*specs.Spec, error) {
 	callInfo := struct {
 	}{}
 	mock.lockLoad.Lock()
@@ -111,9 +112,10 @@ func (mock *SpecMock) Load() error {
 	mock.lockLoad.Unlock()
 	if mock.LoadFunc == nil {
 		var (
-			errOut error
+			specOut *specs.Spec
+			errOut  error
 		)
-		return errOut
+		return specOut, errOut
 	}
 	return mock.LoadFunc()
 }
