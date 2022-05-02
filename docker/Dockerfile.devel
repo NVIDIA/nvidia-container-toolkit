@@ -14,7 +14,7 @@
 ARG GOLANG_VERSION=x.x.x
 FROM golang:${GOLANG_VERSION}
 
-RUN go get -u golang.org/x/lint/golint
-RUN go get -u github.com/matryer/moq
-RUN go get -u github.com/gordonklaus/ineffassign
-RUN go get -u github.com/client9/misspell/cmd/misspell
+RUN go install golang.org/x/lint/golint@latest
+RUN go install github.com/matryer/moq@latest
+RUN go install github.com/gordonklaus/ineffassign@latest
+RUN go install github.com/client9/misspell/cmd/misspell@latest
