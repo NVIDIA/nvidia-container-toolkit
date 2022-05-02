@@ -42,8 +42,8 @@ func TestNewExperimentalModifier(t *testing.T) {
 		{
 			description: "spec load error returns error",
 			spec: &oci.SpecMock{
-				LoadFunc: func() error {
-					return fmt.Errorf("load failed")
+				LoadFunc: func() (*specs.Spec, error) {
+					return nil, fmt.Errorf("load failed")
 				},
 			},
 			expectedError: fmt.Errorf("load failed"),
