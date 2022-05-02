@@ -3,6 +3,7 @@ FROM ${BASEIMAGE}
 
 RUN yum install -y \
         ca-certificates \
+        gcc \
         wget \
         git \
         rpm-build \
