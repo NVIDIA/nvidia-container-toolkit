@@ -24,6 +24,10 @@ const (
 	unmodifiedSpecFileSuffix = "test/input/test_spec.json"
 )
 
+const (
+	runcExecutableName = "runc"
+)
+
 type testConfig struct {
 	root    string
 	binPath string

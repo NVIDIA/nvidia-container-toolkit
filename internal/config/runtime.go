@@ -21,6 +21,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	dockerRuncExecutableName = "docker-runc"
+	runcExecutableName       = "runc"
+)
+
 // RuntimeConfig stores the config options for the NVIDIA Container Runtime
 type RuntimeConfig struct {
 	DebugFilePath string
@@ -28,6 +33,8 @@ type RuntimeConfig struct {
 	DiscoverMode  string
 	// LogLevel defines the logging level for the application
 	LogLevel string
+	// Runtimes defines the candidates for the low-level runtime
+	Runtimes []string
 }
 
 // getRuntimeConfigFrom reads the nvidia container runtime config from the specified toml Tree.
@@ -43,6 +50,15 @@ func getRuntimeConfigFrom(toml *toml.Tree) *RuntimeConfig {
 	cfg.DiscoverMode = toml.GetDefault("nvidia-container-runtime.discover-mode", cfg.DiscoverMode).(string)
 	cfg.LogLevel = toml.GetDefault("nvidia-container-runtime.log-level", cfg.LogLevel).(string)
 
+	configRuntimes := toml.Get("nvidia-container-runtime.runtimes")
+	if configRuntimes != nil {
+		var runtimes []string
+		for _, r := range configRuntimes.([]interface{}) {
+			runtimes = append(runtimes, r.(string))
+		}
+		cfg.Runtimes = runtimes
+	}
+
 	return cfg
 }
 
@@ -53,6 +69,10 @@ func GetDefaultRuntimeConfig() *RuntimeConfig {
 		Experimental:  false,
 		DiscoverMode:  "auto",
 		LogLevel:      logrus.InfoLevel.String(),
+		Runtimes: []string{
+			dockerRuncExecutableName,
+			runcExecutableName,
+		},
 	}
 
 	return &c

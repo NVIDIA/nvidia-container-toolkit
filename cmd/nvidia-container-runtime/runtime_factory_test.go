@@ -38,9 +38,18 @@ func TestFactoryMethod(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			description: "empty config no error",
+			description: "empty config raises error",
 			cfg: &config.Config{
 				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{},
+			},
+			expectedError: true,
+		},
+		{
+			description: "config with runtime raises no error",
+			cfg: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Runtimes: []string{"runc"},
+				},
 			},
 		},
 		{
@@ -49,6 +58,7 @@ func TestFactoryMethod(t *testing.T) {
 				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
 					Experimental: true,
 					DiscoverMode: "legacy",
+					Runtimes:     []string{"runc"},
 				},
 			},
 			spec: &specs.Spec{
