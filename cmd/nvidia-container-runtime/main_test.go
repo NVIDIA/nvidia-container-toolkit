@@ -80,11 +80,6 @@ func TestBadInput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmdRun := exec.Command(nvidiaRuntime, "run", "--bundle")
-	t.Logf("executing: %s\n", strings.Join(cmdRun.Args, " "))
-	output, err := cmdRun.CombinedOutput()
-	require.Errorf(t, err, "runtime should return an error", "output=%v", string(output))
-
 	cmdCreate := exec.Command(nvidiaRuntime, "create", "--bundle")
 	t.Logf("executing: %s\n", strings.Join(cmdCreate.Args, " "))
 	err = cmdCreate.Run()
