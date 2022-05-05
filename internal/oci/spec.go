@@ -46,7 +46,7 @@ func NewSpec(logger *logrus.Logger, args []string) (Spec, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error getting bundle directory: %v", err)
 	}
-	logger.Infof("Using bundle directory: %v", bundleDir)
+	logger.Debugf("Using bundle directory: %v", bundleDir)
 
 	ociSpecPath := GetSpecFilePath(bundleDir)
 	logger.Infof("Using OCI specification file path: %v", ociSpecPath)
