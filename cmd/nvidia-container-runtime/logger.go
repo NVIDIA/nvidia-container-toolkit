@@ -20,60 +20,205 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/tsaikd/KDGoLib/logrusutil"
 )
 
 // Logger adds a way to manage output to a log file to a logrus.Logger
 type Logger struct {
 	*logrus.Logger
-	previousOutput io.Writer
-	logFile        *os.File
+	previousLogger *logrus.Logger
+	logFiles       []*os.File
 }
 
-// NewLogger constructs a Logger with a preddefined formatter
+// NewLogger creates an empty logger
 func NewLogger() *Logger {
-	logrusLogger := logrus.New()
-
-	formatter := &logrusutil.ConsoleLogFormatter{
-		TimestampFormat: "2006/01/02 15:04:07",
-		Flag:            logrusutil.Ltime,
+	return &Logger{
+		Logger: logrus.New(),
 	}
-
-	logger := &Logger{
-		Logger: logrusLogger,
-	}
-	logger.SetFormatter(formatter)
-
-	return logger
 }
 
-// LogToFile opens the specified file for appending and sets the logger to
-// output to the opened file. A reference to the file pointer is stored to
-// allow this to be closed.
-func (l *Logger) LogToFile(filename string) error {
-	logFile, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+// UpdateLogger constructs a Logger with a preddefined formatter
+func UpdateLogger(filename string, logLevel string, argv []string) (*Logger, error) {
+	configFromArgs := parseArgs(argv)
+
+	level, logLevelError := configFromArgs.getLevel(logLevel)
+
+	var logFiles []*os.File
+
+	configLogFile, err := createLogFile(filename)
 	if err != nil {
-		return fmt.Errorf("error opening debug log file: %v", err)
+		return logger, fmt.Errorf("error opening debug log file: %v", err)
+	}
+	if configLogFile != nil {
+		logFiles = append(logFiles, configLogFile)
 	}
 
-	l.logFile = logFile
-	l.previousOutput = l.Out
-	l.SetOutput(logFile)
+	argLogFile, argLogFileError := createLogFile(configFromArgs.file)
+	if argLogFile != nil {
+		logFiles = append(logFiles, argLogFile)
+	}
 
-	return nil
+	l := &Logger{
+		Logger:         logrus.New(),
+		previousLogger: logger.Logger,
+		logFiles:       logFiles,
+	}
+
+	if len(logFiles) == 0 {
+		l.SetOutput(io.Discard)
+	} else if len(logFiles) == 1 {
+		l.SetOutput(logFiles[0])
+	} else {
+		var writers []io.Writer
+		for _, f := range logFiles {
+			writers = append(writers, f)
+		}
+		l.SetOutput(io.MultiWriter(writers...))
+	}
+
+	l.SetLevel(level)
+	if level == logrus.DebugLevel {
+		logrus.SetReportCaller(true)
+		// Shorten function and file names reported by the logger, by
+		// trimming common "github.com/opencontainers/runc" prefix.
+		// This is only done for text formatter.
+		_, file, _, _ := runtime.Caller(0)
+		prefix := filepath.Dir(file) + "/"
+		logrus.SetFormatter(&logrus.TextFormatter{
+			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+				function := strings.TrimPrefix(f.Function, prefix) + "()"
+				fileLine := strings.TrimPrefix(f.File, prefix) + ":" + strconv.Itoa(f.Line)
+				return function, fileLine
+			},
+		})
+	}
+
+	if configFromArgs.format == "json" {
+		l.SetFormatter(new(logrus.JSONFormatter))
+	}
+
+	if logLevelError != nil {
+		l.Warn(logLevelError)
+	}
+
+	if argLogFileError != nil {
+		l.Warnf("Failed to open log file: %v", argLogFileError)
+	}
+
+	return l, nil
 }
 
 // CloseFile closes the log file (if any) and resets the logger output to what it
-// was before LogToFile was called.
+// was before UpdateLogger was called.
 func (l *Logger) CloseFile() error {
-	if l.logFile == nil {
-		return nil
-	}
-	logFile := l.logFile
-	l.SetOutput(l.previousOutput)
-	l.logFile = nil
+	defer func() {
+		previous := l.previousLogger
+		if previous == nil {
+			previous = logrus.New()
+		}
+		logger = &Logger{Logger: previous}
+	}()
 
-	return logFile.Close()
+	var errs []error
+	for _, f := range l.logFiles {
+		err := f.Close()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	var err error
+	for _, e := range errs {
+		if err == nil {
+			err = e
+			continue
+		}
+		return fmt.Errorf("%v; %w", e, err)
+	}
+
+	return err
+}
+
+func createLogFile(filename string) (*os.File, error) {
+	if filename != "" && filename != os.DevNull {
+		return os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
+
+	return nil, nil
+}
+
+type loggerConfig struct {
+	file   string
+	format string
+	debug  bool
+}
+
+func (c loggerConfig) getLevel(logLevel string) (logrus.Level, error) {
+	if c.debug {
+		return logrus.DebugLevel, nil
+	}
+
+	if logLevel, err := logrus.ParseLevel(logLevel); err == nil {
+		return logLevel, nil
+	}
+
+	return logrus.InfoLevel, fmt.Errorf("invalid log-level '%v'", logLevel)
+}
+
+// Informed by Taken from https://github.com/opencontainers/runc/blob/7fd8b57001f5bfa102e89cb434d96bf71f7c1d35/main.go#L182
+func parseArgs(args []string) loggerConfig {
+	c := loggerConfig{}
+
+	expected := map[string]*string{
+		"log-format": &c.format,
+		"log":        &c.file,
+	}
+
+	found := make(map[string]bool)
+
+	for i := 0; i < len(args); i++ {
+		if len(found) == 3 {
+			break
+		}
+
+		param := args[i]
+
+		parts := strings.SplitN(param, "=", 2)
+		trimmed := strings.TrimPrefix(parts[0], "--")
+		if !strings.HasPrefix(parts[0], "--") {
+			continue
+		}
+
+		// Check the debug flag
+		if trimmed == "debug" {
+			c.debug = true
+			found["debug"] = true
+			continue
+		}
+
+		destination, exists := expected[trimmed]
+		if !exists {
+			continue
+		}
+
+		var value string
+		if len(parts) == 2 {
+			value = parts[2]
+		} else if i+1 < len(args) {
+			value = args[i+1]
+			i++
+		} else {
+			continue
+		}
+
+		*destination = value
+		found[trimmed] = true
+	}
+
+	return c
 }

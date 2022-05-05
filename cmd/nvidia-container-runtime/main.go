@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/sirupsen/logrus"
 )
 
 var logger = NewLogger()
@@ -26,22 +25,13 @@ func run(argv []string) (rerr error) {
 		return fmt.Errorf("error loading config: %v", err)
 	}
 
-	err = logger.LogToFile(cfg.NVIDIAContainerRuntimeConfig.DebugFilePath)
+	logger, err = UpdateLogger(
+		cfg.NVIDIAContainerRuntimeConfig.DebugFilePath,
+		cfg.NVIDIAContainerRuntimeConfig.LogLevel,
+		argv,
+	)
 	if err != nil {
-		return fmt.Errorf("error opening debug log file: %v", err)
-	}
-	defer func() {
-		// We capture and log a returning error before closing the log file.
-		if rerr != nil {
-			logger.Errorf("%v", rerr)
-		}
-		logger.CloseFile()
-	}()
-
-	if logLevel, err := logrus.ParseLevel(cfg.NVIDIAContainerRuntimeConfig.LogLevel); err == nil {
-		logger.SetLevel(logLevel)
-	} else {
-		logger.Warnf("Invalid log-level '%v'; using '%v'", cfg.NVIDIAContainerRuntimeConfig.LogLevel, logger.Level.String())
+		return fmt.Errorf("failed to set up logger: %v", err)
 	}
 
 	logger.Debugf("Command line arguments: %v", argv)
