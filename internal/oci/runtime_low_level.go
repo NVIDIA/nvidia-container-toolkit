@@ -32,6 +32,7 @@ func NewLowLevelRuntime(logger *log.Logger, candidates []string) (Runtime, error
 		return nil, fmt.Errorf("error locating runtime: %v", err)
 	}
 
+	logger.Infof("Using low-level runtime %v", runtimePath)
 	return NewRuntimeForPath(logger, runtimePath)
 }
 
@@ -43,13 +44,13 @@ func findRuntime(logger *log.Logger, candidates []string) (string, error) {
 	}
 
 	for _, candidate := range candidates {
-		logger.Infof("Looking for runtime binary '%v'", candidate)
+		logger.Debugf("Looking for runtime binary '%v'", candidate)
 		runcPath, err := exec.LookPath(candidate)
 		if err == nil {
-			logger.Infof("Found runtime binary '%v'", runcPath)
+			logger.Debugf("Found runtime binary '%v'", runcPath)
 			return runcPath, nil
 		}
-		logger.Warnf("Runtime binary '%v' not found: %v", candidate, err)
+		logger.Debugf("Runtime binary '%v' not found: %v", candidate, err)
 	}
 
 	return "", fmt.Errorf("no runtime binary found from candidate list: %v", candidates)
