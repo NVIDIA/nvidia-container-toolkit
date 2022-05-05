@@ -33,7 +33,6 @@ const (
 
 // newNVIDIAContainerRuntime is a factory method that constructs a runtime based on the selected configuration and specified logger
 func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.Config, argv []string) (oci.Runtime, error) {
-
 	lowLevelRuntimeCandidates := []string{dockerRuncExecutableName, runcExecutableName}
 	lowLevelRuntime, err := oci.NewLowLevelRuntime(logger, lowLevelRuntimeCandidates)
 	if err != nil {
