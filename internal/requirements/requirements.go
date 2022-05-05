@@ -61,6 +61,7 @@ func (r Requirements) Assert() error {
 		return nil
 	}
 
+	r.logger.Debugf("Checking properties %+v against requirements %v", r.properties, r.requirements)
 	c, err := constraints.New(r.logger, r.requirements, r.properties)
 	if err != nil {
 		return err
