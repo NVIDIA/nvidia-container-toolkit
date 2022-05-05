@@ -170,6 +170,13 @@ func checkRequirements(logger *logrus.Logger, image *image.CUDA) error {
 		r.AddVersionProperty(requirements.CUDA, cudaVersion)
 	}
 
+	compteCapability, err := cuda.ComputeCapability(0)
+	if err != nil {
+		logger.Warnf("Failed to get CUDA Compute Capability: %v", err)
+	} else {
+		r.AddVersionProperty(requirements.ARCH, compteCapability)
+	}
+
 	return r.Assert()
 }
 
