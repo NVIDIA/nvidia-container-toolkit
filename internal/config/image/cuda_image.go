@@ -72,7 +72,7 @@ func (i CUDA) IsLegacy() bool {
 	return len(legacyCudaVersion) > 0 && len(cudaRequire) == 0
 }
 
-// GetRequirements returns the requirements fomr all NVIDIA_REQUIRE_ environment
+// GetRequirements returns the requirements from all NVIDIA_REQUIRE_ environment
 // variables.
 func (i CUDA) GetRequirements() ([]string, error) {
 	// TODO: We need not process this if disable require is set, but this will be done
