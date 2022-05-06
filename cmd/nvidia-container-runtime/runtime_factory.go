@@ -33,18 +33,23 @@ const (
 
 // newNVIDIAContainerRuntime is a factory method that constructs a runtime based on the selected configuration and specified logger
 func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.Config, argv []string) (oci.Runtime, error) {
-	ociSpec, err := oci.NewSpec(logger, argv)
-	if err != nil {
-		return nil, fmt.Errorf("error constructing OCI specification: %v", err)
-	}
-
 	lowLevelRuntimeCandidates := []string{dockerRuncExecutableName, runcExecutableName}
 	lowLevelRuntime, err := oci.NewLowLevelRuntime(logger, lowLevelRuntimeCandidates)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing low-level runtime: %v", err)
 	}
 
-	specModifier, err := newSpecModifier(logger, cfg, ociSpec)
+	if !oci.HasCreateSubcommand(argv) {
+		logger.Debugf("Skipping modifier for non-create subcommand")
+		return lowLevelRuntime, nil
+	}
+
+	ociSpec, err := oci.NewSpec(logger, argv)
+	if err != nil {
+		return nil, fmt.Errorf("error constructing OCI specification: %v", err)
+	}
+
+	specModifier, err := newSpecModifier(logger, cfg, ociSpec, argv)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct OCI spec modifier: %v", err)
 	}
@@ -61,7 +66,7 @@ func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.Config, argv [
 }
 
 // newSpecModifier is a factory method that creates constructs an OCI spec modifer based on the provided config.
-func newSpecModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
+func newSpecModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec, argv []string) (oci.SpecModifier, error) {
 	if !cfg.NVIDIAContainerRuntimeConfig.Experimental {
 		return modifier.NewStableRuntimeModifier(logger), nil
 	}

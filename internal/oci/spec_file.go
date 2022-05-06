@@ -45,19 +45,19 @@ func NewFileSpec(filepath string) Spec {
 
 // Load reads the contents of an OCI spec from file to be referenced internally.
 // The file is opened "read-only"
-func (s *fileSpec) Load() error {
+func (s *fileSpec) Load() (*specs.Spec, error) {
 	specFile, err := os.Open(s.path)
 	if err != nil {
-		return fmt.Errorf("error opening OCI specification file: %v", err)
+		return nil, fmt.Errorf("error opening OCI specification file: %v", err)
 	}
 	defer specFile.Close()
 
 	spec, err := LoadFrom(specFile)
 	if err != nil {
-		return fmt.Errorf("error loading OCI specification from file: %v", err)
+		return nil, fmt.Errorf("error loading OCI specification from file: %v", err)
 	}
 	s.Spec = spec
-	return nil
+	return s.Spec, nil
 }
 
 // LoadFrom reads the contents of the OCI spec from the specified io.Reader.

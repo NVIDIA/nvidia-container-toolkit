@@ -21,7 +21,6 @@ func main() {
 // run is an entry point that allows for idiomatic handling of errors
 // when calling from the main function.
 func run(argv []string) (rerr error) {
-	logger.Debugf("Running %v", argv)
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return fmt.Errorf("error loading config: %v", err)
@@ -45,6 +44,7 @@ func run(argv []string) (rerr error) {
 		logger.Warnf("Invalid log-level '%v'; using '%v'", cfg.NVIDIAContainerRuntimeConfig.LogLevel, logger.Level.String())
 	}
 
+	logger.Debugf("Command line arguments: %v", argv)
 	runtime, err := newNVIDIAContainerRuntime(logger.Logger, cfg, argv)
 	if err != nil {
 		return fmt.Errorf("failed to create NVIDIA Container Runtime: %v", err)

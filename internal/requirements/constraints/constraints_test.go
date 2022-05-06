@@ -1,4 +1,5 @@
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
+/**
+# Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,10 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-ARG GOLANG_VERSION=x.x.x
-FROM golang:${GOLANG_VERSION}
+**/
 
-RUN go install golang.org/x/lint/golint@latest
-RUN go install github.com/matryer/moq@latest
-RUN go install github.com/gordonklaus/ineffassign@latest
-RUN go install github.com/client9/misspell/cmd/misspell@latest
+package constraints

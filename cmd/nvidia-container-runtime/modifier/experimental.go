@@ -22,10 +22,13 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 )
@@ -46,7 +49,8 @@ const (
 // NewExperimentalModifier creates a modifier that applies the experimental
 // modications to an OCI spec if required by the runtime wrapper.
 func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
-	if err := ociSpec.Load(); err != nil {
+	rawSpec, err := ociSpec.Load()
+	if err != nil {
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
 	}
 
@@ -74,6 +78,17 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec 
 		}
 		d = legacyDiscoverer
 	case "csv":
+		// TODO: Once the devices have been encapsulated in the CUDA image, this can be moved to before the
+		// visible devices are checked.
+		image, err := image.NewCUDAImageFromSpec(rawSpec)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := checkRequirements(logger, &image); err != nil {
+			return nil, fmt.Errorf("requirements not met: %v", err)
+		}
+
 		csvFiles, err := csv.GetFileList(csv.DefaultMountSpecPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get list of CSV files: %v", err)
@@ -131,6 +146,38 @@ func (m experimental) Modify(spec *specs.Spec) error {
 	}
 
 	return specEdits.Modify(spec)
+}
+
+func checkRequirements(logger *logrus.Logger, image *image.CUDA) error {
+	if image.HasDisableRequire() {
+		// TODO: We could print the real value here instead
+		logger.Debugf("NVIDIA_DISABLE_REQUIRE=%v; skipping requirement checks", true)
+		return nil
+	}
+
+	imageRequirements, err := image.GetRequirements()
+	if err != nil {
+		//  TODO: Should we treat this as a failure, or just issue a warning?
+		return fmt.Errorf("failed to get image requirements: %v", err)
+	}
+
+	r := requirements.New(logger, imageRequirements)
+
+	cudaVersion, err := cuda.Version()
+	if err != nil {
+		logger.Warnf("Failed to get CUDA version: %v", err)
+	} else {
+		r.AddVersionProperty(requirements.CUDA, cudaVersion)
+	}
+
+	compteCapability, err := cuda.ComputeCapability(0)
+	if err != nil {
+		logger.Warnf("Failed to get CUDA Compute Capability: %v", err)
+	} else {
+		r.AddVersionProperty(requirements.ARCH, compteCapability)
+	}
+
+	return r.Assert()
 }
 
 // resolveAutoDiscoverMode determines the correct discover mode for the specified platform if set to "auto"
