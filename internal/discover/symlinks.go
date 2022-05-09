@@ -58,7 +58,7 @@ func (d symlinks) Hooks() ([]Hook, error) {
 
 	args := []string{hookPath, "hook", "create-symlinks"}
 	for _, f := range d.csvFiles {
-		args = append(args, "--csv-filenames", f)
+		args = append(args, "--csv-filename", f)
 	}
 
 	h := Hook{

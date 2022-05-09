@@ -66,9 +66,8 @@ func (m command) build() *cli.Command {
 			Destination: &cfg.hostRoot,
 		},
 		&cli.StringSliceFlag{
-			Name:        "csv-filenames",
-			Aliases:     []string{"f"},
-			Usage:       "Specify the (CSV) filenames to process",
+			Name:        "csv-filename",
+			Usage:       "Specify a (CSV) filename to process",
 			Destination: &cfg.filenames,
 		},
 		&cli.StringFlag{
