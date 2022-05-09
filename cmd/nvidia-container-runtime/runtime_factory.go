@@ -26,15 +26,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	dockerRuncExecutableName = "docker-runc"
-	runcExecutableName       = "runc"
-)
-
 // newNVIDIAContainerRuntime is a factory method that constructs a runtime based on the selected configuration and specified logger
 func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.Config, argv []string) (oci.Runtime, error) {
-	lowLevelRuntimeCandidates := []string{dockerRuncExecutableName, runcExecutableName}
-	lowLevelRuntime, err := oci.NewLowLevelRuntime(logger, lowLevelRuntimeCandidates)
+	lowLevelRuntime, err := oci.NewLowLevelRuntime(logger, cfg.NVIDIAContainerRuntimeConfig.Runtimes)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing low-level runtime: %v", err)
 	}

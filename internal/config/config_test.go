@@ -65,6 +65,7 @@ func TestGetConfig(t *testing.T) {
 					Experimental:  false,
 					DiscoverMode:  "auto",
 					LogLevel:      "info",
+					Runtimes:      []string{"docker-runc", "runc"},
 				},
 				NVIDIACTKConfig: CTKConfig{
 					Path: "nvidia-ctk",
@@ -79,6 +80,7 @@ func TestGetConfig(t *testing.T) {
 				"nvidia-container-runtime.experimental = true",
 				"nvidia-container-runtime.discover-mode = \"not-legacy\"",
 				"nvidia-container-runtime.log-level = \"debug\"",
+				"nvidia-container-runtime.runtimes = [\"/some/runtime\",]",
 				"nvidia-ctk.path = \"/foo/bar/nvidia-ctk\"",
 			},
 			expectedConfig: &Config{
@@ -90,6 +92,7 @@ func TestGetConfig(t *testing.T) {
 					Experimental:  true,
 					DiscoverMode:  "not-legacy",
 					LogLevel:      "debug",
+					Runtimes:      []string{"/some/runtime"},
 				},
 				NVIDIACTKConfig: CTKConfig{
 					Path: "/foo/bar/nvidia-ctk",
@@ -106,6 +109,7 @@ func TestGetConfig(t *testing.T) {
 				"experimental = true",
 				"discover-mode = \"not-legacy\"",
 				"log-level = \"debug\"",
+				"runtimes = [\"/some/runtime\",]",
 				"[nvidia-ctk]",
 				"path = \"/foo/bar/nvidia-ctk\"",
 			},
@@ -118,6 +122,7 @@ func TestGetConfig(t *testing.T) {
 					Experimental:  true,
 					DiscoverMode:  "not-legacy",
 					LogLevel:      "debug",
+					Runtimes:      []string{"/some/runtime"},
 				},
 				NVIDIACTKConfig: CTKConfig{
 					Path: "/foo/bar/nvidia-ctk",

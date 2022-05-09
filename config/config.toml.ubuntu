@@ -17,3 +17,10 @@ ldconfig = "@/sbin/ldconfig.real"
 [nvidia-container-runtime]
 #debug = "/var/log/nvidia-container-runtime.log"
 #experimental = false
+
+# Specify the runtimes to consider. This list is processed in order and the PATH
+# searched for matching executables unless the entry is an absolute path.
+runtimes = [
+    "docker-runc",
+    "runc",
+]
