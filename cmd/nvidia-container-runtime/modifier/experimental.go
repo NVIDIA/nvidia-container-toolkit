@@ -69,7 +69,7 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec 
 
 	var d discover.Discover
 
-	switch resolveAutoDiscoverMode(logger, cfg.NVIDIAContainerRuntimeConfig.DiscoverMode) {
+	switch info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.DiscoverMode) {
 	case "legacy":
 		legacyDiscoverer, err := discover.NewLegacyDiscoverer(logger, config)
 		if err != nil {
@@ -177,23 +177,4 @@ func checkRequirements(logger *logrus.Logger, image *image.CUDA) error {
 	}
 
 	return r.Assert()
-}
-
-// resolveAutoDiscoverMode determines the correct discover mode for the specified platform if set to "auto"
-func resolveAutoDiscoverMode(logger *logrus.Logger, mode string) (rmode string) {
-	if mode != "auto" {
-		return mode
-	}
-	defer func() {
-		logger.Infof("Auto-detected discover mode as '%v'", rmode)
-	}()
-
-	isTegra, reason := info.IsTegraSystem()
-	logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
-
-	if isTegra {
-		return "csv"
-	}
-
-	return "legacy"
 }
