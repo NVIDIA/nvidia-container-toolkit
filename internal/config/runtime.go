@@ -26,6 +26,8 @@ import (
 const (
 	dockerRuncExecutableName = "docker-runc"
 	runcExecutableName       = "runc"
+
+	auto = "auto"
 )
 
 // RuntimeConfig stores the config options for the NVIDIA Container Runtime
@@ -36,7 +38,18 @@ type RuntimeConfig struct {
 	// LogLevel defines the logging level for the application
 	LogLevel string `toml:"log-level"`
 	// Runtimes defines the candidates for the low-level runtime
-	Runtimes []string `toml:"runtimes"`
+	Runtimes []string    `toml:"runtimes"`
+	Mode     string      `toml:"mode"`
+	Modes    modesConfig `toml:"modes"`
+}
+
+// modesConfig defines (optional) per-mode configs
+type modesConfig struct {
+	CSV csvModeConfig `toml:"csv"`
+}
+
+type csvModeConfig struct {
+	MountSpecPath string `toml:"mount-spec-path"`
 }
 
 // dummy allows us to unmarshal only a RuntimeConfig from a *toml.Tree
@@ -68,11 +81,17 @@ func GetDefaultRuntimeConfig() *RuntimeConfig {
 	c := RuntimeConfig{
 		DebugFilePath: "/dev/null",
 		Experimental:  false,
-		DiscoverMode:  "auto",
+		DiscoverMode:  auto,
 		LogLevel:      logrus.InfoLevel.String(),
 		Runtimes: []string{
 			dockerRuncExecutableName,
 			runcExecutableName,
+		},
+		Mode: auto,
+		Modes: modesConfig{
+			CSV: csvModeConfig{
+				MountSpecPath: "/etc/nvidia-container-runtime/host-files-for-container.d",
+			},
 		},
 	}
 
