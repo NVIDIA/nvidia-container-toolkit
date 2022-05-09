@@ -17,6 +17,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 )
@@ -28,38 +30,37 @@ const (
 
 // RuntimeConfig stores the config options for the NVIDIA Container Runtime
 type RuntimeConfig struct {
-	DebugFilePath string
-	Experimental  bool
-	DiscoverMode  string
+	DebugFilePath string `toml:"debug"`
+	Experimental  bool   `toml:"experimental"`
+	DiscoverMode  string `toml:"discover-mode"`
 	// LogLevel defines the logging level for the application
-	LogLevel string
+	LogLevel string `toml:"log-level"`
 	// Runtimes defines the candidates for the low-level runtime
-	Runtimes []string
+	Runtimes []string `toml:"runtimes"`
+}
+
+// dummy allows us to unmarshal only a RuntimeConfig from a *toml.Tree
+type dummy struct {
+	Runtime RuntimeConfig `toml:"nvidia-container-runtime"`
 }
 
 // getRuntimeConfigFrom reads the nvidia container runtime config from the specified toml Tree.
-func getRuntimeConfigFrom(toml *toml.Tree) *RuntimeConfig {
+func getRuntimeConfigFrom(toml *toml.Tree) (*RuntimeConfig, error) {
 	cfg := GetDefaultRuntimeConfig()
 
 	if toml == nil {
-		return cfg
+		return cfg, nil
 	}
 
-	cfg.DebugFilePath = toml.GetDefault("nvidia-container-runtime.debug", cfg.DebugFilePath).(string)
-	cfg.Experimental = toml.GetDefault("nvidia-container-runtime.experimental", cfg.Experimental).(bool)
-	cfg.DiscoverMode = toml.GetDefault("nvidia-container-runtime.discover-mode", cfg.DiscoverMode).(string)
-	cfg.LogLevel = toml.GetDefault("nvidia-container-runtime.log-level", cfg.LogLevel).(string)
-
-	configRuntimes := toml.Get("nvidia-container-runtime.runtimes")
-	if configRuntimes != nil {
-		var runtimes []string
-		for _, r := range configRuntimes.([]interface{}) {
-			runtimes = append(runtimes, r.(string))
-		}
-		cfg.Runtimes = runtimes
+	d := dummy{
+		Runtime: *cfg,
 	}
 
-	return cfg
+	if err := toml.Unmarshal(&d); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal runtime config: %v", err)
+	}
+
+	return &d.Runtime, nil
 }
 
 // GetDefaultRuntimeConfig defines the default values for the config

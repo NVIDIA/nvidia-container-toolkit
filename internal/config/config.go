@@ -80,22 +80,26 @@ func loadConfigFrom(reader io.Reader) (*Config, error) {
 		return nil, err
 	}
 
-	return getConfigFrom(toml), nil
+	return getConfigFrom(toml)
 }
 
 // getConfigFrom reads the nvidia container runtime config from the specified toml Tree.
-func getConfigFrom(toml *toml.Tree) *Config {
+func getConfigFrom(toml *toml.Tree) (*Config, error) {
 	cfg := getDefaultConfig()
 
 	if toml == nil {
-		return cfg
+		return cfg, nil
 	}
 
 	cfg.NVIDIAContainerCLIConfig = *getContainerCLIConfigFrom(toml)
 	cfg.NVIDIACTKConfig = *getCTKConfigFrom(toml)
-	cfg.NVIDIAContainerRuntimeConfig = *getRuntimeConfigFrom(toml)
+	runtimeConfig, err := getRuntimeConfigFrom(toml)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load nvidia-container-runtime config: %v", err)
+	}
+	cfg.NVIDIAContainerRuntimeConfig = *runtimeConfig
 
-	return cfg
+	return cfg, nil
 }
 
 // getDefaultConfig defines the default values for the config
