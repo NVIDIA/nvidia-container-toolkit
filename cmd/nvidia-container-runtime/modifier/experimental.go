@@ -18,8 +18,6 @@ package modifier
 
 import (
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
@@ -27,6 +25,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements"
 	"github.com/opencontainers/runtime-spec/specs-go"
@@ -189,7 +188,7 @@ func resolveAutoDiscoverMode(logger *logrus.Logger, mode string) (rmode string) 
 		logger.Infof("Auto-detected discover mode as '%v'", rmode)
 	}()
 
-	isTegra, reason := isTegraSystem()
+	isTegra, reason := info.IsTegraSystem()
 	logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
 
 	if isTegra {
@@ -197,29 +196,4 @@ func resolveAutoDiscoverMode(logger *logrus.Logger, mode string) (rmode string) 
 	}
 
 	return "legacy"
-}
-
-// isTegraSystem returns true if the system is detected as a Tegra-based system
-func isTegraSystem() (bool, string) {
-	const tegraReleaseFile = "/etc/nv_tegra_release"
-	const tegraFamilyFile = "/sys/devices/soc0/family"
-
-	if info, err := os.Stat(tegraReleaseFile); err == nil && !info.IsDir() {
-		return true, fmt.Sprintf("%v found", tegraReleaseFile)
-	}
-
-	if info, err := os.Stat(tegraFamilyFile); err != nil || !info.IsDir() {
-		return false, fmt.Sprintf("%v not found", tegraFamilyFile)
-	}
-
-	contents, err := os.ReadFile(tegraFamilyFile)
-	if err != nil {
-		return false, fmt.Sprintf("could not read %v", tegraFamilyFile)
-	}
-
-	if strings.HasPrefix(strings.ToLower(string(contents)), "tegra") {
-		return true, fmt.Sprintf("%v has 'tegra' prefix", tegraFamilyFile)
-	}
-
-	return false, fmt.Sprintf("%v has no 'tegra' prefix", tegraFamilyFile)
 }
