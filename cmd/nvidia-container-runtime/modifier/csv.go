@@ -25,15 +25,14 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 )
 
-// experiemental represents the modifications required by the experimental runtime
-type experimental struct {
+// csvMode represents the modifications as performed by the csv runtime mode
+type csvMode struct {
 	logger     *logrus.Logger
 	discoverer discover.Discover
 }
@@ -45,9 +44,9 @@ const (
 	nvidiaRequireJetpackEnvvar = "NVIDIA_REQUIRE_JETPACK"
 )
 
-// NewExperimentalModifier creates a modifier that applies the experimental
-// modications to an OCI spec if required by the runtime wrapper.
-func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
+// NewCSVModifier creates a modifier that applies modications to an OCI spec if required by the runtime wrapper.
+// The modifications are defined by CSV MountSpecs.
+func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
 	rawSpec, err := ociSpec.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
@@ -67,64 +66,51 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec 
 		NVIDIAContainerToolkitCLIExecutablePath: cfg.NVIDIACTKConfig.Path,
 	}
 
-	var d discover.Discover
-
-	switch info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.DiscoverMode) {
-	case "legacy":
-		legacyDiscoverer, err := discover.NewLegacyDiscoverer(logger, config)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create legacy discoverer: %v", err)
-		}
-		d = legacyDiscoverer
-	case "csv":
-		// TODO: Once the devices have been encapsulated in the CUDA image, this can be moved to before the
-		// visible devices are checked.
-		image, err := image.NewCUDAImageFromSpec(rawSpec)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := checkRequirements(logger, &image); err != nil {
-			return nil, fmt.Errorf("requirements not met: %v", err)
-		}
-
-		csvFiles, err := csv.GetFileList(csv.DefaultMountSpecPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get list of CSV files: %v", err)
-		}
-
-		nvidiaRequireJetpack, _ := ociSpec.LookupEnv(nvidiaRequireJetpackEnvvar)
-		if nvidiaRequireJetpack != "csv-mounts=all" {
-			csvFiles = csv.BaseFilesOnly(csvFiles)
-		}
-
-		csvDiscoverer, err := discover.NewFromCSVFiles(logger, csvFiles, config.Root)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
-		}
-
-		ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(logger, csvDiscoverer, config)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create ldcach update hook discoverer: %v", err)
-		}
-
-		createSymlinksHook, err := discover.NewCreateSymlinksHook(logger, csvFiles, csvDiscoverer, config)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create symlink hook discoverer: %v", err)
-		}
-
-		d = discover.NewList(csvDiscoverer, ldcacheUpdateHook, createSymlinksHook)
-	default:
-		return nil, fmt.Errorf("invalid discover mode: %v", cfg.NVIDIAContainerRuntimeConfig.DiscoverMode)
+	// TODO: Once the devices have been encapsulated in the CUDA image, this can be moved to before the
+	// visible devices are checked.
+	image, err := image.NewCUDAImageFromSpec(rawSpec)
+	if err != nil {
+		return nil, err
 	}
 
-	return newExperimentalModifierFromDiscoverer(logger, d)
+	if err := checkRequirements(logger, &image); err != nil {
+		return nil, fmt.Errorf("requirements not met: %v", err)
+	}
+
+	csvFiles, err := csv.GetFileList(cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.MountSpecPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get list of CSV files: %v", err)
+	}
+
+	nvidiaRequireJetpack, _ := ociSpec.LookupEnv(nvidiaRequireJetpackEnvvar)
+	if nvidiaRequireJetpack != "csv-mounts=all" {
+		csvFiles = csv.BaseFilesOnly(csvFiles)
+	}
+
+	csvDiscoverer, err := discover.NewFromCSVFiles(logger, csvFiles, config.Root)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
+	}
+
+	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(logger, csvDiscoverer, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ldcach update hook discoverer: %v", err)
+	}
+
+	createSymlinksHook, err := discover.NewCreateSymlinksHook(logger, csvFiles, csvDiscoverer, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create symlink hook discoverer: %v", err)
+	}
+
+	d := discover.NewList(csvDiscoverer, ldcacheUpdateHook, createSymlinksHook)
+
+	return newModifierFromDiscoverer(logger, d)
 }
 
-// newExperimentalModifierFromDiscoverer created a modifier that aplies the discovered
+// newModifierFromDiscoverer created a modifier that aplies the discovered
 // modifications to an OCI spec if require by the runtime wrapper.
-func newExperimentalModifierFromDiscoverer(logger *logrus.Logger, d discover.Discover) (oci.SpecModifier, error) {
-	m := experimental{
+func newModifierFromDiscoverer(logger *logrus.Logger, d discover.Discover) (oci.SpecModifier, error) {
+	m := csvMode{
 		logger:     logger,
 		discoverer: d,
 	}
@@ -133,7 +119,7 @@ func newExperimentalModifierFromDiscoverer(logger *logrus.Logger, d discover.Dis
 
 // Modify applies the required modifications to the incomming OCI spec. These modifications
 // are applied in-place.
-func (m experimental) Modify(spec *specs.Spec) error {
+func (m csvMode) Modify(spec *specs.Spec) error {
 	err := nvidiaContainerRuntimeHookRemover{m.logger}.Modify(spec)
 	if err != nil {
 		return fmt.Errorf("failed to remove existing hooks: %v", err)

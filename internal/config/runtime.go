@@ -33,8 +33,6 @@ const (
 // RuntimeConfig stores the config options for the NVIDIA Container Runtime
 type RuntimeConfig struct {
 	DebugFilePath string `toml:"debug"`
-	Experimental  bool   `toml:"experimental"`
-	DiscoverMode  string `toml:"discover-mode"`
 	// LogLevel defines the logging level for the application
 	LogLevel string `toml:"log-level"`
 	// Runtimes defines the candidates for the low-level runtime
@@ -80,8 +78,6 @@ func getRuntimeConfigFrom(toml *toml.Tree) (*RuntimeConfig, error) {
 func GetDefaultRuntimeConfig() *RuntimeConfig {
 	c := RuntimeConfig{
 		DebugFilePath: "/dev/null",
-		Experimental:  false,
-		DiscoverMode:  auto,
 		LogLevel:      logrus.InfoLevel.String(),
 		Runtimes: []string{
 			dockerRuncExecutableName,

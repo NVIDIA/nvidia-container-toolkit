@@ -62,8 +62,6 @@ func TestGetConfig(t *testing.T) {
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/dev/null",
-					Experimental:  false,
-					DiscoverMode:  "auto",
 					LogLevel:      "info",
 					Runtimes:      []string{"docker-runc", "runc"},
 					Mode:          "auto",
@@ -97,8 +95,6 @@ func TestGetConfig(t *testing.T) {
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/foo/bar",
-					Experimental:  true,
-					DiscoverMode:  "not-legacy",
 					LogLevel:      "debug",
 					Runtimes:      []string{"/some/runtime"},
 					Mode:          "not-auto",
@@ -136,8 +132,6 @@ func TestGetConfig(t *testing.T) {
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/foo/bar",
-					Experimental:  true,
-					DiscoverMode:  "not-legacy",
 					LogLevel:      "debug",
 					Runtimes:      []string{"/some/runtime"},
 					Mode:          "not-auto",

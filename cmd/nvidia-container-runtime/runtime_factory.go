@@ -21,6 +21,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-container-runtime/modifier"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/runtime"
 	"github.com/sirupsen/logrus"
@@ -61,9 +62,12 @@ func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.Config, argv [
 
 // newSpecModifier is a factory method that creates constructs an OCI spec modifer based on the provided config.
 func newSpecModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec, argv []string) (oci.SpecModifier, error) {
-	if !cfg.NVIDIAContainerRuntimeConfig.Experimental {
+	switch info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode) {
+	case "legacy":
 		return modifier.NewStableRuntimeModifier(logger), nil
+	case "csv":
+		return modifier.NewCSVModifier(logger, cfg, ociSpec)
 	}
 
-	return modifier.NewExperimentalModifier(logger, cfg, ociSpec)
+	return nil, fmt.Errorf("invalid runtime mode: %v", cfg.NVIDIAContainerRuntimeConfig.Mode)
 }

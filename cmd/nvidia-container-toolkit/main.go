@@ -13,6 +13,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
@@ -73,7 +74,7 @@ func doPrestart() {
 	hook := getHookConfig()
 	cli := hook.NvidiaContainerCLI
 
-	if hook.NVIDIAContainerRuntime.Experimental && !*forceflag {
+	if !*forceflag && info.ResolveAutoMode(&logInterceptor{}, hook.NVIDIAContainerRuntime.Mode) != "legacy" {
 		log.Panicln("invoking the NVIDIA Container Runtime Hook directly (e.g. specifying the docker --gpus flag) is not supported. Please use the NVIDIA Container Runtime instead.")
 	}
 
@@ -178,3 +179,12 @@ func main() {
 		os.Exit(2)
 	}
 }
+
+// logInterceptor implements the info.Logger interface to allow for logging from this function.
+type logInterceptor struct{}
+
+func (l *logInterceptor) Infof(format string, args ...interface{}) {
+	log.Printf(format, args...)
+}
+
+func (l *logInterceptor) Debugf(format string, args ...interface{}) {}

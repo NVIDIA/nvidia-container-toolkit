@@ -49,16 +49,16 @@ func TestFactoryMethod(t *testing.T) {
 			cfg: &config.Config{
 				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
 					Runtimes: []string{"runc"},
+					Mode:     "legacy",
 				},
 			},
 		},
 		{
-			description: "experimental flag supported",
+			description: "csv mode is supported",
 			cfg: &config.Config{
 				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
-					Experimental: true,
-					DiscoverMode: "legacy",
-					Runtimes:     []string{"runc"},
+					Runtimes: []string{"runc"},
+					Mode:     "csv",
 				},
 			},
 			spec: &specs.Spec{
@@ -68,6 +68,43 @@ func TestFactoryMethod(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			description: "non-legacy discover mode raises error",
+			cfg: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Runtimes: []string{"runc"},
+					Mode:     "non-legacy",
+				},
+			},
+			expectedError: true,
+		},
+		{
+			description: "legacy discover mode returns modifier",
+			cfg: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Runtimes: []string{"runc"},
+					Mode:     "legacy",
+				},
+			},
+		},
+		{
+			description: "csv discover mode returns modifier",
+			cfg: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Runtimes: []string{"runc"},
+					Mode:     "csv",
+				},
+			},
+		},
+		{
+			description: "empty mode raises error",
+			cfg: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Runtimes: []string{"runc"},
+				},
+			},
+			expectedError: true,
 		},
 	}
 
@@ -79,7 +116,7 @@ func TestFactoryMethod(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, json.NewEncoder(specFile).Encode(tc.spec))
 
-			argv := []string{"--bundle", bundleDir}
+			argv := []string{"--bundle", bundleDir, "create"}
 
 			_, err = newNVIDIAContainerRuntime(logger, tc.cfg, argv)
 			if tc.expectedError {
