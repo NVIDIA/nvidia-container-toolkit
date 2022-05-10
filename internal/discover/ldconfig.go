@@ -74,7 +74,7 @@ func (d ldconfig) Hooks() ([]Hook, error) {
 
 	args := []string{hookPath, "hook", "update-ldcache"}
 	for _, f := range libDirs {
-		args = append(args, "--folders", f)
+		args = append(args, "--folder", f)
 	}
 	h := Hook{
 		Lifecycle: cdi.CreateContainerHook,
