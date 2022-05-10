@@ -86,14 +86,9 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("failed to load container state: %v", err)
 	}
 
-	spec, err := s.LoadSpec()
+	containerRoot, err := s.GetContainerRoot()
 	if err != nil {
-		return fmt.Errorf("failed to load OCI spec: %v", err)
-	}
-
-	var containerRoot string
-	if spec.Root != nil {
-		containerRoot = spec.Root.Path
+		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
 	csvFiles := cfg.filenames.Value()

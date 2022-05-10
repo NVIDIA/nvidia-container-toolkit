@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
@@ -56,7 +57,7 @@ func ReadContainerState(reader io.Reader) (*State, error) {
 }
 
 // LoadSpec loads the OCI spec associated with the container state
-func (s State) LoadSpec() (*specs.Spec, error) {
+func (s *State) LoadSpec() (*specs.Spec, error) {
 	specFilePath := GetSpecFilePath(s.Bundle)
 	specFile, err := os.Open(specFilePath)
 	if err != nil {
@@ -68,6 +69,25 @@ func (s State) LoadSpec() (*specs.Spec, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
 	}
-
 	return spec, nil
+}
+
+// GetContainerRoot returns the root for the container from the associated spec. If the spec is not yet loaded, it is
+// loaded and cached.
+func (s *State) GetContainerRoot() (string, error) {
+	spec, err := s.LoadSpec()
+	if err != nil {
+		return "", err
+	}
+
+	var containerRoot string
+	if spec.Root != nil {
+		containerRoot = spec.Root.Path
+	}
+
+	if filepath.IsAbs(containerRoot) {
+		return containerRoot, nil
+	}
+
+	return filepath.Join(s.Bundle, containerRoot), nil
 }
