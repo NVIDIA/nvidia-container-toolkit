@@ -129,6 +129,17 @@ func (m command) run(c *cli.Context, cfg *config) error {
 			m.logger.Debugf("%v is not a symlink", candidate)
 			continue
 		}
+		linkPath, err := changeRoot(cfg.hostRoot, containerRoot, candidate)
+		if err != nil {
+			m.logger.Warnf("Failed to resolve path for link %v relative to %v: %v", candidate, cfg.hostRoot, err)
+			continue
+		}
+
+		if created[linkPath] {
+			m.logger.Debugf("Link %v already created", linkPath)
+			continue
+		}
+
 		target, err := changeRoot(cfg.hostRoot, "/", targets[0])
 		if err != nil {
 			m.logger.Warnf("Failed to resolve path for target %v relative to %v: %v", target, cfg.hostRoot, err)
