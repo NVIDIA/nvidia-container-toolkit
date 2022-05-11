@@ -35,7 +35,10 @@ func ResolveAutoMode(logger Logger, mode string) (rmode string) {
 	isTegra, reason := IsTegraSystem()
 	logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
 
-	if isTegra {
+	hasNVML, reason := HasNVML()
+	logger.Debugf("Has NVML? %v: %v", hasNVML, reason)
+
+	if isTegra && !hasNVML {
 		return "csv"
 	}
 
