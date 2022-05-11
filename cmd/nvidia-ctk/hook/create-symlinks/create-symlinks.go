@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
@@ -35,6 +36,7 @@ type command struct {
 type config struct {
 	hostRoot      string
 	filenames     cli.StringSlice
+	links         cli.StringSlice
 	containerSpec string
 }
 
@@ -69,6 +71,11 @@ func (m command) build() *cli.Command {
 			Name:        "csv-filename",
 			Usage:       "Specify a (CSV) filename to process",
 			Destination: &cfg.filenames,
+		},
+		&cli.StringSliceFlag{
+			Name:        "link",
+			Usage:       "Specify a specific link to create. The link is specified as source:target",
+			Destination: &cfg.links,
 		},
 		&cli.StringFlag{
 			Name:        "container-spec",
@@ -136,28 +143,18 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		}
 	}
 
-		linkPath, err := changeRoot(cfg.hostRoot, containerRoot, candidate)
-		if err != nil {
-			m.logger.Warnf("Failed to resolve path for link %v relative to %v: %v", candidate, cfg.hostRoot, err)
+	links := cfg.links.Value()
+	for _, l := range links {
+		parts := strings.Split(l, ":")
+		if len(parts) != 2 {
+			m.logger.Warnf("Invalid link specification %v", l)
 			continue
 		}
 
-		if created[linkPath] {
-			m.logger.Debugf("Link %v already created", linkPath)
-			continue
-		}
-		m.logger.Infof("Symlinking %v to %v", linkPath, target)
-		err = os.MkdirAll(filepath.Dir(linkPath), 0755)
+		err := m.createLink(created, cfg.hostRoot, containerRoot, parts[0], parts[1])
 		if err != nil {
-			m.logger.Warnf("Faild to create directory: %v", err)
-			continue
+			m.logger.Warnf("Failed to create link %v: %v", parts, err)
 		}
-		err = os.Symlink(target, linkPath)
-		if err != nil {
-			m.logger.Warnf("Failed to create symlink: %v", err)
-			continue
-		}
-		created[linkPath] = true
 	}
 
 	return nil
