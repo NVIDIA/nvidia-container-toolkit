@@ -129,22 +129,12 @@ func (m command) run(c *cli.Context, cfg *config) error {
 			m.logger.Debugf("%v is not a symlink", candidate)
 			continue
 		}
-		linkPath, err := changeRoot(cfg.hostRoot, containerRoot, candidate)
-		if err != nil {
-			m.logger.Warnf("Failed to resolve path for link %v relative to %v: %v", candidate, cfg.hostRoot, err)
-			continue
-		}
 
-		if created[linkPath] {
-			m.logger.Debugf("Link %v already created", linkPath)
-			continue
-		}
-
-		target, err := changeRoot(cfg.hostRoot, "/", targets[0])
+		err = m.createLink(created, cfg.hostRoot, containerRoot, targets[0], candidate)
 		if err != nil {
-			m.logger.Warnf("Failed to resolve path for target %v relative to %v: %v", target, cfg.hostRoot, err)
-			continue
+			m.logger.Warnf("Failed to create link %v: %v", []string{targets[0], candidate}, err)
 		}
+	}
 
 		linkPath, err := changeRoot(cfg.hostRoot, containerRoot, candidate)
 		if err != nil {
@@ -172,6 +162,34 @@ func (m command) run(c *cli.Context, cfg *config) error {
 
 	return nil
 
+}
+
+func (m command) createLink(created map[string]bool, hostRoot string, containerRoot string, target string, link string) error {
+	linkPath, err := changeRoot(hostRoot, containerRoot, link)
+	if err != nil {
+		m.logger.Warnf("Failed to resolve path for link %v relative to %v: %v", link, containerRoot, err)
+	}
+	if created[linkPath] {
+		m.logger.Debugf("Link %v already created", linkPath)
+		return nil
+	}
+
+	targetPath, err := changeRoot(hostRoot, "/", target)
+	if err != nil {
+		m.logger.Warnf("Failed to resolve path for target %v relative to %v: %v", target, "/", err)
+	}
+
+	m.logger.Infof("Symlinking %v to %v", linkPath, targetPath)
+	err = os.MkdirAll(filepath.Dir(linkPath), 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create directory: %v", err)
+	}
+	err = os.Symlink(target, linkPath)
+	if err != nil {
+		return fmt.Errorf("failed to create symlink: %v", err)
+	}
+
+	return nil
 }
 
 func changeRoot(current string, new string, path string) (string, error) {
