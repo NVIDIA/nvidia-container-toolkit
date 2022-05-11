@@ -17,6 +17,10 @@
 package discover
 
 import (
+	"fmt"
+	"path/filepath"
+	"strings"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/sirupsen/logrus"
@@ -28,15 +32,17 @@ type symlinks struct {
 	lookup                  lookup.Locator
 	nvidiaCTKExecutablePath string
 	csvFiles                []string
+	mountsFrom              Discover
 }
 
 // NewCreateSymlinksHook creates a discoverer for a hook that creates required symlinks in the container
-func NewCreateSymlinksHook(logger *logrus.Logger, csvFiles []string, cfg *Config) (Discover, error) {
+func NewCreateSymlinksHook(logger *logrus.Logger, csvFiles []string, mounts Discover, cfg *Config) (Discover, error) {
 	d := symlinks{
 		logger:                  logger,
 		lookup:                  lookup.NewExecutableLocator(logger, cfg.Root),
 		nvidiaCTKExecutablePath: cfg.NVIDIAContainerToolkitCLIExecutablePath,
 		csvFiles:                csvFiles,
+		mountsFrom:              mounts,
 	}
 
 	return &d, nil
@@ -61,6 +67,12 @@ func (d symlinks) Hooks() ([]Hook, error) {
 		args = append(args, "--csv-filename", f)
 	}
 
+	links, err := d.getSpecificLinkArgs()
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine specific links: %v", err)
+	}
+	args = append(args, links...)
+
 	h := Hook{
 		Lifecycle: cdi.CreateContainerHook,
 		Path:      hookPath,
@@ -68,4 +80,46 @@ func (d symlinks) Hooks() ([]Hook, error) {
 	}
 
 	return []Hook{h}, nil
+}
+
+// getSpecificLinkArgs returns the required specic links that need to be created
+func (d symlinks) getSpecificLinkArgs() ([]string, error) {
+	mounts, err := d.mountsFrom.Mounts()
+	if err != nil {
+		return nil, fmt.Errorf("failed to discover mounts for ldcache update: %v", err)
+	}
+
+	linkProcessed := make(map[string]bool)
+	var links []string
+	for _, m := range mounts {
+		var target string
+		var link string
+
+		lib := filepath.Base(m.Path)
+
+		if strings.HasPrefix(lib, "libcuda.so") {
+			// XXX Many applications wrongly assume that libcuda.so exists (e.g. with dlopen).
+			target = "libcuda.so.1"
+			link = "libcuda.so"
+		} else if strings.HasPrefix(lib, "libGLX_nvidia.so") {
+			// XXX GLVND requires this symlink for indirect GLX support.
+			target = lib
+			link = "libGLX_indirect.so.0"
+		} else if strings.HasPrefix(lib, "libnvidia-opticalflow.so") {
+			// XXX Fix missing symlink for libnvidia-opticalflow.so.
+			target = "libnvidia-opticalflow.so.1"
+			link = "libnvidia-opticalflow.so"
+		} else {
+			continue
+		}
+		if linkProcessed[link] {
+			continue
+		}
+
+		linkPath := filepath.Join(filepath.Dir(m.Path), link)
+		links = append(links, "--link", fmt.Sprintf("%v:%v", target, linkPath))
+		linkProcessed[link] = true
+	}
+
+	return links, nil
 }
