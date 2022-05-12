@@ -18,8 +18,8 @@ package oci
 
 import (
 	"fmt"
-	"os/exec"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -43,14 +43,15 @@ func findRuntime(logger *log.Logger, candidates []string) (string, error) {
 		return "", fmt.Errorf("at least one runtime candidate must be specified")
 	}
 
+	locator := lookup.NewExecutableLocator(logger, "/")
 	for _, candidate := range candidates {
 		logger.Debugf("Looking for runtime binary '%v'", candidate)
-		runcPath, err := exec.LookPath(candidate)
-		if err == nil {
-			logger.Debugf("Found runtime binary '%v'", runcPath)
-			return runcPath, nil
+		targets, err := locator.Locate(candidate)
+		if err == nil && len(targets) > 0 {
+			logger.Debugf("Found runtime binary '%v'", targets)
+			return targets[0], nil
 		}
-		logger.Debugf("Runtime binary '%v' not found: %v", candidate, err)
+		logger.Debugf("Runtime binary '%v' not found: %v (targets=%v)", candidate, err, targets)
 	}
 
 	return "", fmt.Errorf("no runtime binary found from candidate list: %v", candidates)

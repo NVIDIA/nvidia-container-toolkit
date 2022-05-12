@@ -6,21 +6,20 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
 var (
 	debugflag  = flag.Bool("debug", false, "enable debug output")
 	forceflag  = flag.Bool("force", false, "force execution of prestart hook in experimental mode")
 	configflag = flag.String("config", "", "configuration file")
-
-	defaultPATH = []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"}
 )
 
 func exit() {
@@ -36,28 +35,16 @@ func exit() {
 	os.Exit(0)
 }
 
-func getPATH(config CLIConfig) string {
-	dirs := filepath.SplitList(os.Getenv("PATH"))
-	// directories from the hook environment have higher precedence
-	dirs = append(dirs, defaultPATH...)
-
-	if config.Root != nil {
-		rootDirs := []string{}
-		for _, dir := range dirs {
-			rootDirs = append(rootDirs, path.Join(*config.Root, dir))
-		}
-		// directories with the root prefix have higher precedence
-		dirs = append(rootDirs, dirs...)
-	}
-	return strings.Join(dirs, ":")
-}
-
 func getCLIPath(config CLIConfig) string {
 	if config.Path != nil {
 		return *config.Path
 	}
 
-	if err := os.Setenv("PATH", getPATH(config)); err != nil {
+	var root string
+	if config.Root != nil {
+		root = *config.Root
+	}
+	if err := os.Setenv("PATH", lookup.GetPath(root)); err != nil {
 		log.Panicln("couldn't set PATH variable:", err)
 	}
 

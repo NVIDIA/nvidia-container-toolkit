@@ -25,24 +25,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	envPath = "PATH"
-)
-
-var defaultPaths = []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"}
-
 type executable struct {
 	file
 }
 
 // NewExecutableLocator creates a locator to fine executable files in the path. A logger can also be specified.
 func NewExecutableLocator(logger *log.Logger, root string) Locator {
-	pathEnv := os.Getenv(envPath)
-	paths := filepath.SplitList(pathEnv)
-
-	if root != "" {
-		paths = append(paths, defaultPaths...)
-	}
+	paths := GetPaths(root)
 
 	var prefixes []string
 	for _, dir := range paths {
