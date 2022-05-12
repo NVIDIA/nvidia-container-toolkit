@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewExperimentalModifier(t *testing.T) {
+func TestNewCSVModifier(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
 	testCases := []struct {
@@ -63,42 +63,6 @@ func TestNewExperimentalModifier(t *testing.T) {
 			visibleDevices: "void",
 			expectedNil:    true,
 		},
-		{
-			description: "empty config raises error",
-			cfg: &config.Config{
-				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{},
-			},
-			visibleDevices: "all",
-			expectedError:  fmt.Errorf("invalid discover mode"),
-		},
-		{
-			description: "non-legacy discover mode raises error",
-			cfg: &config.Config{
-				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
-					DiscoverMode: "non-legacy",
-				},
-			},
-			visibleDevices: "all",
-			expectedError:  fmt.Errorf("invalid discover mode"),
-		},
-		{
-			description: "legacy discover mode returns modifier",
-			cfg: &config.Config{
-				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
-					DiscoverMode: "legacy",
-				},
-			},
-			visibleDevices: "all",
-		},
-		{
-			description: "csv discover mode returns modifier",
-			cfg: &config.Config{
-				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
-					DiscoverMode: "csv",
-				},
-			},
-			visibleDevices: "all",
-		},
 	}
 
 	for _, tc := range testCases {
@@ -115,7 +79,7 @@ func TestNewExperimentalModifier(t *testing.T) {
 				}
 			}
 
-			m, err := NewExperimentalModifier(logger, tc.cfg, spec)
+			m, err := NewCSVModifier(logger, tc.cfg, spec)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 			} else {
@@ -304,7 +268,7 @@ func TestExperimentalModifier(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			m, err := newExperimentalModifierFromDiscoverer(logger, tc.discover)
+			m, err := newModifierFromDiscoverer(logger, tc.discover)
 			require.NoError(t, err)
 
 			err = m.Modify(tc.spec)
@@ -315,35 +279,6 @@ func TestExperimentalModifier(t *testing.T) {
 			}
 
 			require.EqualValues(t, tc.expectedSpec, tc.spec)
-		})
-	}
-}
-
-func TestResolveDiscoverMode(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
-
-	testCases := []struct {
-		description  string
-		mode         string
-		expectedMode string
-	}{
-		{
-			description:  "non-auto resolves to input",
-			mode:         "not-auto",
-			expectedMode: "not-auto",
-		},
-		// TODO: The following test is brittle in that it will break on Tegra-based systems.
-		// {
-		// 	description:  "auto resolves to legacy",
-		// 	mode:         "auto",
-		// 	expectedMode: "legacy",
-		// },
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			mode := resolveAutoDiscoverMode(logger, tc.mode)
-			require.EqualValues(t, tc.expectedMode, mode)
 		})
 	}
 }

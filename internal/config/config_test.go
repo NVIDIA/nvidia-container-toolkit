@@ -62,10 +62,14 @@ func TestGetConfig(t *testing.T) {
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/dev/null",
-					Experimental:  false,
-					DiscoverMode:  "auto",
 					LogLevel:      "info",
 					Runtimes:      []string{"docker-runc", "runc"},
+					Mode:          "auto",
+					Modes: modesConfig{
+						CSV: csvModeConfig{
+							MountSpecPath: "/etc/nvidia-container-runtime/host-files-for-container.d",
+						},
+					},
 				},
 				NVIDIACTKConfig: CTKConfig{
 					Path: "nvidia-ctk",
@@ -81,6 +85,8 @@ func TestGetConfig(t *testing.T) {
 				"nvidia-container-runtime.discover-mode = \"not-legacy\"",
 				"nvidia-container-runtime.log-level = \"debug\"",
 				"nvidia-container-runtime.runtimes = [\"/some/runtime\",]",
+				"nvidia-container-runtime.mode = \"not-auto\"",
+				"nvidia-container-runtime.modes.csv.mount-spec-path = \"/not/etc/nvidia-container-runtime/host-files-for-container.d\"",
 				"nvidia-ctk.path = \"/foo/bar/nvidia-ctk\"",
 			},
 			expectedConfig: &Config{
@@ -89,10 +95,14 @@ func TestGetConfig(t *testing.T) {
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/foo/bar",
-					Experimental:  true,
-					DiscoverMode:  "not-legacy",
 					LogLevel:      "debug",
 					Runtimes:      []string{"/some/runtime"},
+					Mode:          "not-auto",
+					Modes: modesConfig{
+						CSV: csvModeConfig{
+							MountSpecPath: "/not/etc/nvidia-container-runtime/host-files-for-container.d",
+						},
+					},
 				},
 				NVIDIACTKConfig: CTKConfig{
 					Path: "/foo/bar/nvidia-ctk",
@@ -110,6 +120,9 @@ func TestGetConfig(t *testing.T) {
 				"discover-mode = \"not-legacy\"",
 				"log-level = \"debug\"",
 				"runtimes = [\"/some/runtime\",]",
+				"mode = \"not-auto\"",
+				"[nvidia-container-runtime.modes.csv]",
+				"mount-spec-path = \"/not/etc/nvidia-container-runtime/host-files-for-container.d\"",
 				"[nvidia-ctk]",
 				"path = \"/foo/bar/nvidia-ctk\"",
 			},
@@ -119,10 +132,14 @@ func TestGetConfig(t *testing.T) {
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/foo/bar",
-					Experimental:  true,
-					DiscoverMode:  "not-legacy",
 					LogLevel:      "debug",
 					Runtimes:      []string{"/some/runtime"},
+					Mode:          "not-auto",
+					Modes: modesConfig{
+						CSV: csvModeConfig{
+							MountSpecPath: "/not/etc/nvidia-container-runtime/host-files-for-container.d",
+						},
+					},
 				},
 				NVIDIACTKConfig: CTKConfig{
 					Path: "/foo/bar/nvidia-ctk",
