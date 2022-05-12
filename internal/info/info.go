@@ -20,7 +20,24 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/NVIDIA/go-nvml/pkg/dl"
 )
+
+// HasNVML returns true if NVML is detected on the sytems
+func HasNVML() (bool, string) {
+	const (
+		nvmlLibraryName      = "libnvidia-ml.so.1"
+		nvmlLibraryLoadFlags = dl.RTLD_LAZY
+	)
+	lib := dl.New(nvmlLibraryName, nvmlLibraryLoadFlags)
+	if err := lib.Open(); err != nil {
+		return false, fmt.Sprintf("could not load NVML: %v", err)
+	}
+	defer lib.Close()
+
+	return true, "found NVML library"
+}
 
 // IsTegraSystem returns true if the system is detected as a Tegra-based system
 func IsTegraSystem() (bool, string) {
