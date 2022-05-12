@@ -61,7 +61,7 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec 
 		logger.Infof("No modification required: %v=%v (exists=%v)", visibleDevicesEnvvar, visibleDevices, exists)
 		return nil, nil
 	}
-	logger.Infof("Constructing modifier from config: %+v", cfg)
+	logger.Infof("Constructing modifier from config: %+v", *cfg)
 
 	config := &discover.Config{
 		Root:                                    cfg.NVIDIAContainerCLIConfig.Root,
