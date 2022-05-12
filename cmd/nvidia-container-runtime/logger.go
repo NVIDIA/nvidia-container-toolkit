@@ -118,9 +118,9 @@ func UpdateLogger(filename string, logLevel string, argv []string) (*Logger, err
 	return l, nil
 }
 
-// CloseFile closes the log file (if any) and resets the logger output to what it
+// Reset closes the log file (if any) and resets the logger output to what it
 // was before UpdateLogger was called.
-func (l *Logger) CloseFile() error {
+func (l *Logger) Reset() error {
 	defer func() {
 		previous := l.previousLogger
 		if previous == nil {
