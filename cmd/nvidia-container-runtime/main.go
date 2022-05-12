@@ -7,6 +7,8 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 )
 
+var Version string
+
 var logger = NewLogger()
 
 func main() {
