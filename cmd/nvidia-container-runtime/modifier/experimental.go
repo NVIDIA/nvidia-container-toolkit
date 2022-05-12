@@ -109,7 +109,7 @@ func NewExperimentalModifier(logger *logrus.Logger, cfg *config.Config, ociSpec 
 			return nil, fmt.Errorf("failed to create ldcach update hook discoverer: %v", err)
 		}
 
-		createSymlinksHook, err := discover.NewCreateSymlinksHook(logger, csvFiles, config)
+		createSymlinksHook, err := discover.NewCreateSymlinksHook(logger, csvFiles, csvDiscoverer, config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create symlink hook discoverer: %v", err)
 		}

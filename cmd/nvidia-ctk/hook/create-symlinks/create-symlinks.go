@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
@@ -35,6 +36,7 @@ type command struct {
 type config struct {
 	hostRoot      string
 	filenames     cli.StringSlice
+	links         cli.StringSlice
 	containerSpec string
 }
 
@@ -69,6 +71,11 @@ func (m command) build() *cli.Command {
 			Name:        "csv-filename",
 			Usage:       "Specify a (CSV) filename to process",
 			Destination: &cfg.filenames,
+		},
+		&cli.StringSliceFlag{
+			Name:        "link",
+			Usage:       "Specify a specific link to create. The link is specified as source:target",
+			Destination: &cfg.links,
 		},
 		&cli.StringFlag{
 			Name:        "container-spec",
@@ -129,38 +136,57 @@ func (m command) run(c *cli.Context, cfg *config) error {
 			m.logger.Debugf("%v is not a symlink", candidate)
 			continue
 		}
-		target, err := changeRoot(cfg.hostRoot, "/", targets[0])
+
+		err = m.createLink(created, cfg.hostRoot, containerRoot, targets[0], candidate)
 		if err != nil {
-			m.logger.Warnf("Failed to resolve path for target %v relative to %v: %v", target, cfg.hostRoot, err)
+			m.logger.Warnf("Failed to create link %v: %v", []string{targets[0], candidate}, err)
+		}
+	}
+
+	links := cfg.links.Value()
+	for _, l := range links {
+		parts := strings.Split(l, ":")
+		if len(parts) != 2 {
+			m.logger.Warnf("Invalid link specification %v", l)
 			continue
 		}
 
-		linkPath, err := changeRoot(cfg.hostRoot, containerRoot, candidate)
+		err := m.createLink(created, cfg.hostRoot, containerRoot, parts[0], parts[1])
 		if err != nil {
-			m.logger.Warnf("Failed to resolve path for link %v relative to %v: %v", candidate, cfg.hostRoot, err)
-			continue
+			m.logger.Warnf("Failed to create link %v: %v", parts, err)
 		}
-
-		if created[linkPath] {
-			m.logger.Debugf("Link %v already created", linkPath)
-			continue
-		}
-		m.logger.Infof("Symlinking %v to %v", linkPath, target)
-		err = os.MkdirAll(filepath.Dir(linkPath), 0755)
-		if err != nil {
-			m.logger.Warnf("Faild to create directory: %v", err)
-			continue
-		}
-		err = os.Symlink(target, linkPath)
-		if err != nil {
-			m.logger.Warnf("Failed to create symlink: %v", err)
-			continue
-		}
-		created[linkPath] = true
 	}
 
 	return nil
 
+}
+
+func (m command) createLink(created map[string]bool, hostRoot string, containerRoot string, target string, link string) error {
+	linkPath, err := changeRoot(hostRoot, containerRoot, link)
+	if err != nil {
+		m.logger.Warnf("Failed to resolve path for link %v relative to %v: %v", link, containerRoot, err)
+	}
+	if created[linkPath] {
+		m.logger.Debugf("Link %v already created", linkPath)
+		return nil
+	}
+
+	targetPath, err := changeRoot(hostRoot, "/", target)
+	if err != nil {
+		m.logger.Warnf("Failed to resolve path for target %v relative to %v: %v", target, "/", err)
+	}
+
+	m.logger.Infof("Symlinking %v to %v", linkPath, targetPath)
+	err = os.MkdirAll(filepath.Dir(linkPath), 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create directory: %v", err)
+	}
+	err = os.Symlink(target, linkPath)
+	if err != nil {
+		return fmt.Errorf("failed to create symlink: %v", err)
+	}
+
+	return nil
 }
 
 func changeRoot(current string, new string, path string) (string, error) {
