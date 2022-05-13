@@ -1,8 +1,19 @@
 nvidia-container-toolkit (1.10.0~rc.2-1) experimental; urgency=medium
 
-  * Dummy entry
+  * Add support for NVIDIA_REQUIRE_* checks for cuda version and arch to csv mode
+  * Switch to debug logging to reduce log verbosity
+  * Support logging to logs requested in command line
+  * Fix bug when launching containers with relative root path (e.g. using containerd)
+  * Allow low-level runtime path to be set explicitly as nvidia-container-runtime.runtimes option
+  * Fix failure to locate low-level runtime if PATH envvar is unset
+  * Replace experimental option for NVIDIA Container Runtime with nvidia-container-runtime.mode = csv option
+  * Use csv as default mode on Tegra systems without NVML
+  * Add --version flag to all CLIs
+  * [libnvidia-container] Bump libtirpc to 1.3.2
+  * [libnvidia-container] Fix bug when running host ldconfig using glibc compiled with a non-standard prefix
+  * [libnvidia-container] Add libcudadebugger.so to list of compute libraries
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Tue, 12 Apr 2022 10:43:20 +0200
+ -- NVIDIA CORPORATION <cudatools@nvidia.com>  Fri, 13 May 2022 13:41:10 +0200
 
 nvidia-container-toolkit (1.10.0~rc.1-1) experimental; urgency=medium
 
