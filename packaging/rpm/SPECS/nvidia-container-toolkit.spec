@@ -67,8 +67,19 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
-* Tue Apr 12 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.10.0-0.1.rc.2
-- Dummy entry
+* Fri May 13 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.10.0-0.1.rc.2
+- Add support for NVIDIA_REQUIRE_* checks for cuda version and arch to csv mode
+- Switch to debug logging to reduce log verbosity
+- Support logging to logs requested in command line
+- Fix bug when launching containers with relative root path (e.g. using containerd)
+- Allow low-level runtime path to be set explicitly as nvidia-container-runtime.runtimes option
+- Fix failure to locate low-level runtime if PATH envvar is unset
+- Replace experimental option for NVIDIA Container Runtime with nvidia-container-runtime.mode = csv option
+- Use csv as default mode on Tegra systems without NVML
+- Add --version flag to all CLIs
+- [libnvidia-container] Bump libtirpc to 1.3.2
+- [libnvidia-container] Fix bug when running host ldconfig using glibc compiled with a non-standard prefix
+- [libnvidia-container] Add libcudadebugger.so to list of compute libraries
 
 * Thu Mar 24 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.10.0-0.1.rc.1
 - Include nvidia-ctk CLI in installed binaries
