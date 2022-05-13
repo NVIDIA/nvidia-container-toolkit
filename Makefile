@@ -38,8 +38,6 @@ EXAMPLE_TARGETS := $(patsubst %,example-%, $(EXAMPLES))
 CMDS := $(patsubst ./cmd/%/,%,$(sort $(dir $(wildcard ./cmd/*/))))
 CMD_TARGETS := $(patsubst %,cmd-%, $(CMDS))
 
-$(info CMD_TARGETS=$(CMD_TARGETS))
-
 CHECK_TARGETS := assert-fmt vet lint ineffassign misspell
 MAKE_TARGETS := binaries build check fmt lint-internal test examples cmds coverage generate $(CHECK_TARGETS)
 
@@ -47,6 +45,12 @@ TARGETS := $(MAKE_TARGETS) $(EXAMPLE_TARGETS) $(CMD_TARGETS)
 
 DOCKER_TARGETS := $(patsubst %,docker-%, $(TARGETS))
 .PHONY: $(TARGETS) $(DOCKER_TARGETS)
+
+ifeq ($(VERSION),)
+CLI_VERSION = $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))
+else
+CLI_VERSION = $(VERSION)
+endif
 
 GOOS ?= linux
 
@@ -56,7 +60,7 @@ cmd-%: COMMAND_BUILD_OPTIONS = -o $(PREFIX)/$(*)
 endif
 cmds: $(CMD_TARGETS)
 $(CMD_TARGETS): cmd-%:
-	GOOS=$(GOOS) go build -ldflags "-s -w" $(COMMAND_BUILD_OPTIONS) $(MODULE)/cmd/$(*)
+	GOOS=$(GOOS) go build -ldflags "-s -w -X github.com/NVIDIA/nvidia-container-toolkit/internal/info.gitCommit=$(GIT_COMMIT) -X github.com/NVIDIA/nvidia-container-toolkit/internal/info.version=$(CLI_VERSION)" $(COMMAND_BUILD_OPTIONS) $(MODULE)/cmd/$(*)
 
 build:
 	GOOS=$(GOOS) go build ./...

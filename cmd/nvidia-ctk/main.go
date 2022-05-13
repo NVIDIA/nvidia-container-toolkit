@@ -20,11 +20,10 @@ import (
 	"os"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )
-
-var version string
 
 var logger = log.New()
 
@@ -41,10 +40,11 @@ func main() {
 
 	// Create the top-level CLI
 	c := cli.NewApp()
+	c.Name = "NVIDIA Container Toolkit CLI"
 	c.UseShortOptionHandling = true
 	c.EnableBashCompletion = true
 	c.Usage = "Tools to configure the NVIDIA Container Toolkit"
-	c.Version = version
+	c.Version = info.GetVersionString()
 
 	// Setup the flags for this command
 	c.Flags = []cli.Flag{

@@ -18,8 +18,9 @@ import (
 )
 
 var (
-	debugflag  = flag.Bool("debug", false, "enable debug output")
-	configflag = flag.String("config", "", "configuration file")
+	debugflag   = flag.Bool("debug", false, "enable debug output")
+	versionflag = flag.Bool("version", false, "enable version output")
+	configflag  = flag.String("config", "", "configuration file")
 )
 
 func exit() {
@@ -158,6 +159,11 @@ func usage() {
 func main() {
 	flag.Usage = usage
 	flag.Parse()
+
+	if *versionflag {
+		fmt.Printf("%v version %v\n", "NVIDIA Container Runtime Hook", info.GetVersionString())
+		return
+	}
 
 	args := flag.Args()
 	if len(args) == 0 {

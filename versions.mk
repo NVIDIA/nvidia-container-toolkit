@@ -26,3 +26,5 @@ LIBNVIDIA_CONTAINER0_VERSION := 0.10.0+jetpack
 
 CUDA_VERSION := 11.6.0
 GOLANG_VERSION := 1.17.8
+
+GIT_COMMIT ?= $(shell git describe --dirty --long --always 2> /dev/null || echo "")

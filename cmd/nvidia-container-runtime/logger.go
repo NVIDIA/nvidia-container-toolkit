@@ -49,36 +49,29 @@ func UpdateLogger(filename string, logLevel string, argv []string) (*Logger, err
 	level, logLevelError := configFromArgs.getLevel(logLevel)
 
 	var logFiles []*os.File
+	var argLogFileError error
 
-	configLogFile, err := createLogFile(filename)
-	if err != nil {
-		return logger, fmt.Errorf("error opening debug log file: %v", err)
-	}
-	if configLogFile != nil {
-		logFiles = append(logFiles, configLogFile)
-	}
+	// We don't create log files if the version argument is supplied
+	if !configFromArgs.version {
+		configLogFile, err := createLogFile(filename)
+		if err != nil {
+			return logger, fmt.Errorf("error opening debug log file: %v", err)
+		}
+		if configLogFile != nil {
+			logFiles = append(logFiles, configLogFile)
+		}
 
-	argLogFile, argLogFileError := createLogFile(configFromArgs.file)
-	if argLogFile != nil {
-		logFiles = append(logFiles, argLogFile)
+		argLogFile, err := createLogFile(configFromArgs.file)
+		if argLogFile != nil {
+			logFiles = append(logFiles, argLogFile)
+		}
+		argLogFileError = err
 	}
 
 	l := &Logger{
 		Logger:         logrus.New(),
 		previousLogger: logger.Logger,
 		logFiles:       logFiles,
-	}
-
-	if len(logFiles) == 0 {
-		l.SetOutput(io.Discard)
-	} else if len(logFiles) == 1 {
-		l.SetOutput(logFiles[0])
-	} else {
-		var writers []io.Writer
-		for _, f := range logFiles {
-			writers = append(writers, f)
-		}
-		l.SetOutput(io.MultiWriter(writers...))
 	}
 
 	l.SetLevel(level)
@@ -102,6 +95,18 @@ func UpdateLogger(filename string, logLevel string, argv []string) (*Logger, err
 		l.SetFormatter(new(logrus.JSONFormatter))
 	}
 
+	if len(logFiles) == 0 {
+		l.SetOutput(io.Discard)
+	} else if len(logFiles) == 1 {
+		l.SetOutput(logFiles[0])
+	} else if len(logFiles) > 1 {
+		var writers []io.Writer
+		for _, f := range logFiles {
+			writers = append(writers, f)
+		}
+		l.SetOutput(io.MultiWriter(writers...))
+	}
+
 	if logLevelError != nil {
 		l.Warn(logLevelError)
 	}
@@ -113,9 +118,9 @@ func UpdateLogger(filename string, logLevel string, argv []string) (*Logger, err
 	return l, nil
 }
 
-// CloseFile closes the log file (if any) and resets the logger output to what it
+// Reset closes the log file (if any) and resets the logger output to what it
 // was before UpdateLogger was called.
-func (l *Logger) CloseFile() error {
+func (l *Logger) Reset() error {
 	defer func() {
 		previous := l.previousLogger
 		if previous == nil {
@@ -153,9 +158,10 @@ func createLogFile(filename string) (*os.File, error) {
 }
 
 type loggerConfig struct {
-	file   string
-	format string
-	debug  bool
+	file    string
+	format  string
+	debug   bool
+	version bool
 }
 
 func (c loggerConfig) getLevel(logLevel string) (logrus.Level, error) {
@@ -182,15 +188,24 @@ func parseArgs(args []string) loggerConfig {
 	found := make(map[string]bool)
 
 	for i := 0; i < len(args); i++ {
-		if len(found) == 3 {
+		if len(found) == 4 {
 			break
 		}
 
 		param := args[i]
 
 		parts := strings.SplitN(param, "=", 2)
-		trimmed := strings.TrimPrefix(parts[0], "--")
-		if !strings.HasPrefix(parts[0], "--") {
+		trimmed := strings.TrimLeft(parts[0], "-")
+		// If this is not a flag we continue
+		if parts[0] == trimmed {
+			continue
+		}
+
+		// Check the version flag
+		if trimmed == "version" {
+			c.version = true
+			found["version"] = true
+			// For the version flag we don't process any other flags
 			continue
 		}
 

@@ -41,6 +41,8 @@ RUN mkdir -p $DIST_DIR /dist
 WORKDIR $GOPATH/src/nvidia-container-toolkit
 COPY . .
 
+ARG GIT_COMMIT
+ENV GIT_COMMIT ${GIT_COMMIT}
 RUN make PREFIX=${DIST_DIR} cmds
 
 ARG CONFIG_TOML_SUFFIX
