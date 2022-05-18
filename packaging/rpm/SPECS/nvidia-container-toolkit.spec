@@ -69,5 +69,5 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 %changelog
 # As of 1.10.0-1 we generate the release information automatically
 * %{release_date} NVIDIA CORPORATION <cudatools@nvidia.com> %{version}-%{release}
-- See https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/blob/main/CHANGELOG.md
+- See https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/blob/%{git_commit}/CHANGELOG.md
 - Bump libnvidia-container dependency to libnvidia-container-tools >= %{libnvidia_container_version}

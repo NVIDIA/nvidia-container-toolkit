@@ -60,7 +60,7 @@ COPY packaging/debian ./debian
 
 RUN dch --create --package="${PKG_NAME}" \
         --newversion "${REVISION}" \
-            "See https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/blob/main/CHANGELOG.md for the changelog" && \
+            "See https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/blob/${GIT_COMMIT}/CHANGELOG.md for the changelog" && \
     dch --append "Bump libnvidia-container dependency to ${REVISION}" && \
     dch -r "" && \
     if [ "$REVISION" != "$(dpkg-parsechangelog --show-field=Version)" ]; then exit 1; fi
