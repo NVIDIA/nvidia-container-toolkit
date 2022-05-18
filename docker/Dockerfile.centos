@@ -27,6 +27,7 @@ ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
 # packaging
+ARG PKG_NAME
 ARG PKG_VERS
 ARG PKG_REV
 
@@ -61,6 +62,7 @@ COPY packaging/rpm .
 CMD arch=$(uname -m) && \
     rpmbuild --clean --target=$arch -bb \
              -D "_topdir $PWD" \
+             -D "release_date $(date +'%a %b %d %Y')" \
              -D "version $VERSION" \
              -D "libnvidia_container_version ${VERSION}-${RELEASE}" \
              -D "release $RELEASE" \
