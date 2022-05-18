@@ -1,217 +1,162 @@
-nvidia-container-toolkit (1.10.0~rc.3-1) experimental; urgency=medium
+# NVIDIA Container Toolkit Changelog
 
-  * [libnvida-container] Fix bug introduced when adding libcudadebugger.so to list of libraries
+## v1.10.0-rc.3
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Tue, 17 May 2022 13:21:50 +0200
+* [libnvida-container] Fix bug introduced when adding libcudadebugger.so to list of libraries
 
-nvidia-container-toolkit (1.10.0~rc.2-1) experimental; urgency=medium
+## v1.10.0-rc.2
 
-  * Add support for NVIDIA_REQUIRE_* checks for cuda version and arch to csv mode
-  * Switch to debug logging to reduce log verbosity
-  * Support logging to logs requested in command line
-  * Fix bug when launching containers with relative root path (e.g. using containerd)
-  * Allow low-level runtime path to be set explicitly as nvidia-container-runtime.runtimes option
-  * Fix failure to locate low-level runtime if PATH envvar is unset
-  * Replace experimental option for NVIDIA Container Runtime with nvidia-container-runtime.mode = csv option
-  * Use csv as default mode on Tegra systems without NVML
-  * Add --version flag to all CLIs
-  * [libnvidia-container] Bump libtirpc to 1.3.2
-  * [libnvidia-container] Fix bug when running host ldconfig using glibc compiled with a non-standard prefix
-  * [libnvidia-container] Add libcudadebugger.so to list of compute libraries
+* Add support for NVIDIA_REQUIRE_* checks for cuda version and arch to csv mode
+* Switch to debug logging to reduce log verbosity
+* Support logging to logs requested in command line
+* Fix bug when launching containers with relative root path (e.g. using containerd)
+* Allow low-level runtime path to be set explicitly as nvidia-container-runtime.runtimes option
+* Fix failure to locate low-level runtime if PATH envvar is unset
+* Replace experimental option for NVIDIA Container Runtime with nvidia-container-runtime.mode = csv option
+* Use csv as default mode on Tegra systems without NVML
+* Add --version flag to all CLIs
+* [libnvidia-container] Bump libtirpc to 1.3.2
+* [libnvidia-container] Fix bug when running host ldconfig using glibc compiled with a non-standard prefix
+* [libnvidia-container] Add libcudadebugger.so to list of compute libraries
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Fri, 13 May 2022 13:41:10 +0200
+## v1.10.0-rc.1
 
-nvidia-container-toolkit (1.10.0~rc.1-1) experimental; urgency=medium
+* Include nvidia-ctk CLI in installed binaries
+* Add experimental option to NVIDIA Container Runtime
 
-  * Include nvidia-ctk CLI in installed binaries
-  * Add experimental option to NVIDIA Container Runtime
+## v1.9.0
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Thu, 24 Mar 2022 13:22:24 +0200
+* [libnvidia-container] Add additional check for Tegra in /sys/.../family file in CLI
+* [libnvidia-container] Update jetpack-specific CLI option to only load Base CSV files by default
+* [libnvidia-container] Fix bug (from 1.8.0) when mounting GSP firmware into containers without /lib to /usr/lib symlinks
+* [libnvidia-container] Update nvml.h to CUDA 11.6.1 nvML_DEV 11.6.55
+* [libnvidia-container] Update switch statement to include new brands from latest nvml.h
+* [libnvidia-container] Process all --require flags on Jetson platforms
+* [libnvidia-container] Fix long-standing issue with running ldconfig on Debian systems
 
-nvidia-container-toolkit (1.9.0-1) UNRELEASED; urgency=medium
+## v1.8.1
 
- * [libnvidia-container] Add additional check for Tegra in /sys/.../family file in CLI
- * [libnvidia-container] Update jetpack-specific CLI option to only load Base CSV files by default
- * [libnvidia-container] Fix bug (from 1.8.0) when mounting GSP firmware into containers without /lib to /usr/lib symlinks
- * [libnvidia-container] Update nvml.h to CUDA 11.6.1 nvML_DEV 11.6.55
- * [libnvidia-container] Update switch statement to include new brands from latest nvml.h
- * [libnvidia-container] Process all --require flags on Jetson platforms
- * [libnvidia-container] Fix long-standing issue with running ldconfig on Debian systems
+* [libnvidia-container] Fix bug in determining cgroup root when running in nested containers
+* [libnvidia-container] Fix permission issue when determining cgroup version
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com> Fri, 18 Mar 2022 06:10:56 +0200
+## v1.8.0
 
-nvidia-container-toolkit (1.8.1-1) UNRELEASED; urgency=medium
+* Promote 1.8.0-rc.2-1 to 1.8.0
 
- * [libnvidia-container] Fix bug in determining cgroup root when running in nested containers
- * [libnvidia-container] Fix permission issue when determining cgroup version
+## v1.8.0-rc.2
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com> Mon, 14 Feb 2022 09:53:26 +0100
+* Remove support for building amazonlinux1 packages
 
-nvidia-container-toolkit (1.8.0-1) UNRELEASED; urgency=medium
+## v1.8.0-rc.1
 
- * Promote 1.8.0~rc.2-1 to 1.8.0-1
+* [libnvidia-container] Add support for cgroupv2
+* Release toolkit-container images from nvidia-container-toolkit repository
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com> Fri, 04 Feb 2022 06:04:39 +0100
+## v1.7.0
 
-nvidia-container-toolkit (1.8.0~rc.2-1) UNRELEASED; urgency=medium
+* Promote 1.7.0-rc.1-1 to 1.7.0
+ * Bump Golang version to 1.16.4
 
-  * Remove support for building amazonlinux1 packages
+## v1.7.0-rc.1
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com> Thu, 20 Jan 2022 13:38:48 +0100
+* Specify containerd runtime type as string in config tools to remove dependency on containerd package
+* Add supported-driver-capabilities config option to allow for a subset of all driver capabilities to be specified
 
-nvidia-container-toolkit (1.8.0~rc.1-1) UNRELEASED; urgency=medium
+## v1.6.0
 
-  * [libnvidia-container] Add support for cgroupv2
-  * Release toolkit-container images from nvidia-container-toolkit repository
+* Promote 1.6.0-rc.3-1 to 1.6.0
+ * Fix unnecessary logging to stderr instead of configured nvidia-container-runtime log file
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com> Wed, 08 Dec 2021 12:56:49 +0100
+## v1.6.0-rc.3
 
-nvidia-container-toolkit (1.7.0-1) UNRELEASED; urgency=medium
+* Add supported-driver-capabilities config option to the nvidia-container-toolkit
+* Move OCI and command line checks for runtime to internal oci package
 
-  * Promote 1.7.0~rc.1-1 to 1.7.0-1
-  * Bump Golang version to 1.16.4
+## v1.6.0-rc.2
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Tue, 30 Nov 2021 14:11:55 +0100
+* Use relative path to OCI specification file (config.json) if bundle path is not specified as an argument to the nvidia-container-runtime
 
-nvidia-container-toolkit (1.7.0~rc.1-1) experimental; urgency=medium
+## v1.6.0-rc.1
 
-  * Specify containerd runtime type as string in config tools to remove dependency on containerd package
-  * Add supported-driver-capabilities config option to allow for a subset of all driver capabilities to be specified
+* Add AARCH64 package for Amazon Linux 2
+* Include nvidia-container-runtime into nvidia-container-toolkit package
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Thu, 25 Nov 2021 11:36:29 +0100
+## v1.5.1
 
-nvidia-container-toolkit (1.6.0-1) UNRELEASED; urgency=medium
+* Fix bug where Docker Swarm device selection is ignored if NVIDIA_VISIBLE_DEVICES is also set
+* Improve unit testing by using require package and adding coverage reports
+* Remove unneeded go dependencies by running go mod tidy
+* Move contents of pkg directory to cmd for CLI tools
+* Ensure make binary target explicitly sets GOOS
 
-  * Promote 1.6.0~rc.3-1 to 1.6.0-1
-  * Fix unnecessary logging to stderr instead of configured nvidia-container-runtime log file
+## v1.5.0
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Wed, 17 Nov 2021 09:25:15 +0100
+* Add dependence on libnvidia-container-tools >= 1.4.0
+* Add golang check targets to Makefile
+* Add Jenkinsfile definition for build targets
+* Move docker.mk to docker folder
 
-nvidia-container-toolkit (1.6.0~rc.3-1) experimental; urgency=medium
+## v1.4.2
 
-  * Add supported-driver-capabilities config option to the nvidia-container-toolkit
-  * Move OCI and command line checks for runtime to internal oci package
+* Add dependence on libnvidia-container-tools >= 1.3.3
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Mon, 15 Nov 2021 13:02:23 +0100
+## v1.4.1
 
-nvidia-container-toolkit (1.6.0~rc.2-1) experimental; urgency=medium
+* Ignore NVIDIA_VISIBLE_DEVICES for containers with insufficent privileges
+* Add dependence on libnvidia-container-tools >= 1.3.2
 
-  * Use relative path to OCI specification file (config.json) if bundle path is not specified as an argument to the nvidia-container-runtime
+## v1.4.0
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Fri, 05 Nov 2021 12:24:05 +0200
+* Add 'compute' capability to list of defaults
+* Add dependence on libnvidia-container-tools >= 1.3.1
 
-nvidia-container-toolkit (1.6.0~rc.1-1) experimental; urgency=medium
+## v1.3.0
 
-  * Add AARCH64 package for Amazon Linux 2
-  * Include nvidia-container-runtime into nvidia-container-toolkit package
+* Promote 1.3.0-rc.2-1 to 1.3.0
+* Add dependence on libnvidia-container-tools >= 1.3.0
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Mon, 06 Sep 2021 12:24:05 +0200
+## v1.3.0-rc.2
 
-nvidia-container-toolkit (1.5.1-1) UNRELEASED; urgency=medium
+* 2c180947 Add more tests for new semantics with device list from volume mounts
+* 7c003857 Refactor accepting device lists from volume mounts as a boolean
 
-  * Fix bug where Docker Swarm device selection is ignored if
-    NVIDIA_VISIBLE_DEVICES is also set
-  * Improve unit testing by using require package and adding coverage reports
-  * Remove unneeded go dependencies by running go mod tidy
-  * Move contents of pkg directory to cmd for CLI tools
-  * Ensure make binary target explicitly sets GOOS
+## v1.3.0-rc.1
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Mon, 14 Jun 2021 09:00:00 -0700
+* b50d86c1 Update build system to accept a TAG variable for things like rc.x
+* fe65573b Add common CI tests for things like golint, gofmt, unit tests, etc.
+* da6fbb34 Revert "Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*"
+* a7fb3330 Flip build-all targets to run automatically on merge requests
+* 8b248b66 Rename github.com/NVIDIA/container-toolkit to nvidia-container-toolkit
+* da36874e Add new config options to pull device list from mounted files instead of ENVVAR
 
-nvidia-container-toolkit (1.5.0-1) UNRELEASED; urgency=medium
+## v1.2.1
 
-  * Add dependence on libnvidia-container-tools >= 1.4.0
-  * Add golang check targets to Makefile
-  * Add Jenkinsfile definition for build targets
-  * Move docker.mk to docker folder
+* 4e6e0ed4 Add 'ngx' to list of*all* driver capabilities
+* 2f4af743 List config.toml as a config file in the RPM SPEC
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Thu, 29 Apr 2021 03:12:43 -0700
+## v1.2.0
 
-nvidia-container-toolkit (1.4.2-1) UNRELEASED; urgency=medium
+*  8e0aab46 Fix repo listed in changelog for debian distributions
+*  320bb6e4 Update dependence on libnvidia-container to 1.2.0
+*  6cfc8097 Update package license to match source license
+*  e7dc3cbb Fix debian copyright file
+*  d3aee3e0 Add the 'ngx' driver capability
 
-  * Add dependence on libnvidia-container-tools >= 1.3.3
+## v1.1.2
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Fri, 05 Feb 2021 02:24:36 -0700
+* c32237f3 Add support for parsing Linux Capabilities for older OCI specs
 
-nvidia-container-toolkit (1.4.1-1) UNRELEASED; urgency=medium
+## v1.1.1
 
-  * Ignore NVIDIA_VISIBLE_DEVICES for containers with insufficent privileges
-  * Add dependence on libnvidia-container-tools >= 1.3.2
+* d202aded Update dependence to libnvidia-container 1.1.1
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Mon, 25 Jan 2021 02:18:04 -0700
+## v1.1.0
 
-nvidia-container-toolkit (1.4.0-1) UNRELEASED; urgency=medium
+* 4e4de762 Update build system to support multi-arch builds
+* fcc1d116 Add support for MIG (Multi-Instance GPUs)
+* d4ff0416 Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*
+* 60f165ad Add no-pivot option to toolkit
 
-  * Add 'compute' capability to list of defaults
-  * Add dependence on libnvidia-container-tools >= 1.3.1
+## v1.0.5
 
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Fri, 11 Dec 2020 18:29:23 -0700
-
-nvidia-container-toolkit (1.3.0-1) UNRELEASED; urgency=medium
-
-  * Promote 1.3.0~rc.2-1 to 1.3.0-1
-  * Add dependence on libnvidia-container-tools >= 1.3.0
-
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Wed, 16 Sep 2020 13:40:29 -0700
-
-nvidia-container-toolkit (1.3.0~rc.2-1) experimental; urgency=medium
-
-  * 2c180947 Add more tests for new semantics with device list from volume mounts
-  * 7c003857 Refactor accepting device lists from volume mounts as a boolean
-
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Mon, 10 Aug 2020 15:05:34 -0700
-
-nvidia-container-toolkit (1.3.0~rc.1-1) experimental; urgency=medium
-
-  * b50d86c1 Update build system to accept a TAG variable for things like rc.x
-  * fe65573b Add common CI tests for things like golint, gofmt, unit tests, etc.
-  * da6fbb34 Revert "Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*"
-  * a7fb3330 Flip build-all targets to run automatically on merge requests
-  * 8b248b66 Rename github.com/NVIDIA/container-toolkit to nvidia-container-toolkit
-  * da36874e Add new config options to pull device list from mounted files instead of ENVVAR
-
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Fri, 24 Jul 2020 22:21:49 -0700
-
-nvidia-container-toolkit (1.2.1-1) UNRELEASED; urgency=medium
-
-  * 4e6e0ed4 Add 'ngx' to list of *all* driver capabilities
-  * 2f4af743 List config.toml as a config file in the RPM SPEC
-
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Wed, 22 Jul 2020 15:36:12 -0700
-
-nvidia-container-toolkit (1.2.0-1) UNRELEASED; urgency=medium
-
-  *  8e0aab46 Fix repo listed in changelog for debian distributions
-  *  320bb6e4 Update dependence on libnvidia-container to 1.2.0
-  *  6cfc8097 Update package license to match source license
-  *  e7dc3cbb Fix debian copyright file
-  *  d3aee3e0 Add the 'ngx' driver capability
-
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Wed, 08 Jul 2020 18:11:19 -0700
-
-nvidia-container-toolkit (1.1.2-1) UNRELEASED; urgency=medium
-
-  * c32237f3 Add support for parsing Linux Capabilities for older OCI specs
-
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Wed, 03 Jun 2020 12:05:32 -0700
-
-nvidia-container-toolkit (1.1.1-1) UNRELEASED; urgency=medium
-
-  * d202aded Update dependence to libnvidia-container 1.1.1
-
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Tue, 19 May 2020 12:05:32 -0700
-
-nvidia-container-toolkit (1.1.0-1) UNRELEASED; urgency=medium
-
-  * 4e4de762 Update build system to support multi-arch builds
-  * fcc1d116 Add support for MIG (Multi-Instance GPUs)
-  * d4ff0416 Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*
-  * 60f165ad Add no-pivot option to toolkit
-
- -- NVIDIA CORPORATION <cudatools@nvidia.com>  Fri, 15 May 2020 12:05:32 -0700
-
-nvidia-container-toolkit (1.0.5-1) UNRELEASED; urgency=medium
-
-  * Initial release. Replaces older package nvidia-container-runtime-hook. (Closes: #XXXXXX)
-
- -- Rajat Chopra <rajatc@nvidia.com>  Wed, 10 Jul 2019 11:31:11 -0700
+* Initial release. Replaces older package nvidia-container-runtime-hook. (Closes: #XXXXXX)
