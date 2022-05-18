@@ -68,7 +68,7 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 
 %changelog
 * Tue May 17 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.10.0-0.1.rc.3
-- Dummy entry
+- [libnvida-container] Fix bug introduced when adding libcudadebugger.so to list of libraries
 
 * Fri May 13 2022 NVIDIA CORPORATION <cudatools@nvidia.com> 1.10.0-0.1.rc.2
 - Add support for NVIDIA_REQUIRE_* checks for cuda version and arch to csv mode
