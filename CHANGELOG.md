@@ -2,6 +2,7 @@
 
 ## v1.10.0-rc.3
 
+* Use default config instead of raising an error if config file cannot be found
 * Ignore NVIDIA_REQUIRE_JETPACK* environment variables for requirement checks
 * Fix bug in detection of Tegra systems where `/sys/devices/soc0/family` is ignored
 * Fix bug where links to devices were detected as devices
