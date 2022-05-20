@@ -32,6 +32,7 @@ ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
 # packaging
+ARG PKG_NAME
 ARG PKG_VERS
 ARG PKG_REV
 
@@ -64,9 +65,11 @@ RUN if [ "$(lsb_release -cs)" = "jessie" ]; then \
 WORKDIR $DIST_DIR
 COPY packaging/debian ./debian
 
-RUN sed -i "s;@VERSION@;${REVISION};" debian/changelog && \
-    dch --changelog debian/changelog --append "Bump libnvidia-container dependency to ${REVISION}}" && \
-    dch --changelog debian/changelog -r "" && \
+RUN dch --create --package="${PKG_NAME}" \
+        --newversion "${REVISION}" \
+            "See https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/blob/${GIT_COMMIT}/CHANGELOG.md for the changelog" && \
+    dch --append "Bump libnvidia-container dependency to ${REVISION}" && \
+    dch -r "" && \
     if [ "$REVISION" != "$(dpkg-parsechangelog --show-field=Version)" ]; then exit 1; fi
 
 CMD export DISTRIB="$(lsb_release -cs)" && \
