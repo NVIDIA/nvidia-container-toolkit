@@ -42,11 +42,11 @@ func NewCharDeviceLocator(logger *logrus.Logger, root string) Locator {
 
 // assertCharDevice checks whether the specified path is a char device and returns an error if this is not the case.
 func assertCharDevice(filename string) error {
-	info, err := os.Stat(filename)
+	info, err := os.Lstat(filename)
 	if err != nil {
 		return fmt.Errorf("error getting info: %v", err)
 	}
-	if info.Mode()|os.ModeCharDevice == 0 {
+	if info.Mode()&os.ModeCharDevice == 0 {
 		return fmt.Errorf("%v is not a char device", filename)
 	}
 	return nil
