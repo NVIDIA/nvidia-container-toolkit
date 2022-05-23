@@ -2,6 +2,7 @@
 
 ## v1.10.0-rc.3
 
+* Fix bug in detection of Tegra systems where `/sys/devices/soc0/family` is ignored
 * Fix bug where links to devices were detected as devices
 * [libnvida-container] Fix bug introduced when adding libcudadebugger.so to list of libraries
 

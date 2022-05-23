@@ -48,8 +48,8 @@ func IsTegraSystem() (bool, string) {
 		return true, fmt.Sprintf("%v found", tegraReleaseFile)
 	}
 
-	if info, err := os.Stat(tegraFamilyFile); err != nil || !info.IsDir() {
-		return false, fmt.Sprintf("%v not found", tegraFamilyFile)
+	if info, err := os.Stat(tegraFamilyFile); err != nil || info.IsDir() {
+		return false, fmt.Sprintf("%v file not found", tegraFamilyFile)
 	}
 
 	contents, err := os.ReadFile(tegraFamilyFile)
