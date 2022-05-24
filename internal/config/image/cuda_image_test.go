@@ -69,3 +69,55 @@ func TestParseMajorMinorVersionInvalid(t *testing.T) {
 		})
 	}
 }
+
+func TestGetRequirements(t *testing.T) {
+	testCases := []struct {
+		description  string
+		env          []string
+		requirements []string
+	}{
+		{
+			description:  "NVIDIA_REQUIRE_JETPACK is ignored",
+			env:          []string{"NVIDIA_REQUIRE_JETPACK=csv-mounts=all"},
+			requirements: nil,
+		},
+		{
+			description:  "NVIDIA_REQUIRE_JETPACK_HOST_MOUNTS is ignored",
+			env:          []string{"NVIDIA_REQUIRE_JETPACK_HOST_MOUNTS=base-only"},
+			requirements: nil,
+		},
+		{
+			description:  "single requirement set",
+			env:          []string{"NVIDIA_REQUIRE_CUDA=cuda>=11.6"},
+			requirements: []string{"cuda>=11.6"},
+		},
+		{
+			description:  "requirements are concatenated requirement set",
+			env:          []string{"NVIDIA_REQUIRE_CUDA=cuda>=11.6", "NVIDIA_REQUIRE_BRAND=brand=tesla"},
+			requirements: []string{"cuda>=11.6", "brand=tesla"},
+		},
+		{
+			description:  "legacy image",
+			env:          []string{"CUDA_VERSION=11.6"},
+			requirements: []string{"cuda>=11.6"},
+		},
+		{
+			description:  "legacy image with additional requirement",
+			env:          []string{"CUDA_VERSION=11.6", "NVIDIA_REQUIRE_BRAND=brand=tesla"},
+			requirements: []string{"cuda>=11.6", "brand=tesla"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			image, err := NewCUDAImageFromEnv(tc.env)
+			require.NoError(t, err)
+
+			requirements, err := image.GetRequirements()
+			require.NoError(t, err)
+			require.ElementsMatch(t, tc.requirements, requirements)
+
+		})
+
+	}
+}

@@ -29,6 +29,7 @@ const (
 	envCUDAVersion      = "CUDA_VERSION"
 	envNVRequirePrefix  = "NVIDIA_REQUIRE_"
 	envNVRequireCUDA    = envNVRequirePrefix + "CUDA"
+	envNVRequireJetpack = envNVRequirePrefix + "JETPACK"
 	envNVDisableRequire = "NVIDIA_DISABLE_REQUIRE"
 )
 
@@ -84,7 +85,7 @@ func (i CUDA) GetRequirements() ([]string, error) {
 	// All variables with the "NVIDIA_REQUIRE_" prefix are passed to nvidia-container-cli
 	var requirements []string
 	for name, value := range i {
-		if strings.HasPrefix(name, envNVRequirePrefix) {
+		if strings.HasPrefix(name, envNVRequirePrefix) && !strings.HasPrefix(name, envNVRequireJetpack) {
 			requirements = append(requirements, value)
 		}
 	}
