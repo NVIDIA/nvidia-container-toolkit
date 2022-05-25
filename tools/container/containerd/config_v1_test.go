@@ -110,7 +110,7 @@ func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {
 		if tc.expectedDefaultRuntimeBinary == nil {
 			require.Nil(t, defaultRuntime, "%d: %v", i, tc)
 		} else {
-			expected, err := runtimeTomlConfigV1(tc.expectedDefaultRuntimeBinary.(string))
+			expected, err := defaultRuntimeTomlConfigV1(tc.expectedDefaultRuntimeBinary.(string))
 			require.NoError(t, err, "%d: %v", i, tc)
 
 			configContents, _ := toml.Marshal(defaultRuntime.(*toml.Tree))
@@ -291,7 +291,7 @@ func TestRevertV1Config(t *testing.T) {
 								"nvidia":              runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
 								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime-experimental"),
 							},
-							"default_runtime":      runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
+							"default_runtime":      defaultRuntimeV1("/test/runtime/dir/nvidia-container-runtime"),
 							"default_runtime_name": "nvidia",
 						},
 					},
@@ -325,7 +325,11 @@ func runtimeTomlConfigV1(binary string) (*toml.Tree, error) {
 	return toml.TreeFromMap(runtimeMapV1(binary))
 }
 
-func runtimeMapV1(binary string) map[string]interface{} {
+func defaultRuntimeTomlConfigV1(binary string) (*toml.Tree, error) {
+	return toml.TreeFromMap(defaultRuntimeV1(binary))
+}
+
+func defaultRuntimeV1(binary string) map[string]interface{} {
 	return map[string]interface{}{
 		"runtime_type":                    runtimeType,
 		"runtime_root":                    "",
@@ -333,6 +337,18 @@ func runtimeMapV1(binary string) map[string]interface{} {
 		"privileged_without_host_devices": false,
 		"options": map[string]interface{}{
 			"Runtime": binary,
+		},
+	}
+}
+
+func runtimeMapV1(binary string) map[string]interface{} {
+	return map[string]interface{}{
+		"runtime_type":                    runtimeType,
+		"runtime_root":                    "",
+		"runtime_engine":                  "",
+		"privileged_without_host_devices": false,
+		"options": map[string]interface{}{
+			"BinaryName": binary,
 		},
 	}
 }
@@ -359,7 +375,7 @@ func runcRuntimeConfigMapV1(binary string) map[string]interface{} {
 		"privileged_without_host_devices": true,
 		"options": map[string]interface{}{
 			"runc-option": "value",
-			"Runtime":     binary,
+			"BinaryName":  binary,
 		},
 	}
 }

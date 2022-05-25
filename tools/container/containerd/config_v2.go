@@ -28,10 +28,9 @@ type configV2 struct {
 func newConfigV2(cfg *toml.Tree) UpdateReverter {
 	c := configV2{
 		config: config{
-			Tree:      cfg,
-			version:   2,
-			cri:       "io.containerd.grpc.v1.cri",
-			binaryKey: "BinaryName",
+			Tree:    cfg,
+			version: 2,
+			cri:     "io.containerd.grpc.v1.cri",
 		},
 	}
 

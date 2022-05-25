@@ -31,10 +31,9 @@ type configV1 struct {
 func newConfigV1(cfg *toml.Tree) UpdateReverter {
 	c := configV1{
 		config: config{
-			Tree:      cfg,
-			version:   1,
-			cri:       "cri",
-			binaryKey: "Runtime",
+			Tree:    cfg,
+			version: 1,
+			cri:     "cri",
 		},
 	}
 
@@ -68,7 +67,7 @@ func (config *configV1) Update(o *options) error {
 
 		log.Warnf("Setting default_runtime is deprecated")
 		defaultRuntimePath := append(config.containerdPath(), "default_runtime")
-		config.initRuntime(defaultRuntimePath, o.runtimeType, runtimeBinary)
+		config.initRuntime(defaultRuntimePath, o.runtimeType, "Runtime", runtimeBinary)
 	}
 	return nil
 }
