@@ -349,6 +349,7 @@ func runtimeMapV1(binary string) map[string]interface{} {
 		"privileged_without_host_devices": false,
 		"options": map[string]interface{}{
 			"BinaryName": binary,
+			"Runtime":    binary,
 		},
 	}
 }
@@ -376,6 +377,7 @@ func runcRuntimeConfigMapV1(binary string) map[string]interface{} {
 		"options": map[string]interface{}{
 			"runc-option": "value",
 			"BinaryName":  binary,
+			"Runtime":     binary,
 		},
 	}
 }

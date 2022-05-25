@@ -48,6 +48,9 @@ func (config *config) update(runtimeClass string, runtimeType string, runtimeBin
 	}
 
 	config.initRuntime(runtimeClassPath, runtimeType, "BinaryName", runtimeBinary)
+	if config.version == 1 {
+		config.initRuntime(runtimeClassPath, runtimeType, "Runtime", runtimeBinary)
+	}
 
 	if setAsDefault {
 		defaultRuntimeNamePath := config.defaultRuntimeNamePath()
