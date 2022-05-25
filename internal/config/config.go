@@ -61,7 +61,7 @@ func GetConfig() (*Config, error) {
 
 	tomlFile, err := os.Open(configFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open config file %v: %v", configFilePath, err)
+		return getDefaultConfig(), nil
 	}
 	defer tomlFile.Close()
 
