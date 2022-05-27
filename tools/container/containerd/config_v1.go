@@ -84,6 +84,14 @@ func (config *configV1) Revert(o *options) error {
 			}
 		}
 	}
+	if runtime, ok := config.GetPath(append(defaultRuntimeOptionsPath, "BinaryName")).(string); ok {
+		for _, runtimeBinary := range o.getRuntimeBinaries() {
+			if path.Base(runtimeBinary) == path.Base(runtime) {
+				config.DeletePath(append(defaultRuntimeOptionsPath, "BinaryName"))
+				break
+			}
+		}
+	}
 
 	if options, ok := config.GetPath(defaultRuntimeOptionsPath).(*toml.Tree); ok {
 		if len(options.Keys()) == 0 {
