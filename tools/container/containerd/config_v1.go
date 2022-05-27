@@ -68,6 +68,7 @@ func (config *configV1) Update(o *options) error {
 		log.Warnf("Setting default_runtime is deprecated")
 		defaultRuntimePath := append(config.containerdPath(), "default_runtime")
 		config.initRuntime(defaultRuntimePath, o.runtimeType, "Runtime", runtimeBinary)
+		config.initRuntime(defaultRuntimePath, o.runtimeType, "BinaryName", runtimeBinary)
 	}
 	return nil
 }

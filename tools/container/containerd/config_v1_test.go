@@ -336,7 +336,8 @@ func defaultRuntimeV1(binary string) map[string]interface{} {
 		"runtime_engine":                  "",
 		"privileged_without_host_devices": false,
 		"options": map[string]interface{}{
-			"Runtime": binary,
+			"BinaryName": binary,
+			"Runtime":    binary,
 		},
 	}
 }
