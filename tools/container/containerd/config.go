@@ -28,9 +28,8 @@ type UpdateReverter interface {
 
 type config struct {
 	*toml.Tree
-	version   int64
-	cri       string
-	binaryKey string
+	version int64
+	cri     string
 }
 
 // update adds the specified runtime class to the the containerd config.
@@ -48,7 +47,10 @@ func (config *config) update(runtimeClass string, runtimeType string, runtimeBin
 		config.SetPath(runtimeClassPath, runc)
 	}
 
-	config.initRuntime(runtimeClassPath, runtimeType, runtimeBinary)
+	config.initRuntime(runtimeClassPath, runtimeType, "BinaryName", runtimeBinary)
+	if config.version == 1 {
+		config.initRuntime(runtimeClassPath, runtimeType, "Runtime", runtimeBinary)
+	}
 
 	if setAsDefault {
 		defaultRuntimeNamePath := config.defaultRuntimeNamePath()
@@ -83,7 +85,7 @@ func (config *config) revert(runtimeClass string) {
 
 // initRuntime creates a runtime config if it does not exist and ensures that the
 // runtimes binary path is specified.
-func (config *config) initRuntime(path []string, runtimeType string, binary string) {
+func (config *config) initRuntime(path []string, runtimeType string, binaryKey string, binary string) {
 	if config.GetPath(path) == nil {
 		config.SetPath(append(path, "runtime_type"), runtimeType)
 		config.SetPath(append(path, "runtime_root"), "")
@@ -91,16 +93,12 @@ func (config *config) initRuntime(path []string, runtimeType string, binary stri
 		config.SetPath(append(path, "privileged_without_host_devices"), false)
 	}
 
-	binaryPath := append(path, "options", config.binaryKey)
+	binaryPath := append(path, "options", binaryKey)
 	config.SetPath(binaryPath, binary)
 }
 
 func (config config) runcPath() []string {
 	return config.runtimeClassPath("runc")
-}
-
-func (config config) runtimeClassBinaryPath(runtimeClass string) []string {
-	return append(config.runtimeClassPath(runtimeClass), "options", config.binaryKey)
 }
 
 func (config config) runtimeClassPath(runtimeClass string) []string {

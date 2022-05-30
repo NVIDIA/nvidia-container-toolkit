@@ -31,10 +31,9 @@ type configV1 struct {
 func newConfigV1(cfg *toml.Tree) UpdateReverter {
 	c := configV1{
 		config: config{
-			Tree:      cfg,
-			version:   1,
-			cri:       "cri",
-			binaryKey: "Runtime",
+			Tree:    cfg,
+			version: 1,
+			cri:     "cri",
 		},
 	}
 
@@ -68,7 +67,8 @@ func (config *configV1) Update(o *options) error {
 
 		log.Warnf("Setting default_runtime is deprecated")
 		defaultRuntimePath := append(config.containerdPath(), "default_runtime")
-		config.initRuntime(defaultRuntimePath, o.runtimeType, runtimeBinary)
+		config.initRuntime(defaultRuntimePath, o.runtimeType, "Runtime", runtimeBinary)
+		config.initRuntime(defaultRuntimePath, o.runtimeType, "BinaryName", runtimeBinary)
 	}
 	return nil
 }
@@ -81,6 +81,14 @@ func (config *configV1) Revert(o *options) error {
 		for _, runtimeBinary := range o.getRuntimeBinaries() {
 			if path.Base(runtimeBinary) == path.Base(runtime) {
 				config.DeletePath(append(defaultRuntimeOptionsPath, "Runtime"))
+				break
+			}
+		}
+	}
+	if runtime, ok := config.GetPath(append(defaultRuntimeOptionsPath, "BinaryName")).(string); ok {
+		for _, runtimeBinary := range o.getRuntimeBinaries() {
+			if path.Base(runtimeBinary) == path.Base(runtime) {
+				config.DeletePath(append(defaultRuntimeOptionsPath, "BinaryName"))
 				break
 			}
 		}
