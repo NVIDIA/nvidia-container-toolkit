@@ -16,4 +16,17 @@ ldconfig = "@/sbin/ldconfig"
 
 [nvidia-container-runtime]
 #debug = "/var/log/nvidia-container-runtime.log"
-#experimental = false
+log-level = "info"
+
+# Specify the runtimes to consider. This list is processed in order and the PATH
+# searched for matching executables unless the entry is an absolute path.
+runtimes = [
+    "docker-runc",
+    "runc",
+]
+
+mode = "auto"
+
+    [nvidia-container-runtime.modes.csv]
+
+    mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
