@@ -268,7 +268,7 @@ func TestExperimentalModifier(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			m, err := newModifierFromDiscoverer(logger, tc.discover)
+			m, err := newCSVModifierFromDiscoverer(logger, tc.discover)
 			require.NoError(t, err)
 
 			err = m.Modify(tc.spec)
