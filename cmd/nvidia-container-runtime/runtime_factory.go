@@ -62,6 +62,30 @@ func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.Config, argv [
 
 // newSpecModifier is a factory method that creates constructs an OCI spec modifer based on the provided config.
 func newSpecModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec, argv []string) (oci.SpecModifier, error) {
+	modeModifier, err := newModeModifier(logger, cfg, ociSpec, argv)
+	if err != nil {
+		return nil, err
+	}
+
+	gdsModifier, err := modifier.NewGDSModifier(logger, cfg, ociSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	mofedModifier, err := modifier.NewMOFEDModifier(logger, cfg, ociSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	modifiers := modifier.Merge(
+		modeModifier,
+		gdsModifier,
+		mofedModifier,
+	)
+	return modifiers, nil
+}
+
+func newModeModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec, argv []string) (oci.SpecModifier, error) {
 	switch info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode) {
 	case "legacy":
 		return modifier.NewStableRuntimeModifier(logger), nil
