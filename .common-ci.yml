@@ -210,13 +210,6 @@ release:staging-centos7:
   needs:
     - image-centos7
 
-release:staging-centos8:
-  extends:
-    - .release:staging
-    - .dist-centos8
-  needs:
-    - image-centos8
-
 release:staging-ubi8:
   extends:
     - .release:staging
