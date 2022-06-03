@@ -157,15 +157,6 @@ scan-ubuntu18.04-amd64:
   needs:
     - image-ubuntu18.04
 
-scan-ubuntu18.04-arm64:
-  extends:
-    - .scan
-    - .dist-ubuntu18.04
-    - .platform-arm64
-  needs:
-    - image-ubuntu18.04
-    - scan-ubuntu18.04-amd64
-
 scan-ubuntu20.04-amd64:
   extends:
     - .scan
