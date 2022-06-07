@@ -231,16 +231,6 @@ image-centos7:
     - package-centos7-ppc64le
     - package-centos7-x86_64
 
-image-centos8:
-  extends:
-    - .image-build
-    - .package-artifacts
-    - .dist-centos8
-  needs:
-    - package-centos8-aarch64
-    - package-centos8-x86_64
-    - package-centos8-ppc64le
-
 image-ubi8:
   extends:
     - .image-build
