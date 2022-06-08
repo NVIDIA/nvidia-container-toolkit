@@ -93,7 +93,7 @@ LABEL release="N/A"
 LABEL summary="Automatically Configure your Container Runtime for GPU support."
 LABEL description="See summary"
 
-COPY ./LICENSE /licenses/LICENSE
+RUN mkdir /licenses && mv /NGC-DL-CONTAINER-LICENSE /licenses/NGC-DL-CONTAINER-LICENSE
 
 # Install / upgrade packages here that are required to resolve CVEs
 ARG CVE_UPDATES
