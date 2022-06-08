@@ -18,7 +18,7 @@ LIB_TAG := rc.4
 
 # Specify the nvidia-docker2 and nvidia-container-runtime package versions.
 # Note: The tag is automatically specified to match LIB_TAG.
-NVIDIA_DOCKER_VERSION := 2.10.0
+NVIDIA_DOCKER_VERSION := 2.11.0
 NVIDIA_CONTAINER_RUNTIME_VERSION := 3.10.0
 
 # Specify the expected libnvidia-container0 version for arm64-based ubuntu builds.
