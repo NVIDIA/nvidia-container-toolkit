@@ -26,4 +26,4 @@ COPY ${ARTIFACTS_ROOT} /artifacts/packages/
 
 WORKDIR /artifacts/packages
 
-COPY ./LICENSE /licenses/LICENSE
+RUN mkdir /licenses && mv /NGC-DL-CONTAINER-LICENSE /licenses/NGC-DL-CONTAINER-LICENSE
