@@ -1,5 +1,9 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.10.0
+
+* Promote v1.10.0-rc.3 to v1.10.0
+
 ## v1.10.0-rc.3
 
 * Use default config instead of raising an error if config file cannot be found
