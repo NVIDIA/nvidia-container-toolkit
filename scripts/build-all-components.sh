@@ -52,12 +52,15 @@ ${SCRIPTS_DIR}/get-component-versions.sh
 # Build libnvidia-container
 make -C ${LIBNVIDIA_CONTAINER_ROOT} -f mk/docker.mk ${TARGET}
 
-# Build nvidia-container-toolkit
-make -C ${NVIDIA_CONTAINER_TOOLKIT_ROOT} ${TARGET}
-
-if [[ -z ${NVIDIA_CONTAINER_TOOLKIT_VERSION} ]]; then
+if [[ -z ${NVIDIA_CONTAINER_TOOLKIT_VERSION} || -z ${LIBNVIDIA_CONTAINER_VERSION} ]]; then
 eval $(${SCRIPTS_DIR}/get-component-versions.sh)
 fi
+
+# Build nvidia-container-toolkit
+make -C ${NVIDIA_CONTAINER_TOOLKIT_ROOT} \
+    LIBNVIDIA_CONTAINER_VERSION="${LIBNVIDIA_CONTAINER_VERSION}" \
+    LIBNVIDIA_CONTAINER_TAG="${LIBNVIDIA_CONTAINER_TAG}" \
+        ${TARGET}
 
 # We set the TOOLKIT_VERSION, TOOLKIT_TAG for the nvidia-container-runtime and nvidia-docker targets
 # The LIB_TAG is also overridden to match the TOOLKIT_TAG.

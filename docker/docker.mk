@@ -85,32 +85,41 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 --%: docker-build-%
 	@
 
+LIBNVIDIA_CONTAINER_VERSION ?= $(LIB_VERSION)
+LIBNVIDIA_CONTAINER_TAG ?= $(LIB_TAG)
+
 # private ubuntu target
 --ubuntu%: OS := ubuntu
 --ubuntu%: LIB_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
+--ubuntu%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)$(if $(LIBNVIDIA_CONTAINER_TAG),~$(LIBNVIDIA_CONTAINER_TAG))-1
 --ubuntu%: PKG_REV := 1
 
 # private debian target
 --debian%: OS := debian
 --debian%: LIB_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
+--debian%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)$(if $(LIBNVIDIA_CONTAINER_TAG),~$(LIBNVIDIA_CONTAINER_TAG))-1
 --debian%: PKG_REV := 1
 
 # private centos target
 --centos%: OS := centos
 --centos%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
+--centos%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)-$(if $(LIBNVIDIA_CONTAINER_TAG),0.1.$(LIBNVIDIA_CONTAINER_TAG),1)
 --centos8%: BASEIMAGE = quay.io/centos/centos:stream8
 
 # private amazonlinux target
 --amazonlinux%: OS := amazonlinux
+--amazonlinux%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)-$(if $(LIBNVIDIA_CONTAINER_TAG),0.1.$(LIBNVIDIA_CONTAINER_TAG),1)
 --amazonlinux%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
 # private opensuse-leap target
 --opensuse-leap%: OS = opensuse-leap
 --opensuse-leap%: BASEIMAGE = opensuse/leap:$(VERSION)
+--opensuse-leap%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)-$(if $(LIBNVIDIA_CONTAINER_TAG),0.1.$(LIBNVIDIA_CONTAINER_TAG),1)
 --opensuse-leap%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
 # private rhel target (actually built on centos)
 --rhel%: OS := centos
+--rhel%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)-$(if $(LIBNVIDIA_CONTAINER_TAG),0.1.$(LIBNVIDIA_CONTAINER_TAG),1)
 --rhel%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 --rhel%: VERSION = $(patsubst rhel%-$(ARCH),%,$(TARGET_PLATFORM))
 --rhel%: ARTIFACTS_DIR = $(DIST_DIR)/rhel$(VERSION)/$(ARCH)
@@ -131,6 +140,7 @@ docker-build-%:
 	    --build-arg PKG_NAME="$(LIB_NAME)" \
 	    --build-arg PKG_VERS="$(LIB_VERSION)" \
 	    --build-arg PKG_REV="$(PKG_REV)" \
+		--build-arg LIBNVIDIA_CONTAINER_TOOLS_VERSION="$(LIBNVIDIA_CONTAINER_TOOLS_VERSION)" \
 	    --build-arg CONFIG_TOML_SUFFIX="$(CONFIG_TOML_SUFFIX)" \
 		--build-arg GIT_COMMIT="$(GIT_COMMIT)" \
 	    --tag $(BUILDIMAGE) \

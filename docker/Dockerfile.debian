@@ -65,14 +65,17 @@ RUN if [ "$(lsb_release -cs)" = "jessie" ]; then \
 WORKDIR $DIST_DIR
 COPY packaging/debian ./debian
 
+ARG LIBNVIDIA_CONTAINER_TOOLS_VERSION
+ENV LIBNVIDIA_CONTAINER_TOOLS_VERSION ${LIBNVIDIA_CONTAINER_TOOLS_VERSION}
+
 RUN dch --create --package="${PKG_NAME}" \
         --newversion "${REVISION}" \
             "See https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/blob/${GIT_COMMIT}/CHANGELOG.md for the changelog" && \
-    dch --append "Bump libnvidia-container dependency to ${REVISION}" && \
+    dch --append "Bump libnvidia-container dependency to ${LIBNVIDIA_CONTAINER1_VERSION}" && \
     dch -r "" && \
     if [ "$REVISION" != "$(dpkg-parsechangelog --show-field=Version)" ]; then exit 1; fi
 
 CMD export DISTRIB="$(lsb_release -cs)" && \
-    debuild -eDISTRIB -eSECTION -eLIBNVIDIA_CONTAINER_VERSION="${REVISION}" \
+    debuild -eDISTRIB -eSECTION -eLIBNVIDIA_CONTAINER_TOOLS_VERSION \
     --dpkg-buildpackage-hook='sh debian/prepare' -i -us -uc -b && \
     mv /tmp/nvidia-container-toolkit_*.deb /dist

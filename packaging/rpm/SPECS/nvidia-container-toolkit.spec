@@ -21,7 +21,7 @@ Source6: LICENSE
 Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook
 Provides: nvidia-container-runtime
 Provides: nvidia-container-runtime-hook
-Requires: libnvidia-container-tools >= %{libnvidia_container_version}, libnvidia-container-tools < 2.0.0
+Requires: libnvidia-container-tools >= %{libnvidia_container_tools_version}, libnvidia-container-tools < 2.0.0
 
 %if 0%{?suse_version}
 Requires: libseccomp2
@@ -70,4 +70,4 @@ rm -f %{_bindir}/nvidia-container-runtime-hook
 # As of 1.10.0-1 we generate the release information automatically
 * %{release_date} NVIDIA CORPORATION <cudatools@nvidia.com> %{version}-%{release}
 - See https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/blob/%{git_commit}/CHANGELOG.md
-- Bump libnvidia-container dependency to libnvidia-container-tools >= %{libnvidia_container_version}
+- Bump libnvidia-container dependency to libnvidia-container-tools >= %{libnvidia_container_tools_version}
