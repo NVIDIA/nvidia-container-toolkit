@@ -25,7 +25,7 @@ function assert_usage() {
     exit 1
 }
 
-set -e -x
+set -e
 
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 PROJECT_ROOT="$( cd ${SCRIPTS_DIR}/.. && pwd )"

@@ -19,7 +19,7 @@
 # as well as the components included in the third_party folder.
 # All required packages are generated in the specified dist folder.
 
-set -e -x
+set -e
 
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 PROJECT_ROOT="$( cd ${SCRIPTS_DIR}/.. && pwd )"
@@ -61,11 +61,11 @@ fi
 
 eval $(${SCRIPTS_DIR}/get-component-versions.sh)
 
-if [[ "${NVIDIA_CONTAINER_TOOLKIT_VERSION}${NVIDIA_CONTAINER_TOOLKIT_TAG:+~${NVIDIA_CONTAINER_TOOLKIT_TAG}}" != "${LIBNVIDIA_CONTAINER_VERSION}" ]]; then
+if [[ "${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}" != "${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}" ]]; then
     set +x
     echo "The libnvidia-container and nvidia-container-toolkit versions do not match."
-    echo "lib: '${LIBNVIDIA_CONTAINER_VERSION}'"
-    echo "toolkit: '${NVIDIA_CONTAINER_TOOLKIT_VERSION}${NVIDIA_CONTAINER_TOOLKIT_TAG:+~${NVIDIA_CONTAINER_TOOLKIT_TAG}}'"
+    echo "lib: '${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}'"
+    echo "toolkit: '${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}'"
     set -x
     [[ ${ALLOW_VERSION_MISMATCH} == "true" ]] || exit 1
 fi
