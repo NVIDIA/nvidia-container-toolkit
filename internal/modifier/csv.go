@@ -24,7 +24,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements"
 	"github.com/sirupsen/logrus"
@@ -51,8 +50,7 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
 	}
 
-	// In experimental mode, we check whether a modification is required at all and return the lowlevelRuntime directly
-	// if no modification is required.
+	// We check whether a modification is required and return a nil modifier if this is not the case.
 	visibleDevices, exists := ociSpec.LookupEnv(visibleDevicesEnvvar)
 	if !exists || visibleDevices == "" || visibleDevices == visibleDevicesVoid {
 		logger.Infof("No modification required: %v=%v (exists=%v)", visibleDevicesEnvvar, visibleDevices, exists)
@@ -103,17 +101,12 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 
 	d := discover.NewList(csvDiscoverer, ldcacheUpdateHook, createSymlinksHook)
 
-	return newCSVModifierFromDiscoverer(logger, d)
-}
-
-// newCSVModifierFromDiscoverer is used to test with dependency injection
-func newCSVModifierFromDiscoverer(logger *logrus.Logger, d discover.Discover) (oci.SpecModifier, error) {
-	discoverModifier, err := modifier.NewModifierFromDiscoverer(logger, d)
+	discoverModifier, err := NewModifierFromDiscoverer(logger, d)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct modifier: %v", err)
 	}
 
-	modifiers := modifier.Merge(
+	modifiers := Merge(
 		nvidiaContainerRuntimeHookRemover{logger},
 		discoverModifier,
 	)
