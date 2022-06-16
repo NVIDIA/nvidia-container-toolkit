@@ -75,8 +75,8 @@ RUN if [ "${PACKAGE_ARCH}" = "arm64" ]; then \
     fi
 
 RUN dpkg -i \
-    ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container1_${PACKAGE_VERSION}*.deb \
-    ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container-tools_${PACKAGE_VERSION}*.deb \
+    ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container1_1.*.deb \
+    ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container-tools_1.*.deb \
     ${PACKAGE_DIST}/${PACKAGE_ARCH}/nvidia-container-toolkit_${PACKAGE_VERSION}*.deb
 
 WORKDIR /work
