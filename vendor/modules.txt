@@ -7,7 +7,7 @@ github.com/BurntSushi/toml/internal
 github.com/NVIDIA/go-nvml/pkg/dl
 # github.com/blang/semver v3.5.1+incompatible
 github.com/blang/semver
-# github.com/container-orchestrated-devices/container-device-interface v0.3.1-0.20220224133719-e5457123010b
+# github.com/container-orchestrated-devices/container-device-interface v0.4.1-0.20220614144320-dc973e22f674
 ## explicit
 github.com/container-orchestrated-devices/container-device-interface/pkg/cdi
 github.com/container-orchestrated-devices/container-device-interface/specs-go
@@ -18,11 +18,13 @@ github.com/containers/podman/v4/pkg/hooks/1.0.0
 github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/fsnotify/fsnotify v1.5.1
+github.com/fsnotify/fsnotify
 # github.com/hashicorp/errwrap v1.0.0
 github.com/hashicorp/errwrap
 # github.com/hashicorp/go-multierror v1.1.1
 github.com/hashicorp/go-multierror
-# github.com/opencontainers/runc v1.1.0
+# github.com/opencontainers/runc v1.1.2
 github.com/opencontainers/runc/libcontainer/devices
 # github.com/opencontainers/runtime-spec v1.0.3-0.20211214071223-8958f93039ab
 ## explicit
