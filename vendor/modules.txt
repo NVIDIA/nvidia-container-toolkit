@@ -58,11 +58,6 @@ github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 github.com/syndtr/gocapability/capability
-# github.com/tsaikd/KDGoLib v0.0.0-20191001134900-7f3cf518e07d
-## explicit
-github.com/tsaikd/KDGoLib/errutil
-github.com/tsaikd/KDGoLib/logrusutil
-github.com/tsaikd/KDGoLib/runtimecaller
 # github.com/urfave/cli/v2 v2.3.0
 ## explicit
 github.com/urfave/cli/v2
