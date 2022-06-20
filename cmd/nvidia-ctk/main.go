@@ -20,8 +20,10 @@ import (
 	"os"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook"
+	infoCLI "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
+
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )
@@ -72,6 +74,7 @@ func main() {
 	c.Commands = []*cli.Command{
 		hook.NewCommand(logger),
 		runtime.NewCommand(logger),
+		infoCLI.NewCommand(logger),
 	}
 
 	// Run the CLI
