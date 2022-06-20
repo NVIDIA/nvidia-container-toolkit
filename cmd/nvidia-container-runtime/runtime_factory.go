@@ -91,6 +91,8 @@ func newModeModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec
 		return modifier.NewStableRuntimeModifier(logger), nil
 	case "csv":
 		return modifier.NewCSVModifier(logger, cfg, ociSpec)
+	case "cdi":
+		return modifier.NewCDIModifier(logger, cfg, ociSpec)
 	}
 
 	return nil, fmt.Errorf("invalid runtime mode: %v", cfg.NVIDIAContainerRuntimeConfig.Mode)
