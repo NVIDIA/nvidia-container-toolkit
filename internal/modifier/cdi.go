@@ -37,6 +37,24 @@ type cdiModifier struct {
 // CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES enviroment variable is
 // used to select the devices to include.
 func NewCDIModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
+	devices, err := getDevicesFromSpec(ociSpec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get required devices from OCI specification: %v", err)
+	}
+	if len(devices) == 0 {
+		logger.Debugf("No devices requested; no modification required.")
+		return nil, nil
+	}
+
+	m := cdiModifier{
+		logger:  logger,
+		devices: devices,
+	}
+
+	return m, nil
+}
+
+func getDevicesFromSpec(ociSpec oci.Spec) ([]string, error) {
 	rawSpec, err := ociSpec.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
@@ -47,26 +65,27 @@ func NewCDIModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 		return nil, err
 	}
 
-	devices := image.DevicesFromEnvvars(visibleDevicesEnvvar)
-	if len(devices) == 0 {
-		logger.Debugf("No modification required; no devices requested")
-		return nil, nil
+	envDevices := image.DevicesFromEnvvars(visibleDevicesEnvvar)
+
+	_, annotationDevices, err := cdi.ParseAnnotations(rawSpec.Annotations)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse container annotations: %v", err)
 	}
 
-	var qualifiedDevices []string
-	for _, name := range devices {
+	uniqueDevices := make(map[string]struct{})
+	for _, name := range append(envDevices, annotationDevices...) {
 		if !cdi.IsQualifiedName(name) {
 			name = cdi.QualifiedName("nvidia.com", "gpu", name)
 		}
-		qualifiedDevices = append(qualifiedDevices, name)
+		uniqueDevices[name] = struct{}{}
 	}
 
-	m := cdiModifier{
-		logger:  logger,
-		devices: qualifiedDevices,
+	var devices []string
+	for name := range uniqueDevices {
+		devices = append(devices, name)
 	}
 
-	return m, nil
+	return devices, nil
 }
 
 // Modify loads the CDI registry and injects the specified CDI devices into the OCI runtime specification.
@@ -91,6 +110,7 @@ func (m cdiModifier) Modify(spec *specs.Spec) error {
 		}
 	}
 
+	m.logger.Debugf("Injecting devices using CDI: %v", devices)
 	_, err := registry.InjectDevices(spec, devices...)
 	if err != nil {
 		return fmt.Errorf("failed to inject CDI devices: %v", err)
