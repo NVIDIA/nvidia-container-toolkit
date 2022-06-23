@@ -36,22 +36,28 @@ func NewGDSDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
 		required: []string{"/dev/nvidia-fs*"},
 	}
 
-	mounts := &mounts{
+	udev := &mounts{
 		logger:   logger,
 		lookup:   lookup.NewDirectoryLocator(logger, root),
 		required: []string{"/run/udev"},
 	}
 
+	cufile := &mounts{
+		logger:   logger,
+		lookup:   lookup.NewFileLocator(logger, root),
+		required: []string{"/etc/cufile.json"},
+	}
+
 	d := gdsDeviceDiscoverer{
 		logger:  logger,
 		devices: devices,
-		mounts:  mounts,
+		mounts:  NewList(udev, cufile),
 	}
 
 	return &d, nil
 }
 
-// Devices discoveres the nvidia-fs device nodes for use with GPUDirect Storage
+// Devices discovers the nvidia-fs device nodes for use with GPUDirect Storage
 func (d *gdsDeviceDiscoverer) Devices() ([]Device, error) {
 	devicesAsMounts, err := d.devices.Mounts()
 	if err != nil {
@@ -66,7 +72,7 @@ func (d *gdsDeviceDiscoverer) Devices() ([]Device, error) {
 	return devices, nil
 }
 
-// Mounts discovers the required mounts for GDS.
+// Mounts discovers the required mounts for GPUDirect Storage.
 // If no devices are discovered the discovered mounts are empty
 func (d *gdsDeviceDiscoverer) Mounts() ([]Mount, error) {
 	devices, err := d.Devices()
