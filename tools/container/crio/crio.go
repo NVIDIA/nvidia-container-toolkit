@@ -32,11 +32,16 @@ const (
 	defaultHookFilename = "oci-nvidia-hook.json"
 )
 
-var hooksDirFlag string
-var hookFilenameFlag string
-var tooklitDirArg string
+// options stores the configuration from the command line or environment variables
+type options struct {
+	hooksDir     string
+	hookFilename string
+	runtimeDir   string
+}
 
 func main() {
+	options := options{}
+
 	// Create the top-level CLI
 	c := cli.NewApp()
 	c.Name = "crio"
@@ -49,15 +54,20 @@ func main() {
 	setup.Name = "setup"
 	setup.Usage = "Create the cri-o hook required to run NVIDIA GPU containers"
 	setup.ArgsUsage = "<toolkit_dirname>"
-	setup.Action = Setup
-	setup.Before = ParseArgs
+	setup.Action = func(c *cli.Context) error {
+		return Setup(c, &options)
+	}
+	setup.Before = func(c *cli.Context) error {
+		return ParseArgs(c, &options)
+	}
 
 	// Create the 'cleanup' subcommand
 	cleanup := cli.Command{}
 	cleanup.Name = "cleanup"
 	cleanup.Usage = "Remove the NVIDIA cri-o hook"
-	cleanup.Action = Cleanup
-
+	cleanup.Action = func(c *cli.Context) error {
+		return Cleanup(c, &options)
+	}
 	// Register the subcommands with the top-level CLI
 	c.Commands = []*cli.Command{
 		&setup,
@@ -74,7 +84,7 @@ func main() {
 			Aliases:     []string{"d"},
 			Usage:       "path to the cri-o hooks directory",
 			Value:       defaultHooksDir,
-			Destination: &hooksDirFlag,
+			Destination: &options.hooksDir,
 			EnvVars:     []string{"CRIO_HOOKS_DIR"},
 			DefaultText: defaultHooksDir,
 		},
@@ -83,7 +93,7 @@ func main() {
 			Aliases:     []string{"f"},
 			Usage:       "filename of the cri-o hook that will be created / removed in the hooks directory",
 			Value:       defaultHookFilename,
-			Destination: &hookFilenameFlag,
+			Destination: &options.hookFilename,
 			EnvVars:     []string{"CRIO_HOOK_FILENAME"},
 			DefaultText: defaultHookFilename,
 		},
@@ -100,16 +110,16 @@ func main() {
 }
 
 // Setup installs the prestart hook required to launch GPU-enabled containers
-func Setup(c *cli.Context) error {
+func Setup(c *cli.Context, o *options) error {
 	log.Infof("Starting 'setup' for %v", c.App.Name)
 
-	err := os.MkdirAll(hooksDirFlag, 0755)
+	err := os.MkdirAll(o.hooksDir, 0755)
 	if err != nil {
-		return fmt.Errorf("error creating hooks directory %v: %v", hooksDirFlag, err)
+		return fmt.Errorf("error creating hooks directory %v: %v", o.hooksDir, err)
 	}
 
-	hookPath := getHookPath(hooksDirFlag, hookFilenameFlag)
-	err = createHook(tooklitDirArg, hookPath)
+	hookPath := getHookPath(o.hooksDir, o.hookFilename)
+	err = createHook(o.runtimeDir, hookPath)
 	if err != nil {
 		return fmt.Errorf("error creating hook: %v", err)
 	}
@@ -118,10 +128,10 @@ func Setup(c *cli.Context) error {
 }
 
 // Cleanup removes the specified prestart hook
-func Cleanup(c *cli.Context) error {
+func Cleanup(c *cli.Context, o *options) error {
 	log.Infof("Starting 'cleanup' for %v", c.App.Name)
 
-	hookPath := getHookPath(hooksDirFlag, hookFilenameFlag)
+	hookPath := getHookPath(o.hooksDir, o.hookFilename)
 	err := os.Remove(hookPath)
 	if err != nil {
 		return fmt.Errorf("error removing hook '%v': %v", hookPath, err)
@@ -131,14 +141,14 @@ func Cleanup(c *cli.Context) error {
 }
 
 // ParseArgs parses the command line arguments to the CLI
-func ParseArgs(c *cli.Context) error {
+func ParseArgs(c *cli.Context, o *options) error {
 	args := c.Args()
 
 	log.Infof("Parsing arguments: %v", args.Slice())
 	if c.NArg() != 1 {
 		return fmt.Errorf("incorrect number of arguments")
 	}
-	tooklitDirArg = args.Get(0)
+	o.runtimeDir = args.Get(0)
 	log.Infof("Successfully parsed arguments")
 
 	return nil
@@ -152,7 +162,7 @@ func createHook(toolkitDir string, hookPath string) error {
 	defer hook.Close()
 
 	encoder := json.NewEncoder(hook)
-	err = encoder.Encode(generateOciHook(tooklitDirArg))
+	err = encoder.Encode(generateOciHook(toolkitDir))
 	if err != nil {
 		return fmt.Errorf("error writing hook file '%v': %v", hookPath, err)
 	}
