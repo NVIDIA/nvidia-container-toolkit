@@ -70,7 +70,7 @@ func TestMounts(t *testing.T) {
 				},
 				required: []string{"required"},
 			},
-			expectedMounts: []Mount{{Path: "located"}},
+			expectedMounts: []Mount{{Path: "located", HostPath: "located"}},
 		},
 		{
 			description:   "mounts removes located duplicates",
@@ -83,7 +83,7 @@ func TestMounts(t *testing.T) {
 				},
 				required: []string{"required0", "required1"},
 			},
-			expectedMounts: []Mount{{Path: "located"}},
+			expectedMounts: []Mount{{Path: "located", HostPath: "located"}},
 		},
 		{
 			description: "mounts skips located errors",
@@ -98,7 +98,7 @@ func TestMounts(t *testing.T) {
 				},
 				required: []string{"required0", "error", "required1"},
 			},
-			expectedMounts: []Mount{{Path: "required0"}, {Path: "required1"}},
+			expectedMounts: []Mount{{Path: "required0", HostPath: "required0"}, {Path: "required1", HostPath: "required1"}},
 		},
 		{
 			description: "mounts skips unlocated",
@@ -113,10 +113,10 @@ func TestMounts(t *testing.T) {
 				},
 				required: []string{"required0", "empty", "required1"},
 			},
-			expectedMounts: []Mount{{Path: "required0"}, {Path: "required1"}},
+			expectedMounts: []Mount{{Path: "required0", HostPath: "required0"}, {Path: "required1", HostPath: "required1"}},
 		},
 		{
-			description: "mounts skips unlocated",
+			description: "mounts adds multiple",
 			input: &mounts{
 				lookup: &lookup.LocatorMock{
 					LocateFunc: func(s string) ([]string, error) {
@@ -129,10 +129,48 @@ func TestMounts(t *testing.T) {
 				required: []string{"required0", "multiple", "required1"},
 			},
 			expectedMounts: []Mount{
-				{Path: "required0"},
-				{Path: "multiple0"},
-				{Path: "multiple1"},
-				{Path: "required1"},
+				{Path: "required0", HostPath: "required0"},
+				{Path: "multiple0", HostPath: "multiple0"},
+				{Path: "multiple1", HostPath: "multiple1"},
+				{Path: "required1", HostPath: "required1"},
+			},
+		},
+		{
+			description: "mounts uses relative path",
+			input: &mounts{
+				lookup: &lookup.LocatorMock{
+					LocateFunc: func(s string) ([]string, error) {
+						return []string{"located"}, nil
+					},
+					RelativeFunc: func(s string) (string, error) {
+						return "relative", nil
+					},
+				},
+				required: []string{"required0", "multiple", "required1"},
+			},
+			expectedMounts: []Mount{
+				{Path: "relative", HostPath: "located"},
+			},
+		},
+		{
+			description: "mounts skips relative error",
+			input: &mounts{
+				lookup: &lookup.LocatorMock{
+					LocateFunc: func(s string) ([]string, error) {
+						return []string{s}, nil
+					},
+					RelativeFunc: func(s string) (string, error) {
+						if s == "error" {
+							return "", fmt.Errorf("no relative path")
+						}
+						return "relative" + s, nil
+					},
+				},
+				required: []string{"required0", "error", "required1"},
+			},
+			expectedMounts: []Mount{
+				{Path: "relativerequired0", HostPath: "required0"},
+				{Path: "relativerequired1", HostPath: "required1"},
 			},
 		},
 	}

@@ -38,8 +38,7 @@ func (d mount) toEdits() *cdi.ContainerEdits {
 // that missing info is filled in when edits are applied by querying the Mount node.
 func (d mount) toSpec() *specs.Mount {
 	s := specs.Mount{
-		HostPath: d.Path,
-		// TODO: We need to allow the container path to be customised
+		HostPath:      d.HostPath,
 		ContainerPath: d.Path,
 		Options: []string{
 			"ro",

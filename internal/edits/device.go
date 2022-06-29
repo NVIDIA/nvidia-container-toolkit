@@ -37,6 +37,9 @@ func (d device) toEdits() *cdi.ContainerEdits {
 // toSpec converts a discovered Device to a CDI Spec Device. Note
 // that missing info is filled in when edits are applied by querying the Device node.
 func (d device) toSpec() *specs.DeviceNode {
+	// NOTE: We may want to mirror what is done in cri-o w.r.t src (Host) and dst (Container) paths
+	// to ensure that the right permissions are included.
+	// https://github.com/cri-o/cri-o/blob/ca3bb80a3dda0440659fcf8da8ed6f23211de94e/internal/config/device/device.go#L93
 	s := specs.DeviceNode{
 		Path: d.Path,
 	}

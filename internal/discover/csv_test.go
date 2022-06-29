@@ -49,7 +49,7 @@ func TestCharDevices(t *testing.T) {
 					required: []string{"required"},
 				},
 			),
-			expectedDevices: []Device{{Path: "located"}},
+			expectedDevices: []Device{{Path: "located", HostPath: "located"}},
 		},
 		{
 			description:          "dev devices returns error for nil lookup",
