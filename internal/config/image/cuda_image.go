@@ -112,6 +112,36 @@ func (i CUDA) HasDisableRequire() bool {
 	return false
 }
 
+// DevicesFromEnvvars returns the devices requested by the image through environment variables
+func (i CUDA) DevicesFromEnvvars(envVars ...string) []string {
+	// Grab a reference to devices from the first envvar
+	// in the list that actually exists in the environment.
+	var devices *string
+	for _, envVar := range envVars {
+		if devs, ok := i[envVar]; ok {
+			devices = &devs
+			break
+		}
+	}
+
+	// Environment variable unset with legacy image: default to "all".
+	if devices == nil && i.IsLegacy() {
+		return []string{"all"}
+	}
+
+	// Environment variable unset or empty or "void": return nil
+	if devices == nil || len(*devices) == 0 || *devices == "void" {
+		return nil
+	}
+
+	// Environment variable set to "none": reset to "".
+	if *devices == "none" {
+		return []string{""}
+	}
+
+	return strings.Split(*devices, ",")
+}
+
 func (i CUDA) legacyVersion() (string, error) {
 	majorMinor, err := parseMajorMinorVersion(i[envCUDAVersion])
 	if err != nil {

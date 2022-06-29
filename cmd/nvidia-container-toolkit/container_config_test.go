@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/stretchr/testify/require"
 )
 
@@ -671,7 +672,7 @@ func TestDeviceListSourcePriority(t *testing.T) {
 				hookConfig := getDefaultHookConfig()
 				hookConfig.AcceptEnvvarUnprivileged = tc.acceptUnprivileged
 				hookConfig.AcceptDeviceListAsVolumeMounts = tc.acceptMounts
-				devices = getDevices(&hookConfig, env, tc.mountDevices, tc.privileged, false)
+				devices = getDevices(&hookConfig, env, tc.mountDevices, tc.privileged)
 			}
 
 			// For all other tests, just grab the devices and check the results
@@ -693,7 +694,6 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 		description     string
 		envSwarmGPU     *string
 		env             map[string]string
-		legacyImage     bool
 		expectedDevices *string
 	}{
 		{
@@ -729,13 +729,15 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 			description: "NVIDIA_VISIBLE_DEVICES set returns value for legacy image",
 			env: map[string]string{
 				envNVVisibleDevices: gpuID,
+				envCUDAVersion:      "legacy",
 			},
-			legacyImage:     true,
 			expectedDevices: &gpuID,
 		},
 		{
-			description:     "empty env returns all for legacy image",
-			legacyImage:     true,
+			description: "empty env returns all for legacy image",
+			env: map[string]string{
+				envCUDAVersion: "legacy",
+			},
 			expectedDevices: &all,
 		},
 		// Add the `DOCKER_RESOURCE_GPUS` envvar and ensure that this is ignored when
@@ -781,16 +783,16 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 			env: map[string]string{
 				envNVVisibleDevices:   gpuID,
 				envDockerResourceGPUs: anotherGPUID,
+				envCUDAVersion:        "legacy",
 			},
-			legacyImage:     true,
 			expectedDevices: &gpuID,
 		},
 		{
 			description: "empty env returns all for legacy image",
 			env: map[string]string{
 				envDockerResourceGPUs: anotherGPUID,
+				envCUDAVersion:        "legacy",
 			},
-			legacyImage:     true,
 			expectedDevices: &all,
 		},
 		// Add the `DOCKER_RESOURCE_GPUS` envvar and ensure that this is selected when
@@ -834,8 +836,8 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 			envSwarmGPU: &envDockerResourceGPUs,
 			env: map[string]string{
 				envDockerResourceGPUs: gpuID,
+				envCUDAVersion:        "legacy",
 			},
-			legacyImage:     true,
 			expectedDevices: &gpuID,
 		},
 		{
@@ -860,7 +862,7 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 	for i, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			envSwarmGPU = tc.envSwarmGPU
-			devices := getDevicesFromEnvvar(tc.env, tc.legacyImage)
+			devices := getDevicesFromEnvvar(image.CUDA(tc.env))
 			if tc.expectedDevices == nil {
 				require.Nil(t, devices, "%d: %v", i, tc)
 				return
