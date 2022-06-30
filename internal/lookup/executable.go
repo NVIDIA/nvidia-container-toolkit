@@ -49,18 +49,19 @@ func NewExecutableLocator(logger *log.Logger, root string) Locator {
 
 var _ Locator = (*executable)(nil)
 
-// Locate finds executable files in the path. If a relative or absolute path is specified, the prefix paths are not considered.
-func (p executable) Locate(filename string) ([]string, error) {
+// Locate finds executable files with the specified pattern in the path.
+// If a relative or absolute path is specified, the prefix paths are not considered.
+func (p executable) Locate(pattern string) ([]string, error) {
 	// For absolute paths we ensure that it is executable
-	if strings.Contains(filename, "/") {
-		err := assertExecutable(filename)
+	if strings.Contains(pattern, "/") {
+		err := assertExecutable(pattern)
 		if err != nil {
-			return nil, fmt.Errorf("absolute path %v is not an executable file: %v", filename, err)
+			return nil, fmt.Errorf("absolute path %v is not an executable file: %v", pattern, err)
 		}
-		return []string{filename}, nil
+		return []string{pattern}, nil
 	}
 
-	return p.file.Locate(filename)
+	return p.file.Locate(pattern)
 }
 
 // assertExecutable checks whether the specified path is an execuable file.
