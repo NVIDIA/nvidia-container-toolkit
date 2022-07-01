@@ -52,10 +52,10 @@ func NewSymlinkLocator(logger *logrus.Logger, root string) Locator {
 	return &l
 }
 
-// Locate finds the specified file at the specified root. If the file is a symlink, the link is followed and all candidates
-// to the final target are returned.
-func (p symlinkChain) Locate(filename string) ([]string, error) {
-	candidates, err := p.file.Locate(filename)
+// Locate finds the specified pattern at the specified root.
+// If the file is a symlink, the link is followed and all candidates to the final target are returned.
+func (p symlinkChain) Locate(pattern string) ([]string, error) {
+	candidates, err := p.file.Locate(pattern)
 	if err != nil {
 		return nil, err
 	}
@@ -104,14 +104,15 @@ func (p symlinkChain) Locate(filename string) ([]string, error) {
 	return filenames, nil
 }
 
-// Locate finds the specified file at the specified root. If the file is a symlink, the link is resolved and the target returned.
-func (p symlink) Locate(filename string) ([]string, error) {
-	candidates, err := p.file.Locate(filename)
+// Locate finds the specified pattern at the specified root.
+// If the file is a symlink, the link is resolved and the target returned.
+func (p symlink) Locate(pattern string) ([]string, error) {
+	candidates, err := p.file.Locate(pattern)
 	if err != nil {
 		return nil, err
 	}
 	if len(candidates) != 1 {
-		return nil, fmt.Errorf("failed to uniquely resolve symlink %v: %v", filename, candidates)
+		return nil, fmt.Errorf("failed to uniquely resolve symlink %v: %v", pattern, candidates)
 	}
 
 	target, err := filepath.EvalSymlinks(candidates[0])

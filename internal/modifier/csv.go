@@ -24,10 +24,8 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements"
-	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -52,8 +50,7 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
 	}
 
-	// In experimental mode, we check whether a modification is required at all and return the lowlevelRuntime directly
-	// if no modification is required.
+	// We check whether a modification is required and return a nil modifier if this is not the case.
 	visibleDevices, exists := ociSpec.LookupEnv(visibleDevicesEnvvar)
 	if !exists || visibleDevices == "" || visibleDevices == visibleDevicesVoid {
 		logger.Infof("No modification required: %v=%v (exists=%v)", visibleDevicesEnvvar, visibleDevices, exists)
@@ -104,33 +101,17 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 
 	d := discover.NewList(csvDiscoverer, ldcacheUpdateHook, createSymlinksHook)
 
-	return newModifierFromDiscoverer(logger, d)
-}
-
-// newModifierFromDiscoverer created a modifier that aplies the discovered
-// modifications to an OCI spec if require by the runtime wrapper.
-func newModifierFromDiscoverer(logger *logrus.Logger, d discover.Discover) (oci.SpecModifier, error) {
-	m := csvMode{
-		logger:     logger,
-		discoverer: d,
-	}
-	return &m, nil
-}
-
-// Modify applies the required modifications to the incomming OCI spec. These modifications
-// are applied in-place.
-func (m csvMode) Modify(spec *specs.Spec) error {
-	err := nvidiaContainerRuntimeHookRemover{m.logger}.Modify(spec)
+	discoverModifier, err := NewModifierFromDiscoverer(logger, d)
 	if err != nil {
-		return fmt.Errorf("failed to remove existing hooks: %v", err)
+		return nil, fmt.Errorf("failed to construct modifier: %v", err)
 	}
 
-	specEdits, err := edits.NewSpecEdits(m.logger, m.discoverer)
-	if err != nil {
-		return fmt.Errorf("failed to get required container edits: %v", err)
-	}
+	modifiers := Merge(
+		nvidiaContainerRuntimeHookRemover{logger},
+		discoverModifier,
+	)
 
-	return specEdits.Modify(spec)
+	return modifiers, nil
 }
 
 func checkRequirements(logger *logrus.Logger, image *image.CUDA) error {

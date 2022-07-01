@@ -50,22 +50,29 @@ func newFileLocator(logger *log.Logger, root string) file {
 
 var _ Locator = (*file)(nil)
 
-// Locate attempts to find the specified file. All prefixes are searched and any matching
-// candidates are returned. If no matches are found, an error is returned.
-func (p file) Locate(filename string) ([]string, error) {
+// Locate attempts to find files with names matching the specified pattern.
+// All prefixes are searched and any matching candidates are returned. If no matches are found, an error is returned.
+func (p file) Locate(pattern string) ([]string, error) {
 	var filenames []string
 	for _, prefix := range p.prefixes {
-		candidate := filepath.Join(prefix, filename)
-		p.logger.Debugf("Checking candidate '%v'", candidate)
-		err := p.filter(candidate)
+		pathPattern := filepath.Join(prefix, pattern)
+		candidates, err := filepath.Glob(pathPattern)
 		if err != nil {
-			p.logger.Debugf("Candidate '%v' does not meet requirements: %v", candidate, err)
-			continue
+			p.logger.Debugf("Checking pattern '%v' failed: %v", pathPattern, err)
 		}
-		filenames = append(filenames, candidate)
+
+		for _, candidate := range candidates {
+			p.logger.Debugf("Checking candidate '%v'", candidate)
+			err := p.filter(candidate)
+			if err != nil {
+				p.logger.Debugf("Candidate '%v' does not meet requirements: %v", candidate, err)
+				continue
+			}
+			filenames = append(filenames, candidate)
+		}
 	}
-	if len(filename) == 0 {
-		return nil, fmt.Errorf("file %v not found", filename)
+	if len(filenames) == 0 {
+		return nil, fmt.Errorf("pattern %v not found", pattern)
 	}
 	return filenames, nil
 }
