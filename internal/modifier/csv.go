@@ -50,10 +50,13 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
 	}
 
-	// We check whether a modification is required and return a nil modifier if this is not the case.
-	visibleDevices, exists := ociSpec.LookupEnv(visibleDevicesEnvvar)
-	if !exists || visibleDevices == "" || visibleDevices == visibleDevicesVoid {
-		logger.Infof("No modification required: %v=%v (exists=%v)", visibleDevicesEnvvar, visibleDevices, exists)
+	image, err := image.NewCUDAImageFromSpec(rawSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	if devices := image.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices) == 0 {
+		logger.Infof("No modification required; no devices requested")
 		return nil, nil
 	}
 	logger.Infof("Constructing modifier from config: %+v", *cfg)
@@ -63,14 +66,7 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 		NVIDIAContainerToolkitCLIExecutablePath: cfg.NVIDIACTKConfig.Path,
 	}
 
-	// TODO: Once the devices have been encapsulated in the CUDA image, this can be moved to before the
-	// visible devices are checked.
-	image, err := image.NewCUDAImageFromSpec(rawSpec)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := checkRequirements(logger, &image); err != nil {
+	if err := checkRequirements(logger, image); err != nil {
 		return nil, fmt.Errorf("requirements not met: %v", err)
 	}
 
@@ -79,8 +75,7 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 		return nil, fmt.Errorf("failed to get list of CSV files: %v", err)
 	}
 
-	nvidiaRequireJetpack, _ := ociSpec.LookupEnv(nvidiaRequireJetpackEnvvar)
-	if nvidiaRequireJetpack != "csv-mounts=all" {
+	if nvidiaRequireJetpack, _ := image[nvidiaRequireJetpackEnvvar]; nvidiaRequireJetpack != "csv-mounts=all" {
 		csvFiles = csv.BaseFilesOnly(csvFiles)
 	}
 
@@ -114,7 +109,7 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 	return modifiers, nil
 }
 
-func checkRequirements(logger *logrus.Logger, image *image.CUDA) error {
+func checkRequirements(logger *logrus.Logger, image image.CUDA) error {
 	if image.HasDisableRequire() {
 		// TODO: We could print the real value here instead
 		logger.Debugf("NVIDIA_DISABLE_REQUIRE=%v; skipping requirement checks", true)

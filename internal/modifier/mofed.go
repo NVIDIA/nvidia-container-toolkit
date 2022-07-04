@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/sirupsen/logrus"
@@ -32,19 +33,22 @@ const (
 // NewMOFEDModifier creates the modifiers for MOFED devices.
 // If the spec does not contain the NVIDIA_MOFED=enabled environment variable no changes are made.
 func NewMOFEDModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
-	_, err := ociSpec.Load()
+	rawSpec, err := ociSpec.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
 	}
 
-	// We check whether a modification is required and return a nil modifier if this is not the case.
-	visibleDevices, exists := ociSpec.LookupEnv(visibleDevicesEnvvar)
-	if !exists || visibleDevices == "" || visibleDevices == visibleDevicesVoid {
-		logger.Infof("No modification required: %v=%v (exists=%v)", visibleDevicesEnvvar, visibleDevices, exists)
+	image, err := image.NewCUDAImageFromSpec(rawSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	if devices := image.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices) == 0 {
+		logger.Infof("No modification required; no devices requested")
 		return nil, nil
 	}
 
-	if mofed, _ := ociSpec.LookupEnv(nvidiaMOFEDEnvvar); mofed != "enabled" {
+	if mofed, _ := image[nvidiaMOFEDEnvvar]; mofed != "enabled" {
 		return nil, nil
 	}
 

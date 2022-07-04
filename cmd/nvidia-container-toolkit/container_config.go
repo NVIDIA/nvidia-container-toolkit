@@ -165,7 +165,7 @@ func isPrivileged(s *Spec) bool {
 	return false
 }
 
-func getDevicesFromEnvvar(env map[string]string, legacyImage bool) *string {
+func getDevicesFromEnvvar(image image.CUDA) *string {
 	// Build a list of envvars to consider.
 	envVars := []string{envNVVisibleDevices}
 	if envSwarmGPU != nil {
@@ -173,35 +173,14 @@ func getDevicesFromEnvvar(env map[string]string, legacyImage bool) *string {
 		envVars = append([]string{*envSwarmGPU}, envVars...)
 	}
 
-	// Grab a reference to devices from the first envvar
-	// in the list that actually exists in the environment.
-	var devices *string
-	for _, envVar := range envVars {
-		if devs, ok := env[envVar]; ok {
-			devices = &devs
-			break
-		}
-	}
-
-	// Environment variable unset with legacy image: default to "all".
-	if devices == nil && legacyImage {
-		all := "all"
-		return &all
-	}
-
-	// Environment variable unset or empty or "void": return nil
-	if devices == nil || len(*devices) == 0 || *devices == "void" {
+	devices := image.DevicesFromEnvvars(envVars...)
+	if len(devices) == 0 {
 		return nil
 	}
 
-	// Environment variable set to "none": reset to "".
-	if *devices == "none" {
-		empty := ""
-		return &empty
-	}
+	devicesString := strings.Join(devices, ",")
 
-	// Any other value.
-	return devices
+	return &devicesString
 }
 
 func getDevicesFromMounts(mounts []Mount) *string {
@@ -241,7 +220,7 @@ func getDevicesFromMounts(mounts []Mount) *string {
 	return &ret
 }
 
-func getDevices(hookConfig *HookConfig, env map[string]string, mounts []Mount, privileged bool, legacyImage bool) *string {
+func getDevices(hookConfig *HookConfig, image image.CUDA, mounts []Mount, privileged bool) *string {
 	// If enabled, try and get the device list from volume mounts first
 	if hookConfig.AcceptDeviceListAsVolumeMounts {
 		devices := getDevicesFromMounts(mounts)
@@ -251,7 +230,7 @@ func getDevices(hookConfig *HookConfig, env map[string]string, mounts []Mount, p
 	}
 
 	// Fallback to reading from the environment variable if privileges are correct
-	devices := getDevicesFromEnvvar(env, legacyImage)
+	devices := getDevicesFromEnvvar(image)
 	if devices == nil {
 		return nil
 	}
@@ -307,7 +286,7 @@ func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, mounts []Mount, p
 	legacyImage := image.IsLegacy()
 
 	var devices string
-	if d := getDevices(hookConfig, image, mounts, privileged, legacyImage); d != nil {
+	if d := getDevices(hookConfig, image, mounts, privileged); d != nil {
 		devices = *d
 	} else {
 		// 'nil' devices means this is not a GPU container.
