@@ -24,12 +24,14 @@ type Config struct {
 
 // Device represents a discovered character device.
 type Device struct {
-	Path string
+	HostPath string
+	Path     string
 }
 
 // Mount represents a discovered mount.
 type Mount struct {
-	Path string
+	HostPath string
+	Path     string
 }
 
 // Hook represents a discovered hook.
