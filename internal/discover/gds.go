@@ -51,7 +51,7 @@ func NewGDSDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
 	d := gdsDeviceDiscoverer{
 		logger:  logger,
 		devices: devices,
-		mounts:  NewList(udev, cufile),
+		mounts:  Merge(udev, cufile),
 	}
 
 	return &d, nil
