@@ -27,8 +27,8 @@ type list struct {
 
 var _ Discover = (*list)(nil)
 
-// NewList creates a discoverer that is the composite of a list of discoveres.
-func NewList(d ...Discover) Discover {
+// Merge creates a discoverer that is the composite of a list of discoveres.
+func Merge(d ...Discover) Discover {
 	l := list{
 		discoverers: d,
 	}
