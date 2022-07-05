@@ -38,7 +38,7 @@ EXAMPLE_TARGETS := $(patsubst %,example-%, $(EXAMPLES))
 CMDS := $(patsubst ./cmd/%/,%,$(sort $(dir $(wildcard ./cmd/*/))))
 CMD_TARGETS := $(patsubst %,cmd-%, $(CMDS))
 
-CHECK_TARGETS := assert-fmt vet lint ineffassign misspell
+CHECK_TARGETS := assert-fmt vet lint ineffassign misspell licenses
 MAKE_TARGETS := binaries build check fmt lint-internal test examples cmds coverage generate $(CHECK_TARGETS)
 
 TARGETS := $(MAKE_TARGETS) $(EXAMPLE_TARGETS) $(CMD_TARGETS)
@@ -101,6 +101,9 @@ misspell:
 
 vet:
 	go vet $(MODULE)/...
+
+licenses:
+	go-licenses csv $(MODULE)/...
 
 COVERAGE_FILE := coverage.out
 test: build cmds
