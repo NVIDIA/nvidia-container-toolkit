@@ -24,11 +24,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// charDevices is a discover for a list of character devices
-type charDevices mounts
-
-var _ Discover = (*charDevices)(nil)
-
 // NewFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
 // The constructed discoverer is comprised of a list, with each element in the list being associated with a
 // single CSV files.
@@ -60,7 +55,7 @@ func NewFromCSVFiles(logger *logrus.Logger, files []string, root string) (Discov
 	return newFromMountSpecs(logger, locators, mountSpecs)
 }
 
-// loadCSVFile
+// loadCSVFile loads the specified CSV file and returns the list of mount specs
 func loadCSVFile(logger *logrus.Logger, filename string) ([]*csv.MountSpec, error) {
 	// Create a discoverer for each file-kind combination
 	targets, err := csv.NewCSVFileParser(logger, filename).Parse()
@@ -97,41 +92,20 @@ func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]loo
 			return nil, fmt.Errorf("no locator defined for '%v'", t)
 		}
 
-		m := &mounts{
-			logger:   logger,
-			lookup:   locator,
-			required: candidatesByType[t],
-		}
-
+		var m Discover
 		switch t {
 		case csv.MountSpecDev:
-			// For device mount specs, we insert a charDevices into the list of discoverers.
-			discoverers = append(discoverers, (*charDevices)(m))
+			m = NewDeviceDiscoverer(logger, locator, candidatesByType[t])
 		default:
-			discoverers = append(discoverers, m)
+			m = &mounts{
+				logger:   logger,
+				lookup:   locator,
+				required: candidatesByType[t],
+			}
 		}
+		discoverers = append(discoverers, m)
+
 	}
 
 	return &list{discoverers: discoverers}, nil
-}
-
-// Mounts returns the discovered mounts for the charDevices. Since this explicitly specifies a
-// device list, the mounts are nil.
-func (d *charDevices) Mounts() ([]Mount, error) {
-	return nil, nil
-}
-
-// Devices returns the discovered devices for the charDevices. Here the device nodes are first
-// discovered as mounts and these are converted to devices.
-func (d *charDevices) Devices() ([]Device, error) {
-	devicesAsMounts, err := (*mounts)(d).Mounts()
-	if err != nil {
-		return nil, err
-	}
-	var devices []Device
-	for _, mount := range devicesAsMounts {
-		devices = append(devices, Device(mount))
-	}
-
-	return devices, nil
 }
