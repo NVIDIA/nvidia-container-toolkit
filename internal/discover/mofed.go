@@ -17,37 +17,19 @@
 package discover
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/sirupsen/logrus"
 )
 
-type mofedDeviceDiscoverer mounts
-
 // NewMOFEDDiscoverer creates a discoverer for MOFED devices.
 func NewMOFEDDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
-	devices := &mofedDeviceDiscoverer{
-		logger: logger,
-		lookup: lookup.NewCharDeviceLocator(logger, root),
-		required: []string{
+	devices := NewCharDeviceDiscoverer(
+		logger,
+		[]string{
 			"/dev/infiniband/uverbs*",
 			"/dev/infiniband/rdma_cm",
 		},
-	}
-
-	return devices, nil
-}
-
-// Devices discovers the uverbs* and rdma_cm device nodes for use with GPUDirect Storage and the MOFED stack.
-func (d *mofedDeviceDiscoverer) Devices() ([]Device, error) {
-	devicesAsMounts, err := (*mounts)(d).Mounts()
-	if err != nil {
-		d.logger.Debugf("Could not locate MOFED devices: %v", err)
-		return nil, nil
-	}
-	var devices []Device
-	for _, mount := range devicesAsMounts {
-		devices = append(devices, Device(mount))
-	}
+		root,
+	)
 
 	return devices, nil
 }
