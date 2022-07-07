@@ -51,7 +51,11 @@ func NewSpecEdits(logger *logrus.Logger, d discover.Discover) (oci.SpecModifier,
 
 	c := cdi.ContainerEdits{}
 	for _, d := range devices {
-		c.Append(device(d).toEdits())
+		edits, err := device(d).toEdits()
+		if err != nil {
+			return nil, fmt.Errorf("failed to created container edits for device: %v", err)
+		}
+		c.Append(edits)
 	}
 
 	for _, m := range mounts {
