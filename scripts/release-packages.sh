@@ -116,8 +116,19 @@ function sync() {
         return
     fi
     mkdir -p ${dst}
-    cp ${src}/libnvidia-container*.${pkg_type} ${dst}
-    cp ${src}/nvidia-container-toolkit*.${pkg_type} ${dst}
+
+    for f in $(ls ${src}/libnvidia-container*.${pkg_type} ${src}/nvidia-container-toolkit*.${pkg_type}); do
+        df=${dst}/$(basename ${f})
+        df_stable=${df//"/experimental/"/"/stable/"}
+        if [[ -f "${df}" ]]; then
+            echo "${df} already exists; skipping"
+        elif [[ ${REPO} == "experimental" && -f ${df_stable} ]]; then
+            echo "${df_stable} already exists; skipping"
+        else
+            cp ${f} ${df}
+        fi
+
+    done
     if [[ ${REPO} == "stable" ]]; then
         cp ${src}/nvidia-container-runtime*.${pkg_type} ${dst}
         cp ${src}/nvidia-docker*.${pkg_type} ${dst}
