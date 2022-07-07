@@ -7,6 +7,7 @@ require (
 	github.com/NVIDIA/go-nvml v0.11.6-0
 	github.com/container-orchestrated-devices/container-device-interface v0.4.1-0.20220614144320-dc973e22f674
 	github.com/containers/podman/v4 v4.0.3
+	github.com/opencontainers/runc v1.1.3
 	github.com/opencontainers/runtime-spec v1.0.3-0.20211214071223-8958f93039ab
 	github.com/pelletier/go-toml v1.9.4
 	github.com/sirupsen/logrus v1.8.1
