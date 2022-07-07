@@ -24,7 +24,8 @@ github.com/fsnotify/fsnotify
 github.com/hashicorp/errwrap
 # github.com/hashicorp/go-multierror v1.1.1
 github.com/hashicorp/go-multierror
-# github.com/opencontainers/runc v1.1.2
+# github.com/opencontainers/runc v1.1.3
+## explicit
 github.com/opencontainers/runc/libcontainer/devices
 # github.com/opencontainers/runtime-spec v1.0.3-0.20211214071223-8958f93039ab
 ## explicit
