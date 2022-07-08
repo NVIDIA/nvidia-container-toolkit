@@ -20,7 +20,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
@@ -61,8 +60,8 @@ func (m stableRuntimeModifier) Modify(spec *specs.Spec) error {
 		spec.Hooks = &specs.Hooks{}
 	} else if len(spec.Hooks.Prestart) != 0 {
 		for _, hook := range spec.Hooks.Prestart {
-			if strings.Contains(hook.Path, config.NVIDIAContainerRuntimeHookExecutable) {
-				m.logger.Infof("existing nvidia prestart hook found in OCI spec")
+			if isNVIDIAContainerRuntimeHook(&hook) {
+				m.logger.Infof("Existing nvidia prestart hook (%v) found in OCI spec", hook.Path)
 				return nil
 			}
 		}
