@@ -6,8 +6,8 @@ Group: Development Tools
 Vendor: NVIDIA CORPORATION
 Packager: NVIDIA CORPORATION <cudatools@nvidia.com>
 
-Summary: NVIDIA container runtime hook
-URL: https://github.com/NVIDIA/nvidia-container-runtime
+Summary: NVIDIA Container Toolkit
+URL: https://github.com/NVIDIA/nvidia-container-toolkit
 License: Apache-2.0
 
 Source0: nvidia-container-runtime-hook
@@ -31,7 +31,7 @@ Requires: libseccomp
 %endif
 
 %description
-Provides a OCI hook to enable GPU support in containers.
+Provides tools and utilities to enable GPU support in containers.
 
 %prep
 cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} .
