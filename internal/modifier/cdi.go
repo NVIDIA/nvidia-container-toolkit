@@ -93,8 +93,8 @@ func (m cdiModifier) Modify(spec *specs.Spec) error {
 	registry := cdi.GetRegistry(
 		cdi.WithAutoRefresh(false),
 	)
-	if errs := registry.GetErrors(); len(errs) > 0 {
-		m.logger.Debugf("The following errors were triggered when creating the CDI registry: %v", errs)
+	if err := registry.Refresh(); err != nil {
+		m.logger.Debugf("The following error was triggered when refreshing the CDI registry: %v", err)
 	}
 
 	devices := m.devices
