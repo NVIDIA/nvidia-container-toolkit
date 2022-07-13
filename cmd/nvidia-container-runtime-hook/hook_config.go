@@ -34,7 +34,7 @@ type CLIConfig struct {
 	Ldconfig    *string  `toml:"ldconfig"`
 }
 
-// HookConfig : options for the nvidia-container-toolkit.
+// HookConfig : options for the nvidia-container-runtime-hook.
 type HookConfig struct {
 	DisableRequire                 bool               `toml:"disable-require"`
 	SwarmResource                  *string            `toml:"swarm-resource"`

@@ -7,7 +7,7 @@ NVIDIA_CONTAINER_TOOLKIT=/usr/bin/nvidia-container-toolkit
 
 case "$1" in
     purge)
-        [ -L "${NVIDIA_CONTAINER_RUNTIME_HOOK}" ] && rm ${NVIDIA_CONTAINER_RUNTIME_HOOK}
+        [ -L "${NVIDIA_CONTAINER_TOOLKIT}" ] && rm ${NVIDIA_CONTAINER_TOOLKIT}
     ;;
 
     upgrade|failed-upgrade|remove|abort-install|abort-upgrade|disappear)

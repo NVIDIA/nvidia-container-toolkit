@@ -6,11 +6,11 @@ Group: Development Tools
 Vendor: NVIDIA CORPORATION
 Packager: NVIDIA CORPORATION <cudatools@nvidia.com>
 
-Summary: NVIDIA container runtime hook
-URL: https://github.com/NVIDIA/nvidia-container-runtime
+Summary: NVIDIA Container Toolkit
+URL: https://github.com/NVIDIA/nvidia-container-toolkit
 License: Apache-2.0
 
-Source0: nvidia-container-toolkit
+Source0: nvidia-container-runtime-hook
 Source1: nvidia-container-runtime
 Source2: nvidia-ctk
 Source3: config.toml
@@ -31,14 +31,14 @@ Requires: libseccomp
 %endif
 
 %description
-Provides a OCI hook to enable GPU support in containers.
+Provides tools and utilities to enable GPU support in containers.
 
 %prep
 cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} .
 
 %install
 mkdir -p %{buildroot}%{_bindir}
-install -m 755 -t %{buildroot}%{_bindir} nvidia-container-toolkit
+install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime-hook
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime
 install -m 755 -t %{buildroot}%{_bindir} nvidia-ctk
 
@@ -52,14 +52,14 @@ mkdir -p %{buildroot}/usr/share/containers/oci/hooks.d
 install -m 644 -t %{buildroot}/usr/share/containers/oci/hooks.d oci-nvidia-hook.json
 
 %posttrans
-ln -sf %{_bindir}/nvidia-container-toolkit %{_bindir}/nvidia-container-runtime-hook
+ln -sf %{_bindir}/nvidia-container-runtime-hook %{_bindir}/nvidia-container-toolkit
 
 %postun
-rm -f %{_bindir}/nvidia-container-runtime-hook
+rm -f %{_bindir}/nvidia-container-runtime-toolkit
 
 %files
 %license LICENSE
-%{_bindir}/nvidia-container-toolkit
+%{_bindir}/nvidia-container-runtime-hook
 %{_bindir}/nvidia-container-runtime
 %{_bindir}/nvidia-ctk
 %config /etc/nvidia-container-runtime/config.toml

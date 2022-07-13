@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	hooks "github.com/containers/podman/v4/pkg/hooks/1.0.0"
 	rspec "github.com/opencontainers/runtime-spec/specs-go"
 	log "github.com/sirupsen/logrus"
@@ -164,7 +165,7 @@ func getHookPath(hooksDir string, hookFilename string) string {
 }
 
 func generateOciHook(toolkitDir string) hooks.Hook {
-	hookPath := filepath.Join(toolkitDir, "nvidia-container-toolkit")
+	hookPath := filepath.Join(toolkitDir, config.NVIDIAContainerRuntimeHookExecutable)
 	envPath := "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:" + toolkitDir
 	always := true
 
@@ -173,7 +174,7 @@ func generateOciHook(toolkitDir string) hooks.Hook {
 		Stages:  []string{"prestart"},
 		Hook: rspec.Hook{
 			Path: hookPath,
-			Args: []string{"nvidia-container-toolkit", "prestart"},
+			Args: []string{filepath.Base(config.NVIDIAContainerRuntimeHookExecutable), "prestart"},
 			Env:  []string{envPath},
 		},
 		When: hooks.When{

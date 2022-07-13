@@ -7,9 +7,9 @@ NVIDIA_CONTAINER_TOOLKIT=/usr/bin/nvidia-container-toolkit
 
 case "$1" in
     configure)
-        if [ -f "${NVIDIA_CONTAINER_TOOLKIT}" ]; then
-		if [ ! -e "${NVIDIA_CONTAINER_RUNTIME_HOOK}" ]; then
-			ln -s ${NVIDIA_CONTAINER_TOOLKIT} ${NVIDIA_CONTAINER_RUNTIME_HOOK}
+        if [ -f "${NVIDIA_CONTAINER_RUNTIME_HOOK}" ]; then
+		if [ ! -e "${NVIDIA_CONTAINER_TOOLKIT}" ]; then
+			ln -s ${NVIDIA_CONTAINER_RUNTIME_HOOK} ${NVIDIA_CONTAINER_TOOLKIT}
 		fi
         fi
     ;;
