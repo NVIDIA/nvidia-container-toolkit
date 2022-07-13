@@ -29,8 +29,9 @@ import (
 )
 
 type cdiModifier struct {
-	logger  *logrus.Logger
-	devices []string
+	logger   *logrus.Logger
+	specDirs []string
+	devices  []string
 }
 
 // NewCDIModifier creates an OCI spec modifier that determines the modifications to make based on the
@@ -46,9 +47,15 @@ func NewCDIModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 		return nil, nil
 	}
 
+	specDirs := cdi.DefaultSpecDirs
+	if len(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs) > 0 {
+		specDirs = cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs
+	}
+
 	m := cdiModifier{
-		logger:  logger,
-		devices: devices,
+		logger:   logger,
+		specDirs: specDirs,
+		devices:  devices,
 	}
 
 	return m, nil
@@ -91,6 +98,7 @@ func getDevicesFromSpec(ociSpec oci.Spec) ([]string, error) {
 // Modify loads the CDI registry and injects the specified CDI devices into the OCI runtime specification.
 func (m cdiModifier) Modify(spec *specs.Spec) error {
 	registry := cdi.GetRegistry(
+		cdi.WithSpecDirs(m.specDirs...),
 		cdi.WithAutoRefresh(false),
 	)
 	if errs := registry.GetErrors(); len(errs) > 0 {

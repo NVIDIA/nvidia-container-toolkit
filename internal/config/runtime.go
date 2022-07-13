@@ -44,6 +44,12 @@ type RuntimeConfig struct {
 // modesConfig defines (optional) per-mode configs
 type modesConfig struct {
 	CSV csvModeConfig `toml:"csv"`
+	CDI cdiModeConfig `toml:"cdi"`
+}
+
+type cdiModeConfig struct {
+	// SpecDirs allows for the default spec dirs for CDI to be overridden
+	SpecDirs []string `toml:"spec-dirs"`
 }
 
 type csvModeConfig struct {
