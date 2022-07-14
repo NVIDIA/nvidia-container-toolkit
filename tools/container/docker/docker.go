@@ -17,16 +17,14 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
 	"syscall"
 	"time"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/docker"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )
@@ -247,52 +245,15 @@ func ParseArgs(c *cli.Context) (string, error) {
 
 // LoadConfig loads the docker config from disk
 func LoadConfig(config string) (map[string]interface{}, error) {
-	log.Infof("Loading config: %v", config)
-
-	info, err := os.Stat(config)
-	if os.IsExist(err) && info.IsDir() {
-		return nil, fmt.Errorf("config file is a directory")
-	}
-
-	cfg := make(map[string]interface{})
-
-	if os.IsNotExist(err) {
-		log.Infof("Config file does not exist, creating new one")
-		return cfg, nil
-	}
-
-	readBytes, err := ioutil.ReadFile(config)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read config: %v", err)
-	}
-
-	reader := bytes.NewReader(readBytes)
-	if err := json.NewDecoder(reader).Decode(&cfg); err != nil {
-		return nil, err
-	}
-
-	log.Infof("Successfully loaded config")
-	return cfg, nil
+	return docker.LoadConfig(config)
 }
 
 // UpdateConfig updates the docker config to include the nvidia runtimes
 func UpdateConfig(config map[string]interface{}, o *options) error {
 	defaultRuntime := o.getDefaultRuntime()
-	if defaultRuntime != "" {
-		config["default-runtime"] = defaultRuntime
-	}
+	runtimes := o.runtimes()
 
-	runtimes := make(map[string]interface{})
-	if _, exists := config["runtimes"]; exists {
-		runtimes = config["runtimes"].(map[string]interface{})
-	}
-
-	for name, rt := range o.runtimes() {
-		runtimes[name] = rt
-	}
-
-	config["runtimes"] = runtimes
-	return nil
+	return docker.UpdateConfig(config, defaultRuntime, runtimes)
 }
 
 //RevertConfig reverts the docker config to remove the nvidia runtime
@@ -320,36 +281,7 @@ func RevertConfig(config map[string]interface{}) error {
 
 // FlushConfig flushes the updated/reverted config out to disk
 func FlushConfig(cfg map[string]interface{}, config string) error {
-	log.Infof("Flushing config")
-
-	output, err := json.MarshalIndent(cfg, "", "    ")
-	if err != nil {
-		return fmt.Errorf("unable to convert to JSON: %v", err)
-	}
-
-	switch len(output) {
-	case 0:
-		err := os.Remove(config)
-		if err != nil {
-			return fmt.Errorf("unable to remove empty file: %v", err)
-		}
-		log.Infof("Config empty, removing file")
-	default:
-		f, err := os.Create(config)
-		if err != nil {
-			return fmt.Errorf("unable to open %v for writing: %v", config, err)
-		}
-		defer f.Close()
-
-		_, err = f.WriteString(string(output))
-		if err != nil {
-			return fmt.Errorf("unable to write output: %v", err)
-		}
-	}
-
-	log.Infof("Successfully flushed config")
-
-	return nil
+	return docker.FlushConfig(cfg, config)
 }
 
 // RestartDocker restarts docker depending on the value of restartModeFlag
