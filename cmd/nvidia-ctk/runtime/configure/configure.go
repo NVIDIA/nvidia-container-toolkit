@@ -132,9 +132,12 @@ func (m command) configureDocker(c *cli.Context, config *config) error {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	defaultRuntime := config.nvidiaOptions.DefaultRuntime()
-	runtimeConfig := config.nvidiaOptions.Runtime().DockerRuntimesConfig()
-	err = docker.UpdateConfig(cfg, defaultRuntime, runtimeConfig)
+	err = docker.UpdateConfig(
+		cfg,
+		config.nvidiaOptions.RuntimeName,
+		config.nvidiaOptions.RuntimePath,
+		config.nvidiaOptions.SetAsDefault,
+	)
 	if err != nil {
 		return fmt.Errorf("unable to update config: %v", err)
 	}

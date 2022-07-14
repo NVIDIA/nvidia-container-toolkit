@@ -27,30 +27,33 @@ import (
 func TestUpdateConfigDefaultRuntime(t *testing.T) {
 	testCases := []struct {
 		config                     map[string]interface{}
-		defaultRuntime             string
 		runtimeName                string
+		setAsDefault               bool
 		expectedDefaultRuntimeName interface{}
 	}{
 		{
-			defaultRuntime:             "",
+			setAsDefault:               false,
 			expectedDefaultRuntimeName: nil,
 		},
 		{
-			defaultRuntime:             "NAME",
+			runtimeName:                "NAME",
+			setAsDefault:               true,
 			expectedDefaultRuntimeName: "NAME",
 		},
 		{
 			config: map[string]interface{}{
 				"default-runtime": "ALREADY_SET",
 			},
-			defaultRuntime:             "",
+			runtimeName:                "NAME",
+			setAsDefault:               false,
 			expectedDefaultRuntimeName: "ALREADY_SET",
 		},
 		{
 			config: map[string]interface{}{
 				"default-runtime": "ALREADY_SET",
 			},
-			defaultRuntime:             "NAME",
+			runtimeName:                "NAME",
+			setAsDefault:               true,
 			expectedDefaultRuntimeName: "NAME",
 		},
 	}
@@ -60,7 +63,7 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 			if tc.config == nil {
 				tc.config = make(map[string]interface{})
 			}
-			err := UpdateConfig(tc.config, tc.defaultRuntime, nil)
+			err := UpdateConfig(tc.config, tc.runtimeName, "", tc.setAsDefault)
 			require.NoError(t, err)
 
 			defaultRuntimeName := tc.config["default-runtime"]
@@ -72,20 +75,14 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 func TestUpdateConfigRuntimes(t *testing.T) {
 	testCases := []struct {
 		config         map[string]interface{}
-		runtimes       map[string]interface{}
+		runtimes       map[string]string
 		expectedConfig map[string]interface{}
 	}{
 		{
 			config: map[string]interface{}{},
-			runtimes: map[string]interface{}{
-				"runtime1": map[string]interface{}{
-					"path": "/test/runtime/dir/runtime1",
-					"args": []string{},
-				},
-				"runtime2": map[string]interface{}{
-					"path": "/test/runtime/dir/runtime2",
-					"args": []string{},
-				},
+			runtimes: map[string]string{
+				"runtime1": "/test/runtime/dir/runtime1",
+				"runtime2": "/test/runtime/dir/runtime2",
 			},
 			expectedConfig: map[string]interface{}{
 				"runtimes": map[string]interface{}{
@@ -109,15 +106,9 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 					},
 				},
 			},
-			runtimes: map[string]interface{}{
-				"runtime1": map[string]interface{}{
-					"path": "/test/runtime/dir/runtime1",
-					"args": []string{},
-				},
-				"runtime2": map[string]interface{}{
-					"path": "/test/runtime/dir/runtime2",
-					"args": []string{},
-				},
+			runtimes: map[string]string{
+				"runtime1": "/test/runtime/dir/runtime1",
+				"runtime2": "/test/runtime/dir/runtime2",
 			},
 			expectedConfig: map[string]interface{}{
 				"runtimes": map[string]interface{}{
@@ -141,11 +132,8 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 					},
 				},
 			},
-			runtimes: map[string]interface{}{
-				"runtime1": map[string]interface{}{
-					"path": "/test/runtime/dir/runtime1",
-					"args": []string{},
-				},
+			runtimes: map[string]string{
+				"runtime1": "/test/runtime/dir/runtime1",
 			},
 			expectedConfig: map[string]interface{}{
 				"runtimes": map[string]interface{}{
@@ -169,11 +157,8 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 				},
 				"storage-driver": "overlay2",
 			},
-			runtimes: map[string]interface{}{
-				"runtime1": map[string]interface{}{
-					"path": "/test/runtime/dir/runtime1",
-					"args": []string{},
-				},
+			runtimes: map[string]string{
+				"runtime1": "/test/runtime/dir/runtime1",
 			},
 			expectedConfig: map[string]interface{}{
 				"exec-opts":  []string{"native.cgroupdriver=systemd"},
@@ -212,8 +197,10 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("test case %d", i), func(t *testing.T) {
-			err := UpdateConfig(tc.config, "", tc.runtimes)
-			require.NoError(t, err)
+			for runtimeName, runtimePath := range tc.runtimes {
+				err := UpdateConfig(tc.config, runtimeName, runtimePath, false)
+				require.NoError(t, err)
+			}
 
 			configContent, err := json.MarshalIndent(tc.config, "", "    ")
 			require.NoError(t, err)
