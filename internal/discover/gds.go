@@ -36,17 +36,19 @@ func NewGDSDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
 		root,
 	)
 
-	udev := &mounts{
-		logger:   logger,
-		lookup:   lookup.NewDirectoryLocator(logger, root),
-		required: []string{"/run/udev"},
-	}
+	udev := NewMounts(
+		logger,
+		lookup.NewDirectoryLocator(logger, root),
+		root,
+		[]string{"/run/udev"},
+	)
 
-	cufile := &mounts{
-		logger:   logger,
-		lookup:   lookup.NewFileLocator(logger, root),
-		required: []string{"/etc/cufile.json"},
-	}
+	cufile := NewMounts(
+		logger,
+		lookup.NewFileLocator(logger, root),
+		root,
+		[]string{"/etc/cufile.json"},
+	)
 
 	d := gdsDeviceDiscoverer{
 		logger:  logger,

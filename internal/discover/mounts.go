@@ -18,6 +18,8 @@ package discover
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
@@ -31,12 +33,23 @@ type mounts struct {
 	None
 	logger   *logrus.Logger
 	lookup   lookup.Locator
+	root     string
 	required []string
 	sync.Mutex
 	cache []Mount
 }
 
 var _ Discover = (*mounts)(nil)
+
+// NewMounts creates a discoverer for the required mounts using the specified locator.
+func NewMounts(logger *logrus.Logger, lookup lookup.Locator, root string, required []string) Discover {
+	return &mounts{
+		logger:   logger,
+		lookup:   lookup,
+		root:     filepath.Join("/", root),
+		required: required,
+	}
+}
 
 func (d *mounts) Mounts() ([]Mount, error) {
 	if d.lookup == nil {
@@ -71,11 +84,7 @@ func (d *mounts) Mounts() ([]Mount, error) {
 				continue
 			}
 
-			r, err := d.lookup.Relative(p)
-			if err != nil {
-				d.logger.Warnf("Failed to get relative path of %v: %v", p, err)
-				continue
-			}
+			r := d.relativeTo(p)
 			if r == "" {
 				r = p
 			}
@@ -96,4 +105,13 @@ func (d *mounts) Mounts() ([]Mount, error) {
 	d.cache = mounts
 
 	return d.cache, nil
+}
+
+// relativeTo returns the path relative to the root for the file locator
+func (d *mounts) relativeTo(path string) string {
+	if d.root == "/" {
+		return path
+	}
+
+	return strings.TrimPrefix(path, d.root)
 }

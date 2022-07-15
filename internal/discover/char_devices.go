@@ -30,16 +30,14 @@ var _ Discover = (*charDevices)(nil)
 func NewCharDeviceDiscoverer(logger *logrus.Logger, devices []string, root string) Discover {
 	locator := lookup.NewCharDeviceLocator(logger, root)
 
-	return NewDeviceDiscoverer(logger, locator, devices)
+	return NewDeviceDiscoverer(logger, locator, root, devices)
 }
 
 // NewDeviceDiscoverer creates a discoverer which locates the specified set of device nodes using the specified locator.
-func NewDeviceDiscoverer(logger *logrus.Logger, locator lookup.Locator, devices []string) Discover {
-	return &charDevices{
-		logger:   logger,
-		lookup:   locator,
-		required: devices,
-	}
+func NewDeviceDiscoverer(logger *logrus.Logger, locator lookup.Locator, root string, devices []string) Discover {
+	m := NewMounts(logger, locator, root, devices).(*mounts)
+
+	return (*charDevices)(m)
 }
 
 // Mounts returns the discovered mounts for the charDevices.

@@ -36,6 +36,7 @@ func TestNewFromMountSpec(t *testing.T) {
 
 	testCases := []struct {
 		description        string
+		root               string
 		targets            []*csv.MountSpec
 		expectedError      error
 		expectedDiscoverer Discover
@@ -76,12 +77,50 @@ func TestNewFromMountSpec(t *testing.T) {
 						&mounts{
 							logger:   logger,
 							lookup:   locators["dev"],
+							root:     "/",
 							required: []string{"dev0", "dev1"},
 						},
 					),
 					&mounts{
 						logger:   logger,
 						lookup:   locators["lib"],
+						root:     "/",
+						required: []string{"lib0"},
+					},
+				},
+			},
+		},
+		{
+			description: "sets root",
+			targets: []*csv.MountSpec{
+				{
+					Type: "dev",
+					Path: "dev0",
+				},
+				{
+					Type: "lib",
+					Path: "lib0",
+				},
+				{
+					Type: "dev",
+					Path: "dev1",
+				},
+			},
+			root: "/some/root",
+			expectedDiscoverer: &list{
+				discoverers: []Discover{
+					(*charDevices)(
+						&mounts{
+							logger:   logger,
+							lookup:   locators["dev"],
+							root:     "/some/root",
+							required: []string{"dev0", "dev1"},
+						},
+					),
+					&mounts{
+						logger:   logger,
+						lookup:   locators["lib"],
+						root:     "/some/root",
 						required: []string{"lib0"},
 					},
 				},
@@ -91,7 +130,7 @@ func TestNewFromMountSpec(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			discoverer, err := newFromMountSpecs(logger, locators, tc.targets)
+			discoverer, err := newFromMountSpecs(logger, locators, tc.root, tc.targets)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 				return
