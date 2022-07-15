@@ -28,7 +28,6 @@ import (
 // prefixes. The validity of a file is determined by a filter function.
 type file struct {
 	logger   *log.Logger
-	root     string
 	prefixes []string
 	filter   func(string) error
 }
@@ -76,15 +75,6 @@ func (p file) Locate(pattern string) ([]string, error) {
 		return nil, fmt.Errorf("pattern %v not found", pattern)
 	}
 	return filenames, nil
-}
-
-// Relative returns the path relative to the root for the file locator
-func (p file) Relative(path string) (string, error) {
-	if p.root == "" || p.root == "/" {
-		return path, nil
-	}
-
-	return filepath.Rel(p.root, path)
 }
 
 // assertFile checks whether the specified path is a regular file
