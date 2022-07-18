@@ -100,7 +100,7 @@ func getLibDirs(mounts []Mount) []string {
 		if exists {
 			continue
 		}
-		checked[dir] = isLibName(filepath.Base(m.Path))
+		checked[dir] = isLibName(m.Path)
 
 		if checked[dir] {
 			paths = append(paths, dir)
@@ -114,13 +114,18 @@ func getLibDirs(mounts []Mount) []string {
 
 // isLibName checks if the specified filename is a library (i.e. ends in `.so*`)
 func isLibName(filename string) bool {
-	parts := strings.Split(filename, ".")
 
-	for _, p := range parts {
-		if p == "so" {
-			return true
-		}
+	base := filepath.Base(filename)
+
+	isLib, err := filepath.Match("lib?*.so*", base)
+	if !isLib || err != nil {
+		return false
 	}
 
-	return false
+	parts := strings.Split(base, ".so")
+	if len(parts) == 1 {
+		return true
+	}
+
+	return parts[len(parts)-1] == "" || strings.HasPrefix(parts[len(parts)-1], ".")
 }

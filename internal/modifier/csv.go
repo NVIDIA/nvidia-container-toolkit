@@ -84,17 +84,22 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 		return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
 	}
 
-	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(logger, csvDiscoverer, config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create ldcach update hook discoverer: %v", err)
-	}
-
 	createSymlinksHook, err := discover.NewCreateSymlinksHook(logger, csvFiles, csvDiscoverer, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create symlink hook discoverer: %v", err)
 	}
 
-	d := discover.Merge(csvDiscoverer, ldcacheUpdateHook, createSymlinksHook)
+	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(logger, csvDiscoverer, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ldcach update hook discoverer: %v", err)
+	}
+
+	d := discover.Merge(
+		csvDiscoverer,
+		createSymlinksHook,
+		// The ldcacheUpdateHook is added last to ensure that the created symlinks are included
+		ldcacheUpdateHook,
+	)
 
 	discoverModifier, err := NewModifierFromDiscoverer(logger, d)
 	if err != nil {
