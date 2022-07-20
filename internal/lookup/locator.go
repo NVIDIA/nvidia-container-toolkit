@@ -21,5 +21,4 @@ package lookup
 // Locator defines the interface for locating files on a system.
 type Locator interface {
 	Locate(string) ([]string, error)
-	Relative(string) (string, error)
 }

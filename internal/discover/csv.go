@@ -52,7 +52,7 @@ func NewFromCSVFiles(logger *logrus.Logger, files []string, root string) (Discov
 		mountSpecs = append(mountSpecs, targets...)
 	}
 
-	return newFromMountSpecs(logger, locators, mountSpecs)
+	return newFromMountSpecs(logger, locators, root, mountSpecs)
 }
 
 // loadCSVFile loads the specified CSV file and returns the list of mount specs
@@ -71,7 +71,7 @@ func loadCSVFile(logger *logrus.Logger, filename string) ([]*csv.MountSpec, erro
 
 // newFromMountSpecs creates a discoverer for the CSV file. A logger is also supplied.
 // A list of csvDiscoverers is returned, with each being associated with a single MountSpecType.
-func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]lookup.Locator, targets []*csv.MountSpec) (Discover, error) {
+func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]lookup.Locator, root string, targets []*csv.MountSpec) (Discover, error) {
 	if len(targets) == 0 {
 		return &None{}, nil
 	}
@@ -95,13 +95,9 @@ func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]loo
 		var m Discover
 		switch t {
 		case csv.MountSpecDev:
-			m = NewDeviceDiscoverer(logger, locator, candidatesByType[t])
+			m = NewDeviceDiscoverer(logger, locator, root, candidatesByType[t])
 		default:
-			m = &mounts{
-				logger:   logger,
-				lookup:   locator,
-				required: candidatesByType[t],
-			}
+			m = NewMounts(logger, locator, root, candidatesByType[t])
 		}
 		discoverers = append(discoverers, m)
 
