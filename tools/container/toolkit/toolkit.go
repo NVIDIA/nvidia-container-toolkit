@@ -45,6 +45,9 @@ type options struct {
 	ContainerRuntimeLogLevel string
 	ContainerCLIDebug        string
 	toolkitRoot              string
+
+	acceptNVIDIAVisibleDevicesWhenUnprivileged bool
+	acceptNVIDIAVisibleDevicesAsVolumeMounts   bool
 }
 
 func main() {
@@ -110,6 +113,18 @@ func main() {
 			Usage:       "Specify the location of the debug log file for the NVIDIA Container CLI",
 			Destination: &opts.ContainerCLIDebug,
 			EnvVars:     []string{"NVIDIA_CONTAINER_CLI_DEBUG"},
+		},
+		&cli.BoolFlag{
+			Name:        "accept-nvidia-visible-devices-envvar-when-unprivileged",
+			Usage:       "Set the accept-nvidia-visible-devices-envvar-when-unprivileged config option",
+			Destination: &opts.acceptNVIDIAVisibleDevicesWhenUnprivileged,
+			EnvVars:     []string{"ACCEPT_NVIDIA_VISIBLE_DEVICES_ENVVAR_WHEN_UNPRIVILEGED"},
+		},
+		&cli.BoolFlag{
+			Name:        "accept-nvidia-visible-devices-as-volume-mounts",
+			Usage:       "Set the accept-nvidia-visible-devices-as-volume-mounts config option",
+			Destination: &opts.acceptNVIDIAVisibleDevicesWhenUnprivileged,
+			EnvVars:     []string{"ACCEPT_NVIDIA_VISIBLE_DEVICES_AS_VOLUME_MOUNTS"},
 		},
 		&cli.StringFlag{
 			Name:        "toolkit-root",
@@ -259,6 +274,10 @@ func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutable
 		return fmt.Errorf("could not create target config file: %v", err)
 	}
 	defer targetConfig.Close()
+
+	// Set the options in the root toml table
+	config.Set("accept-nvidia-visible-devices-envvar-when-unprivileged", opts.acceptNVIDIAVisibleDevicesWhenUnprivileged)
+	config.Set("accept-nvidia-visible-devices-as-volume-mounts", opts.acceptNVIDIAVisibleDevicesAsVolumeMounts)
 
 	nvidiaContainerCliKey := func(p string) []string {
 		return []string{"nvidia-container-cli", p}
