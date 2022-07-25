@@ -32,7 +32,6 @@ var signalReceived = make(chan bool, 1)
 
 var destinationArg string
 var noDaemonFlag bool
-var toolkitArgsFlag string
 var runtimeFlag string
 var runtimeArgsFlag string
 
@@ -44,7 +43,7 @@ func main() {
 	c := cli.NewApp()
 	c.Name = "nvidia-toolkit"
 	c.Usage = "Install the nvidia-container-toolkit for use by a given runtime"
-	c.UsageText = "DESTINATION [-n | --no-daemon] [-t | --toolkit-args] [-r | --runtime] [-u | --runtime-args]"
+	c.UsageText = "DESTINATION [-n | --no-daemon] [-r | --runtime] [-u | --runtime-args]"
 	c.Description = "DESTINATION points to the host path underneath which the nvidia-container-toolkit should be installed.\nIt will be installed at ${DESTINATION}/toolkit"
 	c.Version = Version
 	c.Action = Run
@@ -57,14 +56,6 @@ func main() {
 			Usage:       "terminate immediatly after setting up the runtime. Note that no cleanup will be performed",
 			Destination: &noDaemonFlag,
 			EnvVars:     []string{"NO_DAEMON"},
-		},
-		&cli.StringFlag{
-			Name:        "toolkit-args",
-			Aliases:     []string{"t"},
-			Usage:       "arguments to pass to the underlying 'toolkit' command",
-			Value:       defaultToolkitArgs,
-			Destination: &toolkitArgsFlag,
-			EnvVars:     []string{"TOOLKIT_ARGS"},
 		},
 		&cli.StringFlag{
 			Name:        "runtime",
@@ -221,17 +212,21 @@ func initialize() error {
 }
 
 func installToolkit() error {
-	toolkitDir := filepath.Join(destinationArg, toolkitSubDir)
-
 	log.Infof("Installing toolkit")
 
-	cmdline := fmt.Sprintf("%v install %v %v\n", toolkitCommand, toolkitArgsFlag, toolkitDir)
-	cmd := exec.Command("sh", "-c", cmdline)
+	cmdline := []string{
+		toolkitCommand,
+		"install",
+		"--toolkit-root",
+		filepath.Join(destinationArg, toolkitSubDir),
+	}
+
+	cmd := exec.Command("sh", "-c", strings.Join(cmdline, " "))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("error running %v command: %v", toolkitCommand, err)
+		return fmt.Errorf("error running %v command: %v", cmdline, err)
 	}
 
 	return nil
