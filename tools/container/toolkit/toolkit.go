@@ -39,13 +39,12 @@ const (
 	configFilename                     = "config.toml"
 )
 
-var toolkitDirArg string
-
 type options struct {
 	DriverRoot               string
 	ContainerRuntimeDebug    string
 	ContainerRuntimeLogLevel string
 	ContainerCLIDebug        string
+	toolkitDir               string
 }
 
 func main() {
@@ -63,7 +62,9 @@ func main() {
 	install.Name = "install"
 	install.Usage = "Install the components of the NVIDIA container toolkit"
 	install.ArgsUsage = "<toolkit_directory>"
-	install.Before = parseArgs
+	install.Before = func(c *cli.Context) error {
+		return parseArgs(c, &opts)
+	}
 	install.Action = func(c *cli.Context) error {
 		return Install(c, &opts)
 	}
@@ -73,8 +74,12 @@ func main() {
 	delete.Name = "delete"
 	delete.Usage = "Delete the NVIDIA container toolkit"
 	delete.ArgsUsage = "<toolkit_directory>"
-	delete.Before = parseArgs
-	delete.Action = Delete
+	delete.Before = func(c *cli.Context) error {
+		return parseArgs(c, &opts)
+	}
+	delete.Action = func(c *cli.Context) error {
+		return Delete(c, &opts)
+	}
 
 	// Register the subcommand with the top-level CLI
 	c.Commands = []*cli.Command{
@@ -118,23 +123,23 @@ func main() {
 }
 
 // parseArgs parses the command line arguments to the CLI
-func parseArgs(c *cli.Context) error {
+func parseArgs(c *cli.Context, opts *options) error {
 	args := c.Args()
 
 	log.Infof("Parsing arguments: %v", args.Slice())
 	if c.NArg() != 1 {
 		return fmt.Errorf("incorrect number of arguments")
 	}
-	toolkitDirArg = args.Get(0)
+	opts.toolkitDir = args.Get(0)
 	log.Infof("Successfully parsed arguments")
 
 	return nil
 }
 
 // Delete removes the NVIDIA container toolkit
-func Delete(cli *cli.Context) error {
-	log.Infof("Deleting NVIDIA container toolkit from '%v'", toolkitDirArg)
-	err := os.RemoveAll(toolkitDirArg)
+func Delete(cli *cli.Context, opts *options) error {
+	log.Infof("Deleting NVIDIA container toolkit from '%v'", opts.toolkitDir)
+	err := os.RemoveAll(opts.toolkitDir)
 	if err != nil {
 		return fmt.Errorf("error deleting toolkit directory: %v", err)
 	}
@@ -144,38 +149,38 @@ func Delete(cli *cli.Context) error {
 // Install installs the components of the NVIDIA container toolkit.
 // Any existing installation is removed.
 func Install(cli *cli.Context, opts *options) error {
-	log.Infof("Installing NVIDIA container toolkit to '%v'", toolkitDirArg)
+	log.Infof("Installing NVIDIA container toolkit to '%v'", opts.toolkitDir)
 
 	log.Infof("Removing existing NVIDIA container toolkit installation")
-	err := os.RemoveAll(toolkitDirArg)
+	err := os.RemoveAll(opts.toolkitDir)
 	if err != nil {
 		return fmt.Errorf("error removing toolkit directory: %v", err)
 	}
 
-	toolkitConfigDir := filepath.Join(toolkitDirArg, ".config", "nvidia-container-runtime")
+	toolkitConfigDir := filepath.Join(opts.toolkitDir, ".config", "nvidia-container-runtime")
 	toolkitConfigPath := filepath.Join(toolkitConfigDir, configFilename)
 
-	err = createDirectories(toolkitDirArg, toolkitConfigDir)
+	err = createDirectories(opts.toolkitDir, toolkitConfigDir)
 	if err != nil {
 		return fmt.Errorf("could not create required directories: %v", err)
 	}
 
-	err = installContainerLibraries(toolkitDirArg)
+	err = installContainerLibraries(opts.toolkitDir)
 	if err != nil {
 		return fmt.Errorf("error installing NVIDIA container library: %v", err)
 	}
 
-	err = installContainerRuntimes(toolkitDirArg, opts.DriverRoot)
+	err = installContainerRuntimes(opts.toolkitDir, opts.DriverRoot)
 	if err != nil {
 		return fmt.Errorf("error installing NVIDIA container runtime: %v", err)
 	}
 
-	nvidiaContainerCliExecutable, err := installContainerCLI(toolkitDirArg)
+	nvidiaContainerCliExecutable, err := installContainerCLI(opts.toolkitDir)
 	if err != nil {
 		return fmt.Errorf("error installing NVIDIA container CLI: %v", err)
 	}
 
-	_, err = installRuntimeHook(toolkitDirArg, toolkitConfigPath)
+	_, err = installRuntimeHook(opts.toolkitDir, toolkitConfigPath)
 	if err != nil {
 		return fmt.Errorf("error installing NVIDIA container runtime hook: %v", err)
 	}
