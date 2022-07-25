@@ -63,7 +63,7 @@ func main() {
 	install.Usage = "Install the components of the NVIDIA container toolkit"
 	install.ArgsUsage = "<toolkit_directory>"
 	install.Before = func(c *cli.Context) error {
-		return parseArgs(c, &opts)
+		return validateOptions(c, &opts)
 	}
 	install.Action = func(c *cli.Context) error {
 		return Install(c, &opts)
@@ -75,7 +75,7 @@ func main() {
 	delete.Usage = "Delete the NVIDIA container toolkit"
 	delete.ArgsUsage = "<toolkit_directory>"
 	delete.Before = func(c *cli.Context) error {
-		return parseArgs(c, &opts)
+		return validateOptions(c, &opts)
 	}
 	delete.Action = func(c *cli.Context) error {
 		return Delete(c, &opts)
@@ -111,10 +111,18 @@ func main() {
 			Destination: &opts.ContainerCLIDebug,
 			EnvVars:     []string{"NVIDIA_CONTAINER_CLI_DEBUG"},
 		},
+		&cli.StringFlag{
+			Name:        "toolkit-root",
+			Usage:       "The directory where the NVIDIA Container toolkit is to be installed",
+			Required:    true,
+			Destination: &opts.toolkitRoot,
+			EnvVars:     []string{"TOOLKIT_ROOT"},
+		},
 	}
 
 	// Update the subcommand flags with the common subcommand flags
 	install.Flags = append([]cli.Flag{}, flags...)
+	delete.Flags = append([]cli.Flag{}, flags...)
 
 	// Run the top-level CLI
 	if err := c.Run(os.Args); err != nil {
@@ -122,16 +130,11 @@ func main() {
 	}
 }
 
-// parseArgs parses the command line arguments to the CLI
-func parseArgs(c *cli.Context, opts *options) error {
-	args := c.Args()
-
-	log.Infof("Parsing arguments: %v", args.Slice())
-	if c.NArg() != 1 {
-		return fmt.Errorf("incorrect number of arguments")
+// validateOptions checks whether the specified options are valid
+func validateOptions(c *cli.Context, opts *options) error {
+	if opts.toolkitRoot == "" {
+		return fmt.Errorf("invalid --toolkit-root option: %v", opts.toolkitRoot)
 	}
-	opts.toolkitRoot = args.Get(0)
-	log.Infof("Successfully parsed arguments")
 
 	return nil
 }

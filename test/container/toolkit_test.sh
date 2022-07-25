@@ -23,7 +23,7 @@ testing::toolkit::install() {
 		READLINK="greadlink"
 	fi
 
-	testing::docker_run::toolkit::shell 'toolkit install /usr/local/nvidia/toolkit'
+	testing::docker_run::toolkit::shell 'toolkit install --toolkit-root=/usr/local/nvidia/toolkit'
 	docker run --rm -v "${shared_dir}:/work" alpine sh -c "chown -R ${uid}:${gid} /work/"
 
 	# Ensure toolkit dir is correctly setup
@@ -66,7 +66,7 @@ testing::toolkit::install() {
 testing::toolkit::delete() {
 	testing::docker_run::toolkit::shell 'mkdir -p /usr/local/nvidia/delete-toolkit'
 	testing::docker_run::toolkit::shell 'touch /usr/local/nvidia/delete-toolkit/test.file'
-	testing::docker_run::toolkit::shell 'toolkit delete /usr/local/nvidia/delete-toolkit'
+	testing::docker_run::toolkit::shell 'toolkit delete --toolkit-root=/usr/local/nvidia/delete-toolkit'
 
 	test ! -z "$(ls -A "${shared_dir}/usr/local/nvidia")"
 	test ! -e "${shared_dir}/usr/local/nvidia/delete-toolkit"
