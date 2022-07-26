@@ -1,5 +1,13 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.11.1-rc.1
+
+* Add discovery of GPUDirect Storage (`nvidia-fs*`) devices if the `NVIDIA_GDS` environment variable of the container is set to `enabled`
+* Add discovery of MOFED Infiniband devices if the `NVIDIA_MOFED` environment variable of the container is set to `enabled`
+* Fix bug in CSV mode where libraries listed as `sym` entries in mount specification are not added to the LDCache.
+* Rename `nvidia-contianer-toolkit` executable to `nvidia-container-runtime-hook` and create `nvidia-container-toolkit` as a symlink to `nvidia-container-runtime-hook` instead.
+* Add `nvidia-ctk runtime configure` command to configure the Docker config file (e.g. `/etc/docker/daemon.json`) for use with the NVIDIA Container Runtime.
+
 ## v1.10.0
 
 * Promote v1.10.0-rc.3 to v1.10.0
