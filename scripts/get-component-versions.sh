@@ -38,7 +38,7 @@ libnvidia_container_version_tag=$(grep "#define NVC_VERSION" ${LIBNVIDIA_CONTAIN
     | sed -e 's/#define NVC_VERSION[[:space:]]"\(.*\)"/\1/')
 libnvidia_container_version=${libnvidia_container_version_tag%%~*}
 libnvidia_container_tag=${libnvidia_container_version_tag##${libnvidia_container_version}}
-libnvidia_container_tag=${libnvidia_container_tag##~}
+libnvidia_container_tag=${libnvidia_container_tag##\~}
 
 versions_makefile=${NVIDIA_CONTAINER_TOOLKIT_ROOT}/versions.mk
 # Get version for nvidia-container-toolit
