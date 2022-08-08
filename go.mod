@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/BurntSushi/toml v1.0.0
-	github.com/NVIDIA/go-nvml v0.11.6-0
+	github.com/NVIDIA/go-nvml v0.11.6-0.0.20220715143214-a79f46f2a6f7
 	github.com/container-orchestrated-devices/container-device-interface v0.4.1-0.20220614144320-dc973e22f674
 	github.com/containers/podman/v4 v4.0.3
 	github.com/opencontainers/runc v1.1.3
@@ -13,6 +13,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli/v2 v2.3.0
+	gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20220725232003-c7f47cb02a33
 	golang.org/x/mod v0.5.0
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
 )
