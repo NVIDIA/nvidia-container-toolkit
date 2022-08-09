@@ -77,10 +77,16 @@ func newSpecModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec
 		return nil, err
 	}
 
+	tegraModifier, err := modifier.NewTegraPlatformFiles(logger)
+	if err != nil {
+		return nil, err
+	}
+
 	modifiers := modifier.Merge(
 		modeModifier,
 		gdsModifier,
 		mofedModifier,
+		tegraModifier,
 	)
 	return modifiers, nil
 }

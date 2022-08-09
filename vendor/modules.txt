@@ -2,7 +2,7 @@
 ## explicit
 github.com/BurntSushi/toml
 github.com/BurntSushi/toml/internal
-# github.com/NVIDIA/go-nvml v0.11.6-0
+# github.com/NVIDIA/go-nvml v0.11.6-0.0.20220715143214-a79f46f2a6f7
 ## explicit
 github.com/NVIDIA/go-nvml/pkg/dl
 # github.com/blang/semver v3.5.1+incompatible
@@ -70,6 +70,9 @@ github.com/xeipuuv/gojsonpointer
 github.com/xeipuuv/gojsonreference
 # github.com/xeipuuv/gojsonschema v1.2.0
 github.com/xeipuuv/gojsonschema
+# gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20220725232003-c7f47cb02a33
+## explicit
+gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvinfo
 # golang.org/x/mod v0.5.0
 ## explicit
 golang.org/x/mod/semver

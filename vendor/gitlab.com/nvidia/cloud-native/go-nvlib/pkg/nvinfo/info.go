@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package info
+package nvinfo
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/dl"
 )
 
-// HasNVML returns true if NVML is detected on the sytems
+// HasNVML returns true if NVML is detected on the system
 func HasNVML() (bool, string) {
 	const (
 		nvmlLibraryName      = "libnvidia-ml.so.1"

@@ -16,6 +16,8 @@
 
 package info
 
+import "gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvinfo"
+
 // Logger is a basic interface for logging to allow these functions to be called
 // from code where logrus is not used.
 type Logger interface {
@@ -32,10 +34,10 @@ func ResolveAutoMode(logger Logger, mode string) (rmode string) {
 		logger.Infof("Auto-detected mode as '%v'", rmode)
 	}()
 
-	isTegra, reason := IsTegraSystem()
+	isTegra, reason := nvinfo.IsTegraSystem()
 	logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
 
-	hasNVML, reason := HasNVML()
+	hasNVML, reason := nvinfo.HasNVML()
 	logger.Debugf("Has NVML? %v: %v", hasNVML, reason)
 
 	if isTegra && !hasNVML {
