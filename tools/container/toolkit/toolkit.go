@@ -117,13 +117,14 @@ func main() {
 		&cli.BoolFlag{
 			Name:        "accept-nvidia-visible-devices-envvar-when-unprivileged",
 			Usage:       "Set the accept-nvidia-visible-devices-envvar-when-unprivileged config option",
+			Value:       true,
 			Destination: &opts.acceptNVIDIAVisibleDevicesWhenUnprivileged,
 			EnvVars:     []string{"ACCEPT_NVIDIA_VISIBLE_DEVICES_ENVVAR_WHEN_UNPRIVILEGED"},
 		},
 		&cli.BoolFlag{
 			Name:        "accept-nvidia-visible-devices-as-volume-mounts",
 			Usage:       "Set the accept-nvidia-visible-devices-as-volume-mounts config option",
-			Destination: &opts.acceptNVIDIAVisibleDevicesWhenUnprivileged,
+			Destination: &opts.acceptNVIDIAVisibleDevicesAsVolumeMounts,
 			EnvVars:     []string{"ACCEPT_NVIDIA_VISIBLE_DEVICES_AS_VOLUME_MOUNTS"},
 		},
 		&cli.StringFlag{
@@ -314,6 +315,10 @@ func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutable
 	if err != nil {
 		return fmt.Errorf("error writing config: %v", err)
 	}
+
+	os.Stdout.WriteString("Using config:\n")
+	config.WriteTo(os.Stdout)
+
 	return nil
 }
 
