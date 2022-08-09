@@ -123,7 +123,7 @@ func main() {
 		&cli.BoolFlag{
 			Name:        "accept-nvidia-visible-devices-as-volume-mounts",
 			Usage:       "Set the accept-nvidia-visible-devices-as-volume-mounts config option",
-			Destination: &opts.acceptNVIDIAVisibleDevicesWhenUnprivileged,
+			Destination: &opts.acceptNVIDIAVisibleDevicesAsVolumeMounts,
 			EnvVars:     []string{"ACCEPT_NVIDIA_VISIBLE_DEVICES_AS_VOLUME_MOUNTS"},
 		},
 		&cli.StringFlag{
