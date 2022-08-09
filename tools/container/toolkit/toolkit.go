@@ -315,6 +315,10 @@ func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutable
 	if err != nil {
 		return fmt.Errorf("error writing config: %v", err)
 	}
+
+	os.Stdout.WriteString("Using config:\n")
+	config.WriteTo(os.Stdout)
+
 	return nil
 }
 
