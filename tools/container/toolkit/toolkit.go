@@ -117,6 +117,7 @@ func main() {
 		&cli.BoolFlag{
 			Name:        "accept-nvidia-visible-devices-envvar-when-unprivileged",
 			Usage:       "Set the accept-nvidia-visible-devices-envvar-when-unprivileged config option",
+			Value:       true,
 			Destination: &opts.acceptNVIDIAVisibleDevicesWhenUnprivileged,
 			EnvVars:     []string{"ACCEPT_NVIDIA_VISIBLE_DEVICES_ENVVAR_WHEN_UNPRIVILEGED"},
 		},
