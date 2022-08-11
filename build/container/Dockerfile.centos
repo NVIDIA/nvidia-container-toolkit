@@ -69,7 +69,7 @@ RUN PACKAGE_ARCH=${PACKAGE_ARCH/amd64/x86_64} && PACKAGE_ARCH=${PACKAGE_ARCH/arm
     yum localinstall -y \
     ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container1-1.*.rpm \
     ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container-tools-1.*.rpm \
-    ${PACKAGE_DIST}/${PACKAGE_ARCH}/nvidia-container-toolkit-${PACKAGE_VERSION}*.rpm
+    ${PACKAGE_DIST}/${PACKAGE_ARCH}/nvidia-container-toolkit*-${PACKAGE_VERSION}*.rpm
 
 WORKDIR /work
 
