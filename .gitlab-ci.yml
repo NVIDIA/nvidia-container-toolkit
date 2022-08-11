@@ -94,7 +94,7 @@ unit-tests:
     - .multi-arch-build
     - .package-artifacts
   stage: package-build
-  timeout: 2h 30m
+  timeout: 3h
   script:
     - ./scripts/build-packages.sh ${DIST}-${ARCH}
 
