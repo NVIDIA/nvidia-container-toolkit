@@ -43,8 +43,8 @@ testing::containerd::toolkit::run() {
 
 	# Ensure that we can run some non GPU containers from within dind
 	with_retry 3 5s testing::containerd::dind::exec " \
-		ctr --address=${containerd_dind_containerd_dir}/containerd.sock image pull nvcr.io/nvidia/cuda-11.1.1-base-ubuntu20.04; \
-		ctr --address=${containerd_dind_containerd_dir}/containerd.sock run --rm --runtime=io.containerd.runtime.v1.linux nvcr.io/nvidia/cuda-11.1.1-base-ubuntu20.04 cuda echo foo"
+		ctr --address=${containerd_dind_containerd_dir}/containerd.sock image pull nvcr.io/nvidia/cuda:11.1.1-base-ubuntu20.04; \
+		ctr --address=${containerd_dind_containerd_dir}/containerd.sock run --rm --runtime=io.containerd.runtime.v1.linux nvcr.io/nvidia/cuda:11.1.1-base-ubuntu20.04 cuda echo foo"
 
 	# Share the volumes so that we can edit the config file and point to the new runtime
 	# Share the pid so that we can ask docker to reload its config
@@ -63,8 +63,8 @@ testing::containerd::toolkit::run() {
 
 	# Ensure that we haven't broken non GPU containers
 	with_retry 3 5s testing::containerd::dind::exec " \
-		ctr --address=${containerd_dind_containerd_dir}/containerd.sock image pull nvcr.io/nvidia/cuda-11.1.1-base-ubuntu20.04; \
-		ctr --address=${containerd_dind_containerd_dir}/containerd.sock run --rm --runtime=io.containerd.runtime.v1.linux nvcr.io/nvidia/cuda-11.1.1-base-ubuntu20.04 cuda echo foo"
+		ctr --address=${containerd_dind_containerd_dir}/containerd.sock image pull nvcr.io/nvidia/cuda:11.1.1-base-ubuntu20.04; \
+		ctr --address=${containerd_dind_containerd_dir}/containerd.sock run --rm --runtime=io.containerd.runtime.v1.linux nvcr.io/nvidia/cuda:11.1.1-base-ubuntu20.04 cuda echo foo"
 }
 
 # This test runs containerd setup and containerd cleanup in succession to ensure that the
