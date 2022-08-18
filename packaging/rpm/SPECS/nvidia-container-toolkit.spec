@@ -55,7 +55,7 @@ install -m 644 -t %{buildroot}/usr/share/containers/oci/hooks.d oci-nvidia-hook.
 ln -sf %{_bindir}/nvidia-container-runtime-hook %{_bindir}/nvidia-container-toolkit
 
 %postun
-rm -f %{_bindir}/nvidia-container-runtime-toolkit
+rm -f %{_bindir}/nvidia-container-toolkit
 
 %files
 %license LICENSE
