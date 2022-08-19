@@ -1,5 +1,5 @@
 /**
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-*/
+**/
+
 package main
 
 import (
@@ -22,8 +23,6 @@ import (
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	hooks "github.com/containers/podman/v4/pkg/hooks/1.0.0"
-	rspec "github.com/opencontainers/runtime-spec/specs-go"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )
@@ -164,20 +163,20 @@ func getHookPath(hooksDir string, hookFilename string) string {
 	return filepath.Join(hooksDir, hookFilename)
 }
 
-func generateOciHook(toolkitDir string) hooks.Hook {
+func generateOciHook(toolkitDir string) podmanHook {
 	hookPath := filepath.Join(toolkitDir, config.NVIDIAContainerRuntimeHookExecutable)
 	envPath := "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:" + toolkitDir
 	always := true
 
-	hook := hooks.Hook{
+	hook := podmanHook{
 		Version: "1.0.0",
 		Stages:  []string{"prestart"},
-		Hook: rspec.Hook{
+		Hook: specHook{
 			Path: hookPath,
 			Args: []string{filepath.Base(config.NVIDIAContainerRuntimeHookExecutable), "prestart"},
 			Env:  []string{envPath},
 		},
-		When: hooks.When{
+		When: When{
 			Always:   &always,
 			Commands: []string{".*"},
 		},
