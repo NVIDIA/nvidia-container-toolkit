@@ -76,6 +76,6 @@ RUN dch --create --package="${PKG_NAME}" \
     if [ "$REVISION" != "$(dpkg-parsechangelog --show-field=Version)" ]; then exit 1; fi
 
 CMD export DISTRIB="$(lsb_release -cs)" && \
-    debuild -eDISTRIB -eSECTION -eLIBNVIDIA_CONTAINER_TOOLS_VERSION \
+    debuild -eDISTRIB -eSECTION -eLIBNVIDIA_CONTAINER_TOOLS_VERSION -eVERSION="${REVISION}" \
     --dpkg-buildpackage-hook='sh debian/prepare' -i -us -uc -b && \
     mv /tmp/nvidia-container-toolkit_*.deb /dist

@@ -10,8 +10,16 @@ Build-Depends: debhelper (>= 9)
 
 Package: nvidia-container-toolkit
 Architecture: any
-Depends: ${misc:Depends}, libnvidia-container-tools (>= @LIBNVIDIA_CONTAINER_TOOLS_VERSION@), libnvidia-container-tools (<< 2.0.0), libseccomp2
+Depends: ${misc:Depends}, nvidia-container-toolkit-base (= @VERSION@), libnvidia-container-tools (>= @LIBNVIDIA_CONTAINER_TOOLS_VERSION@), libnvidia-container-tools (<< 2.0.0), libseccomp2
 Breaks: nvidia-container-runtime (<= 3.5.0-1), nvidia-container-runtime-hook
 Replaces: nvidia-container-runtime (<= 3.5.0-1), nvidia-container-runtime-hook
 Description: NVIDIA Container toolkit
  Provides tools and utilities to enable GPU support in containers.
+
+Package: nvidia-container-toolkit-base
+Architecture: any
+Depends: ${misc:Depends}
+Breaks: nvidia-container-runtime (<= 3.5.0-1), nvidia-container-runtime-hook, nvidia-container-toolkit (<= 1.10.0-1)
+Replaces: nvidia-container-runtime (<= 3.5.0-1), nvidia-container-runtime-hook
+Description: NVIDIA Container Toolkit Base
+ Provides tools such as the NVIDIA Container Runtime and NVIDIA Container Toolkit CLI to enable GPU support in containers.

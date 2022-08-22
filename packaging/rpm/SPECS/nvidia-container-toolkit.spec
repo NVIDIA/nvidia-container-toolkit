@@ -18,10 +18,11 @@ Source4: oci-nvidia-hook
 Source5: oci-nvidia-hook.json
 Source6: LICENSE
 
-Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook
+Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook <= 1.4.0-2
 Provides: nvidia-container-runtime
 Provides: nvidia-container-runtime-hook
 Requires: libnvidia-container-tools >= %{libnvidia_container_tools_version}, libnvidia-container-tools < 2.0.0
+Requires: nvidia-container-toolkit-base == %{version}-%{release}
 
 %if 0%{?suse_version}
 Requires: libseccomp2
@@ -60,9 +61,6 @@ rm -f %{_bindir}/nvidia-container-toolkit
 %files
 %license LICENSE
 %{_bindir}/nvidia-container-runtime-hook
-%{_bindir}/nvidia-container-runtime
-%{_bindir}/nvidia-ctk
-%config /etc/nvidia-container-runtime/config.toml
 /usr/libexec/oci/hooks.d/oci-nvidia-hook
 /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
@@ -71,3 +69,22 @@ rm -f %{_bindir}/nvidia-container-toolkit
 * %{release_date} NVIDIA CORPORATION <cudatools@nvidia.com> %{version}-%{release}
 - See https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/blob/%{git_commit}/CHANGELOG.md
 - Bump libnvidia-container dependency to libnvidia-container-tools >= %{libnvidia_container_tools_version}
+
+# The BASE package consists of the NVIDIA Container Runtime and the NVIDIA Container Toolkit CLI.
+# This allows the package to be installed on systems where no NVIDIA Container CLI is available.
+%package base
+Summary: NVIDIA Container Toolkit Base
+Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook <= 1.4.0-2
+Provides: nvidia-container-runtime
+# Since this package allows certain components of the NVIDIA Container Toolkit to be installed separately
+# it conflicts with older versions of the nvidia-container-toolkit package that also provide these files.
+Conflicts: nvidia-container-toolkit <= 1.10.0-1
+
+%description base
+Provides tools such as the NVIDIA Container Runtime and NVIDIA Container Toolkit CLI to enable GPU support in containers.
+
+%files base
+%license LICENSE
+%config /etc/nvidia-container-runtime/config.toml
+%{_bindir}/nvidia-container-runtime
+%{_bindir}/nvidia-ctk
