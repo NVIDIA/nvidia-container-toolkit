@@ -61,6 +61,8 @@ function sign() {
         ;;
     debian*) pkg_type=deb
         ;;
+    fedora*) pkg_type=rpm
+        ;;
     opensuse-leap*) pkg_type=rpm
         ;;
     ubuntu*) pkg_type=deb
