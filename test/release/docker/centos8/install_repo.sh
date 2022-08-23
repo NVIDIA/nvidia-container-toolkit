@@ -21,5 +21,5 @@
 
 test_repo=$1
 echo "Setting up TEST repo: ${test_repo}"
-sed -i -e "s#nvidia\.github\.io/libnvidia-container#${test_repo}/libnvidia-container#g" /etc/yum.repos.d/nvidia-docker.repo
+sed -i -e "s#nvidia\.github\.io/libnvidia-container#${test_repo}/libnvidia-container#g" /etc/yum.repos.d/nvidia-container-toolkit.repo
 yum-config-manager --enable libnvidia-container-experimental

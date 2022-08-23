@@ -39,9 +39,8 @@ RUN fpm -s empty \
     rm -f /tmp/docker.deb
 
 
-ARG WORKFLOW=nvidia-docker
-RUN curl -s -L https://nvidia.github.io/${WORKFLOW}/gpgkey | apt-key add - \
-   && curl -s -L https://nvidia.github.io/${WORKFLOW}/ubuntu18.04/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list \
+RUN curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | apt-key add - \
+   && curl -s -L https://nvidia.github.io/libnvidia-container/ubuntu18.04/libnvidia-container.list | tee /etc/apt/sources.list.d/nvidia-container-toolkit.list \
    && apt-get update
 
 COPY entrypoint.sh /

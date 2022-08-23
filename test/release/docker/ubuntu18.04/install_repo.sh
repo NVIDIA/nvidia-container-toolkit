@@ -21,5 +21,5 @@
 
 test_repo=$1
 echo "Setting up TEST repo: ${test_repo}"
-sed -i -e "s#nvidia\.github\.io/libnvidia-container#${test_repo}/libnvidia-container#g" /etc/apt/sources.list.d/nvidia-docker.list
-sed -i -e '/experimental/ s/^#//g' /etc/apt/sources.list.d/nvidia-docker.list
+sed -i -e "s#nvidia\.github\.io/libnvidia-container#${test_repo}/libnvidia-container#g" /etc/apt/sources.list.d/nvidia-container-toolkit.list
+sed -i -e '/experimental/ s/^#//g' /etc/apt/sources.list.d/nvidia-container-toolkit.list

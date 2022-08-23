@@ -25,9 +25,8 @@ RUN fpm -s empty \
     rm -f /tmp/docker.rpm
 
 
-ARG WORKFLOW=nvidia-docker
-RUN curl -s -L https://nvidia.github.io/${WORKFLOW}/centos8/nvidia-docker.repo \
-    | tee /etc/yum.repos.d/nvidia-docker.repo
+RUN curl -s -L https://nvidia.github.io/libnvidia-container/centos8/libnvidia-container.repo \
+    | tee /etc/yum.repos.d/nvidia-container-toolkit.repo
 
 COPY entrypoint.sh /
 COPY install_repo.sh /
