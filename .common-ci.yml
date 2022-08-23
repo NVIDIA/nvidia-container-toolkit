@@ -57,6 +57,10 @@ stages:
   variables:
     DIST: debian9
 
+.dist-fedora35:
+  variables:
+    DIST: fedora35
+
 .dist-opensuse-leap15.1:
   variables:
     DIST: opensuse-leap15.1

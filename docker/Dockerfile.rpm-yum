@@ -1,3 +1,19 @@
+# Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is the dockerfile for building packages on yum-based RPM systems.
+
 ARG BASEIMAGE
 FROM ${BASEIMAGE}
 
@@ -6,8 +22,8 @@ RUN yum install -y \
         gcc \
         wget \
         git \
-        rpm-build \
-        make && \
+        make \
+        rpm-build && \
     rm -rf /var/cache/yum/*
 
 ARG GOLANG_VERSION=0.0.0
@@ -51,8 +67,6 @@ ENV CONFIG_TOML_SUFFIX ${CONFIG_TOML_SUFFIX}
 COPY config/config.toml.${CONFIG_TOML_SUFFIX} $DIST_DIR/config.toml
 
 # Hook for Project Atomic's fork of Docker: https://github.com/projectatomic/docker/tree/docker-1.13.1-rhel#add-dockerhooks-exec-custom-hooks-for-prestartpoststop-containerspatch
-# This might not be useful on Amazon Linux, but it's simpler to keep the RHEL
-# and Amazon Linux packages identical.
 COPY oci-nvidia-hook $DIST_DIR/oci-nvidia-hook
 
 # Hook for libpod/CRI-O: https://github.com/containers/libpod/blob/v0.8.5/pkg/hooks/docs/oci-hooks.5.md

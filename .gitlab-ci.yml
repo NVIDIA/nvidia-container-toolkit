@@ -94,7 +94,7 @@ unit-tests:
     - .multi-arch-build
     - .package-artifacts
   stage: package-build
-  timeout: 2h 30m
+  timeout: 3h
   script:
     - ./scripts/build-packages.sh ${DIST}-${ARCH}
 
@@ -157,6 +157,18 @@ package-debian9-amd64:
     - .package-build
     - .dist-debian9
     - .arch-amd64
+
+package-fedora35-aarch64:
+  extends:
+    - .package-build
+    - .dist-fedora35
+    - .arch-aarch64
+
+package-fedora35-x86_64:
+  extends:
+    - .package-build
+    - .dist-fedora35
+    - .arch-x86_64
 
 package-opensuse-leap15.1-x86_64:
   extends:
@@ -278,6 +290,8 @@ image-packaging:
     - package-centos8-x86_64
     - package-debian10-amd64
     - package-debian9-amd64
+    - package-fedora35-aarch64
+    - package-fedora35-x86_64
     - package-opensuse-leap15.1-x86_64
     - package-ubuntu16.04-amd64
     - package-ubuntu16.04-ppc64le
