@@ -1,4 +1,4 @@
-ARG BASEIMAGE=quay.io/centos/centos:stream8
+ARG BASEIMAGE=fedora:35
 FROM ${BASEIMAGE}
 
 RUN yum install -y \
@@ -25,7 +25,7 @@ RUN fpm -s empty \
     rm -f /tmp/docker.rpm
 
 
-RUN curl -s -L https://nvidia.github.io/libnvidia-container/centos8/libnvidia-container.repo \
+RUN curl -s -L https://nvidia.github.io/libnvidia-container/fedora35/nvidia-container-toolkit.repo \
     | tee /etc/yum.repos.d/nvidia-container-toolkit.repo
 
 COPY entrypoint.sh /

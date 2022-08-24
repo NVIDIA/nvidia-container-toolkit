@@ -28,9 +28,9 @@ ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 ARG PKG_NAME
 ARG PKG_VERS
 ARG PKG_REV
-
-ENV VERSION $PKG_VERS
-ENV RELEASE $PKG_REV
+ENV PKG_NAME ${PKG_NAME}
+ENV PKG_VERS ${PKG_VERS}
+ENV PKG_REV ${PKG_REV}
 
 # output directory
 ENV DIST_DIR=/tmp/nvidia-container-toolkit-$PKG_VERS/SOURCES
@@ -65,8 +65,8 @@ CMD arch=$(uname -m) && \
              -D "_topdir $PWD" \
              -D "release_date $(date +'%a %b %d %Y')" \
              -D "git_commit ${GIT_COMMIT}" \
-             -D "version $VERSION" \
+             -D "version ${PKG_VERS}" \
              -D "libnvidia_container_tools_version ${LIBNVIDIA_CONTAINER_TOOLS_VERSION}" \
-             -D "release $RELEASE" \
+             -D "release ${PKG_REV}" \
              SPECS/nvidia-container-toolkit.spec && \
     mv RPMS/$arch/*.rpm /dist
