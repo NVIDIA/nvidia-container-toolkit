@@ -1,11 +1,20 @@
 # NVIDIA Container Toolkit Changelog
 
-## v1.11.1-rc.2
+## v1.11.0-rc.3
+
+* Build fedora35 packages
+* Introduce an `nvidia-container-toolkit-base` package for better dependency management
+* Fix removal of `nvidia-container-runtime-hook` on RPM-based systems
+* Inject platform files into container on Tegra-based systems
+* [toolkit container] Update CUDA base images to 11.7.1
+* [libnvidia-container] Preload libgcc_s.so.1 on arm64 systems
+
+## v1.11.0-rc.2
 
 * Allow `accept-nvidia-visible-devices-*` config options to be set by toolkit container
 * [libnvidia-container] Fix bug where LDCache was not updated when the `--no-pivot-root` option was specified
 
-## v1.11.1-rc.1
+## v1.11.0-rc.1
 
 * Add discovery of GPUDirect Storage (`nvidia-fs*`) devices if the `NVIDIA_GDS` environment variable of the container is set to `enabled`
 * Add discovery of MOFED Infiniband devices if the `NVIDIA_MOFED` environment variable of the container is set to `enabled`
