@@ -30,13 +30,13 @@ var availableRuntimes = map[string]struct{}{"docker": {}, "crio": {}, "container
 var waitingForSignal = make(chan bool, 1)
 var signalReceived = make(chan bool, 1)
 
-var destinationArg string
-
 // options stores the command line arguments
 type options struct {
 	noDaemon    bool
 	runtime     string
 	runtimeArgs string
+
+	root string
 }
 
 // Version defines the CLI version. This is set at build time using LD FLAGS
@@ -87,7 +87,7 @@ func main() {
 	// Run the CLI
 	log.Infof("Starting %v", c.Name)
 
-	remainingArgs, err := ParseArgs(os.Args)
+	remainingArgs, err := ParseArgs(os.Args, &options)
 	if err != nil {
 		log.Errorf("Error: unable to parse arguments: %v", err)
 		os.Exit(1)
@@ -114,7 +114,7 @@ func Run(c *cli.Context, o *options) error {
 	}
 	defer shutdown()
 
-	err = installToolkit()
+	err = installToolkit(o)
 	if err != nil {
 		return fmt.Errorf("unable to install toolkit: %v", err)
 	}
@@ -140,7 +140,7 @@ func Run(c *cli.Context, o *options) error {
 }
 
 // ParseArgs parses the command line arguments and returns the remaining arguments
-func ParseArgs(args []string) ([]string, error) {
+func ParseArgs(args []string, o *options) ([]string, error) {
 	log.Infof("Parsing arguments")
 
 	numPositionalArgs := 2 // Includes command itself
@@ -170,7 +170,7 @@ func ParseArgs(args []string) ([]string, error) {
 		}
 	}
 
-	destinationArg = args[1]
+	o.root = args[1]
 
 	return append([]string{args[0]}, args[numPositionalArgs:]...), nil
 }
@@ -220,14 +220,14 @@ func initialize() error {
 	return nil
 }
 
-func installToolkit() error {
+func installToolkit(o *options) error {
 	log.Infof("Installing toolkit")
 
 	cmdline := []string{
 		toolkitCommand,
 		"install",
 		"--toolkit-root",
-		filepath.Join(destinationArg, toolkitSubDir),
+		filepath.Join(o.root, toolkitSubDir),
 	}
 
 	cmd := exec.Command("sh", "-c", strings.Join(cmdline, " "))
@@ -242,7 +242,7 @@ func installToolkit() error {
 }
 
 func setupRuntime(o *options) error {
-	toolkitDir := filepath.Join(destinationArg, toolkitSubDir)
+	toolkitDir := filepath.Join(o.root, toolkitSubDir)
 
 	log.Infof("Setting up runtime")
 
@@ -267,7 +267,7 @@ func waitForSignal() error {
 }
 
 func cleanupRuntime(o *options) error {
-	toolkitDir := filepath.Join(destinationArg, toolkitSubDir)
+	toolkitDir := filepath.Join(o.root, toolkitSubDir)
 
 	log.Infof("Cleaning up Runtime")
 
