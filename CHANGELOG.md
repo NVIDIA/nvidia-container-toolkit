@@ -1,5 +1,9 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.11.0
+
+* Promote v1.11.0-rc.3 to v1.11.0
+
 ## v1.11.0-rc.3
 
 * Build fedora35 packages
