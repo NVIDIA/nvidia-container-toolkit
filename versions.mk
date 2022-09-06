@@ -14,7 +14,7 @@
 
 LIB_NAME := nvidia-container-toolkit
 LIB_VERSION := 1.11.0
-LIB_TAG := rc.3
+LIB_TAG :=
 
 # Specify the nvidia-docker2 and nvidia-container-runtime package versions.
 # Note: The tag is automatically specified to match LIB_TAG.
@@ -27,4 +27,4 @@ LIBNVIDIA_CONTAINER0_VERSION := 0.10.0+jetpack
 CUDA_VERSION := 11.7.1
 GOLANG_VERSION := 1.17.8
 
-GIT_COMMIT ?= $(shell git describe --dirty --long --always 2> /dev/null || echo "")
+GIT_COMMIT ?= $(shell git describe --match="" --dirty --long --always 2> /dev/null || echo "")
