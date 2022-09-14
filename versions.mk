@@ -13,13 +13,14 @@
 # limitations under the License.
 
 LIB_NAME := nvidia-container-toolkit
-LIB_VERSION := 1.11.0
-LIB_TAG :=
+LIB_VERSION := 1.12.0
+LIB_TAG := rc.1
 
 # Specify the nvidia-docker2 and nvidia-container-runtime package versions.
-# Note: The tag is automatically specified to match LIB_TAG.
-NVIDIA_DOCKER_VERSION := 2.11.0
-NVIDIA_CONTAINER_RUNTIME_VERSION := 3.11.0
+# Note: The build tooling uses `LIB_TAG` above as the version tag.
+# This is appended to the versions below if specified.
+NVIDIA_DOCKER_VERSION := 2.12.0
+NVIDIA_CONTAINER_RUNTIME_VERSION := 3.12.0
 
 # Specify the expected libnvidia-container0 version for arm64-based ubuntu builds.
 LIBNVIDIA_CONTAINER0_VERSION := 0.10.0+jetpack
