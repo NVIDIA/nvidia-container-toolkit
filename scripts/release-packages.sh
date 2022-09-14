@@ -132,8 +132,17 @@ function sync() {
 
     done
     if [[ ${REPO} == "stable" ]]; then
-        cp ${src}/nvidia-container-runtime*.${pkg_type} ${dst}
-        cp ${src}/nvidia-docker*.${pkg_type} ${dst}
+        for f in $(ls ${src}/nvidia-container-runtime*.${pkg_type} ${src}/nvidia-docker*.${pkg_type}); do
+            df=${dst}/$(basename ${f})
+            df_stable=${df//"/experimental/"/"/stable/"}
+            if [[ -f "${df}" ]]; then
+                echo "${df} already exists; skipping"
+            elif [[ ${REPO} == "experimental" && -f ${df_stable} ]]; then
+                echo "${df_stable} already exists; skipping"
+            else
+                cp ${f} ${df}
+            fi
+        done
     fi
 }
 
