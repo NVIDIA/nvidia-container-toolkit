@@ -48,7 +48,12 @@ func run(argv []string) (rerr error) {
 	if err != nil {
 		return fmt.Errorf("failed to set up logger: %v", err)
 	}
-	defer logger.Reset()
+	defer func() {
+		if rerr != nil {
+			logger.Errorf("%v", rerr)
+		}
+		logger.Reset()
+	}()
 
 	logger.Debugf("Command line arguments: %v", argv)
 	runtime, err := newNVIDIAContainerRuntime(logger.Logger, cfg, argv)
