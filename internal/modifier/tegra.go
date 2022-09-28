@@ -21,12 +21,12 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvinfo"
+	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
 )
 
 // NewTegraPlatformFiles creates a modifier to inject the Tegra platform files into a container.
 func NewTegraPlatformFiles(logger *logrus.Logger) (oci.SpecModifier, error) {
-	isTegra, _ := nvinfo.IsTegraSystem()
+	isTegra, _ := info.New().IsTegraSystem()
 	if !isTegra {
 		return nil, nil
 	}

@@ -14,18 +14,31 @@
 # limitations under the License.
 **/
 
-package nvinfo
+package info
 
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/NVIDIA/go-nvml/pkg/dl"
 )
 
-// HasNVML returns true if NVML is detected on the system
-func HasNVML() (bool, string) {
+// Interface provides the API to the info package
+type Interface interface {
+	HasNvml() (bool, string)
+	IsTegraSystem() (bool, string)
+}
+
+type infolib struct {
+	root string
+}
+
+var _ Interface = &infolib{}
+
+// HasNvml returns true if NVML is detected on the system
+func (i *infolib) HasNvml() (bool, string) {
 	const (
 		nvmlLibraryName      = "libnvidia-ml.so.1"
 		nvmlLibraryLoadFlags = dl.RTLD_LAZY
@@ -40,9 +53,9 @@ func HasNVML() (bool, string) {
 }
 
 // IsTegraSystem returns true if the system is detected as a Tegra-based system
-func IsTegraSystem() (bool, string) {
-	const tegraReleaseFile = "/etc/nv_tegra_release"
-	const tegraFamilyFile = "/sys/devices/soc0/family"
+func (i *infolib) IsTegraSystem() (bool, string) {
+	tegraReleaseFile := filepath.Join(i.root, "/etc/nv_tegra_release")
+	tegraFamilyFile := filepath.Join(i.root, "/sys/devices/soc0/family")
 
 	if info, err := os.Stat(tegraReleaseFile); err == nil && !info.IsDir() {
 		return true, fmt.Sprintf("%v found", tegraReleaseFile)

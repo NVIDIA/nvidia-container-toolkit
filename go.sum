@@ -44,6 +44,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/NVIDIA/go-nvml v0.11.6-0.0.20220614115128-31f8b89eb740/go.mod h1:hy7HYeQy335x6nEss0Ne3PYqleRa6Ct+VKD9RQ4nyFs=
 github.com/NVIDIA/go-nvml v0.11.6-0.0.20220715143214-a79f46f2a6f7 h1:yl06QAxbf3g3VZX5/7CaZfTUZqFztdZZvlq0TfAvQrk=
 github.com/NVIDIA/go-nvml v0.11.6-0.0.20220715143214-a79f46f2a6f7/go.mod h1:hy7HYeQy335x6nEss0Ne3PYqleRa6Ct+VKD9RQ4nyFs=
+github.com/NVIDIA/go-nvml v0.11.6-0.0.20220823120812-7e2082095e82 h1:x751Xx1tdxkiA/sdkv2J769n21UbYKzVOpe9S/h1M3k=
+github.com/NVIDIA/go-nvml v0.11.6-0.0.20220823120812-7e2082095e82/go.mod h1:hy7HYeQy335x6nEss0Ne3PYqleRa6Ct+VKD9RQ4nyFs=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
@@ -297,6 +299,8 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20220725232003-c7f47cb02a33 h1:YnWOCWHjoQtpzKUo/ihqs0ldj+GJ2qJ4QhLctMwzcKk=
 gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20220725232003-c7f47cb02a33/go.mod h1:SIbXUP9E8o3uWK6MMfX6Oi9ABkUqhPSX8W8VdVWkYI4=
+gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20220922133427-1049a7fa76a9 h1:3C1cK0/n1HGfH0MPCCPRntK8xPNlrVq9OWR4RA72jW0=
+gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20220922133427-1049a7fa76a9/go.mod h1:GStidGxhaqJhYFW1YpOnLvYCbL2EsM0od7IW4u7+JgU=
 go.etcd.io/etcd/api/v3 v3.5.0/go.mod h1:cbVKeC6lCfl7j/8jBhAK6aIYO9XOjdptoxU/nLQcPvs=
 go.etcd.io/etcd/client/pkg/v3 v3.5.0/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3YSwc9/Ac1g=
 go.etcd.io/etcd/client/v2 v2.305.0/go.mod h1:h9puh54ZTgAKtEbut2oe9P4L/oqKCVB6xsXlzd7alYQ=
