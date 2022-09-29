@@ -40,21 +40,8 @@ func NewGraphicsModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.
 		return nil, err
 	}
 
-	if devices := image.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices.List()) == 0 {
-		logger.Infof("No modification required; no devices requested")
-		return nil, nil
-	}
-
-	var hasGraphics bool
-	for _, c := range strings.Split(image["NVIDIA_DRIVER_CAPABILITIES"], ",") {
-		if c == "graphics" || c == "all" {
-			hasGraphics = true
-			break
-		}
-	}
-
-	if !hasGraphics {
-		logger.Debugf("Capability %q not selected", "graphics")
+	if required, reason := requiresGraphicsModifier(image); !required {
+		logger.Infof("No graphics modifier required: %v", reason)
 		return nil, nil
 	}
 
@@ -64,4 +51,25 @@ func NewGraphicsModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.
 	}
 
 	return NewModifierFromDiscoverer(logger, d)
+}
+
+// requiresGraphicsModifier determines whether a graphics modifier is required.
+func requiresGraphicsModifier(cudaImage image.CUDA) (bool, string) {
+	if devices := cudaImage.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices.List()) == 0 {
+		return false, "no devices requested"
+	}
+
+	var hasGraphics bool
+	for _, c := range strings.Split(cudaImage["NVIDIA_DRIVER_CAPABILITIES"], ",") {
+		if c == "graphics" || c == "all" {
+			hasGraphics = true
+			break
+		}
+	}
+
+	if !hasGraphics {
+		return false, fmt.Sprintf("Capability %q not selected", "graphics")
+	}
+
+	return true, ""
 }
