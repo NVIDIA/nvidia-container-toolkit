@@ -30,6 +30,15 @@ type filtered struct {
 	filter Filter
 }
 
+// newFilteredDisoverer creates a discoverer that applies the specified filter to the returned entities of the discoverer
+func newFilteredDisoverer(logger *logrus.Logger, applyTo Discover, filter Filter) Discover {
+	return filtered{
+		Discover: applyTo,
+		logger:   logger,
+		filter:   filter,
+	}
+}
+
 // Devices returns a filtered list of devices based on the specified filter.
 func (d filtered) Devices() ([]Device, error) {
 	devices, err := d.Discover.Devices()

@@ -44,7 +44,15 @@ func NewGraphicsModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.
 		return nil, nil
 	}
 
-	d, err := discover.NewGraphicsDiscoverer(logger, cfg.NVIDIAContainerCLIConfig.Root)
+	config := &discover.Config{
+		Root:                                    cfg.NVIDIAContainerCLIConfig.Root,
+		NVIDIAContainerToolkitCLIExecutablePath: cfg.NVIDIACTKConfig.Path,
+	}
+	d, err := discover.NewGraphicsDiscoverer(
+		logger,
+		image.DevicesFromEnvvars(visibleDevicesEnvvar),
+		config,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct discoverer: %v", err)
 	}
