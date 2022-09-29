@@ -67,6 +67,11 @@ func newSpecModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec
 		return nil, err
 	}
 
+	graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, ociSpec)
+	if err != nil {
+		return nil, err
+	}
+
 	gdsModifier, err := modifier.NewGDSModifier(logger, cfg, ociSpec)
 	if err != nil {
 		return nil, err
@@ -84,6 +89,7 @@ func newSpecModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec
 
 	modifiers := modifier.Merge(
 		modeModifier,
+		graphicsModifier,
 		gdsModifier,
 		mofedModifier,
 		tegraModifier,
