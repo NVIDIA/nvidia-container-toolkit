@@ -23,9 +23,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	specs "github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -327,50 +327,18 @@ func generateMountsForPaths(pathSets ...[]string) []*specs.Mount {
 }
 
 func (m command) generateUpdateLdCacheHook(libraries []string) *specs.Hook {
-
 	locator := lookup.NewExecutableLocator(m.logger, "")
 
-	hookPath := nvidiaCTKDefaultFilePath
-	targets, err := locator.Locate(nvidiaCTKExecutable)
-	if err != nil {
-		m.logger.Warnf("Failed to locate %v: %v", nvidiaCTKExecutable, err)
-	} else {
-		m.logger.Debugf("Found %v candidates: %v", nvidiaCTKExecutable, targets)
-		hookPath = targets[0]
+	hook := discover.CreateLDCacheUpdateHook(
+		m.logger,
+		locator,
+		nvidiaCTKExecutable,
+		nvidiaCTKDefaultFilePath,
+		libraries,
+	)
+	return &specs.Hook{
+		HookName: hook.Lifecycle,
+		Path:     hook.Path,
+		Args:     hook.Args,
 	}
-	m.logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
-
-	folders := getLibraryPaths(libraries)
-
-	args := []string{hookPath, "hook", "update-ldcache"}
-	for _, f := range folders {
-		args = append(args, "--folder", f)
-	}
-
-	hook := specs.Hook{
-		HookName: cdi.CreateContainerHook,
-		Path:     hookPath,
-		Args:     args,
-	}
-
-	return &hook
-}
-
-// getLibraryPaths returns the directories in which the libraries can be found
-func getLibraryPaths(libraries []string) []string {
-	var paths []string
-	checked := make(map[string]bool)
-
-	for _, l := range libraries {
-		dir := filepath.Dir(l)
-		if dir == "" {
-			continue
-		}
-		if checked[dir] {
-			continue
-		}
-		checked[dir] = true
-		paths = append(paths, dir)
-	}
-	return paths
 }
