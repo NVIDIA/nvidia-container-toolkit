@@ -41,7 +41,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 	}{
 		{
 			description:  "empty mounts",
-			expectedArgs: []string{"/usr/bin/nvidia-ctk", "hook", "update-ldcache"},
+			expectedArgs: []string{"nvidia-ctk", "hook", "update-ldcache"},
 		},
 		{
 			description:   "mount error",
@@ -64,7 +64,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 					Path: "/usr/local/lib/libbar.so",
 				},
 			},
-			expectedArgs: []string{"/usr/bin/nvidia-ctk", "hook", "update-ldcache", "--folder", "/usr/local/lib", "--folder", "/usr/local/libother"},
+			expectedArgs: []string{"nvidia-ctk", "hook", "update-ldcache", "--folder", "/usr/local/lib", "--folder", "/usr/local/libother"},
 		},
 		{
 			description: "host paths are ignored",
@@ -74,7 +74,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 					Path:     "/usr/local/lib/libfoo.so",
 				},
 			},
-			expectedArgs: []string{"/usr/bin/nvidia-ctk", "hook", "update-ldcache", "--folder", "/usr/local/lib"},
+			expectedArgs: []string{"nvidia-ctk", "hook", "update-ldcache", "--folder", "/usr/local/lib"},
 		},
 	}
 

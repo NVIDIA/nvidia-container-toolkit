@@ -80,7 +80,7 @@ func CreateLDCacheUpdateHook(logger *logrus.Logger, lookup lookup.Locator, execu
 	}
 	logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
 
-	args := []string{hookPath, "hook", "update-ldcache"}
+	args := []string{filepath.Base(hookPath), "hook", "update-ldcache"}
 	for _, f := range uniqueFolders(libraries) {
 		args = append(args, "--folder", f)
 	}
