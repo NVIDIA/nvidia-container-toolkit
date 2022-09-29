@@ -18,7 +18,6 @@ package modifier
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
@@ -59,16 +58,8 @@ func requiresGraphicsModifier(cudaImage image.CUDA) (bool, string) {
 		return false, "no devices requested"
 	}
 
-	var hasGraphics bool
-	for _, c := range strings.Split(cudaImage["NVIDIA_DRIVER_CAPABILITIES"], ",") {
-		if c == "graphics" || c == "all" {
-			hasGraphics = true
-			break
-		}
-	}
-
-	if !hasGraphics {
-		return false, fmt.Sprintf("Capability %q not selected", "graphics")
+	if !cudaImage.GetDriverCapabilities().Any(image.DriverCapabilityGraphics, image.DriverCapabilityDisplay) {
+		return false, "no required capabilities requested"
 	}
 
 	return true, ""

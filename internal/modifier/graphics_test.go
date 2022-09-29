@@ -70,6 +70,14 @@ func TestGraphicsModifier(t *testing.T) {
 			expectedRequired: true,
 		},
 		{
+			description: "devices with display capability creates modifier",
+			cudaImage: image.CUDA{
+				"NVIDIA_VISIBLE_DEVICES":     "all",
+				"NVIDIA_DRIVER_CAPABILITIES": "display",
+			},
+			expectedRequired: true,
+		},
+		{
 			description: "devices with display,graphics capability creates modifier",
 			cudaImage: image.CUDA{
 				"NVIDIA_VISIBLE_DEVICES":     "all",
