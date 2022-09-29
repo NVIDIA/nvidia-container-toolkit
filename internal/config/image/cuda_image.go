@@ -26,11 +26,12 @@ import (
 )
 
 const (
-	envCUDAVersion      = "CUDA_VERSION"
-	envNVRequirePrefix  = "NVIDIA_REQUIRE_"
-	envNVRequireCUDA    = envNVRequirePrefix + "CUDA"
-	envNVRequireJetpack = envNVRequirePrefix + "JETPACK"
-	envNVDisableRequire = "NVIDIA_DISABLE_REQUIRE"
+	envCUDAVersion          = "CUDA_VERSION"
+	envNVRequirePrefix      = "NVIDIA_REQUIRE_"
+	envNVRequireCUDA        = envNVRequirePrefix + "CUDA"
+	envNVRequireJetpack     = envNVRequirePrefix + "JETPACK"
+	envNVDisableRequire     = "NVIDIA_DISABLE_REQUIRE"
+	envNVDriverCapabilities = "NVIDIA_DRIVER_CAPABILITIES"
 )
 
 // CUDA represents a CUDA image that can be used for GPU computing. This wraps
@@ -140,6 +141,18 @@ func (i CUDA) DevicesFromEnvvars(envVars ...string) []string {
 	}
 
 	return strings.Split(*devices, ",")
+}
+
+// GetDriverCapabilities returns the requested driver capabilities.
+func (i CUDA) GetDriverCapabilities() DriverCapabilities {
+	env := i[envNVDriverCapabilities]
+
+	capabilites := make(DriverCapabilities)
+	for _, c := range strings.Split(env, ",") {
+		capabilites[DriverCapability(c)] = true
+	}
+
+	return capabilites
 }
 
 func (i CUDA) legacyVersion() (string, error) {
