@@ -17,10 +17,109 @@
 package discover
 
 import (
+	"fmt"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
+
+func TestLDCacheUpdateHook(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	cfg := Config{
+		Root:                                    "/",
+		NVIDIAContainerToolkitCLIExecutablePath: "/foo/bar/nvidia-ctk",
+	}
+
+	testCases := []struct {
+		description   string
+		mounts        []Mount
+		mountError    error
+		expectedError error
+		expectedArgs  []string
+	}{
+		{
+			description:  "empty mounts",
+			expectedArgs: []string{"/usr/bin/nvidia-ctk", "hook", "update-ldcache"},
+		},
+		{
+			description:   "mount error",
+			mountError:    fmt.Errorf("mountError"),
+			expectedError: fmt.Errorf("mountError"),
+		},
+		{
+			description: "library folders are added to args",
+			mounts: []Mount{
+				{
+					Path: "/usr/local/lib/libfoo.so",
+				},
+				{
+					Path: "/usr/bin/notlib",
+				},
+				{
+					Path: "/usr/local/libother/libfoo.so",
+				},
+				{
+					Path: "/usr/local/lib/libbar.so",
+				},
+			},
+			expectedArgs: []string{"/usr/bin/nvidia-ctk", "hook", "update-ldcache", "--folder", "/usr/local/lib", "--folder", "/usr/local/libother"},
+		},
+		{
+			description: "host paths are ignored",
+			mounts: []Mount{
+				{
+					HostPath: "/usr/local/other/libfoo.so",
+					Path:     "/usr/local/lib/libfoo.so",
+				},
+			},
+			expectedArgs: []string{"/usr/bin/nvidia-ctk", "hook", "update-ldcache", "--folder", "/usr/local/lib"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			mountMock := &DiscoverMock{
+				MountsFunc: func() ([]Mount, error) {
+					return tc.mounts, tc.mountError
+				},
+			}
+			expectedHook := Hook{
+				Path:      "/usr/bin/nvidia-ctk",
+				Args:      tc.expectedArgs,
+				Lifecycle: "createContainer",
+			}
+
+			d, err := NewLDCacheUpdateHook(logger, mountMock, &cfg)
+			require.NoError(t, err)
+
+			hooks, err := d.Hooks()
+			require.Len(t, mountMock.MountsCalls(), 1)
+			require.Len(t, mountMock.DevicesCalls(), 0)
+			require.Len(t, mountMock.HooksCalls(), 0)
+			if tc.expectedError != nil {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Len(t, hooks, 1)
+
+			require.EqualValues(t, hooks[0], expectedHook)
+
+			devices, err := d.Devices()
+			require.NoError(t, err)
+			require.Empty(t, devices)
+
+			mounts, err := d.Mounts()
+			require.NoError(t, err)
+			require.Empty(t, mounts)
+
+		})
+	}
+
+}
 
 func TestIsLibName(t *testing.T) {
 	testCases := []struct {
