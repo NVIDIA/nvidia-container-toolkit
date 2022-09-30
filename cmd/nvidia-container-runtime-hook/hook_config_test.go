@@ -103,3 +103,59 @@ func TestGetHookConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestGetSwarmResourceEnvvars(t *testing.T) {
+	testCases := []struct {
+		value    string
+		expected []string
+	}{
+		{
+			value:    "nil",
+			expected: nil,
+		},
+		{
+			value:    "",
+			expected: nil,
+		},
+		{
+			value:    " ",
+			expected: nil,
+		},
+		{
+			value:    "single",
+			expected: []string{"single"},
+		},
+		{
+			value:    "single ",
+			expected: []string{"single"},
+		},
+		{
+			value:    "one,two",
+			expected: []string{"one", "two"},
+		},
+		{
+			value:    "one ,two",
+			expected: []string{"one", "two"},
+		},
+		{
+			value:    "one, two",
+			expected: []string{"one", "two"},
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			c := &HookConfig{
+				SwarmResource: func() *string {
+					if tc.value == "nil" {
+						return nil
+					}
+					return &tc.value
+				}(),
+			}
+
+			envvars := c.getSwarmResourceEnvvars()
+			require.EqualValues(t, tc.expected, envvars)
+		})
+	}
+}

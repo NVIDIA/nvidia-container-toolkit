@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
@@ -115,4 +116,23 @@ func (c HookConfig) getConfigOption(fieldName string) string {
 		return fieldName
 	}
 	return v
+}
+
+// getSwarmResourceEnvvars returns the swarm resource envvars for the config.
+func (c *HookConfig) getSwarmResourceEnvvars() []string {
+	if c.SwarmResource == nil {
+		return nil
+	}
+
+	candidates := strings.Split(*c.SwarmResource, ",")
+
+	var envvars []string
+	for _, c := range candidates {
+		trimmed := strings.TrimSpace(c)
+		if len(trimmed) > 0 {
+			envvars = append(envvars, trimmed)
+		}
+	}
+
+	return envvars
 }

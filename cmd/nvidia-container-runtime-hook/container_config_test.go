@@ -449,6 +449,44 @@ func TestGetNvidiaConfig(t *testing.T) {
 				DriverCapabilities: defaultDriverCapabilities.String(),
 			},
 		},
+		{
+			description: "Hook config set, swarmResource overrides device selection",
+			env: map[string]string{
+				envNVVisibleDevices:     "all",
+				"DOCKER_SWARM_RESOURCE": "GPU1,GPU2",
+			},
+			privileged: true,
+			hookConfig: &HookConfig{
+				SwarmResource: func() *string {
+					s := "DOCKER_SWARM_RESOURCE"
+					return &s
+				}(),
+				SupportedDriverCapabilities: "video,display,utility,compute",
+			},
+			expectedConfig: &nvidiaConfig{
+				Devices:            "GPU1,GPU2",
+				DriverCapabilities: defaultDriverCapabilities.String(),
+			},
+		},
+		{
+			description: "Hook config set, comma separated swarmResource is split and overrides device selection",
+			env: map[string]string{
+				envNVVisibleDevices:     "all",
+				"DOCKER_SWARM_RESOURCE": "GPU1,GPU2",
+			},
+			privileged: true,
+			hookConfig: &HookConfig{
+				SwarmResource: func() *string {
+					s := "NOT_DOCKER_SWARM_RESOURCE,DOCKER_SWARM_RESOURCE"
+					return &s
+				}(),
+				SupportedDriverCapabilities: "video,display,utility,compute",
+			},
+			expectedConfig: &nvidiaConfig{
+				Devices:            "GPU1,GPU2",
+				DriverCapabilities: defaultDriverCapabilities.String(),
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
@@ -689,12 +727,13 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 	envDockerResourceGPUs := "DOCKER_RESOURCE_GPUS"
 	gpuID := "GPU-12345"
 	anotherGPUID := "GPU-67890"
+	thirdGPUID := "MIG-12345"
 
 	var tests = []struct {
-		description     string
-		envSwarmGPU     *string
-		env             map[string]string
-		expectedDevices *string
+		description          string
+		swarmResourceEnvvars []string
+		env                  map[string]string
+		expectedDevices      *string
 	}{
 		{
 			description: "empty env returns nil for non-legacy image",
@@ -798,42 +837,42 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 		// Add the `DOCKER_RESOURCE_GPUS` envvar and ensure that this is selected when
 		// enabled
 		{
-			description: "empty env returns nil for non-legacy image",
-			envSwarmGPU: &envDockerResourceGPUs,
+			description:          "empty env returns nil for non-legacy image",
+			swarmResourceEnvvars: []string{envDockerResourceGPUs},
 		},
 		{
-			description: "blank DOCKER_RESOURCE_GPUS returns nil for non-legacy image",
-			envSwarmGPU: &envDockerResourceGPUs,
+			description:          "blank DOCKER_RESOURCE_GPUS returns nil for non-legacy image",
+			swarmResourceEnvvars: []string{envDockerResourceGPUs},
 			env: map[string]string{
 				envDockerResourceGPUs: "",
 			},
 		},
 		{
-			description: "'void' DOCKER_RESOURCE_GPUS returns nil for non-legacy image",
-			envSwarmGPU: &envDockerResourceGPUs,
+			description:          "'void' DOCKER_RESOURCE_GPUS returns nil for non-legacy image",
+			swarmResourceEnvvars: []string{envDockerResourceGPUs},
 			env: map[string]string{
 				envDockerResourceGPUs: "void",
 			},
 		},
 		{
-			description: "'none' DOCKER_RESOURCE_GPUS returns empty for non-legacy image",
-			envSwarmGPU: &envDockerResourceGPUs,
+			description:          "'none' DOCKER_RESOURCE_GPUS returns empty for non-legacy image",
+			swarmResourceEnvvars: []string{envDockerResourceGPUs},
 			env: map[string]string{
 				envDockerResourceGPUs: "none",
 			},
 			expectedDevices: &empty,
 		},
 		{
-			description: "DOCKER_RESOURCE_GPUS set returns value for non-legacy image",
-			envSwarmGPU: &envDockerResourceGPUs,
+			description:          "DOCKER_RESOURCE_GPUS set returns value for non-legacy image",
+			swarmResourceEnvvars: []string{envDockerResourceGPUs},
 			env: map[string]string{
 				envDockerResourceGPUs: gpuID,
 			},
 			expectedDevices: &gpuID,
 		},
 		{
-			description: "DOCKER_RESOURCE_GPUS set returns value for legacy image",
-			envSwarmGPU: &envDockerResourceGPUs,
+			description:          "DOCKER_RESOURCE_GPUS set returns value for legacy image",
+			swarmResourceEnvvars: []string{envDockerResourceGPUs},
 			env: map[string]string{
 				envDockerResourceGPUs: gpuID,
 				envCUDAVersion:        "legacy",
@@ -841,19 +880,47 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 			expectedDevices: &gpuID,
 		},
 		{
-			description: "DOCKER_RESOURCE_GPUS is selected if present",
-			envSwarmGPU: &envDockerResourceGPUs,
+			description:          "DOCKER_RESOURCE_GPUS is selected if present",
+			swarmResourceEnvvars: []string{envDockerResourceGPUs},
 			env: map[string]string{
 				envDockerResourceGPUs: anotherGPUID,
 			},
 			expectedDevices: &anotherGPUID,
 		},
 		{
-			description: "DOCKER_RESOURCE_GPUS overrides NVIDIA_VISIBLE_DEVICES if present",
-			envSwarmGPU: &envDockerResourceGPUs,
+			description:          "DOCKER_RESOURCE_GPUS overrides NVIDIA_VISIBLE_DEVICES if present",
+			swarmResourceEnvvars: []string{envDockerResourceGPUs},
 			env: map[string]string{
 				envNVVisibleDevices:   gpuID,
 				envDockerResourceGPUs: anotherGPUID,
+			},
+			expectedDevices: &anotherGPUID,
+		},
+		{
+			description:          "DOCKER_RESOURCE_GPUS_ADDITIONAL overrides NVIDIA_VISIBLE_DEVICES if present",
+			swarmResourceEnvvars: []string{"DOCKER_RESOURCE_GPUS_ADDITIONAL"},
+			env: map[string]string{
+				envNVVisibleDevices:               gpuID,
+				"DOCKER_RESOURCE_GPUS_ADDITIONAL": anotherGPUID,
+			},
+			expectedDevices: &anotherGPUID,
+		},
+		{
+			description:          "First available swarm resource envvar is selected and overrides NVIDIA_VISIBLE_DEVICES if present",
+			swarmResourceEnvvars: []string{"DOCKER_RESOURCE_GPUS", "DOCKER_RESOURCE_GPUS_ADDITIONAL"},
+			env: map[string]string{
+				envNVVisibleDevices:               gpuID,
+				"DOCKER_RESOURCE_GPUS":            thirdGPUID,
+				"DOCKER_RESOURCE_GPUS_ADDITIONAL": anotherGPUID,
+			},
+			expectedDevices: &thirdGPUID,
+		},
+		{
+			description:          "DOCKER_RESOURCE_GPUS_ADDITIONAL or DOCKER_RESOURCE_GPUS overrides NVIDIA_VISIBLE_DEVICES if present",
+			swarmResourceEnvvars: []string{"DOCKER_RESOURCE_GPUS", "DOCKER_RESOURCE_GPUS_ADDITIONAL"},
+			env: map[string]string{
+				envNVVisibleDevices:               gpuID,
+				"DOCKER_RESOURCE_GPUS_ADDITIONAL": anotherGPUID,
 			},
 			expectedDevices: &anotherGPUID,
 		},
@@ -861,8 +928,7 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 
 	for i, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			envSwarmGPU = tc.envSwarmGPU
-			devices := getDevicesFromEnvvar(image.CUDA(tc.env))
+			devices := getDevicesFromEnvvar(image.CUDA(tc.env), tc.swarmResourceEnvvars)
 			if tc.expectedDevices == nil {
 				require.Nil(t, devices, "%d: %v", i, tc)
 				return
