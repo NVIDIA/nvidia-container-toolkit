@@ -69,7 +69,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			description: "Legacy image, devices 'void', no capabilities, no requirements",
 			env: map[string]string{
 				envCUDAVersion:      "9.0",
-				envNVVisibleDevices: "",
+				envNVVisibleDevices: "void",
 			},
 			privileged:     false,
 			expectedConfig: nil,
@@ -226,7 +226,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			description: "Modern image, devices 'void', no capabilities, no requirements",
 			env: map[string]string{
 				envNVRequireCUDA:    "cuda>=9.0",
-				envNVVisibleDevices: "",
+				envNVVisibleDevices: "void",
 			},
 			privileged:     false,
 			expectedConfig: nil,
