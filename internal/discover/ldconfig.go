@@ -19,7 +19,6 @@ package discover
 import (
 	"fmt"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
@@ -57,58 +56,50 @@ func (d ldconfig) Hooks() ([]Hook, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover mounts for ldcache update: %v", err)
 	}
+	h := CreateLDCacheUpdateHook(
+		d.logger,
+		d.lookup,
+		d.nvidiaCTKExecutablePath,
+		nvidiaCTKDefaultFilePath,
+		getLibraryPaths(mounts),
+	)
+	return []Hook{h}, nil
+}
 
-	libDirs := getLibDirs(mounts)
-
-	hookPath := nvidiaCTKDefaultFilePath
-	targets, err := d.lookup.Locate(d.nvidiaCTKExecutablePath)
+// CreateLDCacheUpdateHook locates the NVIDIA Container Toolkit CLI and creates a hook for updating the LD Cache
+func CreateLDCacheUpdateHook(logger *logrus.Logger, lookup lookup.Locator, execuable string, defaultPath string, libraries []string) Hook {
+	hookPath := defaultPath
+	targets, err := lookup.Locate(execuable)
 	if err != nil {
-		d.logger.Warnf("Failed to locate %v: %v", d.nvidiaCTKExecutablePath, err)
+		logger.Warnf("Failed to locate %v: %v", execuable, err)
 	} else if len(targets) == 0 {
-		d.logger.Warnf("%v not found", d.nvidiaCTKExecutablePath)
+		logger.Warnf("%v not found", execuable)
 	} else {
-		d.logger.Debugf("Found %v candidates: %v", d.nvidiaCTKExecutablePath, targets)
+		logger.Debugf("Found %v candidates: %v", execuable, targets)
 		hookPath = targets[0]
 	}
-	d.logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
+	logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
 
-	args := []string{hookPath, "hook", "update-ldcache"}
-	for _, f := range libDirs {
+	args := []string{filepath.Base(hookPath), "hook", "update-ldcache"}
+	for _, f := range uniqueFolders(libraries) {
 		args = append(args, "--folder", f)
 	}
-	h := Hook{
+	return Hook{
 		Lifecycle: cdi.CreateContainerHook,
 		Path:      hookPath,
 		Args:      args,
 	}
-
-	return []Hook{h}, nil
 }
 
-// getLibDirs extracts the library dirs from the specified mounts
-func getLibDirs(mounts []Mount) []string {
+// getLibraryPaths extracts the library dirs from the specified mounts
+func getLibraryPaths(mounts []Mount) []string {
 	var paths []string
-	checked := make(map[string]bool)
-
 	for _, m := range mounts {
-		dir := filepath.Dir(m.Path)
-		if dir == "" {
+		if !isLibName(m.Path) {
 			continue
 		}
-
-		_, exists := checked[dir]
-		if exists {
-			continue
-		}
-		checked[dir] = isLibName(m.Path)
-
-		if checked[dir] {
-			paths = append(paths, dir)
-		}
+		paths = append(paths, m.Path)
 	}
-
-	sort.Strings(paths)
-
 	return paths
 }
 
@@ -128,4 +119,23 @@ func isLibName(filename string) bool {
 	}
 
 	return parts[len(parts)-1] == "" || strings.HasPrefix(parts[len(parts)-1], ".")
+}
+
+// uniqueFolders returns the unique set of folders for the specified files
+func uniqueFolders(libraries []string) []string {
+	var paths []string
+	checked := make(map[string]bool)
+
+	for _, l := range libraries {
+		dir := filepath.Dir(l)
+		if dir == "" {
+			continue
+		}
+		if checked[dir] {
+			continue
+		}
+		checked[dir] = true
+		paths = append(paths, dir)
+	}
+	return paths
 }
