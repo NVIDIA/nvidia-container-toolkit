@@ -13,8 +13,6 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-var envSwarmGPU *string
-
 const (
 	envCUDAVersion          = "CUDA_VERSION"
 	envNVRequirePrefix      = "NVIDIA_REQUIRE_"
@@ -165,13 +163,9 @@ func isPrivileged(s *Spec) bool {
 	return false
 }
 
-func getDevicesFromEnvvar(image image.CUDA) *string {
-	// Build a list of envvars to consider.
-	envVars := []string{envNVVisibleDevices}
-	if envSwarmGPU != nil {
-		// The Swarm envvar has higher precedence.
-		envVars = append([]string{*envSwarmGPU}, envVars...)
-	}
+func getDevicesFromEnvvar(image image.CUDA, swarmResourceEnvvars []string) *string {
+	// Build a list of envvars to consider. Note that the Swarm Resource envvars have a higher precedence.
+	envVars := append(swarmResourceEnvvars, envNVVisibleDevices)
 
 	devices := image.DevicesFromEnvvars(envVars...)
 	if len(devices) == 0 {
@@ -230,7 +224,7 @@ func getDevices(hookConfig *HookConfig, image image.CUDA, mounts []Mount, privil
 	}
 
 	// Fallback to reading from the environment variable if privileges are correct
-	devices := getDevicesFromEnvvar(image)
+	devices := getDevicesFromEnvvar(image, hookConfig.getSwarmResourceEnvvars())
 	if devices == nil {
 		return nil
 	}
@@ -348,7 +342,6 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 	}
 
 	privileged := isPrivileged(s)
-	envSwarmGPU = hook.SwarmResource
 	return containerConfig{
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,
