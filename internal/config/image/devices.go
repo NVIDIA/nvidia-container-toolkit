@@ -33,18 +33,20 @@ var _ VisibleDevices = (*void)(nil)
 var _ VisibleDevices = (*devices)(nil)
 
 // newVisibleDevices creates a VisibleDevices based on the value of the specified envvar.
-func newVisibleDevices(envvar string) VisibleDevices {
-	if envvar == "all" {
-		return all{}
-	}
-	if envvar == "none" {
-		return none{}
-	}
-	if envvar == "" || envvar == "void" {
-		return void{}
+func newVisibleDevices(envvars ...string) VisibleDevices {
+	for _, envvar := range envvars {
+		if envvar == "all" {
+			return all{}
+		}
+		if envvar == "none" {
+			return none{}
+		}
+		if envvar == "" || envvar == "void" {
+			return void{}
+		}
 	}
 
-	return newDevices(envvar)
+	return newDevices(envvars...)
 }
 
 type all struct{}

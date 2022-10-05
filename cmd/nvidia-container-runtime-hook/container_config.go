@@ -164,10 +164,23 @@ func isPrivileged(s *Spec) bool {
 }
 
 func getDevicesFromEnvvar(image image.CUDA, swarmResourceEnvvars []string) *string {
-	// Build a list of envvars to consider. Note that the Swarm Resource envvars have a higher precedence.
-	envVars := append(swarmResourceEnvvars, envNVVisibleDevices)
+	// We check if the image has at least one of the Swarm resource envvars defined and use this
+	// if specified.
+	var hasSwarmEnvvar bool
+	for _, envvar := range swarmResourceEnvvars {
+		if _, exists := image[envvar]; exists {
+			hasSwarmEnvvar = true
+			break
+		}
+	}
 
-	devices := image.DevicesFromEnvvars(envVars...).List()
+	var devices []string
+	if hasSwarmEnvvar {
+		devices = image.DevicesFromEnvvars(swarmResourceEnvvars...).List()
+	} else {
+		devices = image.DevicesFromEnvvars(envNVVisibleDevices).List()
+	}
+
 	if len(devices) == 0 {
 		return nil
 	}
