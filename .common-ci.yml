@@ -262,10 +262,7 @@ release:staging-ubuntu20.04:
     - .release:staging
     - .dist-ubuntu20.04
   needs:
-    - test-toolkit-ubuntu20.04
-    - test-containerd-ubuntu20.04
-    - test-crio-ubuntu20.04
-    - test-docker-ubuntu20.04
+    - image-ubuntu20.04
 
 release:staging-packaging:
   extends:
