@@ -42,11 +42,11 @@ var _ deviceInfo = (*nvmlDevice)(nil)
 var _ deviceInfo = (*nvmlMigDevice)(nil)
 
 func newGPUDevice(i int, gpu device.Device) (string, nvmlDevice) {
-	return fmt.Sprintf("%v", i), nvmlDevice{gpu}
+	return fmt.Sprintf("gpu%v", i), nvmlDevice{gpu}
 }
 
 func newMigDevice(i int, j int, mig device.MigDevice) (string, nvmlMigDevice) {
-	return fmt.Sprintf("%v:%v", i, j), nvmlMigDevice{mig}
+	return fmt.Sprintf("mig%v:%v", i, j), nvmlMigDevice{mig}
 }
 
 // GetUUID returns the UUID of the device

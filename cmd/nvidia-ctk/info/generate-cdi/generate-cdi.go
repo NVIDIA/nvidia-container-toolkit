@@ -139,7 +139,7 @@ func (m command) generateSpec() (*specs.Spec, error) {
 	devicelib := device.New(device.WithNvml(nvmllib))
 
 	spec := specs.Spec{
-		Version:        specs.CurrentVersion,
+		Version:        "0.4.0",
 		Kind:           "nvidia.com/gpu",
 		ContainerEdits: specs.ContainerEdits{},
 	}
@@ -210,8 +210,6 @@ func generateEditsForDevice(name string, d deviceInfo) (specs.Device, error) {
 	for _, p := range deviceNodePaths {
 		deviceNode := specs.DeviceNode{
 			Path: p,
-			// TODO: Set the host path dependent on the root
-			HostPath: p,
 		}
 		deviceNodes = append(deviceNodes, &deviceNode)
 	}
