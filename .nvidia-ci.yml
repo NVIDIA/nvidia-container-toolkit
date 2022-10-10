@@ -68,29 +68,29 @@ variables:
 
 image-centos7:
   extends:
-    - .image-pull
     - .dist-centos7
+    - .image-pull
 
 image-ubi8:
   extends:
-    - .image-pull
     - .dist-ubi8
+    - .image-pull
 
 image-ubuntu18.04:
   extends:
-    - .image-pull
     - .dist-ubuntu18.04
+    - .image-pull
 
 image-ubuntu20.04:
   extends:
-    - .image-pull
     - .dist-ubuntu20.04
+    - .image-pull
 
 # The DIST=packaging target creates an image containing all built packages
 image-packaging:
   extends:
-    - .image-pull
     - .dist-packaging
+    - .image-pull
 
 # We skip the integration tests for the internal CI:
 .integration:
@@ -109,7 +109,8 @@ image-packaging:
     IMAGE: "${CI_REGISTRY_IMAGE}/container-toolkit:${CI_COMMIT_SHORT_SHA}-${DIST}"
     IMAGE_ARCHIVE: "container-toolkit.tar"
   rules:
-      - if: $SKIP_SCANS != "yes"
+    - if: $SKIP_SCANS != "yes"
+    - when: manual
   before_script:
     - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
     # TODO: We should specify the architecture here and scan all architectures
@@ -134,59 +135,59 @@ image-packaging:
 # Define the scan targets
 scan-centos7-amd64:
   extends:
-    - .scan
     - .dist-centos7
     - .platform-amd64
+    - .scan
   needs:
     - image-centos7
 
 scan-centos7-arm64:
   extends:
-    - .scan
     - .dist-centos7
     - .platform-arm64
+    - .scan
   needs:
     - image-centos7
     - scan-centos7-amd64
 
 scan-ubuntu18.04-amd64:
   extends:
-    - .scan
     - .dist-ubuntu18.04
     - .platform-amd64
+    - .scan
   needs:
     - image-ubuntu18.04
 
 scan-ubuntu20.04-amd64:
   extends:
-    - .scan
     - .dist-ubuntu20.04
     - .platform-amd64
+    - .scan
   needs:
     - image-ubuntu20.04
 
 scan-ubuntu20.04-arm64:
   extends:
-    - .scan
     - .dist-ubuntu20.04
     - .platform-arm64
+    - .scan
   needs:
     - image-ubuntu20.04
     - scan-ubuntu20.04-amd64
 
 scan-ubi8-amd64:
   extends:
-    - .scan
     - .dist-ubi8
     - .platform-amd64
+    - .scan
   needs:
     - image-ubi8
 
 scan-ubi8-arm64:
   extends:
-    - .scan
     - .dist-ubi8
     - .platform-arm64
+    - .scan
   needs:
     - image-ubi8
     - scan-ubi8-amd64
@@ -208,31 +209,24 @@ release:staging-ubuntu18.04:
   needs:
     - image-ubuntu18.04
 
-release:staging-ubuntu20.04:
-  extends:
-    - .release:staging
-    - .dist-ubuntu20.04
-  needs:
-    - image-ubuntu20.04
-
 # Define the external release targets
 # Release to NGC
 release:ngc-centos7:
   extends:
-    - .release:ngc
     - .dist-centos7
+    - .release:ngc
 
 release:ngc-ubuntu18.04:
   extends:
-    - .release:ngc
     - .dist-ubuntu18.04
+    - .release:ngc
 
 release:ngc-ubuntu20.04:
   extends:
-    - .release:ngc
     - .dist-ubuntu20.04
+    - .release:ngc
 
 release:ngc-ubi8:
   extends:
-    - .release:ngc
     - .dist-ubi8
+    - .release:ngc
