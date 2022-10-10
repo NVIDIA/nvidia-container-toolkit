@@ -48,8 +48,9 @@ variables:
     OUT_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
     PUSH_MULTIPLE_TAGS: "false"
   # We delay the job start to allow the public pipeline to generate the required images.
-  when: delayed
-  start_in: 30 minutes
+  rules:
+    - when: delayed
+      start_in: 30 minutes
   timeout: 30 minutes
   retry:
     max: 2
@@ -107,9 +108,8 @@ image-packaging:
   variables:
     IMAGE: "${CI_REGISTRY_IMAGE}/container-toolkit:${CI_COMMIT_SHORT_SHA}-${DIST}"
     IMAGE_ARCHIVE: "container-toolkit.tar"
-  except:
-    variables:
-      - $SKIP_SCANS && $SKIP_SCANS == "yes"
+  rules:
+      - if: $SKIP_SCANS != "yes"
   before_script:
     - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
     # TODO: We should specify the architecture here and scan all architectures
