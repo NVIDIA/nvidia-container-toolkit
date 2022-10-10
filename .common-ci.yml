@@ -34,12 +34,22 @@ stages:
   - scan
   - release
 
+.main-or-manual:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: manual
+
 # Define the distribution targets
 .dist-amazonlinux2:
+  rules:
+    - !reference [.main-or-manual, rules]
   variables:
     DIST: amazonlinux2
 
 .dist-centos7:
+  rules:
+    - !reference [.main-or-manual, rules]
   variables:
     DIST: centos7
     CVE_UPDATES: "cyrus-sasl-lib"
@@ -50,27 +60,39 @@ stages:
     CVE_UPDATES: "cyrus-sasl-lib"
 
 .dist-debian10:
+  rules:
+    - !reference [.main-or-manual, rules]
   variables:
     DIST: debian10
 
 .dist-debian9:
+  rules:
+    - !reference [.main-or-manual, rules]
   variables:
     DIST: debian9
 
 .dist-fedora35:
+  rules:
+    - !reference [.main-or-manual, rules]
   variables:
     DIST: fedora35
 
 .dist-opensuse-leap15.1:
+  rules:
+    - !reference [.main-or-manual, rules]
   variables:
     DIST: opensuse-leap15.1
 
 .dist-ubi8:
+  rules:
+    - !reference [.main-or-manual, rules]
   variables:
     DIST: ubi8
     CVE_UPDATES: "cyrus-sasl-lib"
 
 .dist-ubuntu16.04:
+  rules:
+    - !reference [.main-or-manual, rules]
   variables:
     DIST: ubuntu16.04
 
@@ -80,6 +102,8 @@ stages:
     CVE_UPDATES: "libsasl2-2 libsasl2-modules-db"
 
 .dist-ubuntu20.04:
+  rules:
+    - !reference [.main-or-manual, rules]
   variables:
     DIST: ubuntu20.04
     CVE_UPDATES: "libsasl2-2 libsasl2-modules-db"
@@ -102,6 +126,8 @@ stages:
     ARCH: arm64
 
 .arch-ppc64le:
+  rules:
+    - !reference [.main-or-manual, rules]
   variables:
     ARCH: ppc64le
 
@@ -236,10 +262,7 @@ release:staging-ubuntu20.04:
     - .release:staging
     - .dist-ubuntu20.04
   needs:
-    - test-toolkit-ubuntu20.04
-    - test-containerd-ubuntu20.04
-    - test-crio-ubuntu20.04
-    - test-docker-ubuntu20.04
+    - image-ubuntu20.04
 
 release:staging-packaging:
   extends:
