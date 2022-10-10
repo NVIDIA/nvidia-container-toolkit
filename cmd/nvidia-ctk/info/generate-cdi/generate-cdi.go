@@ -176,6 +176,21 @@ func (m command) generateSpec() (*specs.Spec, error) {
 		return nil, fmt.Errorf("falied to generate CDI spec for MIG devices: %v", err)
 	}
 
+	// We create an "all" device with all the discovered device nodes
+	var allDeviceNodes []*specs.DeviceNode
+	for _, d := range spec.Devices {
+		for _, dn := range d.ContainerEdits.DeviceNodes {
+			allDeviceNodes = append(allDeviceNodes, dn)
+		}
+	}
+	all := specs.Device{
+		Name: "all",
+		ContainerEdits: specs.ContainerEdits{
+			DeviceNodes: allDeviceNodes,
+		},
+	}
+
+	spec.Devices = append(spec.Devices, all)
 	spec.ContainerEdits.DeviceNodes = m.getExistingMetaDeviceNodes()
 
 	libraries, err := m.findLibs(nvmllib)
