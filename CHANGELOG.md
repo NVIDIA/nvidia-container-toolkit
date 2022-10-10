@@ -1,5 +1,11 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.12.0-rc.1
+
+* Add support for multiple Docker Swarm resources
+* Improve injection of Vulkan configurations and libraries
+* Add `nvidia-ctk info generate-cdi` command to generated CDI specification for available devices
+* [libnvidia-container] Include NVVM compiler library in compute libs
 ## v1.11.0
 
 * Promote v1.11.0-rc.3 to v1.11.0
