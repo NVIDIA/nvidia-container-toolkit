@@ -139,7 +139,7 @@ func (m command) generateSpec() (*specs.Spec, error) {
 	devicelib := device.New(device.WithNvml(nvmllib))
 
 	spec := specs.Spec{
-		Version:        specs.CurrentVersion,
+		Version:        "0.4.0",
 		Kind:           "nvidia.com/gpu",
 		ContainerEdits: specs.ContainerEdits{},
 	}
@@ -176,6 +176,23 @@ func (m command) generateSpec() (*specs.Spec, error) {
 		return nil, fmt.Errorf("falied to generate CDI spec for MIG devices: %v", err)
 	}
 
+	// We create an "all" device with all the discovered device nodes
+	var allDeviceNodes []*specs.DeviceNode
+	for _, d := range spec.Devices {
+		for _, dn := range d.ContainerEdits.DeviceNodes {
+			allDeviceNodes = append(allDeviceNodes, dn)
+		}
+	}
+	all := specs.Device{
+		Name: "all",
+		ContainerEdits: specs.ContainerEdits{
+			DeviceNodes: allDeviceNodes,
+		},
+	}
+
+	spec.Devices = append(spec.Devices, all)
+	spec.ContainerEdits.DeviceNodes = m.getExistingMetaDeviceNodes()
+
 	libraries, err := m.findLibs(nvmllib)
 	if err != nil {
 		return nil, fmt.Errorf("failed to locate driver libraries: %v", err)
@@ -201,20 +218,13 @@ func (m command) generateSpec() (*specs.Spec, error) {
 }
 
 func generateEditsForDevice(name string, d deviceInfo) (specs.Device, error) {
-	var deviceNodes []*specs.DeviceNode
-
 	deviceNodePaths, err := d.GetDeviceNodes()
 	if err != nil {
 		return specs.Device{}, fmt.Errorf("failed to get paths for device: %v", err)
 	}
-	for _, p := range deviceNodePaths {
-		deviceNode := specs.DeviceNode{
-			Path: p,
-			// TODO: Set the host path dependent on the root
-			HostPath: p,
-		}
-		deviceNodes = append(deviceNodes, &deviceNode)
-	}
+
+	deviceNodes := getDeviceNodesFromPaths(deviceNodePaths)
+
 	device := specs.Device{
 		Name: name,
 		ContainerEdits: specs.ContainerEdits{
@@ -223,6 +233,38 @@ func generateEditsForDevice(name string, d deviceInfo) (specs.Device, error) {
 	}
 
 	return device, nil
+}
+
+func (m command) getExistingMetaDeviceNodes() []*specs.DeviceNode {
+	metaDeviceNodePaths := []string{
+		"/dev/nvidia-modeset",
+		"/dev/nvidia-uvm-tools",
+		"/dev/nvidia-uvm",
+		"/dev/nvidiactl",
+	}
+
+	var existingDeviceNodePaths []string
+	for _, p := range metaDeviceNodePaths {
+		if _, err := os.Stat(p); err != nil {
+			m.logger.Infof("Ignoring missing meta device %v", p)
+			continue
+		}
+		existingDeviceNodePaths = append(existingDeviceNodePaths, p)
+	}
+
+	return getDeviceNodesFromPaths(existingDeviceNodePaths)
+}
+
+func getDeviceNodesFromPaths(deviceNodePaths []string) []*specs.DeviceNode {
+	var deviceNodes []*specs.DeviceNode
+	for _, p := range deviceNodePaths {
+		deviceNode := specs.DeviceNode{
+			Path: p,
+		}
+		deviceNodes = append(deviceNodes, &deviceNode)
+	}
+
+	return deviceNodes
 }
 
 func (m command) findLibs(nvmllib nvml.Interface) ([]string, error) {
