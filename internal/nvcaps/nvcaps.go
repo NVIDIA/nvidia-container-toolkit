@@ -48,13 +48,13 @@ type MigCaps map[MigCap]MigMinor
 // NewGPUInstanceCap creates a MigCap for the specified MIG GPU instance.
 // A GPU instance is uniquely defined by the GPU minor number and GI instance ID.
 func NewGPUInstanceCap(gpu, gi int) MigCap {
-	return MigCap(fmt.Sprintf(nvidiaCapabilitiesPath+"/gpu%d/mig/gi%d/access", gpu, gi))
+	return MigCap(fmt.Sprintf("gpu%d/gi%d/access", gpu, gi))
 }
 
 // NewComputeInstanceCap creates a MigCap for the specified MIG Compute instance.
 // A GPU instance is uniquely defined by the GPU minor number, GI instance ID, and CI instance ID.
 func NewComputeInstanceCap(gpu, gi, ci int) MigCap {
-	return MigCap(fmt.Sprintf(nvidiaCapabilitiesPath+"/gpu%d/mig/gi%d/ci%d/access", gpu, gi, ci))
+	return MigCap(fmt.Sprintf("gpu%d/gi%d/ci%d/access", gpu, gi, ci))
 }
 
 // GetCapDevicePath returns the path to the cap device for the specified cap.
