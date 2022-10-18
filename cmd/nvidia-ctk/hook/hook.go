@@ -17,6 +17,7 @@
 package hook
 
 import (
+	chmod "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/chmod"
 	symlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/create-symlinks"
 	ldcache "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/update-ldcache"
 	"github.com/sirupsen/logrus"
@@ -46,6 +47,7 @@ func (m hookCommand) build() *cli.Command {
 	hook.Subcommands = []*cli.Command{
 		ldcache.NewCommand(m.logger),
 		symlinks.NewCommand(m.logger),
+		chmod.NewCommand(m.logger),
 	}
 
 	return &hook
