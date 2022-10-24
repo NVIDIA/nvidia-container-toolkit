@@ -74,7 +74,7 @@ func (m command) build() *cli.Command {
 		},
 		&cli.StringSliceFlag{
 			Name:        "link",
-			Usage:       "Specify a specific link to create. The link is specified as source:target",
+			Usage:       "Specify a specific link to create. The link is specified as target::link",
 			Destination: &cfg.links,
 		},
 		&cli.StringFlag{
@@ -145,7 +145,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 
 	links := cfg.links.Value()
 	for _, l := range links {
-		parts := strings.Split(l, ":")
+		parts := strings.Split(l, "::")
 		if len(parts) != 2 {
 			m.logger.Warnf("Invalid link specification %v", l)
 			continue
