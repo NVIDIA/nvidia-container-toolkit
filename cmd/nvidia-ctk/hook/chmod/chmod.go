@@ -22,6 +22,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -116,9 +117,16 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return nil
 	}
 
-	args := append([]string{"/bin/chmod", cfg.mode}, paths...)
+	locator := lookup.NewExecutableLocator(m.logger, "")
+	targets, err := locator.Locate("chmod")
+	if err != nil {
+		return fmt.Errorf("failed to locate chmod: %v", err)
+	}
+	chmodPath := targets[0]
 
-	return syscall.Exec(args[0], args, nil)
+	args := append([]string{filepath.Base(chmodPath), cfg.mode}, paths...)
+
+	return syscall.Exec(chmodPath, args, nil)
 }
 
 // getPaths updates the specified paths relative to the root.
