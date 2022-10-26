@@ -80,7 +80,7 @@ func getDevicesFromSpec(ociSpec oci.Spec) ([]string, error) {
 	}
 
 	uniqueDevices := make(map[string]struct{})
-	for _, name := range append(envDevices, annotationDevices...) {
+	for _, name := range append(envDevices.List(), annotationDevices...) {
 		if !cdi.IsQualifiedName(name) {
 			name = cdi.QualifiedName("nvidia.com", "gpu", name)
 		}

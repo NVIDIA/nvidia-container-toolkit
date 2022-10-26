@@ -167,7 +167,7 @@ func getDevicesFromEnvvar(image image.CUDA, swarmResourceEnvvars []string) *stri
 	// Build a list of envvars to consider. Note that the Swarm Resource envvars have a higher precedence.
 	envVars := append(swarmResourceEnvvars, envNVVisibleDevices)
 
-	devices := image.DevicesFromEnvvars(envVars...)
+	devices := image.DevicesFromEnvvars(envVars...).List()
 	if len(devices) == 0 {
 		return nil
 	}

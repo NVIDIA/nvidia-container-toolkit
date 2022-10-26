@@ -40,7 +40,7 @@ func NewGraphicsModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.
 		return nil, err
 	}
 
-	if devices := image.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices) == 0 {
+	if devices := image.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices.List()) == 0 {
 		logger.Infof("No modification required; no devices requested")
 		return nil, nil
 	}
