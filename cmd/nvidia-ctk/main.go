@@ -19,6 +19,7 @@ package main
 import (
 	"os"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook"
 	infoCLI "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime"
@@ -75,6 +76,7 @@ func main() {
 		hook.NewCommand(logger),
 		runtime.NewCommand(logger),
 		infoCLI.NewCommand(logger),
+		cdi.NewCommand(logger),
 	}
 
 	// Run the CLI

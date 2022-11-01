@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package cdi
+package generate
 
 import (
 	"fmt"
@@ -63,7 +63,7 @@ func (m command) build() *cli.Command {
 
 	// Create the 'generate-cdi' command
 	c := cli.Command{
-		Name:  "generate-cdi",
+		Name:  "generate",
 		Usage: "Generate CDI specifications for use with CDI-enabled runtimes",
 		Action: func(c *cli.Context) error {
 			return m.run(c, &cfg)
