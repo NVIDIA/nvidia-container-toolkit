@@ -209,7 +209,17 @@ func (m command) generateSpec() (*specs.Spec, error) {
 		return nil, fmt.Errorf("failed to locate driver IPC sockets: %v", err)
 	}
 
-	spec.ContainerEdits.Mounts = generateMountsForPaths(libraries, binaries, ipcs)
+	libOptions := []string{
+		"ro",
+		"nosuid",
+		"nodev",
+		"bind",
+	}
+	ipcOptions := append(libOptions, "noexec")
+	spec.ContainerEdits.Mounts = append(
+		generateMountsForPaths(libOptions, libraries, binaries),
+		generateMountsForPaths(ipcOptions, ipcs)...,
+	)
 
 	ldcacheUpdateHook := m.generateUpdateLdCacheHook(libraries)
 
@@ -352,7 +362,7 @@ func (m command) findIPC() ([]string, error) {
 	return ipcs, nil
 }
 
-func generateMountsForPaths(pathSets ...[]string) []*specs.Mount {
+func generateMountsForPaths(options []string, pathSets ...[]string) []*specs.Mount {
 	var mounts []*specs.Mount
 	for _, paths := range pathSets {
 		for _, p := range paths {
@@ -361,12 +371,7 @@ func generateMountsForPaths(pathSets ...[]string) []*specs.Mount {
 				// We may want to adjust the container path
 				ContainerPath: p,
 				Type:          "bind",
-				Options: []string{
-					"ro",
-					"nosuid",
-					"nodev",
-					"bind",
-				},
+				Options:       options,
 			}
 			mounts = append(mounts, &mount)
 		}
