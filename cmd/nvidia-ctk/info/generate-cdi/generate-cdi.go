@@ -26,6 +26,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	specs "github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -212,7 +213,12 @@ func (m command) generateSpec() (*specs.Spec, error) {
 
 	ldcacheUpdateHook := m.generateUpdateLdCacheHook(libraries)
 
-	spec.ContainerEdits.Hooks = []*specs.Hook{ldcacheUpdateHook}
+	deviceFolderPermissionHooks, err := m.generateDeviceFolderPermissionHooks(ldcacheUpdateHook.Path, allDeviceNodes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generated permission hooks for device nodes: %v", err)
+	}
+
+	spec.ContainerEdits.Hooks = append([]*specs.Hook{ldcacheUpdateHook}, deviceFolderPermissionHooks...)
 
 	return &spec, nil
 }
@@ -383,4 +389,50 @@ func (m command) generateUpdateLdCacheHook(libraries []string) *specs.Hook {
 		Path:     hook.Path,
 		Args:     hook.Args,
 	}
+}
+
+func (m command) generateDeviceFolderPermissionHooks(nvidiaCTKPath string, deviceNodes []*specs.DeviceNode) ([]*specs.Hook, error) {
+	var deviceFolders []string
+	seen := make(map[string]bool)
+
+	for _, dn := range deviceNodes {
+		if !strings.HasPrefix(dn.Path, "/dev") {
+			m.logger.Warningf("Skipping unexpected device folder path for device %v", dn.Path)
+			continue
+		}
+		for df := filepath.Dir(dn.Path); df != "/dev"; df = filepath.Dir(df) {
+			if seen[df] {
+				continue
+			}
+			deviceFolders = append(deviceFolders, df)
+			seen[df] = true
+		}
+	}
+
+	foldersByMode := make(map[string][]string)
+	for _, p := range deviceFolders {
+		info, err := os.Stat(p)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get info for path %v: %v", p, err)
+		}
+		mode := fmt.Sprintf("%o", info.Mode().Perm())
+		foldersByMode[mode] = append(foldersByMode[mode], p)
+	}
+
+	var hooks []*specs.Hook
+	for mode, folders := range foldersByMode {
+		args := []string{filepath.Base(nvidiaCTKPath), "hook", "chmod", "--mode", mode}
+		for _, folder := range folders {
+			args = append(args, "--path", folder)
+		}
+		hook := specs.Hook{
+			HookName: cdi.CreateContainerHook,
+			Path:     nvidiaCTKPath,
+			Args:     args,
+		}
+
+		hooks = append(hooks, &hook)
+	}
+
+	return hooks, nil
 }
