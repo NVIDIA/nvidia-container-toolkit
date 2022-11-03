@@ -117,7 +117,7 @@ func (d symlinks) getSpecificLinkArgs() ([]string, error) {
 		}
 
 		linkPath := filepath.Join(filepath.Dir(m.Path), link)
-		links = append(links, "--link", fmt.Sprintf("%v:%v", target, linkPath))
+		links = append(links, "--link", fmt.Sprintf("%v::%v", target, linkPath))
 		linkProcessed[link] = true
 	}
 

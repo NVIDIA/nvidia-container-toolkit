@@ -18,7 +18,6 @@ package modifier
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
@@ -40,28 +39,36 @@ func NewGraphicsModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.
 		return nil, err
 	}
 
-	if devices := image.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices) == 0 {
-		logger.Infof("No modification required; no devices requested")
+	if required, reason := requiresGraphicsModifier(image); !required {
+		logger.Infof("No graphics modifier required: %v", reason)
 		return nil, nil
 	}
 
-	var hasGraphics bool
-	for _, c := range strings.Split(image["NVIDIA_DRIVER_CAPABILITIES"], ",") {
-		if c == "graphics" || c == "all" {
-			hasGraphics = true
-			break
-		}
+	config := &discover.Config{
+		Root:                                    cfg.NVIDIAContainerCLIConfig.Root,
+		NVIDIAContainerToolkitCLIExecutablePath: cfg.NVIDIACTKConfig.Path,
 	}
-
-	if !hasGraphics {
-		logger.Debugf("Capability %q not selected", "graphics")
-		return nil, nil
-	}
-
-	d, err := discover.NewGraphicsDiscoverer(logger, cfg.NVIDIAContainerCLIConfig.Root)
+	d, err := discover.NewGraphicsDiscoverer(
+		logger,
+		image.DevicesFromEnvvars(visibleDevicesEnvvar),
+		config,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct discoverer: %v", err)
 	}
 
 	return NewModifierFromDiscoverer(logger, d)
+}
+
+// requiresGraphicsModifier determines whether a graphics modifier is required.
+func requiresGraphicsModifier(cudaImage image.CUDA) (bool, string) {
+	if devices := cudaImage.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices.List()) == 0 {
+		return false, "no devices requested"
+	}
+
+	if !cudaImage.GetDriverCapabilities().Any(image.DriverCapabilityGraphics, image.DriverCapabilityDisplay) {
+		return false, "no required capabilities requested"
+	}
+
+	return true, ""
 }

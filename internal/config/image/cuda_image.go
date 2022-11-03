@@ -26,11 +26,12 @@ import (
 )
 
 const (
-	envCUDAVersion      = "CUDA_VERSION"
-	envNVRequirePrefix  = "NVIDIA_REQUIRE_"
-	envNVRequireCUDA    = envNVRequirePrefix + "CUDA"
-	envNVRequireJetpack = envNVRequirePrefix + "JETPACK"
-	envNVDisableRequire = "NVIDIA_DISABLE_REQUIRE"
+	envCUDAVersion          = "CUDA_VERSION"
+	envNVRequirePrefix      = "NVIDIA_REQUIRE_"
+	envNVRequireCUDA        = envNVRequirePrefix + "CUDA"
+	envNVRequireJetpack     = envNVRequirePrefix + "JETPACK"
+	envNVDisableRequire     = "NVIDIA_DISABLE_REQUIRE"
+	envNVDriverCapabilities = "NVIDIA_DRIVER_CAPABILITIES"
 )
 
 // CUDA represents a CUDA image that can be used for GPU computing. This wraps
@@ -113,7 +114,7 @@ func (i CUDA) HasDisableRequire() bool {
 }
 
 // DevicesFromEnvvars returns the devices requested by the image through environment variables
-func (i CUDA) DevicesFromEnvvars(envVars ...string) []string {
+func (i CUDA) DevicesFromEnvvars(envVars ...string) VisibleDevices {
 	// Grab a reference to devices from the first envvar
 	// in the list that actually exists in the environment.
 	var devices *string
@@ -126,20 +127,28 @@ func (i CUDA) DevicesFromEnvvars(envVars ...string) []string {
 
 	// Environment variable unset with legacy image: default to "all".
 	if devices == nil && i.IsLegacy() {
-		return []string{"all"}
+		return newVisibleDevices("all")
 	}
 
 	// Environment variable unset or empty or "void": return nil
 	if devices == nil || len(*devices) == 0 || *devices == "void" {
-		return nil
+		return newVisibleDevices("void")
 	}
 
 	// Environment variable set to "none": reset to "".
-	if *devices == "none" {
-		return []string{""}
+	return newVisibleDevices(*devices)
+}
+
+// GetDriverCapabilities returns the requested driver capabilities.
+func (i CUDA) GetDriverCapabilities() DriverCapabilities {
+	env := i[envNVDriverCapabilities]
+
+	capabilites := make(DriverCapabilities)
+	for _, c := range strings.Split(env, ",") {
+		capabilites[DriverCapability(c)] = true
 	}
 
-	return strings.Split(*devices, ",")
+	return capabilites
 }
 
 func (i CUDA) legacyVersion() (string, error) {
