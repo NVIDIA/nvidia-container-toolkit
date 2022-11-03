@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package cdi
+package generate
 
 import (
 	"fmt"
@@ -63,7 +63,7 @@ func (m command) build() *cli.Command {
 
 	// Create the 'generate-cdi' command
 	c := cli.Command{
-		Name:  "generate-cdi",
+		Name:  "generate",
 		Usage: "Generate CDI specifications for use with CDI-enabled runtimes",
 		Action: func(c *cli.Context) error {
 			return m.run(c, &cfg)
@@ -122,9 +122,25 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		}
 	}
 
-	_, err = outputTo.Write(data)
+	err = writeToOutput(cfg.jsonMode, data, outputTo)
 	if err != nil {
 		return fmt.Errorf("failed to write output: %v", err)
+	}
+
+	return nil
+}
+
+func writeToOutput(jsonMode bool, data []byte, output io.Writer) error {
+	if !jsonMode {
+		_, err := output.Write([]byte("---\n"))
+		if err != nil {
+			return fmt.Errorf("failed to write YAML separator: %v", err)
+		}
+
+	}
+	_, err := output.Write(data)
+	if err != nil {
+		return fmt.Errorf("failed to write data: %v", err)
 	}
 
 	return nil

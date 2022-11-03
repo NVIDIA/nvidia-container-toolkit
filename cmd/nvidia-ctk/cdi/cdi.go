@@ -14,9 +14,10 @@
 # limitations under the License.
 **/
 
-package info
+package cdi
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/generate"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -37,11 +38,13 @@ func NewCommand(logger *logrus.Logger) *cli.Command {
 func (m command) build() *cli.Command {
 	// Create the 'hook' command
 	hook := cli.Command{
-		Name:  "info",
-		Usage: "Provide information about the system",
+		Name:  "cdi",
+		Usage: "Provide tools for interacting with Container Device Interface specifications",
 	}
 
-	hook.Subcommands = []*cli.Command{}
+	hook.Subcommands = []*cli.Command{
+		generate.NewCommand(m.logger),
+	}
 
 	return &hook
 }
