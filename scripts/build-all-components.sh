@@ -62,20 +62,25 @@ make -C ${NVIDIA_CONTAINER_TOOLKIT_ROOT} \
     LIBNVIDIA_CONTAINER_TAG="${LIBNVIDIA_CONTAINER_TAG}" \
         ${TARGET}
 
-# We set the TOOLKIT_VERSION, TOOLKIT_TAG for the nvidia-container-runtime and nvidia-docker targets
-# The LIB_TAG is also overridden to match the TOOLKIT_TAG.
-# Build nvidia-container-runtime
-make -C ${NVIDIA_CONTAINER_RUNTIME_ROOT} \
-    LIB_VERSION="${NVIDIA_CONTAINER_RUNTIME_VERSION}" \
-    LIB_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
-    TOOLKIT_VERSION="${NVIDIA_CONTAINER_TOOLKIT_VERSION}" \
-    TOOLKIT_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
-        ${TARGET}
+if [[ -z ${NVIDIA_CONTAINER_TOOLKIT_TAG} ]]; then
+    # We set the TOOLKIT_VERSION, TOOLKIT_TAG for the nvidia-container-runtime and nvidia-docker targets
+    # The LIB_TAG is also overridden to match the TOOLKIT_TAG.
+    # Build nvidia-container-runtime
+    make -C ${NVIDIA_CONTAINER_RUNTIME_ROOT} \
+        LIB_VERSION="${NVIDIA_CONTAINER_RUNTIME_VERSION}" \
+        LIB_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
+        TOOLKIT_VERSION="${NVIDIA_CONTAINER_TOOLKIT_VERSION}" \
+        TOOLKIT_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
+            ${TARGET}
 
-# Build nvidia-docker2
-make -C ${NVIDIA_DOCKER_ROOT} \
-    LIB_VERSION="${NVIDIA_DOCKER_VERSION}" \
-    LIB_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
-    TOOLKIT_VERSION="${NVIDIA_CONTAINER_TOOLKIT_VERSION}" \
-    TOOLKIT_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
-        ${TARGET}
+    # Build nvidia-docker2
+    make -C ${NVIDIA_DOCKER_ROOT} \
+        LIB_VERSION="${NVIDIA_DOCKER_VERSION}" \
+        LIB_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
+        TOOLKIT_VERSION="${NVIDIA_CONTAINER_TOOLKIT_VERSION}" \
+        TOOLKIT_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
+            ${TARGET}
+
+else
+    echo "Skipping nvidia-container-runtime and nvidia-docker builds for release candidate"
+fi

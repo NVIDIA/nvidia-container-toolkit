@@ -1,5 +1,13 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.12.0-rc.2
+
+* Inject Direct Rendering Manager (DRM) devices into a container using the NVIDIA Container Runtime
+* Improve logging of errors from the NVIDIA Container Runtime
+* Improve CDI specification generation to support rootless podman
+* Use `nvidia-ctk cdi generate` to generate CDI specifications instead of `nvidia-ctk info generate-cdi`
+* [libnvidia-container] Skip creation of existing files when these are already mounted
+
 ## v1.12.0-rc.1
 
 * Add support for multiple Docker Swarm resources
