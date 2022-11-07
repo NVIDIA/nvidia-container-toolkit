@@ -22,7 +22,9 @@ import (
 	"os"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime/nvidia"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/docker"
+	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -31,6 +33,7 @@ const (
 	defaultRuntime = "docker"
 
 	defaultDockerConfigFilePath = "/etc/docker/daemon.json"
+	defaultCrioConfigFilePath   = "/etc/crio/crio.conf"
 )
 
 type command struct {
@@ -75,7 +78,7 @@ func (m command) build() *cli.Command {
 		},
 		&cli.StringFlag{
 			Name:        "runtime",
-			Usage:       "the target runtime engine. One of [docker]",
+			Usage:       "the target runtime engine. One of [crio, docker]",
 			Value:       defaultRuntime,
 			Destination: &config.runtime,
 		},
@@ -108,6 +111,8 @@ func (m command) build() *cli.Command {
 
 func (m command) configureWrapper(c *cli.Context, config *config) error {
 	switch config.runtime {
+	case "crio":
+		return m.configureCrio(c, config)
 	case "docker":
 		return m.configureDocker(c, config)
 	}
@@ -127,9 +132,12 @@ func (m command) configureDocker(c *cli.Context, config *config) error {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	defaultRuntime := config.nvidiaOptions.DefaultRuntime()
-	runtimeConfig := config.nvidiaOptions.Runtime().DockerRuntimesConfig()
-	err = docker.UpdateConfig(cfg, defaultRuntime, runtimeConfig)
+	err = docker.UpdateConfig(
+		cfg,
+		config.nvidiaOptions.RuntimeName,
+		config.nvidiaOptions.RuntimePath,
+		config.nvidiaOptions.SetAsDefault,
+	)
 	if err != nil {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
@@ -149,6 +157,47 @@ func (m command) configureDocker(c *cli.Context, config *config) error {
 
 	m.logger.Infof("Wrote updated config to %v", configFilePath)
 	m.logger.Infof("It is recommended that the docker daemon be restarted.")
+
+	return nil
+}
+
+// configureCrio updates the crio config to enable the NVIDIA Container Runtime
+func (m command) configureCrio(c *cli.Context, config *config) error {
+	configFilePath := config.configFilePath
+	if configFilePath == "" {
+		configFilePath = defaultCrioConfigFilePath
+	}
+
+	cfg, err := crio.LoadConfig(configFilePath)
+	if err != nil {
+		return fmt.Errorf("unable to load config: %v", err)
+	}
+
+	err = crio.UpdateConfig(
+		cfg,
+		config.nvidiaOptions.RuntimeName,
+		config.nvidiaOptions.RuntimePath,
+		config.nvidiaOptions.SetAsDefault,
+	)
+	if err != nil {
+		return fmt.Errorf("unable to update config: %v", err)
+	}
+
+	if config.dryRun {
+		output, err := toml.Marshal(cfg)
+		if err != nil {
+			return fmt.Errorf("unable to convert to TOML: %v", err)
+		}
+		os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
+		return nil
+	}
+	err = crio.FlushConfig(configFilePath, cfg)
+	if err != nil {
+		return fmt.Errorf("unable to flush config: %v", err)
+	}
+
+	m.logger.Infof("Wrote updated config to %v", configFilePath)
+	m.logger.Infof("It is recommended that the cri-o daemon be restarted.")
 
 	return nil
 }

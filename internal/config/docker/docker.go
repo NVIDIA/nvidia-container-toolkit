@@ -57,11 +57,7 @@ func LoadConfig(configFilePath string) (map[string]interface{}, error) {
 }
 
 // UpdateConfig updates the docker config to include the nvidia runtimes
-func UpdateConfig(config map[string]interface{}, defaultRuntime string, newRuntimes map[string]interface{}) error {
-	if defaultRuntime != "" {
-		config["default-runtime"] = defaultRuntime
-	}
-
+func UpdateConfig(config map[string]interface{}, runtimeName string, runtimePath string, setAsDefault bool) error {
 	// Read the existing runtimes
 	runtimes := make(map[string]interface{})
 	if _, exists := config["runtimes"]; exists {
@@ -69,14 +65,20 @@ func UpdateConfig(config map[string]interface{}, defaultRuntime string, newRunti
 	}
 
 	// Add / update the runtime definitions
-	for name, rt := range newRuntimes {
-		runtimes[name] = rt
+	runtimes[runtimeName] = map[string]interface{}{
+		"path": runtimePath,
+		"args": []string{},
 	}
 
 	// Update the runtimes definition
 	if len(runtimes) > 0 {
 		config["runtimes"] = runtimes
 	}
+
+	if setAsDefault {
+		config["default-runtime"] = runtimeName
+	}
+
 	return nil
 }
 

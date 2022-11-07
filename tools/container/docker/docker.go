@@ -250,10 +250,15 @@ func LoadConfig(config string) (map[string]interface{}, error) {
 
 // UpdateConfig updates the docker config to include the nvidia runtimes
 func UpdateConfig(config map[string]interface{}, o *options) error {
-	defaultRuntime := o.getDefaultRuntime()
-	runtimes := o.runtimes()
+	for runtimeName, runtimePath := range o.getRuntimeBinaries() {
+		setAsDefault := runtimeName == o.getDefaultRuntime()
+		err := docker.UpdateConfig(config, runtimeName, runtimePath, setAsDefault)
+		if err != nil {
+			return fmt.Errorf("failed to update runtime %q: %v", runtimeName, err)
+		}
+	}
 
-	return docker.UpdateConfig(config, defaultRuntime, runtimes)
+	return nil
 }
 
 //RevertConfig reverts the docker config to remove the nvidia runtime
@@ -390,19 +395,6 @@ func (o options) getDefaultRuntime() string {
 	}
 
 	return o.runtimeName
-}
-
-// runtimes returns the docker runtime definitions for the supported nvidia runtimes
-// for the given options. This includes the path with the options runtimeDir applied
-func (o options) runtimes() map[string]interface{} {
-	runtimes := make(map[string]interface{})
-	for r, bin := range o.getRuntimeBinaries() {
-		runtimes[r] = map[string]interface{}{
-			"path": bin,
-			"args": []string{},
-		}
-	}
-	return runtimes
 }
 
 // getRuntimeBinaries returns a map of runtime names to binary paths. This includes the
