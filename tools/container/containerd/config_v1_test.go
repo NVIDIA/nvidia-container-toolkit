@@ -57,13 +57,6 @@ func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {
 			expectedDefaultRuntimeBinary: "/test/runtime/dir/nvidia-container-runtime",
 		},
 		{
-			legacyConfig:                 true,
-			setAsDefault:                 true,
-			runtimeName:                  "nvidia-experimental",
-			expectedDefaultRuntimeName:   nil,
-			expectedDefaultRuntimeBinary: "/test/runtime/dir/nvidia-container-runtime.experimental",
-		},
-		{
 			legacyConfig:                 false,
 			setAsDefault:                 false,
 			expectedDefaultRuntimeName:   nil,
@@ -80,13 +73,6 @@ func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {
 			setAsDefault:                 true,
 			runtimeName:                  "NAME",
 			expectedDefaultRuntimeName:   "NAME",
-			expectedDefaultRuntimeBinary: nil,
-		},
-		{
-			legacyConfig:                 false,
-			setAsDefault:                 true,
-			runtimeName:                  "nvidia-experimental",
-			expectedDefaultRuntimeName:   "nvidia-experimental",
 			expectedDefaultRuntimeBinary: nil,
 		},
 	}
@@ -163,17 +149,6 @@ func TestUpdateV1Config(t *testing.T) {
 										"Runtime":    "/test/runtime/dir/nvidia-container-runtime",
 									},
 								},
-								"nvidia-experimental": map[string]interface{}{
-									"runtime_type":                    "runtime_type",
-									"runtime_root":                    "",
-									"runtime_engine":                  "",
-									"privileged_without_host_devices": false,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.experimental",
-										"Runtime":    "/test/runtime/dir/nvidia-container-runtime.experimental",
-									},
-								},
 								"nvidia-cdi": map[string]interface{}{
 									"runtime_type":                    "runtime_type",
 									"runtime_root":                    "",
@@ -219,75 +194,6 @@ func TestUpdateV1Config(t *testing.T) {
 									"options": map[string]interface{}{
 										"BinaryName": "/test/runtime/dir/nvidia-container-runtime",
 										"Runtime":    "/test/runtime/dir/nvidia-container-runtime",
-									},
-								},
-								"nvidia-experimental": map[string]interface{}{
-									"runtime_type":                    "runtime_type",
-									"runtime_root":                    "",
-									"runtime_engine":                  "",
-									"privileged_without_host_devices": false,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.experimental",
-										"Runtime":    "/test/runtime/dir/nvidia-container-runtime.experimental",
-									},
-								},
-								"nvidia-cdi": map[string]interface{}{
-									"runtime_type":                    "runtime_type",
-									"runtime_root":                    "",
-									"runtime_engine":                  "",
-									"privileged_without_host_devices": false,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.cdi",
-										"Runtime":    "/test/runtime/dir/nvidia-container-runtime.cdi",
-									},
-								},
-								"nvidia-legacy": map[string]interface{}{
-									"runtime_type":                    "runtime_type",
-									"runtime_root":                    "",
-									"runtime_engine":                  "",
-									"privileged_without_host_devices": false,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.legacy",
-										"Runtime":    "/test/runtime/dir/nvidia-container-runtime.legacy",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			runtimeName: "nvidia-experimental",
-			expectedConfig: map[string]interface{}{
-				"version": int64(1),
-				"plugins": map[string]interface{}{
-					"cri": map[string]interface{}{
-						"containerd": map[string]interface{}{
-							"runtimes": map[string]interface{}{
-								"nvidia": map[string]interface{}{
-									"runtime_type":                    "runtime_type",
-									"runtime_root":                    "",
-									"runtime_engine":                  "",
-									"privileged_without_host_devices": false,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime",
-										"Runtime":    "/test/runtime/dir/nvidia-container-runtime",
-									},
-								},
-								"nvidia-experimental": map[string]interface{}{
-									"runtime_type":                    "runtime_type",
-									"runtime_root":                    "",
-									"runtime_engine":                  "",
-									"privileged_without_host_devices": false,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.experimental",
-										"Runtime":    "/test/runtime/dir/nvidia-container-runtime.experimental",
 									},
 								},
 								"nvidia-cdi": map[string]interface{}{
@@ -387,18 +293,6 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 										"Runtime":     "/test/runtime/dir/nvidia-container-runtime",
 									},
 								},
-								"nvidia-experimental": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.experimental",
-										"Runtime":     "/test/runtime/dir/nvidia-container-runtime.experimental",
-									},
-								},
 								"nvidia-cdi": map[string]interface{}{
 									"runtime_type":                    "runc_runtime_type",
 									"runtime_root":                    "runc_runtime_root",
@@ -457,90 +351,6 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 										"runc-option": "value",
 										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime",
 										"Runtime":     "/test/runtime/dir/nvidia-container-runtime",
-									},
-								},
-								"nvidia-experimental": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.experimental",
-										"Runtime":     "/test/runtime/dir/nvidia-container-runtime.experimental",
-									},
-								},
-								"nvidia-cdi": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.cdi",
-										"Runtime":     "/test/runtime/dir/nvidia-container-runtime.cdi",
-									},
-								},
-								"nvidia-legacy": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.legacy",
-										"Runtime":     "/test/runtime/dir/nvidia-container-runtime.legacy",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			runtimeName: "nvidia-experimental",
-			expectedConfig: map[string]interface{}{
-				"version": int64(1),
-				"plugins": map[string]interface{}{
-					"cri": map[string]interface{}{
-						"containerd": map[string]interface{}{
-							"runtimes": map[string]interface{}{
-								"runc": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/runc-binary",
-									},
-								},
-								"nvidia": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime",
-										"Runtime":     "/test/runtime/dir/nvidia-container-runtime",
-									},
-								},
-								"nvidia-experimental": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.experimental",
-										"Runtime":     "/test/runtime/dir/nvidia-container-runtime.experimental",
 									},
 								},
 								"nvidia-cdi": map[string]interface{}{
@@ -624,10 +434,9 @@ func TestRevertV1Config(t *testing.T) {
 					"cri": map[string]interface{}{
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
-								"nvidia":              runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
-								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.experimental"),
-								"nvidia-cdi":          runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.cdi"),
-								"nvidia-legacy":       runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.legacy"),
+								"nvidia":        runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
+								"nvidia-cdi":    runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.cdi"),
+								"nvidia-legacy": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.legacy"),
 							},
 						},
 					},
@@ -641,10 +450,9 @@ func TestRevertV1Config(t *testing.T) {
 					"cri": map[string]interface{}{
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
-								"nvidia":              runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
-								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.experimental"),
-								"nvidia-cdi":          runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.cdi"),
-								"nvidia-legacy":       runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.legacy"),
+								"nvidia":        runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
+								"nvidia-cdi":    runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.cdi"),
+								"nvidia-legacy": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.legacy"),
 							},
 							"default_runtime":      defaultRuntimeV1("/test/runtime/dir/nvidia-container-runtime"),
 							"default_runtime_name": "nvidia",

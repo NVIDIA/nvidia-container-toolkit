@@ -55,36 +55,3 @@ func TestNvidiaContainerRuntimeInstallerWrapper(t *testing.T) {
 	exepectedContents := strings.Join(expectedLines, "\n")
 	require.Equal(t, exepectedContents, buf.String())
 }
-
-func TestExperimentalContainerRuntimeInstallerWrapper(t *testing.T) {
-	r := newNvidiaContainerRuntimeExperimentalInstaller("/some/root/usr/lib64")
-
-	const shebang = "#! /bin/sh"
-	const destFolder = "/dest/folder"
-	const dotfileName = "source.real"
-
-	buf := &bytes.Buffer{}
-
-	err := r.writeWrapperTo(buf, destFolder, dotfileName)
-	require.NoError(t, err)
-
-	expectedLines := []string{
-		shebang,
-		"",
-		"cat /proc/modules | grep -e \"^nvidia \" >/dev/null 2>&1",
-		"if [ \"${?}\" != \"0\" ]; then",
-		"	echo \"nvidia driver modules are not yet loaded, invoking runc directly\"",
-		"	exec runc \"$@\"",
-		"fi",
-		"",
-		"LD_LIBRARY_PATH=/some/root/usr/lib64:$LD_LIBRARY_PATH \\",
-		"PATH=/dest/folder:$PATH \\",
-		"XDG_CONFIG_HOME=/dest/folder/.config \\",
-		"source.real \\",
-		"\t\"$@\"",
-		"",
-	}
-
-	exepectedContents := strings.Join(expectedLines, "\n")
-	require.Equal(t, exepectedContents, buf.String())
-}
