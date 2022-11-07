@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -906,17 +907,20 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 			expectedDevices: &anotherGPUID,
 		},
 		{
-			description:          "First available swarm resource envvar is selected and overrides NVIDIA_VISIBLE_DEVICES if present",
+			description:          "All available swarm resource envvars are selected and override NVIDIA_VISIBLE_DEVICES if present",
 			swarmResourceEnvvars: []string{"DOCKER_RESOURCE_GPUS", "DOCKER_RESOURCE_GPUS_ADDITIONAL"},
 			env: map[string]string{
 				envNVVisibleDevices:               gpuID,
 				"DOCKER_RESOURCE_GPUS":            thirdGPUID,
 				"DOCKER_RESOURCE_GPUS_ADDITIONAL": anotherGPUID,
 			},
-			expectedDevices: &thirdGPUID,
+			expectedDevices: func() *string {
+				result := fmt.Sprintf("%s,%s", thirdGPUID, anotherGPUID)
+				return &result
+			}(),
 		},
 		{
-			description:          "DOCKER_RESOURCE_GPUS_ADDITIONAL or DOCKER_RESOURCE_GPUS overrides NVIDIA_VISIBLE_DEVICES if present",
+			description:          "DOCKER_RESOURCE_GPUS_ADDITIONAL or DOCKER_RESOURCE_GPUS override NVIDIA_VISIBLE_DEVICES if present",
 			swarmResourceEnvvars: []string{"DOCKER_RESOURCE_GPUS", "DOCKER_RESOURCE_GPUS_ADDITIONAL"},
 			env: map[string]string{
 				envNVVisibleDevices:               gpuID,

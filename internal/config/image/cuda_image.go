@@ -115,28 +115,35 @@ func (i CUDA) HasDisableRequire() bool {
 
 // DevicesFromEnvvars returns the devices requested by the image through environment variables
 func (i CUDA) DevicesFromEnvvars(envVars ...string) VisibleDevices {
-	// Grab a reference to devices from the first envvar
-	// in the list that actually exists in the environment.
-	var devices *string
+	// We concantenate all the devices from the specified envvars.
+	var isSet bool
+	var devices []string
+	requested := make(map[string]bool)
 	for _, envVar := range envVars {
 		if devs, ok := i[envVar]; ok {
-			devices = &devs
-			break
+			isSet = true
+			for _, d := range strings.Split(devs, ",") {
+				trimmed := strings.TrimSpace(d)
+				if len(trimmed) == 0 {
+					continue
+				}
+				devices = append(devices, trimmed)
+				requested[trimmed] = true
+			}
 		}
 	}
 
 	// Environment variable unset with legacy image: default to "all".
-	if devices == nil && i.IsLegacy() {
+	if !isSet && len(devices) == 0 && i.IsLegacy() {
 		return newVisibleDevices("all")
 	}
 
 	// Environment variable unset or empty or "void": return nil
-	if devices == nil || len(*devices) == 0 || *devices == "void" {
+	if len(devices) == 0 || requested["void"] {
 		return newVisibleDevices("void")
 	}
 
-	// Environment variable set to "none": reset to "".
-	return newVisibleDevices(*devices)
+	return newVisibleDevices(devices...)
 }
 
 // GetDriverCapabilities returns the requested driver capabilities.
