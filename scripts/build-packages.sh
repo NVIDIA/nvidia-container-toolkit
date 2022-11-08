@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@
 set -e
 
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
-PROJECT_ROOT="$( cd ${SCRIPTS_DIR}/.. && pwd )"
 
 # This list represents the distribution-architecture pairs that are actually published
 # to the relevant repositories. This targets forwarded to the build-all-components script
@@ -54,7 +53,7 @@ else
 fi
 
 echo "Updating components"
-${SCRIPTS_DIR}/update-components.sh
+"${SCRIPTS_DIR}/update-components.sh"
 if [[ -n $(git status -s third_party) && ${ALLOW_LOCAL_COMPONENT_CHANGES} != "true" ]]; then
     echo "ERROR: Building with local component changes."
     echo "Commit pending changes or rerun with ALLOW_LOCAL_COMPONENT_CHANGES='true'"
@@ -66,7 +65,7 @@ eval $(${SCRIPTS_DIR}/get-component-versions.sh)
 
 if [[ -n ${NVIDIA_CONTAINER_TOOLKIT_TAG} ]]; then
 echo "Allowing mismatched versions for release candidate "
-: ${ALLOW_VERSION_MISMATCH:=true}
+: "${ALLOW_VERSION_MISMATCH:=true}"
 fi
 
 if [[ "${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}" != "${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}" ]]; then
@@ -86,6 +85,6 @@ export LIBNVIDIA_CONTAINER_TAG
 export NVIDIA_CONTAINER_RUNTIME_VERSION
 export NVIDIA_DOCKER_VERSION
 
-for target in ${targets[@]}; do
-    ${SCRIPTS_DIR}/build-all-components.sh ${target}
+for target in "${targets[@]}"; do
+    "${SCRIPTS_DIR}/build-all-components.sh" "${target}"
 done

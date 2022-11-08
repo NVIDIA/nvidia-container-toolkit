@@ -1,4 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ stages:
     - !reference [.main-or-manual, rules]
   variables:
     DIST: amazonlinux2
+    PACKAGE_REPO_TYPE: rpm
 
 .dist-centos7:
   rules:
@@ -54,35 +55,41 @@ stages:
   variables:
     DIST: centos7
     CVE_UPDATES: "cyrus-sasl-lib"
+    PACKAGE_REPO_TYPE: rpm
 
 .dist-centos8:
   variables:
     DIST: centos8
     CVE_UPDATES: "cyrus-sasl-lib"
+    PACKAGE_REPO_TYPE: rpm
 
 .dist-debian10:
   rules:
     - !reference [.main-or-manual, rules]
   variables:
     DIST: debian10
+    PACKAGE_REPO_TYPE: debian
 
 .dist-debian9:
   rules:
     - !reference [.main-or-manual, rules]
   variables:
     DIST: debian9
+    PACKAGE_REPO_TYPE: debian
 
 .dist-fedora35:
   rules:
     - !reference [.main-or-manual, rules]
   variables:
     DIST: fedora35
+    PACKAGE_REPO_TYPE: rpm
 
 .dist-opensuse-leap15.1:
   rules:
     - !reference [.main-or-manual, rules]
   variables:
     DIST: opensuse-leap15.1
+    PACKAGE_REPO_TYPE: rpm
 
 .dist-ubi8:
   rules:
@@ -90,17 +97,20 @@ stages:
   variables:
     DIST: ubi8
     CVE_UPDATES: "cyrus-sasl-lib"
+    PACKAGE_REPO_TYPE: rpm
 
 .dist-ubuntu16.04:
   rules:
     - !reference [.main-or-manual, rules]
   variables:
     DIST: ubuntu16.04
+    PACKAGE_REPO_TYPE: debian
 
 .dist-ubuntu18.04:
   variables:
     DIST: ubuntu18.04
     CVE_UPDATES: "libsasl2-2 libsasl2-modules-db"
+    PACKAGE_REPO_TYPE: debian
 
 .dist-ubuntu20.04:
   rules:
@@ -108,6 +118,7 @@ stages:
   variables:
     DIST: ubuntu20.04
     CVE_UPDATES: "libsasl2-2 libsasl2-modules-db"
+    PACKAGE_REPO_TYPE: debian
 
 .dist-packaging:
   variables:
