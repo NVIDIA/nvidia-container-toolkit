@@ -15,3 +15,34 @@ nvidia-ctk runtime configure --set-as-default
 ```
 will ensure that the NVIDIA Container Runtime is added as the default runtime to the default container
 engine.
+
+### Generate CDI specifications
+
+The [Container Device Interface (CDI)](https://github.com/container-orchestrated-devices/container-device-interface) provides
+a vendor-agnostic mechanism to make arbitrary devices accessible in containerized environments. To allow NVIDIA devices to be
+used in these environments, the NVIDIA Container Toolkit CLI includes functionality to generate a CDI specification for the
+available NVIDIA GPUs in a system.
+
+In order to generate the CDI specification for the available devices, run the following command:\
+```bash
+nvidia-ctk cdi generate
+```
+
+The default is to print the specification to STDOUT and a filename can be specified using the `--output` flag.
+
+The specification will contain a device entries as follows (where applicable):
+* An `nvidia.com/gpu=gpu{INDEX}` device for each non-MIG-enabled full GPU in the system
+* An `nvidia.com/gpu=mig{GPU_INDEX}:{MIG_INDEX}` device for each MIG-device in the system
+* A special device called `nvidia.com/gpu=all` which represents all available devices.
+
+For example, to generate the CDI specification in the default location where CDI-enabled tools such as `podman`, `containerd`, `cri-o`, or the NVIDIA Container Runtime can be configured to load it, the following command can be run:
+
+```bash
+sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+```
+(Note that `sudo` is used to ensure the correct permissions to write to the `/etc/cdi` folder)
+
+With the specification generated, a GPU can be requested by specifying the fully-qualified CDI device name. With `podman` as an exmaple:
+```bash
+podman run --rm -ti --device=nvidia.com/gpu=gpu0 ubuntu nvidia-smi -L
+```
