@@ -25,5 +25,7 @@ ARG ARTIFACTS_ROOT
 COPY ${ARTIFACTS_ROOT} /artifacts/packages/
 
 WORKDIR /artifacts/packages
+# Create a manifest.txt file with the absolute paths of all deb and rpm packages in the container
+RUN find /artifacts/packages -iname '*.deb' -o -iname '*.rpm' > /artifacts/manifest.txt
 
 RUN mkdir /licenses && mv /NGC-DL-CONTAINER-LICENSE /licenses/NGC-DL-CONTAINER-LICENSE

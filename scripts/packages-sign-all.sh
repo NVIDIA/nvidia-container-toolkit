@@ -9,7 +9,7 @@ set -x -e
 
 function deb-sign {
 	local last_found
-	for r in ${*}; do
+	for r in "$@"; do
 		if [ -f "./${r}" ]; then
 			last_found=${r}
 		fi
@@ -27,12 +27,12 @@ function deb-sign {
 			--no-emit-version \
 			--no-comments \
 			--personal-digest-preferences sha512 \
-			--local-user ${GPG_LOCAL_USER} \
+			--local-user "${GPG_LOCAL_USER}" \
 		> InRelease
 }
 
 function rpm-sign {
-	for r in ${*}; do
+	for r in "$@"; do
 		if [ -f "./${r}" ]; then
 			rpmsign --addsign --key-id A04EA552 --digest-algo=sha512 "${r}"
 		fi
@@ -42,7 +42,7 @@ function rpm-sign {
 		--armor \
 		--no-emit-version \
 		--no-comments --personal-digest-preferences sha512 \
-		--local-user ${GPG_LOCAL_USER} \
+		--local-user "${GPG_LOCAL_USER}" \
 	repodata/repomd.xml
 }
 
@@ -83,15 +83,15 @@ function sign() {
 		return
 	fi
 
-	cd ${dst}
+	cd "${dst}"
 	if [[ -f "/etc/debian_version" ]]; then
-		[[ ${pkg_type} == "deb" ]] && deb-sign ${ALL_DEBS}
+		[[ "${pkg_type}" == "deb" ]] && deb-sign ${ALL_DEBS}
 	else
-		[[ ${pkg_type} == "rpm" ]] && rpm-sign ${ALL_RPMS}
+		[[ "${pkg_type}" == "rpm" ]] && rpm-sign ${ALL_RPMS}
 	fi
 	cd -
 }
 
-for target in ${TARGETS[@]}; do
-    sign ${target} $(pwd)
+for target in "${TARGETS[@]}"; do
+    sign "${target}" "$(pwd)"
 done

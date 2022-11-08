@@ -21,14 +21,14 @@
 
 function assert_usage() {
     echo "Missing argument $1"
-    echo "$(basename ${BASH_SOURCE[0]}) TARGET"
+    echo "$(basename "${BASH_SOURCE[0]}") TARGET"
     exit 1
 }
 
 set -e
 
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
-PROJECT_ROOT="$( cd ${SCRIPTS_DIR}/.. && pwd )"
+PROJECT_ROOT="$( cd "${SCRIPTS_DIR}"/.. && pwd )"
 
 if [[ $# -ne 1 ]]; then
     assert_usage "TARGET"
@@ -36,31 +36,31 @@ fi
 
 TARGET=$1
 
-: ${DIST_DIR:=${PROJECT_ROOT}/dist}
+: "${DIST_DIR:=${PROJECT_ROOT}/dist}"
 export DIST_DIR
 
 echo "Building ${TARGET} for all packages to ${DIST_DIR}"
 
-: ${LIBNVIDIA_CONTAINER_ROOT:=${PROJECT_ROOT}/third_party/libnvidia-container}
-: ${NVIDIA_CONTAINER_TOOLKIT_ROOT:=${PROJECT_ROOT}}
-: ${NVIDIA_CONTAINER_RUNTIME_ROOT:=${PROJECT_ROOT}/third_party/nvidia-container-runtime}
-: ${NVIDIA_DOCKER_ROOT:=${PROJECT_ROOT}/third_party/nvidia-docker}
+: "${LIBNVIDIA_CONTAINER_ROOT:=${PROJECT_ROOT}/third_party/libnvidia-container}"
+: "${NVIDIA_CONTAINER_TOOLKIT_ROOT:=${PROJECT_ROOT}}"
+: "${NVIDIA_CONTAINER_RUNTIME_ROOT:=${PROJECT_ROOT}/third_party/nvidia-container-runtime}"
+: "${NVIDIA_DOCKER_ROOT:=${PROJECT_ROOT}/third_party/nvidia-docker}"
 
 
-${SCRIPTS_DIR}/get-component-versions.sh
+"${SCRIPTS_DIR}/get-component-versions.sh"
 
 # Build libnvidia-container
-make -C ${LIBNVIDIA_CONTAINER_ROOT} -f mk/docker.mk ${TARGET}
+make -C "${LIBNVIDIA_CONTAINER_ROOT}" -f mk/docker.mk "${TARGET}"
 
-if [[ -z ${NVIDIA_CONTAINER_TOOLKIT_VERSION} || -z ${LIBNVIDIA_CONTAINER_VERSION} ]]; then
+if [[ -z "${NVIDIA_CONTAINER_TOOLKIT_VERSION}" || -z "${LIBNVIDIA_CONTAINER_VERSION}" ]]; then
 eval $(${SCRIPTS_DIR}/get-component-versions.sh)
 fi
 
 # Build nvidia-container-toolkit
-make -C ${NVIDIA_CONTAINER_TOOLKIT_ROOT} \
+make -C "${NVIDIA_CONTAINER_TOOLKIT_ROOT}" \
     LIBNVIDIA_CONTAINER_VERSION="${LIBNVIDIA_CONTAINER_VERSION}" \
     LIBNVIDIA_CONTAINER_TAG="${LIBNVIDIA_CONTAINER_TAG}" \
-        ${TARGET}
+        "${TARGET}"
 
 if [[ -z ${NVIDIA_CONTAINER_TOOLKIT_TAG} ]]; then
     # We set the TOOLKIT_VERSION, TOOLKIT_TAG for the nvidia-container-runtime and nvidia-docker targets
