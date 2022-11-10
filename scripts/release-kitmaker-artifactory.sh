@@ -34,7 +34,7 @@ SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 PROJECT_ROOT="$( cd "${SCRIPTS_DIR}/.." && pwd )"
 COMPONENT_NAME="nvidia-container-toolkit"
 
-if [[ $# -ne 1 ]]; then
+if [[ $# -ne 2 ]]; then
     assert_usage "$@"
 fi
 
