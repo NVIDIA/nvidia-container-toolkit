@@ -209,7 +209,7 @@ function kitmakerize-distro() {
     rmdir "${scratch_dir}"
 }
 
-: "${VERSION=$(git describe --tags --dirty)}"
+: "${VERSION=$({NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION})}"
 kitmaker_name="${COMPONENT_NAME//-/_}-${DIST}-${ARCH}-${VERSION}"
 kitmaker_archive="${KITMAKER_DIR}/${kitmaker_name}.tar.gz"
 kitmakerize-distro "${DIST}" "${ARCH}" "${kitmaker_archive}"

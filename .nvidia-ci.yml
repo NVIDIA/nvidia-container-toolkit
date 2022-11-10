@@ -311,6 +311,7 @@ scan-ubi8-arm64:
   needs:
     - image-packaging
   variables:
+    VERSION: "${CI_COMMIT_SHORT_SHA}"
     PACKAGE_REGISTRY: "${CI_REGISTRY}"
     PACKAGE_REGISTRY_USER: "${CI_REGISTRY_USER}"
     PACKAGE_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
