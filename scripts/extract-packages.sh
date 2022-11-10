@@ -92,6 +92,8 @@ function extract-all() {
     local dist=$1
     local arch=$2
 
+    echo "Extracting packages for ${dist}-${arch} from ${PACKAGE_IMAGE}"
+
     mkdir -p "${ARTIFACTS_DIR}"
     copy-file "${PACKAGE_IMAGE}" "/artifacts/manifest.txt" "${ARTIFACTS_DIR}/manifest.txt"
 
