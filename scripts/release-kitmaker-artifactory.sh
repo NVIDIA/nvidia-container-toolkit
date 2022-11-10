@@ -45,6 +45,8 @@ DIST=${DISTARCH%-*}
 ARCH=${DISTARCH#*-}
 ARTIFACTORY_URL=$2
 
+CURL=${CURL:-curl}
+
 if [[ -z "${DIST}" || -z "${ARCH}" ]]; then
     echo "ERROR: Distro and Architecture must be specified." >&2
     assert_usage "$@"
