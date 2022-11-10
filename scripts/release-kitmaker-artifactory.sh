@@ -141,7 +141,7 @@ upload_file() {
     # extract the Artifactory hostname
     artifactory_host=$(echo "${ARTIFACTORY_URL##https://}" | awk -F'/' '{print $1}')
     # get base part of the ARTIFACTORY_URL without hostname
-    local image_path="${ARTIFACTORY_URL#https://${artifactory_host}/}/${dist}/${arch}"
+    local image_path="${ARTIFACTORY_URL#https://${artifactory_host}/}/${dist}/${arch}/$(basename ${file})"
 
     local PROPS
     process_props "${dist}" "${arch}"
@@ -159,7 +159,7 @@ upload_file() {
         -H "X-JFrog-Art-Api: ${ARTIFACTORY_TOKEN}" \
         -H "X-Checksum-Sha1: ${SHA1_SUM}" \
         ${file:+-T ${file}} -X PUT \
-        "https://${artifactory_host}/artifactory/${image_path};${PROPS}" ;
+        "https://${artifactory_host}/${image_path};${PROPS}" ;
         then
         echo "ERROR: upload file failed: ${file}"
         exit 1
