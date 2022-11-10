@@ -324,7 +324,6 @@ scan-ubi8-arm64:
     - regctl registry login "${PACKAGE_REGISTRY}" -u "${PACKAGE_REGISTRY_USER}" -p "${PACKAGE_REGISTRY_TOKEN}"
     - ./scripts/extract-packages.sh "${PACKAGE_IMAGE_NAME}:${PACKAGE_IMAGE_TAG}" "${DIST}-${ARCH}"
     # TODO: ./scripts/release-packages-artifactory.sh "${DIST}-${ARCH}" "${PACKAGE_ARTIFACTORY_REPO}"
-    - ./scripts/kitmakerize-packages.sh" "${DIST}-${ARCH}"
     - ./scripts/release-kitmaker-artifactory.sh "${DIST}-${ARCH}" "${KITMAKER_ARTIFACTORY_REPO}"
 
 release:staging-ubuntu18.04:
