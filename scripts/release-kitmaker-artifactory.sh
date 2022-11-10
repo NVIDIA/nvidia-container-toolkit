@@ -103,6 +103,8 @@ process_props() {
             PROPS+=$(set_prop_value "${var}" "${!var}")
         fi
     done
+
+    echo "Applying properties: ${PROPS}"
 }
 
 ## NOT USED:
