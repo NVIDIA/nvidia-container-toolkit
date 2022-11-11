@@ -36,6 +36,8 @@ variables:
   STAGING_REGISTRY: registry.gitlab.com/nvidia/container-toolkit/container-toolkit/staging
   STAGING_VERSION: ${CI_COMMIT_SHORT_SHA}
   ARTIFACTORY_REPO_BASE: "https://urm.nvidia.com/artifactory/sw-gpu-cloudnative"
+  # TODO: We should set the kitmaker release folder here once we have the end-to-end workflow set up
+  KITMAKER_RELEASE_FOLDER: "testing"
 
 .image-pull:
   stage: image-build
@@ -311,20 +313,20 @@ scan-ubi8-arm64:
   needs:
     - image-packaging
   variables:
+    VERSION: "${CI_COMMIT_SHORT_SHA}"
     PACKAGE_REGISTRY: "${CI_REGISTRY}"
     PACKAGE_REGISTRY_USER: "${CI_REGISTRY_USER}"
     PACKAGE_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
     PACKAGE_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
     PACKAGE_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}-packaging"
     PACKAGE_ARTIFACTORY_REPO: "${ARTIFACTORY_REPO_BASE}-${PACKAGE_REPO_TYPE}-local"
-    KITMAKER_ARTIFACTORY_REPO: "${ARTIFACTORY_REPO_BASE}-generic-local/kitmaker"
+    KITMAKER_ARTIFACTORY_REPO: "${ARTIFACTORY_REPO_BASE}-generic-local/${KITMAKER_RELEASE_FOLDER}"
   script:
     - !reference [.regctl-setup, before_script]
     - apk add --no-cache bash
     - regctl registry login "${PACKAGE_REGISTRY}" -u "${PACKAGE_REGISTRY_USER}" -p "${PACKAGE_REGISTRY_TOKEN}"
-    - ./scripts/extract-packages.sh "${PACKAGE_REGISTRY}/${PACKAGE_IMAGE_NAME}:${PACKAGE_IMAGE_TAG}" "${DIST}-${ARCH}"
+    - ./scripts/extract-packages.sh "${PACKAGE_IMAGE_NAME}:${PACKAGE_IMAGE_TAG}" "${DIST}-${ARCH}"
     # TODO: ./scripts/release-packages-artifactory.sh "${DIST}-${ARCH}" "${PACKAGE_ARTIFACTORY_REPO}"
-    - ./scripts/kitmakerize-packages.sh" "${DIST}-${ARCH}"
     - ./scripts/release-kitmaker-artifactory.sh "${DIST}-${ARCH}" "${KITMAKER_ARTIFACTORY_REPO}"
 
 release:staging-ubuntu18.04:

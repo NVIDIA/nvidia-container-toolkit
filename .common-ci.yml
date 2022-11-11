@@ -180,7 +180,7 @@ test-packaging:
 # Download the regctl binary for use in the release steps
 .regctl-setup:
   before_script:
-    - export REGCTL_VERSION=v0.3.10
+    - export REGCTL_VERSION=v0.4.5
     - apk add --no-cache curl
     - mkdir -p bin
     - curl -sSLo bin/regctl https://github.com/regclient/regclient/releases/download/${REGCTL_VERSION}/regctl-linux-amd64

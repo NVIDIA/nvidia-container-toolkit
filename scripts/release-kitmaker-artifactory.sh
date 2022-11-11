@@ -34,7 +34,7 @@ SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 PROJECT_ROOT="$( cd "${SCRIPTS_DIR}/.." && pwd )"
 COMPONENT_NAME="nvidia-container-toolkit"
 
-if [[ $# -ne 1 ]]; then
+if [[ $# -ne 2 ]]; then
     assert_usage "$@"
 fi
 
@@ -44,6 +44,8 @@ DISTARCH=$1
 DIST=${DISTARCH%-*}
 ARCH=${DISTARCH#*-}
 ARTIFACTORY_URL=$2
+
+CURL=${CURL:-curl}
 
 if [[ -z "${DIST}" || -z "${ARCH}" ]]; then
     echo "ERROR: Distro and Architecture must be specified." >&2
@@ -101,6 +103,8 @@ process_props() {
             PROPS+=$(set_prop_value "${var}" "${!var}")
         fi
     done
+
+    echo "Applying properties: ${PROPS}"
 }
 
 ## NOT USED:
@@ -139,7 +143,7 @@ upload_file() {
     # extract the Artifactory hostname
     artifactory_host=$(echo "${ARTIFACTORY_URL##https://}" | awk -F'/' '{print $1}')
     # get base part of the ARTIFACTORY_URL without hostname
-    local image_path="${ARTIFACTORY_URL#https://${artifactory_host}/}/${dist}/${arch}"
+    local image_path="${ARTIFACTORY_URL#https://${artifactory_host}/}/${dist}/${arch}/$(basename ${file})"
 
     local PROPS
     process_props "${dist}" "${arch}"
@@ -157,7 +161,7 @@ upload_file() {
         -H "X-JFrog-Art-Api: ${ARTIFACTORY_TOKEN}" \
         -H "X-Checksum-Sha1: ${SHA1_SUM}" \
         ${file:+-T ${file}} -X PUT \
-        "https://${artifactory_host}/artifactory/${image_path};${PROPS}" ;
+        "https://${artifactory_host}/${image_path};${PROPS}" ;
         then
         echo "ERROR: upload file failed: ${file}"
         exit 1
@@ -205,7 +209,8 @@ function kitmakerize-distro() {
     rmdir "${scratch_dir}"
 }
 
-kitmaker_name="${COMPONENT_NAME//-/_}-${DIST}-${ARCH}-${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}"
+: "${VERSION=$({NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION})}"
+kitmaker_name="${COMPONENT_NAME//-/_}-${DIST}-${ARCH}-${VERSION}"
 kitmaker_archive="${KITMAKER_DIR}/${kitmaker_name}.tar.gz"
 kitmakerize-distro "${DIST}" "${ARCH}" "${kitmaker_archive}"
 push-kitmaker-artifactory "${DIST}" "${ARCH}" "${kitmaker_archive}"
