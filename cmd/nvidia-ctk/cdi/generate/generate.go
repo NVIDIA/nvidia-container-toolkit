@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
@@ -173,6 +174,19 @@ func (m command) generateSpec() (*specs.Spec, error) {
 			return fmt.Errorf("failed to generate CDI spec for device %v: %v", i, err)
 		}
 
+		graphicsEdits, err := m.editsForGraphicsDevice(d)
+		if err != nil {
+			return fmt.Errorf("failed to generate CDI spec for DRM devices associated with device %v: %v", i, err)
+		}
+
+		// We add the device nodes and hooks edits for the DRM devices; Mounts are added globally
+		for _, dn := range graphicsEdits.DeviceNodes {
+			device.ContainerEdits.DeviceNodes = append(device.ContainerEdits.DeviceNodes, dn)
+		}
+		for _, h := range graphicsEdits.Hooks {
+			device.ContainerEdits.Hooks = append(device.ContainerEdits.Hooks, h)
+		}
+
 		spec.Devices = append(spec.Devices, device)
 		return nil
 	})
@@ -225,6 +239,11 @@ func (m command) generateSpec() (*specs.Spec, error) {
 		return nil, fmt.Errorf("failed to locate driver IPC sockets: %v", err)
 	}
 
+	graphicsEdits, err := m.editsForGraphicsDevice(nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generated edits for graphics libraries")
+	}
+
 	libOptions := []string{
 		"ro",
 		"nosuid",
@@ -232,10 +251,13 @@ func (m command) generateSpec() (*specs.Spec, error) {
 		"bind",
 	}
 	ipcOptions := append(libOptions, "noexec")
+
 	spec.ContainerEdits.Mounts = append(
 		generateMountsForPaths(libOptions, libraries, binaries),
 		generateMountsForPaths(ipcOptions, ipcs)...,
 	)
+
+	spec.ContainerEdits.Mounts = append(spec.ContainerEdits.Mounts, graphicsEdits.Mounts...)
 
 	ldcacheUpdateHook := m.generateUpdateLdCacheHook(libraries)
 
@@ -265,6 +287,84 @@ func generateEditsForDevice(name string, d deviceInfo) (specs.Device, error) {
 	}
 
 	return device, nil
+}
+
+func (m command) editsForGraphicsDevice(device device.Device) (*specs.ContainerEdits, error) {
+	selectedDevice := image.NewVisibleDevices("none")
+	if device != nil {
+		uuid, ret := device.GetUUID()
+		if ret != nvml.SUCCESS {
+			return nil, fmt.Errorf("error getting device UUID: %v", ret)
+		}
+		selectedDevice = image.NewVisibleDevices(uuid)
+	}
+	cfg := discover.Config{
+		Root:                                    "",
+		NVIDIAContainerToolkitCLIExecutablePath: "nvidia-ctk",
+	}
+	// Create a discoverer for the single device:
+	d, err := discover.NewGraphicsDiscoverer(m.logger, selectedDevice, &cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error constructing discoverer: %v", err)
+	}
+
+	devices, err := d.Devices()
+	if err != nil {
+		return nil, fmt.Errorf("error getting DRM devices: %v", err)
+	}
+
+	var deviceNodes []*specs.DeviceNode
+	for _, d := range devices {
+		dn := specs.DeviceNode{
+			Path:     d.Path,
+			HostPath: d.HostPath,
+		}
+		deviceNodes = append(deviceNodes, &dn)
+	}
+
+	hooks, err := d.Hooks()
+	if err != nil {
+		return nil, fmt.Errorf("error getting hooks: %v", err)
+	}
+
+	var cdiHooks []*specs.Hook
+	for _, h := range hooks {
+		cdiHook := specs.Hook{
+			HookName: h.Lifecycle,
+			Path:     h.Path,
+			Args:     h.Args,
+		}
+		cdiHooks = append(cdiHooks, &cdiHook)
+	}
+
+	mounts, err := d.Mounts()
+	if err != nil {
+		return nil, fmt.Errorf("error getting mounts: %v", err)
+	}
+
+	var cdiMounts []*specs.Mount
+	for _, m := range mounts {
+		cdiMount := specs.Mount{
+			ContainerPath: m.Path,
+			HostPath:      m.HostPath,
+			Options: []string{
+				"ro",
+				"nosuid",
+				"nodev",
+				"bind",
+			},
+			Type: "bind",
+		}
+		cdiMounts = append(cdiMounts, &cdiMount)
+	}
+
+	edits := specs.ContainerEdits{
+		DeviceNodes: deviceNodes,
+		Hooks:       cdiHooks,
+		Mounts:      cdiMounts,
+	}
+
+	return &edits, nil
 }
 
 func (m command) getExistingMetaDeviceNodes() []*specs.DeviceNode {
