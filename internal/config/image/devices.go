@@ -32,8 +32,8 @@ var _ VisibleDevices = (*none)(nil)
 var _ VisibleDevices = (*void)(nil)
 var _ VisibleDevices = (*devices)(nil)
 
-// newVisibleDevices creates a VisibleDevices based on the value of the specified envvar.
-func newVisibleDevices(envvars ...string) VisibleDevices {
+// NewVisibleDevices creates a VisibleDevices based on the value of the specified envvar.
+func NewVisibleDevices(envvars ...string) VisibleDevices {
 	for _, envvar := range envvars {
 		if envvar == "all" {
 			return all{}

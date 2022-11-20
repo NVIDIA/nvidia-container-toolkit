@@ -135,15 +135,15 @@ func (i CUDA) DevicesFromEnvvars(envVars ...string) VisibleDevices {
 
 	// Environment variable unset with legacy image: default to "all".
 	if !isSet && len(devices) == 0 && i.IsLegacy() {
-		return newVisibleDevices("all")
+		return NewVisibleDevices("all")
 	}
 
 	// Environment variable unset or empty or "void": return nil
 	if len(devices) == 0 || requested["void"] {
-		return newVisibleDevices("void")
+		return NewVisibleDevices("void")
 	}
 
-	return newVisibleDevices(devices...)
+	return NewVisibleDevices(devices...)
 }
 
 // GetDriverCapabilities returns the requested driver capabilities.
