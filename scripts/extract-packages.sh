@@ -34,7 +34,7 @@ fi
 PACKAGE_IMAGE=$1
 DISTARCH=$2
 DIST=${DISTARCH%-*}
-ARCH=${DISTARCH#*-}
+ARCH=${DISTARCH##*-}
 
 if [[ -z "${DIST}" || -z "${ARCH}" ]]; then
     echo "ERROR: Distro and Architecture must be specified." >&2
