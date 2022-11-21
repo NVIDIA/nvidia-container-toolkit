@@ -42,7 +42,7 @@ source "${SCRIPTS_DIR}"/utils.sh
 
 DISTARCH=$1
 DIST=${DISTARCH%-*}
-ARCH=${DISTARCH#*-}
+ARCH=${DISTARCH##*-}
 ARTIFACTORY_URL=$2
 
 CURL=${CURL:-curl}
