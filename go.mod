@@ -1,6 +1,6 @@
 module github.com/NVIDIA/nvidia-container-toolkit
 
-go 1.17
+go 1.18
 
 require (
 	github.com/BurntSushi/toml v1.0.0
