@@ -92,6 +92,6 @@ function sign() {
 	cd -
 }
 
-for target in "${TARGETS[@]}"; do
+for target in ${TARGETS[@]}; do
     sign "${target}" "$(pwd)"
 done

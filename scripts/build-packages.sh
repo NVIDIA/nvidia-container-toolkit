@@ -85,6 +85,6 @@ export LIBNVIDIA_CONTAINER_TAG
 export NVIDIA_CONTAINER_RUNTIME_VERSION
 export NVIDIA_DOCKER_VERSION
 
-for target in "${targets[@]}"; do
+for target in ${targets[@]}; do
     "${SCRIPTS_DIR}/build-all-components.sh" "${target}"
 done
