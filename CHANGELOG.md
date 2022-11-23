@@ -1,5 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.12.0-rc.3
+
 ## v1.12.0-rc.2
 
 * Inject Direct Rendering Manager (DRM) devices into a container using the NVIDIA Container Runtime
