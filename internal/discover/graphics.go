@@ -109,6 +109,13 @@ func (d drmDevicesByPath) Hooks() ([]Hook, error) {
 	if len(devices) == 0 {
 		return nil, nil
 	}
+	links, err := d.getSpecificLinkArgs(devices)
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine specific links: %v", err)
+	}
+	if len(links) == 0 {
+		return nil, nil
+	}
 
 	hookPath := nvidiaCTKDefaultFilePath
 	targets, err := d.lookup.Locate(d.nvidiaCTKExecutablePath)
@@ -123,10 +130,6 @@ func (d drmDevicesByPath) Hooks() ([]Hook, error) {
 	d.logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
 
 	args := []string{hookPath, "hook", "create-symlinks"}
-	links, err := d.getSpecificLinkArgs(devices)
-	if err != nil {
-		return nil, fmt.Errorf("failed to determine specific links: %v", err)
-	}
 	for _, l := range links {
 		args = append(args, "--link", l)
 	}
@@ -150,7 +153,8 @@ func (d drmDevicesByPath) getSpecificLinkArgs(devices []Device) ([]string, error
 	linkLocator := lookup.NewFileLocator(d.logger, d.root)
 	candidates, err := linkLocator.Locate("/dev/dri/by-path/pci-*-*")
 	if err != nil {
-		return nil, fmt.Errorf("failed to locate devices by path: %v", err)
+		d.logger.Warningf("Failed to locate by-path links: %v; ignoring", err)
+		return nil, nil
 	}
 
 	var links []string
