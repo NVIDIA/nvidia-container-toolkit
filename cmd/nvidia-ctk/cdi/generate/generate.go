@@ -241,7 +241,7 @@ func (m command) generateSpec() (*specs.Spec, error) {
 
 	graphicsEdits, err := m.editsForGraphicsDevice(nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generated edits for graphics libraries")
+		return nil, fmt.Errorf("failed to generate edits for graphics libraries: %v", err)
 	}
 
 	libOptions := []string{
