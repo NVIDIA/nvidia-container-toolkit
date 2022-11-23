@@ -67,27 +67,43 @@ func (d ldconfig) Hooks() ([]Hook, error) {
 }
 
 // CreateLDCacheUpdateHook locates the NVIDIA Container Toolkit CLI and creates a hook for updating the LD Cache
-func CreateLDCacheUpdateHook(logger *logrus.Logger, lookup lookup.Locator, execuable string, defaultPath string, libraries []string) Hook {
+func CreateLDCacheUpdateHook(logger *logrus.Logger, lookup lookup.Locator, executable string, defaultPath string, libraries []string) Hook {
+	var args []string
+	for _, f := range uniqueFolders(libraries) {
+		args = append(args, "--folder", f)
+	}
+
+	hook := CreateNvidiaCTKHook(
+		logger,
+		lookup,
+		executable,
+		defaultPath,
+		"update-ldcache",
+		args...,
+	)
+
+	return hook
+
+}
+
+// CreateNvidiaCTKHook creates a hook which invokes the NVIDIA Container CLI hook subcommand.
+func CreateNvidiaCTKHook(logger *logrus.Logger, lookup lookup.Locator, executable string, defaultPath string, hookName string, additionalArgs ...string) Hook {
 	hookPath := defaultPath
-	targets, err := lookup.Locate(execuable)
+	targets, err := lookup.Locate(executable)
 	if err != nil {
-		logger.Warnf("Failed to locate %v: %v", execuable, err)
+		logger.Warnf("Failed to locate %v: %v", executable, err)
 	} else if len(targets) == 0 {
-		logger.Warnf("%v not found", execuable)
+		logger.Warnf("%v not found", executable)
 	} else {
-		logger.Debugf("Found %v candidates: %v", execuable, targets)
+		logger.Debugf("Found %v candidates: %v", executable, targets)
 		hookPath = targets[0]
 	}
 	logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
 
-	args := []string{filepath.Base(hookPath), "hook", "update-ldcache"}
-	for _, f := range uniqueFolders(libraries) {
-		args = append(args, "--folder", f)
-	}
 	return Hook{
 		Lifecycle: cdi.CreateContainerHook,
 		Path:      hookPath,
-		Args:      args,
+		Args:      append([]string{filepath.Base(hookPath), "hook", hookName}, additionalArgs...),
 	}
 }
 
