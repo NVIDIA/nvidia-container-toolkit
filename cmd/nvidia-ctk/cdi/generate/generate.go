@@ -117,6 +117,10 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	if cfg.output == "" {
 		outputTo = os.Stdout
 	} else {
+		err := createParentDirsIfRequired(cfg.output)
+		if err != nil {
+			return fmt.Errorf("failed to create parent folders for output file: %v", err)
+		}
 		outputFile, err := os.Create(cfg.output)
 		if err != nil {
 			return fmt.Errorf("failed to create output file: %v", err)
@@ -593,4 +597,15 @@ func (m command) generateDeviceFolderPermissionHooks(nvidiaCTKPath string, devic
 	}
 
 	return hooks, nil
+}
+
+// createParentDirsIfRequired creates the parent folders of the specified path if requried.
+// Note that MkdirAll does not specifically check whether the specified path is non-empty and raises an error if it is.
+// The path will be empty if filename in the current folder is specified, for example
+func createParentDirsIfRequired(filename string) error {
+	dir := filepath.Dir(filename)
+	if dir == "" {
+		return nil
+	}
+	return os.MkdirAll(dir, 0755)
 }
