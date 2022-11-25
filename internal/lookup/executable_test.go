@@ -34,7 +34,7 @@ func TestExecutableLocator(t *testing.T) {
 	}{
 		{
 			root:             "",
-			expectedPrefixes: nil,
+			expectedPrefixes: []string{""},
 		},
 		{
 			root:             "",
@@ -48,7 +48,7 @@ func TestExecutableLocator(t *testing.T) {
 		},
 		{
 			root:             "/",
-			expectedPrefixes: nil,
+			expectedPrefixes: []string{"/"},
 		},
 		{
 			root:             "/",

@@ -19,7 +19,6 @@ package lookup
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -37,14 +36,10 @@ func NewExecutableLocator(logger *log.Logger, root string) Locator {
 }
 
 func newExecutableLocator(logger *log.Logger, root string, paths ...string) *executable {
-	var prefixes []string
-	for _, dir := range paths {
-		prefixes = append(prefixes, filepath.Join(root, dir))
-	}
 	l := executable{
 		file: file{
 			logger:   logger,
-			prefixes: prefixes,
+			prefixes: getSearchPrefixes(root, paths...),
 			filter:   assertExecutable,
 		},
 	}

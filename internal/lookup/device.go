@@ -19,7 +19,6 @@ package lookup
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 )
@@ -33,7 +32,7 @@ const (
 func NewCharDeviceLocator(logger *logrus.Logger, root string) Locator {
 	l := file{
 		logger:   logger,
-		prefixes: []string{root, filepath.Join(root, devRoot)},
+		prefixes: getSearchPrefixes(root, "", devRoot),
 		filter:   assertCharDevice,
 	}
 

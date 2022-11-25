@@ -28,7 +28,7 @@ import (
 func NewDirectoryLocator(logger *log.Logger, root string) Locator {
 	l := file{
 		logger:   logger,
-		prefixes: []string{root},
+		prefixes: getSearchPrefixes(root),
 		filter:   assertDirectory,
 	}
 
