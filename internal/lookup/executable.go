@@ -33,6 +33,10 @@ type executable struct {
 func NewExecutableLocator(logger *log.Logger, root string) Locator {
 	paths := GetPaths(root)
 
+	return newExecutableLocator(logger, root, paths...)
+}
+
+func newExecutableLocator(logger *log.Logger, root string, paths ...string) *executable {
 	var prefixes []string
 	for _, dir := range paths {
 		prefixes = append(prefixes, filepath.Join(root, dir))
@@ -44,6 +48,7 @@ func NewExecutableLocator(logger *log.Logger, root string) Locator {
 			filter:   assertExecutable,
 		},
 	}
+
 	return &l
 }
 
