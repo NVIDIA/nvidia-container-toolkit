@@ -32,20 +32,54 @@ type file struct {
 	filter   func(string) error
 }
 
-// NewFileLocator creates a Locator that can be used to find files at the specified root. A logger
-// can also be specified.
-func NewFileLocator(logger *log.Logger, root string) Locator {
-	l := newFileLocator(logger, root)
+// NewFileLocator creates a Locator that can be used to find files at the specified root.
+// An optional list of prefixes can aslo be specified with each of these being searched in order.
+// The specified root is prefixed to each of the prefixes to determine the final search path.
+func NewFileLocator(logger *log.Logger, root string, prefixes ...string) Locator {
+	l := newFileLocator(logger, root, prefixes...)
 
 	return &l
 }
 
-func newFileLocator(logger *log.Logger, root string) file {
+func newFileLocator(logger *log.Logger, root string, prefixes ...string) file {
+
 	return file{
 		logger:   logger,
-		prefixes: []string{root},
+		prefixes: getSearchPrefixes(root, prefixes...),
 		filter:   assertFile,
 	}
+}
+
+// getSearchPrefixes generates a list of unique paths to be searched by a file locator.
+//
+// For each of the unique prefixes <p> specified the path <root><p> is searched, where <root> is the
+// specified root. If no prefixes are specified, <root> is returned as the only search prefix.
+//
+// Note that an empty root is equivalent to searching relative to the current working directory, and
+// if the root filesystem should be searched instead, root should be specified as "/" explicitly.
+//
+// Also, a prefix of "" forces the root to be included in returned set of paths. This means that if
+// the root in addition to another prefix must be searched the function should be called with:
+//
+//	getSearchPrefixes("/root", "", "another/path")
+//
+// and will result in the search paths []{"/root", "/root/another/path"} being returned.
+func getSearchPrefixes(root string, prefixes ...string) []string {
+	seen := make(map[string]bool)
+	var uniquePrefixes []string
+	for _, p := range prefixes {
+		if seen[p] {
+			continue
+		}
+		seen[p] = true
+		uniquePrefixes = append(uniquePrefixes, filepath.Join(root, p))
+	}
+
+	if len(uniquePrefixes) == 0 {
+		uniquePrefixes = append(uniquePrefixes, root)
+	}
+
+	return uniquePrefixes
 }
 
 var _ Locator = (*file)(nil)
