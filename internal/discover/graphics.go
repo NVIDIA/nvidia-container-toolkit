@@ -81,6 +81,7 @@ func NewGraphicsMountsDiscoverer(logger *logrus.Logger, root string) (Discover, 
 			"/usr/share/vulkan/icd.d/nvidia_icd.json",
 			"/usr/share/vulkan/implicit_layer.d/nvidia_layers.json",
 			"/usr/share/egl/egl_external_platform.d/15_nvidia_gbm.json",
+			"/usr/share/egl/egl_external_platform.d/10_nvidia_wayland.json",
 		},
 	)
 
