@@ -39,6 +39,9 @@ import (
 const (
 	nvidiaCTKExecutable      = "nvidia-ctk"
 	nvidiaCTKDefaultFilePath = "/usr/bin/" + nvidiaCTKExecutable
+
+	formatJSON = "json"
+	formatYAML = "yaml"
 )
 
 type command struct {
@@ -47,6 +50,7 @@ type command struct {
 
 type config struct {
 	output   string
+	format   string
 	jsonMode bool
 }
 
@@ -66,6 +70,9 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "generate",
 		Usage: "Generate CDI specifications for use with CDI-enabled runtimes",
+		Before: func(c *cli.Context) error {
+			return m.validateFlags(c, &cfg)
+		},
 		Action: func(c *cli.Context) error {
 			return m.run(c, &cfg)
 		},
@@ -74,17 +81,30 @@ func (m command) build() *cli.Command {
 	c.Flags = []cli.Flag{
 		&cli.StringFlag{
 			Name:        "output",
-			Usage:       "Specify the file to output the generated CDI specification to. If this is '-' or '' the specification is output to STDOUT",
+			Usage:       "Specify the file to output the generated CDI specification to. If this is '' the specification is output to STDOUT",
 			Destination: &cfg.output,
 		},
-		&cli.BoolFlag{
-			Name:        "json",
-			Usage:       "Output the generated CDI spec in JSON mode instead of YAML",
-			Destination: &cfg.jsonMode,
+		&cli.StringFlag{
+			Name:        "format",
+			Usage:       "The output format for the generated spec [json | yaml]. This overrides the format defined by the output file extension (if specified).",
+			Value:       formatYAML,
+			Destination: &cfg.format,
 		},
 	}
 
 	return &c
+}
+
+func (m command) validateFlags(r *cli.Context, cfg *config) error {
+	cfg.format = strings.ToLower(cfg.format)
+	switch cfg.format {
+	case formatJSON:
+	case formatYAML:
+	default:
+		return fmt.Errorf("invalid output format: %v", cfg.format)
+	}
+
+	return nil
 }
 
 func (m command) run(c *cli.Context, cfg *config) error {
@@ -94,7 +114,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	}
 
 	var outputTo io.Writer
-	if cfg.output == "" || cfg.output == "-" {
+	if cfg.output == "" {
 		outputTo = os.Stdout
 	} else {
 		outputFile, err := os.Create(cfg.output)
@@ -105,10 +125,13 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		outputTo = outputFile
 	}
 
-	if filepath.Ext(cfg.output) == ".json" {
-		cfg.jsonMode = true
-	} else if filepath.Ext(cfg.output) == ".yaml" || filepath.Ext(cfg.output) == ".yml" {
-		cfg.jsonMode = false
+	if outputFileFormat := formatFromFilename(cfg.output); outputFileFormat != "" {
+		m.logger.Debugf("Inferred output format as %q from output file name", outputFileFormat)
+		if !c.IsSet("format") {
+			cfg.format = outputFileFormat
+		} else if outputFileFormat != cfg.format {
+			m.logger.Warningf("Requested output format %q does not match format implied by output file name: %q", cfg.format, outputFileFormat)
+		}
 	}
 
 	data, err := yaml.Marshal(spec)
@@ -116,7 +139,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("failed to marshal CDI spec: %v", err)
 	}
 
-	if cfg.jsonMode {
+	if strings.ToLower(cfg.format) == formatJSON {
 		data, err = yaml.YAMLToJSONStrict(data)
 		if err != nil {
 			return fmt.Errorf("failed to convert CDI spec from YAML to JSON: %v", err)
@@ -129,6 +152,20 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	}
 
 	return nil
+}
+
+func formatFromFilename(filename string) string {
+	ext := filepath.Ext(filename)
+	switch strings.ToLower(ext) {
+	case ".json":
+		return formatJSON
+	case ".yaml":
+		return formatYAML
+	case ".yml":
+		return formatYAML
+	}
+
+	return ""
 }
 
 func writeToOutput(jsonMode bool, data []byte, output io.Writer) error {
