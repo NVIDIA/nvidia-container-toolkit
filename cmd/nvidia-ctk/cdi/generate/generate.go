@@ -49,9 +49,8 @@ type command struct {
 }
 
 type config struct {
-	output   string
-	format   string
-	jsonMode bool
+	output string
+	format string
 }
 
 // NewCommand constructs a generate-cdi command with the specified logger
@@ -150,7 +149,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		}
 	}
 
-	err = writeToOutput(cfg.jsonMode, data, outputTo)
+	err = writeToOutput(cfg.format, data, outputTo)
 	if err != nil {
 		return fmt.Errorf("failed to write output: %v", err)
 	}
@@ -172,13 +171,12 @@ func formatFromFilename(filename string) string {
 	return ""
 }
 
-func writeToOutput(jsonMode bool, data []byte, output io.Writer) error {
-	if !jsonMode {
+func writeToOutput(format string, data []byte, output io.Writer) error {
+	if format == formatYAML {
 		_, err := output.Write([]byte("---\n"))
 		if err != nil {
 			return fmt.Errorf("failed to write YAML separator: %v", err)
 		}
-
 	}
 	_, err := output.Write(data)
 	if err != nil {
