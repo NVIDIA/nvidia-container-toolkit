@@ -17,10 +17,7 @@
 package generate
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
@@ -29,9 +26,9 @@ import (
 )
 
 type deviceFolderPermissions struct {
-	logger        *logrus.Logger
-	root          string
-	foldersByMode map[string][]string
+	logger  *logrus.Logger
+	root    string
+	folders []string
 }
 
 var _ discover.Discover = (*deviceFolderPermissions)(nil)
@@ -39,41 +36,38 @@ var _ discover.Discover = (*deviceFolderPermissions)(nil)
 // NewDeviceFolderPermissionHookDiscoverer creates a discoverer that can be used to update the permissions for the parent folders of nested device nodes from the specified set of device specs.
 // This works around an issue with rootless podman when using crun as a low-level runtime.
 // See https://github.com/containers/crun/issues/1047
-// TODO: This currently assumes `root == ""`
+// The nested devices that are applicable to the NVIDIA GPU devices are:
+//   - DRM devices at /dev/dri/*
+//   - NVIDIA Caps devices at /dev/nvidia-caps/*
 func NewDeviceFolderPermissionHookDiscoverer(logger *logrus.Logger, root string, deviceSpecs []specs.Device) (discover.Discover, error) {
-	var paths []string
+	var folders []string
 	seen := make(map[string]bool)
-
 	for _, device := range deviceSpecs {
 		for _, dn := range device.ContainerEdits.DeviceNodes {
-			if !strings.HasPrefix(dn.Path, "/dev") {
-				logger.Warningf("Skipping unexpected device folder path for device %v", dn)
+			df := filepath.Dir(dn.Path)
+			if seen[df] {
 				continue
 			}
-			for df := filepath.Dir(dn.Path); df != "/dev"; df = filepath.Dir(df) {
-				if seen[df] {
-					continue
-				}
-				paths = append(paths, df)
-				seen[df] = true
+			// We only consider the special case paths
+			if df != "/dev/dri" && df != "/dev/nvidia-caps" {
+				continue
 			}
+			folders = append(folders, df)
+			seen[df] = true
+		}
+		if len(folders) == 2 {
+			break
 		}
 	}
 
-	foldersByMode := make(map[string][]string)
-	for _, p := range paths {
-		info, err := os.Stat(p)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get info for path %v: %v", p, err)
-		}
-		mode := fmt.Sprintf("%o", info.Mode().Perm())
-		foldersByMode[mode] = append(foldersByMode[mode], p)
+	if len(folders) == 0 {
+		return discover.None{}, nil
 	}
 
 	d := &deviceFolderPermissions{
-		logger:        logger,
-		root:          root,
-		foldersByMode: foldersByMode,
+		logger:  logger,
+		root:    root,
+		folders: folders,
 	}
 
 	return d, nil
@@ -84,31 +78,26 @@ func (d *deviceFolderPermissions) Devices() ([]discover.Device, error) {
 	return nil, nil
 }
 
-// Hooks returns a set of hooks that sets the file modes of parent folders for device nodes.
-// One hook is returned per mode.
+// Hooks returns a set of hooks that sets the file mode to 755 of parent folders for nested device nodes.
 func (d *deviceFolderPermissions) Hooks() ([]discover.Hook, error) {
-	locator := lookup.NewExecutableLocator(d.logger, d.root)
-
-	var hooks []discover.Hook
-	for mode, folders := range d.foldersByMode {
-		args := []string{"--mode", mode}
-		for _, folder := range folders {
-			args = append(args, "--path", folder)
-		}
-
-		hook := discover.CreateNvidiaCTKHook(
-			d.logger,
-			locator,
-			nvidiaCTKExecutable,
-			nvidiaCTKDefaultFilePath,
-			"chmod",
-			args...,
-		)
-
-		hooks = append(hooks, hook)
+	if len(d.folders) == 0 {
+		return nil, nil
 	}
 
-	return hooks, nil
+	args := []string{"--mode", "755"}
+	for _, folder := range d.folders {
+		args = append(args, "--path", folder)
+	}
+	hook := discover.CreateNvidiaCTKHook(
+		d.logger,
+		lookup.NewExecutableLocator(d.logger, d.root),
+		nvidiaCTKExecutable,
+		nvidiaCTKDefaultFilePath,
+		"chmod",
+		args...,
+	)
+
+	return []discover.Hook{hook}, nil
 }
 
 // Mounts are empty for this discoverer
