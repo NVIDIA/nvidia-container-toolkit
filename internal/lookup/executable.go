@@ -36,12 +36,15 @@ func NewExecutableLocator(logger *log.Logger, root string) Locator {
 }
 
 func newExecutableLocator(logger *log.Logger, root string, paths ...string) *executable {
+	f := newFileLocator(
+		WithLogger(logger),
+		WithRoot(root),
+		WithSearchPaths(paths...),
+		WithFilter(assertExecutable),
+	)
+
 	l := executable{
-		file: file{
-			logger:   logger,
-			prefixes: getSearchPrefixes(root, paths...),
-			filter:   assertExecutable,
-		},
+		file: *f,
 	}
 
 	return &l

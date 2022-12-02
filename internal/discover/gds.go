@@ -45,7 +45,10 @@ func NewGDSDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
 
 	cufile := NewMounts(
 		logger,
-		lookup.NewFileLocator(logger, root),
+		lookup.NewFileLocator(
+			lookup.WithLogger(logger),
+			lookup.WithRoot(root),
+		),
 		root,
 		[]string{"/etc/cufile.json"},
 	)

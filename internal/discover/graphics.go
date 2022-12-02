@@ -70,7 +70,11 @@ func NewGraphicsMountsDiscoverer(logger *logrus.Logger, root string) (Discover, 
 
 	jsonMounts := NewMounts(
 		logger,
-		lookup.NewFileLocator(logger, root, "/etc", "/usr/share"),
+		lookup.NewFileLocator(
+			lookup.WithLogger(logger),
+			lookup.WithRoot(root),
+			lookup.WithSearchPaths("/etc", "/usr/share"),
+		),
 		root,
 		[]string{
 			"glvnd/egl_vendor.d/10_nvidia.json",
@@ -161,7 +165,10 @@ func (d drmDevicesByPath) getSpecificLinkArgs(devices []Device) ([]string, error
 		selectedDevices[filepath.Base(d.HostPath)] = true
 	}
 
-	linkLocator := lookup.NewFileLocator(d.logger, d.root)
+	linkLocator := lookup.NewFileLocator(
+		lookup.WithLogger(d.logger),
+		lookup.WithRoot(d.root),
+	)
 	candidates, err := linkLocator.Locate("/dev/dri/by-path/pci-*-*")
 	if err != nil {
 		d.logger.Warningf("Failed to locate by-path links: %v; ignoring", err)
