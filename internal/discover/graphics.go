@@ -33,6 +33,28 @@ import (
 func NewGraphicsDiscoverer(logger *logrus.Logger, devices image.VisibleDevices, cfg *Config) (Discover, error) {
 	root := cfg.Root
 
+	mounts, err := NewGraphicsMountsDiscoverer(logger, root)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mounts discoverer: %v", err)
+	}
+
+	drmDeviceNodes, err := newDRMDeviceDiscoverer(logger, devices, root)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create DRM device discoverer: %v", err)
+	}
+
+	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, cfg)
+
+	discover := Merge(
+		Merge(drmDeviceNodes, drmByPathSymlinks),
+		mounts,
+	)
+
+	return discover, nil
+}
+
+// NewGraphicsMountsDiscoverer creates a discoverer for the mounts required by graphics tools such as vulkan.
+func NewGraphicsMountsDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
 	locator, err := lookup.NewLibraryLocator(logger, root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct library locator: %v", err)
@@ -62,15 +84,7 @@ func NewGraphicsDiscoverer(logger *logrus.Logger, devices image.VisibleDevices, 
 		},
 	)
 
-	drmDeviceNodes, err := newDRMDeviceDiscoverer(logger, devices, root)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create DRM device discoverer: %v", err)
-	}
-
-	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, cfg)
-
 	discover := Merge(
-		Merge(drmDeviceNodes, drmByPathSymlinks),
 		libraries,
 		jsonMounts,
 	)

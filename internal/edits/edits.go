@@ -34,6 +34,20 @@ type edits struct {
 // NewSpecEdits creates a SpecModifier that defines the required OCI spec edits (as CDI ContainerEdits) from the specified
 // discoverer.
 func NewSpecEdits(logger *logrus.Logger, d discover.Discover) (oci.SpecModifier, error) {
+	c, err := FromDiscoverer(d)
+	if err != nil {
+		return nil, fmt.Errorf("error constructing container edits: %v", err)
+	}
+	e := edits{
+		ContainerEdits: *c,
+		logger:         logger,
+	}
+
+	return &e, nil
+}
+
+// FromDiscoverer creates CDI container edits for the specified discoverer.
+func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 	devices, err := d.Devices()
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover devices: %v", err)
@@ -66,12 +80,7 @@ func NewSpecEdits(logger *logrus.Logger, d discover.Discover) (oci.SpecModifier,
 		c.Append(hook(h).toEdits())
 	}
 
-	e := edits{
-		ContainerEdits: c,
-		logger:         logger,
-	}
-
-	return &e, nil
+	return &c, nil
 }
 
 // Modify applies the defined edits to the incoming OCI spec
