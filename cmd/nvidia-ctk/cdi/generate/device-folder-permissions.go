@@ -17,9 +17,12 @@
 package generate
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/sirupsen/logrus"
 )
@@ -32,6 +35,16 @@ type deviceFolderPermissions struct {
 }
 
 var _ discover.Discover = (*deviceFolderPermissions)(nil)
+
+// GetDeviceFolderPermissionHookEdits gets the edits required for device folder permissions discoverer
+func GetDeviceFolderPermissionHookEdits(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, deviceSpecs []specs.Device) (*cdi.ContainerEdits, error) {
+	deviceFolderPermissionHooks, err := NewDeviceFolderPermissionHookDiscoverer(logger, driverRoot, nvidiaCTKPath, deviceSpecs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generated permission hooks for device nodes: %v", err)
+	}
+
+	return edits.FromDiscoverer(deviceFolderPermissionHooks)
+}
 
 // NewDeviceFolderPermissionHookDiscoverer creates a discoverer that can be used to update the permissions for the parent folders of nested device nodes from the specified set of device specs.
 // This works around an issue with rootless podman when using crun as a low-level runtime.

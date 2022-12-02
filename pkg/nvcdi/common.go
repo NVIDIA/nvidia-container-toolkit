@@ -14,20 +14,33 @@
 # limitations under the License.
 **/
 
-package generate
+package nvcdi
 
 import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
+
 	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
 
-// NewCommonDiscoverer returns a discoverer for entities that are not associated with a specific CDI device.
+// GetCommonEdits generates a CDI specification that can be used for ANY devices
+func (l *nvcdilib) GetCommonEdits() (*cdi.ContainerEdits, error) {
+	common, err := newCommonDiscoverer(l.logger, l.driverRoot, l.nvidiaCTKPath, l.nvmllib)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create discoverer for common entities: %v", err)
+	}
+
+	return edits.FromDiscoverer(common)
+}
+
+// newCommonDiscoverer returns a discoverer for entities that are not associated with a specific CDI device.
 // This includes driver libraries and meta devices, for example.
-func NewCommonDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, nvmllib nvml.Interface) (discover.Discover, error) {
+func newCommonDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, nvmllib nvml.Interface) (discover.Discover, error) {
 	metaDevices := discover.NewDeviceDiscoverer(
 		logger,
 		lookup.NewCharDeviceLocator(

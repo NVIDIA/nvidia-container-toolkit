@@ -23,8 +23,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	specs "github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/sirupsen/logrus"
@@ -90,7 +90,7 @@ func (m command) build() *cli.Command {
 		&cli.StringFlag{
 			Name:        "device-name-strategy",
 			Usage:       "Specify the strategy for generating device names. One of [index | uuid | type-index]",
-			Value:       deviceNameStrategyIndex,
+			Value:       nvcdi.DeviceNameStrategyIndex,
 			Destination: &cfg.deviceNameStrategy,
 		},
 		&cli.StringFlag{
@@ -117,7 +117,7 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 		return fmt.Errorf("invalid output format: %v", cfg.format)
 	}
 
-	_, err := newDeviceNamer(cfg.deviceNameStrategy)
+	_, err := nvcdi.NewDeviceNamer(cfg.deviceNameStrategy)
 	if err != nil {
 		return err
 	}
@@ -126,16 +126,7 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 }
 
 func (m command) run(c *cli.Context, cfg *config) error {
-	deviceNamer, err := newDeviceNamer(cfg.deviceNameStrategy)
-	if err != nil {
-		return fmt.Errorf("failed to create device namer: %v", err)
-	}
-
-	spec, err := m.generateSpec(
-		cfg.driverRoot,
-		discover.FindNvidiaCTK(m.logger, cfg.nvidiaCTKPath),
-		deviceNamer,
-	)
+	spec, err := m.generateSpec(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to generate CDI spec: %v", err)
 	}
@@ -214,7 +205,12 @@ func writeToOutput(format string, data []byte, output io.Writer) error {
 	return nil
 }
 
-func (m command) generateSpec(driverRoot string, nvidiaCTKPath string, namer deviceNamer) (*specs.Spec, error) {
+func (m command) generateSpec(cfg *config) (*specs.Spec, error) {
+	deviceNamer, err := nvcdi.NewDeviceNamer(cfg.deviceNameStrategy)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create device namer: %v", err)
+	}
+
 	nvmllib := nvml.New()
 	if r := nvmllib.Init(); r != nvml.SUCCESS {
 		return nil, r
@@ -223,7 +219,16 @@ func (m command) generateSpec(driverRoot string, nvidiaCTKPath string, namer dev
 
 	devicelib := device.New(device.WithNvml(nvmllib))
 
-	deviceSpecs, err := m.generateDeviceSpecs(devicelib, driverRoot, nvidiaCTKPath, namer)
+	cdilib := nvcdi.New(
+		nvcdi.WithLogger(m.logger),
+		nvcdi.WithDriverRoot(cfg.driverRoot),
+		nvcdi.WithNVIDIACTKPath(cfg.nvidiaCTKPath),
+		nvcdi.WithDeviceNamer(deviceNamer),
+		nvcdi.WithDeviceLib(devicelib),
+		nvcdi.WithNvmlLib(nvmllib),
+	)
+
+	deviceSpecs, err := cdilib.GetAllDeviceSpecs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device CDI specs: %v", err)
 	}
@@ -232,20 +237,16 @@ func (m command) generateSpec(driverRoot string, nvidiaCTKPath string, namer dev
 
 	deviceSpecs = append(deviceSpecs, allDevice)
 
-	common, err := NewCommonDiscoverer(m.logger, driverRoot, nvidiaCTKPath, nvmllib)
+	commonEdits, err := cdilib.GetCommonEdits()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create discoverer for common entities: %v", err)
+		return nil, fmt.Errorf("failed to create edits common for entities: %v", err)
+	}
+	deviceFolderPermissionEdits, err := GetDeviceFolderPermissionHookEdits(m.logger, cfg.driverRoot, cfg.nvidiaCTKPath, deviceSpecs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generated edits for device folder permissions: %v", err)
 	}
 
-	deviceFolderPermissionHooks, err := NewDeviceFolderPermissionHookDiscoverer(m.logger, driverRoot, nvidiaCTKPath, deviceSpecs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generated permission hooks for device nodes: %v", err)
-	}
-
-	commonEdits, err := edits.FromDiscoverer(discover.Merge(common, deviceFolderPermissionHooks))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create container edits for common entities: %v", err)
-	}
+	commonEdits.Append(deviceFolderPermissionEdits)
 
 	// We construct the spec and determine the minimum required version based on the specification.
 	spec := specs.Spec{
@@ -264,73 +265,6 @@ func (m command) generateSpec(driverRoot string, nvidiaCTKPath string, namer dev
 	spec.Version = minVersion
 
 	return &spec, nil
-}
-
-func (m command) generateDeviceSpecs(devicelib device.Interface, driverRoot string, nvidiaCTKPath string, namer deviceNamer) ([]specs.Device, error) {
-	var deviceSpecs []specs.Device
-
-	err := devicelib.VisitDevices(func(i int, d device.Device) error {
-		isMigEnabled, err := d.IsMigEnabled()
-		if err != nil {
-			return fmt.Errorf("failed to check whether device is MIG device: %v", err)
-		}
-		if isMigEnabled {
-			return nil
-		}
-		device, err := NewFullGPUDiscoverer(m.logger, driverRoot, nvidiaCTKPath, d)
-		if err != nil {
-			return fmt.Errorf("failed to create device: %v", err)
-		}
-
-		deviceEdits, err := edits.FromDiscoverer(device)
-		if err != nil {
-			return fmt.Errorf("failed to create container edits for device: %v", err)
-		}
-
-		deviceName, err := namer.GetDeviceName(i, d)
-		if err != nil {
-			return fmt.Errorf("failed to get device name: %v", err)
-		}
-		deviceSpec := specs.Device{
-			Name:           deviceName,
-			ContainerEdits: *deviceEdits.ContainerEdits,
-		}
-
-		deviceSpecs = append(deviceSpecs, deviceSpec)
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate CDI spec for GPU devices: %v", err)
-	}
-
-	err = devicelib.VisitMigDevices(func(i int, d device.Device, j int, mig device.MigDevice) error {
-		device, err := NewMigDeviceDiscoverer(m.logger, "", d, mig)
-		if err != nil {
-			return fmt.Errorf("failed to create MIG device: %v", err)
-		}
-
-		deviceEdits, err := edits.FromDiscoverer(device)
-		if err != nil {
-			return fmt.Errorf("failed to create container edits for MIG device: %v", err)
-		}
-
-		deviceName, err := namer.GetMigDeviceName(i, j, mig)
-		if err != nil {
-			return fmt.Errorf("failed to get device name: %v", err)
-		}
-		deviceSpec := specs.Device{
-			Name:           deviceName,
-			ContainerEdits: *deviceEdits.ContainerEdits,
-		}
-
-		deviceSpecs = append(deviceSpecs, deviceSpec)
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("falied to generate CDI spec for MIG devices: %v", err)
-	}
-
-	return deviceSpecs, nil
 }
 
 // createAllDevice creates an 'all' device which combines the edits from the previous devices
