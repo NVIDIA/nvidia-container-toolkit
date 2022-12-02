@@ -28,24 +28,96 @@ import (
 // prefixes. The validity of a file is determined by a filter function.
 type file struct {
 	logger   *log.Logger
+	root     string
 	prefixes []string
 	filter   func(string) error
 }
 
-// NewFileLocator creates a Locator that can be used to find files at the specified root. A logger
-// can also be specified.
-func NewFileLocator(logger *log.Logger, root string) Locator {
-	l := newFileLocator(logger, root)
+// Option defines a function for passing options to the NewFileLocator() call
+type Option func(*file)
 
-	return &l
+// WithRoot sets the root for the file locator
+func WithRoot(root string) Option {
+	return func(f *file) {
+		f.root = root
+	}
 }
 
-func newFileLocator(logger *log.Logger, root string) file {
-	return file{
-		logger:   logger,
-		prefixes: []string{root},
-		filter:   assertFile,
+// WithLogger sets the logger for the file locator
+func WithLogger(logger *log.Logger) Option {
+	return func(f *file) {
+		f.logger = logger
 	}
+}
+
+// WithSearchPaths sets the search paths for the file locator.
+func WithSearchPaths(paths ...string) Option {
+	return func(f *file) {
+		f.prefixes = paths
+	}
+}
+
+// WithFilter sets the filter for the file locator
+// The filter is called for each candidate file and candidates that return nil are considered.
+func WithFilter(assert func(string) error) Option {
+	return func(f *file) {
+		f.filter = assert
+	}
+}
+
+// NewFileLocator creates a Locator that can be used to find files with the specified options.
+func NewFileLocator(opts ...Option) Locator {
+	return newFileLocator(opts...)
+}
+
+func newFileLocator(opts ...Option) *file {
+	f := &file{}
+	for _, opt := range opts {
+		opt(f)
+	}
+	if f.logger == nil {
+		f.logger = log.StandardLogger()
+	}
+	if f.filter == nil {
+		f.filter = assertFile
+	}
+	// Since the `Locate` implementations rely on the root already being specified we update
+	// the prefixes to include the root.
+	f.prefixes = getSearchPrefixes(f.root, f.prefixes...)
+
+	return f
+}
+
+// getSearchPrefixes generates a list of unique paths to be searched by a file locator.
+//
+// For each of the unique prefixes <p> specified, the path <root><p> is searched, where <root> is the
+// specified root. If no prefixes are specified, <root> is returned as the only search prefix.
+//
+// Note that an empty root is equivalent to searching relative to the current working directory, and
+// if the root filesystem should be searched instead, root should be specified as "/" explicitly.
+//
+// Also, a prefix of "" forces the root to be included in returned set of paths. This means that if
+// the root in addition to another prefix must be searched the function should be called with:
+//
+//	getSearchPrefixes("/root", "", "another/path")
+//
+// and will result in the search paths []{"/root", "/root/another/path"} being returned.
+func getSearchPrefixes(root string, prefixes ...string) []string {
+	seen := make(map[string]bool)
+	var uniquePrefixes []string
+	for _, p := range prefixes {
+		if seen[p] {
+			continue
+		}
+		seen[p] = true
+		uniquePrefixes = append(uniquePrefixes, filepath.Join(root, p))
+	}
+
+	if len(uniquePrefixes) == 0 {
+		uniquePrefixes = append(uniquePrefixes, root)
+	}
+
+	return uniquePrefixes
 }
 
 var _ Locator = (*file)(nil)

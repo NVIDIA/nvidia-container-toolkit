@@ -26,13 +26,11 @@ import (
 // NewDirectoryLocator creates a Locator that can be used to find directories at the specified root. A logger
 // is also specified.
 func NewDirectoryLocator(logger *log.Logger, root string) Locator {
-	l := file{
-		logger:   logger,
-		prefixes: []string{root},
-		filter:   assertDirectory,
-	}
-
-	return &l
+	return NewFileLocator(
+		WithLogger(logger),
+		WithRoot(root),
+		WithFilter(assertDirectory),
+	)
 }
 
 // assertDirectory checks wither the specified path is a directory.

@@ -70,17 +70,18 @@ func NewGraphicsMountsDiscoverer(logger *logrus.Logger, root string) (Discover, 
 
 	jsonMounts := NewMounts(
 		logger,
-		lookup.NewFileLocator(logger, root),
+		lookup.NewFileLocator(
+			lookup.WithLogger(logger),
+			lookup.WithRoot(root),
+			lookup.WithSearchPaths("/etc", "/usr/share"),
+		),
 		root,
 		[]string{
-			// TODO: We should handle this more cleanly
-			"/etc/glvnd/egl_vendor.d/10_nvidia.json",
-			"/etc/vulkan/icd.d/nvidia_icd.json",
-			"/etc/vulkan/implicit_layer.d/nvidia_layers.json",
-			"/usr/share/glvnd/egl_vendor.d/10_nvidia.json",
-			"/usr/share/vulkan/icd.d/nvidia_icd.json",
-			"/usr/share/vulkan/implicit_layer.d/nvidia_layers.json",
-			"/usr/share/egl/egl_external_platform.d/15_nvidia_gbm.json",
+			"glvnd/egl_vendor.d/10_nvidia.json",
+			"vulkan/icd.d/nvidia_icd.json",
+			"vulkan/implicit_layer.d/nvidia_layers.json",
+			"egl/egl_external_platform.d/15_nvidia_gbm.json",
+			"egl/egl_external_platform.d/10_nvidia_wayland.json",
 		},
 	)
 
@@ -164,7 +165,10 @@ func (d drmDevicesByPath) getSpecificLinkArgs(devices []Device) ([]string, error
 		selectedDevices[filepath.Base(d.HostPath)] = true
 	}
 
-	linkLocator := lookup.NewFileLocator(d.logger, d.root)
+	linkLocator := lookup.NewFileLocator(
+		lookup.WithLogger(d.logger),
+		lookup.WithRoot(d.root),
+	)
 	candidates, err := linkLocator.Locate("/dev/dri/by-path/pci-*-*")
 	if err != nil {
 		d.logger.Warningf("Failed to locate by-path links: %v; ignoring", err)

@@ -19,7 +19,6 @@ package lookup
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 )
@@ -31,13 +30,12 @@ const (
 // NewCharDeviceLocator creates a Locator that can be used to find char devices at the specified root. A logger is
 // also specified.
 func NewCharDeviceLocator(logger *logrus.Logger, root string) Locator {
-	l := file{
-		logger:   logger,
-		prefixes: []string{root, filepath.Join(root, devRoot)},
-		filter:   assertCharDevice,
-	}
-
-	return &l
+	return NewFileLocator(
+		WithLogger(logger),
+		WithRoot(root),
+		WithSearchPaths("", devRoot),
+		WithFilter(assertCharDevice),
+	)
 }
 
 // assertCharDevice checks whether the specified path is a char device and returns an error if this is not the case.

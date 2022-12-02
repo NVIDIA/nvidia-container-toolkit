@@ -33,7 +33,7 @@ func NewTegraPlatformFiles(logger *logrus.Logger) (oci.SpecModifier, error) {
 
 	tegraSystemMounts := discover.NewMounts(
 		logger,
-		lookup.NewFileLocator(logger, ""),
+		lookup.NewFileLocator(lookup.WithLogger(logger)),
 		"",
 		[]string{
 			"/etc/nv_tegra_release",

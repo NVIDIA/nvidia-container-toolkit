@@ -26,7 +26,10 @@ import (
 func NewIPCDiscoverer(logger *logrus.Logger, root string) (discover.Discover, error) {
 	d := discover.NewMounts(
 		logger,
-		lookup.NewFileLocator(logger, root),
+		lookup.NewFileLocator(
+			lookup.WithLogger(logger),
+			lookup.WithRoot(root),
+		),
 		root,
 		[]string{
 			"/var/run/nvidia-persistenced/socket",

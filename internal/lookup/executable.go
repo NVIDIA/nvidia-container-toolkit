@@ -19,7 +19,6 @@ package lookup
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -33,17 +32,21 @@ type executable struct {
 func NewExecutableLocator(logger *log.Logger, root string) Locator {
 	paths := GetPaths(root)
 
-	var prefixes []string
-	for _, dir := range paths {
-		prefixes = append(prefixes, filepath.Join(root, dir))
-	}
+	return newExecutableLocator(logger, root, paths...)
+}
+
+func newExecutableLocator(logger *log.Logger, root string, paths ...string) *executable {
+	f := newFileLocator(
+		WithLogger(logger),
+		WithRoot(root),
+		WithSearchPaths(paths...),
+		WithFilter(assertExecutable),
+	)
+
 	l := executable{
-		file: file{
-			logger:   logger,
-			prefixes: prefixes,
-			filter:   assertExecutable,
-		},
+		file: *f,
 	}
+
 	return &l
 }
 

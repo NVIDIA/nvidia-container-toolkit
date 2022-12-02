@@ -35,8 +35,9 @@ type symlink struct {
 // NewSymlinkChainLocator creats a locator that can be used for locating files through symlinks.
 // A logger can also be specified.
 func NewSymlinkChainLocator(logger *logrus.Logger, root string) Locator {
+	f := newFileLocator(WithLogger(logger), WithRoot(root))
 	l := symlinkChain{
-		file: newFileLocator(logger, root),
+		file: *f,
 	}
 
 	return &l
@@ -45,8 +46,9 @@ func NewSymlinkChainLocator(logger *logrus.Logger, root string) Locator {
 // NewSymlinkLocator creats a locator that can be used for locating files through symlinks.
 // A logger can also be specified.
 func NewSymlinkLocator(logger *logrus.Logger, root string) Locator {
+	f := newFileLocator(WithLogger(logger), WithRoot(root))
 	l := symlink{
-		file: newFileLocator(logger, root),
+		file: *f,
 	}
 
 	return &l
