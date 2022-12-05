@@ -208,7 +208,7 @@ func (c *ldcache) List() ([]string, []string) {
 
 		n := bytes.IndexByte(value, 0)
 		if n < 0 {
-			break
+			continue
 		}
 
 		name := filepath.Join(c.root, strn(value, n))
@@ -217,7 +217,7 @@ func (c *ldcache) List() ([]string, []string) {
 		path, err := filepath.EvalSymlinks(name)
 		if err != nil {
 			c.logger.Debugf("could not resolve symlink for %v", name)
-			break
+			continue
 		}
 		if processed[path] {
 			continue
