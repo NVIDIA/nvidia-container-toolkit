@@ -22,6 +22,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
+	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	ociSpecs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 )
@@ -63,7 +64,9 @@ func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 		return nil, fmt.Errorf("failed to discover hooks: %v", err)
 	}
 
-	c := cdi.ContainerEdits{}
+	c := cdi.ContainerEdits{
+		ContainerEdits: &specs.ContainerEdits{},
+	}
 	for _, d := range devices {
 		edits, err := device(d).toEdits()
 		if err != nil {
