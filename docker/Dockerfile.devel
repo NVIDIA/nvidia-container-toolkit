@@ -16,6 +16,6 @@ FROM golang:${GOLANG_VERSION}
 
 RUN go install golang.org/x/lint/golint@6edffad5e6160f5949cdefc81710b2706fbcd4f6
 RUN go install github.com/matryer/moq@latest
-RUN go install github.com/gordonklaus/ineffassign@latest
+RUN go install github.com/gordonklaus/ineffassign@d2c82e48359b033cde9cf1307f6d5550b8d61321
 RUN go install github.com/client9/misspell/cmd/misspell@latest
 RUN go install github.com/google/go-licenses@latest
