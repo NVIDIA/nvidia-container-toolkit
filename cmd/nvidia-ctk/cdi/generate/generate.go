@@ -208,7 +208,7 @@ func (m command) generateSpec(root string) (*specs.Spec, error) {
 
 	deviceSpecs = append(deviceSpecs, allDevice)
 
-	allEdits := cdi.ContainerEdits{}
+	allEdits := edits.NewContainerEdits()
 
 	ipcs, err := NewIPCDiscoverer(m.logger, root)
 	if err != nil {
@@ -316,7 +316,7 @@ func (m command) generateDeviceSpecs(devicelib device.Interface, root string) ([
 
 // createAllDevice creates an 'all' device which combines the edits from the previous devices
 func createAllDevice(deviceSpecs []specs.Device) specs.Device {
-	edits := cdi.ContainerEdits{}
+	edits := edits.NewContainerEdits()
 
 	for _, d := range deviceSpecs {
 		edit := cdi.ContainerEdits{

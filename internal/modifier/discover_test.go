@@ -37,8 +37,10 @@ func TestDiscoverModifier(t *testing.T) {
 		expectedSpec  *specs.Spec
 	}{
 		{
-			description: "empty discoverer does not modify spec",
-			discover:    &discover.DiscoverMock{},
+			description:  "empty discoverer does not modify spec",
+			spec:         &specs.Spec{},
+			discover:     &discover.DiscoverMock{},
+			expectedSpec: &specs.Spec{},
 		},
 		{
 			description: "failed hooks discoverer returns error",

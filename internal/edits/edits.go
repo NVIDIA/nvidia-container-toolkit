@@ -22,6 +22,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
+	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	ociSpecs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 )
@@ -63,7 +64,7 @@ func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 		return nil, fmt.Errorf("failed to discover hooks: %v", err)
 	}
 
-	c := cdi.ContainerEdits{}
+	c := NewContainerEdits()
 	for _, d := range devices {
 		edits, err := device(d).toEdits()
 		if err != nil {
@@ -80,7 +81,15 @@ func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 		c.Append(hook(h).toEdits())
 	}
 
-	return &c, nil
+	return c, nil
+}
+
+// NewContainerEdits is a utility function to create a CDI ContainerEdits struct.
+func NewContainerEdits() *cdi.ContainerEdits {
+	c := cdi.ContainerEdits{
+		ContainerEdits: &specs.ContainerEdits{},
+	}
+	return &c
 }
 
 // Modify applies the defined edits to the incoming OCI spec
