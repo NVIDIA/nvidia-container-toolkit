@@ -31,15 +31,16 @@ import (
 
 // byPathHookDiscoverer discovers the entities required for injecting by-path DRM device links
 type byPathHookDiscoverer struct {
-	logger   *logrus.Logger
-	root     string
-	pciBusID string
+	logger        *logrus.Logger
+	root          string
+	nvidiaCTKPath string
+	pciBusID      string
 }
 
 var _ discover.Discover = (*byPathHookDiscoverer)(nil)
 
 // NewFullGPUDiscoverer creates a discoverer for the full GPU defined by the specified device.
-func NewFullGPUDiscoverer(logger *logrus.Logger, root string, d device.Device) (discover.Discover, error) {
+func NewFullGPUDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPath string, d device.Device) (discover.Discover, error) {
 	// TODO: The functionality to get device paths should be integrated into the go-nvlib/pkg/device.Device interface.
 	// This will allow reuse here and in other code where the paths are queried such as the NVIDIA device plugin.
 	minor, ret := d.GetMinorNumber()
@@ -68,9 +69,10 @@ func NewFullGPUDiscoverer(logger *logrus.Logger, root string, d device.Device) (
 	)
 
 	byPathHooks := &byPathHookDiscoverer{
-		logger:   logger,
-		root:     root,
-		pciBusID: pciBusID,
+		logger:        logger,
+		root:          root,
+		nvidiaCTKPath: nvidiaCTKPath,
+		pciBusID:      pciBusID,
 	}
 
 	dd := discover.Merge(
@@ -98,21 +100,18 @@ func (d *byPathHookDiscoverer) Hooks() ([]discover.Hook, error) {
 		return nil, nil
 	}
 
-	hookPath := "nvidia-ctk"
-	args := []string{hookPath, "hook", "create-symlinks"}
+	var args []string
 	for _, l := range links {
 		args = append(args, "--link", l)
 	}
 
-	var hooks []discover.Hook
-	hook := discover.Hook{
-		Lifecycle: "createContainer",
-		Path:      hookPath,
-		Args:      args,
-	}
-	hooks = append(hooks, hook)
+	hook := discover.CreateNvidiaCTKHook(
+		d.nvidiaCTKPath,
+		"create-symlinks",
+		args...,
+	)
 
-	return hooks, nil
+	return []discover.Hook{hook}, nil
 }
 
 // Mounts returns an empty slice for a full GPU

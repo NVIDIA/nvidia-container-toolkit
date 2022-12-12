@@ -20,15 +20,15 @@ import (
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/sirupsen/logrus"
 )
 
 type deviceFolderPermissions struct {
-	logger  *logrus.Logger
-	root    string
-	folders []string
+	logger        *logrus.Logger
+	root          string
+	nvidiaCTKPath string
+	folders       []string
 }
 
 var _ discover.Discover = (*deviceFolderPermissions)(nil)
@@ -39,7 +39,7 @@ var _ discover.Discover = (*deviceFolderPermissions)(nil)
 // The nested devices that are applicable to the NVIDIA GPU devices are:
 //   - DRM devices at /dev/dri/*
 //   - NVIDIA Caps devices at /dev/nvidia-caps/*
-func NewDeviceFolderPermissionHookDiscoverer(logger *logrus.Logger, root string, deviceSpecs []specs.Device) (discover.Discover, error) {
+func NewDeviceFolderPermissionHookDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPath string, deviceSpecs []specs.Device) (discover.Discover, error) {
 	var folders []string
 	seen := make(map[string]bool)
 	for _, device := range deviceSpecs {
@@ -65,9 +65,10 @@ func NewDeviceFolderPermissionHookDiscoverer(logger *logrus.Logger, root string,
 	}
 
 	d := &deviceFolderPermissions{
-		logger:  logger,
-		root:    root,
-		folders: folders,
+		logger:        logger,
+		root:          root,
+		nvidiaCTKPath: nvidiaCTKPath,
+		folders:       folders,
 	}
 
 	return d, nil
@@ -88,11 +89,9 @@ func (d *deviceFolderPermissions) Hooks() ([]discover.Hook, error) {
 	for _, folder := range d.folders {
 		args = append(args, "--path", folder)
 	}
+
 	hook := discover.CreateNvidiaCTKHook(
-		d.logger,
-		lookup.NewExecutableLocator(d.logger, d.root),
-		nvidiaCTKExecutable,
-		nvidiaCTKDefaultFilePath,
+		d.nvidiaCTKPath,
 		"chmod",
 		args...,
 	)

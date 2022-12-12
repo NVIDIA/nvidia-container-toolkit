@@ -24,12 +24,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testNvidiaCTKPath = "/foo/bar/nvidia-ctk"
+)
+
 func TestLDCacheUpdateHook(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
 	cfg := Config{
 		Root:                                    "/",
-		NVIDIAContainerToolkitCLIExecutablePath: "/foo/bar/nvidia-ctk",
+		NVIDIAContainerToolkitCLIExecutablePath: testNvidiaCTKPath,
 	}
 
 	testCases := []struct {
@@ -86,7 +90,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 				},
 			}
 			expectedHook := Hook{
-				Path:      "/usr/bin/nvidia-ctk",
+				Path:      testNvidiaCTKPath,
 				Args:      tc.expectedArgs,
 				Lifecycle: "createContainer",
 			}

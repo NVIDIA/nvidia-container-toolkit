@@ -29,22 +29,23 @@ import (
 )
 
 type driverLibraries struct {
-	logger    *logrus.Logger
-	root      string
-	libraries []string
+	logger        *logrus.Logger
+	root          string
+	nvidiaCTKPath string
+	libraries     []string
 }
 
 var _ discover.Discover = (*driverLibraries)(nil)
 
 // NewDriverDiscoverer creates a discoverer for the libraries and binaries associated with a driver installation.
 // The supplied NVML Library is used to query the expected driver version.
-func NewDriverDiscoverer(logger *logrus.Logger, root string, nvmllib nvml.Interface) (discover.Discover, error) {
+func NewDriverDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPath string, nvmllib nvml.Interface) (discover.Discover, error) {
 	version, r := nvmllib.SystemGetDriverVersion()
 	if r != nvml.SUCCESS {
 		return nil, fmt.Errorf("failed to determine driver version: %v", r)
 	}
 
-	libraries, err := NewDriverLibraryDiscoverer(logger, root, version)
+	libraries, err := NewDriverLibraryDiscoverer(logger, root, nvidiaCTKPath, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for driver libraries: %v", err)
 	}
@@ -63,16 +64,17 @@ func NewDriverDiscoverer(logger *logrus.Logger, root string, nvmllib nvml.Interf
 }
 
 // NewDriverLibraryDiscoverer creates a discoverer for the libraries associated with the specified driver version.
-func NewDriverLibraryDiscoverer(logger *logrus.Logger, root string, version string) (discover.Discover, error) {
+func NewDriverLibraryDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPath, version string) (discover.Discover, error) {
 	libraries, err := findVersionLibs(logger, root, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get libraries for driver version: %v", err)
 	}
 
 	d := driverLibraries{
-		logger:    logger,
-		root:      root,
-		libraries: libraries,
+		logger:        logger,
+		root:          root,
+		nvidiaCTKPath: nvidiaCTKPath,
+		libraries:     libraries,
 	}
 
 	return &d, nil
@@ -129,13 +131,8 @@ func (d *driverLibraries) Mounts() ([]discover.Mount, error) {
 
 // Hooks returns a hook that updates the LDCache for the specified driver library paths.
 func (d *driverLibraries) Hooks() ([]discover.Hook, error) {
-	locator := lookup.NewExecutableLocator(d.logger, d.root)
-
 	hook := discover.CreateLDCacheUpdateHook(
-		d.logger,
-		locator,
-		nvidiaCTKExecutable,
-		nvidiaCTKDefaultFilePath,
+		d.nvidiaCTKPath,
 		d.libraries,
 	)
 
