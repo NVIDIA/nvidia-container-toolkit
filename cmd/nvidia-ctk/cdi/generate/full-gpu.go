@@ -29,14 +29,14 @@ import (
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
 
-// fullGPUDiscoverer wraps a deviceDiscoverer and adds specifics required for discovering full GPUs
-type fullGPUDiscoverer struct {
-	deviceDiscoverer
-
+// byPathHookDiscoverer discovers the entities required for injecting by-path DRM device links
+type byPathHookDiscoverer struct {
+	logger   *logrus.Logger
+	root     string
 	pciBusID string
 }
 
-var _ discover.Discover = (*fullGPUDiscoverer)(nil)
+var _ discover.Discover = (*byPathHookDiscoverer)(nil)
 
 // NewFullGPUDiscoverer creates a discoverer for the full GPU defined by the specified device.
 func NewFullGPUDiscoverer(logger *logrus.Logger, root string, d device.Device) (discover.Discover, error) {
@@ -61,22 +61,35 @@ func NewFullGPUDiscoverer(logger *logrus.Logger, root string, d device.Device) (
 
 	deviceNodePaths := append([]string{path}, drmDeviceNodes...)
 
-	device := fullGPUDiscoverer{
-		deviceDiscoverer: deviceDiscoverer{
-			logger:          logger,
-			root:            root,
-			deviceNodePaths: deviceNodePaths,
-		},
+	deviceNodes := discover.NewCharDeviceDiscoverer(
+		logger,
+		deviceNodePaths,
+		root,
+	)
+
+	byPathHooks := &byPathHookDiscoverer{
+		logger:   logger,
+		root:     root,
 		pciBusID: pciBusID,
 	}
 
-	return &device, nil
+	dd := discover.Merge(
+		deviceNodes,
+		byPathHooks,
+	)
+
+	return dd, nil
+}
+
+// Devices returns the empty list for the by-path hook discoverer
+func (d *byPathHookDiscoverer) Devices() ([]discover.Device, error) {
+	return nil, nil
 }
 
 // Hooks returns the hooks for the GPU device.
 // The following hooks are detected:
 //  1. A hook to create /dev/dri/by-path symlinks
-func (d *fullGPUDiscoverer) Hooks() ([]discover.Hook, error) {
+func (d *byPathHookDiscoverer) Hooks() ([]discover.Hook, error) {
 	links, err := d.deviceNodeLinks()
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover DRA device links: %v", err)
@@ -103,11 +116,11 @@ func (d *fullGPUDiscoverer) Hooks() ([]discover.Hook, error) {
 }
 
 // Mounts returns an empty slice for a full GPU
-func (d *fullGPUDiscoverer) Mounts() ([]discover.Mount, error) {
+func (d *byPathHookDiscoverer) Mounts() ([]discover.Mount, error) {
 	return nil, nil
 }
 
-func (d *fullGPUDiscoverer) deviceNodeLinks() ([]string, error) {
+func (d *byPathHookDiscoverer) deviceNodeLinks() ([]string, error) {
 	candidates := []string{
 		fmt.Sprintf("/dev/dri/by-path/pci-%s-card", d.pciBusID),
 		fmt.Sprintf("/dev/dri/by-path/pci-%s-render", d.pciBusID),
