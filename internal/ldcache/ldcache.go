@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -205,18 +206,14 @@ func (c *ldcache) List() ([]string, []string) {
 			continue
 		}
 		value := c.libs[e.Value:]
-
-		n := bytes.IndexByte(value, 0)
-		if n < 0 {
+		name := bytesToString(value)
+		if name == "" {
 			continue
 		}
 
-		name := filepath.Join(c.root, strn(value, n))
-		c.logger.Debugf("checking %v", string(name))
-
-		path, err := filepath.EvalSymlinks(name)
+		path, err := c.resolve(name)
 		if err != nil {
-			c.logger.Debugf("could not resolve symlink for %v", name)
+			c.logger.Debugf("Could not resolve entry: %v", err)
 			continue
 		}
 		if processed[path] {
@@ -233,10 +230,9 @@ func (c *ldcache) List() ([]string, []string) {
 // The 32-bit and 64-bit libraries matching the prefixes are returned.
 func (c *ldcache) Lookup(libs ...string) (paths32, paths64 []string) {
 	c.logger.Debugf("Looking up %v in cache", libs)
-	type void struct{}
 	var paths *[]string
 
-	set := make(map[string]void)
+	processed := make(map[string]bool)
 	prefix := make([][]byte, len(libs))
 
 	for i := range libs {
@@ -264,29 +260,53 @@ func (c *ldcache) Lookup(libs ...string) (paths32, paths64 []string) {
 		lib := c.libs[e.Key:]
 		value := c.libs[e.Value:]
 
+		name := bytesToString(value)
+		if name == "" {
+			continue
+		}
+
 		for _, p := range prefix {
 			if bytes.HasPrefix(lib, p) {
-				n := bytes.IndexByte(value, 0)
-				if n < 0 {
-					break
-				}
-
-				name := filepath.Join(c.root, strn(value, n))
-				c.logger.Debugf("checking %v", string(name))
-
-				path, err := filepath.EvalSymlinks(name)
+				path, err := c.resolve(name)
 				if err != nil {
-					c.logger.Debugf("could not resolve symlink for %v", name)
+					c.logger.Debugf("Could not resolve entry: %v", err)
 					break
 				}
-				if _, ok := set[path]; ok {
+				if processed[path] {
 					break
 				}
-				set[path] = void{}
+				processed[path] = true
 				*paths = append(*paths, path)
 				break
 			}
 		}
 	}
 	return
+}
+
+// resolve resolves the specified ldcache entry based on the value being processed.
+// The input is the name of the entry in the cache.
+func (c *ldcache) resolve(target string) (string, error) {
+	name := filepath.Join(c.root, target)
+
+	c.logger.Debugf("checking %v", name)
+
+	link, err := filepath.EvalSymlinks(name)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve symlink: %v", err)
+	}
+
+	c.logger.Debugf("Resolved link: '%v' => '%v'", name, link)
+	return link, nil
+}
+
+// bytesToString converts a byte slice to a string.
+// This assumes that the byte slice is null-terminated
+func bytesToString(value []byte) string {
+	n := bytes.IndexByte(value, 0)
+	if n < 0 {
+		return ""
+	}
+
+	return strn(value, n)
 }
