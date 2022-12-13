@@ -289,11 +289,25 @@ func (c *ldcache) Lookup(libs ...string) (paths32, paths64 []string) {
 func (c *ldcache) resolve(target string) (string, error) {
 	name := filepath.Join(c.root, target)
 
-	c.logger.Debugf("checking %v", name)
+	c.logger.Debugf("checking %v", string(name))
 
-	link, err := filepath.EvalSymlinks(name)
+	info, err := os.Lstat(name)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file info: %v", info)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		c.logger.Debugf("Resolved regular file: %v", name)
+		return name, nil
+	}
+
+	link, err := os.Readlink(name)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve symlink: %v", err)
+	}
+
+	if filepath.IsAbs(link) {
+		c.logger.Debugf("Found absolute link %v", link)
+		link = filepath.Join(c.root, link)
 	}
 
 	c.logger.Debugf("Resolved link: '%v' => '%v'", name, link)
