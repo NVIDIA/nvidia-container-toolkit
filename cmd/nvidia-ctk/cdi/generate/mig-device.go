@@ -26,13 +26,6 @@ import (
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
 
-// migDeviceDiscoverer wraps a deviceDiscoverer and adds specifics required for discovering MIG devices.
-type migDeviceDiscoverer struct {
-	deviceDiscoverer
-}
-
-var _ discover.Discover = (*migDeviceDiscoverer)(nil)
-
 // NewMigDeviceDiscoverer creates a discoverer for the specified mig device and its parent.
 func NewMigDeviceDiscoverer(logger *logrus.Logger, root string, parent device.Device, d device.MigDevice) (discover.Discover, error) {
 	minor, ret := parent.GetMinorNumber()
@@ -68,17 +61,15 @@ func NewMigDeviceDiscoverer(logger *logrus.Logger, root string, parent device.De
 		return nil, fmt.Errorf("failed to get CI cap device path: %v", err)
 	}
 
-	m := migDeviceDiscoverer{
-		deviceDiscoverer: deviceDiscoverer{
-			logger: logger,
-			root:   root,
-			deviceNodePaths: []string{
-				parentPath,
-				giCapDevicePath,
-				ciCapDevicePath,
-			},
+	deviceNodes := discover.NewCharDeviceDiscoverer(
+		logger,
+		[]string{
+			parentPath,
+			giCapDevicePath,
+			ciCapDevicePath,
 		},
-	}
+		root,
+	)
 
-	return &m, nil
+	return deviceNodes, nil
 }
