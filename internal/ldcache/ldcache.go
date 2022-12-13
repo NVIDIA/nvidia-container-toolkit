@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"unsafe"
 
@@ -178,13 +179,15 @@ func (c *ldcache) parse() error {
 	return nil
 }
 
-// List creates a list of libraires in the ldcache.
-// The 32-bit and 64-bit libraries are returned separately.
-func (c *ldcache) List() ([]string, []string) {
-	paths := make(map[int][]string)
+type entry struct {
+	libname string
+	bits    int
+	value   string
+}
 
-	processed := make(map[string]bool)
-
+// getEntries returns the entires of the ldcache in a go-friendly struct.
+func (c *ldcache) getEntries(selected func(string) bool) []entry {
+	var entries []entry
 	for _, e := range c.entries {
 		bits := 0
 		if ((e.Flags & flagTypeMask) & flagTypeELF) == 0 {
@@ -205,13 +208,39 @@ func (c *ldcache) List() ([]string, []string) {
 		if e.Key > uint32(len(c.libs)) || e.Value > uint32(len(c.libs)) {
 			continue
 		}
-		value := c.libs[e.Value:]
-		name := bytesToString(value)
-		if name == "" {
+		lib := bytesToString(c.libs[e.Key:])
+		if lib == "" {
+			c.logger.Debugf("Skipping invalid lib")
 			continue
 		}
+		if !selected(lib) {
+			continue
+		}
+		value := bytesToString(c.libs[e.Value:])
+		if value == "" {
+			c.logger.Debugf("Skipping invalid value for lib %v", lib)
+			continue
+		}
+		e := entry{
+			libname: lib,
+			bits:    bits,
+			value:   value,
+		}
 
-		path, err := c.resolve(name)
+		entries = append(entries, e)
+	}
+
+	return entries
+}
+
+// List creates a list of libraires in the ldcache.
+// The 32-bit and 64-bit libraries are returned separately.
+func (c *ldcache) List() ([]string, []string) {
+	all := func(s string) bool { return true }
+	paths := make(map[int][]string)
+	processed := make(map[string]bool)
+	for _, e := range c.getEntries(all) {
+		path, err := c.resolve(e.value)
 		if err != nil {
 			c.logger.Debugf("Could not resolve entry: %v", err)
 			continue
@@ -219,7 +248,7 @@ func (c *ldcache) List() ([]string, []string) {
 		if processed[path] {
 			continue
 		}
-		paths[bits] = append(paths[bits], path)
+		paths[e.bits] = append(paths[e.bits], path)
 		processed[path] = true
 	}
 
@@ -228,60 +257,36 @@ func (c *ldcache) List() ([]string, []string) {
 
 // Lookup searches the ldcache for the specified prefixes.
 // The 32-bit and 64-bit libraries matching the prefixes are returned.
-func (c *ldcache) Lookup(libs ...string) (paths32, paths64 []string) {
-	c.logger.Debugf("Looking up %v in cache", libs)
-	var paths *[]string
+func (c *ldcache) Lookup(libPrefixes ...string) ([]string, []string) {
+	c.logger.Debugf("Looking up %v in cache", libPrefixes)
 
+	paths := make(map[int][]string)
 	processed := make(map[string]bool)
-	prefix := make([][]byte, len(libs))
 
-	for i := range libs {
-		prefix[i] = []byte(libs[i])
-	}
-	for _, e := range c.entries {
-		if ((e.Flags & flagTypeMask) & flagTypeELF) == 0 {
-			continue
-		}
-		switch e.Flags & flagArchMask {
-		case flagArchX8664:
-			fallthrough
-		case flagArchPpc64le:
-			paths = &paths64
-		case flagArchX32:
-			fallthrough
-		case flagArchI386:
-			paths = &paths32
-		default:
-			continue
-		}
-		if e.Key > uint32(len(c.libs)) || e.Value > uint32(len(c.libs)) {
-			continue
-		}
-		lib := c.libs[e.Key:]
-		value := c.libs[e.Value:]
-
-		name := bytesToString(value)
-		if name == "" {
-			continue
-		}
-
-		for _, p := range prefix {
-			if bytes.HasPrefix(lib, p) {
-				path, err := c.resolve(name)
-				if err != nil {
-					c.logger.Debugf("Could not resolve entry: %v", err)
-					break
-				}
-				if processed[path] {
-					break
-				}
-				processed[path] = true
-				*paths = append(*paths, path)
-				break
+	// We define a functor to check whether a given library name matches any of the prefixes
+	matchesAnyPrefix := func(s string) bool {
+		for _, p := range libPrefixes {
+			if strings.HasPrefix(s, p) {
+				return true
 			}
 		}
+		return false
 	}
-	return
+
+	for _, e := range c.getEntries(matchesAnyPrefix) {
+		path, err := c.resolve(e.value)
+		if err != nil {
+			c.logger.Debug("Could not resolve entry: %v", err)
+			continue
+		}
+		if processed[path] {
+			continue
+		}
+		paths[e.bits] = append(paths[e.bits], path)
+		processed[path] = true
+	}
+
+	return paths[32], paths[64]
 }
 
 // resolve resolves the specified ldcache entry based on the value being processed.
