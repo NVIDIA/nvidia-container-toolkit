@@ -52,7 +52,16 @@ install -m 755 -t %{buildroot}/usr/libexec/oci/hooks.d oci-nvidia-hook
 mkdir -p %{buildroot}/usr/share/containers/oci/hooks.d
 install -m 644 -t %{buildroot}/usr/share/containers/oci/hooks.d oci-nvidia-hook.json
 
+%post
+mkdir -p %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
+cp -af %{_bindir}/nvidia-container-runtime-hook %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
+
 %posttrans
+if [ ! -e %{_bindir}/nvidia-container-runtime-hook ]; then 
+  # reparing lost file nvidia-container-runtime-hook
+  cp -avf %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit/nvidia-container-runtime-hook %{_bindir} 
+fi 
+rm -f %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit/nvidia-container-runtime-hook
 ln -sf %{_bindir}/nvidia-container-runtime-hook %{_bindir}/nvidia-container-toolkit
 
 %postun
