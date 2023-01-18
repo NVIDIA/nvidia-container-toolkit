@@ -95,21 +95,21 @@ func NewGraphicsMountsDiscoverer(logger *logrus.Logger, root string) (Discover, 
 
 type drmDevicesByPath struct {
 	None
-	logger                  *logrus.Logger
-	lookup                  lookup.Locator
-	nvidiaCTKExecutablePath string
-	root                    string
-	devicesFrom             Discover
+	logger        *logrus.Logger
+	lookup        lookup.Locator
+	nvidiaCTKPath string
+	root          string
+	devicesFrom   Discover
 }
 
 // newCreateDRMByPathSymlinks creates a discoverer for a hook to create the by-path symlinks for DRM devices discovered by the specified devices discoverer
 func newCreateDRMByPathSymlinks(logger *logrus.Logger, devices Discover, cfg *Config) Discover {
 	d := drmDevicesByPath{
-		logger:                  logger,
-		lookup:                  lookup.NewExecutableLocator(logger, cfg.Root),
-		nvidiaCTKExecutablePath: cfg.NvidiaCTKPath,
-		root:                    cfg.Root,
-		devicesFrom:             devices,
+		logger:        logger,
+		lookup:        lookup.NewExecutableLocator(logger, cfg.Root),
+		nvidiaCTKPath: cfg.NvidiaCTKPath,
+		root:          cfg.Root,
+		devicesFrom:   devices,
 	}
 
 	return &d
@@ -133,13 +133,13 @@ func (d drmDevicesByPath) Hooks() ([]Hook, error) {
 	}
 
 	hookPath := nvidiaCTKDefaultFilePath
-	targets, err := d.lookup.Locate(d.nvidiaCTKExecutablePath)
+	targets, err := d.lookup.Locate(d.nvidiaCTKPath)
 	if err != nil {
-		d.logger.Warnf("Failed to locate %v: %v", d.nvidiaCTKExecutablePath, err)
+		d.logger.Warnf("Failed to locate %v: %v", d.nvidiaCTKPath, err)
 	} else if len(targets) == 0 {
-		d.logger.Warnf("%v not found", d.nvidiaCTKExecutablePath)
+		d.logger.Warnf("%v not found", d.nvidiaCTKPath)
 	} else {
-		d.logger.Debugf("Found %v candidates: %v", d.nvidiaCTKExecutablePath, targets)
+		d.logger.Debugf("Found %v candidates: %v", d.nvidiaCTKPath, targets)
 		hookPath = targets[0]
 	}
 	d.logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)

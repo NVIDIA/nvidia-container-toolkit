@@ -29,10 +29,10 @@ import (
 // NewLDCacheUpdateHook creates a discoverer that updates the ldcache for the specified mounts. A logger can also be specified
 func NewLDCacheUpdateHook(logger *logrus.Logger, mounts Discover, cfg *Config) (Discover, error) {
 	d := ldconfig{
-		logger:                  logger,
-		mountsFrom:              mounts,
-		lookup:                  lookup.NewExecutableLocator(logger, cfg.Root),
-		nvidiaCTKExecutablePath: cfg.NvidiaCTKPath,
+		logger:        logger,
+		mountsFrom:    mounts,
+		lookup:        lookup.NewExecutableLocator(logger, cfg.Root),
+		nvidiaCTKPath: cfg.NvidiaCTKPath,
 	}
 
 	return &d, nil
@@ -44,10 +44,10 @@ const (
 
 type ldconfig struct {
 	None
-	logger                  *logrus.Logger
-	mountsFrom              Discover
-	lookup                  lookup.Locator
-	nvidiaCTKExecutablePath string
+	logger        *logrus.Logger
+	mountsFrom    Discover
+	lookup        lookup.Locator
+	nvidiaCTKPath string
 }
 
 // Hooks checks the required mounts for libraries and returns a hook to update the LDcache for the discovered paths.
@@ -57,7 +57,7 @@ func (d ldconfig) Hooks() ([]Hook, error) {
 		return nil, fmt.Errorf("failed to discover mounts for ldcache update: %v", err)
 	}
 	h := CreateLDCacheUpdateHook(
-		d.nvidiaCTKExecutablePath,
+		d.nvidiaCTKPath,
 		getLibraryPaths(mounts),
 	)
 	return []Hook{h}, nil

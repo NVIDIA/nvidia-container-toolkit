@@ -28,21 +28,21 @@ import (
 
 type symlinks struct {
 	None
-	logger                  *logrus.Logger
-	lookup                  lookup.Locator
-	nvidiaCTKExecutablePath string
-	csvFiles                []string
-	mountsFrom              Discover
+	logger        *logrus.Logger
+	lookup        lookup.Locator
+	nvidiaCTKPath string
+	csvFiles      []string
+	mountsFrom    Discover
 }
 
 // NewCreateSymlinksHook creates a discoverer for a hook that creates required symlinks in the container
 func NewCreateSymlinksHook(logger *logrus.Logger, csvFiles []string, mounts Discover, cfg *Config) (Discover, error) {
 	d := symlinks{
-		logger:                  logger,
-		lookup:                  lookup.NewExecutableLocator(logger, cfg.Root),
-		nvidiaCTKExecutablePath: cfg.NvidiaCTKPath,
-		csvFiles:                csvFiles,
-		mountsFrom:              mounts,
+		logger:        logger,
+		lookup:        lookup.NewExecutableLocator(logger, cfg.Root),
+		nvidiaCTKPath: cfg.NvidiaCTKPath,
+		csvFiles:      csvFiles,
+		mountsFrom:    mounts,
 	}
 
 	return &d, nil
@@ -51,13 +51,13 @@ func NewCreateSymlinksHook(logger *logrus.Logger, csvFiles []string, mounts Disc
 // Hooks returns a hook to create the symlinks from the required CSV files
 func (d symlinks) Hooks() ([]Hook, error) {
 	hookPath := nvidiaCTKDefaultFilePath
-	targets, err := d.lookup.Locate(d.nvidiaCTKExecutablePath)
+	targets, err := d.lookup.Locate(d.nvidiaCTKPath)
 	if err != nil {
-		d.logger.Warnf("Failed to locate %v: %v", d.nvidiaCTKExecutablePath, err)
+		d.logger.Warnf("Failed to locate %v: %v", d.nvidiaCTKPath, err)
 	} else if len(targets) == 0 {
-		d.logger.Warnf("%v not found", d.nvidiaCTKExecutablePath)
+		d.logger.Warnf("%v not found", d.nvidiaCTKPath)
 	} else {
-		d.logger.Debugf("Found %v candidates: %v", d.nvidiaCTKExecutablePath, targets)
+		d.logger.Debugf("Found %v candidates: %v", d.nvidiaCTKPath, targets)
 		hookPath = targets[0]
 	}
 	d.logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
