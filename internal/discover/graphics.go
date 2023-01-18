@@ -107,7 +107,7 @@ func newCreateDRMByPathSymlinks(logger *logrus.Logger, devices Discover, cfg *Co
 	d := drmDevicesByPath{
 		logger:                  logger,
 		lookup:                  lookup.NewExecutableLocator(logger, cfg.Root),
-		nvidiaCTKExecutablePath: cfg.NVIDIAContainerToolkitCLIExecutablePath,
+		nvidiaCTKExecutablePath: cfg.NvidiaCTKPath,
 		root:                    cfg.Root,
 		devicesFrom:             devices,
 	}

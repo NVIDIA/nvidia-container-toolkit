@@ -32,7 +32,7 @@ func NewLDCacheUpdateHook(logger *logrus.Logger, mounts Discover, cfg *Config) (
 		logger:                  logger,
 		mountsFrom:              mounts,
 		lookup:                  lookup.NewExecutableLocator(logger, cfg.Root),
-		nvidiaCTKExecutablePath: cfg.NVIDIAContainerToolkitCLIExecutablePath,
+		nvidiaCTKExecutablePath: cfg.NvidiaCTKPath,
 	}
 
 	return &d, nil

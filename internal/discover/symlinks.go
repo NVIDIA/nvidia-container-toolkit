@@ -40,7 +40,7 @@ func NewCreateSymlinksHook(logger *logrus.Logger, csvFiles []string, mounts Disc
 	d := symlinks{
 		logger:                  logger,
 		lookup:                  lookup.NewExecutableLocator(logger, cfg.Root),
-		nvidiaCTKExecutablePath: cfg.NVIDIAContainerToolkitCLIExecutablePath,
+		nvidiaCTKExecutablePath: cfg.NvidiaCTKPath,
 		csvFiles:                csvFiles,
 		mountsFrom:              mounts,
 	}

@@ -32,8 +32,8 @@ func TestLDCacheUpdateHook(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
 	cfg := Config{
-		Root:                                    "/",
-		NVIDIAContainerToolkitCLIExecutablePath: testNvidiaCTKPath,
+		Root:          "/",
+		NvidiaCTKPath: testNvidiaCTKPath,
 	}
 
 	testCases := []struct {
