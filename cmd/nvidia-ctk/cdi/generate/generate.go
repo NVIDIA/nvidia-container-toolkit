@@ -249,14 +249,19 @@ func (m command) generateSpec(root string, nvidiaCTKPath string) (*specs.Spec, e
 
 	allEdits.Append(commonEdits)
 
-	// Construct the spec
-	// TODO: Use the code to determine the minimal version
+	// We construct the spec and determine the minimum required version based on the specification.
 	spec := specs.Spec{
-		Version:        "0.4.0",
+		Version:        "NOT_SET",
 		Kind:           "nvidia.com/gpu",
 		Devices:        deviceSpecs,
 		ContainerEdits: *allEdits.ContainerEdits,
 	}
+
+	minVersion, err := cdi.MinimumRequiredVersion(&spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get minumum required CDI spec version: %v", err)
+	}
+	spec.Version = minVersion
 
 	return &spec, nil
 }
