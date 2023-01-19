@@ -61,7 +61,7 @@ if [ ! -e %{_bindir}/nvidia-container-runtime-hook ]; then
   # reparing lost file nvidia-container-runtime-hook
   cp -avf %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit/nvidia-container-runtime-hook %{_bindir} 
 fi 
-rm -f %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit/nvidia-container-runtime-hook
+rm -rf %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
 ln -sf %{_bindir}/nvidia-container-runtime-hook %{_bindir}/nvidia-container-toolkit
 
 %postun
