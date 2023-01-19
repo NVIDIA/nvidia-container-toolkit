@@ -62,8 +62,8 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 	logger.Infof("Constructing modifier from config: %+v", *cfg)
 
 	config := &discover.Config{
-		Root:                                    cfg.NVIDIAContainerCLIConfig.Root,
-		NVIDIAContainerToolkitCLIExecutablePath: cfg.NVIDIACTKConfig.Path,
+		Root:          cfg.NVIDIAContainerCLIConfig.Root,
+		NvidiaCTKPath: cfg.NVIDIACTKConfig.Path,
 	}
 
 	if err := checkRequirements(logger, image); err != nil {

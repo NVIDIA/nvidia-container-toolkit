@@ -22,32 +22,27 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/sirupsen/logrus"
 )
 
 // NewLDCacheUpdateHook creates a discoverer that updates the ldcache for the specified mounts. A logger can also be specified
 func NewLDCacheUpdateHook(logger *logrus.Logger, mounts Discover, cfg *Config) (Discover, error) {
 	d := ldconfig{
-		logger:                  logger,
-		mountsFrom:              mounts,
-		lookup:                  lookup.NewExecutableLocator(logger, cfg.Root),
-		nvidiaCTKExecutablePath: cfg.NVIDIAContainerToolkitCLIExecutablePath,
+		logger:        logger,
+		mountsFrom:    mounts,
+		lookup:        lookup.NewExecutableLocator(logger, cfg.Root),
+		nvidiaCTKPath: cfg.NvidiaCTKPath,
 	}
 
 	return &d, nil
 }
 
-const (
-	nvidiaCTKDefaultFilePath = "/usr/bin/nvidia-ctk"
-)
-
 type ldconfig struct {
 	None
-	logger                  *logrus.Logger
-	mountsFrom              Discover
-	lookup                  lookup.Locator
-	nvidiaCTKExecutablePath string
+	logger        *logrus.Logger
+	mountsFrom    Discover
+	lookup        lookup.Locator
+	nvidiaCTKPath string
 }
 
 // Hooks checks the required mounts for libraries and returns a hook to update the LDcache for the discovered paths.
@@ -57,54 +52,27 @@ func (d ldconfig) Hooks() ([]Hook, error) {
 		return nil, fmt.Errorf("failed to discover mounts for ldcache update: %v", err)
 	}
 	h := CreateLDCacheUpdateHook(
-		d.logger,
-		d.lookup,
-		d.nvidiaCTKExecutablePath,
-		nvidiaCTKDefaultFilePath,
+		d.nvidiaCTKPath,
 		getLibraryPaths(mounts),
 	)
 	return []Hook{h}, nil
 }
 
 // CreateLDCacheUpdateHook locates the NVIDIA Container Toolkit CLI and creates a hook for updating the LD Cache
-func CreateLDCacheUpdateHook(logger *logrus.Logger, lookup lookup.Locator, executable string, defaultPath string, libraries []string) Hook {
+func CreateLDCacheUpdateHook(executable string, libraries []string) Hook {
 	var args []string
 	for _, f := range uniqueFolders(libraries) {
 		args = append(args, "--folder", f)
 	}
 
 	hook := CreateNvidiaCTKHook(
-		logger,
-		lookup,
 		executable,
-		defaultPath,
 		"update-ldcache",
 		args...,
 	)
 
 	return hook
 
-}
-
-// CreateNvidiaCTKHook creates a hook which invokes the NVIDIA Container CLI hook subcommand.
-func CreateNvidiaCTKHook(logger *logrus.Logger, lookup lookup.Locator, executable string, defaultPath string, hookName string, additionalArgs ...string) Hook {
-	hookPath := defaultPath
-	targets, err := lookup.Locate(executable)
-	if err != nil {
-		logger.Warnf("Failed to locate %v: %v", executable, err)
-	} else if len(targets) == 0 {
-		logger.Warnf("%v not found", executable)
-	} else {
-		logger.Debugf("Found %v candidates: %v", executable, targets)
-		hookPath = targets[0]
-	}
-	logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
-
-	return Hook{
-		Lifecycle: cdi.CreateContainerHook,
-		Path:      hookPath,
-		Args:      append([]string{filepath.Base(hookPath), "hook", hookName}, additionalArgs...),
-	}
 }
 
 // getLibraryPaths extracts the library dirs from the specified mounts

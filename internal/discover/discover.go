@@ -18,8 +18,8 @@ package discover
 
 // Config represents the configuration options for discovery
 type Config struct {
-	Root                                    string
-	NVIDIAContainerToolkitCLIExecutablePath string
+	Root          string
+	NvidiaCTKPath string
 }
 
 // Device represents a discovered character device.
@@ -41,8 +41,9 @@ type Hook struct {
 	Args      []string
 }
 
-//go:generate moq -stub -out discover_mock.go . Discover
 // Discover defines an interface for discovering the devices, mounts, and hooks available on a system
+//
+//go:generate moq -stub -out discover_mock.go . Discover
 type Discover interface {
 	Devices() ([]Device, error)
 	Mounts() ([]Mount, error)

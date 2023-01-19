@@ -25,7 +25,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/drm"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -95,21 +94,19 @@ func NewGraphicsMountsDiscoverer(logger *logrus.Logger, root string) (Discover, 
 
 type drmDevicesByPath struct {
 	None
-	logger                  *logrus.Logger
-	lookup                  lookup.Locator
-	nvidiaCTKExecutablePath string
-	root                    string
-	devicesFrom             Discover
+	logger        *logrus.Logger
+	nvidiaCTKPath string
+	root          string
+	devicesFrom   Discover
 }
 
 // newCreateDRMByPathSymlinks creates a discoverer for a hook to create the by-path symlinks for DRM devices discovered by the specified devices discoverer
 func newCreateDRMByPathSymlinks(logger *logrus.Logger, devices Discover, cfg *Config) Discover {
 	d := drmDevicesByPath{
-		logger:                  logger,
-		lookup:                  lookup.NewExecutableLocator(logger, cfg.Root),
-		nvidiaCTKExecutablePath: cfg.NVIDIAContainerToolkitCLIExecutablePath,
-		root:                    cfg.Root,
-		devicesFrom:             devices,
+		logger:        logger,
+		nvidiaCTKPath: FindNvidiaCTK(logger, cfg.NvidiaCTKPath),
+		root:          cfg.Root,
+		devicesFrom:   devices,
 	}
 
 	return &d
@@ -132,30 +129,18 @@ func (d drmDevicesByPath) Hooks() ([]Hook, error) {
 		return nil, nil
 	}
 
-	hookPath := nvidiaCTKDefaultFilePath
-	targets, err := d.lookup.Locate(d.nvidiaCTKExecutablePath)
-	if err != nil {
-		d.logger.Warnf("Failed to locate %v: %v", d.nvidiaCTKExecutablePath, err)
-	} else if len(targets) == 0 {
-		d.logger.Warnf("%v not found", d.nvidiaCTKExecutablePath)
-	} else {
-		d.logger.Debugf("Found %v candidates: %v", d.nvidiaCTKExecutablePath, targets)
-		hookPath = targets[0]
-	}
-	d.logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
-
-	args := []string{hookPath, "hook", "create-symlinks"}
+	var args []string
 	for _, l := range links {
 		args = append(args, "--link", l)
 	}
 
-	h := Hook{
-		Lifecycle: cdi.CreateContainerHook,
-		Path:      hookPath,
-		Args:      args,
-	}
+	hook := CreateNvidiaCTKHook(
+		d.nvidiaCTKPath,
+		"create-symlinks",
+		args...,
+	)
 
-	return []Hook{h}, nil
+	return []Hook{hook}, nil
 }
 
 // getSpecificLinkArgs returns the required specic links that need to be created
