@@ -237,31 +237,14 @@ func (c *ldcache) getEntries(selected func(string) bool) []entry {
 // The 32-bit and 64-bit libraries are returned separately.
 func (c *ldcache) List() ([]string, []string) {
 	all := func(s string) bool { return true }
-	paths := make(map[int][]string)
-	processed := make(map[string]bool)
-	for _, e := range c.getEntries(all) {
-		path, err := c.resolve(e.value)
-		if err != nil {
-			c.logger.Debugf("Could not resolve entry: %v", err)
-			continue
-		}
-		if processed[path] {
-			continue
-		}
-		paths[e.bits] = append(paths[e.bits], path)
-		processed[path] = true
-	}
 
-	return paths[32], paths[64]
+	return c.resolveSelected(all)
 }
 
 // Lookup searches the ldcache for the specified prefixes.
 // The 32-bit and 64-bit libraries matching the prefixes are returned.
 func (c *ldcache) Lookup(libPrefixes ...string) ([]string, []string) {
 	c.logger.Debugf("Looking up %v in cache", libPrefixes)
-
-	paths := make(map[int][]string)
-	processed := make(map[string]bool)
 
 	// We define a functor to check whether a given library name matches any of the prefixes
 	matchesAnyPrefix := func(s string) bool {
@@ -273,10 +256,19 @@ func (c *ldcache) Lookup(libPrefixes ...string) ([]string, []string) {
 		return false
 	}
 
-	for _, e := range c.getEntries(matchesAnyPrefix) {
+	return c.resolveSelected(matchesAnyPrefix)
+}
+
+// resolveSelected process the entries in the LDCach based on the supplied filter and returns the resolved paths.
+// The paths are separated by bittage.
+func (c *ldcache) resolveSelected(selected func(string) bool) ([]string, []string) {
+	paths := make(map[int][]string)
+	processed := make(map[string]bool)
+
+	for _, e := range c.getEntries(selected) {
 		path, err := c.resolve(e.value)
 		if err != nil {
-			c.logger.Debug("Could not resolve entry: %v", err)
+			c.logger.Debugf("Could not resolve entry: %v", err)
 			continue
 		}
 		if processed[path] {
