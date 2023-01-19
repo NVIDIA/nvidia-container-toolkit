@@ -114,7 +114,10 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 }
 
 func (m command) run(c *cli.Context, cfg *config) error {
-	spec, err := m.generateSpec(cfg.root, cfg.nvidiaCTKPath)
+	spec, err := m.generateSpec(
+		cfg.root,
+		discover.FindNvidiaCTK(m.logger, cfg.nvidiaCTKPath),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to generate CDI spec: %v", err)
 	}
@@ -202,9 +205,7 @@ func (m command) generateSpec(root string, nvidiaCTKPath string) (*specs.Spec, e
 
 	devicelib := device.New(device.WithNvml(nvmllib))
 
-	useNvidiaCTKPath := discover.FindNvidiaCTK(m.logger, nvidiaCTKPath)
-
-	deviceSpecs, err := m.generateDeviceSpecs(devicelib, root, useNvidiaCTKPath)
+	deviceSpecs, err := m.generateDeviceSpecs(devicelib, root, nvidiaCTKPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device CDI specs: %v", err)
 	}
