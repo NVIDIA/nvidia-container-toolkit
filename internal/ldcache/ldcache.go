@@ -22,8 +22,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"unsafe"
 
@@ -177,13 +179,15 @@ func (c *ldcache) parse() error {
 	return nil
 }
 
-// List creates a list of libraires in the ldcache.
-// The 32-bit and 64-bit libraries are returned separately.
-func (c *ldcache) List() ([]string, []string) {
-	paths := make(map[int][]string)
+type entry struct {
+	libname string
+	bits    int
+	value   string
+}
 
-	processed := make(map[string]bool)
-
+// getEntries returns the entires of the ldcache in a go-friendly struct.
+func (c *ldcache) getEntries(selected func(string) bool) []entry {
+	var entries []entry
 	for _, e := range c.entries {
 		bits := 0
 		if ((e.Flags & flagTypeMask) & flagTypeELF) == 0 {
@@ -204,89 +208,116 @@ func (c *ldcache) List() ([]string, []string) {
 		if e.Key > uint32(len(c.libs)) || e.Value > uint32(len(c.libs)) {
 			continue
 		}
-		value := c.libs[e.Value:]
-
-		n := bytes.IndexByte(value, 0)
-		if n < 0 {
-			break
+		lib := bytesToString(c.libs[e.Key:])
+		if lib == "" {
+			c.logger.Debugf("Skipping invalid lib")
+			continue
+		}
+		if !selected(lib) {
+			continue
+		}
+		value := bytesToString(c.libs[e.Value:])
+		if value == "" {
+			c.logger.Debugf("Skipping invalid value for lib %v", lib)
+			continue
+		}
+		e := entry{
+			libname: lib,
+			bits:    bits,
+			value:   value,
 		}
 
-		name := filepath.Join(c.root, strn(value, n))
-		c.logger.Debugf("checking %v", string(name))
+		entries = append(entries, e)
+	}
 
-		path, err := filepath.EvalSymlinks(name)
+	return entries
+}
+
+// List creates a list of libraires in the ldcache.
+// The 32-bit and 64-bit libraries are returned separately.
+func (c *ldcache) List() ([]string, []string) {
+	all := func(s string) bool { return true }
+
+	return c.resolveSelected(all)
+}
+
+// Lookup searches the ldcache for the specified prefixes.
+// The 32-bit and 64-bit libraries matching the prefixes are returned.
+func (c *ldcache) Lookup(libPrefixes ...string) ([]string, []string) {
+	c.logger.Debugf("Looking up %v in cache", libPrefixes)
+
+	// We define a functor to check whether a given library name matches any of the prefixes
+	matchesAnyPrefix := func(s string) bool {
+		for _, p := range libPrefixes {
+			if strings.HasPrefix(s, p) {
+				return true
+			}
+		}
+		return false
+	}
+
+	return c.resolveSelected(matchesAnyPrefix)
+}
+
+// resolveSelected process the entries in the LDCach based on the supplied filter and returns the resolved paths.
+// The paths are separated by bittage.
+func (c *ldcache) resolveSelected(selected func(string) bool) ([]string, []string) {
+	paths := make(map[int][]string)
+	processed := make(map[string]bool)
+
+	for _, e := range c.getEntries(selected) {
+		path, err := c.resolve(e.value)
 		if err != nil {
-			c.logger.Debugf("could not resolve symlink for %v", name)
-			break
+			c.logger.Debugf("Could not resolve entry: %v", err)
+			continue
 		}
 		if processed[path] {
 			continue
 		}
-		paths[bits] = append(paths[bits], path)
+		paths[e.bits] = append(paths[e.bits], path)
 		processed[path] = true
 	}
 
 	return paths[32], paths[64]
 }
 
-// Lookup searches the ldcache for the specified prefixes.
-// The 32-bit and 64-bit libraries matching the prefixes are returned.
-func (c *ldcache) Lookup(libs ...string) (paths32, paths64 []string) {
-	c.logger.Debugf("Looking up %v in cache", libs)
-	type void struct{}
-	var paths *[]string
+// resolve resolves the specified ldcache entry based on the value being processed.
+// The input is the name of the entry in the cache.
+func (c *ldcache) resolve(target string) (string, error) {
+	name := filepath.Join(c.root, target)
 
-	set := make(map[string]void)
-	prefix := make([][]byte, len(libs))
+	c.logger.Debugf("checking %v", string(name))
 
-	for i := range libs {
-		prefix[i] = []byte(libs[i])
+	info, err := os.Lstat(name)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file info: %v", info)
 	}
-	for _, e := range c.entries {
-		if ((e.Flags & flagTypeMask) & flagTypeELF) == 0 {
-			continue
-		}
-		switch e.Flags & flagArchMask {
-		case flagArchX8664:
-			fallthrough
-		case flagArchPpc64le:
-			paths = &paths64
-		case flagArchX32:
-			fallthrough
-		case flagArchI386:
-			paths = &paths32
-		default:
-			continue
-		}
-		if e.Key > uint32(len(c.libs)) || e.Value > uint32(len(c.libs)) {
-			continue
-		}
-		lib := c.libs[e.Key:]
-		value := c.libs[e.Value:]
-
-		for _, p := range prefix {
-			if bytes.HasPrefix(lib, p) {
-				n := bytes.IndexByte(value, 0)
-				if n < 0 {
-					break
-				}
-
-				name := filepath.Join(c.root, strn(value, n))
-				c.logger.Debugf("checking %v", string(name))
-
-				path, err := filepath.EvalSymlinks(name)
-				if err != nil {
-					c.logger.Debugf("could not resolve symlink for %v", name)
-					break
-				}
-				if _, ok := set[path]; ok {
-					break
-				}
-				set[path] = void{}
-				*paths = append(*paths, path)
-				break
-			}
-		}
+	if info.Mode()&os.ModeSymlink == 0 {
+		c.logger.Debugf("Resolved regular file: %v", name)
+		return name, nil
 	}
-	return
+
+	link, err := os.Readlink(name)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve symlink: %v", err)
+	}
+
+	if filepath.IsAbs(link) {
+		c.logger.Debugf("Found absolute link %v", link)
+		link = filepath.Join(c.root, link)
+	}
+
+	c.logger.Debugf("Resolved link: '%v' => '%v'", name, link)
+	return link, nil
+}
+
+// bytesToString converts a byte slice to a string.
+// This assumes that the byte slice is null-terminated
+func bytesToString(value []byte) string {
+	n := bytes.IndexByte(value, 0)
+	if n < 0 {
+		return ""
+	}
+
+	return strn(value, n)
 }
