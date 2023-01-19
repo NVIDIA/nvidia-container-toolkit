@@ -25,7 +25,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/drm"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -130,18 +129,18 @@ func (d drmDevicesByPath) Hooks() ([]Hook, error) {
 		return nil, nil
 	}
 
-	args := []string{d.nvidiaCTKPath, "hook", "create-symlinks"}
+	var args []string
 	for _, l := range links {
 		args = append(args, "--link", l)
 	}
 
-	h := Hook{
-		Lifecycle: cdi.CreateContainerHook,
-		Path:      d.nvidiaCTKPath,
-		Args:      args,
-	}
+	hook := CreateNvidiaCTKHook(
+		d.nvidiaCTKPath,
+		"create-symlinks",
+		args...,
+	)
 
-	return []Hook{h}, nil
+	return []Hook{hook}, nil
 }
 
 // getSpecificLinkArgs returns the required specic links that need to be created

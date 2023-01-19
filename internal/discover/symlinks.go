@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,7 +46,7 @@ func NewCreateSymlinksHook(logger *logrus.Logger, csvFiles []string, mounts Disc
 
 // Hooks returns a hook to create the symlinks from the required CSV files
 func (d symlinks) Hooks() ([]Hook, error) {
-	args := []string{d.nvidiaCTKPath, "hook", "create-symlinks"}
+	var args []string
 	for _, f := range d.csvFiles {
 		args = append(args, "--csv-filename", f)
 	}
@@ -58,13 +57,13 @@ func (d symlinks) Hooks() ([]Hook, error) {
 	}
 	args = append(args, links...)
 
-	h := Hook{
-		Lifecycle: cdi.CreateContainerHook,
-		Path:      d.nvidiaCTKPath,
-		Args:      args,
-	}
+	hook := CreateNvidiaCTKHook(
+		d.nvidiaCTKPath,
+		"create-symlinks",
+		args...,
+	)
 
-	return []Hook{h}, nil
+	return []Hook{hook}, nil
 }
 
 // getSpecificLinkArgs returns the required specic links that need to be created
