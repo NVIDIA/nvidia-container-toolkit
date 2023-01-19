@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -37,10 +36,6 @@ func NewLDCacheUpdateHook(logger *logrus.Logger, mounts Discover, cfg *Config) (
 
 	return &d, nil
 }
-
-const (
-	nvidiaCTKDefaultFilePath = "/usr/bin/nvidia-ctk"
-)
 
 type ldconfig struct {
 	None
@@ -78,15 +73,6 @@ func CreateLDCacheUpdateHook(executable string, libraries []string) Hook {
 
 	return hook
 
-}
-
-// CreateNvidiaCTKHook creates a hook which invokes the NVIDIA Container CLI hook subcommand.
-func CreateNvidiaCTKHook(executable string, hookName string, additionalArgs ...string) Hook {
-	return Hook{
-		Lifecycle: cdi.CreateContainerHook,
-		Path:      executable,
-		Args:      append([]string{filepath.Base(executable), "hook", hookName}, additionalArgs...),
-	}
 }
 
 // getLibraryPaths extracts the library dirs from the specified mounts

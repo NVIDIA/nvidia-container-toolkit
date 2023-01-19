@@ -25,7 +25,6 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	specs "github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/sirupsen/logrus"
@@ -36,9 +35,6 @@ import (
 )
 
 const (
-	nvidiaCTKExecutable      = "nvidia-ctk"
-	nvidiaCTKDefaultFilePath = "/usr/bin/" + nvidiaCTKExecutable
-
 	formatJSON = "json"
 	formatYAML = "yaml"
 )
@@ -168,30 +164,6 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	return nil
 }
 
-// findNvidiaCTK locates the nvidia-ctk executable to be used in hooks.
-// If an override is specified, this is used instead.
-func (m command) findNvidiaCTK(override string) string {
-	if override != "" {
-		m.logger.Debugf("Using specified NVIDIA Container Toolkit CLI path %v", override)
-		return override
-	}
-
-	lookup := lookup.NewExecutableLocator(m.logger, "")
-	hookPath := nvidiaCTKDefaultFilePath
-	targets, err := lookup.Locate(nvidiaCTKExecutable)
-	if err != nil {
-		m.logger.Warnf("Failed to locate %v: %v", nvidiaCTKExecutable, err)
-	} else if len(targets) == 0 {
-		m.logger.Warnf("%v not found", nvidiaCTKExecutable)
-	} else {
-		m.logger.Debugf("Found %v candidates: %v", nvidiaCTKExecutable, targets)
-		hookPath = targets[0]
-	}
-	m.logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
-
-	return hookPath
-}
-
 func formatFromFilename(filename string) string {
 	ext := filepath.Ext(filename)
 	switch strings.ToLower(ext) {
@@ -230,7 +202,7 @@ func (m command) generateSpec(root string, nvidiaCTKPath string) (*specs.Spec, e
 
 	devicelib := device.New(device.WithNvml(nvmllib))
 
-	useNvidiaCTKPath := m.findNvidiaCTK(nvidiaCTKPath)
+	useNvidiaCTKPath := discover.FindNvidiaCTK(m.logger, nvidiaCTKPath)
 
 	deviceSpecs, err := m.generateDeviceSpecs(devicelib, root, useNvidiaCTKPath)
 	if err != nil {

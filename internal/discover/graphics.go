@@ -96,7 +96,6 @@ func NewGraphicsMountsDiscoverer(logger *logrus.Logger, root string) (Discover, 
 type drmDevicesByPath struct {
 	None
 	logger        *logrus.Logger
-	lookup        lookup.Locator
 	nvidiaCTKPath string
 	root          string
 	devicesFrom   Discover
@@ -106,8 +105,7 @@ type drmDevicesByPath struct {
 func newCreateDRMByPathSymlinks(logger *logrus.Logger, devices Discover, cfg *Config) Discover {
 	d := drmDevicesByPath{
 		logger:        logger,
-		lookup:        lookup.NewExecutableLocator(logger, cfg.Root),
-		nvidiaCTKPath: cfg.NvidiaCTKPath,
+		nvidiaCTKPath: FindNvidiaCTK(logger, cfg.NvidiaCTKPath),
 		root:          cfg.Root,
 		devicesFrom:   devices,
 	}
@@ -132,26 +130,14 @@ func (d drmDevicesByPath) Hooks() ([]Hook, error) {
 		return nil, nil
 	}
 
-	hookPath := nvidiaCTKDefaultFilePath
-	targets, err := d.lookup.Locate(d.nvidiaCTKPath)
-	if err != nil {
-		d.logger.Warnf("Failed to locate %v: %v", d.nvidiaCTKPath, err)
-	} else if len(targets) == 0 {
-		d.logger.Warnf("%v not found", d.nvidiaCTKPath)
-	} else {
-		d.logger.Debugf("Found %v candidates: %v", d.nvidiaCTKPath, targets)
-		hookPath = targets[0]
-	}
-	d.logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
-
-	args := []string{hookPath, "hook", "create-symlinks"}
+	args := []string{d.nvidiaCTKPath, "hook", "create-symlinks"}
 	for _, l := range links {
 		args = append(args, "--link", l)
 	}
 
 	h := Hook{
 		Lifecycle: cdi.CreateContainerHook,
-		Path:      hookPath,
+		Path:      d.nvidiaCTKPath,
 		Args:      args,
 	}
 
