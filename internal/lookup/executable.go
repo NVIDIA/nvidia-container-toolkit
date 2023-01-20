@@ -41,6 +41,7 @@ func newExecutableLocator(logger *log.Logger, root string, paths ...string) *exe
 		WithRoot(root),
 		WithSearchPaths(paths...),
 		WithFilter(assertExecutable),
+		WithCount(1),
 	)
 
 	l := executable{

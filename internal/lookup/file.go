@@ -31,6 +31,7 @@ type file struct {
 	root     string
 	prefixes []string
 	filter   func(string) error
+	count    int
 }
 
 // Option defines a function for passing options to the NewFileLocator() call
@@ -62,6 +63,13 @@ func WithSearchPaths(paths ...string) Option {
 func WithFilter(assert func(string) error) Option {
 	return func(f *file) {
 		f.filter = assert
+	}
+}
+
+// WithCount sets the maximum number of candidates to discover
+func WithCount(count int) Option {
+	return func(f *file) {
+		f.count = count
 	}
 }
 
@@ -126,6 +134,8 @@ var _ Locator = (*file)(nil)
 // All prefixes are searched and any matching candidates are returned. If no matches are found, an error is returned.
 func (p file) Locate(pattern string) ([]string, error) {
 	var filenames []string
+
+visit:
 	for _, prefix := range p.prefixes {
 		pathPattern := filepath.Join(prefix, pattern)
 		candidates, err := filepath.Glob(pathPattern)
@@ -141,8 +151,13 @@ func (p file) Locate(pattern string) ([]string, error) {
 				continue
 			}
 			filenames = append(filenames, candidate)
+			if p.count > 0 && len(filenames) == p.count {
+				p.logger.Debugf("Found %d candidates; ignoring further candidates", len(filenames))
+				break visit
+			}
 		}
 	}
+
 	if len(filenames) == 0 {
 		return nil, fmt.Errorf("pattern %v not found", pattern)
 	}
