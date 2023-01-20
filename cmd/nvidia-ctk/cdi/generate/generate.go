@@ -44,10 +44,11 @@ type command struct {
 }
 
 type config struct {
-	output        string
-	format        string
-	root          string
-	nvidiaCTKPath string
+	output             string
+	format             string
+	deviceNameStrategy string
+	root               string
+	nvidiaCTKPath      string
 }
 
 // NewCommand constructs a generate-cdi command with the specified logger
@@ -87,6 +88,12 @@ func (m command) build() *cli.Command {
 			Destination: &cfg.format,
 		},
 		&cli.StringFlag{
+			Name:        "device-name-strategy",
+			Usage:       "Specify the strategy for generating device names. One of [type-index | index | uuid]",
+			Value:       deviceNameStrategyTypeIndex,
+			Destination: &cfg.deviceNameStrategy,
+		},
+		&cli.StringFlag{
 			Name:        "root",
 			Usage:       "Specify the root to use when discovering the entities that should be included in the CDI specification.",
 			Destination: &cfg.root,
@@ -110,13 +117,24 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 		return fmt.Errorf("invalid output format: %v", cfg.format)
 	}
 
+	_, err := NewDeviceNamer(cfg.deviceNameStrategy)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (m command) run(c *cli.Context, cfg *config) error {
+	deviceNamer, err := NewDeviceNamer(cfg.deviceNameStrategy)
+	if err != nil {
+		return fmt.Errorf("failed to create device namer: %v", err)
+	}
+
 	spec, err := m.generateSpec(
 		cfg.root,
 		discover.FindNvidiaCTK(m.logger, cfg.nvidiaCTKPath),
+		deviceNamer,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to generate CDI spec: %v", err)
@@ -196,7 +214,7 @@ func writeToOutput(format string, data []byte, output io.Writer) error {
 	return nil
 }
 
-func (m command) generateSpec(root string, nvidiaCTKPath string) (*specs.Spec, error) {
+func (m command) generateSpec(root string, nvidiaCTKPath string, namer deviceNamer) (*specs.Spec, error) {
 	nvmllib := nvml.New()
 	if r := nvmllib.Init(); r != nvml.SUCCESS {
 		return nil, r
@@ -205,7 +223,7 @@ func (m command) generateSpec(root string, nvidiaCTKPath string) (*specs.Spec, e
 
 	devicelib := device.New(device.WithNvml(nvmllib))
 
-	deviceSpecs, err := m.generateDeviceSpecs(devicelib, root, nvidiaCTKPath)
+	deviceSpecs, err := m.generateDeviceSpecs(devicelib, root, nvidiaCTKPath, namer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device CDI specs: %v", err)
 	}
@@ -266,7 +284,7 @@ func (m command) generateSpec(root string, nvidiaCTKPath string) (*specs.Spec, e
 	return &spec, nil
 }
 
-func (m command) generateDeviceSpecs(devicelib device.Interface, root string, nvidiaCTKPath string) ([]specs.Device, error) {
+func (m command) generateDeviceSpecs(devicelib device.Interface, root string, nvidiaCTKPath string, namer deviceNamer) ([]specs.Device, error) {
 	var deviceSpecs []specs.Device
 
 	err := devicelib.VisitDevices(func(i int, d device.Device) error {
@@ -287,8 +305,12 @@ func (m command) generateDeviceSpecs(devicelib device.Interface, root string, nv
 			return fmt.Errorf("failed to create container edits for device: %v", err)
 		}
 
+		deviceName, err := namer.GetDeviceName(i, d)
+		if err != nil {
+			return fmt.Errorf("failed to get device name: %v", err)
+		}
 		deviceSpec := specs.Device{
-			Name:           fmt.Sprintf("gpu%d", i),
+			Name:           deviceName,
 			ContainerEdits: *deviceEdits.ContainerEdits,
 		}
 
@@ -310,8 +332,12 @@ func (m command) generateDeviceSpecs(devicelib device.Interface, root string, nv
 			return fmt.Errorf("failed to create container edits for MIG device: %v", err)
 		}
 
+		deviceName, err := namer.GetMigDeviceName(i, j, mig)
+		if err != nil {
+			return fmt.Errorf("failed to get device name: %v", err)
+		}
 		deviceSpec := specs.Device{
-			Name:           fmt.Sprintf("mig%v:%v", i, j),
+			Name:           deviceName,
 			ContainerEdits: *deviceEdits.ContainerEdits,
 		}
 
