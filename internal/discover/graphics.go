@@ -181,7 +181,10 @@ func (d drmDevicesByPath) getSpecificLinkArgs(devices []Device) ([]string, error
 func newDRMDeviceDiscoverer(logger *logrus.Logger, devices image.VisibleDevices, root string) (Discover, error) {
 	allDevices := NewDeviceDiscoverer(
 		logger,
-		lookup.NewCharDeviceLocator(logger, root),
+		lookup.NewCharDeviceLocator(
+			lookup.WithLogger(logger),
+			lookup.WithRoot(root),
+		),
 		root,
 		[]string{
 			"/dev/dri/card*",

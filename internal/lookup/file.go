@@ -27,11 +27,12 @@ import (
 // file can be used to locate file (or file-like elements) at a specified set of
 // prefixes. The validity of a file is determined by a filter function.
 type file struct {
-	logger   *log.Logger
-	root     string
-	prefixes []string
-	filter   func(string) error
-	count    int
+	logger     *log.Logger
+	root       string
+	prefixes   []string
+	filter     func(string) error
+	count      int
+	isOptional bool
 }
 
 // Option defines a function for passing options to the NewFileLocator() call
@@ -70,6 +71,14 @@ func WithFilter(assert func(string) error) Option {
 func WithCount(count int) Option {
 	return func(f *file) {
 		f.count = count
+	}
+}
+
+// WithOptional sets the optional flag for the file locator
+// If the optional flag is set, the locator will not return an error if the file is not found.
+func WithOptional(optional bool) Option {
+	return func(f *file) {
+		f.isOptional = optional
 	}
 }
 
@@ -158,7 +167,7 @@ visit:
 		}
 	}
 
-	if len(filenames) == 0 {
+	if !p.isOptional && len(filenames) == 0 {
 		return nil, fmt.Errorf("pattern %v not found", pattern)
 	}
 	return filenames, nil

@@ -19,8 +19,6 @@ package lookup
 import (
 	"fmt"
 	"os"
-
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -29,12 +27,13 @@ const (
 
 // NewCharDeviceLocator creates a Locator that can be used to find char devices at the specified root. A logger is
 // also specified.
-func NewCharDeviceLocator(logger *logrus.Logger, root string) Locator {
-	return NewFileLocator(
-		WithLogger(logger),
-		WithRoot(root),
+func NewCharDeviceLocator(opts ...Option) Locator {
+	opts = append(opts,
 		WithSearchPaths("", devRoot),
 		WithFilter(assertCharDevice),
+	)
+	return NewFileLocator(
+		opts...,
 	)
 }
 

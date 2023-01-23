@@ -35,7 +35,7 @@ func NewFromCSVFiles(logger *logrus.Logger, files []string, root string) (Discov
 
 	symlinkLocator := lookup.NewSymlinkLocator(logger, root)
 	locators := map[csv.MountSpecType]lookup.Locator{
-		csv.MountSpecDev: lookup.NewCharDeviceLocator(logger, root),
+		csv.MountSpecDev: lookup.NewCharDeviceLocator(lookup.WithLogger(logger), lookup.WithRoot(root)),
 		csv.MountSpecDir: lookup.NewDirectoryLocator(logger, root),
 		// Libraries and symlinks are handled in the same way
 		csv.MountSpecLib: symlinkLocator,

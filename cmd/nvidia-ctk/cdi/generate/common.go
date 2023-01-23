@@ -30,7 +30,10 @@ import (
 func NewCommonDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPath string, nvmllib nvml.Interface) (discover.Discover, error) {
 	metaDevices := discover.NewDeviceDiscoverer(
 		logger,
-		lookup.NewCharDeviceLocator(logger, root),
+		lookup.NewCharDeviceLocator(
+			lookup.WithLogger(logger),
+			lookup.WithRoot(root),
+		),
 		root,
 		[]string{
 			"/dev/nvidia-modeset",
