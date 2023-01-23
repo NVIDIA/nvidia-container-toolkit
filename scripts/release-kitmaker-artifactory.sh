@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,10 +17,8 @@
 function assert_usage() {
 cat >&2 << EOF
 Incorrect arguments: $*
-$(basename "${BASH_SOURCE[0]}") DIST-ARCH ARTIFACTORY_URL
-    DIST: The distribution.
-    ARCH: The architecture.
-    ARTIFACTORY_URL must contain repo path for package, including hostname.
+$(basename "${BASH_SOURCE[0]}") KITMAKER_ARTIFACTORY_REPO
+    KITMAKER_ARTIFACTORY_REPO must contain repo path for package, including hostname.
 
 Environment Variables
     ARTIFACTORY_TOKEN: must contain an auth token. [required]
@@ -32,26 +30,20 @@ set -e
 
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 PROJECT_ROOT="$( cd "${SCRIPTS_DIR}/.." && pwd )"
-COMPONENT_NAME="nvidia-container-toolkit"
 
-if [[ $# -ne 2 ]]; then
+if [[ $# -ne 1 ]]; then
     assert_usage "$@"
 fi
 
 source "${SCRIPTS_DIR}"/utils.sh
 
-DISTARCH=$1
-DIST=${DISTARCH%-*}
-ARCH=${DISTARCH##*-}
-ARTIFACTORY_URL=$2
+# KITMAKER_ARTIFACTORY_REPO=https://urm.nvidia.com/artifactory/sw-gpu-cloudnative-generic-local/testing
+KITMAKER_ARTIFACTORY_REPO=$1
 
-CURL=${CURL:-curl}
+: ${CURL:=curl}
 
-if [[ -z "${DIST}" || -z "${ARCH}" ]]; then
-    echo "ERROR: Distro and Architecture must be specified." >&2
-    assert_usage "$@"
-fi
-
+# ARTIFACTS_DIR represents the root of the artifacts (deb and rpm packages)
+# extracted from the packaging image.
 # TODO: accept ARTIFACTS_DIR as a command-line argument
 : "${ARTIFACTS_DIR="${PROJECT_ROOT}/artifacts"}"
 
@@ -60,142 +52,68 @@ if [[ ! -d "${ARTIFACTS_DIR}" ]]; then
     assert_usage "$@"
 fi
 
+if [[ ! -f "${ARTIFACTS_DIR}/manifest.txt" ]]; then
+    echo "ERROR: Manifest file not found." >&2
+    assert_usage "$@"
+fi
+
 if [[ -z "${ARTIFACTORY_TOKEN}" ]]; then
     echo "ERROR: ARTIFACTORY_TOKEN must be defined." >&2
     assert_usage "$@"
 fi
 
-# TODO: accept KITMACKER_DIR as a command-line argument
+# TODO: accept KITMAKER_DIR as a command-line argument
 : "${KITMAKER_DIR="${PROJECT_ROOT}/artifacts/kitmaker"}"
 
-eval $(${SCRIPTS_DIR}/get-component-versions.sh)
+KITMAKER_SCRATCH="${KITMAKER_DIR}/.scratch"
 
-# Returns the key=value property if the value isn't empty
-# Prepends with ";" if needed
-set_prop_value() {
-    local key=$1
-    local value=$2
-    if [ -n "${value}" ]; then
-        if [ -z "${PROPS}" ]; then
-            echo "${key}=${value}"
-        else
-            echo ";${key}=${value}"
-        fi
-    fi
+# extract_info extracts the value of the specified variable from the manifest.txt file.
+function extract_info() {
+    local variable=$1
+    local value=$(cat "${ARTIFACTS_DIR}/manifest.txt" | grep "#${variable}" | sed -e "s/#${variable}=//" | tr -d '\r')
+    echo $value
 }
 
-process_props() {
-    local dist=$1
-    local arch=$2
+IMAGE_EPOCH=$(extract_info "IMAGE_EPOCH")
+GIT_BRANCH=$(extract_info "GIT_BRANCH")
+GIT_COMMIT=$(extract_info "GIT_COMMIT")
+VERSION=$(extract_info "VERSION")
 
-    PROPS+=$(set_prop_value "component_name" "${COMPONENT_NAME}")
-    PROPS+=$(set_prop_value "version" "${VERSION}")
-    PROPS+=$(set_prop_value "os" "${dist}")
-    PROPS+=$(set_prop_value "arch" "${arch}")
-    PROPS+=$(set_prop_value "platform" "${dist}-${arch}")
-    # TODO: Use `git describe` to get this information if it's not available.
-    PROPS+=$(set_prop_value "changelist" "${CI_COMMIT_SHA}")
-    PROPS+=$(set_prop_value "branch" "${CI_COMMIT_REF_NAME}")
 
-    # Gitlab variables to expose
-    for var in CI_PROJECT_ID CI_PIPELINE_ID CI_JOB_ID CI_JOB_URL CI_PROJECT_PATH; do
-        if [ -n "${!var}" ]; then
-            PROPS+=$(set_prop_value "${var}" "${!var}")
-        fi
-    done
+# add_distro adds the specified component, os, and arch to the .package folder from which a kitmaker archive is generated.
+function add_distro() {
+    local component=$1
+    local os=$2
+    local arch=$3
 
-    echo "Applying properties: ${PROPS}"
-}
+    local package_dist=$4
+    local package_arch=$5
 
-## NOT USED:
-## can substitute this function place of upload_file to modify properties of
-## existing file instead of uploading files.
-# Sets the properties on a path
-# Relies on global variables: ARTIFACTORY_TOKEN, ARTIFACTORY_URL
-set_props() {
-    local dist="$1"
-    local arch="$2"
-    local kitmakerfilename="$3"
+    local name="${component}-${os}-${arch}"
 
-    # extract the Artifactory hostname
-    artifactory_host=$(echo "${ARTIFACTORY_URL##https://}" | awk -F'/' '{print $1}')
-    local image_path="${ARTIFACTORY_URL#https://${artifactory_host}/}/${dist}/${arch}/${kitmakerfilename}"
-
-    local PROPS
-    process_props "${DIST}" "${ARCH}"
-
-    echo "Setting ${image_path} with properties: ${PROPS}"
-    if ! ${CURL} -fs -H "X-JFrog-Art-Api: ${ARTIFACTORY_TOKEN}" \
-        -X PUT \
-        "https://${artifactory_host}/artifactory/api/storage/${image_path}?properties=${PROPS}&recursive=0" ; then
-        echo "ERROR: set props failed: ${image_path}"
-        exit 1
-    fi
-}
-
-# Uploads file to ARTIFACTS_DIR/<os>/<arch>/<filename>
-# Relies on global variables: DIST, ARCH, ARTIFACTORY_TOKEN, ARTIFACTORY_URL
-upload_file() {
-    local dist=$1
-    local arch=$2
-    local file=$3
-
-    # extract the Artifactory hostname
-    artifactory_host=$(echo "${ARTIFACTORY_URL##https://}" | awk -F'/' '{print $1}')
-    # get base part of the ARTIFACTORY_URL without hostname
-    local image_path="${ARTIFACTORY_URL#https://${artifactory_host}/}/${dist}/${arch}/$(basename ${file})"
-
-    local PROPS
-    process_props "${dist}" "${arch}"
-
-    if [ ! -r "${file}" ]; then
-        echo "ERROR: File not found or not readable: ${file}"
-        exit 1
-    fi
-
-    # Collect sum
-    SHA1_SUM=$(sha1sum -b "${file}" | awk '{ print $1 }')
-
-    echo "Uploading ${image_path} from ${file}"
-    if ! ${CURL} -f \
-        -H "X-JFrog-Art-Api: ${ARTIFACTORY_TOKEN}" \
-        -H "X-Checksum-Sha1: ${SHA1_SUM}" \
-        ${file:+-T ${file}} -X PUT \
-        "https://${artifactory_host}/${image_path};${PROPS}" ;
-        then
-        echo "ERROR: upload file failed: ${file}"
-        exit 1
-    fi
-}
-
-function push-kitmaker-artifactory() {
-    local dist=$1
-    local arch=$2
-    local archive=$3
-
-    upload_file "${dist}" "${arch}" "${archive}"
-}
-
-# kitmakerize-distro creates a tar.gz archive for the specified dist-arch combination.
-# The archive is created at ${KITMAKER_DIR}/${name}.tar.gz (where ${name} is the third positional argument)
-function kitmakerize-distro() {
-    local dist="$1"
-    local arch="$2"
-    local archive="$3"
-
-    local name=$(basename "${archive%%.tar.gz}")
-    ## Copy packages into directory layout for .tar.gz
-    # TODO: make scratch_dir configurable
-    local scratch_dir="$(dirname ${archive})/.scratch/${name}"
-    local packages_dir="${scratch_dir}/.packages/"
+    local scratch_dir="${KITMAKER_SCRATCH}/${name}"
+    local packages_dir="${scratch_dir}/.packages"
 
     mkdir -p "${packages_dir}"
 
     # Copy the extracted files to the .packages directory so that a kitmaker file can be created.
-    source="${ARTIFACTS_DIR}/packages/${dist}/${arch}"
+    source="${ARTIFACTS_DIR}/packages/${package_dist}/${package_arch}"
     cp -r "${source}/"* "${packages_dir}/"
+}
 
-    ## Tar up the directory structure created above
+# create_archive creates a kitmaker archive for the specified component, os, and arch.
+function create_archive() {
+    local component=$1
+    local os=$2
+    local arch=$3
+    local version=$4
+
+    local name="${component}-${os}-${arch}"
+    local archive="${KITMAKER_DIR}/${name}-${version}.tar.gz"
+
+    local scratch_dir="${KITMAKER_SCRATCH}/${name}"
+    local packages_dir="${scratch_dir}/.packages/"
+
     tar zcvf "${archive}" -C "${scratch_dir}/.." "${name}"
     echo "Created: ${archive}"
     ls -l "${archive}"
@@ -209,8 +127,99 @@ function kitmakerize-distro() {
     rmdir "${scratch_dir}"
 }
 
-: "${VERSION=$({NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION})}"
-kitmaker_name="${COMPONENT_NAME//-/_}-${DIST}-${ARCH}-${VERSION}"
-kitmaker_archive="${KITMAKER_DIR}/${kitmaker_name}.tar.gz"
-kitmakerize-distro "${DIST}" "${ARCH}" "${kitmaker_archive}"
-push-kitmaker-artifactory "${DIST}" "${ARCH}" "${kitmaker_archive}"
+function join_by { local IFS="$1"; shift; echo "$*"; }
+
+function optionally_add_property() {
+    local property=$1
+    local value=$2
+    if [[ -n "${value}" ]]; then
+        props+=("${property}=${value}")
+    fi
+}
+
+function upload_archive() {
+    local component=$1
+    local os=$2
+    local arch=$3
+    local version=$4
+
+    local package_builds=$(join_by , ${@:5})
+
+    local name="${component}-${os}-${arch}"
+    local archive="${KITMAKER_DIR}/${name}-${version}.tar.gz"
+
+    if [ ! -r "${archive}" ]; then
+        echo "ERROR: File not found or not readable: ${archive}"
+        exit 1
+    fi
+    local sha1_checksum=$(sha1sum -b "${archive}" | awk '{ print $1 }')
+
+    local upload_url="${KITMAKER_ARTIFACTORY_REPO}/${component}-${GIT_BRANCH}/default/$(basename ${archive})"
+
+    local props=()
+    # Required KITMAKER properties:
+    props+=("component_name=${component}")
+    props+=("version=${version}")
+    props+=("os=${os}")
+    props+=("arch=${arch}")
+    props+=("platform=${os}-${arch}")
+    # TODO: extract the GIT commit from the packaging image
+    props+=("changelist=${GIT_COMMIT}")
+    props+=("branch=${GIT_BRANCH}")
+    # Package properties:
+    props+=("package.epoch=${IMAGE_EPOCH}")
+    props+=("package.version=${VERSION}")
+    optionally_add_property "package.builds" "${package_builds}"
+
+    for var in "CI_PROJECT_ID" "CI_PIPELINE_ID" "CI_JOB_ID" "CI_JOB_URL" "CI_PROJECT_PATH"; do
+        if [ -n "${!var}" ]; then
+            optionally_add_property "${var}" "${!var}"
+        fi
+    done
+    local PROPS=$(join_by ";" "${props[@]}")
+
+    echo "Uploading ${upload_url} from ${file}"
+    if ! ${CURL} -f \
+        -H "X-JFrog-Art-Api: ${ARTIFACTORY_TOKEN}" \
+        -H "X-Checksum-Sha1: ${sha1_checksum}" \
+        ${archive:+-T ${archive}} -X PUT \
+        "${upload_url};${PROPS}" ;
+    then
+        echo "ERROR: upload file failed: ${archive}"
+        exit 1
+    fi
+}
+
+component="nvidia_container_toolkit"
+version="${VERSION%-rc.*}"
+version_suffix=$(date -r "${IMAGE_EPOCH}" '+%Y.%m.%d.%s' || date -d @"${IMAGE_EPOCH}" '+%Y.%m.%d.%s')
+kitmaker_version="${VERSION%-rc.*}.${version_suffix}"
+kitmaker_os="linux"
+
+# create_and_upload creates a kitmaker archive for the specified component, os, and arch and uploads it.
+function create_and_upload() {
+    local kitmaker_arch=$1
+    local builds=${@:2}
+
+    for build in ${builds}; do
+        local package_dist=$(echo ${build} | cut -d- -f1)
+        local package_arch=$(echo ${build} | cut -d- -f2)
+
+        add_distro "${component}" "${kitmaker_os}" "${kitmaker_arch}" "${package_dist}" "${package_arch}"
+    done
+
+    create_archive "${component}" "${kitmaker_os}" "${kitmaker_arch}" "${kitmaker_version}"
+    upload_archive "${component}" "${kitmaker_os}" "${kitmaker_arch}" "${kitmaker_version}" ${builds}
+}
+
+# Create archive for x86_64 linux distributions
+create_and_upload "x86_64" "ubuntu18.04-amd64" "centos8-x86_64"
+
+# Create archive for sbsa linux distributions
+create_and_upload "sbsa" "ubuntu18.04-arm64" "centos8-aarch64"
+# Create archive for aarch64 linux distributions
+# NOTE: From the perspective of the NVIDIA Container Toolkit aarch64 is just a duplicate of sbsa
+create_and_upload "aarch64" "ubuntu18.04-arm64" "centos8-aarch64"
+
+# Create archive for ppc64le linux distributions
+create_and_upload "ppc64le" "ubuntu18.04-ppc64le" "centos8-ppc64le"
