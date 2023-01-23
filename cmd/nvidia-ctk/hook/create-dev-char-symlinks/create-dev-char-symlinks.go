@@ -19,8 +19,12 @@ package devchar
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"strings"
+	"syscall"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -37,6 +41,7 @@ type config struct {
 	devCharPath string
 	driverRoot  string
 	dryRun      bool
+	watch       bool
 }
 
 // NewCommand constructs a hook sub-command with the specified logger
@@ -76,6 +81,13 @@ func (m command) build() *cli.Command {
 			EnvVars:     []string{"DRIVER_ROOT"},
 		},
 		&cli.BoolFlag{
+			Name:        "watch",
+			Usage:       "If set, the command will watch for changes to the driver root and recreate the symlinks when changes are detected.",
+			Value:       false,
+			Destination: &cfg.watch,
+			EnvVars:     []string{"WATCH"},
+		},
+		&cli.BoolFlag{
 			Name:        "dry-run",
 			Usage:       "If set, the command will not create any symlinks.",
 			Value:       false,
@@ -88,17 +100,67 @@ func (m command) build() *cli.Command {
 }
 
 func (m command) run(c *cli.Context, cfg *config) error {
+
+	var watcher *fsnotify.Watcher
+	var sigs chan os.Signal
+
+	if cfg.watch {
+		watcher, err := newFSWatcher(filepath.Join(cfg.driverRoot, "dev"))
+		if err != nil {
+			return fmt.Errorf("failed to create FS watcher: %v", err)
+		}
+		defer watcher.Close()
+
+		sigs = newOSWatcher(syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	}
+
 	l := NewSymlinkCreator(
 		WithLogger(m.logger),
 		WithDevCharPath(cfg.devCharPath),
 		WithDriverRoot(cfg.driverRoot),
 		WithDryRun(cfg.dryRun),
 	)
+create:
 	err := l.CreateLinks()
 	if err != nil {
 		return fmt.Errorf("failed to create links: %v", err)
 	}
-	return nil
+	if !cfg.watch {
+		return nil
+	}
+	for {
+		select {
+
+		case event := <-watcher.Events:
+			deviceNode := filepath.Base(event.Name)
+			if !strings.HasPrefix(deviceNode, "nvidia") {
+				continue
+			}
+			if event.Op&fsnotify.Create == fsnotify.Create {
+				m.logger.Infof("%s created, restarting.", event.Name)
+				goto create
+			}
+			if event.Op&fsnotify.Create == fsnotify.Remove {
+				m.logger.Infof("%s removed. Ignoring", event.Name)
+
+			}
+
+		// Watch for any other fs errors and log them.
+		case err := <-watcher.Errors:
+			m.logger.Errorf("inotify: %s", err)
+
+		// React to signals
+		case s := <-sigs:
+			switch s {
+			case syscall.SIGHUP:
+				m.logger.Infof("Received SIGHUP, recreating symlinks.")
+				goto create
+			default:
+				m.logger.Infof("Received signal %q, shutting down.", s)
+				return nil
+			}
+		}
+	}
 }
 
 type linkCreator struct {
@@ -206,4 +268,28 @@ type deviceNode struct {
 
 func (d deviceNode) devCharName() string {
 	return fmt.Sprintf("%d:%d", d.major, d.minor)
+}
+
+func newFSWatcher(files ...string) (*fsnotify.Watcher, error) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range files {
+		err = watcher.Add(f)
+		if err != nil {
+			watcher.Close()
+			return nil, err
+		}
+	}
+
+	return watcher, nil
+}
+
+func newOSWatcher(sigs ...os.Signal) chan os.Signal {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, sigs...)
+
+	return sigChan
 }
