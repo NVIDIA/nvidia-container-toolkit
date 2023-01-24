@@ -13,43 +13,43 @@ var _ Interface = &InterfaceMock{}
 
 // InterfaceMock is a mock implementation of Interface.
 //
-// 	func TestSomethingThatUsesInterface(t *testing.T) {
+//	func TestSomethingThatUsesInterface(t *testing.T) {
 //
-// 		// make and configure a mocked Interface
-// 		mockedInterface := &InterfaceMock{
-// 			DeviceGetCountFunc: func() (int, Return) {
-// 				panic("mock out the DeviceGetCount method")
-// 			},
-// 			DeviceGetHandleByIndexFunc: func(Index int) (Device, Return) {
-// 				panic("mock out the DeviceGetHandleByIndex method")
-// 			},
-// 			DeviceGetHandleByUUIDFunc: func(UUID string) (Device, Return) {
-// 				panic("mock out the DeviceGetHandleByUUID method")
-// 			},
-// 			ErrorStringFunc: func(r Return) string {
-// 				panic("mock out the ErrorString method")
-// 			},
-// 			EventSetCreateFunc: func() (EventSet, Return) {
-// 				panic("mock out the EventSetCreate method")
-// 			},
-// 			InitFunc: func() Return {
-// 				panic("mock out the Init method")
-// 			},
-// 			ShutdownFunc: func() Return {
-// 				panic("mock out the Shutdown method")
-// 			},
-// 			SystemGetCudaDriverVersionFunc: func() (int, Return) {
-// 				panic("mock out the SystemGetCudaDriverVersion method")
-// 			},
-// 			SystemGetDriverVersionFunc: func() (string, Return) {
-// 				panic("mock out the SystemGetDriverVersion method")
-// 			},
-// 		}
+//		// make and configure a mocked Interface
+//		mockedInterface := &InterfaceMock{
+//			DeviceGetCountFunc: func() (int, Return) {
+//				panic("mock out the DeviceGetCount method")
+//			},
+//			DeviceGetHandleByIndexFunc: func(Index int) (Device, Return) {
+//				panic("mock out the DeviceGetHandleByIndex method")
+//			},
+//			DeviceGetHandleByUUIDFunc: func(UUID string) (Device, Return) {
+//				panic("mock out the DeviceGetHandleByUUID method")
+//			},
+//			ErrorStringFunc: func(r Return) string {
+//				panic("mock out the ErrorString method")
+//			},
+//			EventSetCreateFunc: func() (EventSet, Return) {
+//				panic("mock out the EventSetCreate method")
+//			},
+//			InitFunc: func() Return {
+//				panic("mock out the Init method")
+//			},
+//			ShutdownFunc: func() Return {
+//				panic("mock out the Shutdown method")
+//			},
+//			SystemGetCudaDriverVersionFunc: func() (int, Return) {
+//				panic("mock out the SystemGetCudaDriverVersion method")
+//			},
+//			SystemGetDriverVersionFunc: func() (string, Return) {
+//				panic("mock out the SystemGetDriverVersion method")
+//			},
+//		}
 //
-// 		// use mockedInterface in code that requires Interface
-// 		// and then make assertions.
+//		// use mockedInterface in code that requires Interface
+//		// and then make assertions.
 //
-// 	}
+//	}
 type InterfaceMock struct {
 	// DeviceGetCountFunc mocks the DeviceGetCount method.
 	DeviceGetCountFunc func() (int, Return)
@@ -140,7 +140,8 @@ func (mock *InterfaceMock) DeviceGetCount() (int, Return) {
 
 // DeviceGetCountCalls gets all the calls that were made to DeviceGetCount.
 // Check the length with:
-//     len(mockedInterface.DeviceGetCountCalls())
+//
+//	len(mockedInterface.DeviceGetCountCalls())
 func (mock *InterfaceMock) DeviceGetCountCalls() []struct {
 } {
 	var calls []struct {
@@ -169,7 +170,8 @@ func (mock *InterfaceMock) DeviceGetHandleByIndex(Index int) (Device, Return) {
 
 // DeviceGetHandleByIndexCalls gets all the calls that were made to DeviceGetHandleByIndex.
 // Check the length with:
-//     len(mockedInterface.DeviceGetHandleByIndexCalls())
+//
+//	len(mockedInterface.DeviceGetHandleByIndexCalls())
 func (mock *InterfaceMock) DeviceGetHandleByIndexCalls() []struct {
 	Index int
 } {
@@ -200,7 +202,8 @@ func (mock *InterfaceMock) DeviceGetHandleByUUID(UUID string) (Device, Return) {
 
 // DeviceGetHandleByUUIDCalls gets all the calls that were made to DeviceGetHandleByUUID.
 // Check the length with:
-//     len(mockedInterface.DeviceGetHandleByUUIDCalls())
+//
+//	len(mockedInterface.DeviceGetHandleByUUIDCalls())
 func (mock *InterfaceMock) DeviceGetHandleByUUIDCalls() []struct {
 	UUID string
 } {
@@ -231,7 +234,8 @@ func (mock *InterfaceMock) ErrorString(r Return) string {
 
 // ErrorStringCalls gets all the calls that were made to ErrorString.
 // Check the length with:
-//     len(mockedInterface.ErrorStringCalls())
+//
+//	len(mockedInterface.ErrorStringCalls())
 func (mock *InterfaceMock) ErrorStringCalls() []struct {
 	R Return
 } {
@@ -259,7 +263,8 @@ func (mock *InterfaceMock) EventSetCreate() (EventSet, Return) {
 
 // EventSetCreateCalls gets all the calls that were made to EventSetCreate.
 // Check the length with:
-//     len(mockedInterface.EventSetCreateCalls())
+//
+//	len(mockedInterface.EventSetCreateCalls())
 func (mock *InterfaceMock) EventSetCreateCalls() []struct {
 } {
 	var calls []struct {
@@ -285,7 +290,8 @@ func (mock *InterfaceMock) Init() Return {
 
 // InitCalls gets all the calls that were made to Init.
 // Check the length with:
-//     len(mockedInterface.InitCalls())
+//
+//	len(mockedInterface.InitCalls())
 func (mock *InterfaceMock) InitCalls() []struct {
 } {
 	var calls []struct {
@@ -311,7 +317,8 @@ func (mock *InterfaceMock) Shutdown() Return {
 
 // ShutdownCalls gets all the calls that were made to Shutdown.
 // Check the length with:
-//     len(mockedInterface.ShutdownCalls())
+//
+//	len(mockedInterface.ShutdownCalls())
 func (mock *InterfaceMock) ShutdownCalls() []struct {
 } {
 	var calls []struct {
@@ -337,7 +344,8 @@ func (mock *InterfaceMock) SystemGetCudaDriverVersion() (int, Return) {
 
 // SystemGetCudaDriverVersionCalls gets all the calls that were made to SystemGetCudaDriverVersion.
 // Check the length with:
-//     len(mockedInterface.SystemGetCudaDriverVersionCalls())
+//
+//	len(mockedInterface.SystemGetCudaDriverVersionCalls())
 func (mock *InterfaceMock) SystemGetCudaDriverVersionCalls() []struct {
 } {
 	var calls []struct {
@@ -363,7 +371,8 @@ func (mock *InterfaceMock) SystemGetDriverVersion() (string, Return) {
 
 // SystemGetDriverVersionCalls gets all the calls that were made to SystemGetDriverVersion.
 // Check the length with:
-//     len(mockedInterface.SystemGetDriverVersionCalls())
+//
+//	len(mockedInterface.SystemGetDriverVersionCalls())
 func (mock *InterfaceMock) SystemGetDriverVersionCalls() []struct {
 } {
 	var calls []struct {

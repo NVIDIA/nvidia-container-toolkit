@@ -48,6 +48,15 @@ func (d *devicelib) NewMigDevice(handle nvml.Device) (MigDevice, error) {
 	return &migdevice{handle, d, nil}, nil
 }
 
+// NewMigDeviceByUUID builds a new MigDevice from a UUID
+func (d *devicelib) NewMigDeviceByUUID(uuid string) (MigDevice, error) {
+	dev, ret := d.nvml.DeviceGetHandleByUUID(uuid)
+	if ret != nvml.SUCCESS {
+		return nil, fmt.Errorf("error getting device handle for uuid '%v': %v", uuid, ret)
+	}
+	return d.NewMigDevice(dev)
+}
+
 // GetProfile returns the MIG profile associated with a MIG device
 func (m *migdevice) GetProfile() (MigProfile, error) {
 	if m.profile != nil {
@@ -101,6 +110,12 @@ func (m *migdevice) GetProfile() (MigProfile, error) {
 
 	for i := 0; i < nvml.GPU_INSTANCE_PROFILE_COUNT; i++ {
 		giProfileInfo, ret := parent.GetGpuInstanceProfileInfo(i)
+		if ret == nvml.ERROR_NOT_SUPPORTED {
+			continue
+		}
+		if ret == nvml.ERROR_INVALID_ARGUMENT {
+			continue
+		}
 		if ret != nvml.SUCCESS {
 			return nil, fmt.Errorf("error getting GPU Instance profile info: %v", ret)
 		}
@@ -112,6 +127,12 @@ func (m *migdevice) GetProfile() (MigProfile, error) {
 		for j := 0; j < nvml.COMPUTE_INSTANCE_PROFILE_COUNT; j++ {
 			for k := 0; k < nvml.COMPUTE_INSTANCE_ENGINE_PROFILE_COUNT; k++ {
 				ciProfileInfo, ret := gi.GetComputeInstanceProfileInfo(j, k)
+				if ret == nvml.ERROR_NOT_SUPPORTED {
+					continue
+				}
+				if ret == nvml.ERROR_INVALID_ARGUMENT {
+					continue
+				}
 				if ret != nvml.SUCCESS {
 					return nil, fmt.Errorf("error getting Compute Instance profile info: %v", ret)
 

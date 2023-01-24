@@ -13,34 +13,34 @@ var _ GpuInstance = &GpuInstanceMock{}
 
 // GpuInstanceMock is a mock implementation of GpuInstance.
 //
-// 	func TestSomethingThatUsesGpuInstance(t *testing.T) {
+//	func TestSomethingThatUsesGpuInstance(t *testing.T) {
 //
-// 		// make and configure a mocked GpuInstance
-// 		mockedGpuInstance := &GpuInstanceMock{
-// 			CreateComputeInstanceFunc: func(Info *ComputeInstanceProfileInfo) (ComputeInstance, Return) {
-// 				panic("mock out the CreateComputeInstance method")
-// 			},
-// 			DestroyFunc: func() Return {
-// 				panic("mock out the Destroy method")
-// 			},
-// 			GetComputeInstanceByIdFunc: func(ID int) (ComputeInstance, Return) {
-// 				panic("mock out the GetComputeInstanceById method")
-// 			},
-// 			GetComputeInstanceProfileInfoFunc: func(Profile int, EngProfile int) (ComputeInstanceProfileInfo, Return) {
-// 				panic("mock out the GetComputeInstanceProfileInfo method")
-// 			},
-// 			GetComputeInstancesFunc: func(Info *ComputeInstanceProfileInfo) ([]ComputeInstance, Return) {
-// 				panic("mock out the GetComputeInstances method")
-// 			},
-// 			GetInfoFunc: func() (GpuInstanceInfo, Return) {
-// 				panic("mock out the GetInfo method")
-// 			},
-// 		}
+//		// make and configure a mocked GpuInstance
+//		mockedGpuInstance := &GpuInstanceMock{
+//			CreateComputeInstanceFunc: func(Info *ComputeInstanceProfileInfo) (ComputeInstance, Return) {
+//				panic("mock out the CreateComputeInstance method")
+//			},
+//			DestroyFunc: func() Return {
+//				panic("mock out the Destroy method")
+//			},
+//			GetComputeInstanceByIdFunc: func(ID int) (ComputeInstance, Return) {
+//				panic("mock out the GetComputeInstanceById method")
+//			},
+//			GetComputeInstanceProfileInfoFunc: func(Profile int, EngProfile int) (ComputeInstanceProfileInfo, Return) {
+//				panic("mock out the GetComputeInstanceProfileInfo method")
+//			},
+//			GetComputeInstancesFunc: func(Info *ComputeInstanceProfileInfo) ([]ComputeInstance, Return) {
+//				panic("mock out the GetComputeInstances method")
+//			},
+//			GetInfoFunc: func() (GpuInstanceInfo, Return) {
+//				panic("mock out the GetInfo method")
+//			},
+//		}
 //
-// 		// use mockedGpuInstance in code that requires GpuInstance
-// 		// and then make assertions.
+//		// use mockedGpuInstance in code that requires GpuInstance
+//		// and then make assertions.
 //
-// 	}
+//	}
 type GpuInstanceMock struct {
 	// CreateComputeInstanceFunc mocks the CreateComputeInstance method.
 	CreateComputeInstanceFunc func(Info *ComputeInstanceProfileInfo) (ComputeInstance, Return)
@@ -117,7 +117,8 @@ func (mock *GpuInstanceMock) CreateComputeInstance(Info *ComputeInstanceProfileI
 
 // CreateComputeInstanceCalls gets all the calls that were made to CreateComputeInstance.
 // Check the length with:
-//     len(mockedGpuInstance.CreateComputeInstanceCalls())
+//
+//	len(mockedGpuInstance.CreateComputeInstanceCalls())
 func (mock *GpuInstanceMock) CreateComputeInstanceCalls() []struct {
 	Info *ComputeInstanceProfileInfo
 } {
@@ -145,7 +146,8 @@ func (mock *GpuInstanceMock) Destroy() Return {
 
 // DestroyCalls gets all the calls that were made to Destroy.
 // Check the length with:
-//     len(mockedGpuInstance.DestroyCalls())
+//
+//	len(mockedGpuInstance.DestroyCalls())
 func (mock *GpuInstanceMock) DestroyCalls() []struct {
 } {
 	var calls []struct {
@@ -174,7 +176,8 @@ func (mock *GpuInstanceMock) GetComputeInstanceById(ID int) (ComputeInstance, Re
 
 // GetComputeInstanceByIdCalls gets all the calls that were made to GetComputeInstanceById.
 // Check the length with:
-//     len(mockedGpuInstance.GetComputeInstanceByIdCalls())
+//
+//	len(mockedGpuInstance.GetComputeInstanceByIdCalls())
 func (mock *GpuInstanceMock) GetComputeInstanceByIdCalls() []struct {
 	ID int
 } {
@@ -207,7 +210,8 @@ func (mock *GpuInstanceMock) GetComputeInstanceProfileInfo(Profile int, EngProfi
 
 // GetComputeInstanceProfileInfoCalls gets all the calls that were made to GetComputeInstanceProfileInfo.
 // Check the length with:
-//     len(mockedGpuInstance.GetComputeInstanceProfileInfoCalls())
+//
+//	len(mockedGpuInstance.GetComputeInstanceProfileInfoCalls())
 func (mock *GpuInstanceMock) GetComputeInstanceProfileInfoCalls() []struct {
 	Profile    int
 	EngProfile int
@@ -240,7 +244,8 @@ func (mock *GpuInstanceMock) GetComputeInstances(Info *ComputeInstanceProfileInf
 
 // GetComputeInstancesCalls gets all the calls that were made to GetComputeInstances.
 // Check the length with:
-//     len(mockedGpuInstance.GetComputeInstancesCalls())
+//
+//	len(mockedGpuInstance.GetComputeInstancesCalls())
 func (mock *GpuInstanceMock) GetComputeInstancesCalls() []struct {
 	Info *ComputeInstanceProfileInfo
 } {
@@ -268,7 +273,8 @@ func (mock *GpuInstanceMock) GetInfo() (GpuInstanceInfo, Return) {
 
 // GetInfoCalls gets all the calls that were made to GetInfo.
 // Check the length with:
-//     len(mockedGpuInstance.GetInfoCalls())
+//
+//	len(mockedGpuInstance.GetInfoCalls())
 func (mock *GpuInstanceMock) GetInfoCalls() []struct {
 } {
 	var calls []struct {
