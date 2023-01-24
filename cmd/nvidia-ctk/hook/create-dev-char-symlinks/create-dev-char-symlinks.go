@@ -42,6 +42,7 @@ type config struct {
 	driverRoot  string
 	dryRun      bool
 	watch       bool
+	createAll   bool
 }
 
 // NewCommand constructs a hook sub-command with the specified logger
@@ -60,6 +61,9 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "create-dev-char-symlinks",
 		Usage: "A hook to create symlinks to possible /dev/nv* devices in /dev/char",
+		Before: func(c *cli.Context) error {
+			return m.validateFlags(c, &cfg)
+		},
 		Action: func(c *cli.Context) error {
 			return m.run(c, &cfg)
 		},
@@ -88,6 +92,12 @@ func (m command) build() *cli.Command {
 			EnvVars:     []string{"WATCH"},
 		},
 		&cli.BoolFlag{
+			Name:        "create-all",
+			Usage:       "Create all possible /dev/char symlinks instead of limiting these to existing device nodes.",
+			Destination: &cfg.createAll,
+			EnvVars:     []string{"CREATE_ALL"},
+		},
+		&cli.BoolFlag{
 			Name:        "dry-run",
 			Usage:       "If set, the command will not create any symlinks.",
 			Value:       false,
@@ -99,8 +109,15 @@ func (m command) build() *cli.Command {
 	return &c
 }
 
-func (m command) run(c *cli.Context, cfg *config) error {
+func (m command) validateFlags(r *cli.Context, cfg *config) error {
+	if cfg.createAll && cfg.watch {
+		return fmt.Errorf("create-all and watch are mutually exclusive")
+	}
 
+	return nil
+}
+
+func (m command) run(c *cli.Context, cfg *config) error {
 	var watcher *fsnotify.Watcher
 	var sigs chan os.Signal
 
@@ -114,14 +131,19 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		sigs = newOSWatcher(syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	}
 
-	l := NewSymlinkCreator(
+	l, err := NewSymlinkCreator(
 		WithLogger(m.logger),
 		WithDevCharPath(cfg.devCharPath),
 		WithDriverRoot(cfg.driverRoot),
 		WithDryRun(cfg.dryRun),
+		WithCreateAll(cfg.createAll),
 	)
+	if err != nil {
+		return fmt.Errorf("failed to create symlink creator: %v", err)
+	}
+
 create:
-	err := l.CreateLinks()
+	err = l.CreateLinks()
 	if err != nil {
 		return fmt.Errorf("failed to create links: %v", err)
 	}
@@ -169,6 +191,7 @@ type linkCreator struct {
 	driverRoot  string
 	devCharPath string
 	dryRun      bool
+	createAll   bool
 }
 
 // Creator is an interface for creating symlinks to /dev/nv* devices in /dev/char.
@@ -180,7 +203,7 @@ type Creator interface {
 type Option func(*linkCreator)
 
 // NewSymlinkCreator creates a new linkCreator.
-func NewSymlinkCreator(opts ...Option) Creator {
+func NewSymlinkCreator(opts ...Option) (Creator, error) {
 	c := linkCreator{}
 	for _, opt := range opts {
 		opt(&c)
@@ -194,10 +217,17 @@ func NewSymlinkCreator(opts ...Option) Creator {
 	if c.devCharPath == "" {
 		c.devCharPath = defaultDevCharPath
 	}
-	if c.lister == nil {
+
+	if c.createAll {
+		lister, err := newAllPossible(c.logger, c.driverRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create all possible device lister: %v", err)
+		}
+		c.lister = lister
+	} else {
 		c.lister = existing{c.logger, c.driverRoot}
 	}
-	return c
+	return c, nil
 }
 
 // WithDriverRoot sets the driver root path.
@@ -228,7 +258,14 @@ func WithLogger(logger *logrus.Logger) Option {
 	}
 }
 
-// CreateLinks creates symlinks for all device nodes returned by the configured lister.
+// WithCreateAll sets the createAll flag for the linkCreator.
+func WithCreateAll(createAll bool) Option {
+	return func(lc *linkCreator) {
+		lc.createAll = createAll
+	}
+}
+
+// CreateLinks creates symlinks for all NVIDIA device nodes found in the driver root.
 func (m linkCreator) CreateLinks() error {
 	deviceNodes, err := m.lister.DeviceNodes()
 	if err != nil {
