@@ -1,6 +1,16 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.12.0-rc.4
+
 ## v1.12.0-rc.3
+
+* Don't fail if by-path symlinks for DRM devices do not exist
+* Replace the --json flag with a --format [json|yaml] flag for the nvidia-ctk cdi generate command
+* Ensure that the CDI output folder is created if required
+* When generating a CDI specification use a blank host path for devices to ensure compatibility with the v0.4.0 CDI specification
+* Add injection of Wayland JSON files
+* Add GSP firmware paths to generated CDI specification
+* Add --root flag to nvidia-ctk cdi generate command
 
 ## v1.12.0-rc.2
 
