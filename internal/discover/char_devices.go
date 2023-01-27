@@ -28,7 +28,10 @@ var _ Discover = (*charDevices)(nil)
 
 // NewCharDeviceDiscoverer creates a discoverer which locates the specified set of device nodes.
 func NewCharDeviceDiscoverer(logger *logrus.Logger, devices []string, root string) Discover {
-	locator := lookup.NewCharDeviceLocator(logger, root)
+	locator := lookup.NewCharDeviceLocator(
+		lookup.WithLogger(logger),
+		lookup.WithRoot(root),
+	)
 
 	return NewDeviceDiscoverer(logger, locator, root, devices)
 }

@@ -62,11 +62,15 @@ github.com/syndtr/gocapability/capability
 github.com/urfave/cli/v2
 # github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
 ## explicit
-# gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20220922133427-1049a7fa76a9
+# gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20230119114711-6fe07bb33342
 ## explicit; go 1.16
 gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device
 gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info
 gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml
+gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci
+gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci/bytes
+gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci/mmio
+gitlab.com/nvidia/cloud-native/go-nvlib/pkg/pciids
 # golang.org/x/mod v0.5.0
 ## explicit; go 1.17
 golang.org/x/mod/semver

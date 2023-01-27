@@ -26,7 +26,9 @@ type Interface interface {
 	GetMigDevices() ([]MigDevice, error)
 	GetMigProfiles() ([]MigProfile, error)
 	NewDevice(d nvml.Device) (Device, error)
+	NewDeviceByUUID(uuid string) (Device, error)
 	NewMigDevice(d nvml.Device) (MigDevice, error)
+	NewMigDeviceByUUID(uuid string) (MigDevice, error)
 	NewMigProfile(giProfileID, ciProfileID, ciEngProfileID int, migMemorySizeMB, deviceMemorySizeBytes uint64) (MigProfile, error)
 	ParseMigProfile(profile string) (MigProfile, error)
 	VisitDevices(func(i int, d Device) error) error
@@ -35,7 +37,8 @@ type Interface interface {
 }
 
 type devicelib struct {
-	nvml nvml.Interface
+	nvml           nvml.Interface
+	skippedDevices map[string]struct{}
 }
 
 var _ Interface = &devicelib{}
@@ -49,6 +52,12 @@ func New(opts ...Option) Interface {
 	if d.nvml == nil {
 		d.nvml = nvml.New()
 	}
+	if d.skippedDevices == nil {
+		WithSkippedDevices(
+			"DGX Display",
+			"NVIDIA DGX Display",
+		)(d)
+	}
 	return d
 }
 
@@ -56,6 +65,18 @@ func New(opts ...Option) Interface {
 func WithNvml(nvml nvml.Interface) Option {
 	return func(d *devicelib) {
 		d.nvml = nvml
+	}
+}
+
+// WithSkippedDevices provides an Option to set devices to be skipped by model name
+func WithSkippedDevices(names ...string) Option {
+	return func(d *devicelib) {
+		if d.skippedDevices == nil {
+			d.skippedDevices = make(map[string]struct{})
+		}
+		for _, name := range names {
+			d.skippedDevices[name] = struct{}{}
+		}
 	}
 }
 

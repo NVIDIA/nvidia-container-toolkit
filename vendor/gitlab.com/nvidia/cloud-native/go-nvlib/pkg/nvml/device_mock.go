@@ -13,80 +13,89 @@ var _ Device = &DeviceMock{}
 
 // DeviceMock is a mock implementation of Device.
 //
-// 	func TestSomethingThatUsesDevice(t *testing.T) {
+//	func TestSomethingThatUsesDevice(t *testing.T) {
 //
-// 		// make and configure a mocked Device
-// 		mockedDevice := &DeviceMock{
-// 			GetAttributesFunc: func() (DeviceAttributes, Return) {
-// 				panic("mock out the GetAttributes method")
-// 			},
-// 			GetComputeInstanceIdFunc: func() (int, Return) {
-// 				panic("mock out the GetComputeInstanceId method")
-// 			},
-// 			GetCudaComputeCapabilityFunc: func() (int, int, Return) {
-// 				panic("mock out the GetCudaComputeCapability method")
-// 			},
-// 			GetDeviceHandleFromMigDeviceHandleFunc: func() (Device, Return) {
-// 				panic("mock out the GetDeviceHandleFromMigDeviceHandle method")
-// 			},
-// 			GetGpuInstanceByIdFunc: func(ID int) (GpuInstance, Return) {
-// 				panic("mock out the GetGpuInstanceById method")
-// 			},
-// 			GetGpuInstanceIdFunc: func() (int, Return) {
-// 				panic("mock out the GetGpuInstanceId method")
-// 			},
-// 			GetGpuInstanceProfileInfoFunc: func(Profile int) (GpuInstanceProfileInfo, Return) {
-// 				panic("mock out the GetGpuInstanceProfileInfo method")
-// 			},
-// 			GetGpuInstancesFunc: func(Info *GpuInstanceProfileInfo) ([]GpuInstance, Return) {
-// 				panic("mock out the GetGpuInstances method")
-// 			},
-// 			GetIndexFunc: func() (int, Return) {
-// 				panic("mock out the GetIndex method")
-// 			},
-// 			GetMaxMigDeviceCountFunc: func() (int, Return) {
-// 				panic("mock out the GetMaxMigDeviceCount method")
-// 			},
-// 			GetMemoryInfoFunc: func() (Memory, Return) {
-// 				panic("mock out the GetMemoryInfo method")
-// 			},
-// 			GetMigDeviceHandleByIndexFunc: func(Index int) (Device, Return) {
-// 				panic("mock out the GetMigDeviceHandleByIndex method")
-// 			},
-// 			GetMigModeFunc: func() (int, int, Return) {
-// 				panic("mock out the GetMigMode method")
-// 			},
-// 			GetMinorNumberFunc: func() (int, Return) {
-// 				panic("mock out the GetMinorNumber method")
-// 			},
-// 			GetNameFunc: func() (string, Return) {
-// 				panic("mock out the GetName method")
-// 			},
-// 			GetPciInfoFunc: func() (PciInfo, Return) {
-// 				panic("mock out the GetPciInfo method")
-// 			},
-// 			GetSupportedEventTypesFunc: func() (uint64, Return) {
-// 				panic("mock out the GetSupportedEventTypes method")
-// 			},
-// 			GetUUIDFunc: func() (string, Return) {
-// 				panic("mock out the GetUUID method")
-// 			},
-// 			IsMigDeviceHandleFunc: func() (bool, Return) {
-// 				panic("mock out the IsMigDeviceHandle method")
-// 			},
-// 			RegisterEventsFunc: func(v uint64, eventSet EventSet) Return {
-// 				panic("mock out the RegisterEvents method")
-// 			},
-// 			SetMigModeFunc: func(Mode int) (Return, Return) {
-// 				panic("mock out the SetMigMode method")
-// 			},
-// 		}
+//		// make and configure a mocked Device
+//		mockedDevice := &DeviceMock{
+//			CreateGpuInstanceWithPlacementFunc: func(gpuInstanceProfileInfo *GpuInstanceProfileInfo, gpuInstancePlacement *GpuInstancePlacement) (GpuInstance, Return) {
+//				panic("mock out the CreateGpuInstanceWithPlacement method")
+//			},
+//			GetAttributesFunc: func() (DeviceAttributes, Return) {
+//				panic("mock out the GetAttributes method")
+//			},
+//			GetComputeInstanceIdFunc: func() (int, Return) {
+//				panic("mock out the GetComputeInstanceId method")
+//			},
+//			GetCudaComputeCapabilityFunc: func() (int, int, Return) {
+//				panic("mock out the GetCudaComputeCapability method")
+//			},
+//			GetDeviceHandleFromMigDeviceHandleFunc: func() (Device, Return) {
+//				panic("mock out the GetDeviceHandleFromMigDeviceHandle method")
+//			},
+//			GetGpuInstanceByIdFunc: func(ID int) (GpuInstance, Return) {
+//				panic("mock out the GetGpuInstanceById method")
+//			},
+//			GetGpuInstanceIdFunc: func() (int, Return) {
+//				panic("mock out the GetGpuInstanceId method")
+//			},
+//			GetGpuInstancePossiblePlacementsFunc: func(gpuInstanceProfileInfo *GpuInstanceProfileInfo) ([]GpuInstancePlacement, Return) {
+//				panic("mock out the GetGpuInstancePossiblePlacements method")
+//			},
+//			GetGpuInstanceProfileInfoFunc: func(Profile int) (GpuInstanceProfileInfo, Return) {
+//				panic("mock out the GetGpuInstanceProfileInfo method")
+//			},
+//			GetGpuInstancesFunc: func(Info *GpuInstanceProfileInfo) ([]GpuInstance, Return) {
+//				panic("mock out the GetGpuInstances method")
+//			},
+//			GetIndexFunc: func() (int, Return) {
+//				panic("mock out the GetIndex method")
+//			},
+//			GetMaxMigDeviceCountFunc: func() (int, Return) {
+//				panic("mock out the GetMaxMigDeviceCount method")
+//			},
+//			GetMemoryInfoFunc: func() (Memory, Return) {
+//				panic("mock out the GetMemoryInfo method")
+//			},
+//			GetMigDeviceHandleByIndexFunc: func(Index int) (Device, Return) {
+//				panic("mock out the GetMigDeviceHandleByIndex method")
+//			},
+//			GetMigModeFunc: func() (int, int, Return) {
+//				panic("mock out the GetMigMode method")
+//			},
+//			GetMinorNumberFunc: func() (int, Return) {
+//				panic("mock out the GetMinorNumber method")
+//			},
+//			GetNameFunc: func() (string, Return) {
+//				panic("mock out the GetName method")
+//			},
+//			GetPciInfoFunc: func() (PciInfo, Return) {
+//				panic("mock out the GetPciInfo method")
+//			},
+//			GetSupportedEventTypesFunc: func() (uint64, Return) {
+//				panic("mock out the GetSupportedEventTypes method")
+//			},
+//			GetUUIDFunc: func() (string, Return) {
+//				panic("mock out the GetUUID method")
+//			},
+//			IsMigDeviceHandleFunc: func() (bool, Return) {
+//				panic("mock out the IsMigDeviceHandle method")
+//			},
+//			RegisterEventsFunc: func(v uint64, eventSet EventSet) Return {
+//				panic("mock out the RegisterEvents method")
+//			},
+//			SetMigModeFunc: func(Mode int) (Return, Return) {
+//				panic("mock out the SetMigMode method")
+//			},
+//		}
 //
-// 		// use mockedDevice in code that requires Device
-// 		// and then make assertions.
+//		// use mockedDevice in code that requires Device
+//		// and then make assertions.
 //
-// 	}
+//	}
 type DeviceMock struct {
+	// CreateGpuInstanceWithPlacementFunc mocks the CreateGpuInstanceWithPlacement method.
+	CreateGpuInstanceWithPlacementFunc func(gpuInstanceProfileInfo *GpuInstanceProfileInfo, gpuInstancePlacement *GpuInstancePlacement) (GpuInstance, Return)
+
 	// GetAttributesFunc mocks the GetAttributes method.
 	GetAttributesFunc func() (DeviceAttributes, Return)
 
@@ -104,6 +113,9 @@ type DeviceMock struct {
 
 	// GetGpuInstanceIdFunc mocks the GetGpuInstanceId method.
 	GetGpuInstanceIdFunc func() (int, Return)
+
+	// GetGpuInstancePossiblePlacementsFunc mocks the GetGpuInstancePossiblePlacements method.
+	GetGpuInstancePossiblePlacementsFunc func(gpuInstanceProfileInfo *GpuInstanceProfileInfo) ([]GpuInstancePlacement, Return)
 
 	// GetGpuInstanceProfileInfoFunc mocks the GetGpuInstanceProfileInfo method.
 	GetGpuInstanceProfileInfoFunc func(Profile int) (GpuInstanceProfileInfo, Return)
@@ -152,6 +164,13 @@ type DeviceMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// CreateGpuInstanceWithPlacement holds details about calls to the CreateGpuInstanceWithPlacement method.
+		CreateGpuInstanceWithPlacement []struct {
+			// GpuInstanceProfileInfo is the gpuInstanceProfileInfo argument value.
+			GpuInstanceProfileInfo *GpuInstanceProfileInfo
+			// GpuInstancePlacement is the gpuInstancePlacement argument value.
+			GpuInstancePlacement *GpuInstancePlacement
+		}
 		// GetAttributes holds details about calls to the GetAttributes method.
 		GetAttributes []struct {
 		}
@@ -171,6 +190,11 @@ type DeviceMock struct {
 		}
 		// GetGpuInstanceId holds details about calls to the GetGpuInstanceId method.
 		GetGpuInstanceId []struct {
+		}
+		// GetGpuInstancePossiblePlacements holds details about calls to the GetGpuInstancePossiblePlacements method.
+		GetGpuInstancePossiblePlacements []struct {
+			// GpuInstanceProfileInfo is the gpuInstanceProfileInfo argument value.
+			GpuInstanceProfileInfo *GpuInstanceProfileInfo
 		}
 		// GetGpuInstanceProfileInfo holds details about calls to the GetGpuInstanceProfileInfo method.
 		GetGpuInstanceProfileInfo []struct {
@@ -230,12 +254,14 @@ type DeviceMock struct {
 			Mode int
 		}
 	}
+	lockCreateGpuInstanceWithPlacement     sync.RWMutex
 	lockGetAttributes                      sync.RWMutex
 	lockGetComputeInstanceId               sync.RWMutex
 	lockGetCudaComputeCapability           sync.RWMutex
 	lockGetDeviceHandleFromMigDeviceHandle sync.RWMutex
 	lockGetGpuInstanceById                 sync.RWMutex
 	lockGetGpuInstanceId                   sync.RWMutex
+	lockGetGpuInstancePossiblePlacements   sync.RWMutex
 	lockGetGpuInstanceProfileInfo          sync.RWMutex
 	lockGetGpuInstances                    sync.RWMutex
 	lockGetIndex                           sync.RWMutex
@@ -253,6 +279,42 @@ type DeviceMock struct {
 	lockSetMigMode                         sync.RWMutex
 }
 
+// CreateGpuInstanceWithPlacement calls CreateGpuInstanceWithPlacementFunc.
+func (mock *DeviceMock) CreateGpuInstanceWithPlacement(gpuInstanceProfileInfo *GpuInstanceProfileInfo, gpuInstancePlacement *GpuInstancePlacement) (GpuInstance, Return) {
+	if mock.CreateGpuInstanceWithPlacementFunc == nil {
+		panic("DeviceMock.CreateGpuInstanceWithPlacementFunc: method is nil but Device.CreateGpuInstanceWithPlacement was just called")
+	}
+	callInfo := struct {
+		GpuInstanceProfileInfo *GpuInstanceProfileInfo
+		GpuInstancePlacement   *GpuInstancePlacement
+	}{
+		GpuInstanceProfileInfo: gpuInstanceProfileInfo,
+		GpuInstancePlacement:   gpuInstancePlacement,
+	}
+	mock.lockCreateGpuInstanceWithPlacement.Lock()
+	mock.calls.CreateGpuInstanceWithPlacement = append(mock.calls.CreateGpuInstanceWithPlacement, callInfo)
+	mock.lockCreateGpuInstanceWithPlacement.Unlock()
+	return mock.CreateGpuInstanceWithPlacementFunc(gpuInstanceProfileInfo, gpuInstancePlacement)
+}
+
+// CreateGpuInstanceWithPlacementCalls gets all the calls that were made to CreateGpuInstanceWithPlacement.
+// Check the length with:
+//
+//	len(mockedDevice.CreateGpuInstanceWithPlacementCalls())
+func (mock *DeviceMock) CreateGpuInstanceWithPlacementCalls() []struct {
+	GpuInstanceProfileInfo *GpuInstanceProfileInfo
+	GpuInstancePlacement   *GpuInstancePlacement
+} {
+	var calls []struct {
+		GpuInstanceProfileInfo *GpuInstanceProfileInfo
+		GpuInstancePlacement   *GpuInstancePlacement
+	}
+	mock.lockCreateGpuInstanceWithPlacement.RLock()
+	calls = mock.calls.CreateGpuInstanceWithPlacement
+	mock.lockCreateGpuInstanceWithPlacement.RUnlock()
+	return calls
+}
+
 // GetAttributes calls GetAttributesFunc.
 func (mock *DeviceMock) GetAttributes() (DeviceAttributes, Return) {
 	if mock.GetAttributesFunc == nil {
@@ -268,7 +330,8 @@ func (mock *DeviceMock) GetAttributes() (DeviceAttributes, Return) {
 
 // GetAttributesCalls gets all the calls that were made to GetAttributes.
 // Check the length with:
-//     len(mockedDevice.GetAttributesCalls())
+//
+//	len(mockedDevice.GetAttributesCalls())
 func (mock *DeviceMock) GetAttributesCalls() []struct {
 } {
 	var calls []struct {
@@ -294,7 +357,8 @@ func (mock *DeviceMock) GetComputeInstanceId() (int, Return) {
 
 // GetComputeInstanceIdCalls gets all the calls that were made to GetComputeInstanceId.
 // Check the length with:
-//     len(mockedDevice.GetComputeInstanceIdCalls())
+//
+//	len(mockedDevice.GetComputeInstanceIdCalls())
 func (mock *DeviceMock) GetComputeInstanceIdCalls() []struct {
 } {
 	var calls []struct {
@@ -320,7 +384,8 @@ func (mock *DeviceMock) GetCudaComputeCapability() (int, int, Return) {
 
 // GetCudaComputeCapabilityCalls gets all the calls that were made to GetCudaComputeCapability.
 // Check the length with:
-//     len(mockedDevice.GetCudaComputeCapabilityCalls())
+//
+//	len(mockedDevice.GetCudaComputeCapabilityCalls())
 func (mock *DeviceMock) GetCudaComputeCapabilityCalls() []struct {
 } {
 	var calls []struct {
@@ -346,7 +411,8 @@ func (mock *DeviceMock) GetDeviceHandleFromMigDeviceHandle() (Device, Return) {
 
 // GetDeviceHandleFromMigDeviceHandleCalls gets all the calls that were made to GetDeviceHandleFromMigDeviceHandle.
 // Check the length with:
-//     len(mockedDevice.GetDeviceHandleFromMigDeviceHandleCalls())
+//
+//	len(mockedDevice.GetDeviceHandleFromMigDeviceHandleCalls())
 func (mock *DeviceMock) GetDeviceHandleFromMigDeviceHandleCalls() []struct {
 } {
 	var calls []struct {
@@ -375,7 +441,8 @@ func (mock *DeviceMock) GetGpuInstanceById(ID int) (GpuInstance, Return) {
 
 // GetGpuInstanceByIdCalls gets all the calls that were made to GetGpuInstanceById.
 // Check the length with:
-//     len(mockedDevice.GetGpuInstanceByIdCalls())
+//
+//	len(mockedDevice.GetGpuInstanceByIdCalls())
 func (mock *DeviceMock) GetGpuInstanceByIdCalls() []struct {
 	ID int
 } {
@@ -403,7 +470,8 @@ func (mock *DeviceMock) GetGpuInstanceId() (int, Return) {
 
 // GetGpuInstanceIdCalls gets all the calls that were made to GetGpuInstanceId.
 // Check the length with:
-//     len(mockedDevice.GetGpuInstanceIdCalls())
+//
+//	len(mockedDevice.GetGpuInstanceIdCalls())
 func (mock *DeviceMock) GetGpuInstanceIdCalls() []struct {
 } {
 	var calls []struct {
@@ -411,6 +479,38 @@ func (mock *DeviceMock) GetGpuInstanceIdCalls() []struct {
 	mock.lockGetGpuInstanceId.RLock()
 	calls = mock.calls.GetGpuInstanceId
 	mock.lockGetGpuInstanceId.RUnlock()
+	return calls
+}
+
+// GetGpuInstancePossiblePlacements calls GetGpuInstancePossiblePlacementsFunc.
+func (mock *DeviceMock) GetGpuInstancePossiblePlacements(gpuInstanceProfileInfo *GpuInstanceProfileInfo) ([]GpuInstancePlacement, Return) {
+	if mock.GetGpuInstancePossiblePlacementsFunc == nil {
+		panic("DeviceMock.GetGpuInstancePossiblePlacementsFunc: method is nil but Device.GetGpuInstancePossiblePlacements was just called")
+	}
+	callInfo := struct {
+		GpuInstanceProfileInfo *GpuInstanceProfileInfo
+	}{
+		GpuInstanceProfileInfo: gpuInstanceProfileInfo,
+	}
+	mock.lockGetGpuInstancePossiblePlacements.Lock()
+	mock.calls.GetGpuInstancePossiblePlacements = append(mock.calls.GetGpuInstancePossiblePlacements, callInfo)
+	mock.lockGetGpuInstancePossiblePlacements.Unlock()
+	return mock.GetGpuInstancePossiblePlacementsFunc(gpuInstanceProfileInfo)
+}
+
+// GetGpuInstancePossiblePlacementsCalls gets all the calls that were made to GetGpuInstancePossiblePlacements.
+// Check the length with:
+//
+//	len(mockedDevice.GetGpuInstancePossiblePlacementsCalls())
+func (mock *DeviceMock) GetGpuInstancePossiblePlacementsCalls() []struct {
+	GpuInstanceProfileInfo *GpuInstanceProfileInfo
+} {
+	var calls []struct {
+		GpuInstanceProfileInfo *GpuInstanceProfileInfo
+	}
+	mock.lockGetGpuInstancePossiblePlacements.RLock()
+	calls = mock.calls.GetGpuInstancePossiblePlacements
+	mock.lockGetGpuInstancePossiblePlacements.RUnlock()
 	return calls
 }
 
@@ -432,7 +532,8 @@ func (mock *DeviceMock) GetGpuInstanceProfileInfo(Profile int) (GpuInstanceProfi
 
 // GetGpuInstanceProfileInfoCalls gets all the calls that were made to GetGpuInstanceProfileInfo.
 // Check the length with:
-//     len(mockedDevice.GetGpuInstanceProfileInfoCalls())
+//
+//	len(mockedDevice.GetGpuInstanceProfileInfoCalls())
 func (mock *DeviceMock) GetGpuInstanceProfileInfoCalls() []struct {
 	Profile int
 } {
@@ -463,7 +564,8 @@ func (mock *DeviceMock) GetGpuInstances(Info *GpuInstanceProfileInfo) ([]GpuInst
 
 // GetGpuInstancesCalls gets all the calls that were made to GetGpuInstances.
 // Check the length with:
-//     len(mockedDevice.GetGpuInstancesCalls())
+//
+//	len(mockedDevice.GetGpuInstancesCalls())
 func (mock *DeviceMock) GetGpuInstancesCalls() []struct {
 	Info *GpuInstanceProfileInfo
 } {
@@ -491,7 +593,8 @@ func (mock *DeviceMock) GetIndex() (int, Return) {
 
 // GetIndexCalls gets all the calls that were made to GetIndex.
 // Check the length with:
-//     len(mockedDevice.GetIndexCalls())
+//
+//	len(mockedDevice.GetIndexCalls())
 func (mock *DeviceMock) GetIndexCalls() []struct {
 } {
 	var calls []struct {
@@ -517,7 +620,8 @@ func (mock *DeviceMock) GetMaxMigDeviceCount() (int, Return) {
 
 // GetMaxMigDeviceCountCalls gets all the calls that were made to GetMaxMigDeviceCount.
 // Check the length with:
-//     len(mockedDevice.GetMaxMigDeviceCountCalls())
+//
+//	len(mockedDevice.GetMaxMigDeviceCountCalls())
 func (mock *DeviceMock) GetMaxMigDeviceCountCalls() []struct {
 } {
 	var calls []struct {
@@ -543,7 +647,8 @@ func (mock *DeviceMock) GetMemoryInfo() (Memory, Return) {
 
 // GetMemoryInfoCalls gets all the calls that were made to GetMemoryInfo.
 // Check the length with:
-//     len(mockedDevice.GetMemoryInfoCalls())
+//
+//	len(mockedDevice.GetMemoryInfoCalls())
 func (mock *DeviceMock) GetMemoryInfoCalls() []struct {
 } {
 	var calls []struct {
@@ -572,7 +677,8 @@ func (mock *DeviceMock) GetMigDeviceHandleByIndex(Index int) (Device, Return) {
 
 // GetMigDeviceHandleByIndexCalls gets all the calls that were made to GetMigDeviceHandleByIndex.
 // Check the length with:
-//     len(mockedDevice.GetMigDeviceHandleByIndexCalls())
+//
+//	len(mockedDevice.GetMigDeviceHandleByIndexCalls())
 func (mock *DeviceMock) GetMigDeviceHandleByIndexCalls() []struct {
 	Index int
 } {
@@ -600,7 +706,8 @@ func (mock *DeviceMock) GetMigMode() (int, int, Return) {
 
 // GetMigModeCalls gets all the calls that were made to GetMigMode.
 // Check the length with:
-//     len(mockedDevice.GetMigModeCalls())
+//
+//	len(mockedDevice.GetMigModeCalls())
 func (mock *DeviceMock) GetMigModeCalls() []struct {
 } {
 	var calls []struct {
@@ -626,7 +733,8 @@ func (mock *DeviceMock) GetMinorNumber() (int, Return) {
 
 // GetMinorNumberCalls gets all the calls that were made to GetMinorNumber.
 // Check the length with:
-//     len(mockedDevice.GetMinorNumberCalls())
+//
+//	len(mockedDevice.GetMinorNumberCalls())
 func (mock *DeviceMock) GetMinorNumberCalls() []struct {
 } {
 	var calls []struct {
@@ -652,7 +760,8 @@ func (mock *DeviceMock) GetName() (string, Return) {
 
 // GetNameCalls gets all the calls that were made to GetName.
 // Check the length with:
-//     len(mockedDevice.GetNameCalls())
+//
+//	len(mockedDevice.GetNameCalls())
 func (mock *DeviceMock) GetNameCalls() []struct {
 } {
 	var calls []struct {
@@ -678,7 +787,8 @@ func (mock *DeviceMock) GetPciInfo() (PciInfo, Return) {
 
 // GetPciInfoCalls gets all the calls that were made to GetPciInfo.
 // Check the length with:
-//     len(mockedDevice.GetPciInfoCalls())
+//
+//	len(mockedDevice.GetPciInfoCalls())
 func (mock *DeviceMock) GetPciInfoCalls() []struct {
 } {
 	var calls []struct {
@@ -704,7 +814,8 @@ func (mock *DeviceMock) GetSupportedEventTypes() (uint64, Return) {
 
 // GetSupportedEventTypesCalls gets all the calls that were made to GetSupportedEventTypes.
 // Check the length with:
-//     len(mockedDevice.GetSupportedEventTypesCalls())
+//
+//	len(mockedDevice.GetSupportedEventTypesCalls())
 func (mock *DeviceMock) GetSupportedEventTypesCalls() []struct {
 } {
 	var calls []struct {
@@ -730,7 +841,8 @@ func (mock *DeviceMock) GetUUID() (string, Return) {
 
 // GetUUIDCalls gets all the calls that were made to GetUUID.
 // Check the length with:
-//     len(mockedDevice.GetUUIDCalls())
+//
+//	len(mockedDevice.GetUUIDCalls())
 func (mock *DeviceMock) GetUUIDCalls() []struct {
 } {
 	var calls []struct {
@@ -756,7 +868,8 @@ func (mock *DeviceMock) IsMigDeviceHandle() (bool, Return) {
 
 // IsMigDeviceHandleCalls gets all the calls that were made to IsMigDeviceHandle.
 // Check the length with:
-//     len(mockedDevice.IsMigDeviceHandleCalls())
+//
+//	len(mockedDevice.IsMigDeviceHandleCalls())
 func (mock *DeviceMock) IsMigDeviceHandleCalls() []struct {
 } {
 	var calls []struct {
@@ -787,7 +900,8 @@ func (mock *DeviceMock) RegisterEvents(v uint64, eventSet EventSet) Return {
 
 // RegisterEventsCalls gets all the calls that were made to RegisterEvents.
 // Check the length with:
-//     len(mockedDevice.RegisterEventsCalls())
+//
+//	len(mockedDevice.RegisterEventsCalls())
 func (mock *DeviceMock) RegisterEventsCalls() []struct {
 	V        uint64
 	EventSet EventSet
@@ -820,7 +934,8 @@ func (mock *DeviceMock) SetMigMode(Mode int) (Return, Return) {
 
 // SetMigModeCalls gets all the calls that were made to SetMigMode.
 // Check the length with:
-//     len(mockedDevice.SetMigModeCalls())
+//
+//	len(mockedDevice.SetMigModeCalls())
 func (mock *DeviceMock) SetMigModeCalls() []struct {
 	Mode int
 } {

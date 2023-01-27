@@ -13,22 +13,22 @@ var _ ComputeInstance = &ComputeInstanceMock{}
 
 // ComputeInstanceMock is a mock implementation of ComputeInstance.
 //
-// 	func TestSomethingThatUsesComputeInstance(t *testing.T) {
+//	func TestSomethingThatUsesComputeInstance(t *testing.T) {
 //
-// 		// make and configure a mocked ComputeInstance
-// 		mockedComputeInstance := &ComputeInstanceMock{
-// 			DestroyFunc: func() Return {
-// 				panic("mock out the Destroy method")
-// 			},
-// 			GetInfoFunc: func() (ComputeInstanceInfo, Return) {
-// 				panic("mock out the GetInfo method")
-// 			},
-// 		}
+//		// make and configure a mocked ComputeInstance
+//		mockedComputeInstance := &ComputeInstanceMock{
+//			DestroyFunc: func() Return {
+//				panic("mock out the Destroy method")
+//			},
+//			GetInfoFunc: func() (ComputeInstanceInfo, Return) {
+//				panic("mock out the GetInfo method")
+//			},
+//		}
 //
-// 		// use mockedComputeInstance in code that requires ComputeInstance
-// 		// and then make assertions.
+//		// use mockedComputeInstance in code that requires ComputeInstance
+//		// and then make assertions.
 //
-// 	}
+//	}
 type ComputeInstanceMock struct {
 	// DestroyFunc mocks the Destroy method.
 	DestroyFunc func() Return
@@ -64,7 +64,8 @@ func (mock *ComputeInstanceMock) Destroy() Return {
 
 // DestroyCalls gets all the calls that were made to Destroy.
 // Check the length with:
-//     len(mockedComputeInstance.DestroyCalls())
+//
+//	len(mockedComputeInstance.DestroyCalls())
 func (mock *ComputeInstanceMock) DestroyCalls() []struct {
 } {
 	var calls []struct {
@@ -90,7 +91,8 @@ func (mock *ComputeInstanceMock) GetInfo() (ComputeInstanceInfo, Return) {
 
 // GetInfoCalls gets all the calls that were made to GetInfo.
 // Check the length with:
-//     len(mockedComputeInstance.GetInfoCalls())
+//
+//	len(mockedComputeInstance.GetInfoCalls())
 func (mock *ComputeInstanceMock) GetInfoCalls() []struct {
 } {
 	var calls []struct {

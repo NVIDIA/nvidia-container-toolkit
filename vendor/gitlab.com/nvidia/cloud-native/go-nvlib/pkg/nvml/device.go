@@ -88,6 +88,16 @@ func (d nvmlDevice) GetGpuInstanceProfileInfo(profile int) (GpuInstanceProfileIn
 	return GpuInstanceProfileInfo(p), Return(r)
 }
 
+// GetGpuInstancePossiblePlacements returns the possible placements of a GPU Instance
+func (d nvmlDevice) GetGpuInstancePossiblePlacements(info *GpuInstanceProfileInfo) ([]GpuInstancePlacement, Return) {
+	nvmlPlacements, r := nvml.Device(d).GetGpuInstancePossiblePlacements((*nvml.GpuInstanceProfileInfo)(info))
+	var placements []GpuInstancePlacement
+	for _, p := range nvmlPlacements {
+		placements = append(placements, GpuInstancePlacement(p))
+	}
+	return placements, Return(r)
+}
+
 // GetGpuInstances returns the set of GPU Instances associated with a Device
 func (d nvmlDevice) GetGpuInstances(info *GpuInstanceProfileInfo) ([]GpuInstance, Return) {
 	nvmlGis, r := nvml.Device(d).GetGpuInstances((*nvml.GpuInstanceProfileInfo)(info))
@@ -96,6 +106,12 @@ func (d nvmlDevice) GetGpuInstances(info *GpuInstanceProfileInfo) ([]GpuInstance
 		gis = append(gis, nvmlGpuInstance(gi))
 	}
 	return gis, Return(r)
+}
+
+// CreateGpuInstanceWithPlacement creates a GPU Instance with a specific placement
+func (d nvmlDevice) CreateGpuInstanceWithPlacement(info *GpuInstanceProfileInfo, placement *GpuInstancePlacement) (GpuInstance, Return) {
+	gi, r := nvml.Device(d).CreateGpuInstanceWithPlacement((*nvml.GpuInstanceProfileInfo)(info), (*nvml.GpuInstancePlacement)(placement))
+	return nvmlGpuInstance(gi), Return(r)
 }
 
 // GetMaxMigDeviceCount returns the maximum number of MIG devices that can be created on a Device
