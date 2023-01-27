@@ -17,7 +17,7 @@
 package system
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime/configure"
+	devchar "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system/create-dev-char-symlinks"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -42,7 +42,7 @@ func (m command) build() *cli.Command {
 	}
 
 	system.Subcommands = []*cli.Command{
-		configure.NewCommand(m.logger),
+		devchar.NewCommand(m.logger),
 	}
 
 	return &system

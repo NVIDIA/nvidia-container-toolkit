@@ -45,7 +45,7 @@ type config struct {
 	createAll   bool
 }
 
-// NewCommand constructs a hook sub-command with the specified logger
+// NewCommand constructs a command sub-command with the specified logger
 func NewCommand(logger *logrus.Logger) *cli.Command {
 	c := command{
 		logger: logger,
@@ -60,7 +60,7 @@ func (m command) build() *cli.Command {
 	// Create the 'create-dev-char-symlinks' command
 	c := cli.Command{
 		Name:  "create-dev-char-symlinks",
-		Usage: "A hook to create symlinks to possible /dev/nv* devices in /dev/char",
+		Usage: "A utility to create symlinks to possible /dev/nv* devices in /dev/char",
 		Before: func(c *cli.Context) error {
 			return m.validateFlags(c, &cfg)
 		},
