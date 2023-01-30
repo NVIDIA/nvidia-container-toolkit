@@ -117,7 +117,7 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 		return fmt.Errorf("invalid output format: %v", cfg.format)
 	}
 
-	_, err := NewDeviceNamer(cfg.deviceNameStrategy)
+	_, err := newDeviceNamer(cfg.deviceNameStrategy)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 }
 
 func (m command) run(c *cli.Context, cfg *config) error {
-	deviceNamer, err := NewDeviceNamer(cfg.deviceNameStrategy)
+	deviceNamer, err := newDeviceNamer(cfg.deviceNameStrategy)
 	if err != nil {
 		return fmt.Errorf("failed to create device namer: %v", err)
 	}
