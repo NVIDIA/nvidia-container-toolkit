@@ -23,6 +23,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook"
 	infoCLI "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 
 	log "github.com/sirupsen/logrus"
@@ -77,6 +78,7 @@ func main() {
 		runtime.NewCommand(logger),
 		infoCLI.NewCommand(logger),
 		cdi.NewCommand(logger),
+		system.NewCommand(logger),
 	}
 
 	// Run the CLI
