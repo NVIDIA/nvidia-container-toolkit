@@ -95,109 +95,6 @@ image-packaging:
     - .dist-packaging
     - .image-pull
 
-# Define the package release targets
-release:packages:amazonlinux2-aarch64:
-  extends:
-    - .release:packages
-    - .dist-amazonlinux2
-    - .arch-aarch64
-
-release:packages:amazonlinux2-x86_64:
-  extends:
-    - .release:packages
-    - .dist-amazonlinux2
-    - .arch-x86_64
-
-release:packages:centos7-ppc64le:
-  extends:
-    - .release:packages
-    - .dist-centos7
-    - .arch-ppc64le
-
-release:packages:centos7-x86_64:
-  extends:
-    - .release:packages
-    - .dist-centos7
-    - .arch-x86_64
-
-release:packages:centos8-aarch64:
-  extends:
-    - .release:packages
-    - .dist-centos8
-    - .arch-aarch64
-
-release:packages:centos8-ppc64le:
-  extends:
-    - .release:packages
-    - .dist-centos8
-    - .arch-ppc64le
-
-release:packages:centos8-x86_64:
-  extends:
-    - .release:packages
-    - .dist-centos8
-    - .arch-x86_64
-
-release:packages:debian10-amd64:
-  extends:
-    - .release:packages
-    - .dist-debian10
-    - .arch-amd64
-
-release:packages:debian9-amd64:
-  extends:
-    - .release:packages
-    - .dist-debian9
-    - .arch-amd64
-
-release:packages:fedora35-aarch64:
-  extends:
-    - .release:packages
-    - .dist-fedora35
-    - .arch-aarch64
-
-release:packages:fedora35-x86_64:
-  extends:
-    - .release:packages
-    - .dist-fedora35
-    - .arch-x86_64
-
-release:packages:opensuse-leap15.1-x86_64:
-  extends:
-    - .release:packages
-    - .dist-opensuse-leap15.1
-    - .arch-x86_64
-
-release:packages:ubuntu16.04-amd64:
-  extends:
-    - .release:packages
-    - .dist-ubuntu16.04
-    - .arch-amd64
-
-release:packages:ubuntu16.04-ppc64le:
-  extends:
-    - .release:packages
-    - .dist-ubuntu16.04
-    - .arch-ppc64le
-
-release:packages:ubuntu18.04-amd64:
-  extends:
-    - .release:packages
-    - .dist-ubuntu18.04
-    - .arch-amd64
-
-release:packages:ubuntu18.04-arm64:
-  extends:
-    - .release:packages
-    - .dist-ubuntu18.04
-    - .arch-arm64
-
-release:packages:ubuntu18.04-ppc64le:
-  extends:
-    - .release:packages
-    - .dist-ubuntu18.04
-    - .arch-ppc64le
-
 # We skip the integration tests for the internal CI:
 .integration:
   stage: test
@@ -319,15 +216,19 @@ scan-ubi8-arm64:
     PACKAGE_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
     PACKAGE_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
     PACKAGE_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}-packaging"
-    PACKAGE_ARTIFACTORY_REPO: "${ARTIFACTORY_REPO_BASE}-${PACKAGE_REPO_TYPE}-local"
     KITMAKER_ARTIFACTORY_REPO: "${ARTIFACTORY_REPO_BASE}-generic-local/${KITMAKER_RELEASE_FOLDER}"
   script:
     - !reference [.regctl-setup, before_script]
-    - apk add --no-cache bash
+    - apk add --no-cache bash git
     - regctl registry login "${PACKAGE_REGISTRY}" -u "${PACKAGE_REGISTRY_USER}" -p "${PACKAGE_REGISTRY_TOKEN}"
-    - ./scripts/extract-packages.sh "${PACKAGE_IMAGE_NAME}:${PACKAGE_IMAGE_TAG}" "${DIST}-${ARCH}"
+    - ./scripts/extract-packages.sh "${PACKAGE_IMAGE_NAME}:${PACKAGE_IMAGE_TAG}"
     # TODO: ./scripts/release-packages-artifactory.sh "${DIST}-${ARCH}" "${PACKAGE_ARTIFACTORY_REPO}"
-    - ./scripts/release-kitmaker-artifactory.sh "${DIST}-${ARCH}" "${KITMAKER_ARTIFACTORY_REPO}"
+    - ./scripts/release-kitmaker-artifactory.sh "${KITMAKER_ARTIFACTORY_REPO}"
+
+# Define the package release targets
+release:packages:kitmaker:
+  extends:
+    - .release:packages
 
 release:staging-ubuntu18.04:
   extends:

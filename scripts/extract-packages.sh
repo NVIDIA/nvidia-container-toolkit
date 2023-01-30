@@ -16,30 +16,22 @@
 
 function assert_usage() {
     echo "Incorrect arguments: $*" >&2
-    echo "$(basename "${BASH_SOURCE[0]}") PACKAGE_IMAGE_NAME:PACKAGE_IMAGE_TAG DIST-ARCH" >&2
+    echo "$(basename "${BASH_SOURCE[0]}") PACKAGE_IMAGE_NAME:PACKAGE_IMAGE_TAG" >&2
     echo -e "\\tPACKAGE_IMAGE: container image holding packages [e.g. registry.gitlab.com/nvidia/container-toolkit/container-toolkit/staging/container-toolkit]" >&2
     echo -e "\\tPACKAGE_TAG: tag for container image holding packages. [e.g. 1a2b3c4-packaging]" >&2
-    echo -e "\\tDIST: The distribution." >&2
-    echo -e "\\tARCH: The architecture." >&2
     exit 1
 }
+
+set -e
 
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 PROJECT_ROOT="$( cd "${SCRIPTS_DIR}/.." && pwd )"
 
-if [[ $# -ne 2 ]]; then
+if [[ $# -ne 1 ]]; then
     assert_usage "$@"
 fi
 
 PACKAGE_IMAGE=$1
-DISTARCH=$2
-DIST=${DISTARCH%-*}
-ARCH=${DISTARCH##*-}
-
-if [[ -z "${DIST}" || -z "${ARCH}" ]]; then
-    echo "ERROR: Distro and Architecture must be specified." >&2
-    assert_usage "$@"
-fi
 
 # TODO: accept ARTIFACTS_DIR as a command-line argument
 : "${ARTIFACTS_DIR="${PROJECT_ROOT}/artifacts"}"
@@ -85,30 +77,30 @@ function copy-file() {
 
 eval $(${SCRIPTS_DIR}/get-component-versions.sh)
 
-# extract-all extracts all package for the specified dist-arch combination from the package image.
+# extract-all extracts all package for the specified distribution from the package image.
 # The manifest.txt file in the image is used to detemine the applicable files for the combination.
 # Files are extracted to ${ARTIFACTS_DIR}/artifacts/packages/${dist}/${arch}
 function extract-all() {
     local dist=$1
-    local arch=$2
 
-    echo "Extracting packages for ${dist}-${arch} from ${PACKAGE_IMAGE}"
-
-    mkdir -p "${ARTIFACTS_DIR}"
-    copy-file "${PACKAGE_IMAGE}" "/artifacts/manifest.txt" "${ARTIFACTS_DIR}/manifest.txt"
+    echo "Extracting packages for ${dist} from ${PACKAGE_IMAGE}"
 
     # Extract every file for the specified dist-arch combiniation in MANIFEST.txt
-    grep "/${dist}/${arch}/" "${ARTIFACTS_DIR}/manifest.txt" | while read -r f ; do
+    grep "/${dist}/" "${ARTIFACTS_DIR}/manifest.txt" | while read -r f ; do
         package_name="$(basename "$f")"
         # For release-candidates, we skip certain packages
         if skip-for-release-candidate "${package_name}"; then
             echo "Skipping $f for release-candidate ${VERSION}"
             continue
         fi
-        target="${ARTIFACTS_DIR}/packages/${dist}/${arch}/${package_name}"
+        target="${ARTIFACTS_DIR}/${f##/artifacts/}"
         mkdir -p "$(dirname "$target")"
         copy-file "${PACKAGE_IMAGE}" "${f}" "${target}"
     done
 }
 
-extract-all "${DIST}" "${ARCH}"
+mkdir -p "${ARTIFACTS_DIR}"
+copy-file "${PACKAGE_IMAGE}" "/artifacts/manifest.txt" "${ARTIFACTS_DIR}/manifest.txt"
+
+extract-all ubuntu18.04
+extract-all centos8

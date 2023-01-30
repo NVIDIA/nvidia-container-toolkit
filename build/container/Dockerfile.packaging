@@ -15,17 +15,23 @@
 ARG BASE_DIST
 ARG CUDA_VERSION
 ARG GOLANG_VERSION=x.x.x
-ARG VERSION="N/A"
 
 FROM nvidia/cuda:${CUDA_VERSION}-base-${BASE_DIST}
 
-ENV NVIDIA_CONTAINER_TOOLKIT_VERSION="${VERSION}"
+ARG VERSION="N/A"
 
 ARG ARTIFACTS_ROOT
 COPY ${ARTIFACTS_ROOT} /artifacts/packages/
 
 WORKDIR /artifacts/packages
+
+ARG GIT_BRANCH
+ARG GIT_COMMIT
+ARG SOURCE_DATE_EPOCH
+
 # Create a manifest.txt file with the absolute paths of all deb and rpm packages in the container
-RUN find /artifacts/packages -iname '*.deb' -o -iname '*.rpm' > /artifacts/manifest.txt
+RUN echo "IMAGE_EPOCH=$(date '+%s')" | sed 's/^/#/g' > /artifacts/manifest.txt && \
+    env | sed 's/^/#/g' >> /artifacts/manifest.txt && \
+    find /artifacts/packages -iname '*.deb' -o -iname '*.rpm' >> /artifacts/manifest.txt
 
 RUN mkdir /licenses && mv /NGC-DL-CONTAINER-LICENSE /licenses/NGC-DL-CONTAINER-LICENSE
