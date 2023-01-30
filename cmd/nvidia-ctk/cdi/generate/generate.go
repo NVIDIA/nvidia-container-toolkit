@@ -89,8 +89,8 @@ func (m command) build() *cli.Command {
 		},
 		&cli.StringFlag{
 			Name:        "device-name-strategy",
-			Usage:       "Specify the strategy for generating device names. One of [type-index | index | uuid]",
-			Value:       deviceNameStrategyTypeIndex,
+			Usage:       "Specify the strategy for generating device names. One of [index | uuid | type-index]",
+			Value:       deviceNameStrategyIndex,
 			Destination: &cfg.deviceNameStrategy,
 		},
 		&cli.StringFlag{
