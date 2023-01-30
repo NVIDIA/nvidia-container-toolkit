@@ -279,6 +279,8 @@ func (m command) generateSpec(root string, nvidiaCTKPath string, namer deviceNam
 	if err != nil {
 		return nil, fmt.Errorf("failed to get minumum required CDI spec version: %v", err)
 	}
+	m.logger.Infof("Using minimum required CDI spec version: %s", minVersion)
+
 	spec.Version = minVersion
 
 	return &spec, nil
