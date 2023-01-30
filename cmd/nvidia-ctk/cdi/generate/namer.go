@@ -40,9 +40,9 @@ type deviceNameIndex struct {
 }
 type deviceNameUUID struct{}
 
-// NewDeviceNamer creates a Device Namer based on the supplied strategy.
+// newDeviceNamer creates a Device Namer based on the supplied strategy.
 // This namer can be used to construct the names for MIG and GPU devices when generating the CDI spec.
-func NewDeviceNamer(strategy string) (deviceNamer, error) {
+func newDeviceNamer(strategy string) (deviceNamer, error) {
 	switch strategy {
 	case deviceNameStrategyIndex:
 		return deviceNameIndex{}, nil

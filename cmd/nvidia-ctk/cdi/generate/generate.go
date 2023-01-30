@@ -89,8 +89,8 @@ func (m command) build() *cli.Command {
 		},
 		&cli.StringFlag{
 			Name:        "device-name-strategy",
-			Usage:       "Specify the strategy for generating device names. One of [type-index | index | uuid]",
-			Value:       deviceNameStrategyTypeIndex,
+			Usage:       "Specify the strategy for generating device names. One of [index | uuid | type-index]",
+			Value:       deviceNameStrategyIndex,
 			Destination: &cfg.deviceNameStrategy,
 		},
 		&cli.StringFlag{
@@ -117,7 +117,7 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 		return fmt.Errorf("invalid output format: %v", cfg.format)
 	}
 
-	_, err := NewDeviceNamer(cfg.deviceNameStrategy)
+	_, err := newDeviceNamer(cfg.deviceNameStrategy)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 }
 
 func (m command) run(c *cli.Context, cfg *config) error {
-	deviceNamer, err := NewDeviceNamer(cfg.deviceNameStrategy)
+	deviceNamer, err := newDeviceNamer(cfg.deviceNameStrategy)
 	if err != nil {
 		return fmt.Errorf("failed to create device namer: %v", err)
 	}
@@ -279,6 +279,8 @@ func (m command) generateSpec(root string, nvidiaCTKPath string, namer deviceNam
 	if err != nil {
 		return nil, fmt.Errorf("failed to get minumum required CDI spec version: %v", err)
 	}
+	m.logger.Infof("Using minimum required CDI spec version: %s", minVersion)
+
 	spec.Version = minVersion
 
 	return &spec, nil
