@@ -158,18 +158,6 @@ package-debian9-amd64:
     - .dist-debian9
     - .arch-amd64
 
-package-fedora35-aarch64:
-  extends:
-    - .package-build
-    - .dist-fedora35
-    - .arch-aarch64
-
-package-fedora35-x86_64:
-  extends:
-    - .package-build
-    - .dist-fedora35
-    - .arch-x86_64
-
 package-opensuse-leap15.1-x86_64:
   extends:
     - .package-build
@@ -299,10 +287,6 @@ image-packaging:
     - job: package-debian10-amd64
       optional: true
     - job: package-debian9-amd64
-      optional: true
-    - job: package-fedora35-aarch64
-      optional: true
-    - job: package-fedora35-x86_64
       optional: true
     - job: package-opensuse-leap15.1-x86_64
       optional: true
