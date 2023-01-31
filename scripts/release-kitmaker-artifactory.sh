@@ -77,7 +77,7 @@ function extract_info() {
 IMAGE_EPOCH=$(extract_info "IMAGE_EPOCH")
 GIT_BRANCH=$(extract_info "GIT_BRANCH")
 GIT_COMMIT=$(extract_info "GIT_COMMIT")
-VERSION=$(extract_info "VERSION")
+VERSION=$(extract_info "PACKAGE_VERSION")
 
 
 # add_distro adds the specified component, os, and arch to the .package folder from which a kitmaker archive is generated.
