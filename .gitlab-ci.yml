@@ -228,7 +228,7 @@ package-ubuntu18.04-ppc64le:
   before_script:
     - !reference [.buildx-setup, before_script]
 
-    - apk add --no-cache bash make
+    - apk add --no-cache bash make git
     - 'echo "Logging in to CI registry ${CI_REGISTRY}"'
     - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
   script:
