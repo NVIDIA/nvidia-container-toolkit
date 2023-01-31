@@ -302,10 +302,13 @@ func (c *ldcache) resolve(target string) (string, error) {
 		return "", fmt.Errorf("failed to resolve symlink: %v", err)
 	}
 
-	if filepath.IsAbs(link) {
-		c.logger.Debugf("Found absolute link %v", link)
-		link = filepath.Join(c.root, link)
+	// We return absolute paths for all targets
+	if !filepath.IsAbs(link) || strings.HasPrefix(link, ".") {
+		link = filepath.Join(filepath.Dir(target), link)
 	}
+
+	// Ensure that the returned path is relative to the root.
+	link = filepath.Join(c.root, link)
 
 	c.logger.Debugf("Resolved link: '%v' => '%v'", name, link)
 	return link, nil
