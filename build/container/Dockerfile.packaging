@@ -18,19 +18,22 @@ ARG GOLANG_VERSION=x.x.x
 
 FROM nvidia/cuda:${CUDA_VERSION}-base-${BASE_DIST}
 
-ARG VERSION="N/A"
-
 ARG ARTIFACTS_ROOT
 COPY ${ARTIFACTS_ROOT} /artifacts/packages/
 
 WORKDIR /artifacts/packages
 
+# build-args are added to the manifest.txt file below.
+ARG BASE_DIST
+ARG PACKAGE_DIST
+ARG PACKAGE_VERSION
 ARG GIT_BRANCH
 ARG GIT_COMMIT
 ARG SOURCE_DATE_EPOCH
+ARG VERSION
 
 # Create a manifest.txt file with the absolute paths of all deb and rpm packages in the container
-RUN echo "IMAGE_EPOCH=$(date '+%s')" | sed 's/^/#/g' > /artifacts/manifest.txt && \
+RUN echo "#IMAGE_EPOCH=$(date '+%s')" > /artifacts/manifest.txt && \
     env | sed 's/^/#/g' >> /artifacts/manifest.txt && \
     find /artifacts/packages -iname '*.deb' -o -iname '*.rpm' >> /artifacts/manifest.txt
 
