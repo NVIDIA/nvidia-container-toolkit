@@ -14,7 +14,7 @@
 
 LIB_NAME := nvidia-container-toolkit
 LIB_VERSION := 1.12.0
-LIB_TAG := rc.4
+LIB_TAG := rc.5
 
 # Specify the nvidia-docker2 and nvidia-container-runtime package versions.
 # Note: The build tooling uses `LIB_TAG` above as the version tag.

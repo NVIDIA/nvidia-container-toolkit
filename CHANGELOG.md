@@ -1,10 +1,13 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.12.0-rc.5
+
 ## v1.12.0-rc.4
 
 * Generate a minimum CDI spec version for improved compatibility.
 * Add `--device-name-strategy` options to the `nvidia-ctk cdi generate` command that can be used to control how device names are constructed.
 * Set default for CDI device name generation to `index` to generate device names such as `nvidia.com/gpu=0` or `nvidia.com/gpu=1:0` by default.
+
 ## v1.12.0-rc.3
 
 * Don't fail if by-path symlinks for DRM devices do not exist
