@@ -75,7 +75,8 @@ function extract_info() {
 }
 
 IMAGE_EPOCH=$(extract_info "IMAGE_EPOCH")
-GIT_BRANCH=$(extract_info "GIT_BRANCH")
+# Note we use the main branch for the kitmaker archive.
+GIT_BRANCH=main
 GIT_COMMIT=$(extract_info "GIT_COMMIT")
 VERSION=$(extract_info "PACKAGE_VERSION")
 
