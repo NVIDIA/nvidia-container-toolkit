@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,9 +28,8 @@ import (
 func NewLDCacheUpdateHook(logger *logrus.Logger, mounts Discover, cfg *Config) (Discover, error) {
 	d := ldconfig{
 		logger:        logger,
+		nvidiaCTKPath: FindNvidiaCTK(logger, cfg.NvidiaCTKPath),
 		mountsFrom:    mounts,
-		lookup:        lookup.NewExecutableLocator(logger, cfg.Root),
-		nvidiaCTKPath: cfg.NvidiaCTKPath,
 	}
 
 	return &d, nil
@@ -40,9 +38,8 @@ func NewLDCacheUpdateHook(logger *logrus.Logger, mounts Discover, cfg *Config) (
 type ldconfig struct {
 	None
 	logger        *logrus.Logger
-	mountsFrom    Discover
-	lookup        lookup.Locator
 	nvidiaCTKPath string
+	mountsFrom    Discover
 }
 
 // Hooks checks the required mounts for libraries and returns a hook to update the LDcache for the discovered paths.
