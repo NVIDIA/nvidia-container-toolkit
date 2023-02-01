@@ -108,7 +108,7 @@ func (e *edits) Modify(spec *ociSpecs.Spec) error {
 	}
 	e.logger.Infof("Hooks:")
 	for _, hook := range e.Hooks {
-		e.logger.Infof("Injecting %v", hook.Args)
+		e.logger.Infof("Injecting %v %v", hook.Path, hook.Args)
 	}
 
 	return e.Apply(spec)
