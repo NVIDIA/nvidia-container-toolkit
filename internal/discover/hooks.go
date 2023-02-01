@@ -39,22 +39,24 @@ func CreateNvidiaCTKHook(executable string, hookName string, additionalArgs ...s
 }
 
 // FindNvidiaCTK locates the nvidia-ctk executable to be used in hooks.
-// If an override is specified, this is used instead.
-func FindNvidiaCTK(logger *logrus.Logger, override string) string {
-	if override != "" {
-		logger.Debugf("Using specified NVIDIA Container Toolkit CLI path %v", override)
-		return override
+// If an nvidia-ctk path is specified as an absolute path, it is used directly
+// without checking for existence of an executable at that path.
+func FindNvidiaCTK(logger *logrus.Logger, nvidiaCTKPath string) string {
+	if filepath.IsAbs(nvidiaCTKPath) {
+		logger.Debugf("Using specified NVIDIA Container Toolkit CLI path %v", nvidiaCTKPath)
+		return nvidiaCTKPath
 	}
 
+	logger.Debugf("Locating NVIDIA Container Toolkit CLI as %v", nvidiaCTKPath)
 	lookup := lookup.NewExecutableLocator(logger, "")
 	hookPath := nvidiaCTKDefaultFilePath
-	targets, err := lookup.Locate(nvidiaCTKExecutable)
+	targets, err := lookup.Locate(nvidiaCTKPath)
 	if err != nil {
-		logger.Warnf("Failed to locate %v: %v", nvidiaCTKExecutable, err)
+		logger.Warnf("Failed to locate %v: %v", nvidiaCTKPath, err)
 	} else if len(targets) == 0 {
-		logger.Warnf("%v not found", nvidiaCTKExecutable)
+		logger.Warnf("%v not found", nvidiaCTKPath)
 	} else {
-		logger.Debugf("Found %v candidates: %v", nvidiaCTKExecutable, targets)
+		logger.Debugf("Found %v candidates: %v", nvidiaCTKPath, targets)
 		hookPath = targets[0]
 	}
 	logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
