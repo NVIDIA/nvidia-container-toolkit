@@ -110,7 +110,7 @@ image-packaging:
   image: "${PULSE_IMAGE}"
   variables:
     IMAGE: "${CI_REGISTRY_IMAGE}/container-toolkit:${CI_COMMIT_SHORT_SHA}-${DIST}"
-    IMAGE_ARCHIVE: "container-toolkit.tar"
+    IMAGE_ARCHIVE: "container-toolkit-${DIST}-${ARCH}-${CI_JOB_ID}.tar"
   rules:
     - if: $SKIP_SCANS != "yes"
     - when: manual
