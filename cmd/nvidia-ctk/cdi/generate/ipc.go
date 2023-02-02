@@ -23,14 +23,14 @@ import (
 )
 
 // NewIPCDiscoverer creats a discoverer for NVIDIA IPC sockets.
-func NewIPCDiscoverer(logger *logrus.Logger, root string) (discover.Discover, error) {
+func NewIPCDiscoverer(logger *logrus.Logger, driverRoot string) (discover.Discover, error) {
 	d := discover.NewMounts(
 		logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
-			lookup.WithRoot(root),
+			lookup.WithRoot(driverRoot),
 		),
-		root,
+		driverRoot,
 		[]string{
 			"/var/run/nvidia-persistenced/socket",
 			"/var/run/nvidia-fabricmanager/socket",

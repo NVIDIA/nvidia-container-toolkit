@@ -32,7 +32,7 @@ import (
 // byPathHookDiscoverer discovers the entities required for injecting by-path DRM device links
 type byPathHookDiscoverer struct {
 	logger        *logrus.Logger
-	root          string
+	driverRoot    string
 	nvidiaCTKPath string
 	pciBusID      string
 }
@@ -40,7 +40,7 @@ type byPathHookDiscoverer struct {
 var _ discover.Discover = (*byPathHookDiscoverer)(nil)
 
 // NewFullGPUDiscoverer creates a discoverer for the full GPU defined by the specified device.
-func NewFullGPUDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPath string, d device.Device) (discover.Discover, error) {
+func NewFullGPUDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, d device.Device) (discover.Discover, error) {
 	// TODO: The functionality to get device paths should be integrated into the go-nvlib/pkg/device.Device interface.
 	// This will allow reuse here and in other code where the paths are queried such as the NVIDIA device plugin.
 	minor, ret := d.GetMinorNumber()
@@ -65,12 +65,12 @@ func NewFullGPUDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPath stri
 	deviceNodes := discover.NewCharDeviceDiscoverer(
 		logger,
 		deviceNodePaths,
-		root,
+		driverRoot,
 	)
 
 	byPathHooks := &byPathHookDiscoverer{
 		logger:        logger,
-		root:          root,
+		driverRoot:    driverRoot,
 		nvidiaCTKPath: nvidiaCTKPath,
 		pciBusID:      pciBusID,
 	}
@@ -127,7 +127,7 @@ func (d *byPathHookDiscoverer) deviceNodeLinks() ([]string, error) {
 
 	var links []string
 	for _, c := range candidates {
-		linkPath := filepath.Join(d.root, c)
+		linkPath := filepath.Join(d.driverRoot, c)
 		device, err := os.Readlink(linkPath)
 		if err != nil {
 			d.logger.Warningf("Failed to evaluate symlink %v; ignoring", linkPath)

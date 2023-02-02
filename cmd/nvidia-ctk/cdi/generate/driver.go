@@ -30,20 +30,20 @@ import (
 
 // NewDriverDiscoverer creates a discoverer for the libraries and binaries associated with a driver installation.
 // The supplied NVML Library is used to query the expected driver version.
-func NewDriverDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPath string, nvmllib nvml.Interface) (discover.Discover, error) {
+func NewDriverDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, nvmllib nvml.Interface) (discover.Discover, error) {
 	version, r := nvmllib.SystemGetDriverVersion()
 	if r != nvml.SUCCESS {
 		return nil, fmt.Errorf("failed to determine driver version: %v", r)
 	}
 
-	libraries, err := NewDriverLibraryDiscoverer(logger, root, nvidiaCTKPath, version)
+	libraries, err := NewDriverLibraryDiscoverer(logger, driverRoot, nvidiaCTKPath, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for driver libraries: %v", err)
 	}
 
-	firmwares := NewDriverFirmwareDiscoverer(logger, root, version)
+	firmwares := NewDriverFirmwareDiscoverer(logger, driverRoot, version)
 
-	binaries := NewDriverBinariesDiscoverer(logger, root)
+	binaries := NewDriverBinariesDiscoverer(logger, driverRoot)
 
 	d := discover.Merge(
 		libraries,
@@ -55,8 +55,8 @@ func NewDriverDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPath strin
 }
 
 // NewDriverLibraryDiscoverer creates a discoverer for the libraries associated with the specified driver version.
-func NewDriverLibraryDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPath string, version string) (discover.Discover, error) {
-	libraryPaths, err := getVersionLibs(logger, root, version)
+func NewDriverLibraryDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, version string) (discover.Discover, error) {
+	libraryPaths, err := getVersionLibs(logger, driverRoot, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get libraries for driver version: %v", err)
 	}
@@ -65,14 +65,14 @@ func NewDriverLibraryDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPat
 		logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
-			lookup.WithRoot(root),
+			lookup.WithRoot(driverRoot),
 		),
-		root,
+		driverRoot,
 		libraryPaths,
 	)
 
 	cfg := &discover.Config{
-		Root:          root,
+		Root:          driverRoot,
 		NvidiaCTKPath: nvidiaCTKPath,
 	}
 	hooks, _ := discover.NewLDCacheUpdateHook(logger, libraries, cfg)
@@ -86,25 +86,25 @@ func NewDriverLibraryDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPat
 }
 
 // NewDriverFirmwareDiscoverer creates a discoverer for GSP firmware associated with the specified driver version.
-func NewDriverFirmwareDiscoverer(logger *logrus.Logger, root string, version string) discover.Discover {
+func NewDriverFirmwareDiscoverer(logger *logrus.Logger, driverRoot string, version string) discover.Discover {
 	gspFirmwarePath := filepath.Join("/lib/firmware/nvidia", version, "gsp.bin")
 	return discover.NewMounts(
 		logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
-			lookup.WithRoot(root),
+			lookup.WithRoot(driverRoot),
 		),
-		root,
+		driverRoot,
 		[]string{gspFirmwarePath},
 	)
 }
 
 // NewDriverBinariesDiscoverer creates a discoverer for GSP firmware associated with the GPU driver.
-func NewDriverBinariesDiscoverer(logger *logrus.Logger, root string) discover.Discover {
+func NewDriverBinariesDiscoverer(logger *logrus.Logger, driverRoot string) discover.Discover {
 	return discover.NewMounts(
 		logger,
-		lookup.NewExecutableLocator(logger, root),
-		root,
+		lookup.NewExecutableLocator(logger, driverRoot),
+		driverRoot,
 		[]string{
 			"nvidia-smi",              /* System management interface */
 			"nvidia-debugdump",        /* GPU coredump utility */
@@ -116,12 +116,12 @@ func NewDriverBinariesDiscoverer(logger *logrus.Logger, root string) discover.Di
 }
 
 // getVersionLibs checks the LDCache for libraries ending in the specified driver version.
-// Although the ldcache at the specified root is queried, the paths are returned relative to this root.
+// Although the ldcache at the specified driverRoot is queried, the paths are returned relative to this driverRoot.
 // This allows the standard mount location logic to be used for resolving the mounts.
-func getVersionLibs(logger *logrus.Logger, root string, version string) ([]string, error) {
+func getVersionLibs(logger *logrus.Logger, driverRoot string, version string) ([]string, error) {
 	logger.Infof("Using driver version %v", version)
 
-	cache, err := ldcache.New(logger, root)
+	cache, err := ldcache.New(logger, driverRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load ldcache: %v", err)
 	}
@@ -143,13 +143,13 @@ func getVersionLibs(logger *logrus.Logger, root string, version string) ([]strin
 		}
 	}
 
-	if root == "/" || root == "" {
+	if driverRoot == "/" || driverRoot == "" {
 		return libs, nil
 	}
 
 	var relative []string
 	for _, l := range libs {
-		relative = append(relative, strings.TrimPrefix(l, root))
+		relative = append(relative, strings.TrimPrefix(l, driverRoot))
 	}
 
 	return relative, nil
