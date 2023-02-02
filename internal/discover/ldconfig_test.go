@@ -32,7 +32,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
 	cfg := Config{
-		Root:          "/",
+		DriverRoot:    "/",
 		NvidiaCTKPath: testNvidiaCTKPath,
 	}
 

@@ -47,7 +47,7 @@ type config struct {
 	output             string
 	format             string
 	deviceNameStrategy string
-	root               string
+	driverRoot         string
 	nvidiaCTKPath      string
 }
 
@@ -94,9 +94,9 @@ func (m command) build() *cli.Command {
 			Destination: &cfg.deviceNameStrategy,
 		},
 		&cli.StringFlag{
-			Name:        "root",
-			Usage:       "Specify the root to use when discovering the entities that should be included in the CDI specification.",
-			Destination: &cfg.root,
+			Name:        "driver-root",
+			Usage:       "Specify the NVIDIA GPU driver root to use when discovering the entities that should be included in the CDI specification.",
+			Destination: &cfg.driverRoot,
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-ctk-path",
@@ -132,7 +132,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	}
 
 	spec, err := m.generateSpec(
-		cfg.root,
+		cfg.driverRoot,
 		discover.FindNvidiaCTK(m.logger, cfg.nvidiaCTKPath),
 		deviceNamer,
 	)
@@ -214,7 +214,7 @@ func writeToOutput(format string, data []byte, output io.Writer) error {
 	return nil
 }
 
-func (m command) generateSpec(root string, nvidiaCTKPath string, namer deviceNamer) (*specs.Spec, error) {
+func (m command) generateSpec(driverRoot string, nvidiaCTKPath string, namer deviceNamer) (*specs.Spec, error) {
 	nvmllib := nvml.New()
 	if r := nvmllib.Init(); r != nvml.SUCCESS {
 		return nil, r
@@ -223,7 +223,7 @@ func (m command) generateSpec(root string, nvidiaCTKPath string, namer deviceNam
 
 	devicelib := device.New(device.WithNvml(nvmllib))
 
-	deviceSpecs, err := m.generateDeviceSpecs(devicelib, root, nvidiaCTKPath, namer)
+	deviceSpecs, err := m.generateDeviceSpecs(devicelib, driverRoot, nvidiaCTKPath, namer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device CDI specs: %v", err)
 	}
@@ -234,7 +234,7 @@ func (m command) generateSpec(root string, nvidiaCTKPath string, namer deviceNam
 
 	allEdits := edits.NewContainerEdits()
 
-	ipcs, err := NewIPCDiscoverer(m.logger, root)
+	ipcs, err := NewIPCDiscoverer(m.logger, driverRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for IPC sockets: %v", err)
 	}
@@ -250,12 +250,12 @@ func (m command) generateSpec(root string, nvidiaCTKPath string, namer deviceNam
 
 	allEdits.Append(ipcEdits)
 
-	common, err := NewCommonDiscoverer(m.logger, root, nvidiaCTKPath, nvmllib)
+	common, err := NewCommonDiscoverer(m.logger, driverRoot, nvidiaCTKPath, nvmllib)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for common entities: %v", err)
 	}
 
-	deviceFolderPermissionHooks, err := NewDeviceFolderPermissionHookDiscoverer(m.logger, root, nvidiaCTKPath, deviceSpecs)
+	deviceFolderPermissionHooks, err := NewDeviceFolderPermissionHookDiscoverer(m.logger, driverRoot, nvidiaCTKPath, deviceSpecs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generated permission hooks for device nodes: %v", err)
 	}
@@ -286,7 +286,7 @@ func (m command) generateSpec(root string, nvidiaCTKPath string, namer deviceNam
 	return &spec, nil
 }
 
-func (m command) generateDeviceSpecs(devicelib device.Interface, root string, nvidiaCTKPath string, namer deviceNamer) ([]specs.Device, error) {
+func (m command) generateDeviceSpecs(devicelib device.Interface, driverRoot string, nvidiaCTKPath string, namer deviceNamer) ([]specs.Device, error) {
 	var deviceSpecs []specs.Device
 
 	err := devicelib.VisitDevices(func(i int, d device.Device) error {
@@ -297,7 +297,7 @@ func (m command) generateDeviceSpecs(devicelib device.Interface, root string, nv
 		if isMigEnabled {
 			return nil
 		}
-		device, err := NewFullGPUDiscoverer(m.logger, root, nvidiaCTKPath, d)
+		device, err := NewFullGPUDiscoverer(m.logger, driverRoot, nvidiaCTKPath, d)
 		if err != nil {
 			return fmt.Errorf("failed to create device: %v", err)
 		}

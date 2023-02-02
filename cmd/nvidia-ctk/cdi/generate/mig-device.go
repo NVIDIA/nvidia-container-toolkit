@@ -27,7 +27,7 @@ import (
 )
 
 // NewMigDeviceDiscoverer creates a discoverer for the specified mig device and its parent.
-func NewMigDeviceDiscoverer(logger *logrus.Logger, root string, parent device.Device, d device.MigDevice) (discover.Discover, error) {
+func NewMigDeviceDiscoverer(logger *logrus.Logger, driverRoot string, parent device.Device, d device.MigDevice) (discover.Discover, error) {
 	minor, ret := parent.GetMinorNumber()
 	if ret != nvml.SUCCESS {
 		return nil, fmt.Errorf("error getting GPU device minor number: %v", ret)
@@ -68,7 +68,7 @@ func NewMigDeviceDiscoverer(logger *logrus.Logger, root string, parent device.De
 			giCapDevicePath,
 			ciCapDevicePath,
 		},
-		root,
+		driverRoot,
 	)
 
 	return deviceNodes, nil

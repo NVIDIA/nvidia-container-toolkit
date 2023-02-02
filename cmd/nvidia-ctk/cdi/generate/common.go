@@ -27,14 +27,14 @@ import (
 
 // NewCommonDiscoverer returns a discoverer for entities that are not associated with a specific CDI device.
 // This includes driver libraries and meta devices, for example.
-func NewCommonDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPath string, nvmllib nvml.Interface) (discover.Discover, error) {
+func NewCommonDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, nvmllib nvml.Interface) (discover.Discover, error) {
 	metaDevices := discover.NewDeviceDiscoverer(
 		logger,
 		lookup.NewCharDeviceLocator(
 			lookup.WithLogger(logger),
-			lookup.WithRoot(root),
+			lookup.WithRoot(driverRoot),
 		),
-		root,
+		driverRoot,
 		[]string{
 			"/dev/nvidia-modeset",
 			"/dev/nvidia-uvm-tools",
@@ -43,12 +43,12 @@ func NewCommonDiscoverer(logger *logrus.Logger, root string, nvidiaCTKPath strin
 		},
 	)
 
-	graphicsMounts, err := discover.NewGraphicsMountsDiscoverer(logger, root)
+	graphicsMounts, err := discover.NewGraphicsMountsDiscoverer(logger, driverRoot)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing discoverer for graphics mounts: %v", err)
 	}
 
-	driverFiles, err := NewDriverDiscoverer(logger, root, nvidiaCTKPath, nvmllib)
+	driverFiles, err := NewDriverDiscoverer(logger, driverRoot, nvidiaCTKPath, nvmllib)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for driver files: %v", err)
 	}

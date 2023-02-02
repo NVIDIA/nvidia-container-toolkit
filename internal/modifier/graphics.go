@@ -45,7 +45,7 @@ func NewGraphicsModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.
 	}
 
 	config := &discover.Config{
-		Root:          cfg.NVIDIAContainerCLIConfig.Root,
+		DriverRoot:    cfg.NVIDIAContainerCLIConfig.Root,
 		NvidiaCTKPath: cfg.NVIDIACTKConfig.Path,
 	}
 	d, err := discover.NewGraphicsDiscoverer(

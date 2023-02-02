@@ -18,7 +18,7 @@ package discover
 
 // Config represents the configuration options for discovery
 type Config struct {
-	Root          string
+	DriverRoot    string
 	NvidiaCTKPath string
 }
 
