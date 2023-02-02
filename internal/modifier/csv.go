@@ -62,7 +62,7 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 	logger.Infof("Constructing modifier from config: %+v", *cfg)
 
 	config := &discover.Config{
-		Root:          cfg.NVIDIAContainerCLIConfig.Root,
+		DriverRoot:    cfg.NVIDIAContainerCLIConfig.Root,
 		NvidiaCTKPath: cfg.NVIDIACTKConfig.Path,
 	}
 
@@ -79,7 +79,7 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 		csvFiles = csv.BaseFilesOnly(csvFiles)
 	}
 
-	csvDiscoverer, err := discover.NewFromCSVFiles(logger, csvFiles, config.Root)
+	csvDiscoverer, err := discover.NewFromCSVFiles(logger, csvFiles, config.DriverRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
 	}

@@ -27,16 +27,16 @@ import (
 // NewFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
 // The constructed discoverer is comprised of a list, with each element in the list being associated with a
 // single CSV files.
-func NewFromCSVFiles(logger *logrus.Logger, files []string, root string) (Discover, error) {
+func NewFromCSVFiles(logger *logrus.Logger, files []string, driverRoot string) (Discover, error) {
 	if len(files) == 0 {
 		logger.Warnf("No CSV files specified")
 		return None{}, nil
 	}
 
-	symlinkLocator := lookup.NewSymlinkLocator(logger, root)
+	symlinkLocator := lookup.NewSymlinkLocator(logger, driverRoot)
 	locators := map[csv.MountSpecType]lookup.Locator{
-		csv.MountSpecDev: lookup.NewCharDeviceLocator(lookup.WithLogger(logger), lookup.WithRoot(root)),
-		csv.MountSpecDir: lookup.NewDirectoryLocator(logger, root),
+		csv.MountSpecDev: lookup.NewCharDeviceLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot)),
+		csv.MountSpecDir: lookup.NewDirectoryLocator(logger, driverRoot),
 		// Libraries and symlinks are handled in the same way
 		csv.MountSpecLib: symlinkLocator,
 		csv.MountSpecSym: symlinkLocator,
@@ -52,7 +52,7 @@ func NewFromCSVFiles(logger *logrus.Logger, files []string, root string) (Discov
 		mountSpecs = append(mountSpecs, targets...)
 	}
 
-	return newFromMountSpecs(logger, locators, root, mountSpecs)
+	return newFromMountSpecs(logger, locators, driverRoot, mountSpecs)
 }
 
 // loadCSVFile loads the specified CSV file and returns the list of mount specs
@@ -71,7 +71,7 @@ func loadCSVFile(logger *logrus.Logger, filename string) ([]*csv.MountSpec, erro
 
 // newFromMountSpecs creates a discoverer for the CSV file. A logger is also supplied.
 // A list of csvDiscoverers is returned, with each being associated with a single MountSpecType.
-func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]lookup.Locator, root string, targets []*csv.MountSpec) (Discover, error) {
+func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]lookup.Locator, driverRoot string, targets []*csv.MountSpec) (Discover, error) {
 	if len(targets) == 0 {
 		return &None{}, nil
 	}
@@ -95,9 +95,9 @@ func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]loo
 		var m Discover
 		switch t {
 		case csv.MountSpecDev:
-			m = NewDeviceDiscoverer(logger, locator, root, candidatesByType[t])
+			m = NewDeviceDiscoverer(logger, locator, driverRoot, candidatesByType[t])
 		default:
-			m = NewMounts(logger, locator, root, candidatesByType[t])
+			m = NewMounts(logger, locator, driverRoot, candidatesByType[t])
 		}
 		discoverers = append(discoverers, m)
 
