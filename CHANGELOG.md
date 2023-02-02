@@ -1,6 +1,12 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.12.0-rc.6
+
+* [libnvidia-container] Add nvcubins.bin to DriverStore components under WSL2
+
 ## v1.12.0-rc.5
+
+* Fix bug here the `nvidia-ctk` path was not properly resolved. This causes failures to run containers when the runtime is configured in `csv` mode or if the `NVIDIA_DRIVER_CAPABILITIES` includes `graphics` or `display` (e.g. `all`).
 
 ## v1.12.0-rc.4
 
