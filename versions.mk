@@ -14,7 +14,6 @@
 
 LIB_NAME := nvidia-container-toolkit
 LIB_VERSION := 1.12.0
-LIB_TAG := rc.6
 
 # Specify the nvidia-docker2 and nvidia-container-runtime package versions.
 # Note: The build tooling uses `LIB_TAG` above as the version tag.
@@ -25,7 +24,7 @@ NVIDIA_CONTAINER_RUNTIME_VERSION := 3.12.0
 # Specify the expected libnvidia-container0 version for arm64-based ubuntu builds.
 LIBNVIDIA_CONTAINER0_VERSION := 0.10.0+jetpack
 
-CUDA_VERSION := 11.8.0
+CUDA_VERSION := 12.0.1
 GOLANG_VERSION := 1.18.8
 
 GIT_COMMIT ?= $(shell git describe --match="" --dirty --long --always --abbrev=40 2> /dev/null || echo "")
