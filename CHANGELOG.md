@@ -1,7 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
-## v1.12.0-rc.6
+## v1.12.0
 
+* Promote `v1.12.0-rc.5` to `v1.12.0`
 * Rename `nvidia cdi generate` `--root` flag to `--driver-root` to better indicate intent
 * [libnvidia-container] Add nvcubins.bin to DriverStore components under WSL2
 
