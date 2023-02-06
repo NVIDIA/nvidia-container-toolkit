@@ -64,6 +64,8 @@ func New(opts ...Option) Interface {
 		}
 
 		return (*nvmllib)(l)
+	case "wsl":
+		return (*wsllib)(l)
 	}
 
 	// TODO: We want an error here.
