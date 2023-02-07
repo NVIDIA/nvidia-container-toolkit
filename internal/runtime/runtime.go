@@ -17,6 +17,7 @@
 package runtime
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -62,7 +63,14 @@ func (r rt) Run(argv []string) (rerr error) {
 		r.logger.Reset()
 	}()
 
-	r.logger.Infof("Using config %+v", cfg)
+	// Print the config to the output.
+	configJSON, err := json.MarshalIndent(cfg, "", "  ")
+	if err == nil {
+		r.logger.Infof("Running with config:\n%v", string(configJSON))
+	} else {
+		r.logger.Infof("Running with config:\n%+v", cfg)
+	}
+
 	r.logger.Debugf("Command line arguments: %v", argv)
 	runtime, err := newNVIDIAContainerRuntime(r.logger.Logger, cfg, argv)
 	if err != nil {
