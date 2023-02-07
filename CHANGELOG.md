@@ -1,5 +1,9 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.13.0-rc.1
+
+* Bump version to v1.13.0-rc.1
+
 ## v1.12.0
 
 * Promote `v1.12.0-rc.5` to `v1.12.0`
