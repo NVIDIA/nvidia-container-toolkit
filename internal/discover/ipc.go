@@ -21,9 +21,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type ipcMounts mounts
+
 // NewIPCDiscoverer creats a discoverer for NVIDIA IPC sockets.
 func NewIPCDiscoverer(logger *logrus.Logger, driverRoot string) (Discover, error) {
-	d := NewMounts(
+	d := newMounts(
 		logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
@@ -37,5 +39,14 @@ func NewIPCDiscoverer(logger *logrus.Logger, driverRoot string) (Discover, error
 		},
 	)
 
-	return d, nil
+	return (*ipcMounts)(d), nil
+}
+
+func (d *ipcMounts) Mounts() ([]Mount, error) {
+	mounts, err := (*mounts)(d).Mounts()
+	if err != nil {
+		return nil, err
+	}
+
+	return mounts, nil
 }
