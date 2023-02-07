@@ -11,12 +11,13 @@ URL: https://github.com/NVIDIA/nvidia-container-toolkit
 License: Apache-2.0
 
 Source0: nvidia-container-runtime-hook
-Source1: nvidia-container-runtime
-Source2: nvidia-ctk
-Source3: config.toml
-Source4: oci-nvidia-hook
-Source5: oci-nvidia-hook.json
-Source6: LICENSE
+Source1: nvidia-ctk
+Source2: config.toml
+Source3: oci-nvidia-hook
+Source4: oci-nvidia-hook.json
+Source5: LICENSE
+Source6: nvidia-container-runtime
+Source7: nvidia-container-runtime.cdi
 
 Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook <= 1.4.0-2
 Provides: nvidia-container-runtime
@@ -35,12 +36,13 @@ Requires: libseccomp
 Provides tools and utilities to enable GPU support in containers.
 
 %prep
-cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} .
+cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} %{SOURCE7} .
 
 %install
 mkdir -p %{buildroot}%{_bindir}
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime-hook
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime
+install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime.cdi
 install -m 755 -t %{buildroot}%{_bindir} nvidia-ctk
 
 mkdir -p %{buildroot}/etc/nvidia-container-runtime
@@ -57,10 +59,10 @@ mkdir -p %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
 cp -af %{_bindir}/nvidia-container-runtime-hook %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
 
 %posttrans
-if [ ! -e %{_bindir}/nvidia-container-runtime-hook ]; then 
+if [ ! -e %{_bindir}/nvidia-container-runtime-hook ]; then
   # reparing lost file nvidia-container-runtime-hook
-  cp -avf %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit/nvidia-container-runtime-hook %{_bindir} 
-fi 
+  cp -avf %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit/nvidia-container-runtime-hook %{_bindir}
+fi
 rm -rf %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
 ln -sf %{_bindir}/nvidia-container-runtime-hook %{_bindir}/nvidia-container-toolkit
 
@@ -96,4 +98,5 @@ Provides tools such as the NVIDIA Container Runtime and NVIDIA Container Toolkit
 %license LICENSE
 %config /etc/nvidia-container-runtime/config.toml
 %{_bindir}/nvidia-container-runtime
+%{_bindir}/nvidia-container-runtime.cdi
 %{_bindir}/nvidia-ctk
