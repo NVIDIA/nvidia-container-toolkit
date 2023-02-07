@@ -42,11 +42,19 @@ func NewIPCDiscoverer(logger *logrus.Logger, driverRoot string) (Discover, error
 	return (*ipcMounts)(d), nil
 }
 
+// Mounts returns the discovered mounts with "noexec" added to the mount options.
 func (d *ipcMounts) Mounts() ([]Mount, error) {
 	mounts, err := (*mounts)(d).Mounts()
 	if err != nil {
 		return nil, err
 	}
 
-	return mounts, nil
+	var modifiedMounts []Mount
+	for _, m := range mounts {
+		mount := m
+		mount.Options = append(m.Options, "noexec")
+		modifiedMounts = append(modifiedMounts, mount)
+	}
+
+	return modifiedMounts, nil
 }

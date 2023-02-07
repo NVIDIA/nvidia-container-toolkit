@@ -243,11 +243,6 @@ func (m command) generateSpec(driverRoot string, nvidiaCTKPath string, namer dev
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for IPC sockets: %v", err)
 	}
-	// TODO: We should not have to update this after the fact
-	for _, s := range ipcEdits.Mounts {
-		s.Options = append(s.Options, "noexec")
-	}
-
 	allEdits.Append(ipcEdits)
 
 	common, err := NewCommonDiscoverer(m.logger, driverRoot, nvidiaCTKPath, nvmllib)
