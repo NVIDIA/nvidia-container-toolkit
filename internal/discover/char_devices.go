@@ -58,7 +58,11 @@ func (d *charDevices) Devices() ([]Device, error) {
 	}
 	var devices []Device
 	for _, mount := range devicesAsMounts {
-		devices = append(devices, Device(mount))
+		device := Device{
+			HostPath: mount.HostPath,
+			Path:     mount.Path,
+		}
+		devices = append(devices, device)
 	}
 
 	return devices, nil

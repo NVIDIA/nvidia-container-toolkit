@@ -93,6 +93,12 @@ func (d *mounts) Mounts() ([]Mount, error) {
 			uniqueMounts[p] = Mount{
 				HostPath: p,
 				Path:     r,
+				Options: []string{
+					"ro",
+					"nosuid",
+					"nodev",
+					"bind",
+				},
 			}
 		}
 	}

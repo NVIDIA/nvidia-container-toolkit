@@ -35,6 +35,14 @@ func TestMountsReturnsEmptyDevices(t *testing.T) {
 }
 
 func TestMounts(t *testing.T) {
+
+	mountOptions := []string{
+		"ro",
+		"nosuid",
+		"nodev",
+		"bind",
+	}
+
 	logger, logHook := testlog.NewNullLogger()
 
 	testCases := []struct {
@@ -70,7 +78,7 @@ func TestMounts(t *testing.T) {
 				},
 				required: []string{"required"},
 			},
-			expectedMounts: []Mount{{Path: "located", HostPath: "located"}},
+			expectedMounts: []Mount{{Path: "located", HostPath: "located", Options: mountOptions}},
 		},
 		{
 			description:   "mounts removes located duplicates",
@@ -83,7 +91,7 @@ func TestMounts(t *testing.T) {
 				},
 				required: []string{"required0", "required1"},
 			},
-			expectedMounts: []Mount{{Path: "located", HostPath: "located"}},
+			expectedMounts: []Mount{{Path: "located", HostPath: "located", Options: mountOptions}},
 		},
 		{
 			description: "mounts skips located errors",
@@ -98,7 +106,7 @@ func TestMounts(t *testing.T) {
 				},
 				required: []string{"required0", "error", "required1"},
 			},
-			expectedMounts: []Mount{{Path: "required0", HostPath: "required0"}, {Path: "required1", HostPath: "required1"}},
+			expectedMounts: []Mount{{Path: "required0", HostPath: "required0", Options: mountOptions}, {Path: "required1", HostPath: "required1", Options: mountOptions}},
 		},
 		{
 			description: "mounts skips unlocated",
@@ -113,7 +121,7 @@ func TestMounts(t *testing.T) {
 				},
 				required: []string{"required0", "empty", "required1"},
 			},
-			expectedMounts: []Mount{{Path: "required0", HostPath: "required0"}, {Path: "required1", HostPath: "required1"}},
+			expectedMounts: []Mount{{Path: "required0", HostPath: "required0", Options: mountOptions}, {Path: "required1", HostPath: "required1", Options: mountOptions}},
 		},
 		{
 			description: "mounts adds multiple",
@@ -129,10 +137,10 @@ func TestMounts(t *testing.T) {
 				required: []string{"required0", "multiple", "required1"},
 			},
 			expectedMounts: []Mount{
-				{Path: "required0", HostPath: "required0"},
-				{Path: "multiple0", HostPath: "multiple0"},
-				{Path: "multiple1", HostPath: "multiple1"},
-				{Path: "required1", HostPath: "required1"},
+				{Path: "required0", HostPath: "required0", Options: mountOptions},
+				{Path: "multiple0", HostPath: "multiple0", Options: mountOptions},
+				{Path: "multiple1", HostPath: "multiple1", Options: mountOptions},
+				{Path: "required1", HostPath: "required1", Options: mountOptions},
 			},
 		},
 		{
@@ -147,7 +155,7 @@ func TestMounts(t *testing.T) {
 				required: []string{"required0", "multiple", "required1"},
 			},
 			expectedMounts: []Mount{
-				{Path: "/located", HostPath: "/some/root/located"},
+				{Path: "/located", HostPath: "/some/root/located", Options: mountOptions},
 			},
 		},
 	}

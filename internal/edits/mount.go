@@ -40,12 +40,7 @@ func (d mount) toSpec() *specs.Mount {
 	s := specs.Mount{
 		HostPath:      d.HostPath,
 		ContainerPath: d.Path,
-		Options: []string{
-			"ro",
-			"nosuid",
-			"nodev",
-			"bind",
-		},
+		Options:       d.Options,
 	}
 
 	return &s
