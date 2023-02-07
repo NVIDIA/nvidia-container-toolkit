@@ -14,17 +14,16 @@
 # limitations under the License.
 **/
 
-package generate
+package discover
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/sirupsen/logrus"
 )
 
 // NewIPCDiscoverer creats a discoverer for NVIDIA IPC sockets.
-func NewIPCDiscoverer(logger *logrus.Logger, driverRoot string) (discover.Discover, error) {
-	d := discover.NewMounts(
+func NewIPCDiscoverer(logger *logrus.Logger, driverRoot string) (Discover, error) {
+	d := NewMounts(
 		logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),

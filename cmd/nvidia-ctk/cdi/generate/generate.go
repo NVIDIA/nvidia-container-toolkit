@@ -234,7 +234,7 @@ func (m command) generateSpec(driverRoot string, nvidiaCTKPath string, namer dev
 
 	allEdits := edits.NewContainerEdits()
 
-	ipcs, err := NewIPCDiscoverer(m.logger, driverRoot)
+	ipcs, err := discover.NewIPCDiscoverer(m.logger, driverRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for IPC sockets: %v", err)
 	}
