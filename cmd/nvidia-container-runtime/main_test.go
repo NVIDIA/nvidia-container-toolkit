@@ -13,6 +13,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,7 +42,7 @@ func TestMain(m *testing.M) {
 	var err error
 	moduleRoot, err := test.GetModuleRoot()
 	if err != nil {
-		logger.Fatalf("error in test setup: could not get module root: %v", err)
+		logrus.Fatalf("error in test setup: could not get module root: %v", err)
 	}
 	testBinPath := filepath.Join(moduleRoot, "test", "bin")
 	testInputPath := filepath.Join(moduleRoot, "test", "input")
@@ -53,11 +54,11 @@ func TestMain(m *testing.M) {
 	// Confirm that the environment is configured correctly
 	runcPath, err := exec.LookPath(runcExecutableName)
 	if err != nil || filepath.Join(testBinPath, runcExecutableName) != runcPath {
-		logger.Fatalf("error in test setup: mock runc path set incorrectly in TestMain(): %v", err)
+		logrus.Fatalf("error in test setup: mock runc path set incorrectly in TestMain(): %v", err)
 	}
 	hookPath, err := exec.LookPath(nvidiaHook)
 	if err != nil || filepath.Join(testBinPath, nvidiaHook) != hookPath {
-		logger.Fatalf("error in test setup: mock hook path set incorrectly in TestMain(): %v", err)
+		logrus.Fatalf("error in test setup: mock hook path set incorrectly in TestMain(): %v", err)
 	}
 
 	// Store the root and binary paths in the test Config
@@ -77,7 +78,7 @@ func TestMain(m *testing.M) {
 
 // case 1) nvidia-container-runtime run --bundle
 // case 2) nvidia-container-runtime create --bundle
-//		- Confirm the runtime handles bad input correctly
+//   - Confirm the runtime handles bad input correctly
 func TestBadInput(t *testing.T) {
 	err := cfg.generateNewRuntimeSpec()
 	if err != nil {
@@ -91,9 +92,10 @@ func TestBadInput(t *testing.T) {
 }
 
 // case 1) nvidia-container-runtime run --bundle <bundle-name> <ctr-name>
-//		- Confirm the runtime runs with no errors
+//   - Confirm the runtime runs with no errors
+//
 // case 2) nvidia-container-runtime create --bundle <bundle-name> <ctr-name>
-//		- Confirm the runtime inserts the NVIDIA prestart hook correctly
+//   - Confirm the runtime inserts the NVIDIA prestart hook correctly
 func TestGoodInput(t *testing.T) {
 	err := cfg.generateNewRuntimeSpec()
 	if err != nil {
@@ -170,7 +172,7 @@ func TestDuplicateHook(t *testing.T) {
 // addNVIDIAHook is a basic wrapper for an addHookModifier that is used for
 // testing.
 func addNVIDIAHook(spec *specs.Spec) error {
-	m := modifier.NewStableRuntimeModifier(logger.Logger)
+	m := modifier.NewStableRuntimeModifier(logrus.StandardLogger())
 	return m.Modify(spec)
 }
 
