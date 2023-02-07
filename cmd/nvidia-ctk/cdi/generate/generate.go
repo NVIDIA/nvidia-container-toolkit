@@ -232,19 +232,6 @@ func (m command) generateSpec(driverRoot string, nvidiaCTKPath string, namer dev
 
 	deviceSpecs = append(deviceSpecs, allDevice)
 
-	allEdits := edits.NewContainerEdits()
-
-	ipcs, err := discover.NewIPCDiscoverer(m.logger, driverRoot)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create discoverer for IPC sockets: %v", err)
-	}
-
-	ipcEdits, err := edits.FromDiscoverer(ipcs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create container edits for IPC sockets: %v", err)
-	}
-	allEdits.Append(ipcEdits)
-
 	common, err := NewCommonDiscoverer(m.logger, driverRoot, nvidiaCTKPath, nvmllib)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for common entities: %v", err)
@@ -260,14 +247,12 @@ func (m command) generateSpec(driverRoot string, nvidiaCTKPath string, namer dev
 		return nil, fmt.Errorf("failed to create container edits for common entities: %v", err)
 	}
 
-	allEdits.Append(commonEdits)
-
 	// We construct the spec and determine the minimum required version based on the specification.
 	spec := specs.Spec{
 		Version:        "NOT_SET",
 		Kind:           "nvidia.com/gpu",
 		Devices:        deviceSpecs,
-		ContainerEdits: *allEdits.ContainerEdits,
+		ContainerEdits: *commonEdits.ContainerEdits,
 	}
 
 	minVersion, err := cdi.MinimumRequiredVersion(&spec)
