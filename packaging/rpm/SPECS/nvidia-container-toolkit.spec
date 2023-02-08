@@ -18,6 +18,7 @@ Source4: oci-nvidia-hook.json
 Source5: LICENSE
 Source6: nvidia-container-runtime
 Source7: nvidia-container-runtime.cdi
+Source8: nvidia-container-runtime.legacy
 
 Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook <= 1.4.0-2
 Provides: nvidia-container-runtime
@@ -36,13 +37,14 @@ Requires: libseccomp
 Provides tools and utilities to enable GPU support in containers.
 
 %prep
-cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} %{SOURCE7} .
+cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} %{SOURCE7} %{SOURCE8} .
 
 %install
 mkdir -p %{buildroot}%{_bindir}
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime-hook
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime.cdi
+install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime.legacy
 install -m 755 -t %{buildroot}%{_bindir} nvidia-ctk
 
 mkdir -p %{buildroot}/etc/nvidia-container-runtime
@@ -99,4 +101,5 @@ Provides tools such as the NVIDIA Container Runtime and NVIDIA Container Toolkit
 %config /etc/nvidia-container-runtime/config.toml
 %{_bindir}/nvidia-container-runtime
 %{_bindir}/nvidia-container-runtime.cdi
+%{_bindir}/nvidia-container-runtime.legacy
 %{_bindir}/nvidia-ctk
