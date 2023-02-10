@@ -1,4 +1,3 @@
 config.toml /etc/nvidia-container-runtime
 nvidia-container-runtime /usr/bin
-nvidia-container-runtime.cdi /usr/bin
 nvidia-ctk /usr/bin

@@ -23,3 +23,9 @@ Breaks: nvidia-container-runtime (<= 3.5.0-1), nvidia-container-runtime-hook, nv
 Replaces: nvidia-container-runtime (<= 3.5.0-1), nvidia-container-runtime-hook
 Description: NVIDIA Container Toolkit Base
  Provides tools such as the NVIDIA Container Runtime and NVIDIA Container Toolkit CLI to enable GPU support in containers.
+
+Package: nvidia-container-toolkit-operator-extensions
+Architecture: any
+Depends: ${misc:Depends}, nvidia-container-toolkit-base (= @VERSION@)
+Description: NVIDIA Container Toolkit Operator Extensions
+ Provides tools for using the NVIDIA Container Toolkit with the GPU Operator

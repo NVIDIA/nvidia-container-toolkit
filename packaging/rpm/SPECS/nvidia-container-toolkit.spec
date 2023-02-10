@@ -100,6 +100,18 @@ Provides tools such as the NVIDIA Container Runtime and NVIDIA Container Toolkit
 %license LICENSE
 %config /etc/nvidia-container-runtime/config.toml
 %{_bindir}/nvidia-container-runtime
+%{_bindir}/nvidia-ctk
+
+# The OPERATOR EXTENSIONS package consists of components that are required to enable GPU support in Kubernetes.
+# This package is not distributed as part of the NVIDIA Container Toolkit RPMs.
+%package operator-extensions
+Summary: NVIDIA Container Toolkit Operator Extensions
+Requires: nvidia-container-toolkit-base == %{version}-%{release}
+
+%description operator-extensions
+Provides tools for using the NVIDIA Container Toolkit with the GPU Operator
+
+%files operator-extensions
+%license LICENSE
 %{_bindir}/nvidia-container-runtime.cdi
 %{_bindir}/nvidia-container-runtime.legacy
-%{_bindir}/nvidia-ctk
