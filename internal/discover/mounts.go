@@ -43,6 +43,11 @@ var _ Discover = (*mounts)(nil)
 
 // NewMounts creates a discoverer for the required mounts using the specified locator.
 func NewMounts(logger *logrus.Logger, lookup lookup.Locator, root string, required []string) Discover {
+	return newMounts(logger, lookup, root, required)
+}
+
+// newMounts creates a discoverer for the required mounts using the specified locator.
+func newMounts(logger *logrus.Logger, lookup lookup.Locator, root string, required []string) *mounts {
 	return &mounts{
 		logger:   logger,
 		lookup:   lookup,
@@ -93,6 +98,12 @@ func (d *mounts) Mounts() ([]Mount, error) {
 			uniqueMounts[p] = Mount{
 				HostPath: p,
 				Path:     r,
+				Options: []string{
+					"ro",
+					"nosuid",
+					"nodev",
+					"bind",
+				},
 			}
 		}
 	}

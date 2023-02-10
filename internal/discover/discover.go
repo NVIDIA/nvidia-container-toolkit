@@ -32,6 +32,7 @@ type Device struct {
 type Mount struct {
 	HostPath string
 	Path     string
+	Options  []string
 }
 
 // Hook represents a discovered hook.

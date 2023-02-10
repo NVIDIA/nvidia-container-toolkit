@@ -41,12 +41,18 @@ func NewDriverDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath
 		return nil, fmt.Errorf("failed to create discoverer for driver libraries: %v", err)
 	}
 
+	ipcs, err := discover.NewIPCDiscoverer(logger, driverRoot)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create discoverer for IPC sockets: %v", err)
+	}
+
 	firmwares := NewDriverFirmwareDiscoverer(logger, driverRoot, version)
 
 	binaries := NewDriverBinariesDiscoverer(logger, driverRoot)
 
 	d := discover.Merge(
 		libraries,
+		ipcs,
 		firmwares,
 		binaries,
 	)

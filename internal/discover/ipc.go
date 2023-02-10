@@ -14,17 +14,18 @@
 # limitations under the License.
 **/
 
-package generate
+package discover
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/sirupsen/logrus"
 )
 
+type ipcMounts mounts
+
 // NewIPCDiscoverer creats a discoverer for NVIDIA IPC sockets.
-func NewIPCDiscoverer(logger *logrus.Logger, driverRoot string) (discover.Discover, error) {
-	d := discover.NewMounts(
+func NewIPCDiscoverer(logger *logrus.Logger, driverRoot string) (Discover, error) {
+	d := newMounts(
 		logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
@@ -38,5 +39,22 @@ func NewIPCDiscoverer(logger *logrus.Logger, driverRoot string) (discover.Discov
 		},
 	)
 
-	return d, nil
+	return (*ipcMounts)(d), nil
+}
+
+// Mounts returns the discovered mounts with "noexec" added to the mount options.
+func (d *ipcMounts) Mounts() ([]Mount, error) {
+	mounts, err := (*mounts)(d).Mounts()
+	if err != nil {
+		return nil, err
+	}
+
+	var modifiedMounts []Mount
+	for _, m := range mounts {
+		mount := m
+		mount.Options = append(m.Options, "noexec")
+		modifiedMounts = append(modifiedMounts, mount)
+	}
+
+	return modifiedMounts, nil
 }
