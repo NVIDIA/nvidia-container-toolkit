@@ -119,6 +119,19 @@ type ViolationTime struct {
 	ViolationTime uint64
 }
 
+type GpuThermalSettingsSensor struct {
+	Controller     int32
+	DefaultMinTemp int32
+	DefaultMaxTemp int32
+	CurrentTemp    int32
+	Target         int32
+}
+
+type GpuThermalSettings struct {
+	Count  uint32
+	Sensor [3]GpuThermalSettingsSensor
+}
+
 type ClkMonFaultInfo struct {
 	ClkApiDomain       uint32
 	ClkDomainFaultMask uint32
@@ -152,6 +165,73 @@ type VgpuProcessUtilizationSample struct {
 	MemUtil      uint32
 	EncUtil      uint32
 	DecUtil      uint32
+}
+
+type VgpuSchedulerParamsVgpuSchedDataWithARR struct {
+	AvgFactor uint32
+	Timeslice uint32
+}
+
+type VgpuSchedulerParamsVgpuSchedData struct {
+	Timeslice uint32
+}
+
+const sizeofVgpuSchedulerParams = unsafe.Sizeof([8]byte{})
+
+type VgpuSchedulerParams [sizeofVgpuSchedulerParams]byte
+
+type VgpuSchedulerLogEntry struct {
+	Timestamp                uint64
+	TimeRunTotal             uint64
+	TimeRun                  uint64
+	SwRunlistId              uint32
+	TargetTimeSlice          uint64
+	CumulativePreemptionTime uint64
+}
+
+type VgpuSchedulerLog struct {
+	EngineId        uint32
+	SchedulerPolicy uint32
+	IsEnabledARR    uint32
+	SchedulerParams [8]byte
+	EntriesCount    uint32
+	LogEntries      [200]VgpuSchedulerLogEntry
+}
+
+type VgpuSchedulerGetState struct {
+	SchedulerPolicy uint32
+	IsEnabledARR    uint32
+	SchedulerParams [8]byte
+}
+
+type VgpuSchedulerSetParamsVgpuSchedDataWithARR struct {
+	AvgFactor uint32
+	Frequency uint32
+}
+
+type VgpuSchedulerSetParamsVgpuSchedData struct {
+	Timeslice uint32
+}
+
+const sizeofVgpuSchedulerSetParams = unsafe.Sizeof([8]byte{})
+
+type VgpuSchedulerSetParams [sizeofVgpuSchedulerSetParams]byte
+
+type VgpuSchedulerSetState struct {
+	SchedulerPolicy uint32
+	EnableARRMode   uint32
+	SchedulerParams [8]byte
+}
+
+type VgpuSchedulerCapabilities struct {
+	SupportedSchedulers [3]uint32
+	MaxTimeslice        uint32
+	MinTimeslice        uint32
+	IsArrModeSupported  uint32
+	MaxFrequencyForARR  uint32
+	MinFrequencyForARR  uint32
+	MaxAvgFactorForARR  uint32
+	MinAvgFactorForARR  uint32
 }
 
 type VgpuLicenseExpiry struct {
@@ -210,7 +290,21 @@ type DeviceArchitecture uint32
 
 type BusType uint32
 
+type FanControlPolicy uint32
+
 type PowerSource uint32
+
+type GpuDynamicPstatesInfoUtilization struct {
+	BIsPresent   uint32
+	Percentage   uint32
+	IncThreshold uint32
+	DecThreshold uint32
+}
+
+type GpuDynamicPstatesInfo struct {
+	Flags       uint32
+	Utilization [8]GpuDynamicPstatesInfoUtilization
+}
 
 type FieldValue struct {
 	FieldId     uint32
@@ -312,6 +406,16 @@ type FBCSessionInfo struct {
 	VResolution    uint32
 	AverageFPS     uint32
 	AverageLatency uint32
+}
+
+type GpuFabricState byte
+
+type GpuFabricInfo struct {
+	ClusterUuid [16]int8
+	Status      uint32
+	PartitionId uint32
+	State       uint8
+	Pad_cgo_0   [3]byte
 }
 
 type AffinityScope uint32
@@ -442,4 +546,38 @@ type ComputeInstanceInfo struct {
 
 type ComputeInstance struct {
 	Handle *_Ctype_struct_nvmlComputeInstance_st
+}
+
+type GpmSample struct {
+	Handle *_Ctype_struct_nvmlGpmSample_st
+}
+
+type GpmMetricMetricInfo struct {
+	ShortName *int8
+	LongName  *int8
+	Unit      *int8
+}
+
+type GpmMetric struct {
+	MetricId   uint32
+	NvmlReturn uint32
+	Value      float64
+	MetricInfo GpmMetricMetricInfo
+}
+
+type GpmMetricsGetType struct {
+	Version    uint32
+	NumMetrics uint32
+	Sample1    GpmSample
+	Sample2    GpmSample
+	Metrics    [98]GpmMetric
+}
+
+type GpmSupport struct {
+	Version           uint32
+	IsSupportedDevice uint32
+}
+
+type NvLinkPowerThres struct {
+	LowPwrThreshold uint32
 }

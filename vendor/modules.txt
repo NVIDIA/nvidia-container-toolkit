@@ -2,7 +2,7 @@
 ## explicit; go 1.16
 github.com/BurntSushi/toml
 github.com/BurntSushi/toml/internal
-# github.com/NVIDIA/go-nvml v0.11.6-0.0.20220823120812-7e2082095e82
+# github.com/NVIDIA/go-nvml v0.12.0-0
 ## explicit; go 1.15
 github.com/NVIDIA/go-nvml/pkg/dl
 github.com/NVIDIA/go-nvml/pkg/nvml
@@ -62,7 +62,7 @@ github.com/syndtr/gocapability/capability
 github.com/urfave/cli/v2
 # github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
 ## explicit
-# gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20230119114711-6fe07bb33342
+# gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20230209143738-95328d8c4438
 ## explicit; go 1.16
 gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device
 gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info
