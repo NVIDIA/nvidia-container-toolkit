@@ -77,13 +77,6 @@ stages:
     DIST: debian9
     PACKAGE_REPO_TYPE: debian
 
-.dist-fedora35:
-  rules:
-    - !reference [.main-or-manual, rules]
-  variables:
-    DIST: fedora35
-    PACKAGE_REPO_TYPE: rpm
-
 .dist-opensuse-leap15.1:
   rules:
     - !reference [.main-or-manual, rules]

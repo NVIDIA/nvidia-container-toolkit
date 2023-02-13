@@ -88,30 +88,24 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 LIBNVIDIA_CONTAINER_VERSION ?= $(LIB_VERSION)
 LIBNVIDIA_CONTAINER_TAG ?= $(LIB_TAG)
 
+LIB_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
+PKG_REV := 1
+LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)$(if $(LIBNVIDIA_CONTAINER_TAG),~$(LIBNVIDIA_CONTAINER_TAG))-1
+
 # private ubuntu target
 --ubuntu%: OS := ubuntu
---ubuntu%: LIB_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
---ubuntu%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)$(if $(LIBNVIDIA_CONTAINER_TAG),~$(LIBNVIDIA_CONTAINER_TAG))-1
---ubuntu%: PKG_REV := 1
 
 # private debian target
 --debian%: OS := debian
---debian%: LIB_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
---debian%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)$(if $(LIBNVIDIA_CONTAINER_TAG),~$(LIBNVIDIA_CONTAINER_TAG))-1
---debian%: PKG_REV := 1
 
 # private centos target
 --centos%: OS := centos
---centos%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
---centos%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)-$(if $(LIBNVIDIA_CONTAINER_TAG),0.1.$(LIBNVIDIA_CONTAINER_TAG),1)
 --centos%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
 --centos%: CONFIG_TOML_SUFFIX := rpm-yum
 --centos8%: BASEIMAGE = quay.io/centos/centos:stream8
 
 # private fedora target
 --fedora%: OS := fedora
---fedora%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
---fedora%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)-$(if $(LIBNVIDIA_CONTAINER_TAG),0.1.$(LIBNVIDIA_CONTAINER_TAG),1)
 --fedora%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
 --fedora%: CONFIG_TOML_SUFFIX := rpm-yum
 # The fedora(35) base image has very slow performance when building aarch64 packages.
@@ -120,21 +114,15 @@ LIBNVIDIA_CONTAINER_TAG ?= $(LIB_TAG)
 
 # private amazonlinux target
 --amazonlinux%: OS := amazonlinux
---amazonlinux%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)-$(if $(LIBNVIDIA_CONTAINER_TAG),0.1.$(LIBNVIDIA_CONTAINER_TAG),1)
---amazonlinux%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 --amazonlinux%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
 --amazonlinux%: CONFIG_TOML_SUFFIX := rpm-yum
 
 # private opensuse-leap target
 --opensuse-leap%: OS = opensuse-leap
 --opensuse-leap%: BASEIMAGE = opensuse/leap:$(VERSION)
---opensuse-leap%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)-$(if $(LIBNVIDIA_CONTAINER_TAG),0.1.$(LIBNVIDIA_CONTAINER_TAG),1)
---opensuse-leap%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
 # private rhel target (actually built on centos)
 --rhel%: OS := centos
---rhel%: LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)-$(if $(LIBNVIDIA_CONTAINER_TAG),0.1.$(LIBNVIDIA_CONTAINER_TAG),1)
---rhel%: PKG_REV := $(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 --rhel%: VERSION = $(patsubst rhel%-$(ARCH),%,$(TARGET_PLATFORM))
 --rhel%: ARTIFACTS_DIR = $(DIST_DIR)/rhel$(VERSION)/$(ARCH)
 --rhel%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
