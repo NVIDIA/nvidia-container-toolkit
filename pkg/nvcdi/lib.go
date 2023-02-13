@@ -31,6 +31,8 @@ type nvcdilib struct {
 	deviceNamer   DeviceNamer
 	driverRoot    string
 	nvidiaCTKPath string
+
+	infolib info.Interface
 }
 
 // New creates a new nvcdi library
@@ -53,6 +55,9 @@ func New(opts ...Option) Interface {
 	}
 	if l.nvidiaCTKPath == "" {
 		l.nvidiaCTKPath = "/usr/bin/nvidia-ctk"
+	}
+	if l.infolib == nil {
+		l.infolib = info.New()
 	}
 
 	switch l.resolveMode() {
@@ -82,9 +87,7 @@ func (l *nvcdilib) resolveMode() (rmode string) {
 		l.logger.Infof("Auto-detected mode as %q", rmode)
 	}()
 
-	nvinfo := info.New()
-
-	isWSL, reason := nvinfo.HasDXCore()
+	isWSL, reason := l.infolib.HasDXCore()
 	l.logger.Debugf("Is WSL-based system? %v: %v", isWSL, reason)
 
 	if isWSL {
