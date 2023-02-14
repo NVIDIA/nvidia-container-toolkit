@@ -88,8 +88,6 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 LIBNVIDIA_CONTAINER_VERSION ?= $(LIB_VERSION)
 LIBNVIDIA_CONTAINER_TAG ?= $(LIB_TAG)
 
-LIB_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
-PKG_REV := 1
 LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)$(if $(LIBNVIDIA_CONTAINER_TAG),~$(LIBNVIDIA_CONTAINER_TAG))-1
 
 # private ubuntu target
@@ -143,8 +141,8 @@ docker-build-%:
 	    --build-arg BASEIMAGE="$(BASEIMAGE)" \
 	    --build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
 	    --build-arg PKG_NAME="$(LIB_NAME)" \
-	    --build-arg PKG_VERS="$(LIB_VERSION)" \
-	    --build-arg PKG_REV="$(PKG_REV)" \
+	    --build-arg PKG_VERS="$(PACKAGE_VERSION)" \
+	    --build-arg PKG_REV="$(PACKAGE_REVISION)" \
 	    --build-arg LIBNVIDIA_CONTAINER_TOOLS_VERSION="$(LIBNVIDIA_CONTAINER_TOOLS_VERSION)" \
 	    --build-arg CONFIG_TOML_SUFFIX="$(CONFIG_TOML_SUFFIX)" \
 	    --build-arg GIT_COMMIT="$(GIT_COMMIT)" \
