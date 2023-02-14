@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package generate
+package nvcdi
 
 import (
 	"fmt"
@@ -23,11 +23,49 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/drm"
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
+	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
+
+// GetGPUDeviceSpecs returns the CDI device specs for the full GPU represented by 'device'.
+func (l *nvcdilib) GetGPUDeviceSpecs(i int, d device.Device) (*specs.Device, error) {
+	edits, err := l.GetGPUDeviceEdits(d)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get edits for device: %v", err)
+	}
+
+	name, err := l.deviceNamer.GetDeviceName(i, d)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get device name: %v", err)
+	}
+
+	spec := specs.Device{
+		Name:           name,
+		ContainerEdits: *edits.ContainerEdits,
+	}
+
+	return &spec, nil
+}
+
+// GetGPUDeviceEdits returns the CDI edits for the full GPU represented by 'device'.
+func (l *nvcdilib) GetGPUDeviceEdits(d device.Device) (*cdi.ContainerEdits, error) {
+	device, err := newFullGPUDiscoverer(l.logger, l.driverRoot, l.nvidiaCTKPath, d)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
+	}
+
+	editsForDevice, err := edits.FromDiscoverer(device)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create container edits for device: %v", err)
+	}
+
+	return editsForDevice, nil
+}
 
 // byPathHookDiscoverer discovers the entities required for injecting by-path DRM device links
 type byPathHookDiscoverer struct {
@@ -39,8 +77,8 @@ type byPathHookDiscoverer struct {
 
 var _ discover.Discover = (*byPathHookDiscoverer)(nil)
 
-// NewFullGPUDiscoverer creates a discoverer for the full GPU defined by the specified device.
-func NewFullGPUDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, d device.Device) (discover.Discover, error) {
+// newFullGPUDiscoverer creates a discoverer for the full GPU defined by the specified device.
+func newFullGPUDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, d device.Device) (discover.Discover, error) {
 	// TODO: The functionality to get device paths should be integrated into the go-nvlib/pkg/device.Device interface.
 	// This will allow reuse here and in other code where the paths are queried such as the NVIDIA device plugin.
 	minor, ret := d.GetMinorNumber()

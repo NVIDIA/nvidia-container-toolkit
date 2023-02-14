@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package generate
+package nvcdi
 
 import (
 	"fmt"
@@ -23,15 +23,20 @@ import (
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
 
-type deviceNamer interface {
+// DeviceNamer is an interface for getting device names
+type DeviceNamer interface {
 	GetDeviceName(int, device.Device) (string, error)
-	GetMigDeviceName(int, int, device.MigDevice) (string, error)
+	GetMigDeviceName(int, device.Device, int, device.MigDevice) (string, error)
 }
 
+// Supported device naming strategies
 const (
-	deviceNameStrategyIndex     = "index"
-	deviceNameStrategyTypeIndex = "type-index"
-	deviceNameStrategyUUID      = "uuid"
+	// DeviceNameStrategyIndex generates devices names such as 0 or 1:0
+	DeviceNameStrategyIndex = "index"
+	// DeviceNameStrategyTypeIndex generates devices names such as gpu0 or mig1:0
+	DeviceNameStrategyTypeIndex = "type-index"
+	// DeviceNameStrategyUUID uses the device UUID as the name
+	DeviceNameStrategyUUID = "uuid"
 )
 
 type deviceNameIndex struct {
@@ -40,15 +45,15 @@ type deviceNameIndex struct {
 }
 type deviceNameUUID struct{}
 
-// newDeviceNamer creates a Device Namer based on the supplied strategy.
+// NewDeviceNamer creates a Device Namer based on the supplied strategy.
 // This namer can be used to construct the names for MIG and GPU devices when generating the CDI spec.
-func newDeviceNamer(strategy string) (deviceNamer, error) {
+func NewDeviceNamer(strategy string) (DeviceNamer, error) {
 	switch strategy {
-	case deviceNameStrategyIndex:
+	case DeviceNameStrategyIndex:
 		return deviceNameIndex{}, nil
-	case deviceNameStrategyTypeIndex:
+	case DeviceNameStrategyTypeIndex:
 		return deviceNameIndex{gpuPrefix: "gpu", migPrefix: "mig"}, nil
-	case deviceNameStrategyUUID:
+	case DeviceNameStrategyUUID:
 		return deviceNameUUID{}, nil
 	}
 
@@ -61,7 +66,7 @@ func (s deviceNameIndex) GetDeviceName(i int, d device.Device) (string, error) {
 }
 
 // GetMigDeviceName returns the name for the specified device based on the naming strategy
-func (s deviceNameIndex) GetMigDeviceName(i int, j int, d device.MigDevice) (string, error) {
+func (s deviceNameIndex) GetMigDeviceName(i int, d device.Device, j int, mig device.MigDevice) (string, error) {
 	return fmt.Sprintf("%s%d:%d", s.migPrefix, i, j), nil
 }
 
@@ -75,8 +80,8 @@ func (s deviceNameUUID) GetDeviceName(i int, d device.Device) (string, error) {
 }
 
 // GetMigDeviceName returns the name for the specified device based on the naming strategy
-func (s deviceNameUUID) GetMigDeviceName(i int, j int, d device.MigDevice) (string, error) {
-	uuid, ret := d.GetUUID()
+func (s deviceNameUUID) GetMigDeviceName(i int, d device.Device, j int, mig device.MigDevice) (string, error) {
+	uuid, ret := mig.GetUUID()
 	if ret != nvml.SUCCESS {
 		return "", fmt.Errorf("failed to get device UUID: %v", ret)
 	}
