@@ -14,7 +14,7 @@
 # limitations under the License.
 */
 
-package main
+package runtime
 
 import (
 	"fmt"
@@ -42,8 +42,8 @@ func NewLogger() *Logger {
 	}
 }
 
-// UpdateLogger constructs a Logger with a preddefined formatter
-func UpdateLogger(filename string, logLevel string, argv []string) (*Logger, error) {
+// Update constructs a Logger with a preddefined formatter
+func (l *Logger) Update(filename string, logLevel string, argv []string) error {
 	configFromArgs := parseArgs(argv)
 
 	level, logLevelError := configFromArgs.getLevel(logLevel)
@@ -55,7 +55,7 @@ func UpdateLogger(filename string, logLevel string, argv []string) (*Logger, err
 	if !configFromArgs.version {
 		configLogFile, err := createLogFile(filename)
 		if err != nil {
-			return logger, fmt.Errorf("error opening debug log file: %v", err)
+			return fmt.Errorf("error opening debug log file: %v", err)
 		}
 		if configLogFile != nil {
 			logFiles = append(logFiles, configLogFile)
@@ -68,9 +68,10 @@ func UpdateLogger(filename string, logLevel string, argv []string) (*Logger, err
 		argLogFileError = err
 	}
 
-	l := &Logger{
+	previous := l.Logger
+	l = &Logger{
 		Logger:         logrus.New(),
-		previousLogger: logger.Logger,
+		previousLogger: previous,
 		logFiles:       logFiles,
 	}
 
@@ -115,7 +116,7 @@ func UpdateLogger(filename string, logLevel string, argv []string) (*Logger, err
 		l.Warnf("Failed to open log file: %v", argLogFileError)
 	}
 
-	return l, nil
+	return nil
 }
 
 // Reset closes the log file (if any) and resets the logger output to what it
@@ -126,7 +127,7 @@ func (l *Logger) Reset() error {
 		if previous == nil {
 			previous = logrus.New()
 		}
-		logger = &Logger{Logger: previous}
+		l = &Logger{Logger: previous}
 	}()
 
 	var errs []error

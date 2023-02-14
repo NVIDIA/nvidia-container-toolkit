@@ -14,19 +14,51 @@
 # limitations under the License.
 */
 
-package main
+package runtime
 
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/sirupsen/logrus"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
+
+const (
+	runcExecutableName = "runc"
+)
+
+func TestMain(m *testing.M) {
+	// TEST SETUP
+	// Determine the module root and the test binary path
+	var err error
+	moduleRoot, err := test.GetModuleRoot()
+	if err != nil {
+		logrus.Fatalf("error in test setup: could not get module root: %v", err)
+	}
+	testBinPath := filepath.Join(moduleRoot, "test", "bin")
+
+	// Set the environment variables for the test
+	os.Setenv("PATH", test.PrependToPath(testBinPath, moduleRoot))
+
+	// Confirm that the environment is configured correctly
+	runcPath, err := exec.LookPath(runcExecutableName)
+	if err != nil || filepath.Join(testBinPath, runcExecutableName) != runcPath {
+		logrus.Fatalf("error in test setup: mock runc path set incorrectly in TestMain(): %v", err)
+	}
+
+	// RUN TESTS
+	exitCode := m.Run()
+
+	os.Exit(exitCode)
+}
 
 func TestFactoryMethod(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()

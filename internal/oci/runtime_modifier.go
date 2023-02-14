@@ -14,27 +14,26 @@
 # limitations under the License.
 */
 
-package runtime
+package oci
 
 import (
 	"fmt"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	log "github.com/sirupsen/logrus"
 )
 
 type modifyingRuntimeWrapper struct {
 	logger   *log.Logger
-	runtime  oci.Runtime
-	ociSpec  oci.Spec
-	modifier oci.SpecModifier
+	runtime  Runtime
+	ociSpec  Spec
+	modifier SpecModifier
 }
 
-var _ oci.Runtime = (*modifyingRuntimeWrapper)(nil)
+var _ Runtime = (*modifyingRuntimeWrapper)(nil)
 
 // NewModifyingRuntimeWrapper creates a runtime wrapper that applies the specified modifier to the OCI specification
 // before invoking the wrapped runtime. If the modifier is nil, the input runtime is returned.
-func NewModifyingRuntimeWrapper(logger *log.Logger, runtime oci.Runtime, spec oci.Spec, modifier oci.SpecModifier) oci.Runtime {
+func NewModifyingRuntimeWrapper(logger *log.Logger, runtime Runtime, spec Spec, modifier SpecModifier) Runtime {
 	if modifier == nil {
 		logger.Infof("Using low-level runtime with no modification")
 		return runtime
@@ -52,7 +51,7 @@ func NewModifyingRuntimeWrapper(logger *log.Logger, runtime oci.Runtime, spec oc
 // Exec checks whether a modification of the OCI specification is required and modifies it accordingly before exec-ing
 // into the wrapped runtime.
 func (r *modifyingRuntimeWrapper) Exec(args []string) error {
-	if oci.HasCreateSubcommand(args) {
+	if HasCreateSubcommand(args) {
 		err := r.modify()
 		if err != nil {
 			return fmt.Errorf("could not apply required modification to OCI specification: %v", err)

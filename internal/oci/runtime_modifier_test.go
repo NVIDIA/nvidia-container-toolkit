@@ -14,13 +14,12 @@
 # limitations under the License.
 */
 
-package runtime
+package oci
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
@@ -38,7 +37,7 @@ func TestExec(t *testing.T) {
 		args          []string
 		modifyError   error
 		writeError    error
-		modifer       oci.SpecModifier
+		modifer       SpecModifier
 	}{
 		{
 			description:   "no args forwards",
@@ -92,9 +91,9 @@ func TestExec(t *testing.T) {
 		hook.Reset()
 
 		t.Run(tc.description, func(t *testing.T) {
-			runtimeMock := &oci.RuntimeMock{}
-			specMock := &oci.SpecMock{
-				ModifyFunc: func(specModifier oci.SpecModifier) error {
+			runtimeMock := &RuntimeMock{}
+			specMock := &SpecMock{
+				ModifyFunc: func(specModifier SpecModifier) error {
 					return tc.modifyError
 				},
 				FlushFunc: func() error {
@@ -144,8 +143,8 @@ func TestExec(t *testing.T) {
 func TestNilModiferReturnsRuntime(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
-	runtimeMock := &oci.RuntimeMock{}
-	specMock := &oci.SpecMock{}
+	runtimeMock := &RuntimeMock{}
+	specMock := &SpecMock{}
 
 	shim := NewModifyingRuntimeWrapper(
 		logger,

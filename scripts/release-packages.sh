@@ -120,6 +120,12 @@ function sync() {
     mkdir -p ${dst}
 
     for f in $(ls ${src}/libnvidia-container*.${pkg_type} ${src}/nvidia-container-toolkit*.${pkg_type}); do
+        # We never release nvidia-container-toolkit-operator-extensions packages
+        if [[ "${f/"nvidia-container-toolkit-operator-extensions"/}" != "${f}" ]]; then
+            echo "Skipping ${f}"
+            continue
+        fi
+
         df=${dst}/$(basename ${f})
         df_stable=${df//"/experimental/"/"/stable/"}
         if [[ -f "${df}" ]]; then

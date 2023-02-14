@@ -14,7 +14,7 @@
 # limitations under the License.
 */
 
-package main
+package runtime
 
 import (
 	"fmt"
@@ -23,7 +23,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/runtime"
 	"github.com/sirupsen/logrus"
 )
 
@@ -50,7 +49,7 @@ func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.Config, argv [
 	}
 
 	// Create the wrapping runtime with the specified modifier
-	r := runtime.NewModifyingRuntimeWrapper(
+	r := oci.NewModifyingRuntimeWrapper(
 		logger,
 		lowLevelRuntime,
 		ociSpec,

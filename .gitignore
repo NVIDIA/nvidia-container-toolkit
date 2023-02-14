@@ -1,9 +1,11 @@
 dist
+artifacts
 *.swp
 *.swo
 /coverage.out*
 /test/output/
 /nvidia-container-runtime
+/nvidia-container-runtime.*
 /nvidia-container-runtime-hook
 /nvidia-container-toolkit
 /nvidia-ctk
