@@ -105,24 +105,20 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 build-ubuntu%: BASE_DIST = $(*)
 build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
 build-ubuntu%: PACKAGE_DIST = ubuntu18.04
-build-ubuntu%: PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
 build-ubuntu%: LIBNVIDIA_CONTAINER0_DEPENDENCY=$(LIBNVIDIA_CONTAINER0_VERSION)
 
 build-ubi8: BASE_DIST := ubi8
 build-ubi8: DOCKERFILE_SUFFIX := centos
 build-ubi8: PACKAGE_DIST = centos8
-build-ubi8: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
 build-centos7: BASE_DIST = $(*)
 build-centos7: DOCKERFILE_SUFFIX := centos
 build-centos7: PACKAGE_DIST = $(BASE_DIST)
-build-centos7: PACKAGE_VERSION := $(LIB_VERSION)-$(if $(LIB_TAG),0.1.$(LIB_TAG),1)
 
 build-packaging: BASE_DIST := ubuntu20.04
 build-packaging: DOCKERFILE_SUFFIX := packaging
 build-packaging: PACKAGE_ARCH := amd64
 build-packaging: PACKAGE_DIST = all
-build-packaging: PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))
 
 # Test targets
 test-%: DIST = $(*)
