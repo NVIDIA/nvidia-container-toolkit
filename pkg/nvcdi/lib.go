@@ -37,6 +37,9 @@ type nvcdilib struct {
 // New creates a new nvcdi library
 func New(opts ...Option) Interface {
 	l := &nvcdilib{}
+	for _, opt := range opts {
+		opt(l)
+	}
 
 	if l.nvmllib == nil {
 		l.nvmllib = nvml.New()
