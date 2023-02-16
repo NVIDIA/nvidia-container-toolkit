@@ -47,6 +47,9 @@ func FindNvidiaCTK(logger *logrus.Logger, nvidiaCTKPath string) string {
 		return nvidiaCTKPath
 	}
 
+	if nvidiaCTKPath == "" {
+		nvidiaCTKPath = nvidiaCTKExecutable
+	}
 	logger.Debugf("Locating NVIDIA Container Toolkit CLI as %v", nvidiaCTKPath)
 	lookup := lookup.NewExecutableLocator(logger, "")
 	hookPath := nvidiaCTKDefaultFilePath
