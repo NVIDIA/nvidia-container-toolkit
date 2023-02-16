@@ -28,6 +28,7 @@ import (
 type nvcdilib struct {
 	logger        *logrus.Logger
 	nvmllib       nvml.Interface
+	mode          string
 	devicelib     device.Interface
 	deviceNamer   DeviceNamer
 	driverRoot    string
