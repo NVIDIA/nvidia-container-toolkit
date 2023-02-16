@@ -44,9 +44,15 @@ func NewLogger() *Logger {
 
 // Update constructs a Logger with a preddefined formatter
 func (l *Logger) Update(filename string, logLevel string, argv []string) error {
+
 	configFromArgs := parseArgs(argv)
 
 	level, logLevelError := configFromArgs.getLevel(logLevel)
+	defer func() {
+		if logLevelError != nil {
+			l.Warn(logLevelError)
+		}
+	}()
 
 	var logFiles []*os.File
 	var argLogFileError error
@@ -67,15 +73,15 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) error {
 		}
 		argLogFileError = err
 	}
+	defer func() {
+		if argLogFileError != nil {
+			l.Warnf("Failed to open log file: %v", argLogFileError)
+		}
+	}()
 
-	previous := l.Logger
-	l = &Logger{
-		Logger:         logrus.New(),
-		previousLogger: previous,
-		logFiles:       logFiles,
-	}
+	newLogger := logrus.New()
 
-	l.SetLevel(level)
+	newLogger.SetLevel(level)
 	if level == logrus.DebugLevel {
 		logrus.SetReportCaller(true)
 		// Shorten function and file names reported by the logger, by
@@ -93,27 +99,25 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) error {
 	}
 
 	if configFromArgs.format == "json" {
-		l.SetFormatter(new(logrus.JSONFormatter))
+		newLogger.SetFormatter(new(logrus.JSONFormatter))
 	}
 
 	if len(logFiles) == 0 {
-		l.SetOutput(io.Discard)
+		newLogger.SetOutput(io.Discard)
 	} else if len(logFiles) == 1 {
-		l.SetOutput(logFiles[0])
+		newLogger.SetOutput(logFiles[0])
 	} else if len(logFiles) > 1 {
 		var writers []io.Writer
 		for _, f := range logFiles {
 			writers = append(writers, f)
 		}
-		l.SetOutput(io.MultiWriter(writers...))
+		newLogger.SetOutput(io.MultiWriter(writers...))
 	}
 
-	if logLevelError != nil {
-		l.Warn(logLevelError)
-	}
-
-	if argLogFileError != nil {
-		l.Warnf("Failed to open log file: %v", argLogFileError)
+	*l = Logger{
+		Logger:         newLogger,
+		previousLogger: l.Logger,
+		logFiles:       logFiles,
 	}
 
 	return nil
@@ -127,7 +131,9 @@ func (l *Logger) Reset() error {
 		if previous == nil {
 			previous = logrus.New()
 		}
-		l = &Logger{Logger: previous}
+		l.Logger = previous
+		l.previousLogger = nil
+		l.logFiles = nil
 	}()
 
 	var errs []error
