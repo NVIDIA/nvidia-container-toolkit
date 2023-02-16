@@ -33,7 +33,7 @@ import (
 )
 
 // GetGPUDeviceSpecs returns the CDI device specs for the full GPU represented by 'device'.
-func (l *nvcdilib) GetGPUDeviceSpecs(i int, d device.Device) (*specs.Device, error) {
+func (l *nvmllib) GetGPUDeviceSpecs(i int, d device.Device) (*specs.Device, error) {
 	edits, err := l.GetGPUDeviceEdits(d)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get edits for device: %v", err)
@@ -53,7 +53,7 @@ func (l *nvcdilib) GetGPUDeviceSpecs(i int, d device.Device) (*specs.Device, err
 }
 
 // GetGPUDeviceEdits returns the CDI edits for the full GPU represented by 'device'.
-func (l *nvcdilib) GetGPUDeviceEdits(d device.Device) (*cdi.ContainerEdits, error) {
+func (l *nvmllib) GetGPUDeviceEdits(d device.Device) (*cdi.ContainerEdits, error) {
 	device, err := newFullGPUDiscoverer(l.logger, l.driverRoot, l.nvidiaCTKPath, d)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
