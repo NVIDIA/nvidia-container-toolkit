@@ -87,7 +87,7 @@ func NewDriverLibraryDiscoverer(logger *logrus.Logger, driverRoot string, nvidia
 
 // NewDriverFirmwareDiscoverer creates a discoverer for GSP firmware associated with the specified driver version.
 func NewDriverFirmwareDiscoverer(logger *logrus.Logger, driverRoot string, version string) discover.Discover {
-	gspFirmwarePath := filepath.Join("/lib/firmware/nvidia", version, "gsp.bin")
+	gspFirmwarePath := filepath.Join("/lib/firmware/nvidia", version, "gsp*.bin")
 	return discover.NewMounts(
 		logger,
 		lookup.NewFileLocator(
