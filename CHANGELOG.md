@@ -2,7 +2,8 @@
 
 ## v1.13.0-rc.1
 
-* Bump version to v1.13.0-rc.1
+* Discover gsb*.bin files for GSP firmware when generating CDI specification
+* [libnvidia-container] Inject gsp*.bin files for GSP firmware
 
 ## v1.12.0
 
