@@ -41,6 +41,7 @@ const (
 
 type options struct {
 	DriverRoot               string
+	ContainerRuntimeMode     string
 	ContainerRuntimeDebug    string
 	ContainerRuntimeLogLevel string
 	ContainerCLIDebug        string
@@ -107,6 +108,11 @@ func main() {
 			Name:        "nvidia-container-runtime-debug-log-level",
 			Destination: &opts.ContainerRuntimeLogLevel,
 			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_LOG_LEVEL"},
+		},
+		&cli.StringFlag{
+			Name:        "nvidia-container-runtime-mode",
+			Destination: &opts.ContainerRuntimeMode,
+			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODE"},
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-container-cli-debug",
@@ -299,6 +305,7 @@ func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutable
 	debugOptions := map[string]string{
 		"nvidia-container-runtime.debug":     opts.ContainerRuntimeDebug,
 		"nvidia-container-runtime.log-level": opts.ContainerRuntimeLogLevel,
+		"nvidia-container-runtime.mode":      opts.ContainerRuntimeMode,
 		"nvidia-container-cli.debug":         opts.ContainerCLIDebug,
 	}
 	for key, value := range debugOptions {
