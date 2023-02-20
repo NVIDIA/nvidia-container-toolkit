@@ -42,7 +42,7 @@ func New(opts ...Option) Interface {
 		opt(l)
 	}
 	if l.mode == "" {
-		l.mode = "auto"
+		l.mode = ModeAuto
 	}
 	if l.logger == nil {
 		l.logger = logrus.StandardLogger()
@@ -61,7 +61,7 @@ func New(opts ...Option) Interface {
 	}
 
 	switch l.resolveMode() {
-	case "nvml":
+	case ModeNvml:
 		if l.nvmllib == nil {
 			l.nvmllib = nvml.New()
 		}
@@ -70,7 +70,7 @@ func New(opts ...Option) Interface {
 		}
 
 		return (*nvmllib)(l)
-	case "wsl":
+	case ModeWsl:
 		return (*wsllib)(l)
 	}
 
@@ -80,7 +80,7 @@ func New(opts ...Option) Interface {
 
 // resolveMode resolves the mode for CDI spec generation based on the current system.
 func (l *nvcdilib) resolveMode() (rmode string) {
-	if l.mode != "auto" {
+	if l.mode != ModeAuto {
 		return l.mode
 	}
 	defer func() {
@@ -91,8 +91,8 @@ func (l *nvcdilib) resolveMode() (rmode string) {
 	l.logger.Debugf("Is WSL-based system? %v: %v", isWSL, reason)
 
 	if isWSL {
-		return "wsl"
+		return ModeWsl
 	}
 
-	return "nvml"
+	return ModeNvml
 }
