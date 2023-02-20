@@ -122,6 +122,8 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 		return err
 	}
 
+	cfg.nvidiaCTKPath = discover.FindNvidiaCTK(m.logger, cfg.nvidiaCTKPath)
+
 	return nil
 }
 
