@@ -460,3 +460,21 @@ func VgpuInstanceGetMdevUUID(VgpuInstance VgpuInstance) (string, Return) {
 func (VgpuInstance VgpuInstance) GetMdevUUID() (string, Return) {
 	return VgpuInstanceGetMdevUUID(VgpuInstance)
 }
+
+// nvml.VgpuTypeGetCapabilities()
+func VgpuTypeGetCapabilities(VgpuTypeId VgpuTypeId, Capability VgpuCapability) (bool, Return) {
+	var CapResult uint32
+	ret := nvmlVgpuTypeGetCapabilities(VgpuTypeId, Capability, &CapResult)
+	return (CapResult != 0), ret
+}
+
+func (VgpuTypeId VgpuTypeId) GetCapabilities(Capability VgpuCapability) (bool, Return) {
+	return VgpuTypeGetCapabilities(VgpuTypeId, Capability)
+}
+
+// nvml.GetVgpuDriverCapabilities()
+func GetVgpuDriverCapabilities(Capability VgpuDriverCapability) (bool, Return) {
+	var CapResult uint32
+	ret := nvmlGetVgpuDriverCapabilities(Capability, &CapResult)
+	return (CapResult != 0), ret
+}

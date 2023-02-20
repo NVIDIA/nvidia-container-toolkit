@@ -36,6 +36,7 @@ import (
 )
 
 const (
+	discoveryModeAuto = "auto"
 	discoveryModeNVML = "nvml"
 	discoveryModeWSL  = "wsl"
 
@@ -96,8 +97,8 @@ func (m command) build() *cli.Command {
 		},
 		&cli.StringFlag{
 			Name:        "discovery-mode",
-			Usage:       "The mode to use when discovering the available entities. One of [nvml | wsl]",
-			Value:       discoveryModeNVML,
+			Usage:       "The mode to use when discovering the available entities. One of [auto | nvml | wsl]. I mode is set to 'auto' the mode will be determined based on the system configuration.",
+			Value:       discoveryModeAuto,
 			Destination: &cfg.discoveryMode,
 		},
 		&cli.StringFlag{
@@ -132,6 +133,7 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 
 	cfg.discoveryMode = strings.ToLower(cfg.discoveryMode)
 	switch cfg.discoveryMode {
+	case discoveryModeAuto:
 	case discoveryModeNVML:
 	case discoveryModeWSL:
 	default:

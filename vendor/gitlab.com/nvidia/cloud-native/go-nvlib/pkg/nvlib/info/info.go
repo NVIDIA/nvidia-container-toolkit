@@ -27,6 +27,7 @@ import (
 
 // Interface provides the API to the info package
 type Interface interface {
+	HasDXCore() (bool, string)
 	HasNvml() (bool, string)
 	IsTegraSystem() (bool, string)
 }
@@ -37,17 +38,26 @@ type infolib struct {
 
 var _ Interface = &infolib{}
 
+// HasDXCore returns true if DXCore is detected on the system.
+func (i *infolib) HasDXCore() (bool, string) {
+	const (
+		libraryName = "libdxcore.so"
+	)
+	if err := assertHasLibrary(libraryName); err != nil {
+		return false, fmt.Sprintf("could not load DXCore library: %v", err)
+	}
+
+	return true, "found DXCore library"
+}
+
 // HasNvml returns true if NVML is detected on the system
 func (i *infolib) HasNvml() (bool, string) {
 	const (
-		nvmlLibraryName      = "libnvidia-ml.so.1"
-		nvmlLibraryLoadFlags = dl.RTLD_LAZY
+		libraryName = "libnvidia-ml.so.1"
 	)
-	lib := dl.New(nvmlLibraryName, nvmlLibraryLoadFlags)
-	if err := lib.Open(); err != nil {
-		return false, fmt.Sprintf("could not load NVML: %v", err)
+	if err := assertHasLibrary(libraryName); err != nil {
+		return false, fmt.Sprintf("could not load NVML library: %v", err)
 	}
-	defer lib.Close()
 
 	return true, "found NVML library"
 }
@@ -75,4 +85,18 @@ func (i *infolib) IsTegraSystem() (bool, string) {
 	}
 
 	return false, fmt.Sprintf("%v has no 'tegra' prefix", tegraFamilyFile)
+}
+
+// assertHasLibrary returns an error if the specified library cannot be loaded
+func assertHasLibrary(libraryName string) error {
+	const (
+		libraryLoadFlags = dl.RTLD_LAZY
+	)
+	lib := dl.New(libraryName, libraryLoadFlags)
+	if err := lib.Open(); err != nil {
+		return err
+	}
+	defer lib.Close()
+
+	return nil
 }

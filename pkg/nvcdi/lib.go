@@ -19,6 +19,7 @@ package nvcdi
 import (
 	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
+	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
 
@@ -39,7 +40,7 @@ func New(opts ...Option) Interface {
 		opt(l)
 	}
 	if l.mode == "" {
-		l.mode = "nvml"
+		l.mode = "auto"
 	}
 	if l.logger == nil {
 		l.logger = logrus.StandardLogger()
@@ -54,7 +55,7 @@ func New(opts ...Option) Interface {
 		l.nvidiaCTKPath = "/usr/bin/nvidia-ctk"
 	}
 
-	switch l.mode {
+	switch l.resolveMode() {
 	case "nvml":
 		if l.nvmllib == nil {
 			l.nvmllib = nvml.New()
@@ -70,4 +71,25 @@ func New(opts ...Option) Interface {
 
 	// TODO: We want an error here.
 	return nil
+}
+
+// resolveMode resolves the mode for CDI spec generation based on the current system.
+func (l *nvcdilib) resolveMode() (rmode string) {
+	if l.mode != "auto" {
+		return l.mode
+	}
+	defer func() {
+		l.logger.Infof("Auto-detected mode as %q", rmode)
+	}()
+
+	nvinfo := info.New()
+
+	isWSL, reason := nvinfo.HasDXCore()
+	l.logger.Debugf("Is WSL-based system? %v: %v", isWSL, reason)
+
+	if isWSL {
+		return "wsl"
+	}
+
+	return "nvml"
 }
