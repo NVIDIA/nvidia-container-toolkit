@@ -22,6 +22,15 @@ import (
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 )
 
+const (
+	// ModeAuto configures the CDI spec generator to automatically detect the system configuration
+	ModeAuto = "auto"
+	// ModeNvml configures the CDI spec generator to use the NVML library.
+	ModeNvml = "nvml"
+	// ModeWsl configures the CDI spec generator to generate a WSL spec.
+	ModeWsl = "wsl"
+)
+
 // Interface defines the API for the nvcdi package
 type Interface interface {
 	GetCommonEdits() (*cdi.ContainerEdits, error)

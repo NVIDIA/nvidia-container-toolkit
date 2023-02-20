@@ -31,6 +31,8 @@ type nvcdilib struct {
 	deviceNamer   DeviceNamer
 	driverRoot    string
 	nvidiaCTKPath string
+
+	infolib info.Interface
 }
 
 // New creates a new nvcdi library
@@ -40,7 +42,7 @@ func New(opts ...Option) Interface {
 		opt(l)
 	}
 	if l.mode == "" {
-		l.mode = "auto"
+		l.mode = ModeAuto
 	}
 	if l.logger == nil {
 		l.logger = logrus.StandardLogger()
@@ -54,9 +56,12 @@ func New(opts ...Option) Interface {
 	if l.nvidiaCTKPath == "" {
 		l.nvidiaCTKPath = "/usr/bin/nvidia-ctk"
 	}
+	if l.infolib == nil {
+		l.infolib = info.New()
+	}
 
 	switch l.resolveMode() {
-	case "nvml":
+	case ModeNvml:
 		if l.nvmllib == nil {
 			l.nvmllib = nvml.New()
 		}
@@ -65,7 +70,7 @@ func New(opts ...Option) Interface {
 		}
 
 		return (*nvmllib)(l)
-	case "wsl":
+	case ModeWsl:
 		return (*wsllib)(l)
 	}
 
@@ -75,21 +80,19 @@ func New(opts ...Option) Interface {
 
 // resolveMode resolves the mode for CDI spec generation based on the current system.
 func (l *nvcdilib) resolveMode() (rmode string) {
-	if l.mode != "auto" {
+	if l.mode != ModeAuto {
 		return l.mode
 	}
 	defer func() {
 		l.logger.Infof("Auto-detected mode as %q", rmode)
 	}()
 
-	nvinfo := info.New()
-
-	isWSL, reason := nvinfo.HasDXCore()
+	isWSL, reason := l.infolib.HasDXCore()
 	l.logger.Debugf("Is WSL-based system? %v: %v", isWSL, reason)
 
 	if isWSL {
-		return "wsl"
+		return ModeWsl
 	}
 
-	return "nvml"
+	return ModeNvml
 }
