@@ -30,7 +30,7 @@ import (
 )
 
 // GetMIGDeviceSpecs returns the CDI device specs for the full GPU represented by 'device'.
-func (l *nvcdilib) GetMIGDeviceSpecs(i int, d device.Device, j int, mig device.MigDevice) (*specs.Device, error) {
+func (l *nvmllib) GetMIGDeviceSpecs(i int, d device.Device, j int, mig device.MigDevice) (*specs.Device, error) {
 	edits, err := l.GetMIGDeviceEdits(d, mig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get edits for device: %v", err)
@@ -50,7 +50,7 @@ func (l *nvcdilib) GetMIGDeviceSpecs(i int, d device.Device, j int, mig device.M
 }
 
 // GetMIGDeviceEdits returns the CDI edits for the MIG device represented by 'mig' on 'parent'.
-func (l *nvcdilib) GetMIGDeviceEdits(parent device.Device, mig device.MigDevice) (*cdi.ContainerEdits, error) {
+func (l *nvmllib) GetMIGDeviceEdits(parent device.Device, mig device.MigDevice) (*cdi.ContainerEdits, error) {
 	gpu, ret := parent.GetMinorNumber()
 	if ret != nvml.SUCCESS {
 		return nil, fmt.Errorf("error getting GPU minor: %v", ret)

@@ -66,3 +66,10 @@ func WithNvmlLib(nvmllib nvml.Interface) Option {
 		l.nvmllib = nvmllib
 	}
 }
+
+// WithMode sets the discovery mode for the library
+func WithMode(mode string) Option {
+	return func(l *nvcdilib) {
+		l.mode = mode
+	}
+}

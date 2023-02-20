@@ -17,9 +17,6 @@
 package nvcdi
 
 import (
-	"fmt"
-
-	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
@@ -28,6 +25,7 @@ import (
 type nvcdilib struct {
 	logger        *logrus.Logger
 	nvmllib       nvml.Interface
+	mode          string
 	devicelib     device.Interface
 	deviceNamer   DeviceNamer
 	driverRoot    string
@@ -40,12 +38,8 @@ func New(opts ...Option) Interface {
 	for _, opt := range opts {
 		opt(l)
 	}
-
-	if l.nvmllib == nil {
-		l.nvmllib = nvml.New()
-	}
-	if l.devicelib == nil {
-		l.devicelib = device.New(device.WithNvml(l.nvmllib))
+	if l.mode == "" {
+		l.mode = "nvml"
 	}
 	if l.logger == nil {
 		l.logger = logrus.StandardLogger()
@@ -60,58 +54,20 @@ func New(opts ...Option) Interface {
 		l.nvidiaCTKPath = "/usr/bin/nvidia-ctk"
 	}
 
-	return l
-}
-
-// GetAllDeviceSpecs returns the device specs for all available devices.
-func (l *nvcdilib) GetAllDeviceSpecs() ([]specs.Device, error) {
-	var deviceSpecs []specs.Device
-
-	gpuDeviceSpecs, err := l.getGPUDeviceSpecs()
-	if err != nil {
-		return nil, err
-	}
-	deviceSpecs = append(deviceSpecs, gpuDeviceSpecs...)
-
-	migDeviceSpecs, err := l.getMigDeviceSpecs()
-	if err != nil {
-		return nil, err
-	}
-	deviceSpecs = append(deviceSpecs, migDeviceSpecs...)
-
-	return deviceSpecs, nil
-}
-
-func (l *nvcdilib) getGPUDeviceSpecs() ([]specs.Device, error) {
-	var deviceSpecs []specs.Device
-	err := l.devicelib.VisitDevices(func(i int, d device.Device) error {
-		deviceSpec, err := l.GetGPUDeviceSpecs(i, d)
-		if err != nil {
-			return err
+	switch l.mode {
+	case "nvml":
+		if l.nvmllib == nil {
+			l.nvmllib = nvml.New()
 		}
-		deviceSpecs = append(deviceSpecs, *deviceSpec)
-
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate CDI edits for GPU devices: %v", err)
-	}
-	return deviceSpecs, err
-}
-
-func (l *nvcdilib) getMigDeviceSpecs() ([]specs.Device, error) {
-	var deviceSpecs []specs.Device
-	err := l.devicelib.VisitMigDevices(func(i int, d device.Device, j int, mig device.MigDevice) error {
-		deviceSpec, err := l.GetMIGDeviceSpecs(i, d, j, mig)
-		if err != nil {
-			return err
+		if l.devicelib == nil {
+			l.devicelib = device.New(device.WithNvml(l.nvmllib))
 		}
-		deviceSpecs = append(deviceSpecs, *deviceSpec)
 
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate CDI edits for GPU devices: %v", err)
+		return (*nvmllib)(l)
+	case "wsl":
+		return (*wsllib)(l)
 	}
-	return deviceSpecs, err
+
+	// TODO: We want an error here.
+	return nil
 }

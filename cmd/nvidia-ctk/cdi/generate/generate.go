@@ -36,8 +36,13 @@ import (
 )
 
 const (
+	discoveryModeNVML = "nvml"
+	discoveryModeWSL  = "wsl"
+
 	formatJSON = "json"
 	formatYAML = "yaml"
+
+	allDeviceName = "all"
 )
 
 type command struct {
@@ -50,6 +55,7 @@ type config struct {
 	deviceNameStrategy string
 	driverRoot         string
 	nvidiaCTKPath      string
+	discoveryMode      string
 }
 
 // NewCommand constructs a generate-cdi command with the specified logger
@@ -89,6 +95,12 @@ func (m command) build() *cli.Command {
 			Destination: &cfg.format,
 		},
 		&cli.StringFlag{
+			Name:        "discovery-mode",
+			Usage:       "The mode to use when discovering the available entities. One of [nvml | wsl]",
+			Value:       discoveryModeNVML,
+			Destination: &cfg.discoveryMode,
+		},
+		&cli.StringFlag{
 			Name:        "device-name-strategy",
 			Usage:       "Specify the strategy for generating device names. One of [index | uuid | type-index]",
 			Value:       nvcdi.DeviceNameStrategyIndex,
@@ -116,6 +128,14 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 	case formatYAML:
 	default:
 		return fmt.Errorf("invalid output format: %v", cfg.format)
+	}
+
+	cfg.discoveryMode = strings.ToLower(cfg.discoveryMode)
+	switch cfg.discoveryMode {
+	case discoveryModeNVML:
+	case discoveryModeWSL:
+	default:
+		return fmt.Errorf("invalid discovery mode: %v", cfg.discoveryMode)
 	}
 
 	_, err := nvcdi.NewDeviceNamer(cfg.deviceNameStrategy)
@@ -229,16 +249,27 @@ func (m command) generateSpec(cfg *config) (*specs.Spec, error) {
 		nvcdi.WithDeviceNamer(deviceNamer),
 		nvcdi.WithDeviceLib(devicelib),
 		nvcdi.WithNvmlLib(nvmllib),
+		nvcdi.WithMode(string(cfg.discoveryMode)),
 	)
 
 	deviceSpecs, err := cdilib.GetAllDeviceSpecs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device CDI specs: %v", err)
 	}
-
-	allDevice := createAllDevice(deviceSpecs)
-
-	deviceSpecs = append(deviceSpecs, allDevice)
+	var hasAll bool
+	for _, deviceSpec := range deviceSpecs {
+		if deviceSpec.Name == allDeviceName {
+			hasAll = true
+			break
+		}
+	}
+	if !hasAll {
+		allDevice, err := MergeDeviceSpecs(deviceSpecs, allDeviceName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create CDI specification for %q device: %v", allDeviceName, err)
+		}
+		deviceSpecs = append(deviceSpecs, allDevice)
+	}
 
 	commonEdits, err := cdilib.GetCommonEdits()
 	if err != nil {
@@ -270,22 +301,32 @@ func (m command) generateSpec(cfg *config) (*specs.Spec, error) {
 	return &spec, nil
 }
 
-// createAllDevice creates an 'all' device which combines the edits from the previous devices
-func createAllDevice(deviceSpecs []specs.Device) specs.Device {
-	edits := edits.NewContainerEdits()
+// MergeDeviceSpecs creates a device with the specified name which combines the edits from the previous devices.
+// If a device of the specified name already exists, an error is returned.
+func MergeDeviceSpecs(deviceSpecs []specs.Device, mergedDeviceName string) (specs.Device, error) {
+	if err := cdi.ValidateDeviceName(mergedDeviceName); err != nil {
+		return specs.Device{}, fmt.Errorf("invalid device name %q: %v", mergedDeviceName, err)
+	}
+	for _, d := range deviceSpecs {
+		if d.Name == mergedDeviceName {
+			return specs.Device{}, fmt.Errorf("device %q already exists", mergedDeviceName)
+		}
+	}
+
+	mergedEdits := edits.NewContainerEdits()
 
 	for _, d := range deviceSpecs {
 		edit := cdi.ContainerEdits{
 			ContainerEdits: &d.ContainerEdits,
 		}
-		edits.Append(&edit)
+		mergedEdits.Append(&edit)
 	}
 
-	all := specs.Device{
-		Name:           "all",
-		ContainerEdits: *edits.ContainerEdits,
+	merged := specs.Device{
+		Name:           mergedDeviceName,
+		ContainerEdits: *mergedEdits.ContainerEdits,
 	}
-	return all
+	return merged, nil
 }
 
 // createParentDirsIfRequired creates the parent folders of the specified path if requried.
