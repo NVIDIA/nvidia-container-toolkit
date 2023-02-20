@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
@@ -121,6 +122,8 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 	if err != nil {
 		return err
 	}
+
+	cfg.nvidiaCTKPath = discover.FindNvidiaCTK(m.logger, cfg.nvidiaCTKPath)
 
 	return nil
 }
