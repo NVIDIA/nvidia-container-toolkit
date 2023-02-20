@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
@@ -28,6 +29,11 @@ import (
 type nvmllib nvcdilib
 
 var _ Interface = (*nvmllib)(nil)
+
+// GetSpec should not be called for nvmllib
+func (l *nvmllib) GetSpec() (spec.Interface, error) {
+	return nil, fmt.Errorf("Unexpected call to nvmllib.GetSpec()")
+}
 
 // GetAllDeviceSpecs returns the device specs for all available devices.
 func (l *nvmllib) GetAllDeviceSpecs() ([]specs.Device, error) {

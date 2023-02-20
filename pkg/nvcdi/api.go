@@ -17,6 +17,7 @@
 package nvcdi
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
@@ -33,6 +34,7 @@ const (
 
 // Interface defines the API for the nvcdi package
 type Interface interface {
+	GetSpec() (spec.Interface, error)
 	GetCommonEdits() (*cdi.ContainerEdits, error)
 	GetAllDeviceSpecs() ([]specs.Device, error)
 	GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, error)
