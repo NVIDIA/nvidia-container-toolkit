@@ -1,5 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.13.0-rc.2
+
 ## v1.13.0-rc.1
 
 * Include MIG-enabled devices as GPUs when generating CDI specification
