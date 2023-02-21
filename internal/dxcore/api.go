@@ -49,9 +49,15 @@ func Shutdown() error {
 // GetDriverStorePaths returns the list of driver store paths
 func GetDriverStorePaths() []string {
 	var paths []string
+	selected := make(map[string]bool)
+
 	for i := 0; i < dxcore.getAdapterCount(); i++ {
-		adapter := dxcore.getAdapter(i)
-		paths = append(paths, adapter.getDriverStorePath())
+		path := dxcore.getAdapter(i).getDriverStorePath()
+		if selected[path] {
+			continue
+		}
+		selected[path] = true
+		paths = append(paths, path)
 	}
 
 	return paths
