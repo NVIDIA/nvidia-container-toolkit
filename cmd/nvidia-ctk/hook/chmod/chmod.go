@@ -18,6 +18,7 @@ package chmod
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -133,7 +134,12 @@ func (m command) run(c *cli.Context, cfg *config) error {
 func (m command) getPaths(root string, paths []string) []string {
 	var pathsInRoot []string
 	for _, f := range paths {
-		pathsInRoot = append(pathsInRoot, filepath.Join(root, f))
+		path := filepath.Join(root, f)
+		if _, err := os.Stat(path); err != nil {
+			m.logger.Debugf("Skipping path %q: %v", path, err)
+			continue
+		}
+		pathsInRoot = append(pathsInRoot, path)
 	}
 
 	return pathsInRoot
