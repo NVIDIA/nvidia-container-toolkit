@@ -2,8 +2,19 @@
 
 ## v1.13.0-rc.1
 
-* Discover gsb*.bin files for GSP firmware when generating CDI specification
-* [libnvidia-container] Inject gsp*.bin files for GSP firmware
+* Include MIG-enabled devices as GPUs when generating CDI specification
+* Fix missing NVML symbols when running `nvidia-ctk` on some platforms [#49]
+* Add CDI spec generation for WSL2-based systems to `nvidia-ctk cdi generate` command
+* Add `auto` mode to `nvidia-ctk cdi generate` command to automatically detect a WSL2-based system over a standard NVML-based system.
+* Add mode-specific (`.cdi` and `.legacy`) NVIDIA Container Runtime binaries for use in the GPU Operator
+* Discover all `gsb*.bin` GSP firmware files when generating CDI specification.
+* Align `.deb` and `.rpm` release candidate package versions
+* Remove `fedora35` packaging targets
+* [libnvidia-container] Include all `gsp*.bin` firmware files if present
+* [libnvidia-container] Align `.deb` and `.rpm` release candidate package versions
+* [libnvidia-container] Remove `fedora35` packaging targets
+* [toolkit-container] Install `nvidia-container-toolkit-operator-extensions` package for mode-specific executables.
+* [toolkit-container] Allow `nvidia-container-runtime.mode` to be set when configuring the NVIDIA Container Toolkit
 
 ## v1.12.0
 
