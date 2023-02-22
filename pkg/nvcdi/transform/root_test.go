@@ -98,18 +98,54 @@ func TestRootTransformer(t *testing.T) {
 			spec: &specs.Spec{
 				ContainerEdits: specs.ContainerEdits{
 					Hooks: []*specs.Hook{
-						{Path: "/root/usr/bin/nvidia-ctk"},
-						{Path: "/target-root/usr/bin/nvidia-ctk"},
-						{Path: "/different-root/usr/bin/nvidia-ctk"},
+						{
+							Path: "/root/usr/bin/nvidia-ctk",
+							Args: []string{
+								"--link",
+								"/root/path/to/target::/root/path/to/link",
+							},
+						},
+						{
+							Path: "/target-root/usr/bin/nvidia-ctk",
+							Args: []string{
+								"--link",
+								"/target-root/path/to/target::/target-root/path/to/link",
+							},
+						},
+						{
+							Path: "/different-root/usr/bin/nvidia-ctk",
+							Args: []string{
+								"--link",
+								"/different-root/path/to/target::/different-root/path/to/link",
+							},
+						},
 					},
 				},
 			},
 			expectedSpec: &specs.Spec{
 				ContainerEdits: specs.ContainerEdits{
 					Hooks: []*specs.Hook{
-						{Path: "/target-root/usr/bin/nvidia-ctk"},
-						{Path: "/target-root/usr/bin/nvidia-ctk"},
-						{Path: "/different-root/usr/bin/nvidia-ctk"},
+						{
+							Path: "/target-root/usr/bin/nvidia-ctk",
+							Args: []string{
+								"--link",
+								"/target-root/path/to/target::/target-root/path/to/link",
+							},
+						},
+						{
+							Path: "/target-root/usr/bin/nvidia-ctk",
+							Args: []string{
+								"--link",
+								"/target-root/path/to/target::/target-root/path/to/link",
+							},
+						},
+						{
+							Path: "/different-root/usr/bin/nvidia-ctk",
+							Args: []string{
+								"--link",
+								"/different-root/path/to/target::/different-root/path/to/link",
+							},
+						},
 					},
 				},
 			},

@@ -32,8 +32,13 @@ type rootTransformer struct {
 var _ Transformer = (*rootTransformer)(nil)
 
 // NewRootTransformer creates a new transformer for modifying
-// the root for paths in a CDI spec.
+// the root for paths in a CDI spec. If both roots are identical,
+// this tranformer is a no-op.
 func NewRootTransformer(root string, targetRoot string) Transformer {
+	if root == targetRoot {
+		return NewNoopTransformer()
+	}
+
 	t := rootTransformer{
 		root:       root,
 		targetRoot: targetRoot,
@@ -69,10 +74,23 @@ func (t rootTransformer) applyToEdits(edits *specs.ContainerEdits) error {
 	for i, hook := range edits.Hooks {
 		hook.Path = t.transformPath(hook.Path)
 
-		// TODO: The args need more attention. For the hooks that create symlinks we would have to transform these too.
 		var args []string
 		for _, arg := range hook.Args {
-			args = append(args, t.transformPath(arg))
+			if !strings.Contains(arg, "::") {
+				args = append(args, t.transformPath(arg))
+				continue
+			}
+
+			// For the 'create-symlinks' hook, special care is taken for the
+			// '--link' flag argument which takes the form <target>::<link>.
+			// Both paths, the target and link paths, are transformed.
+			split := strings.Split(arg, "::")
+			if len(split) != 2 {
+				return fmt.Errorf("unexpected number of '::' separators in hook argument")
+			}
+			split[0] = t.transformPath(split[0])
+			split[1] = t.transformPath(split[1])
+			args = append(args, strings.Join(split, "::"))
 		}
 		hook.Args = args
 		edits.Hooks[i] = hook
