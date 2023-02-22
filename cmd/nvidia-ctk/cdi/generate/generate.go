@@ -187,6 +187,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		if err != nil {
 			return fmt.Errorf("failed to convert CDI spec from YAML to JSON: %v", err)
 		}
+		return nil
 	}
 
 	err = writeToOutput(cfg.format, data, outputTo)

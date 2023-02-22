@@ -17,44 +17,92 @@
 package spec
 
 import (
-	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 )
 
-type spec specs.Spec
+type spec struct {
+	*specs.Spec
+	format string
+}
 
 var _ Interface = (*spec)(nil)
 
-// New creates a new spec with the specified deivice specs and edits.
-func New(deviceSpecs []specs.Device, edits specs.ContainerEdits) (Interface, error) {
-	s := specs.Spec{
-		// TODO: Should be set through an option
-		Version: "NOT_SET",
-		// TODO: Should be set through an option
-		Kind: "nvidia.com/gpu",
-		// TODO: Should be set through an option
-		Devices: deviceSpecs,
-		// TODO: Should be set through an option
-		ContainerEdits: edits,
-	}
-
-	minVersion, err := cdi.MinimumRequiredVersion(&s)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get minumum required CDI spec version: %v", err)
-	}
-	s.Version = minVersion
-
-	return (*spec)(&s), nil
+// New creates a new spec with the specified options.
+func New(opts ...Option) (Interface, error) {
+	return NewBuilder(opts...).Build()
 }
 
 // Save writes the spec to the specified path and overwrites the file if it exists.
 func (s *spec) Save(path string) error {
-	return cdi.WriteSpec(s, path, true)
+	path = s.normalizePath(path)
+
+	specDir := filepath.Dir(path)
+	registry := cdi.GetRegistry(
+		cdi.WithAutoRefresh(false),
+		cdi.WithSpecDirs(specDir),
+	)
+
+	return registry.SpecDB().WriteSpec(s.Raw(), filepath.Base(path))
+}
+
+// WriteTo writes the spec to the specified writer.
+func (s *spec) WriteTo(w io.Writer) (int64, error) {
+	name, err := cdi.GenerateNameForSpec(s.Raw())
+	if err != nil {
+		return 0, err
+	}
+
+	path := s.normalizePath(name)
+	tmpFile, err := os.CreateTemp("", "*"+filepath.Base(path))
+	if err != nil {
+		return 0, err
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if err := s.Save(tmpFile.Name()); err != nil {
+		return 0, err
+	}
+
+	err = tmpFile.Close()
+	if err != nil {
+		return 0, fmt.Errorf("failed to close temporary file: %w", err)
+	}
+
+	r, err := os.Open(tmpFile.Name())
+	if err != nil {
+		return 0, fmt.Errorf("failed to open temporary file: %w", err)
+	}
+	defer r.Close()
+
+	return io.Copy(w, r)
 }
 
 // Raw returns a pointer to the raw spec.
 func (s *spec) Raw() *specs.Spec {
-	return (*specs.Spec)(s)
+	return s.Spec
+}
+
+// normalizePath ensures that the specified path has a supported extension
+func (s *spec) normalizePath(path string) string {
+	if ext := filepath.Ext(path); ext != ".yaml" && ext != ".json" {
+		path += s.extension()
+	}
+
+	return path
+}
+
+func (s *spec) extension() string {
+	switch s.format {
+	case "json":
+		return ".json"
+	case "yaml", "yml":
+		return ".yaml"
+	}
+
+	return ".yaml"
 }

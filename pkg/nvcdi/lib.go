@@ -98,7 +98,11 @@ func (l *wrapper) GetSpec() (spec.Interface, error) {
 		return nil, err
 	}
 
-	return spec.New(deviceSpecs, *edits.ContainerEdits)
+	return spec.New(
+		spec.WithDeviceSpecs(deviceSpecs),
+		spec.WithEdits(*edits.ContainerEdits),
+	)
+
 }
 
 // resolveMode resolves the mode for CDI spec generation based on the current system.

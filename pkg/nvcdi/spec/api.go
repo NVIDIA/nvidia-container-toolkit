@@ -16,10 +16,20 @@
 
 package spec
 
-import "github.com/container-orchestrated-devices/container-device-interface/specs-go"
+import (
+	"io"
+
+	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
+)
+
+const (
+	// DetectMinimumVersion is a constant that triggers a spec to detect the minimum required version.
+	DetectMinimumVersion = "DETECT_MINIMUM_VERSION"
+)
 
 // Interface is the interface for the spec API
 type Interface interface {
+	io.WriterTo
 	Save(string) error
 	Raw() *specs.Spec
 }
