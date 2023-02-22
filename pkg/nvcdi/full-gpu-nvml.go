@@ -115,9 +115,17 @@ func newFullGPUDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPat
 		deviceNodes:   deviceNodes,
 	}
 
+	deviceFolderPermissionHooks := newDeviceFolderPermissionHookDiscoverer(
+		logger,
+		driverRoot,
+		nvidiaCTKPath,
+		deviceNodes,
+	)
+
 	dd := discover.Merge(
 		deviceNodes,
 		byPathHooks,
+		deviceFolderPermissionHooks,
 	)
 
 	return dd, nil

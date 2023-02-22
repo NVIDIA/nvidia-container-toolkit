@@ -273,12 +273,6 @@ func (m command) generateSpec(cfg *config) (*specs.Spec, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create edits common for entities: %v", err)
 	}
-	deviceFolderPermissionEdits, err := GetDeviceFolderPermissionHookEdits(m.logger, cfg.driverRoot, cfg.nvidiaCTKPath, deviceSpecs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generated edits for device folder permissions: %v", err)
-	}
-
-	commonEdits.Append(deviceFolderPermissionEdits)
 
 	// We construct the spec and determine the minimum required version based on the specification.
 	spec := specs.Spec{
