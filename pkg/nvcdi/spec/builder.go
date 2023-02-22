@@ -33,8 +33,8 @@ type builder struct {
 	format      string
 }
 
-// NewBuilder creates a new spec builder with the supplied options
-func NewBuilder(opts ...Option) *builder {
+// newBuilder creates a new spec builder with the supplied options
+func newBuilder(opts ...Option) *builder {
 	s := &builder{}
 	for _, opt := range opts {
 		opt(s)
@@ -47,6 +47,9 @@ func NewBuilder(opts ...Option) *builder {
 	}
 	if s.class == "" {
 		s.class = "gpu"
+	}
+	if s.format == "" {
+		s.format = FormatYAML
 	}
 
 	return s

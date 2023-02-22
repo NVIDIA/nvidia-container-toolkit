@@ -34,7 +34,7 @@ var _ Interface = (*spec)(nil)
 
 // New creates a new spec with the specified options.
 func New(opts ...Option) (Interface, error) {
-	return NewBuilder(opts...).Build()
+	return newBuilder(opts...).Build()
 }
 
 // Save writes the spec to the specified path and overwrites the file if it exists.
@@ -98,9 +98,9 @@ func (s *spec) normalizePath(path string) string {
 
 func (s *spec) extension() string {
 	switch s.format {
-	case "json":
+	case FormatJSON:
 		return ".json"
-	case "yaml", "yml":
+	case FormatYAML:
 		return ".yaml"
 	}
 

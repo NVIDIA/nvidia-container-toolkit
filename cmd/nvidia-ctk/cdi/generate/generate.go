@@ -35,9 +35,6 @@ import (
 )
 
 const (
-	formatJSON = "json"
-	formatYAML = "yaml"
-
 	allDeviceName = "all"
 )
 
@@ -87,7 +84,7 @@ func (m command) build() *cli.Command {
 		&cli.StringFlag{
 			Name:        "format",
 			Usage:       "The output format for the generated spec [json | yaml]. This overrides the format defined by the output file extension (if specified).",
-			Value:       formatYAML,
+			Value:       spec.FormatYAML,
 			Destination: &cfg.format,
 		},
 		&cli.StringFlag{
@@ -121,8 +118,8 @@ func (m command) validateFlags(c *cli.Context, cfg *config) error {
 
 	cfg.format = strings.ToLower(cfg.format)
 	switch cfg.format {
-	case formatJSON:
-	case formatYAML:
+	case spec.FormatJSON:
+	case spec.FormatYAML:
 	default:
 		return fmt.Errorf("invalid output format: %v", cfg.format)
 	}
@@ -160,7 +157,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	if err != nil {
 		return fmt.Errorf("failed to generate CDI spec: %v", err)
 	}
-	m.logger.Infof("Generated CDI spec with version", spec.Raw().Version)
+	m.logger.Infof("Generated CDI spec with version %v", spec.Raw().Version)
 
 	if cfg.output == "" {
 		_, err := spec.WriteTo(os.Stdout)
@@ -181,11 +178,9 @@ func formatFromFilename(filename string) string {
 	ext := filepath.Ext(filename)
 	switch strings.ToLower(ext) {
 	case ".json":
-		return formatJSON
-	case ".yaml":
-		return formatYAML
-	case ".yml":
-		return formatYAML
+		return spec.FormatJSON
+	case ".yaml", ".yml":
+		return spec.FormatYAML
 	}
 
 	return ""

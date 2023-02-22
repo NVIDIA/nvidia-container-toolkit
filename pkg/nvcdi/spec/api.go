@@ -25,6 +25,11 @@ import (
 const (
 	// DetectMinimumVersion is a constant that triggers a spec to detect the minimum required version.
 	DetectMinimumVersion = "DETECT_MINIMUM_VERSION"
+
+	// FormatJSON indicates a JSON output format
+	FormatJSON = "json"
+	// FormatYAML indicates a YAML output format
+	FormatYAML = "yaml"
 )
 
 // Interface is the interface for the spec API
