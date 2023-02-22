@@ -26,6 +26,9 @@ import (
 
 type wrapper struct {
 	Interface
+
+	vendor string
+	class  string
 }
 
 type nvcdilib struct {
@@ -36,6 +39,9 @@ type nvcdilib struct {
 	deviceNamer   DeviceNamer
 	driverRoot    string
 	nvidiaCTKPath string
+
+	vendor string
+	class  string
 
 	infolib info.Interface
 }
@@ -83,7 +89,12 @@ func New(opts ...Option) Interface {
 		panic("Unknown mode")
 	}
 
-	return &wrapper{Interface: lib}
+	w := wrapper{
+		Interface: lib,
+		vendor:    l.vendor,
+		class:     l.class,
+	}
+	return &w
 }
 
 // GetSpec combines the device specs and common edits from the wrapped Interface to a single spec.Interface.
@@ -101,6 +112,8 @@ func (l *wrapper) GetSpec() (spec.Interface, error) {
 	return spec.New(
 		spec.WithDeviceSpecs(deviceSpecs),
 		spec.WithEdits(*edits.ContainerEdits),
+		spec.WithVendor(l.vendor),
+		spec.WithClass(l.class),
 	)
 
 }
