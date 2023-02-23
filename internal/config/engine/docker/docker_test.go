@@ -26,7 +26,7 @@ import (
 
 func TestUpdateConfigDefaultRuntime(t *testing.T) {
 	testCases := []struct {
-		config                     map[string]interface{}
+		config                     Config
 		runtimeName                string
 		setAsDefault               bool
 		expectedDefaultRuntimeName interface{}
@@ -63,7 +63,7 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 			if tc.config == nil {
 				tc.config = make(map[string]interface{})
 			}
-			err := UpdateConfig(tc.config, tc.runtimeName, "", tc.setAsDefault)
+			err := tc.config.AddRuntime(tc.runtimeName, "", tc.setAsDefault)
 			require.NoError(t, err)
 
 			defaultRuntimeName := tc.config["default-runtime"]
@@ -74,7 +74,7 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 
 func TestUpdateConfigRuntimes(t *testing.T) {
 	testCases := []struct {
-		config         map[string]interface{}
+		config         Config
 		runtimes       map[string]string
 		expectedConfig map[string]interface{}
 	}{
@@ -198,7 +198,7 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("test case %d", i), func(t *testing.T) {
 			for runtimeName, runtimePath := range tc.runtimes {
-				err := UpdateConfig(tc.config, runtimeName, runtimePath, false)
+				err := tc.config.AddRuntime(runtimeName, runtimePath, false)
 				require.NoError(t, err)
 			}
 

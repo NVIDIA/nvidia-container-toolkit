@@ -127,13 +127,14 @@ func (m command) configureDocker(c *cli.Context, config *config) error {
 		configFilePath = defaultDockerConfigFilePath
 	}
 
-	cfg, err := docker.LoadConfig(configFilePath)
+	cfg, err := docker.New(
+		docker.WithPath(configFilePath),
+	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	err = docker.UpdateConfig(
-		cfg,
+	err = cfg.AddRuntime(
 		config.nvidiaOptions.RuntimeName,
 		config.nvidiaOptions.RuntimePath,
 		config.nvidiaOptions.SetAsDefault,
@@ -150,12 +151,16 @@ func (m command) configureDocker(c *cli.Context, config *config) error {
 		os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
 		return nil
 	}
-	err = docker.FlushConfig(cfg, configFilePath)
+	n, err := cfg.Save(configFilePath)
 	if err != nil {
 		return fmt.Errorf("unable to flush config: %v", err)
 	}
 
-	m.logger.Infof("Wrote updated config to %v", configFilePath)
+	if n == 0 {
+		m.logger.Infof("Removed empty config from %v", configFilePath)
+	} else {
+		m.logger.Infof("Wrote updated config to %v", configFilePath)
+	}
 	m.logger.Infof("It is recommended that the docker daemon be restarted.")
 
 	return nil

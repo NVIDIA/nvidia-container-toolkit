@@ -17,47 +17,39 @@
 package docker
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine"
 )
 
-// LoadConfig loads the docker config from disk
-func LoadConfig(configFilePath string) (map[string]interface{}, error) {
-	log.Infof("Loading docker config from %v", configFilePath)
+const (
+	defaultDockerRuntime = "runc"
+)
 
-	info, err := os.Stat(configFilePath)
-	if os.IsExist(err) && info.IsDir() {
-		return nil, fmt.Errorf("config file is a directory")
+// Config defines a docker config file.
+// TODO: This should not be public, but we need to access it from the tests in tools/container/docker
+type Config map[string]interface{}
+
+// New creates a docker config with the specified options
+func New(opts ...Option) (engine.Interface, error) {
+	b := &builder{}
+	for _, opt := range opts {
+		opt(b)
 	}
 
-	cfg := make(map[string]interface{})
-
-	if os.IsNotExist(err) {
-		log.Infof("Config file does not exist, creating new one")
-		return cfg, nil
-	}
-
-	readBytes, err := ioutil.ReadFile(configFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read config: %v", err)
-	}
-
-	reader := bytes.NewReader(readBytes)
-	if err := json.NewDecoder(reader).Decode(&cfg); err != nil {
-		return nil, err
-	}
-
-	log.Infof("Successfully loaded config")
-	return cfg, nil
+	return b.build()
 }
 
-// UpdateConfig updates the docker config to include the nvidia runtimes
-func UpdateConfig(config map[string]interface{}, runtimeName string, runtimePath string, setAsDefault bool) error {
+// AddRuntime adds a new runtime to the docker config
+func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
+	if c == nil {
+		return fmt.Errorf("config is nil")
+	}
+
+	config := *c
+
 	// Read the existing runtimes
 	runtimes := make(map[string]interface{})
 	if _, exists := config["runtimes"]; exists {
@@ -65,53 +57,84 @@ func UpdateConfig(config map[string]interface{}, runtimeName string, runtimePath
 	}
 
 	// Add / update the runtime definitions
-	runtimes[runtimeName] = map[string]interface{}{
-		"path": runtimePath,
+	runtimes[name] = map[string]interface{}{
+		"path": path,
 		"args": []string{},
 	}
 
-	// Update the runtimes definition
-	if len(runtimes) > 0 {
-		config["runtimes"] = runtimes
-	}
+	config["runtimes"] = runtimes
 
 	if setAsDefault {
-		config["default-runtime"] = runtimeName
+		config["default-runtime"] = name
 	}
+
+	*c = config
+	return nil
+}
+
+// DefaultRuntime returns the default runtime for the docker config
+func (c Config) DefaultRuntime() string {
+	r, ok := c["default-runtime"].(string)
+	if !ok {
+		return ""
+	}
+	return r
+}
+
+// RemoveRuntime removes a runtime from the docker config
+func (c *Config) RemoveRuntime(name string) error {
+	if c == nil {
+		return nil
+	}
+	config := *c
+
+	if _, exists := config["default-runtime"]; exists {
+		defaultRuntime := config["default-runtime"].(string)
+		if defaultRuntime == name {
+			config["default-runtime"] = defaultDockerRuntime
+		}
+	}
+
+	if _, exists := config["runtimes"]; exists {
+		runtimes := config["runtimes"].(map[string]interface{})
+
+		delete(runtimes, name)
+
+		if len(runtimes) == 0 {
+			delete(config, "runtimes")
+		}
+	}
+
+	*c = config
 
 	return nil
 }
 
-// FlushConfig flushes the updated/reverted config out to disk
-func FlushConfig(cfg map[string]interface{}, configFilePath string) error {
-	log.Infof("Flushing docker config to %v", configFilePath)
-
-	output, err := json.MarshalIndent(cfg, "", "    ")
+// Save writes the config to the specified path
+func (c Config) Save(path string) (int64, error) {
+	output, err := json.MarshalIndent(c, "", "    ")
 	if err != nil {
-		return fmt.Errorf("unable to convert to JSON: %v", err)
+		return 0, fmt.Errorf("unable to convert to JSON: %v", err)
 	}
 
-	switch len(output) {
-	case 0:
-		err := os.Remove(configFilePath)
+	if len(output) == 0 {
+		err := os.Remove(path)
 		if err != nil {
-			return fmt.Errorf("unable to remove empty file: %v", err)
+			return 0, fmt.Errorf("unable to remove empty file: %v", err)
 		}
-		log.Infof("Config empty, removing file")
-	default:
-		f, err := os.Create(configFilePath)
-		if err != nil {
-			return fmt.Errorf("unable to open %v for writing: %v", configFilePath, err)
-		}
-		defer f.Close()
-
-		_, err = f.WriteString(string(output))
-		if err != nil {
-			return fmt.Errorf("unable to write output: %v", err)
-		}
+		return 0, nil
 	}
 
-	log.Infof("Successfully flushed config")
+	f, err := os.Create(path)
+	if err != nil {
+		return 0, fmt.Errorf("unable to open %v for writing: %v", path, err)
+	}
+	defer f.Close()
 
-	return nil
+	n, err := f.WriteString(string(output))
+	if err != nil {
+		return 0, fmt.Errorf("unable to write output: %v", err)
+	}
+
+	return int64(n), nil
 }

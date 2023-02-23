@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/docker"
 	"github.com/stretchr/testify/require"
 )
 
@@ -60,9 +61,9 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 			runtimeDir:   runtimeDir,
 		}
 
-		config := map[string]interface{}{}
+		config := docker.Config(map[string]interface{}{})
 
-		err := UpdateConfig(config, o)
+		err := UpdateConfig(&config, o)
 		require.NoError(t, err, "%d: %v", i, tc)
 
 		defaultRuntimeName := config["default-runtime"]
@@ -74,7 +75,7 @@ func TestUpdateConfig(t *testing.T) {
 	const runtimeDir = "/test/runtime/dir"
 
 	testCases := []struct {
-		config         map[string]interface{}
+		config         docker.Config
 		setAsDefault   bool
 		runtimeName    string
 		expectedConfig map[string]interface{}
@@ -254,7 +255,8 @@ func TestUpdateConfig(t *testing.T) {
 			runtimeName:  tc.runtimeName,
 			runtimeDir:   runtimeDir,
 		}
-		err := UpdateConfig(tc.config, options)
+
+		err := UpdateConfig(&tc.config, options)
 		require.NoError(t, err, "%d: %v", i, tc)
 
 		configContent, err := json.MarshalIndent(tc.config, "", "    ")
@@ -269,7 +271,7 @@ func TestUpdateConfig(t *testing.T) {
 
 func TestRevertConfig(t *testing.T) {
 	testCases := []struct {
-		config         map[string]interface{}
+		config         docker.Config
 		expectedConfig map[string]interface{}
 	}{
 		{
@@ -368,7 +370,7 @@ func TestRevertConfig(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		err := RevertConfig(tc.config)
+		err := RevertConfig(&tc.config, &options{})
 
 		require.NoError(t, err, "%d: %v", i, tc)
 
@@ -379,45 +381,5 @@ func TestRevertConfig(t *testing.T) {
 		require.NoError(t, err)
 
 		require.EqualValues(t, string(expectedContent), string(configContent), "%d: %v", i, tc)
-	}
-}
-
-func TestFlagsDefaultRuntime(t *testing.T) {
-	testCases := []struct {
-		setAsDefault bool
-		runtimeName  string
-		expected     string
-	}{
-		{
-			expected: "",
-		},
-		{
-			runtimeName: "not-bool",
-			expected:    "",
-		},
-		{
-			setAsDefault: false,
-			runtimeName:  "nvidia",
-			expected:     "",
-		},
-		{
-			setAsDefault: true,
-			runtimeName:  "nvidia",
-			expected:     "nvidia",
-		},
-		{
-			setAsDefault: true,
-			runtimeName:  "nvidia-experimental",
-			expected:     "nvidia-experimental",
-		},
-	}
-
-	for i, tc := range testCases {
-		f := options{
-			setAsDefault: tc.setAsDefault,
-			runtimeName:  tc.runtimeName,
-		}
-
-		require.Equal(t, tc.expected, f.getDefaultRuntime(), "%d: %v", i, tc)
 	}
 }
