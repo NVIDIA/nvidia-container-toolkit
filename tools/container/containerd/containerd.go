@@ -21,11 +21,12 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"syscall"
 	"time"
 
-	toml "github.com/pelletier/go-toml"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/containerd"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )
@@ -194,24 +195,27 @@ func Setup(c *cli.Context, o *options) error {
 	}
 	o.runtimeDir = runtimeDir
 
-	cfg, err := LoadConfig(o.config)
+	cfg, err := containerd.New(
+		containerd.WithPath(o.config),
+		containerd.WithRuntimeType(o.runtimeType),
+		containerd.WithUseLegacyConfig(o.useLegacyConfig),
+	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	version, err := ParseVersion(cfg, o.useLegacyConfig)
-	if err != nil {
-		return fmt.Errorf("unable to parse version: %v", err)
-	}
-
-	err = UpdateConfig(cfg, o, version)
+	err = UpdateConfig(cfg, o)
 	if err != nil {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
 
-	err = FlushConfig(o.config, cfg)
+	log.Infof("Flushing containerd config to %v", o.config)
+	n, err := cfg.Save(o.config)
 	if err != nil {
 		return fmt.Errorf("unable to flush config: %v", err)
+	}
+	if n == 0 {
+		log.Infof("Config file is empty, removed")
 	}
 
 	err = RestartContainerd(o)
@@ -233,24 +237,27 @@ func Cleanup(c *cli.Context, o *options) error {
 		return fmt.Errorf("unable to parse args: %v", err)
 	}
 
-	cfg, err := LoadConfig(o.config)
+	cfg, err := containerd.New(
+		containerd.WithPath(o.config),
+		containerd.WithRuntimeType(o.runtimeType),
+		containerd.WithUseLegacyConfig(o.useLegacyConfig),
+	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	version, err := ParseVersion(cfg, o.useLegacyConfig)
-	if err != nil {
-		return fmt.Errorf("unable to parse version: %v", err)
-	}
-
-	err = RevertConfig(cfg, o, version)
+	err = RevertConfig(cfg, o)
 	if err != nil {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
 
-	err = FlushConfig(o.config, cfg)
+	log.Infof("Flushing containerd config to %v", o.config)
+	n, err := cfg.Save(o.config)
 	if err != nil {
 		return fmt.Errorf("unable to flush config: %v", err)
+	}
+	if n == 0 {
+		log.Infof("Config file is empty, removed")
 	}
 
 	err = RestartContainerd(o)
@@ -277,160 +284,36 @@ func ParseArgs(c *cli.Context) (string, error) {
 	return runtimeDir, nil
 }
 
-// LoadConfig loads the containerd config from disk
-func LoadConfig(config string) (*toml.Tree, error) {
-	log.Infof("Loading config: %v", config)
-
-	info, err := os.Stat(config)
-	if os.IsExist(err) && info.IsDir() {
-		return nil, fmt.Errorf("config file is a directory")
-	}
-
-	configFile := config
-	if os.IsNotExist(err) {
-		configFile = "/dev/null"
-		log.Infof("Config file does not exist, creating new one")
-	}
-
-	cfg, err := toml.LoadFile(configFile)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("Successfully loaded config")
-
-	return cfg, nil
-}
-
-// ParseVersion parses the version field out of the containerd config
-func ParseVersion(config *toml.Tree, useLegacyConfig bool) (int, error) {
-	var defaultVersion int
-	if !useLegacyConfig {
-		defaultVersion = 2
-	} else {
-		defaultVersion = 1
-	}
-
-	var version int
-	switch v := config.Get("version").(type) {
-	case nil:
-		switch len(config.Keys()) {
-		case 0: // No config exists, or the config file is empty, use version inferred from containerd
-			version = defaultVersion
-		default: // A config file exists, has content, and no version is set
-			version = 1
-		}
-	case int64:
-		version = int(v)
-	default:
-		return -1, fmt.Errorf("unsupported type for version field: %v", v)
-	}
-	log.Infof("Config version: %v", version)
-
-	if version == 1 {
-		log.Warnf("Support for containerd config version 1 is deprecated")
-	}
-
-	return version, nil
-}
-
 // UpdateConfig updates the containerd config to include the nvidia-container-runtime
-func UpdateConfig(config *toml.Tree, o *options, version int) error {
-	var err error
-
-	log.Infof("Updating config")
-	switch version {
-	case 1:
-		err = UpdateV1Config(config, o)
-	case 2:
-		err = UpdateV2Config(config, o)
-	default:
-		err = fmt.Errorf("unsupported containerd config version: %v", version)
+func UpdateConfig(cfg engine.Interface, o *options) error {
+	runtimes := operator.GetRuntimes(
+		operator.WithNvidiaRuntimeName(o.runtimeClass),
+		operator.WithSetAsDefault(o.setAsDefault),
+		operator.WithRoot(o.runtimeDir),
+	)
+	for class, runtime := range runtimes {
+		err := cfg.AddRuntime(class, runtime.Path, runtime.SetAsDefault)
+		if err != nil {
+			return fmt.Errorf("unable to update config for runtime class '%v': %v", class, err)
+		}
 	}
-	if err != nil {
-		return err
-	}
-	log.Infof("Successfully updated config")
 
 	return nil
 }
 
 // RevertConfig reverts the containerd config to remove the nvidia-container-runtime
-func RevertConfig(config *toml.Tree, o *options, version int) error {
-	var err error
-
-	log.Infof("Reverting config")
-	switch version {
-	case 1:
-		err = RevertV1Config(config, o)
-	case 2:
-		err = RevertV2Config(config, o)
-	default:
-		err = fmt.Errorf("unsupported containerd config version: %v", version)
-	}
-	if err != nil {
-		return err
-	}
-	log.Infof("Successfully reverted config")
-
-	return nil
-}
-
-// UpdateV1Config performs an update specific to v1 of the containerd config
-func UpdateV1Config(config *toml.Tree, o *options) error {
-	c := newConfigV1(config)
-	return c.Update(o)
-}
-
-// RevertV1Config performs a revert specific to v1 of the containerd config
-func RevertV1Config(config *toml.Tree, o *options) error {
-	c := newConfigV1(config)
-	return c.Revert(o)
-}
-
-// UpdateV2Config performs an update specific to v2 of the containerd config
-func UpdateV2Config(config *toml.Tree, o *options) error {
-	c := newConfigV2(config)
-	return c.Update(o)
-}
-
-// RevertV2Config performs a revert specific to v2 of the containerd config
-func RevertV2Config(config *toml.Tree, o *options) error {
-	c := newConfigV2(config)
-	return c.Revert(o)
-}
-
-// FlushConfig flushes the updated/reverted config out to disk
-func FlushConfig(config string, cfg *toml.Tree) error {
-	log.Infof("Flushing config")
-
-	output, err := cfg.ToTomlString()
-	if err != nil {
-		return fmt.Errorf("unable to convert to TOML: %v", err)
-	}
-
-	switch len(output) {
-	case 0:
-		err := os.Remove(config)
+func RevertConfig(cfg engine.Interface, o *options) error {
+	runtimes := operator.GetRuntimes(
+		operator.WithNvidiaRuntimeName(o.runtimeClass),
+		operator.WithSetAsDefault(o.setAsDefault),
+		operator.WithRoot(o.runtimeDir),
+	)
+	for class := range runtimes {
+		err := cfg.RemoveRuntime(class)
 		if err != nil {
-			return fmt.Errorf("unable to remove empty file: %v", err)
-		}
-		log.Infof("Config empty, removing file")
-	default:
-		f, err := os.Create(config)
-		if err != nil {
-			return fmt.Errorf("unable to open '%v' for writing: %v", config, err)
-		}
-		defer f.Close()
-
-		_, err = f.WriteString(output)
-		if err != nil {
-			return fmt.Errorf("unable to write output: %v", err)
+			return fmt.Errorf("unable to revert config for runtime class '%v': %v", class, err)
 		}
 	}
-
-	log.Infof("Successfully flushed config")
-
 	return nil
 }
 
@@ -550,37 +433,4 @@ func RestartContainerdSystemd(hostRootMount string) error {
 	}
 
 	return nil
-}
-
-// getDefaultRuntime returns the default runtime for the configured options.
-// If the configuration is invalid or the default runtimes should not be set
-// the empty string is returned.
-func (o options) getDefaultRuntime() string {
-	if o.setAsDefault {
-		if o.runtimeClass == nvidiaExperimentalRuntimeName {
-			return nvidiaExperimentalRuntimeName
-		}
-		if o.runtimeClass == "" {
-			return defaultRuntimeClass
-		}
-		return o.runtimeClass
-	}
-	return ""
-}
-
-// getRuntimeBinaries returns a map of runtime names to binary paths. This includes the
-// renaming of the `nvidia` runtime as per the --runtime-class command line flag.
-func (o options) getRuntimeBinaries() map[string]string {
-	runtimeBinaries := make(map[string]string)
-
-	for rt, bin := range nvidiaRuntimeBinaries {
-		runtime := rt
-		if o.runtimeClass != "" && o.runtimeClass != nvidiaExperimentalRuntimeName && runtime == defaultRuntimeClass {
-			runtime = o.runtimeClass
-		}
-
-		runtimeBinaries[runtime] = filepath.Join(o.runtimeDir, bin)
-	}
-
-	return runtimeBinaries
 }
