@@ -52,18 +52,18 @@ func TestRootTransformer(t *testing.T) {
 			spec: &specs.Spec{
 				ContainerEdits: specs.ContainerEdits{
 					DeviceNodes: []*specs.DeviceNode{
-						{HostPath: "/root/dev/nvidia0"},
-						{HostPath: "/target-root/dev/nvidia1"},
-						{HostPath: "/different-root/dev/nvidia2"},
+						{HostPath: "/root/dev/nvidia0", Path: "/root/dev/nvidia0"},
+						{HostPath: "/target-root/dev/nvidia1", Path: "/target-root/dev/nvidia1"},
+						{HostPath: "/different-root/dev/nvidia2", Path: "/different-root/dev/nvidia2"},
 					},
 				},
 			},
 			expectedSpec: &specs.Spec{
 				ContainerEdits: specs.ContainerEdits{
 					DeviceNodes: []*specs.DeviceNode{
-						{HostPath: "/target-root/dev/nvidia0"},
-						{HostPath: "/target-root/dev/nvidia1"},
-						{HostPath: "/different-root/dev/nvidia2"},
+						{HostPath: "/target-root/dev/nvidia0", Path: "/root/dev/nvidia0"},
+						{HostPath: "/target-root/dev/nvidia1", Path: "/target-root/dev/nvidia1"},
+						{HostPath: "/different-root/dev/nvidia2", Path: "/different-root/dev/nvidia2"},
 					},
 				},
 			},
@@ -75,18 +75,18 @@ func TestRootTransformer(t *testing.T) {
 			spec: &specs.Spec{
 				ContainerEdits: specs.ContainerEdits{
 					Mounts: []*specs.Mount{
-						{HostPath: "/root/lib/lib1.so"},
-						{HostPath: "/target-root/lib/lib2.so"},
-						{HostPath: "/different-root/lib/lib3.so"},
+						{HostPath: "/root/lib/lib1.so", ContainerPath: "/root/lib/lib1.so"},
+						{HostPath: "/target-root/lib/lib2.so", ContainerPath: "/target-root/lib/lib2.so"},
+						{HostPath: "/different-root/lib/lib3.so", ContainerPath: "/different-root/lib/lib3.so"},
 					},
 				},
 			},
 			expectedSpec: &specs.Spec{
 				ContainerEdits: specs.ContainerEdits{
 					Mounts: []*specs.Mount{
-						{HostPath: "/target-root/lib/lib1.so"},
-						{HostPath: "/target-root/lib/lib2.so"},
-						{HostPath: "/different-root/lib/lib3.so"},
+						{HostPath: "/target-root/lib/lib1.so", ContainerPath: "/root/lib/lib1.so"},
+						{HostPath: "/target-root/lib/lib2.so", ContainerPath: "/target-root/lib/lib2.so"},
+						{HostPath: "/different-root/lib/lib3.so", ContainerPath: "/different-root/lib/lib3.so"},
 					},
 				},
 			},
