@@ -173,13 +173,14 @@ func (m command) configureCrio(c *cli.Context, config *config) error {
 		configFilePath = defaultCrioConfigFilePath
 	}
 
-	cfg, err := crio.LoadConfig(configFilePath)
+	cfg, err := crio.New(
+		crio.WithPath(configFilePath),
+	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	err = crio.UpdateConfig(
-		cfg,
+	err = cfg.AddRuntime(
 		config.nvidiaOptions.RuntimeName,
 		config.nvidiaOptions.RuntimePath,
 		config.nvidiaOptions.SetAsDefault,
@@ -196,12 +197,16 @@ func (m command) configureCrio(c *cli.Context, config *config) error {
 		os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
 		return nil
 	}
-	err = crio.FlushConfig(configFilePath, cfg)
+	n, err := cfg.Save(configFilePath)
 	if err != nil {
 		return fmt.Errorf("unable to flush config: %v", err)
 	}
 
-	m.logger.Infof("Wrote updated config to %v", configFilePath)
+	if n == 0 {
+		m.logger.Infof("Removed empty config from %v", configFilePath)
+	} else {
+		m.logger.Infof("Wrote updated config to %v", configFilePath)
+	}
 	m.logger.Infof("It is recommended that the cri-o daemon be restarted.")
 
 	return nil
