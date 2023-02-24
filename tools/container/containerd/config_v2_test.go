@@ -92,7 +92,7 @@ func TestUpdateV2Config(t *testing.T) {
 
 	expectedBinaries := []string{
 		"/test/runtime/dir/nvidia-container-runtime",
-		"/test/runtime/dir/nvidia-container-runtime-experimental",
+		"/test/runtime/dir/nvidia-container-runtime.experimental",
 	}
 
 	testCases := []struct {
@@ -160,7 +160,7 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 	expectedBinaries := []string{
 		runcBinary,
 		"/test/runtime/dir/nvidia-container-runtime",
-		"/test/runtime/dir/nvidia-container-runtime-experimental",
+		"/test/runtime/dir/nvidia-container-runtime.experimental",
 	}
 
 	testCases := []struct {
@@ -239,7 +239,7 @@ func TestRevertV2Config(t *testing.T) {
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
 								"nvidia":              runtimeMapV2("/test/runtime/dir/nvidia-container-runtime"),
-								"nvidia-experimental": runtimeMapV2("/test/runtime/dir/nvidia-container-runtime-experimental"),
+								"nvidia-experimental": runtimeMapV2("/test/runtime/dir/nvidia-container-runtime.experimental"),
 							},
 						},
 					},
@@ -254,7 +254,7 @@ func TestRevertV2Config(t *testing.T) {
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
 								"nvidia":              runtimeMapV2("/test/runtime/dir/nvidia-container-runtime"),
-								"nvidia-experimental": runtimeMapV2("/test/runtime/dir/nvidia-container-runtime-experimental"),
+								"nvidia-experimental": runtimeMapV2("/test/runtime/dir/nvidia-container-runtime.experimental"),
 							},
 							"default_runtime_name": "nvidia",
 						},

@@ -36,7 +36,7 @@ const (
 	nvidiaRuntimeName               = "nvidia"
 	nvidiaRuntimeBinary             = "nvidia-container-runtime"
 	nvidiaExperimentalRuntimeName   = "nvidia-experimental"
-	nvidiaExperimentalRuntimeBinary = "nvidia-container-runtime-experimental"
+	nvidiaExperimentalRuntimeBinary = "nvidia-container-runtime.experimental"
 
 	defaultConfig       = "/etc/docker/daemon.json"
 	defaultSocket       = "/var/run/docker.sock"
@@ -261,7 +261,7 @@ func UpdateConfig(config map[string]interface{}, o *options) error {
 	return nil
 }
 
-//RevertConfig reverts the docker config to remove the nvidia runtime
+// RevertConfig reverts the docker config to remove the nvidia runtime
 func RevertConfig(config map[string]interface{}) error {
 	if _, exists := config["default-runtime"]; exists {
 		defaultRuntime := config["default-runtime"].(string)

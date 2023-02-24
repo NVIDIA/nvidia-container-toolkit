@@ -58,7 +58,7 @@ func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {
 			setAsDefault:                 true,
 			runtimeClass:                 "nvidia-experimental",
 			expectedDefaultRuntimeName:   nil,
-			expectedDefaultRuntimeBinary: "/test/runtime/dir/nvidia-container-runtime-experimental",
+			expectedDefaultRuntimeBinary: "/test/runtime/dir/nvidia-container-runtime.experimental",
 		},
 		{
 			legacyConfig:                 false,
@@ -128,7 +128,7 @@ func TestUpdateV1Config(t *testing.T) {
 
 	expectedBinaries := []string{
 		"/test/runtime/dir/nvidia-container-runtime",
-		"/test/runtime/dir/nvidia-container-runtime-experimental",
+		"/test/runtime/dir/nvidia-container-runtime.experimental",
 	}
 
 	testCases := []struct {
@@ -195,7 +195,7 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 	expectedBinaries := []string{
 		runcBinary,
 		"/test/runtime/dir/nvidia-container-runtime",
-		"/test/runtime/dir/nvidia-container-runtime-experimental",
+		"/test/runtime/dir/nvidia-container-runtime.experimental",
 	}
 
 	testCases := []struct {
@@ -274,7 +274,7 @@ func TestRevertV1Config(t *testing.T) {
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
 								"nvidia":              runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
-								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime-experimental"),
+								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.experimental"),
 							},
 						},
 					},
@@ -289,7 +289,7 @@ func TestRevertV1Config(t *testing.T) {
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
 								"nvidia":              runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
-								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime-experimental"),
+								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.experimental"),
 							},
 							"default_runtime":      defaultRuntimeV1("/test/runtime/dir/nvidia-container-runtime"),
 							"default_runtime_name": "nvidia",

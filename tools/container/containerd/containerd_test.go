@@ -31,7 +31,7 @@ func TestOptions(t *testing.T) {
 		{
 			expectedRuntimeBinaries: map[string]string{
 				"nvidia":              "nvidia-container-runtime",
-				"nvidia-experimental": "nvidia-container-runtime-experimental",
+				"nvidia-experimental": "nvidia-container-runtime.experimental",
 			},
 		},
 		{
@@ -41,7 +41,7 @@ func TestOptions(t *testing.T) {
 			expectedDefaultRuntime: "nvidia",
 			expectedRuntimeBinaries: map[string]string{
 				"nvidia":              "nvidia-container-runtime",
-				"nvidia-experimental": "nvidia-container-runtime-experimental",
+				"nvidia-experimental": "nvidia-container-runtime.experimental",
 			},
 		},
 		{
@@ -52,7 +52,7 @@ func TestOptions(t *testing.T) {
 			expectedDefaultRuntime: "nvidia",
 			expectedRuntimeBinaries: map[string]string{
 				"nvidia":              "nvidia-container-runtime",
-				"nvidia-experimental": "nvidia-container-runtime-experimental",
+				"nvidia-experimental": "nvidia-container-runtime.experimental",
 			},
 		},
 		{
@@ -63,7 +63,7 @@ func TestOptions(t *testing.T) {
 			expectedDefaultRuntime: "NAME",
 			expectedRuntimeBinaries: map[string]string{
 				"NAME":                "nvidia-container-runtime",
-				"nvidia-experimental": "nvidia-container-runtime-experimental",
+				"nvidia-experimental": "nvidia-container-runtime.experimental",
 			},
 		},
 		{
@@ -73,7 +73,7 @@ func TestOptions(t *testing.T) {
 			},
 			expectedRuntimeBinaries: map[string]string{
 				"NAME":                "nvidia-container-runtime",
-				"nvidia-experimental": "nvidia-container-runtime-experimental",
+				"nvidia-experimental": "nvidia-container-runtime.experimental",
 			},
 		},
 		{
@@ -84,7 +84,7 @@ func TestOptions(t *testing.T) {
 			expectedDefaultRuntime: "nvidia-experimental",
 			expectedRuntimeBinaries: map[string]string{
 				"nvidia":              "nvidia-container-runtime",
-				"nvidia-experimental": "nvidia-container-runtime-experimental",
+				"nvidia-experimental": "nvidia-container-runtime.experimental",
 			},
 		},
 		{
@@ -94,7 +94,7 @@ func TestOptions(t *testing.T) {
 			},
 			expectedRuntimeBinaries: map[string]string{
 				"nvidia":              "nvidia-container-runtime",
-				"nvidia-experimental": "nvidia-container-runtime-experimental",
+				"nvidia-experimental": "nvidia-container-runtime.experimental",
 			},
 		},
 	}

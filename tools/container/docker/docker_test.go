@@ -89,7 +89,7 @@ func TestUpdateConfig(t *testing.T) {
 						"args": []string{},
 					},
 					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime-experimental",
+						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 				},
@@ -106,7 +106,7 @@ func TestUpdateConfig(t *testing.T) {
 						"args": []string{},
 					},
 					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime-experimental",
+						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 				},
@@ -123,7 +123,7 @@ func TestUpdateConfig(t *testing.T) {
 						"args": []string{},
 					},
 					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime-experimental",
+						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 				},
@@ -146,7 +146,7 @@ func TestUpdateConfig(t *testing.T) {
 						"args": []string{},
 					},
 					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime-experimental",
+						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 				},
@@ -172,7 +172,7 @@ func TestUpdateConfig(t *testing.T) {
 						"args": []string{},
 					},
 					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime-experimental",
+						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 				},
@@ -192,7 +192,7 @@ func TestUpdateConfig(t *testing.T) {
 						"args": []string{},
 					},
 					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime-experimental",
+						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 				},
@@ -212,7 +212,7 @@ func TestUpdateConfig(t *testing.T) {
 						"args": []string{},
 					},
 					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime-experimental",
+						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 				},
@@ -240,7 +240,7 @@ func TestUpdateConfig(t *testing.T) {
 						"args": []string{},
 					},
 					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime-experimental",
+						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 				},
@@ -306,7 +306,7 @@ func TestRevertConfig(t *testing.T) {
 						"args": []string{},
 					},
 					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime-experimental",
+						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 				},

@@ -47,11 +47,11 @@ testing::toolkit::install() {
 	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime.real"
 
 	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime.experimental"
-	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime-experimental"
+	test -e "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime.experimental.real"
 
-	grep -q -E "nvidia driver modules are not yet loaded, invoking runc directly" "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime-experimental"
-	grep -q -E "exec runc \".@\"" "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime-experimental"
-	grep -q -E "LD_LIBRARY_PATH=/run/nvidia/driver/usr/lib64:\\\$LD_LIBRARY_PATH " "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime-experimental"
+	grep -q -E "nvidia driver modules are not yet loaded, invoking runc directly" "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime.experimental"
+	grep -q -E "exec runc \".@\"" "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime.experimental"
+	grep -q -E "LD_LIBRARY_PATH=/run/nvidia/driver/usr/lib64:\\\$LD_LIBRARY_PATH " "${shared_dir}/usr/local/nvidia/toolkit/nvidia-container-runtime.experimental"
 
 	test -e "${shared_dir}/usr/local/nvidia/toolkit/.config/nvidia-container-runtime/config.toml"
 

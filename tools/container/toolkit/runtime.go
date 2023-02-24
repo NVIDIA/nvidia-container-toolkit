@@ -29,9 +29,7 @@ const (
 	nvidiaContainerRuntimeTarget  = "nvidia-container-runtime.real"
 	nvidiaContainerRuntimeWrapper = "nvidia-container-runtime"
 
-	nvidiaExperimentalContainerRuntimeSource  = "nvidia-container-runtime.experimental"
-	nvidiaExperimentalContainerRuntimeTarget  = nvidiaExperimentalContainerRuntimeSource
-	nvidiaExperimentalContainerRuntimeWrapper = "nvidia-container-runtime-experimental"
+	nvidiaExperimentalContainerRuntimeSource = "nvidia-container-runtime.experimental"
 )
 
 // installContainerRuntimes sets up the NVIDIA container runtimes, copying the executables
@@ -79,16 +77,19 @@ func newNvidiaContainerRuntimeInstaller() *executable {
 }
 
 func newNvidiaContainerRuntimeExperimentalInstaller(libraryRoot string) *executable {
+	source := nvidiaExperimentalContainerRuntimeSource
+	wrapperName := filepath.Base(source)
+	dotfileName := wrapperName + ".real"
 	target := executableTarget{
-		dotfileName: nvidiaExperimentalContainerRuntimeTarget,
-		wrapperName: nvidiaExperimentalContainerRuntimeWrapper,
+		dotfileName: dotfileName,
+		wrapperName: wrapperName,
 	}
 
 	env := make(map[string]string)
 	if libraryRoot != "" {
 		env["LD_LIBRARY_PATH"] = strings.Join([]string{libraryRoot, "$LD_LIBRARY_PATH"}, ":")
 	}
-	return newRuntimeInstaller(nvidiaExperimentalContainerRuntimeSource, target, env)
+	return newRuntimeInstaller(source, target, env)
 }
 
 func newRuntimeInstaller(source string, target executableTarget, env map[string]string) *executable {

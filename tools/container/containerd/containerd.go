@@ -38,7 +38,7 @@ const (
 	nvidiaRuntimeName               = "nvidia"
 	nvidiaRuntimeBinary             = "nvidia-container-runtime"
 	nvidiaExperimentalRuntimeName   = "nvidia-experimental"
-	nvidiaExperimentalRuntimeBinary = "nvidia-container-runtime-experimental"
+	nvidiaExperimentalRuntimeBinary = "nvidia-container-runtime.experimental"
 
 	defaultConfig        = "/etc/containerd/config.toml"
 	defaultSocket        = "/run/containerd/containerd.sock"
