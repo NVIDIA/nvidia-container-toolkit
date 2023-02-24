@@ -41,6 +41,14 @@ func TestOptions(t *testing.T) {
 					name: "nvidia-experimental",
 					Path: "/usr/bin/nvidia-container-runtime.experimental",
 				},
+				"nvidia-cdi": Runtime{
+					name: "nvidia-cdi",
+					Path: "/usr/bin/nvidia-container-runtime.cdi",
+				},
+				"nvidia-legacy": Runtime{
+					name: "nvidia-legacy",
+					Path: "/usr/bin/nvidia-container-runtime.legacy",
+				},
 			},
 		},
 		{
@@ -55,6 +63,14 @@ func TestOptions(t *testing.T) {
 				"nvidia-experimental": Runtime{
 					name: "nvidia-experimental",
 					Path: "/usr/bin/nvidia-container-runtime.experimental",
+				},
+				"nvidia-cdi": Runtime{
+					name: "nvidia-cdi",
+					Path: "/usr/bin/nvidia-container-runtime.cdi",
+				},
+				"nvidia-legacy": Runtime{
+					name: "nvidia-legacy",
+					Path: "/usr/bin/nvidia-container-runtime.legacy",
 				},
 			},
 		},
@@ -72,6 +88,14 @@ func TestOptions(t *testing.T) {
 					name: "nvidia-experimental",
 					Path: "/usr/bin/nvidia-container-runtime.experimental",
 				},
+				"nvidia-cdi": Runtime{
+					name: "nvidia-cdi",
+					Path: "/usr/bin/nvidia-container-runtime.cdi",
+				},
+				"nvidia-legacy": Runtime{
+					name: "nvidia-legacy",
+					Path: "/usr/bin/nvidia-container-runtime.legacy",
+				},
 			},
 		},
 		{
@@ -88,6 +112,14 @@ func TestOptions(t *testing.T) {
 					name: "nvidia-experimental",
 					Path: "/usr/bin/nvidia-container-runtime.experimental",
 				},
+				"nvidia-cdi": Runtime{
+					name: "nvidia-cdi",
+					Path: "/usr/bin/nvidia-container-runtime.cdi",
+				},
+				"nvidia-legacy": Runtime{
+					name: "nvidia-legacy",
+					Path: "/usr/bin/nvidia-container-runtime.legacy",
+				},
 			},
 		},
 		{
@@ -101,6 +133,14 @@ func TestOptions(t *testing.T) {
 				"nvidia-experimental": Runtime{
 					name: "nvidia-experimental",
 					Path: "/usr/bin/nvidia-container-runtime.experimental",
+				},
+				"nvidia-cdi": Runtime{
+					name: "nvidia-cdi",
+					Path: "/usr/bin/nvidia-container-runtime.cdi",
+				},
+				"nvidia-legacy": Runtime{
+					name: "nvidia-legacy",
+					Path: "/usr/bin/nvidia-container-runtime.legacy",
 				},
 			},
 		},
@@ -118,6 +158,14 @@ func TestOptions(t *testing.T) {
 					Path:         "/usr/bin/nvidia-container-runtime.experimental",
 					SetAsDefault: true,
 				},
+				"nvidia-cdi": Runtime{
+					name: "nvidia-cdi",
+					Path: "/usr/bin/nvidia-container-runtime.cdi",
+				},
+				"nvidia-legacy": Runtime{
+					name: "nvidia-legacy",
+					Path: "/usr/bin/nvidia-container-runtime.legacy",
+				},
 			},
 		},
 		{
@@ -131,6 +179,14 @@ func TestOptions(t *testing.T) {
 				"nvidia-experimental": Runtime{
 					name: "nvidia-experimental",
 					Path: "/usr/bin/nvidia-container-runtime.experimental",
+				},
+				"nvidia-cdi": Runtime{
+					name: "nvidia-cdi",
+					Path: "/usr/bin/nvidia-container-runtime.cdi",
+				},
+				"nvidia-legacy": Runtime{
+					name: "nvidia-legacy",
+					Path: "/usr/bin/nvidia-container-runtime.legacy",
 				},
 			},
 		},

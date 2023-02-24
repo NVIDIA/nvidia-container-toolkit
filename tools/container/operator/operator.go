@@ -59,7 +59,7 @@ func GetRuntimes(opts ...Option) Runtimes {
 	runtimes := make(Runtimes)
 	runtimes.add(c.nvidiaRuntime())
 
-	modes := []string{"experimental"}
+	modes := []string{"experimental", "cdi", "legacy"}
 	for _, mode := range modes {
 		runtimes.add(c.modeRuntime(mode))
 	}

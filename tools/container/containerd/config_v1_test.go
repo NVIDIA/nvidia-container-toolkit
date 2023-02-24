@@ -141,6 +141,8 @@ func TestUpdateV1Config(t *testing.T) {
 	expectedBinaries := []string{
 		"/test/runtime/dir/nvidia-container-runtime",
 		"/test/runtime/dir/nvidia-container-runtime.experimental",
+		"/test/runtime/dir/nvidia-container-runtime.cdi",
+		"/test/runtime/dir/nvidia-container-runtime.legacy",
 	}
 
 	testCases := []struct {
@@ -149,15 +151,15 @@ func TestUpdateV1Config(t *testing.T) {
 	}{
 		{
 			runtimeClass:     "nvidia",
-			expectedRuntimes: []string{"nvidia", "nvidia-experimental"},
+			expectedRuntimes: []string{"nvidia", "nvidia-experimental", "nvidia-cdi", "nvidia-legacy"},
 		},
 		{
 			runtimeClass:     "NAME",
-			expectedRuntimes: []string{"NAME", "nvidia-experimental"},
+			expectedRuntimes: []string{"NAME", "nvidia-experimental", "nvidia-cdi", "nvidia-legacy"},
 		},
 		{
 			runtimeClass:     "nvidia-experimental",
-			expectedRuntimes: []string{"nvidia", "nvidia-experimental"},
+			expectedRuntimes: []string{"nvidia", "nvidia-experimental", "nvidia-cdi", "nvidia-legacy"},
 		},
 	}
 
@@ -216,6 +218,8 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 		runcBinary,
 		"/test/runtime/dir/nvidia-container-runtime",
 		"/test/runtime/dir/nvidia-container-runtime.experimental",
+		"/test/runtime/dir/nvidia-container-runtime.cdi",
+		"/test/runtime/dir/nvidia-container-runtime.legacy",
 	}
 
 	testCases := []struct {
@@ -224,15 +228,15 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 	}{
 		{
 			runtimeClass:     "nvidia",
-			expectedRuntimes: []string{"runc", "nvidia", "nvidia-experimental"},
+			expectedRuntimes: []string{"runc", "nvidia", "nvidia-experimental", "nvidia-cdi", "nvidia-legacy"},
 		},
 		{
 			runtimeClass:     "NAME",
-			expectedRuntimes: []string{"runc", "NAME", "nvidia-experimental"},
+			expectedRuntimes: []string{"runc", "NAME", "nvidia-experimental", "nvidia-cdi", "nvidia-legacy"},
 		},
 		{
 			runtimeClass:     "nvidia-experimental",
-			expectedRuntimes: []string{"runc", "nvidia", "nvidia-experimental"},
+			expectedRuntimes: []string{"runc", "nvidia", "nvidia-experimental", "nvidia-cdi", "nvidia-legacy"},
 		},
 	}
 
@@ -303,6 +307,8 @@ func TestRevertV1Config(t *testing.T) {
 							"runtimes": map[string]interface{}{
 								"nvidia":              runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
 								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.experimental"),
+								"nvidia-cdi":          runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.cdi"),
+								"nvidia-legacy":       runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.legacy"),
 							},
 						},
 					},
@@ -318,6 +324,8 @@ func TestRevertV1Config(t *testing.T) {
 							"runtimes": map[string]interface{}{
 								"nvidia":              runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
 								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.experimental"),
+								"nvidia-cdi":          runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.cdi"),
+								"nvidia-legacy":       runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.legacy"),
 							},
 							"default_runtime":      defaultRuntimeV1("/test/runtime/dir/nvidia-container-runtime"),
 							"default_runtime_name": "nvidia",
