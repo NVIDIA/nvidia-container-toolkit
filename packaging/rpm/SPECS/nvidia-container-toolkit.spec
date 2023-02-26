@@ -69,7 +69,9 @@ rm -rf %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
 ln -sf %{_bindir}/nvidia-container-runtime-hook %{_bindir}/nvidia-container-toolkit
 
 %postun
-if [ -L %{_bindir}/nvidia-container-toolkit ] then; rm -f %{_bindir}/nvidia-container-toolkit; fi
+if [ "$1" = 0 ]; then  # package is uninstalled, not upgraded
+  if [ -L %{_bindir}/nvidia-container-toolkit ]; then rm -f %{_bindir}/nvidia-container-toolkit; fi
+fi
 
 %files
 %license LICENSE
