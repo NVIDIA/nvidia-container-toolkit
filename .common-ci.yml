@@ -85,13 +85,6 @@ stages:
     CVE_UPDATES: "cyrus-sasl-lib"
     PACKAGE_REPO_TYPE: rpm
 
-.dist-ubuntu16.04:
-  rules:
-    - !reference [.main-or-manual, rules]
-  variables:
-    DIST: ubuntu16.04
-    PACKAGE_REPO_TYPE: debian
-
 .dist-ubuntu18.04:
   variables:
     DIST: ubuntu18.04

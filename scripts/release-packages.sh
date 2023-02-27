@@ -167,8 +167,6 @@ all=(
     fedora35-aarch64
     fedora35-x86_64
     opensuse-leap15.1-x86_64
-    ubuntu16.04-amd64
-    ubuntu16.04-ppc64le
     ubuntu18.04-amd64
     ubuntu18.04-arm64
     ubuntu18.04-ppc64le

@@ -158,18 +158,6 @@ package-opensuse-leap15.1-x86_64:
     - .dist-opensuse-leap15.1
     - .arch-x86_64
 
-package-ubuntu16.04-amd64:
-  extends:
-    - .package-build
-    - .dist-ubuntu16.04
-    - .arch-amd64
-
-package-ubuntu16.04-ppc64le:
-  extends:
-    - .package-build
-    - .dist-ubuntu16.04
-    - .arch-ppc64le
-
 package-ubuntu18.04-amd64:
   extends:
     - .package-build
@@ -281,10 +269,6 @@ image-packaging:
     - job: package-debian10-amd64
       optional: true
     - job: package-opensuse-leap15.1-x86_64
-      optional: true
-    - job: package-ubuntu16.04-amd64
-      optional: true
-    - job: package-ubuntu16.04-ppc64le
       optional: true
     - job: package-ubuntu18.04-ppc64le
       optional: true
