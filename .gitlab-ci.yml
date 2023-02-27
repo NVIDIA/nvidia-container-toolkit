@@ -116,12 +116,6 @@ package-amazonlinux2-x86_64:
     - .dist-amazonlinux2
     - .arch-x86_64
 
-package-centos7-ppc64le:
-  extends:
-    - .package-build
-    - .dist-centos7
-    - .arch-ppc64le
-
 package-centos7-x86_64:
   extends:
     - .package-build
@@ -152,29 +146,11 @@ package-debian10-amd64:
     - .dist-debian10
     - .arch-amd64
 
-package-debian9-amd64:
-  extends:
-    - .package-build
-    - .dist-debian9
-    - .arch-amd64
-
 package-opensuse-leap15.1-x86_64:
   extends:
     - .package-build
     - .dist-opensuse-leap15.1
     - .arch-x86_64
-
-package-ubuntu16.04-amd64:
-  extends:
-    - .package-build
-    - .dist-ubuntu16.04
-    - .arch-amd64
-
-package-ubuntu16.04-ppc64le:
-  extends:
-    - .package-build
-    - .dist-ubuntu16.04
-    - .arch-ppc64le
 
 package-ubuntu18.04-amd64:
   extends:
@@ -228,7 +204,6 @@ image-centos7:
     - .package-artifacts
     - .dist-centos7
   needs:
-    - package-centos7-ppc64le
     - package-centos7-x86_64
 
 image-ubi8:
@@ -242,17 +217,6 @@ image-ubi8:
     - package-centos8-x86_64
     - package-centos8-ppc64le
 
-image-ubuntu18.04:
-  extends:
-    - .image-build
-    - .package-artifacts
-    - .dist-ubuntu18.04
-  needs:
-    - package-ubuntu18.04-amd64
-    - package-ubuntu18.04-arm64
-    - job: package-ubuntu18.04-ppc64le
-      optional: true
-
 image-ubuntu20.04:
   extends:
     - .image-build
@@ -261,7 +225,8 @@ image-ubuntu20.04:
   needs:
     - package-ubuntu18.04-amd64
     - package-ubuntu18.04-arm64
-    - package-ubuntu18.04-ppc64le
+    - job: package-ubuntu18.04-ppc64le
+      optional: true
 
 # The DIST=packaging target creates an image containing all built packages
 image-packaging:
@@ -278,21 +243,13 @@ image-packaging:
       optional: true
     - job: package-amazonlinux2-x86_64
       optional: true
-    - job: package-centos7-ppc64le
-      optional: true
     - job: package-centos7-x86_64
       optional: true
     - job: package-centos8-ppc64le
       optional: true
     - job: package-debian10-amd64
       optional: true
-    - job: package-debian9-amd64
-      optional: true
     - job: package-opensuse-leap15.1-x86_64
-      optional: true
-    - job: package-ubuntu16.04-amd64
-      optional: true
-    - job: package-ubuntu16.04-ppc64le
       optional: true
     - job: package-ubuntu18.04-ppc64le
       optional: true
@@ -327,31 +284,31 @@ image-packaging:
     TEST_CASES: "crio"
 
 # Define the test targets
-test-toolkit-ubuntu18.04:
+test-toolkit-ubuntu20.04:
   extends:
     - .test:toolkit
-    - .dist-ubuntu18.04
+    - .dist-ubuntu20.04
   needs:
-    - image-ubuntu18.04
+    - image-ubuntu20.04
 
-test-containerd-ubuntu18.04:
+test-containerd-ubuntu20.04:
   extends:
     - .test:containerd
-    - .dist-ubuntu18.04
+    - .dist-ubuntu20.04
   needs:
-    - image-ubuntu18.04
+    - image-ubuntu20.04
 
-test-crio-ubuntu18.04:
+test-crio-ubuntu20.04:
   extends:
     - .test:crio
-    - .dist-ubuntu18.04
+    - .dist-ubuntu20.04
   needs:
-    - image-ubuntu18.04
+    - image-ubuntu20.04
 
-test-docker-ubuntu18.04:
+test-docker-ubuntu20.04:
   extends:
     - .test:docker
-    - .dist-ubuntu18.04
+    - .dist-ubuntu20.04
   needs:
-    - image-ubuntu18.04
+    - image-ubuntu20.04
 

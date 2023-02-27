@@ -70,13 +70,6 @@ stages:
     DIST: debian10
     PACKAGE_REPO_TYPE: debian
 
-.dist-debian9:
-  rules:
-    - !reference [.main-or-manual, rules]
-  variables:
-    DIST: debian9
-    PACKAGE_REPO_TYPE: debian
-
 .dist-opensuse-leap15.1:
   rules:
     - !reference [.main-or-manual, rules]
@@ -92,13 +85,6 @@ stages:
     CVE_UPDATES: "cyrus-sasl-lib"
     PACKAGE_REPO_TYPE: rpm
 
-.dist-ubuntu16.04:
-  rules:
-    - !reference [.main-or-manual, rules]
-  variables:
-    DIST: ubuntu16.04
-    PACKAGE_REPO_TYPE: debian
-
 .dist-ubuntu18.04:
   variables:
     DIST: ubuntu18.04
@@ -106,8 +92,6 @@ stages:
     PACKAGE_REPO_TYPE: debian
 
 .dist-ubuntu20.04:
-  rules:
-    - !reference [.main-or-manual, rules]
   variables:
     DIST: ubuntu20.04
     CVE_UPDATES: "libsasl2-2 libsasl2-modules-db"
@@ -252,22 +236,15 @@ release:staging-ubi8:
   needs:
     - image-ubi8
 
-release:staging-ubuntu18.04:
-  extends:
-    - .release:staging
-    - .dist-ubuntu18.04
-  needs:
-    - test-toolkit-ubuntu18.04
-    - test-containerd-ubuntu18.04
-    - test-crio-ubuntu18.04
-    - test-docker-ubuntu18.04
-
 release:staging-ubuntu20.04:
   extends:
     - .release:staging
     - .dist-ubuntu20.04
   needs:
-    - image-ubuntu20.04
+    - test-toolkit-ubuntu20.04
+    - test-containerd-ubuntu20.04
+    - test-crio-ubuntu20.04
+    - test-docker-ubuntu20.04
 
 release:staging-packaging:
   extends:

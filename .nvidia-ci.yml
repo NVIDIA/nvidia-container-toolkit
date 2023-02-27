@@ -79,11 +79,6 @@ image-ubi8:
     - .dist-ubi8
     - .image-pull
 
-image-ubuntu18.04:
-  extends:
-    - .dist-ubuntu18.04
-    - .image-pull
-
 image-ubuntu20.04:
   extends:
     - .dist-ubuntu20.04
@@ -230,23 +225,18 @@ release:packages:kitmaker:
   extends:
     - .release:packages
 
-release:staging-ubuntu18.04:
+release:staging-ubuntu20.04:
   extends:
     - .release:staging
-    - .dist-ubuntu18.04
+    - .dist-ubuntu20.04
   needs:
-    - image-ubuntu18.04
+    - image-ubuntu20.04
 
 # Define the external release targets
 # Release to NGC
 release:ngc-centos7:
   extends:
     - .dist-centos7
-    - .release:ngc
-
-release:ngc-ubuntu18.04:
-  extends:
-    - .dist-ubuntu18.04
     - .release:ngc
 
 release:ngc-ubuntu20.04:

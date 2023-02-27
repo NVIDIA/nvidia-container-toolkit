@@ -29,18 +29,12 @@ SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 all=(
     amazonlinux2-aarch64
     amazonlinux2-x86_64
-    centos7-ppc64le
     centos7-x86_64
     centos8-aarch64
     centos8-ppc64le
     centos8-x86_64
     debian10-amd64
-    debian9-amd64
-    fedora35-aarch64
-    fedora35-x86_64
     opensuse-leap15.1-x86_64
-    ubuntu16.04-amd64
-    ubuntu16.04-ppc64le
     ubuntu18.04-amd64
     ubuntu18.04-arm64
     ubuntu18.04-ppc64le

@@ -44,7 +44,7 @@ OUT_IMAGE = $(OUT_IMAGE_NAME):$(OUT_IMAGE_TAG)
 
 ##### Public rules #####
 DEFAULT_PUSH_TARGET := ubuntu20.04
-DISTRIBUTIONS := ubuntu20.04 ubuntu18.04 ubi8 centos7
+DISTRIBUTIONS := ubuntu20.04 ubi8 centos7
 
 META_TARGETS := packaging
 
@@ -146,10 +146,7 @@ test-packaging:
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos8/ppc64le" || echo "Missing centos8/ppc64le"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos8/x86_64" || echo "Missing centos8/x86_64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/debian10/amd64" || echo "Missing debian10/amd64"
-	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/debian9/amd64" || echo "Missing debian9/amd64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/opensuse-leap15.1/x86_64" || echo "Missing opensuse-leap15.1/x86_64"
-	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/ubuntu16.04/amd64" || echo "Missing ubuntu16.04/amd64"
-	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/ubuntu16.04/ppc64le" || echo "Missing ubuntu16.04/ppc64le"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/ubuntu18.04/amd64" || echo "Missing ubuntu18.04/amd64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/ubuntu18.04/arm64" || echo "Missing ubuntu18.04/arm64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/ubuntu18.04/ppc64le" || echo "Missing ubuntu18.04/ppc64le"
