@@ -44,7 +44,7 @@ OUT_IMAGE = $(OUT_IMAGE_NAME):$(OUT_IMAGE_TAG)
 
 ##### Public rules #####
 DEFAULT_PUSH_TARGET := ubuntu20.04
-DISTRIBUTIONS := ubuntu20.04 ubuntu18.04 ubi8 centos7
+DISTRIBUTIONS := ubuntu20.04 ubi8 centos7
 
 META_TARGETS := packaging
 
