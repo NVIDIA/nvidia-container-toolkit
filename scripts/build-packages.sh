@@ -35,7 +35,6 @@ all=(
     centos8-ppc64le
     centos8-x86_64
     debian10-amd64
-    debian9-amd64
     fedora35-aarch64
     fedora35-x86_64
     opensuse-leap15.1-x86_64

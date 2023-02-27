@@ -152,12 +152,6 @@ package-debian10-amd64:
     - .dist-debian10
     - .arch-amd64
 
-package-debian9-amd64:
-  extends:
-    - .package-build
-    - .dist-debian9
-    - .arch-amd64
-
 package-opensuse-leap15.1-x86_64:
   extends:
     - .package-build
@@ -285,8 +279,6 @@ image-packaging:
     - job: package-centos8-ppc64le
       optional: true
     - job: package-debian10-amd64
-      optional: true
-    - job: package-debian9-amd64
       optional: true
     - job: package-opensuse-leap15.1-x86_64
       optional: true

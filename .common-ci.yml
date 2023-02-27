@@ -70,13 +70,6 @@ stages:
     DIST: debian10
     PACKAGE_REPO_TYPE: debian
 
-.dist-debian9:
-  rules:
-    - !reference [.main-or-manual, rules]
-  variables:
-    DIST: debian9
-    PACKAGE_REPO_TYPE: debian
-
 .dist-opensuse-leap15.1:
   rules:
     - !reference [.main-or-manual, rules]
