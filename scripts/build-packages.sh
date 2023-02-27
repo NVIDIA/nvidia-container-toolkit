@@ -29,7 +29,6 @@ SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 all=(
     amazonlinux2-aarch64
     amazonlinux2-x86_64
-    centos7-ppc64le
     centos7-x86_64
     centos8-aarch64
     centos8-ppc64le

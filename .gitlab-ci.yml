@@ -116,12 +116,6 @@ package-amazonlinux2-x86_64:
     - .dist-amazonlinux2
     - .arch-x86_64
 
-package-centos7-ppc64le:
-  extends:
-    - .package-build
-    - .dist-centos7
-    - .arch-ppc64le
-
 package-centos7-x86_64:
   extends:
     - .package-build
@@ -210,7 +204,6 @@ image-centos7:
     - .package-artifacts
     - .dist-centos7
   needs:
-    - package-centos7-ppc64le
     - package-centos7-x86_64
 
 image-ubi8:
@@ -259,8 +252,6 @@ image-packaging:
     - job: package-amazonlinux2-aarch64
       optional: true
     - job: package-amazonlinux2-x86_64
-      optional: true
-    - job: package-centos7-ppc64le
       optional: true
     - job: package-centos7-x86_64
       optional: true
