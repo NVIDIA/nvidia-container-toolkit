@@ -2,6 +2,7 @@
 
 ## v1.13.0-rc.3
 
+* Add transformers to deduplicate and simplify CDI specifications.
 * Fix the generation of CDI specifications for management containers when the driver libraries are not in the LDCache.
 * Prefer /run over /var/run when locating nvidia-persistenced and nvidia-fabricmanager sockets.
 * Only initialize NVML for modes that require it when runing `nvidia-ctk cdi generate`
