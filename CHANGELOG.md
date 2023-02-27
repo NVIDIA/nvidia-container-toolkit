@@ -1,5 +1,15 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.12.1
+
+* Don't fail chmod hook if paths are not injected
+* Fix possible blank `nvidia-ctk` path in generated CDI specifications
+* Fix error in postun scriplet on RPM-based systems
+* Fix missing NVML symbols when running `nvidia-ctk` on some platforms [#49]
+* Discover all `gsb*.bin` GSP firmware files when generating CDI specification.
+* Remove `fedora35` packaging targets
+* [libnvidia-container] Include all `gsp*.bin` firmware files if present
+
 ## v1.12.0
 
 * Promote `v1.12.0-rc.5` to `v1.12.0`
