@@ -24,7 +24,7 @@ import (
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/crio"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/crio"
 	"github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"

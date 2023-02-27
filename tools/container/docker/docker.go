@@ -24,7 +24,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/docker"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/docker"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )

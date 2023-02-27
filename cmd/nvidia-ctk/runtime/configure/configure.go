@@ -22,8 +22,8 @@ import (
 	"os"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime/nvidia"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/crio"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/docker"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/crio"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/docker"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
