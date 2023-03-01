@@ -167,15 +167,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return nil
 	}
 
-	path := cfg.output
-	if filepath.Clean(filepath.Dir(path)) == "." {
-		pwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("failed to get current working directory: %v", err)
-		}
-		path = filepath.Join(pwd, path)
-	}
-	return spec.Save(path)
+	return spec.Save(cfg.output)
 }
 
 func formatFromFilename(filename string) string {
