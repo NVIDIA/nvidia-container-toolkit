@@ -14,16 +14,13 @@
 # limitations under the License.
 **/
 
-package generate
+package nvcdi
 
 import (
 	"fmt"
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
-	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,60 +28,26 @@ type deviceFolderPermissions struct {
 	logger        *logrus.Logger
 	driverRoot    string
 	nvidiaCTKPath string
-	folders       []string
+	devices       discover.Discover
 }
 
 var _ discover.Discover = (*deviceFolderPermissions)(nil)
 
-// GetDeviceFolderPermissionHookEdits gets the edits required for device folder permissions discoverer
-func GetDeviceFolderPermissionHookEdits(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, deviceSpecs []specs.Device) (*cdi.ContainerEdits, error) {
-	deviceFolderPermissionHooks, err := NewDeviceFolderPermissionHookDiscoverer(logger, driverRoot, nvidiaCTKPath, deviceSpecs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generated permission hooks for device nodes: %v", err)
-	}
-
-	return edits.FromDiscoverer(deviceFolderPermissionHooks)
-}
-
-// NewDeviceFolderPermissionHookDiscoverer creates a discoverer that can be used to update the permissions for the parent folders of nested device nodes from the specified set of device specs.
+// newDeviceFolderPermissionHookDiscoverer creates a discoverer that can be used to update the permissions for the parent folders of nested device nodes from the specified set of device specs.
 // This works around an issue with rootless podman when using crun as a low-level runtime.
 // See https://github.com/containers/crun/issues/1047
 // The nested devices that are applicable to the NVIDIA GPU devices are:
 //   - DRM devices at /dev/dri/*
 //   - NVIDIA Caps devices at /dev/nvidia-caps/*
-func NewDeviceFolderPermissionHookDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, deviceSpecs []specs.Device) (discover.Discover, error) {
-	var folders []string
-	seen := make(map[string]bool)
-	for _, device := range deviceSpecs {
-		for _, dn := range device.ContainerEdits.DeviceNodes {
-			df := filepath.Dir(dn.Path)
-			if seen[df] {
-				continue
-			}
-			// We only consider the special case paths
-			if df != "/dev/dri" && df != "/dev/nvidia-caps" {
-				continue
-			}
-			folders = append(folders, df)
-			seen[df] = true
-		}
-		if len(folders) == 2 {
-			break
-		}
-	}
-
-	if len(folders) == 0 {
-		return discover.None{}, nil
-	}
-
+func newDeviceFolderPermissionHookDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, devices discover.Discover) discover.Discover {
 	d := &deviceFolderPermissions{
 		logger:        logger,
 		driverRoot:    driverRoot,
 		nvidiaCTKPath: nvidiaCTKPath,
-		folders:       folders,
+		devices:       devices,
 	}
 
-	return d, nil
+	return d
 }
 
 // Devices are empty for this discoverer
@@ -94,12 +57,16 @@ func (d *deviceFolderPermissions) Devices() ([]discover.Device, error) {
 
 // Hooks returns a set of hooks that sets the file mode to 755 of parent folders for nested device nodes.
 func (d *deviceFolderPermissions) Hooks() ([]discover.Hook, error) {
-	if len(d.folders) == 0 {
+	folders, err := d.getDeviceSubfolders()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get device subfolders: %v", err)
+	}
+	if len(folders) == 0 {
 		return nil, nil
 	}
 
 	args := []string{"--mode", "755"}
-	for _, folder := range d.folders {
+	for _, folder := range folders {
 		args = append(args, "--path", folder)
 	}
 
@@ -110,6 +77,39 @@ func (d *deviceFolderPermissions) Hooks() ([]discover.Hook, error) {
 	)
 
 	return []discover.Hook{hook}, nil
+}
+
+func (d *deviceFolderPermissions) getDeviceSubfolders() ([]string, error) {
+	// For now we only consider the following special case paths
+	allowedPaths := map[string]bool{
+		"/dev/dri":         true,
+		"/dev/nvidia-caps": true,
+	}
+
+	devices, err := d.devices.Devices()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get devices: %v", err)
+	}
+
+	var folders []string
+	seen := make(map[string]bool)
+	for _, device := range devices {
+		df := filepath.Dir(device.Path)
+		if seen[df] {
+			continue
+		}
+		// We only consider the special case paths
+		if !allowedPaths[df] {
+			continue
+		}
+		folders = append(folders, df)
+		seen[df] = true
+		if len(folders) == len(allowedPaths) {
+			break
+		}
+	}
+
+	return folders, nil
 }
 
 // Mounts are empty for this discoverer
