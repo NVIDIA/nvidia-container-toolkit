@@ -23,7 +23,7 @@ testing::toolkit::install() {
 		READLINK="greadlink"
 	fi
 
-	testing::docker_run::toolkit::shell 'toolkit install --toolkit-root=/usr/local/nvidia/toolkit'
+	testing::docker_run::toolkit::shell 'toolkit install --toolkit-root=/usr/local/nvidia/toolkit --cdi-output-dir=""'
 	docker run --rm -v "${shared_dir}:/work" alpine sh -c "chown -R ${uid}:${gid} /work/"
 
 	# Ensure toolkit dir is correctly setup
