@@ -215,6 +215,11 @@ func Install(cli *cli.Context, opts *options) error {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
 	}
 
+	_, err = installContainerToolkitCLI(opts.toolkitRoot)
+	if err != nil {
+		return fmt.Errorf("error installing NVIDIA Container Toolkit CLI: %v", err)
+	}
+
 	return nil
 }
 
@@ -324,6 +329,19 @@ func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutable
 	config.WriteTo(os.Stdout)
 
 	return nil
+}
+
+// installContainerToolkitCLI installs the nvidia-ctk CLI executable and wrapper.
+func installContainerToolkitCLI(toolkitDir string) (string, error) {
+	e := executable{
+		source: "/usr/bin/nvidia-ctk",
+		target: executableTarget{
+			dotfileName: "nvidia-ctk.real",
+			wrapperName: "nvidia-ctk",
+		},
+	}
+
+	return e.install(toolkitDir)
 }
 
 // installContainerCLI sets up the NVIDIA container CLI executable, copying the executable
