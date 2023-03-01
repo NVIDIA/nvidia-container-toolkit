@@ -129,6 +129,7 @@ func (m command) validateFlags(c *cli.Context, cfg *config) error {
 	case nvcdi.ModeAuto:
 	case nvcdi.ModeNvml:
 	case nvcdi.ModeWsl:
+	case nvcdi.ModeManagement:
 	default:
 		return fmt.Errorf("invalid discovery mode: %v", cfg.discoveryMode)
 	}
