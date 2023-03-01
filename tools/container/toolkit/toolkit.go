@@ -23,6 +23,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	toml "github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -41,11 +44,17 @@ const (
 
 type options struct {
 	DriverRoot               string
+	DriverRootCtrPath        string
 	ContainerRuntimeMode     string
 	ContainerRuntimeDebug    string
 	ContainerRuntimeLogLevel string
 	ContainerCLIDebug        string
 	toolkitRoot              string
+
+	cdiOutputDir string
+	cdiKind      string
+	cdiVendor    string
+	cdiClass     string
 
 	acceptNVIDIAVisibleDevicesWhenUnprivileged bool
 	acceptNVIDIAVisibleDevicesAsVolumeMounts   bool
@@ -99,6 +108,12 @@ func main() {
 			EnvVars:     []string{"NVIDIA_DRIVER_ROOT"},
 		},
 		&cli.StringFlag{
+			Name:        "driver-root-ctr-path",
+			Value:       DefaultNvidiaDriverRoot,
+			Destination: &opts.DriverRootCtrPath,
+			EnvVars:     []string{"DRIVER_ROOT_CTR_PATH"},
+		},
+		&cli.StringFlag{
 			Name:        "nvidia-container-runtime-debug",
 			Usage:       "Specify the location of the debug log file for the NVIDIA Container Runtime",
 			Destination: &opts.ContainerRuntimeDebug,
@@ -140,6 +155,18 @@ func main() {
 			Destination: &opts.toolkitRoot,
 			EnvVars:     []string{"TOOLKIT_ROOT"},
 		},
+		&cli.StringFlag{
+			Name:        "cdi-output-dir",
+			Usage:       "the directory where the CDI output files are to be written. If this is set to '', no CDI specification is generated.",
+			Value:       "/var/run/cdi",
+			Destination: &opts.cdiOutputDir,
+		},
+		&cli.StringFlag{
+			Name:        "cdi-kind",
+			Usage:       "the vendor string to use for the generated CDI specification",
+			Value:       "management.nvidia.com/gpu",
+			Destination: &opts.cdiKind,
+		},
 	}
 
 	// Update the subcommand flags with the common subcommand flags
@@ -157,6 +184,16 @@ func validateOptions(c *cli.Context, opts *options) error {
 	if opts.toolkitRoot == "" {
 		return fmt.Errorf("invalid --toolkit-root option: %v", opts.toolkitRoot)
 	}
+
+	vendor, class := cdi.ParseQualifier(opts.cdiKind)
+	if err := cdi.ValidateVendorName(vendor); err != nil {
+		return fmt.Errorf("invalid CDI vendor name: %v", err)
+	}
+	if err := cdi.ValidateClassName(class); err != nil {
+		return fmt.Errorf("invalid CDI class name: %v", err)
+	}
+	opts.cdiVendor = vendor
+	opts.cdiClass = class
 
 	return nil
 }
@@ -215,12 +252,12 @@ func Install(cli *cli.Context, opts *options) error {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
 	}
 
-	_, err = installContainerToolkitCLI(opts.toolkitRoot)
+	nvidiaCTKPath, err := installContainerToolkitCLI(opts.toolkitRoot)
 	if err != nil {
 		return fmt.Errorf("error installing NVIDIA Container Toolkit CLI: %v", err)
 	}
 
-	return nil
+	return generateCDISpec(opts, nvidiaCTKPath)
 }
 
 // installContainerLibraries locates and installs the libraries that are part of
@@ -525,5 +562,44 @@ func createDirectories(dir ...string) error {
 			return fmt.Errorf("error creating directory: %v", err)
 		}
 	}
+	return nil
+}
+
+// generateCDISpec generates a CDI spec for use in managemnt containers
+func generateCDISpec(opts *options, nvidiaCTKPath string) error {
+	if opts.cdiOutputDir == "" {
+		log.Info("Skipping CDI spec generation (no output directory specified)")
+		return nil
+	}
+
+	cdilib := nvcdi.New(
+		nvcdi.WithMode(nvcdi.ModeManagement),
+		nvcdi.WithDriverRoot(opts.DriverRootCtrPath),
+		nvcdi.WithNVIDIACTKPath(nvidiaCTKPath),
+		nvcdi.WithVendor(opts.cdiVendor),
+		nvcdi.WithClass(opts.cdiClass),
+	)
+
+	spec, err := cdilib.GetSpec()
+	if err != nil {
+		return fmt.Errorf("failed to genereate CDI spec for management containers: %v", err)
+	}
+	err = transform.NewRootTransformer(
+		opts.DriverRootCtrPath,
+		opts.DriverRoot,
+	).Transform(spec.Raw())
+	if err != nil {
+		return fmt.Errorf("failed to transform driver root in CDI spec: %v", err)
+	}
+
+	name, err := cdi.GenerateNameForSpec(spec.Raw())
+	if err != nil {
+		return fmt.Errorf("failed to generate CDI name for management containers: %v", err)
+	}
+	err = spec.Save(filepath.Join(opts.cdiOutputDir, name))
+	if err != nil {
+		return fmt.Errorf("failed to save CDI spec for management containers: %v", err)
+	}
+
 	return nil
 }
