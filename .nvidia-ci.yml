@@ -36,8 +36,7 @@ variables:
   STAGING_REGISTRY: registry.gitlab.com/nvidia/container-toolkit/container-toolkit/staging
   STAGING_VERSION: ${CI_COMMIT_SHORT_SHA}
   ARTIFACTORY_REPO_BASE: "https://urm.nvidia.com/artifactory/sw-gpu-cloudnative"
-  # TODO: We should set the kitmaker release folder here once we have the end-to-end workflow set up
-  KITMAKER_RELEASE_FOLDER: "testing"
+  KITMAKER_RELEASE_FOLDER: "kitmaker"
 
 .image-pull:
   stage: image-build
