@@ -50,6 +50,13 @@ func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool) error
 		config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "runtime_engine"}, "")
 		config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "privileged_without_host_devices"}, false)
 	}
+	cdiAnnotations := []interface{}{"cdi.k8s.io/*"}
+	containerAnnotations, ok := config.GetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "container_annotations"}).([]interface{})
+	if ok && containerAnnotations != nil {
+		cdiAnnotations = append(containerAnnotations, cdiAnnotations...)
+	}
+	config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "container_annotations"}, cdiAnnotations)
+
 	config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "options", "BinaryName"}, path)
 	config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "options", "Runtime"}, path)
 
