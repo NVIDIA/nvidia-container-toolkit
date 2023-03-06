@@ -1,0 +1,130 @@
+/**
+# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+**/
+
+package spec
+
+import (
+	"fmt"
+
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
+	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
+)
+
+type builder struct {
+	raw         *specs.Spec
+	version     string
+	vendor      string
+	class       string
+	deviceSpecs []specs.Device
+	edits       specs.ContainerEdits
+	format      string
+}
+
+// newBuilder creates a new spec builder with the supplied options
+func newBuilder(opts ...Option) *builder {
+	s := &builder{}
+	for _, opt := range opts {
+		opt(s)
+	}
+	if s.version == "" {
+		s.version = DetectMinimumVersion
+	}
+	if s.vendor == "" {
+		s.vendor = "nvidia.com"
+	}
+	if s.class == "" {
+		s.class = "gpu"
+	}
+	if s.format == "" {
+		s.format = FormatYAML
+	}
+
+	return s
+}
+
+// Build builds a CDI spec form the spec builder.
+func (o *builder) Build() (*spec, error) {
+	raw := o.raw
+
+	if raw == nil {
+		raw = &specs.Spec{
+			Version:        o.version,
+			Kind:           fmt.Sprintf("%s/%s", o.vendor, o.class),
+			Devices:        o.deviceSpecs,
+			ContainerEdits: o.edits,
+		}
+	}
+
+	if raw.Version == DetectMinimumVersion {
+		minVersion, err := cdi.MinimumRequiredVersion(raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get minumum required CDI spec version: %v", err)
+		}
+		raw.Version = minVersion
+	}
+
+	s := spec{
+		Spec:   raw,
+		format: o.format,
+	}
+
+	return &s, nil
+}
+
+// Option defines a function that can be used to configure the spec builder.
+type Option func(*builder)
+
+// WithDeviceSpecs sets the device specs for the spec builder
+func WithDeviceSpecs(deviceSpecs []specs.Device) Option {
+	return func(o *builder) {
+		o.deviceSpecs = deviceSpecs
+	}
+}
+
+// WithEdits sets the container edits for the spec builder
+func WithEdits(edits specs.ContainerEdits) Option {
+	return func(o *builder) {
+		o.edits = edits
+	}
+}
+
+// WithVersion sets the version for the spec builder
+func WithVersion(version string) Option {
+	return func(o *builder) {
+		o.version = version
+	}
+}
+
+// WithVendor sets the vendor for the spec builder
+func WithVendor(vendor string) Option {
+	return func(o *builder) {
+		o.vendor = vendor
+	}
+}
+
+// WithClass sets the class for the spec builder
+func WithClass(class string) Option {
+	return func(o *builder) {
+		o.class = class
+	}
+}
+
+// WithFormat sets the output file format
+func WithFormat(format string) Option {
+	return func(o *builder) {
+		o.format = format
+	}
+}

@@ -17,11 +17,19 @@
 package nvcdi
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
+
+type wrapper struct {
+	Interface
+
+	vendor string
+	class  string
+}
 
 type nvcdilib struct {
 	logger        *logrus.Logger
@@ -31,6 +39,9 @@ type nvcdilib struct {
 	deviceNamer   DeviceNamer
 	driverRoot    string
 	nvidiaCTKPath string
+
+	vendor string
+	class  string
 
 	infolib info.Interface
 }
@@ -60,6 +71,7 @@ func New(opts ...Option) Interface {
 		l.infolib = info.New()
 	}
 
+	var lib Interface
 	switch l.resolveMode() {
 	case ModeNvml:
 		if l.nvmllib == nil {
@@ -69,13 +81,41 @@ func New(opts ...Option) Interface {
 			l.devicelib = device.New(device.WithNvml(l.nvmllib))
 		}
 
-		return (*nvmllib)(l)
+		lib = (*nvmllib)(l)
 	case ModeWsl:
-		return (*wsllib)(l)
+		lib = (*wsllib)(l)
+	default:
+		// TODO: We would like to return an error here instead of panicking
+		panic("Unknown mode")
 	}
 
-	// TODO: We want an error here.
-	return nil
+	w := wrapper{
+		Interface: lib,
+		vendor:    l.vendor,
+		class:     l.class,
+	}
+	return &w
+}
+
+// GetSpec combines the device specs and common edits from the wrapped Interface to a single spec.Interface.
+func (l *wrapper) GetSpec() (spec.Interface, error) {
+	deviceSpecs, err := l.GetAllDeviceSpecs()
+	if err != nil {
+		return nil, err
+	}
+
+	edits, err := l.GetCommonEdits()
+	if err != nil {
+		return nil, err
+	}
+
+	return spec.New(
+		spec.WithDeviceSpecs(deviceSpecs),
+		spec.WithEdits(*edits.ContainerEdits),
+		spec.WithVendor(l.vendor),
+		spec.WithClass(l.class),
+	)
+
 }
 
 // resolveMode resolves the mode for CDI spec generation based on the current system.

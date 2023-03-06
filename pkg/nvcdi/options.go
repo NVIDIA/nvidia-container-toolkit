@@ -73,3 +73,17 @@ func WithMode(mode string) Option {
 		l.mode = mode
 	}
 }
+
+// WithVendor sets the vendor for the library
+func WithVendor(vendor string) Option {
+	return func(o *nvcdilib) {
+		o.vendor = vendor
+	}
+}
+
+// WithClass sets the class for the library
+func WithClass(class string) Option {
+	return func(o *nvcdilib) {
+		o.class = class
+	}
+}
