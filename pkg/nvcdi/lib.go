@@ -89,6 +89,11 @@ func New(opts ...Option) Interface {
 		lib = (*nvmllib)(l)
 	case ModeWsl:
 		lib = (*wsllib)(l)
+	case ModeGds:
+		if l.class == "" {
+			l.class = "gds"
+		}
+		lib = (*gdslib)(l)
 	default:
 		// TODO: We would like to return an error here instead of panicking
 		panic("Unknown mode")
