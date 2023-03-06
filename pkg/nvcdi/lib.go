@@ -73,6 +73,11 @@ func New(opts ...Option) Interface {
 
 	var lib Interface
 	switch l.resolveMode() {
+	case ModeManagement:
+		if l.vendor == "" {
+			l.vendor = "management.nvidia.com"
+		}
+		lib = (*managementlib)(l)
 	case ModeNvml:
 		if l.nvmllib == nil {
 			l.nvmllib = nvml.New()

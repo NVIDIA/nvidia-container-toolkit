@@ -36,6 +36,10 @@ func NewDriverDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath
 		return nil, fmt.Errorf("failed to determine driver version: %v", r)
 	}
 
+	return newDriverVersionDiscoverer(logger, driverRoot, nvidiaCTKPath, version)
+}
+
+func newDriverVersionDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, version string) (discover.Discover, error) {
 	libraries, err := NewDriverLibraryDiscoverer(logger, driverRoot, nvidiaCTKPath, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for driver libraries: %v", err)
