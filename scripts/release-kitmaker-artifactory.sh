@@ -180,7 +180,7 @@ function upload_archive() {
     done
     local PROPS=$(join_by ";" "${props[@]}")
 
-    echo "Uploading ${upload_url} from ${file}"
+    echo "Uploading ${upload_url} from ${archive}"
     if ! ${CURL} -f \
         -H "X-JFrog-Art-Api: ${ARTIFACTORY_TOKEN}" \
         -H "X-Checksum-Sha1: ${sha1_checksum}" \
