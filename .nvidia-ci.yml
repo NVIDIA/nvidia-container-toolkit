@@ -148,14 +148,6 @@ scan-centos7-arm64:
     - image-centos7
     - scan-centos7-amd64
 
-scan-ubuntu18.04-amd64:
-  extends:
-    - .dist-ubuntu18.04
-    - .platform-amd64
-    - .scan
-  needs:
-    - image-ubuntu18.04
-
 scan-ubuntu20.04-amd64:
   extends:
     - .dist-ubuntu20.04
