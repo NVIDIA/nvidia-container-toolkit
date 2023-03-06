@@ -94,6 +94,11 @@ func New(opts ...Option) Interface {
 			l.class = "gds"
 		}
 		lib = (*gdslib)(l)
+	case ModeMofed:
+		if l.class == "" {
+			l.class = "mofed"
+		}
+		lib = (*mofedlib)(l)
 	default:
 		// TODO: We would like to return an error here instead of panicking
 		panic("Unknown mode")
