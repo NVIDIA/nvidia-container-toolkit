@@ -69,6 +69,9 @@ func TestGetConfig(t *testing.T) {
 						CSV: csvModeConfig{
 							MountSpecPath: "/etc/nvidia-container-runtime/host-files-for-container.d",
 						},
+						CDI: cdiModeConfig{
+							DefaultKind: "nvidia.com/gpu",
+						},
 					},
 				},
 				NVIDIACTKConfig: CTKConfig{
@@ -86,6 +89,7 @@ func TestGetConfig(t *testing.T) {
 				"nvidia-container-runtime.log-level = \"debug\"",
 				"nvidia-container-runtime.runtimes = [\"/some/runtime\",]",
 				"nvidia-container-runtime.mode = \"not-auto\"",
+				"nvidia-container-runtime.modes.cdi.default-kind = \"example.vendor.com/device\"",
 				"nvidia-container-runtime.modes.csv.mount-spec-path = \"/not/etc/nvidia-container-runtime/host-files-for-container.d\"",
 				"nvidia-ctk.path = \"/foo/bar/nvidia-ctk\"",
 			},
@@ -101,6 +105,9 @@ func TestGetConfig(t *testing.T) {
 					Modes: modesConfig{
 						CSV: csvModeConfig{
 							MountSpecPath: "/not/etc/nvidia-container-runtime/host-files-for-container.d",
+						},
+						CDI: cdiModeConfig{
+							DefaultKind: "example.vendor.com/device",
 						},
 					},
 				},
@@ -121,6 +128,8 @@ func TestGetConfig(t *testing.T) {
 				"log-level = \"debug\"",
 				"runtimes = [\"/some/runtime\",]",
 				"mode = \"not-auto\"",
+				"[nvidia-container-runtime.modes.cdi]",
+				"default-kind = \"example.vendor.com/device\"",
 				"[nvidia-container-runtime.modes.csv]",
 				"mount-spec-path = \"/not/etc/nvidia-container-runtime/host-files-for-container.d\"",
 				"[nvidia-ctk]",
@@ -138,6 +147,9 @@ func TestGetConfig(t *testing.T) {
 					Modes: modesConfig{
 						CSV: csvModeConfig{
 							MountSpecPath: "/not/etc/nvidia-container-runtime/host-files-for-container.d",
+						},
+						CDI: cdiModeConfig{
+							DefaultKind: "example.vendor.com/device",
 						},
 					},
 				},

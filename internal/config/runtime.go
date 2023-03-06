@@ -50,6 +50,8 @@ type modesConfig struct {
 type cdiModeConfig struct {
 	// SpecDirs allows for the default spec dirs for CDI to be overridden
 	SpecDirs []string `toml:"spec-dirs"`
+	// DefaultKind sets the default kind to be used when constructing fully-qualified CDI device names
+	DefaultKind string `toml:"default-kind"`
 }
 
 type csvModeConfig struct {
@@ -93,6 +95,9 @@ func GetDefaultRuntimeConfig() *RuntimeConfig {
 		Modes: modesConfig{
 			CSV: csvModeConfig{
 				MountSpecPath: "/etc/nvidia-container-runtime/host-files-for-container.d",
+			},
+			CDI: cdiModeConfig{
+				DefaultKind: "nvidia.com/gpu",
 			},
 		},
 	}
