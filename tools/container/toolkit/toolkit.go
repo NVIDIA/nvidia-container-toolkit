@@ -312,9 +312,6 @@ func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutable
 		if value == "" {
 			continue
 		}
-		if config.Get(key) != nil {
-			continue
-		}
 		config.Set(key, value)
 	}
 
