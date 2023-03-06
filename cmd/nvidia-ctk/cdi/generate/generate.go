@@ -48,7 +48,7 @@ type config struct {
 	deviceNameStrategy string
 	driverRoot         string
 	nvidiaCTKPath      string
-	discoveryMode      string
+	mode               string
 }
 
 // NewCommand constructs a generate-cdi command with the specified logger
@@ -88,10 +88,11 @@ func (m command) build() *cli.Command {
 			Destination: &cfg.format,
 		},
 		&cli.StringFlag{
-			Name:        "discovery-mode",
+			Name:        "mode",
+			Aliases:     []string{"discovery-mode"},
 			Usage:       "The mode to use when discovering the available entities. One of [auto | nvml | wsl]. If mode is set to 'auto' the mode will be determined based on the system configuration.",
 			Value:       nvcdi.ModeAuto,
-			Destination: &cfg.discoveryMode,
+			Destination: &cfg.mode,
 		},
 		&cli.StringFlag{
 			Name:        "device-name-strategy",
@@ -124,13 +125,13 @@ func (m command) validateFlags(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("invalid output format: %v", cfg.format)
 	}
 
-	cfg.discoveryMode = strings.ToLower(cfg.discoveryMode)
-	switch cfg.discoveryMode {
+	cfg.mode = strings.ToLower(cfg.mode)
+	switch cfg.mode {
 	case nvcdi.ModeAuto:
 	case nvcdi.ModeNvml:
 	case nvcdi.ModeWsl:
 	default:
-		return fmt.Errorf("invalid discovery mode: %v", cfg.discoveryMode)
+		return fmt.Errorf("invalid discovery mode: %v", cfg.mode)
 	}
 
 	_, err := nvcdi.NewDeviceNamer(cfg.deviceNameStrategy)
@@ -203,7 +204,7 @@ func (m command) generateSpec(cfg *config) (spec.Interface, error) {
 		nvcdi.WithDeviceNamer(deviceNamer),
 		nvcdi.WithDeviceLib(devicelib),
 		nvcdi.WithNvmlLib(nvmllib),
-		nvcdi.WithMode(string(cfg.discoveryMode)),
+		nvcdi.WithMode(string(cfg.mode)),
 	)
 
 	deviceSpecs, err := cdilib.GetAllDeviceSpecs()
