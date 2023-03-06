@@ -34,6 +34,6 @@ CUDA_VERSION := 12.0.1
 GOLANG_VERSION := 1.18.8
 
 GIT_COMMIT ?= $(shell git describe --match="" --dirty --long --always --abbrev=40 2> /dev/null || echo "")
-GIT_COMMIT_SHORT ?= $(shell  git git rev-parse --short HEAD 2> /dev/null || echo "")
+GIT_COMMIT_SHORT ?= $(shell git rev-parse --short HEAD 2> /dev/null || echo "")
 GIT_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD 2> /dev/null || echo "${GIT_COMMIT}")
 SOURCE_DATE_EPOCH ?= $(shell git log -1 --format=%ct  2> /dev/null || echo "")

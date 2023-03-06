@@ -95,6 +95,7 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 		--build-arg PACKAGE_VERSION="$(PACKAGE_VERSION)" \
 		--build-arg VERSION="$(VERSION)" \
 		--build-arg GIT_COMMIT="$(GIT_COMMIT)" \
+		--build-arg GIT_COMMIT_SHORT="$(GIT_COMMIT_SHORT)" \
 		--build-arg GIT_BRANCH="$(GIT_BRANCH)" \
 		--build-arg SOURCE_DATE_EPOCH="$(SOURCE_DATE_EPOCH)" \
 		--build-arg CVE_UPDATES="$(CVE_UPDATES)" \
