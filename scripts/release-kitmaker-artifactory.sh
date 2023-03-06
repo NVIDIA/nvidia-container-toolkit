@@ -77,7 +77,7 @@ function extract_info() {
 IMAGE_EPOCH=$(extract_info "IMAGE_EPOCH")
 # Note we use the main branch for the kitmaker archive.
 GIT_BRANCH=main
-GIT_COMMIT=$(extract_info "GIT_COMMIT")
+GIT_COMMIT_SHORT=$(extract_info "GIT_COMMIT_SHORT")
 VERSION=$(extract_info "PACKAGE_VERSION")
 
 
@@ -155,7 +155,7 @@ function upload_archive() {
     fi
     local sha1_checksum=$(sha1sum -b "${archive}" | awk '{ print $1 }')
 
-    local upload_url="${KITMAKER_ARTIFACTORY_REPO}/${component}-${GIT_BRANCH}/default/$(basename ${archive})"
+    local upload_url="${KITMAKER_ARTIFACTORY_REPO}/${GIT_BRANCH}/${component}/${os}-${arch}/${version}/$(basename ${archive})"
 
     local props=()
     # Required KITMAKER properties:
@@ -164,8 +164,7 @@ function upload_archive() {
     props+=("os=${os}")
     props+=("arch=${arch}")
     props+=("platform=${os}-${arch}")
-    # TODO: extract the GIT commit from the packaging image
-    props+=("changelist=${GIT_COMMIT}")
+    props+=("changelist=${GIT_COMMIT_SHORT}")
     props+=("branch=${GIT_BRANCH}")
     # Package properties:
     props+=("package.epoch=${IMAGE_EPOCH}")
