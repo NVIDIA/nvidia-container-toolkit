@@ -77,6 +77,7 @@ function extract_info() {
 IMAGE_EPOCH=$(extract_info "IMAGE_EPOCH")
 # Note we use the main branch for the kitmaker archive.
 GIT_BRANCH=main
+GIT_COMMIT=$(extract_info "GIT_COMMIT")
 GIT_COMMIT_SHORT=$(extract_info "GIT_COMMIT_SHORT")
 VERSION=$(extract_info "PACKAGE_VERSION")
 
@@ -169,6 +170,7 @@ function upload_archive() {
     # Package properties:
     props+=("package.epoch=${IMAGE_EPOCH}")
     props+=("package.version=${VERSION}")
+    props+=("package.commit=${GIT_COMMIT}")
     optionally_add_property "package.builds" "${package_builds}"
 
     for var in "CI_PROJECT_ID" "CI_PIPELINE_ID" "CI_JOB_ID" "CI_JOB_URL" "CI_PROJECT_PATH"; do
