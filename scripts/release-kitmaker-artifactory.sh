@@ -167,6 +167,7 @@ function upload_archive() {
     props+=("platform=${os}-${arch}")
     props+=("changelist=${GIT_COMMIT_SHORT}")
     props+=("branch=${GIT_BRANCH}")
+    props+=("source=https://gitlab.com/nvidia/container-toolkit/container-toolkit")
     # Package properties:
     props+=("package.epoch=${IMAGE_EPOCH}")
     props+=("package.version=${VERSION}")
@@ -180,7 +181,11 @@ function upload_archive() {
     done
     local PROPS=$(join_by ";" "${props[@]}")
 
-    echo "Uploading ${upload_url} from ${file}"
+    echo "Uploading ${upload_url} from ${archive}"
+    echo -H "X-JFrog-Art-Api: REDACTED" \
+        -H "X-Checksum-Sha1: ${sha1_checksum}" \
+        ${archive:+-T ${archive}} -X PUT \
+        "${upload_url};${PROPS}"
     if ! ${CURL} -f \
         -H "X-JFrog-Art-Api: ${ARTIFACTORY_TOKEN}" \
         -H "X-Checksum-Sha1: ${sha1_checksum}" \
