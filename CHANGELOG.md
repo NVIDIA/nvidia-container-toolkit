@@ -8,6 +8,7 @@
 * Add transformers to deduplicate and simplify CDI specifications.
 * Generate a simplified CDI specification by default. This means that entities in the common edits in a spec are not included in device definitions.
 * Also return an error from the nvcdi.New constructor instead of panicing.
+* Detect XOrg libraries for injection and CDI spec generation.
 
 * [libnvidia-container] Fix segmentation fault when RPC initialization fails.
 * [libnvidia-container] Build centos variants of the NVIDIA Container Library with static libtirpc v1.3.2.
