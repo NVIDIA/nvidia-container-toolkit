@@ -70,7 +70,7 @@ KITMAKER_SCRATCH="${KITMAKER_DIR}/.scratch"
 # extract_info extracts the value of the specified variable from the manifest.txt file.
 function extract_info() {
     local variable=$1
-    local value=$(cat "${ARTIFACTS_DIR}/manifest.txt" | grep "#${variable}" | sed -e "s/#${variable}=//" | tr -d '\r')
+    local value=$(cat "${ARTIFACTS_DIR}/manifest.txt" | grep "#${variable}=" | sed -e "s/#${variable}=//" | tr -d '\r')
     echo $value
 }
 
