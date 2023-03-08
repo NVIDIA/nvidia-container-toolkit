@@ -82,7 +82,7 @@ func (r *Runtimes) add(runtime Runtime) {
 }
 
 // nvidiaRuntime creates a runtime that corresponds to the nvidia runtime.
-// If the nvidiaRuntimeName is specified, this name us used unless this is exactly equal to nvidia-experimental.
+// If name is equal to one of the predefined runtimes, `nvidia` is used as the runtime name instead.
 func (c config) nvidiaRuntime() Runtime {
 	predefinedRuntimes := map[string]struct{}{
 		"nvidia-experimental": {},
