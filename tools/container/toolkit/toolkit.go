@@ -43,13 +43,16 @@ const (
 )
 
 type options struct {
-	DriverRoot               string
-	DriverRootCtrPath        string
-	ContainerRuntimeMode     string
-	ContainerRuntimeDebug    string
-	ContainerRuntimeLogLevel string
-	ContainerCLIDebug        string
-	toolkitRoot              string
+	DriverRoot        string
+	DriverRootCtrPath string
+
+	ContainerRuntimeMode                string
+	ContainerRuntimeModesCdiDefaultKind string
+	ContainerRuntimeDebug               string
+	ContainerRuntimeLogLevel            string
+
+	ContainerCLIDebug string
+	toolkitRoot       string
 
 	cdiOutputDir string
 	cdiKind      string
@@ -128,6 +131,11 @@ func main() {
 			Name:        "nvidia-container-runtime-mode",
 			Destination: &opts.ContainerRuntimeMode,
 			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODE"},
+		},
+		&cli.StringFlag{
+			Name:        "nvidia-container-runtime-modes.cdi.default-kind",
+			Destination: &opts.ContainerRuntimeModesCdiDefaultKind,
+			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODES_CDI_DEFAULT_KIND"},
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-container-cli-debug",
@@ -345,10 +353,11 @@ func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutable
 
 	// Set the debug options if selected
 	debugOptions := map[string]string{
-		"nvidia-container-runtime.debug":     opts.ContainerRuntimeDebug,
-		"nvidia-container-runtime.log-level": opts.ContainerRuntimeLogLevel,
-		"nvidia-container-runtime.mode":      opts.ContainerRuntimeMode,
-		"nvidia-container-cli.debug":         opts.ContainerCLIDebug,
+		"nvidia-container-runtime.debug":                  opts.ContainerRuntimeDebug,
+		"nvidia-container-runtime.log-level":              opts.ContainerRuntimeLogLevel,
+		"nvidia-container-runtime.mode":                   opts.ContainerRuntimeMode,
+		"nvidia-container-runtime.modes.cdi.default-kind": opts.ContainerRuntimeModesCdiDefaultKind,
+		"nvidia-container-cli.debug":                      opts.ContainerCLIDebug,
 	}
 	for key, value := range debugOptions {
 		if value == "" {
