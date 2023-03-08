@@ -24,8 +24,9 @@ import (
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/crio"
-	"github.com/pelletier/go-toml"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/crio"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )
@@ -213,7 +214,9 @@ func setupHook(o *options) error {
 func setupConfig(o *options) error {
 	log.Infof("Updating config file")
 
-	cfg, err := crio.LoadConfig(o.config)
+	cfg, err := crio.New(
+		crio.WithPath(o.config),
+	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
@@ -223,9 +226,13 @@ func setupConfig(o *options) error {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
 
-	err = crio.FlushConfig(o.config, cfg)
+	log.Infof("Flushing cri-o config to %v", o.config)
+	n, err := cfg.Save(o.config)
 	if err != nil {
 		return fmt.Errorf("unable to flush config: %v", err)
+	}
+	if n == 0 {
+		log.Infof("Config file is empty, removed")
 	}
 
 	err = RestartCrio(o)
@@ -267,7 +274,9 @@ func cleanupHook(o *options) error {
 func cleanupConfig(o *options) error {
 	log.Infof("Reverting config file modifications")
 
-	cfg, err := crio.LoadConfig(o.config)
+	cfg, err := crio.New(
+		crio.WithPath(o.config),
+	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
@@ -277,9 +286,13 @@ func cleanupConfig(o *options) error {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
 
-	err = crio.FlushConfig(o.config, cfg)
+	log.Infof("Flushing cri-o config to %v", o.config)
+	n, err := cfg.Save(o.config)
 	if err != nil {
 		return fmt.Errorf("unable to flush config: %v", err)
+	}
+	if n == 0 {
+		log.Infof("Config file is empty, removed")
 	}
 
 	err = RestartCrio(o)
@@ -345,14 +358,36 @@ func generateOciHook(toolkitDir string) podmanHook {
 }
 
 // UpdateConfig updates the cri-o config to include the NVIDIA Container Runtime
-func UpdateConfig(config *toml.Tree, o *options) error {
-	runtimePath := filepath.Join(o.runtimeDir, "nvidia-container-runtime")
-	return crio.UpdateConfig(config, o.runtimeClass, runtimePath, o.setAsDefault)
+func UpdateConfig(cfg engine.Interface, o *options) error {
+	runtimes := operator.GetRuntimes(
+		operator.WithNvidiaRuntimeName(o.runtimeClass),
+		operator.WithSetAsDefault(o.setAsDefault),
+		operator.WithRoot(o.runtimeDir),
+	)
+	for class, runtime := range runtimes {
+		err := cfg.AddRuntime(class, runtime.Path, runtime.SetAsDefault)
+		if err != nil {
+			return fmt.Errorf("unable to update config for runtime class '%v': %v", class, err)
+		}
+	}
+
+	return nil
 }
 
 // RevertConfig reverts the cri-o config to remove the NVIDIA Container Runtime
-func RevertConfig(config *toml.Tree, o *options) error {
-	return crio.RevertConfig(config, o.runtimeClass)
+func RevertConfig(cfg engine.Interface, o *options) error {
+	runtimes := operator.GetRuntimes(
+		operator.WithNvidiaRuntimeName(o.runtimeClass),
+		operator.WithSetAsDefault(o.setAsDefault),
+		operator.WithRoot(o.runtimeDir),
+	)
+	for class := range runtimes {
+		err := cfg.RemoveRuntime(class)
+		if err != nil {
+			return fmt.Errorf("unable to revert config for runtime class '%v': %v", class, err)
+		}
+	}
+	return nil
 }
 
 // RestartCrio restarts crio depending on the value of restartModeFlag

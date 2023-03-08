@@ -17,8 +17,10 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/containerd"
 	"github.com/pelletier/go-toml"
 	"github.com/stretchr/testify/require"
 )
@@ -58,7 +60,7 @@ func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {
 			setAsDefault:                 true,
 			runtimeClass:                 "nvidia-experimental",
 			expectedDefaultRuntimeName:   nil,
-			expectedDefaultRuntimeBinary: "/test/runtime/dir/nvidia-container-runtime-experimental",
+			expectedDefaultRuntimeBinary: "/test/runtime/dir/nvidia-container-runtime.experimental",
 		},
 		{
 			legacyConfig:                 false,
@@ -89,36 +91,46 @@ func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		o := &options{
-			useLegacyConfig: tc.legacyConfig,
-			setAsDefault:    tc.setAsDefault,
-			runtimeClass:    tc.runtimeClass,
-			runtimeType:     runtimeType,
-			runtimeDir:      runtimeDir,
-		}
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			o := &options{
+				useLegacyConfig: tc.legacyConfig,
+				setAsDefault:    tc.setAsDefault,
+				runtimeClass:    tc.runtimeClass,
+				runtimeType:     runtimeType,
+				runtimeDir:      runtimeDir,
+			}
 
-		config, err := toml.TreeFromMap(map[string]interface{}{})
-		require.NoError(t, err, "%d: %v", i, tc)
-
-		err = UpdateV1Config(config, o)
-		require.NoError(t, err, "%d: %v", i, tc)
-
-		defaultRuntimeName := config.GetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"})
-		require.EqualValues(t, tc.expectedDefaultRuntimeName, defaultRuntimeName, "%d: %v", i, tc)
-
-		defaultRuntime := config.GetPath([]string{"plugins", "cri", "containerd", "default_runtime"})
-		if tc.expectedDefaultRuntimeBinary == nil {
-			require.Nil(t, defaultRuntime, "%d: %v", i, tc)
-		} else {
-			expected, err := defaultRuntimeTomlConfigV1(tc.expectedDefaultRuntimeBinary.(string))
+			config, err := toml.TreeFromMap(map[string]interface{}{})
 			require.NoError(t, err, "%d: %v", i, tc)
 
-			configContents, _ := toml.Marshal(defaultRuntime.(*toml.Tree))
-			expectedContents, _ := toml.Marshal(expected)
+			v1 := &containerd.ConfigV1{
+				Tree:                  config,
+				UseDefaultRuntimeName: !tc.legacyConfig,
+				RuntimeType:           runtimeType,
+			}
 
-			require.Equal(t, string(expectedContents), string(configContents), "%d: %v: %v", i, tc)
-		}
+			err = UpdateConfig(v1, o)
+			require.NoError(t, err, "%d: %v", i, tc)
 
+			defaultRuntimeName := v1.GetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"})
+			require.EqualValues(t, tc.expectedDefaultRuntimeName, defaultRuntimeName, "%d: %v", i, tc)
+
+			defaultRuntime := v1.GetPath([]string{"plugins", "cri", "containerd", "default_runtime"})
+			if tc.expectedDefaultRuntimeBinary == nil {
+				require.Nil(t, defaultRuntime, "%d: %v", i, tc)
+			} else {
+				require.NotNil(t, defaultRuntime)
+
+				expected, err := defaultRuntimeTomlConfigV1(tc.expectedDefaultRuntimeBinary.(string))
+				require.NoError(t, err, "%d: %v", i, tc)
+
+				configContents, _ := toml.Marshal(defaultRuntime.(*toml.Tree))
+				expectedContents, _ := toml.Marshal(expected)
+
+				require.Equal(t, string(expectedContents), string(configContents), "%d: %v: %v", i, tc)
+			}
+
+		})
 	}
 }
 
@@ -128,7 +140,9 @@ func TestUpdateV1Config(t *testing.T) {
 
 	expectedBinaries := []string{
 		"/test/runtime/dir/nvidia-container-runtime",
-		"/test/runtime/dir/nvidia-container-runtime-experimental",
+		"/test/runtime/dir/nvidia-container-runtime.experimental",
+		"/test/runtime/dir/nvidia-container-runtime.cdi",
+		"/test/runtime/dir/nvidia-container-runtime.legacy",
 	}
 
 	testCases := []struct {
@@ -137,53 +151,61 @@ func TestUpdateV1Config(t *testing.T) {
 	}{
 		{
 			runtimeClass:     "nvidia",
-			expectedRuntimes: []string{"nvidia", "nvidia-experimental"},
+			expectedRuntimes: []string{"nvidia", "nvidia-experimental", "nvidia-cdi", "nvidia-legacy"},
 		},
 		{
 			runtimeClass:     "NAME",
-			expectedRuntimes: []string{"NAME", "nvidia-experimental"},
+			expectedRuntimes: []string{"NAME", "nvidia-experimental", "nvidia-cdi", "nvidia-legacy"},
 		},
 		{
 			runtimeClass:     "nvidia-experimental",
-			expectedRuntimes: []string{"nvidia", "nvidia-experimental"},
+			expectedRuntimes: []string{"nvidia", "nvidia-experimental", "nvidia-cdi", "nvidia-legacy"},
 		},
 	}
 
 	for i, tc := range testCases {
-		o := &options{
-			runtimeClass: tc.runtimeClass,
-			runtimeType:  runtimeType,
-			runtimeDir:   runtimeDir,
-		}
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			o := &options{
+				runtimeClass: tc.runtimeClass,
+				runtimeType:  runtimeType,
+				runtimeDir:   runtimeDir,
+			}
 
-		config, err := toml.TreeFromMap(map[string]interface{}{})
-		require.NoError(t, err, "%d: %v", i, tc)
-
-		err = UpdateV1Config(config, o)
-		require.NoError(t, err, "%d: %v", i, tc)
-
-		version, ok := config.Get("version").(int64)
-		require.True(t, ok)
-		require.EqualValues(t, expectedVersion, version)
-
-		runtimes, ok := config.GetPath([]string{"plugins", "cri", "containerd", "runtimes"}).(*toml.Tree)
-		require.True(t, ok)
-
-		runtimeClasses := runtimes.Keys()
-		require.ElementsMatch(t, tc.expectedRuntimes, runtimeClasses, "%d: %v", i, tc)
-
-		for i, r := range tc.expectedRuntimes {
-			runtimeConfig := runtimes.Get(r)
-
-			expected, err := runtimeTomlConfigV1(expectedBinaries[i])
+			config, err := toml.TreeFromMap(map[string]interface{}{})
 			require.NoError(t, err, "%d: %v", i, tc)
 
-			configContents, _ := toml.Marshal(runtimeConfig)
-			expectedContents, _ := toml.Marshal(expected)
+			v1 := &containerd.ConfigV1{
+				Tree:                  config,
+				UseDefaultRuntimeName: true,
+				RuntimeType:           runtimeType,
+			}
 
-			require.Equal(t, string(expectedContents), string(configContents), "%d: %v: %v", i, r, tc)
+			err = UpdateConfig(v1, o)
+			require.NoError(t, err, "%d: %v", i, tc)
 
-		}
+			version, ok := config.Get("version").(int64)
+			require.True(t, ok)
+			require.EqualValues(t, expectedVersion, version)
+
+			runtimes, ok := config.GetPath([]string{"plugins", "cri", "containerd", "runtimes"}).(*toml.Tree)
+			require.True(t, ok)
+
+			runtimeClasses := runtimes.Keys()
+			require.ElementsMatch(t, tc.expectedRuntimes, runtimeClasses, "%d: %v", i, tc)
+
+			for i, r := range tc.expectedRuntimes {
+				runtimeConfig := runtimes.Get(r)
+
+				expected, err := runtimeTomlConfigV1(expectedBinaries[i])
+				require.NoError(t, err, "%d: %v", i, tc)
+
+				configContents, _ := toml.Marshal(runtimeConfig)
+				expectedContents, _ := toml.Marshal(expected)
+
+				require.Equal(t, string(expectedContents), string(configContents), "%d: %v: %v", i, r, tc)
+
+			}
+		})
 	}
 }
 
@@ -195,7 +217,9 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 	expectedBinaries := []string{
 		runcBinary,
 		"/test/runtime/dir/nvidia-container-runtime",
-		"/test/runtime/dir/nvidia-container-runtime-experimental",
+		"/test/runtime/dir/nvidia-container-runtime.experimental",
+		"/test/runtime/dir/nvidia-container-runtime.cdi",
+		"/test/runtime/dir/nvidia-container-runtime.legacy",
 	}
 
 	testCases := []struct {
@@ -204,53 +228,61 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 	}{
 		{
 			runtimeClass:     "nvidia",
-			expectedRuntimes: []string{"runc", "nvidia", "nvidia-experimental"},
+			expectedRuntimes: []string{"runc", "nvidia", "nvidia-experimental", "nvidia-cdi", "nvidia-legacy"},
 		},
 		{
 			runtimeClass:     "NAME",
-			expectedRuntimes: []string{"runc", "NAME", "nvidia-experimental"},
+			expectedRuntimes: []string{"runc", "NAME", "nvidia-experimental", "nvidia-cdi", "nvidia-legacy"},
 		},
 		{
 			runtimeClass:     "nvidia-experimental",
-			expectedRuntimes: []string{"runc", "nvidia", "nvidia-experimental"},
+			expectedRuntimes: []string{"runc", "nvidia", "nvidia-experimental", "nvidia-cdi", "nvidia-legacy"},
 		},
 	}
 
 	for i, tc := range testCases {
-		o := &options{
-			runtimeClass: tc.runtimeClass,
-			runtimeType:  runtimeType,
-			runtimeDir:   runtimeDir,
-		}
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			o := &options{
+				runtimeClass: tc.runtimeClass,
+				runtimeType:  runtimeType,
+				runtimeDir:   runtimeDir,
+			}
 
-		config, err := toml.TreeFromMap(runcConfigMapV1("/runc-binary"))
-		require.NoError(t, err, "%d: %v", i, tc)
-
-		err = UpdateV1Config(config, o)
-		require.NoError(t, err, "%d: %v", i, tc)
-
-		version, ok := config.Get("version").(int64)
-		require.True(t, ok)
-		require.EqualValues(t, expectedVersion, version)
-
-		runtimes, ok := config.GetPath([]string{"plugins", "cri", "containerd", "runtimes"}).(*toml.Tree)
-		require.True(t, ok)
-
-		runtimeClasses := runtimes.Keys()
-		require.ElementsMatch(t, tc.expectedRuntimes, runtimeClasses, "%d: %v", i, tc)
-
-		for i, r := range tc.expectedRuntimes {
-			runtimeConfig := runtimes.Get(r)
-
-			expected, err := toml.TreeFromMap(runcRuntimeConfigMapV1(expectedBinaries[i]))
+			config, err := toml.TreeFromMap(runcConfigMapV1("/runc-binary"))
 			require.NoError(t, err, "%d: %v", i, tc)
 
-			configContents, _ := toml.Marshal(runtimeConfig)
-			expectedContents, _ := toml.Marshal(expected)
+			v1 := &containerd.ConfigV1{
+				Tree:                  config,
+				UseDefaultRuntimeName: true,
+				RuntimeType:           runtimeType,
+			}
 
-			require.Equal(t, string(expectedContents), string(configContents), "%d: %v: %v", i, r, tc)
+			err = UpdateConfig(v1, o)
+			require.NoError(t, err, "%d: %v", i, tc)
 
-		}
+			version, ok := v1.Get("version").(int64)
+			require.True(t, ok)
+			require.EqualValues(t, expectedVersion, version)
+
+			runtimes, ok := v1.GetPath([]string{"plugins", "cri", "containerd", "runtimes"}).(*toml.Tree)
+			require.True(t, ok)
+
+			runtimeClasses := runtimes.Keys()
+			require.ElementsMatch(t, tc.expectedRuntimes, runtimeClasses, "%d: %v", i, tc)
+
+			for i, r := range tc.expectedRuntimes {
+				runtimeConfig := runtimes.Get(r)
+
+				expected, err := toml.TreeFromMap(runcRuntimeConfigMapV1(expectedBinaries[i]))
+				require.NoError(t, err, "%d: %v", i, tc)
+
+				configContents, _ := toml.Marshal(runtimeConfig)
+				expectedContents, _ := toml.Marshal(expected)
+
+				require.Equal(t, string(expectedContents), string(configContents), "%d: %v: %v", i, r, tc)
+
+			}
+		})
 	}
 }
 
@@ -274,7 +306,9 @@ func TestRevertV1Config(t *testing.T) {
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
 								"nvidia":              runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
-								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime-experimental"),
+								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.experimental"),
+								"nvidia-cdi":          runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.cdi"),
+								"nvidia-legacy":       runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.legacy"),
 							},
 						},
 					},
@@ -289,7 +323,9 @@ func TestRevertV1Config(t *testing.T) {
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
 								"nvidia":              runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
-								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime-experimental"),
+								"nvidia-experimental": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.experimental"),
+								"nvidia-cdi":          runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.cdi"),
+								"nvidia-legacy":       runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.legacy"),
 							},
 							"default_runtime":      defaultRuntimeV1("/test/runtime/dir/nvidia-container-runtime"),
 							"default_runtime_name": "nvidia",
@@ -301,23 +337,31 @@ func TestRevertV1Config(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		o := &options{
-			runtimeClass: "nvidia",
-		}
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			o := &options{
+				runtimeClass: "nvidia",
+			}
 
-		config, err := toml.TreeFromMap(tc.config)
-		require.NoError(t, err, "%d: %v", i, tc)
+			config, err := toml.TreeFromMap(tc.config)
+			require.NoError(t, err, "%d: %v", i, tc)
 
-		expected, err := toml.TreeFromMap(tc.expected)
-		require.NoError(t, err, "%d: %v", i, tc)
+			expected, err := toml.TreeFromMap(tc.expected)
+			require.NoError(t, err, "%d: %v", i, tc)
 
-		err = RevertV1Config(config, o)
-		require.NoError(t, err, "%d: %v", i, tc)
+			v1 := &containerd.ConfigV1{
+				Tree:                  config,
+				UseDefaultRuntimeName: true,
+				RuntimeType:           runtimeType,
+			}
 
-		configContents, _ := toml.Marshal(config)
-		expectedContents, _ := toml.Marshal(expected)
+			err = RevertConfig(v1, o)
+			require.NoError(t, err, "%d: %v", i, tc)
 
-		require.Equal(t, string(expectedContents), string(configContents), "%d: %v", i, tc)
+			configContents, _ := toml.Marshal(config)
+			expectedContents, _ := toml.Marshal(expected)
+
+			require.Equal(t, string(expectedContents), string(configContents), "%d: %v", i, tc)
+		})
 	}
 }
 

@@ -25,7 +25,7 @@ import (
 )
 
 func TestNvidiaContainerRuntimeInstallerWrapper(t *testing.T) {
-	r := newNvidiaContainerRuntimeInstaller()
+	r := newNvidiaContainerRuntimeInstaller(nvidiaContainerRuntimeSource)
 
 	const shebang = "#! /bin/sh"
 	const destFolder = "/dest/folder"
