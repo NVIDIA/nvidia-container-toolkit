@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
+	"github.com/opencontainers/runtime-spec/specs-go"
 	"golang.org/x/mod/semver"
 )
 
@@ -130,7 +131,7 @@ func isPrivileged(s *Spec) bool {
 	}
 
 	var caps []string
-	// If v1.1.0-rc1 <= OCI version < v1.0.0-rc5 parse s.Process.Capabilities as:
+	// If v1.0.0-rc1 <= OCI version < v1.0.0-rc5 parse s.Process.Capabilities as:
 	// github.com/opencontainers/runtime-spec/blob/v1.0.0-rc1/specs-go/config.go#L30-L54
 	rc1cmp := semver.Compare("v"+*s.Version, "v1.0.0-rc1")
 	rc5cmp := semver.Compare("v"+*s.Version, "v1.0.0-rc5")
@@ -139,28 +140,31 @@ func isPrivileged(s *Spec) bool {
 		if err != nil {
 			log.Panicln("could not decode Process.Capabilities in OCI spec:", err)
 		}
-		// Otherwise, parse s.Process.Capabilities as:
-		// github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L30-L54
-	} else {
-		var lc LinuxCapabilities
-		err := json.Unmarshal(*s.Process.Capabilities, &lc)
-		if err != nil {
-			log.Panicln("could not decode Process.Capabilities in OCI spec:", err)
+		for _, c := range caps {
+			if c == capSysAdmin {
+				return true
+			}
 		}
-		// We only make sure that the bounding capabibility set has
-		// CAP_SYS_ADMIN. This allows us to make sure that the container was
-		// actually started as '--privileged', but also allow non-root users to
-		// access the privileged NVIDIA capabilities.
-		caps = lc.Bounding
+		return false
 	}
 
-	for _, c := range caps {
-		if c == capSysAdmin {
-			return true
-		}
+	// Otherwise, parse s.Process.Capabilities as:
+	// github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L30-L54
+	process := specs.Process{
+		Env: s.Process.Env,
 	}
 
-	return false
+	err := json.Unmarshal(*s.Process.Capabilities, &process.Capabilities)
+	if err != nil {
+		log.Panicln("could not decode Process.Capabilities in OCI spec:", err)
+	}
+
+	fullSpec := specs.Spec{
+		Version: *s.Version,
+		Process: &process,
+	}
+
+	return image.IsPrivileged(&fullSpec)
 }
 
 func getDevicesFromEnvvar(image image.CUDA, swarmResourceEnvvars []string) *string {

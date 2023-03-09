@@ -45,6 +45,8 @@ var (
 // Config represents the contents of the config.toml file for the NVIDIA Container Toolkit
 // Note: This is currently duplicated by the HookConfig in cmd/nvidia-container-toolkit/hook_config.go
 type Config struct {
+	AcceptEnvvarUnprivileged bool `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
+
 	NVIDIAContainerCLIConfig     ContainerCLIConfig `toml:"nvidia-container-cli"`
 	NVIDIACTKConfig              CTKConfig          `toml:"nvidia-ctk"`
 	NVIDIAContainerRuntimeConfig RuntimeConfig      `toml:"nvidia-container-runtime"`
@@ -91,6 +93,8 @@ func getConfigFrom(toml *toml.Tree) (*Config, error) {
 		return cfg, nil
 	}
 
+	cfg.AcceptEnvvarUnprivileged = toml.GetDefault("accept-nvidia-visible-devices-envvar-when-unprivileged", cfg.AcceptEnvvarUnprivileged).(bool)
+
 	cfg.NVIDIAContainerCLIConfig = *getContainerCLIConfigFrom(toml)
 	cfg.NVIDIACTKConfig = *getCTKConfigFrom(toml)
 	runtimeConfig, err := getRuntimeConfigFrom(toml)
@@ -105,6 +109,7 @@ func getConfigFrom(toml *toml.Tree) (*Config, error) {
 // getDefaultConfig defines the default values for the config
 func getDefaultConfig() *Config {
 	c := Config{
+		AcceptEnvvarUnprivileged:     true,
 		NVIDIAContainerCLIConfig:     *getDefaultContainerCLIConfig(),
 		NVIDIACTKConfig:              *getDefaultCTKConfig(),
 		NVIDIAContainerRuntimeConfig: *GetDefaultRuntimeConfig(),

@@ -37,7 +37,7 @@ type cdiModifier struct {
 // CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES enviroment variable is
 // used to select the devices to include.
 func NewCDIModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
-	devices, err := getDevicesFromSpec(logger, ociSpec, cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind)
+	devices, err := getDevicesFromSpec(logger, ociSpec, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get required devices from OCI specification: %v", err)
 	}
@@ -61,7 +61,7 @@ func NewCDIModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 	return m, nil
 }
 
-func getDevicesFromSpec(logger *logrus.Logger, ociSpec oci.Spec, defaultKind string) ([]string, error) {
+func getDevicesFromSpec(logger *logrus.Logger, ociSpec oci.Spec, cfg *config.Config) ([]string, error) {
 	rawSpec, err := ociSpec.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
@@ -75,17 +75,17 @@ func getDevicesFromSpec(logger *logrus.Logger, ociSpec oci.Spec, defaultKind str
 		return annotationDevices, nil
 	}
 
-	image, err := image.NewCUDAImageFromSpec(rawSpec)
+	container, err := image.NewCUDAImageFromSpec(rawSpec)
 	if err != nil {
 		return nil, err
 	}
-	envDevices := image.DevicesFromEnvvars(visibleDevicesEnvvar)
+	envDevices := container.DevicesFromEnvvars(visibleDevicesEnvvar)
 
 	var devices []string
 	seen := make(map[string]bool)
 	for _, name := range envDevices.List() {
 		if !cdi.IsQualifiedName(name) {
-			name = fmt.Sprintf("%s=%s", defaultKind, name)
+			name = fmt.Sprintf("%s=%s", cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind, name)
 		}
 		if seen[name] {
 			logger.Debugf("Ignoring duplicate device %q", name)
@@ -93,6 +93,16 @@ func getDevicesFromSpec(logger *logrus.Logger, ociSpec oci.Spec, defaultKind str
 		}
 		devices = append(devices, name)
 	}
+
+	if len(devices) == 0 {
+		return nil, nil
+	}
+
+	if cfg.AcceptEnvvarUnprivileged || image.IsPrivileged(rawSpec) {
+		return devices, nil
+	}
+
+	logger.Warningf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES: %v", devices)
 
 	return devices, nil
 }
