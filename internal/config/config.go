@@ -47,9 +47,10 @@ var (
 type Config struct {
 	AcceptEnvvarUnprivileged bool `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
 
-	NVIDIAContainerCLIConfig     ContainerCLIConfig `toml:"nvidia-container-cli"`
-	NVIDIACTKConfig              CTKConfig          `toml:"nvidia-ctk"`
-	NVIDIAContainerRuntimeConfig RuntimeConfig      `toml:"nvidia-container-runtime"`
+	NVIDIAContainerCLIConfig         ContainerCLIConfig `toml:"nvidia-container-cli"`
+	NVIDIACTKConfig                  CTKConfig          `toml:"nvidia-ctk"`
+	NVIDIAContainerRuntimeConfig     RuntimeConfig      `toml:"nvidia-container-runtime"`
+	NVIDIAContainerRuntimeHookConfig RuntimeHookConfig  `toml:"nvidia-container-runtime-hook"`
 }
 
 // GetConfig sets up the config struct. Values are read from a toml file
@@ -102,6 +103,12 @@ func getConfigFrom(toml *toml.Tree) (*Config, error) {
 		return nil, fmt.Errorf("failed to load nvidia-container-runtime config: %v", err)
 	}
 	cfg.NVIDIAContainerRuntimeConfig = *runtimeConfig
+
+	runtimeHookConfig, err := getRuntimeHookConfigFrom(toml)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load nvidia-container-runtime-hook config: %v", err)
+	}
+	cfg.NVIDIAContainerRuntimeHookConfig = *runtimeHookConfig
 
 	return cfg, nil
 }

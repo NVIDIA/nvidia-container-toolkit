@@ -51,6 +51,8 @@ type options struct {
 	ContainerRuntimeDebug               string
 	ContainerRuntimeLogLevel            string
 
+	ContainerRuntimeHookSkipModeDetection bool
+
 	ContainerCLIDebug string
 	toolkitRoot       string
 
@@ -136,6 +138,12 @@ func main() {
 			Name:        "nvidia-container-runtime-modes.cdi.default-kind",
 			Destination: &opts.ContainerRuntimeModesCdiDefaultKind,
 			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODES_CDI_DEFAULT_KIND"},
+		},
+		&cli.BoolFlag{
+			Name:        "nvidia-container-runtime-hook.skip-mode-detection",
+			Value:       true,
+			Destination: &opts.ContainerRuntimeHookSkipModeDetection,
+			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_HOOK_SKIP_MODE_DETECTION"},
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-container-cli-debug",
@@ -370,6 +378,9 @@ func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutable
 
 	// Set nvidia-ctk options
 	config.Set("nvidia-ctk.path", nvidiaCTKPath)
+
+	// Set the nvidia-container-runtime-hook options
+	config.Set("nvidia-container-runtime-hook.skip-mode-detection", opts.ContainerRuntimeHookSkipModeDetection)
 
 	_, err = config.WriteTo(targetConfig)
 	if err != nil {
