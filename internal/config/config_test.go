@@ -57,6 +57,7 @@ func TestGetConfig(t *testing.T) {
 		{
 			description: "empty config is default",
 			expectedConfig: &Config{
+				AcceptEnvvarUnprivileged: true,
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root: "",
 				},
@@ -82,6 +83,7 @@ func TestGetConfig(t *testing.T) {
 		{
 			description: "config options set inline",
 			contents: []string{
+				"accept-nvidia-visible-devices-envvar-when-unprivileged = false",
 				"nvidia-container-cli.root = \"/bar/baz\"",
 				"nvidia-container-runtime.debug = \"/foo/bar\"",
 				"nvidia-container-runtime.experimental = true",
@@ -94,6 +96,7 @@ func TestGetConfig(t *testing.T) {
 				"nvidia-ctk.path = \"/foo/bar/nvidia-ctk\"",
 			},
 			expectedConfig: &Config{
+				AcceptEnvvarUnprivileged: false,
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root: "/bar/baz",
 				},
@@ -119,6 +122,7 @@ func TestGetConfig(t *testing.T) {
 		{
 			description: "config options set in section",
 			contents: []string{
+				"accept-nvidia-visible-devices-envvar-when-unprivileged = false",
 				"[nvidia-container-cli]",
 				"root = \"/bar/baz\"",
 				"[nvidia-container-runtime]",
@@ -136,6 +140,7 @@ func TestGetConfig(t *testing.T) {
 				"path = \"/foo/bar/nvidia-ctk\"",
 			},
 			expectedConfig: &Config{
+				AcceptEnvvarUnprivileged: false,
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root: "/bar/baz",
 				},
