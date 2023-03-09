@@ -255,14 +255,14 @@ func Install(cli *cli.Context, opts *options) error {
 		return fmt.Errorf("error installing NVIDIA container runtime hook: %v", err)
 	}
 
-	err = installToolkitConfig(toolkitConfigPath, nvidiaContainerCliExecutable, opts)
-	if err != nil {
-		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
-	}
-
 	nvidiaCTKPath, err := installContainerToolkitCLI(opts.toolkitRoot)
 	if err != nil {
 		return fmt.Errorf("error installing NVIDIA Container Toolkit CLI: %v", err)
+	}
+
+	err = installToolkitConfig(toolkitConfigPath, nvidiaContainerCliExecutable, nvidiaCTKPath, opts)
+	if err != nil {
+		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
 	}
 
 	return generateCDISpec(opts, nvidiaCTKPath)
@@ -318,7 +318,7 @@ func installLibrary(libName string, toolkitRoot string) error {
 
 // installToolkitConfig installs the config file for the NVIDIA container toolkit ensuring
 // that the settings are updated to match the desired install and nvidia driver directories.
-func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutablePath string, opts *options) error {
+func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, opts *options) error {
 	log.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
 
 	config, err := toml.LoadFile(nvidiaContainerToolkitConfigSource)
@@ -365,6 +365,9 @@ func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutable
 		}
 		config.Set(key, value)
 	}
+
+	// Set nvidia-ctk options
+	config.Set("nvidia-ctk.path", nvidiaCTKPath)
 
 	_, err = config.WriteTo(targetConfig)
 	if err != nil {
