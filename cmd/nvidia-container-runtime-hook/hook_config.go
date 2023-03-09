@@ -43,8 +43,9 @@ type HookConfig struct {
 	AcceptDeviceListAsVolumeMounts bool               `toml:"accept-nvidia-visible-devices-as-volume-mounts"`
 	SupportedDriverCapabilities    DriverCapabilities `toml:"supported-driver-capabilities"`
 
-	NvidiaContainerCLI     CLIConfig            `toml:"nvidia-container-cli"`
-	NVIDIAContainerRuntime config.RuntimeConfig `toml:"nvidia-container-runtime"`
+	NvidiaContainerCLI         CLIConfig                `toml:"nvidia-container-cli"`
+	NVIDIAContainerRuntime     config.RuntimeConfig     `toml:"nvidia-container-runtime"`
+	NVIDIAContainerRuntimeHook config.RuntimeHookConfig `toml:"nvidia-container-runtime-hook"`
 }
 
 func getDefaultHookConfig() HookConfig {
@@ -66,7 +67,8 @@ func getDefaultHookConfig() HookConfig {
 			User:        nil,
 			Ldconfig:    nil,
 		},
-		NVIDIAContainerRuntime: *config.GetDefaultRuntimeConfig(),
+		NVIDIAContainerRuntime:     *config.GetDefaultRuntimeConfig(),
+		NVIDIAContainerRuntimeHook: *config.GetDefaultRuntimeHookConfig(),
 	}
 }
 
