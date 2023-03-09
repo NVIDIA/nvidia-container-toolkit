@@ -168,12 +168,14 @@ func main() {
 			Usage:       "the directory where the CDI output files are to be written. If this is set to '', no CDI specification is generated.",
 			Value:       "/var/run/cdi",
 			Destination: &opts.cdiOutputDir,
+			EnvVars:     []string{"CDI_OUTPUT_DIR"},
 		},
 		&cli.StringFlag{
 			Name:        "cdi-kind",
 			Usage:       "the vendor string to use for the generated CDI specification",
 			Value:       "management.nvidia.com/gpu",
 			Destination: &opts.cdiKind,
+			EnvVars:     []string{"CDI_KIND"},
 		},
 	}
 
