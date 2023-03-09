@@ -50,7 +50,7 @@ META_TARGETS := packaging
 
 BUILD_TARGETS := $(patsubst %,build-%,$(DISTRIBUTIONS) $(META_TARGETS))
 PUSH_TARGETS := $(patsubst %,push-%,$(DISTRIBUTIONS) $(META_TARGETS))
-TEST_TARGETS := $(patsubst %,test-%, $(DISTRIBUTIONS))
+TEST_TARGETS := $(patsubst %,test-%,$(DISTRIBUTIONS))
 
 .PHONY: $(DISTRIBUTIONS) $(PUSH_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
 
