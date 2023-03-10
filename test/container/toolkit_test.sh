@@ -61,6 +61,7 @@ testing::toolkit::install() {
 	grep -q -E "^\s*ldconfig = \"@${nvidia_run_dir}/driver/sbin/ldconfig(.real)?\"" "${shared_dir}/usr/local/nvidia/toolkit/.config/nvidia-container-runtime/config.toml"
 	grep -q -E "^\s*root = \"${nvidia_run_dir}/driver\"" "${shared_dir}/usr/local/nvidia/toolkit/.config/nvidia-container-runtime/config.toml"
 	grep -q -E "^\s*path = \"/usr/local/nvidia/toolkit/nvidia-container-cli\"" "${shared_dir}/usr/local/nvidia/toolkit/.config/nvidia-container-runtime/config.toml"
+	grep -q -E "^\s*path = \"/usr/local/nvidia/toolkit/nvidia-ctk\"" "${shared_dir}/usr/local/nvidia/toolkit/.config/nvidia-container-runtime/config.toml"
 }
 
 testing::toolkit::delete() {

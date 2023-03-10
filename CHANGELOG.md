@@ -9,6 +9,9 @@
 * Discover all `gsb*.bin` GSP firmware files when generating CDI specification.
 * Remove `fedora35` packaging targets
 * [libnvidia-container] Include all `gsp*.bin` firmware files if present
+* [toolkit-container] Install `nvidia-ctk` from toolkit container
+* [toolkit-container] Use installed `nvidia-ctk` path in NVIDIA Container Toolkit config
+* [toolkit-container] Bump CUDA base images to 12.1.0
 
 ## v1.12.0
 
