@@ -93,7 +93,7 @@ function add_distro() {
 
     local name="${component}-${os}-${arch}"
 
-    local scratch_dir="${KITMAKER_SCRATCH}/${name}"
+    local scratch_dir="${KITMAKER_SCRATCH}/${name}/${component}"
     local packages_dir="${scratch_dir}/.packages"
 
     mkdir -p "${packages_dir}"
@@ -113,10 +113,10 @@ function create_archive() {
     local name="${component}-${os}-${arch}"
     local archive="${KITMAKER_DIR}/${name}-${version}.tar.gz"
 
-    local scratch_dir="${KITMAKER_SCRATCH}/${name}"
+    local scratch_dir="${KITMAKER_SCRATCH}/${name}/${component}"
     local packages_dir="${scratch_dir}/.packages/"
 
-    tar zcvf "${archive}" -C "${scratch_dir}/.." "${name}"
+    tar zcvf "${archive}" -C "${scratch_dir}/.." "${component}"
     echo "Created: ${archive}"
     ls -l "${archive}"
     echo "With contents:"
