@@ -104,7 +104,7 @@ func getDevicesFromSpec(logger *logrus.Logger, ociSpec oci.Spec, cfg *config.Con
 
 	logger.Warningf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES: %v", devices)
 
-	return devices, nil
+	return nil, nil
 }
 
 // Modify loads the CDI registry and injects the specified CDI devices into the OCI runtime specification.
