@@ -22,7 +22,7 @@ import (
 
 // ContainerCLIConfig stores the options for the nvidia-container-cli
 type ContainerCLIConfig struct {
-	Root string
+	Root string `toml:"root"`
 }
 
 // getContainerCLIConfigFrom reads the nvidia container runtime config from the specified toml Tree.
