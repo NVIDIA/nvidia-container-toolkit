@@ -16,31 +16,7 @@
 
 package config
 
-import "github.com/pelletier/go-toml"
-
 // CTKConfig stores the config options for the NVIDIA Container Toolkit CLI (nvidia-ctk)
 type CTKConfig struct {
 	Path string `toml:"path"`
-}
-
-// getCTKConfigFrom reads the nvidia container runtime config from the specified toml Tree.
-func getCTKConfigFrom(toml *toml.Tree) *CTKConfig {
-	cfg := getDefaultCTKConfig()
-
-	if toml == nil {
-		return cfg
-	}
-
-	cfg.Path = toml.GetDefault("nvidia-ctk.path", cfg.Path).(string)
-
-	return cfg
-}
-
-// getDefaultCTKConfig defines the default values for the config
-func getDefaultCTKConfig() *CTKConfig {
-	c := CTKConfig{
-		Path: "nvidia-ctk",
-	}
-
-	return &c
 }

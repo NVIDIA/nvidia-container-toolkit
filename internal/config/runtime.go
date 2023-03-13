@@ -16,21 +16,6 @@
 
 package config
 
-import (
-	"fmt"
-
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
-	"github.com/pelletier/go-toml"
-	"github.com/sirupsen/logrus"
-)
-
-const (
-	dockerRuncExecutableName = "docker-runc"
-	runcExecutableName       = "runc"
-
-	auto = "auto"
-)
-
 // RuntimeConfig stores the config options for the NVIDIA Container Runtime
 type RuntimeConfig struct {
 	DebugFilePath string `toml:"debug"`
@@ -61,52 +46,12 @@ type csvModeConfig struct {
 	MountSpecPath string `toml:"mount-spec-path"`
 }
 
-// dummy allows us to unmarshal only a RuntimeConfig from a *toml.Tree
-type dummy struct {
-	Runtime RuntimeConfig `toml:"nvidia-container-runtime"`
-}
-
-// getRuntimeConfigFrom reads the nvidia container runtime config from the specified toml Tree.
-func getRuntimeConfigFrom(toml *toml.Tree) (*RuntimeConfig, error) {
-	cfg := GetDefaultRuntimeConfig()
-
-	if toml == nil {
-		return cfg, nil
-	}
-
-	d := dummy{
-		Runtime: *cfg,
-	}
-
-	if err := toml.Unmarshal(&d); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal runtime config: %v", err)
-	}
-
-	return &d.Runtime, nil
-}
-
 // GetDefaultRuntimeConfig defines the default values for the config
-func GetDefaultRuntimeConfig() *RuntimeConfig {
-	c := RuntimeConfig{
-		DebugFilePath: "/dev/null",
-		LogLevel:      logrus.InfoLevel.String(),
-		Runtimes: []string{
-			dockerRuncExecutableName,
-			runcExecutableName,
-		},
-		Mode: auto,
-		Modes: modesConfig{
-			CSV: csvModeConfig{
-				MountSpecPath: "/etc/nvidia-container-runtime/host-files-for-container.d",
-			},
-			CDI: cdiModeConfig{
-				DefaultKind: "nvidia.com/gpu",
-				AnnotationPrefixes: []string{
-					cdi.AnnotationPrefix,
-				},
-			},
-		},
+func GetDefaultRuntimeConfig() (*RuntimeConfig, error) {
+	cfg, err := getDefaultConfig()
+	if err != nil {
+		return nil, err
 	}
 
-	return &c
+	return &cfg.NVIDIAContainerRuntimeConfig, nil
 }

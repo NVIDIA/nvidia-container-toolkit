@@ -16,47 +16,18 @@
 
 package config
 
-import (
-	"fmt"
-
-	"github.com/pelletier/go-toml"
-)
-
 // RuntimeHookConfig stores the config options for the NVIDIA Container Runtime
 type RuntimeHookConfig struct {
 	// SkipModeDetection disables the mode check for the runtime hook.
 	SkipModeDetection bool `toml:"skip-mode-detection"`
 }
 
-// dummyHookConfig allows us to unmarshal only a RuntimeHookConfig from a *toml.Tree
-type dummyHookConfig struct {
-	RuntimeHook RuntimeHookConfig `toml:"nvidia-container-runtime-hook"`
-}
-
-// getRuntimeHookConfigFrom reads the nvidia container runtime config from the specified toml Tree.
-func getRuntimeHookConfigFrom(toml *toml.Tree) (*RuntimeHookConfig, error) {
-	cfg := GetDefaultRuntimeHookConfig()
-
-	if toml == nil {
-		return cfg, nil
-	}
-
-	d := dummyHookConfig{
-		RuntimeHook: *cfg,
-	}
-
-	if err := toml.Unmarshal(&d); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal runtime config: %v", err)
-	}
-
-	return &d.RuntimeHook, nil
-}
-
 // GetDefaultRuntimeHookConfig defines the default values for the config
-func GetDefaultRuntimeHookConfig() *RuntimeHookConfig {
-	c := RuntimeHookConfig{
-		SkipModeDetection: false,
+func GetDefaultRuntimeHookConfig() (*RuntimeHookConfig, error) {
+	cfg, err := getDefaultConfig()
+	if err != nil {
+		return nil, err
 	}
 
-	return &c
+	return &cfg.NVIDIAContainerRuntimeHookConfig, nil
 }

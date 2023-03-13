@@ -71,14 +71,17 @@ func doPrestart() {
 	defer exit()
 	log.SetFlags(0)
 
-	hook := getHookConfig()
+	hook, err := getHookConfig()
+	if err != nil || hook == nil {
+		log.Panicln("error getting hook config:", err)
+	}
 	cli := hook.NvidiaContainerCLI
 
 	if !hook.NVIDIAContainerRuntimeHook.SkipModeDetection && info.ResolveAutoMode(&logInterceptor{}, hook.NVIDIAContainerRuntime.Mode) != "legacy" {
 		log.Panicln("invoking the NVIDIA Container Runtime Hook directly (e.g. specifying the docker --gpus flag) is not supported. Please use the NVIDIA Container Runtime (e.g. specify the --runtime=nvidia flag) instead.")
 	}
 
-	container := getContainerConfig(hook)
+	container := getContainerConfig(*hook)
 	nvidia := container.Nvidia
 	if nvidia == nil {
 		// Not a GPU container, nothing to do.
