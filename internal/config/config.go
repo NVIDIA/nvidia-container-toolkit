@@ -21,7 +21,9 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/pelletier/go-toml"
 )
 
@@ -123,4 +125,53 @@ func getDefaultConfig() *Config {
 	}
 
 	return &c
+}
+
+// GetDefaultConfigToml returns the default config as a toml Tree.
+func GetDefaultConfigToml() (*toml.Tree, error) {
+	tree, err := toml.TreeFromMap(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	tree.Set("disable-require", false)
+	tree.SetWithComment("swarm-resource", "", true, "DOCKER_RESOURCE_GPU")
+	tree.SetWithComment("accept-nvidia-visible-devices-envvar-when-unprivileged", "", true, true)
+	tree.SetWithComment("accept-nvidia-visible-devices-as-volume-mounts", "", true, false)
+
+	// nvidia-container-cli
+	tree.SetWithComment("nvidia-container-cli.root", "", true, "/run/nvidia/driver")
+	tree.SetWithComment("nvidia-container-cli.path", "", true, "/usr/bin/nvidia-container-cli")
+	tree.Set("nvidia-container-cli.environment", []string{})
+	tree.SetWithComment("nvidia-container-cli.debug", "", true, "/var/log/nvidia-container-toolkit.log")
+	tree.SetWithComment("nvidia-container-cli.ldcache", "", true, "/etc/ld.so.cache")
+	tree.Set("nvidia-container-cli.load-kmods", true)
+	tree.SetWithComment("nvidia-container-cli.no-cgroups", "", true, false)
+	tree.SetWithComment("nvidia-container-cli.user", "", true, "root:video")
+	tree.Set("nvidia-container-cli.ldconfig", getLdConfigPath())
+
+	// nvidia-container-runtime
+	tree.SetWithComment("nvidia-container-runtime.debug", "", true, "/var/log/nvidia-container-runtime.log")
+	tree.Set("nvidia-container-runtime.log-level", "info")
+
+	commentLines := []string{
+		"Specify the runtimes to consider. This list is processed in order and the PATH",
+		"searched for matching executables unless the entry is an absolute path.",
+	}
+	tree.SetWithComment("nvidia-container-runtime.runtimes", strings.Join(commentLines, "\n "), false, []string{"docker-runc", "runc"})
+
+	tree.Set("nvidia-container-runtime.mode", "auto")
+
+	tree.Set("nvidia-container-runtime.modes.csv.mount-spec-path", "/etc/nvidia-container-runtime/host-files-for-container.d")
+	tree.Set("nvidia-container-runtime.modes.cdi.default-kind", "nvidia.com/gpu")
+	tree.Set("nvidia-container-runtime.modes.cdi.annotation-prefixes", []string{cdi.AnnotationPrefix})
+
+	// nvidia-ctk
+	tree.Set("nvidia-ctk.path", "nvidia-ctk")
+
+	return tree, nil
+}
+
+func getLdConfigPath() string {
+	return "@/sbin/ldconfig.real"
 }
