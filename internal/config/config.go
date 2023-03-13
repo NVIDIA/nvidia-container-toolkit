@@ -17,6 +17,7 @@
 package config
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -159,7 +160,8 @@ func GetDefaultConfigToml() (*toml.Tree, error) {
 	tree.SetWithComment("nvidia-container-cli.ldcache", "", true, "/etc/ld.so.cache")
 	tree.Set("nvidia-container-cli.load-kmods", true)
 	tree.SetWithComment("nvidia-container-cli.no-cgroups", "", true, false)
-	tree.SetWithComment("nvidia-container-cli.user", "", true, "root:video")
+
+	tree.SetWithComment("nvidia-container-cli.user", "", getCommentedUserGroup(), getUserGroup())
 	tree.Set("nvidia-container-cli.ldconfig", getLdConfigPath())
 
 	// nvidia-container-runtime
@@ -189,4 +191,44 @@ func getLdConfigPath() string {
 		return "@/sbin/ldconfig.real"
 	}
 	return "@/sbin/ldconfig"
+}
+
+// getUserGroup returns the user and group to use for the nvidia-container-cli and whether the config option should be commented.
+func getUserGroup() string {
+	return "root:video"
+}
+
+// getCommentedUserGroup returns whether the nvidia-container-cli user and group config option should be commented.
+func getCommentedUserGroup() bool {
+	uncommentIf := map[string]bool{
+		"suse":     true,
+		"opensuse": true,
+	}
+
+	idsLike := getDistIDLike()
+	for _, id := range idsLike {
+		if uncommentIf[id] {
+			return false
+		}
+	}
+	return true
+}
+
+// getDistIDLike returns the ID_LIKE field from /etc/os-release.
+func getDistIDLike() []string {
+	releaseFile, err := os.Open("/etc/os-release")
+	if err != nil {
+		return nil
+	}
+	defer releaseFile.Close()
+
+	scanner := bufio.NewScanner(releaseFile)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "ID_LIKE=") {
+			value := strings.Trim(strings.TrimPrefix(line, "ID_LIKE="), "\"")
+			return strings.Split(value, " ")
+		}
+	}
+	return nil
 }
