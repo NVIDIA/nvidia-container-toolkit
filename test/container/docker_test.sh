@@ -39,7 +39,6 @@ testing::docker::toolkit::run() {
 		--volumes-from "${docker_dind_ctr}" \
 		--pid "container:${docker_dind_ctr}" \
 		-e RUNTIME_ARGS="--socket ${docker_dind_socket}" \
-		-e CDI_OUTPUT_DIR="" \
 		--name "${docker_test_ctr}" \
 		"${toolkit_container_image}" "/usr/local/nvidia" "--no-daemon"
 
