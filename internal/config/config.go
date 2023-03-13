@@ -173,5 +173,8 @@ func GetDefaultConfigToml() (*toml.Tree, error) {
 }
 
 func getLdConfigPath() string {
-	return "@/sbin/ldconfig.real"
+	if _, err := os.Stat("/sbin/ldconfig.real"); err == nil {
+		return "@/sbin/ldconfig.real"
+	}
+	return "@/sbin/ldconfig"
 }
