@@ -2,6 +2,28 @@
 
 ## v1.13.0-rc.2
 
+* Don't fail chmod hook if paths are not injected
+* Only create `by-path` symlinks if CDI devices are actually requested.
+* Fix possible blank `nvidia-ctk` path in generated CDI specifications
+* Fix error in postun scriplet on RPM-based systems
+* Only check `NVIDIA_VISIBLE_DEVICES` for environment variables if no annotations are specified.
+* Add `cdi.default-kind` config option for constructing fully-qualified CDI device names in CDI mode
+* Add support for `accept-nvidia-visible-devices-envvar-unprivileged` config setting in CDI mode
+* Add `nvidia-container-runtime-hook.skip-mode-detection` config option to bypass mode detection. This allows `legacy` and `cdi` mode, for example, to be used at the same time.
+* Add support for generating CDI specifications for GDS and MOFED devices
+* Ensure CDI specification is validated on save when generating a spec
+* Rename `--discovery-mode` argument to `--mode` for `nvidia-ctk cdi generate`
+* [libnvidia-container] Fix segfault on WSL2 systems
+* [toolkit-container] Add `--cdi-enabled` flag to toolkit config
+* [toolkit-container] Install `nvidia-ctk` from toolkit container
+* [toolkit-container] Use installed `nvidia-ctk` path in NVIDIA Container Toolkit config
+* [toolkit-container] Bump CUDA base images to 12.1.0
+* [toolkit-container] Set `nvidia-ctk` path in the
+* [toolkit-container] Add `cdi.k8s.io/*` to set of allowed annotations in containerd config
+* [toolkit-container] Generate CDI specification for use in management containers
+* [toolkit-container] Install experimental runtime as `nvidia-container-runtime.experimental` instead of `nvidia-container-runtime-experimental`
+* [toolkit-container] Install and configure mode-specific runtimes for `cdi` and `legacy` modes
+
 ## v1.13.0-rc.1
 
 * Include MIG-enabled devices as GPUs when generating CDI specification
