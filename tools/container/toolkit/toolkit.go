@@ -56,6 +56,7 @@ type options struct {
 	ContainerCLIDebug string
 	toolkitRoot       string
 
+	cdiEnabled   bool
 	cdiOutputDir string
 	cdiKind      string
 	cdiVendor    string
@@ -170,6 +171,13 @@ func main() {
 			Required:    true,
 			Destination: &opts.toolkitRoot,
 			EnvVars:     []string{"TOOLKIT_ROOT"},
+		},
+		&cli.BoolFlag{
+			Name:        "cdi-enabled",
+			Aliases:     []string{"enable-cdi"},
+			Usage:       "enable the generation of a CDI specification",
+			Destination: &opts.cdiEnabled,
+			EnvVars:     []string{"CDI_ENABLED", "ENABLE_CDI"},
 		},
 		&cli.StringFlag{
 			Name:        "cdi-output-dir",
@@ -592,6 +600,9 @@ func createDirectories(dir ...string) error {
 
 // generateCDISpec generates a CDI spec for use in managemnt containers
 func generateCDISpec(opts *options, nvidiaCTKPath string) error {
+	if !opts.cdiEnabled {
+		return nil
+	}
 	if opts.cdiOutputDir == "" {
 		log.Info("Skipping CDI spec generation (no output directory specified)")
 		return nil
