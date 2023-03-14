@@ -1,5 +1,9 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.12.2
+
+* [libnvidia-container] Fix segfault on WSL2 systems
+
 ## v1.12.1
 
 * Don't fail chmod hook if paths are not injected
