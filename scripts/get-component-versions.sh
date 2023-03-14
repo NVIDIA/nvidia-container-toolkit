@@ -62,8 +62,10 @@ echo "LIBNVIDIA_CONTAINER_PACKAGE_VERSION=${libnvidia_container_version_tag//\~/
 echo "NVIDIA_CONTAINER_TOOLKIT_VERSION=${nvidia_container_toolkit_version}"
 echo "NVIDIA_CONTAINER_TOOLKIT_TAG=${nvidia_container_toolkit_tag}"
 echo "NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION=${nvidia_container_toolkit_version_tag//\~/-}"
-if [[ "${libnvidia_container_version_tag}" != "${nvidia_container_toolkit_version_tag}" ]]; then
+if [[ "${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}" != "${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}" ]]; then
     >&2 echo "WARNING: The libnvidia-container and nvidia-container-toolkit versions do not match"
+    >&2 echo "WARNING: lib: ${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}"
+    >&2 echo "WARNING: toolkit: ${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}"
 fi
 echo "NVIDIA_CONTAINER_RUNTIME_VERSION=${nvidia_container_runtime_version}"
 echo "NVIDIA_CONTAINER_RUNTIME_TAG=${nvidia_container_runtime_tag}"
