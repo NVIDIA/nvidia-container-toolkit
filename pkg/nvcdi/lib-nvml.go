@@ -24,6 +24,7 @@ import (
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
+	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
 
 type nvmllib nvcdilib
@@ -38,6 +39,11 @@ func (l *nvmllib) GetSpec() (spec.Interface, error) {
 // GetAllDeviceSpecs returns the device specs for all available devices.
 func (l *nvmllib) GetAllDeviceSpecs() ([]specs.Device, error) {
 	var deviceSpecs []specs.Device
+
+	if r := l.nvmllib.Init(); r != nvml.SUCCESS {
+		return nil, fmt.Errorf("failed to initalize NVML: %v", r)
+	}
+	defer l.nvmllib.Shutdown()
 
 	gpuDeviceSpecs, err := l.getGPUDeviceSpecs()
 	if err != nil {

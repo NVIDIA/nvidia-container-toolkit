@@ -31,6 +31,11 @@ import (
 // NewDriverDiscoverer creates a discoverer for the libraries and binaries associated with a driver installation.
 // The supplied NVML Library is used to query the expected driver version.
 func NewDriverDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string, nvmllib nvml.Interface) (discover.Discover, error) {
+	if r := nvmllib.Init(); r != nvml.SUCCESS {
+		return nil, fmt.Errorf("failed to initalize NVML: %v", r)
+	}
+	defer nvmllib.Shutdown()
+
 	version, r := nvmllib.SystemGetDriverVersion()
 	if r != nvml.SUCCESS {
 		return nil, fmt.Errorf("failed to determine driver version: %v", r)
