@@ -28,8 +28,8 @@ var _ Transformer = (*simplify)(nil)
 
 // NewSimplifier creates a simplifier transformer.
 // This transoformer ensures that entities in the spec are deduplicated and that common edits are removed from device-specific edits.
-func NewSimplifier() (Transformer, error) {
-	return &simplify{}, nil
+func NewSimplifier() Transformer {
+	return &simplify{}
 }
 
 // Transform simplifies the supplied spec.

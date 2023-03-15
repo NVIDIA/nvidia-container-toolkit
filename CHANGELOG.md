@@ -2,6 +2,7 @@
 
 ## v1.13.0-rc.3
 
+* Generate a simplified CDI specification by default. This means that entities in the common edits in a spec are not included in device definitions.
 * Add transformers to deduplicate and simplify CDI specifications.
 * Fix the generation of CDI specifications for management containers when the driver libraries are not in the LDCache.
 * Prefer /run over /var/run when locating nvidia-persistenced and nvidia-fabricmanager sockets.
