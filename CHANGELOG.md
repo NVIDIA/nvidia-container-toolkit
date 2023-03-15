@@ -1,5 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.13.0-rc.3
+
 ## v1.13.0-rc.2
 
 * Don't fail chmod hook if paths are not injected
