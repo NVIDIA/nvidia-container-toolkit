@@ -23,6 +23,7 @@ variables:
   BUILD_MULTI_ARCH_IMAGES: "true"
 
 stages:
+  - trigger
   - image
   - lint
   - go-checks
@@ -34,21 +35,43 @@ stages:
   - scan
   - release
 
-workflow:
+.pipeline-trigger-rules:
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    # We trigger the pipeline if started manually
     - if: $CI_PIPELINE_SOURCE == "web"
+    # We trigger the pipeline on the main branch
     - if: $CI_COMMIT_BRANCH == "main"
+    # We trigger the pipeline on the release- branches
     - if: $CI_COMMIT_BRANCH =~ /^release-.*$/
+    # We trigger the pipeline on tags
     - if: $CI_COMMIT_TAG && $CI_COMMIT_TAG != ""
 
+workflow:
+  rules:
+    # We trigger the pipeline on a merge request
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    # We then add all the regular triggers
+    - !reference [.pipeline-trigger-rules, rules]
+
+# The main or manual job is used to filter out distributions or architectures that are not required on
+# every build.
 .main-or-manual:
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-    - if: $CI_COMMIT_BRANCH =~ /^release-.*$/
-    - if: $CI_COMMIT_TAG && $CI_COMMIT_TAG != ""
+    - !reference [.pipeline-trigger-rules, rules]
     - if: $CI_PIPELINE_SOURCE == "schedule"
       when: manual
+
+# The trigger-pipeline job adds a manualy triggered job to the pipeline on merge requests.
+trigger-pipeline:
+  stage: trigger
+  script:
+    - echo "starting pipeline"
+  rules:
+    - !reference [.main-or-manual, rules]
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+      allow_failure: false
+    - when: always
 
 # Define the distribution targets
 .dist-amazonlinux2:
