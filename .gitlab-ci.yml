@@ -22,6 +22,11 @@ build-dev-image:
     - make .build-image
     - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
     - make .push-build-image
+  rules:
+    - !reference [.main-or-manual, rules]
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      when: manual
+    - when: always
 
 .requires-build-image:
   image: "${BUILDIMAGE}"
