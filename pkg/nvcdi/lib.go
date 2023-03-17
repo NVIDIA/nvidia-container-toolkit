@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
@@ -31,6 +32,8 @@ type wrapper struct {
 
 	vendor string
 	class  string
+
+	mergedDeviceOptions []transform.MergedDeviceOption
 }
 
 type nvcdilib struct {
@@ -46,6 +49,8 @@ type nvcdilib struct {
 	class  string
 
 	infolib info.Interface
+
+	mergedDeviceOptions []transform.MergedDeviceOption
 }
 
 // New creates a new nvcdi library
@@ -106,9 +111,10 @@ func New(opts ...Option) (Interface, error) {
 	}
 
 	w := wrapper{
-		Interface: lib,
-		vendor:    l.vendor,
-		class:     l.class,
+		Interface:           lib,
+		vendor:              l.vendor,
+		class:               l.class,
+		mergedDeviceOptions: l.mergedDeviceOptions,
 	}
 	return &w, nil
 }
@@ -130,8 +136,8 @@ func (l *wrapper) GetSpec() (spec.Interface, error) {
 		spec.WithEdits(*edits.ContainerEdits),
 		spec.WithVendor(l.vendor),
 		spec.WithClass(l.class),
+		spec.WithMergedDeviceOptions(l.mergedDeviceOptions...),
 	)
-
 }
 
 // resolveMode resolves the mode for CDI spec generation based on the current system.

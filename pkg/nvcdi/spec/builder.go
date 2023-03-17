@@ -33,8 +33,10 @@ type builder struct {
 	deviceSpecs []specs.Device
 	edits       specs.ContainerEdits
 	format      string
-	noSimplify  bool
-	permissions os.FileMode
+
+	mergedDeviceOptions []transform.MergedDeviceOption
+	noSimplify          bool
+	permissions         os.FileMode
 }
 
 // newBuilder creates a new spec builder with the supplied options
@@ -92,6 +94,16 @@ func (o *builder) Build() (*spec, error) {
 		err := transform.NewSimplifier().Transform(raw)
 		if err != nil {
 			return nil, fmt.Errorf("failed to simplify spec: %v", err)
+		}
+	}
+
+	if len(o.mergedDeviceOptions) > 0 {
+		merge, err := transform.NewMergedDevice(o.mergedDeviceOptions...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create merged device transformer: %v", err)
+		}
+		if err := merge.Transform(raw); err != nil {
+			return nil, fmt.Errorf("failed to merge devices: %v", err)
 		}
 	}
 
@@ -167,5 +179,12 @@ func WithRawSpec(raw *specs.Spec) Option {
 func WithPermissions(permissions os.FileMode) Option {
 	return func(o *builder) {
 		o.permissions = permissions
+	}
+}
+
+// WithMergedDeviceOptions sets the options for generating a merged device.
+func WithMergedDeviceOptions(opts ...transform.MergedDeviceOption) Option {
+	return func(o *builder) {
+		o.mergedDeviceOptions = opts
 	}
 }

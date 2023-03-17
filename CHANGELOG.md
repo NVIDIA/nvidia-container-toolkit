@@ -6,6 +6,7 @@
 * Create file in `etc/ld.so.conf.d` with permissions `644` to support non-root containers.
 * Generate CDI specification files with `644` permissions to allow rootless applications (e.g. podman)
 * Add `nvidia-ctk cdi list` command to show the known CDI devices.
+* Add support for generating merged devices (e.g. `all` device) to the nvcdi API.
 
 ## v1.13.1
 

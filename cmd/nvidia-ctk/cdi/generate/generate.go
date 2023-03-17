@@ -230,28 +230,16 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		return nil, fmt.Errorf("failed to create edits common for entities: %v", err)
 	}
 
-	spec, err := spec.New(
+	return spec.New(
 		spec.WithVendor(opts.vendor),
 		spec.WithClass(opts.class),
 		spec.WithDeviceSpecs(deviceSpecs),
 		spec.WithEdits(*commonEdits.ContainerEdits),
 		spec.WithFormat(opts.format),
+		spec.WithMergedDeviceOptions(
+			transform.WithName(allDeviceName),
+			transform.WithSkipIfExists(true),
+		),
 		spec.WithPermissions(0644),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create CDI spec: %v", err)
-	}
-
-	addAllDevice, err := transform.NewMergedDevice(
-		transform.WithName(allDeviceName),
-		transform.WithSkipIfExists(true),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create merged device: %v", err)
-	}
-	if err := addAllDevice.Transform(spec.Raw()); err != nil {
-		return nil, fmt.Errorf("failed to add merged device: %v", err)
-	}
-
-	return spec, nil
 }
