@@ -2,6 +2,8 @@
 
 ## v1.13.0-rc.3
 
+* Prefer /run over /var/run when locating nvidia-persistenced and nvidia-fabricmanager sockets.
+
 ## v1.13.0-rc.2
 
 * Don't fail chmod hook if paths are not injected
