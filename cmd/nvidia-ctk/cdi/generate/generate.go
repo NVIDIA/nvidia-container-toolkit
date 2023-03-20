@@ -30,8 +30,6 @@ import (
 	specs "github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
 
 const (
@@ -190,21 +188,11 @@ func (m command) generateSpec(cfg *config) (spec.Interface, error) {
 		return nil, fmt.Errorf("failed to create device namer: %v", err)
 	}
 
-	nvmllib := nvml.New()
-	if r := nvmllib.Init(); r != nvml.SUCCESS {
-		return nil, r
-	}
-	defer nvmllib.Shutdown()
-
-	devicelib := device.New(device.WithNvml(nvmllib))
-
 	cdilib := nvcdi.New(
 		nvcdi.WithLogger(m.logger),
 		nvcdi.WithDriverRoot(cfg.driverRoot),
 		nvcdi.WithNVIDIACTKPath(cfg.nvidiaCTKPath),
 		nvcdi.WithDeviceNamer(deviceNamer),
-		nvcdi.WithDeviceLib(devicelib),
-		nvcdi.WithNvmlLib(nvmllib),
 		nvcdi.WithMode(string(cfg.mode)),
 	)
 
