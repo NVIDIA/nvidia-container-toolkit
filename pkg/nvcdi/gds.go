@@ -68,7 +68,7 @@ func (l *gdslib) GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, error) {
 }
 
 // GetGPUDeviceSpecs is unsupported for the gdslib specs
-func (l *gdslib) GetGPUDeviceSpecs(int, device.Device) (*specs.Device, error) {
+func (l *gdslib) GetGPUDeviceSpecs(int, device.Device) ([]specs.Device, error) {
 	return nil, fmt.Errorf("GetGPUDeviceSpecs is not supported")
 }
 
@@ -78,7 +78,7 @@ func (l *gdslib) GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi.Contai
 }
 
 // GetMIGDeviceSpecs is unsupported for the gdslib specs
-func (l *gdslib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) (*specs.Device, error) {
+func (l *gdslib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) ([]specs.Device, error) {
 	return nil, fmt.Errorf("GetMIGDeviceSpecs is not supported")
 }
 

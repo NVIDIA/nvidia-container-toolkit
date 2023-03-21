@@ -68,7 +68,7 @@ func (l *wsllib) GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, error) {
 }
 
 // GetGPUDeviceSpecs returns the CDI device specs for the full GPU represented by 'device'.
-func (l *wsllib) GetGPUDeviceSpecs(i int, d device.Device) (*specs.Device, error) {
+func (l *wsllib) GetGPUDeviceSpecs(i int, d device.Device) ([]specs.Device, error) {
 	return nil, fmt.Errorf("GetGPUDeviceSpecs is not supported on WSL")
 }
 
@@ -78,7 +78,7 @@ func (l *wsllib) GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi.Contai
 }
 
 // GetMIGDeviceSpecs returns the CDI device specs for the full MIG represented by 'device'.
-func (l *wsllib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) (*specs.Device, error) {
+func (l *wsllib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) ([]specs.Device, error) {
 	return nil, fmt.Errorf("GetMIGDeviceSpecs is not supported on WSL")
 }
 

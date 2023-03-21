@@ -175,7 +175,7 @@ func (m *managementlib) GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, e
 }
 
 // GetGPUDeviceSpecs is unsupported for the managementlib specs
-func (m *managementlib) GetGPUDeviceSpecs(int, device.Device) (*specs.Device, error) {
+func (m *managementlib) GetGPUDeviceSpecs(int, device.Device) ([]specs.Device, error) {
 	return nil, fmt.Errorf("GetGPUDeviceSpecs is not supported")
 }
 
@@ -185,7 +185,7 @@ func (m *managementlib) GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi
 }
 
 // GetMIGDeviceSpecs is unsupported for the managementlib specs
-func (m *managementlib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) (*specs.Device, error) {
+func (m *managementlib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) ([]specs.Device, error) {
 	return nil, fmt.Errorf("GetMIGDeviceSpecs is not supported")
 }
 

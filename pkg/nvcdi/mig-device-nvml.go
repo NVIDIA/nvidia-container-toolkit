@@ -31,23 +31,25 @@ import (
 )
 
 // GetMIGDeviceSpecs returns the CDI device specs for the full GPU represented by 'device'.
-func (l *nvmllib) GetMIGDeviceSpecs(i int, d device.Device, j int, mig device.MigDevice) (*specs.Device, error) {
+func (l *nvmllib) GetMIGDeviceSpecs(i int, d device.Device, j int, mig device.MigDevice) ([]specs.Device, error) {
 	edits, err := l.GetMIGDeviceEdits(d, mig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get edits for device: %v", err)
 	}
 
-	name, err := l.deviceNamer.GetMigDeviceName(i, convert{d}, j, convert{mig})
+	names, err := l.deviceNamers.GetMigDeviceNames(i, convert{d}, j, convert{mig})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device name: %v", err)
 	}
-
-	spec := specs.Device{
-		Name:           name,
-		ContainerEdits: *edits.ContainerEdits,
+	var deviceSpecs []specs.Device
+	for _, name := range names {
+		spec := specs.Device{
+			Name:           name,
+			ContainerEdits: *edits.ContainerEdits,
+		}
+		deviceSpecs = append(deviceSpecs, spec)
 	}
-
-	return &spec, nil
+	return deviceSpecs, nil
 }
 
 // GetMIGDeviceEdits returns the CDI edits for the MIG device represented by 'mig' on 'parent'.

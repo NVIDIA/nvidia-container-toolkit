@@ -44,7 +44,7 @@ type nvcdilib struct {
 	nvmllib            nvml.Interface
 	mode               string
 	devicelib          device.Interface
-	deviceNamer        DeviceNamer
+	deviceNamers       DeviceNamers
 	driverRoot         string
 	devRoot            string
 	nvidiaCTKPath      string
@@ -75,8 +75,9 @@ func New(opts ...Option) (Interface, error) {
 	if l.logger == nil {
 		l.logger = logger.New()
 	}
-	if l.deviceNamer == nil {
-		l.deviceNamer, _ = NewDeviceNamer(DeviceNameStrategyIndex)
+	if len(l.deviceNamers) == 0 {
+		indexNamer, _ := NewDeviceNamer(DeviceNameStrategyIndex)
+		l.deviceNamers = []DeviceNamer{indexNamer}
 	}
 	if l.driverRoot == "" {
 		l.driverRoot = "/"

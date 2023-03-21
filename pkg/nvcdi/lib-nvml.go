@@ -208,11 +208,11 @@ func (l *nvmllib) getEditsForMIGDevice(nvmlDevice nvml.Device) (*cdi.ContainerEd
 func (l *nvmllib) getGPUDeviceSpecs() ([]specs.Device, error) {
 	var deviceSpecs []specs.Device
 	err := l.devicelib.VisitDevices(func(i int, d device.Device) error {
-		deviceSpec, err := l.GetGPUDeviceSpecs(i, d)
+		specsForDevice, err := l.GetGPUDeviceSpecs(i, d)
 		if err != nil {
 			return err
 		}
-		deviceSpecs = append(deviceSpecs, *deviceSpec)
+		deviceSpecs = append(deviceSpecs, specsForDevice...)
 
 		return nil
 	})
@@ -225,11 +225,11 @@ func (l *nvmllib) getGPUDeviceSpecs() ([]specs.Device, error) {
 func (l *nvmllib) getMigDeviceSpecs() ([]specs.Device, error) {
 	var deviceSpecs []specs.Device
 	err := l.devicelib.VisitMigDevices(func(i int, d device.Device, j int, mig device.MigDevice) error {
-		deviceSpec, err := l.GetMIGDeviceSpecs(i, d, j, mig)
+		specsForDevice, err := l.GetMIGDeviceSpecs(i, d, j, mig)
 		if err != nil {
 			return err
 		}
-		deviceSpecs = append(deviceSpecs, *deviceSpec)
+		deviceSpecs = append(deviceSpecs, specsForDevice...)
 
 		return nil
 	})
