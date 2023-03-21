@@ -4,6 +4,7 @@
 * Add support for extracting device major number from `/proc/devices` if `nvidia` is used as a device name over `nvidia-frontend`.
 * Allow multiple device naming strategies for `nvidia-ctk cdi generate` command. This allows a single
   CDI spec to be generated that includes GPUs by index and UUID.
+* Set the default `--device-name-strategy` for the `nvidia-ctk cdi generate` command to `[index, uuid]`.
 
 ## v1.15.0-rc.3
 * Fix bug in `nvidia-ctk hook update-ldcache` where default `--ldconfig-path` value was not applied.

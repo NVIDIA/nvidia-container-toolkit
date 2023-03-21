@@ -112,7 +112,7 @@ func (m command) build() *cli.Command {
 		&cli.StringSliceFlag{
 			Name:        "device-name-strategy",
 			Usage:       "Specify the strategy for generating device names. If this is specified multiple times, the devices will be duplicated for each strategy. One of [index | uuid | type-index]",
-			Value:       cli.NewStringSlice(nvcdi.DeviceNameStrategyIndex),
+			Value:       cli.NewStringSlice(nvcdi.DeviceNameStrategyIndex, nvcdi.DeviceNameStrategyUUID),
 			Destination: &opts.deviceNameStrategies,
 		},
 		&cli.StringFlag{
