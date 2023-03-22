@@ -608,13 +608,16 @@ func generateCDISpec(opts *options, nvidiaCTKPath string) error {
 		return nil
 	}
 
-	cdilib := nvcdi.New(
+	cdilib, err := nvcdi.New(
 		nvcdi.WithMode(nvcdi.ModeManagement),
 		nvcdi.WithDriverRoot(opts.DriverRootCtrPath),
 		nvcdi.WithNVIDIACTKPath(nvidiaCTKPath),
 		nvcdi.WithVendor(opts.cdiVendor),
 		nvcdi.WithClass(opts.cdiClass),
 	)
+	if err != nil {
+		return fmt.Errorf("failed to create CDI library for management containers: %v", err)
+	}
 
 	spec, err := cdilib.GetSpec()
 	if err != nil {

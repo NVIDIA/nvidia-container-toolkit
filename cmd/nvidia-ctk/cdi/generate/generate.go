@@ -188,13 +188,16 @@ func (m command) generateSpec(cfg *config) (spec.Interface, error) {
 		return nil, fmt.Errorf("failed to create device namer: %v", err)
 	}
 
-	cdilib := nvcdi.New(
+	cdilib, err := nvcdi.New(
 		nvcdi.WithLogger(m.logger),
 		nvcdi.WithDriverRoot(cfg.driverRoot),
 		nvcdi.WithNVIDIACTKPath(cfg.nvidiaCTKPath),
 		nvcdi.WithDeviceNamer(deviceNamer),
 		nvcdi.WithMode(string(cfg.mode)),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CDI library: %v", err)
+	}
 
 	deviceSpecs, err := cdilib.GetAllDeviceSpecs()
 	if err != nil {

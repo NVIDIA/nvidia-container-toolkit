@@ -49,7 +49,7 @@ type nvcdilib struct {
 }
 
 // New creates a new nvcdi library
-func New(opts ...Option) Interface {
+func New(opts ...Option) (Interface, error) {
 	l := &nvcdilib{}
 	for _, opt := range opts {
 		opt(l)
@@ -102,8 +102,7 @@ func New(opts ...Option) Interface {
 		}
 		lib = (*mofedlib)(l)
 	default:
-		// TODO: We would like to return an error here instead of panicking
-		panic("Unknown mode")
+		return nil, fmt.Errorf("unknown mode %q", l.mode)
 	}
 
 	w := wrapper{
@@ -111,7 +110,7 @@ func New(opts ...Option) Interface {
 		vendor:    l.vendor,
 		class:     l.class,
 	}
-	return &w
+	return &w, nil
 }
 
 // GetSpec combines the device specs and common edits from the wrapped Interface to a single spec.Interface.
