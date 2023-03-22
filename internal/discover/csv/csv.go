@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 const (
@@ -103,12 +103,12 @@ type Parser interface {
 }
 
 type csv struct {
-	logger   *logrus.Logger
+	logger   logger.Interface
 	filename string
 }
 
 // NewCSVFileParser creates a new parser for reading MountSpecs from the specified CSV file
-func NewCSVFileParser(logger *logrus.Logger, filename string) Parser {
+func NewCSVFileParser(logger logger.Interface, filename string) Parser {
 	p := csv{
 		logger:   logger,
 		filename: filename,

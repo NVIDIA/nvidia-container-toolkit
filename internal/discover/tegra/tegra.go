@@ -20,12 +20,12 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/sirupsen/logrus"
 )
 
 type tegraOptions struct {
-	logger        *logrus.Logger
+	logger        logger.Interface
 	csvFiles      []string
 	driverRoot    string
 	nvidiaCTKPath string
@@ -78,7 +78,7 @@ func New(opts ...Option) (discover.Discover, error) {
 }
 
 // WithLogger sets the logger for the discoverer.
-func WithLogger(logger *logrus.Logger) Option {
+func WithLogger(logger logger.Interface) Option {
 	return func(o *tegraOptions) {
 		o.logger = logger
 	}

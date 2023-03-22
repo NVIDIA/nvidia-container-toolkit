@@ -18,19 +18,19 @@ package hook
 
 import (
 	chmod "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/chmod"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
 	symlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/create-symlinks"
 	ldcache "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/update-ldcache"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
 type hookCommand struct {
-	logger *logrus.Logger
+	logger logger.Interface
 }
 
 // NewCommand constructs a hook command with the specified logger
-func NewCommand(logger *logrus.Logger) *cli.Command {
+func NewCommand(logger logger.Interface) *cli.Command {
 	c := hookCommand{
 		logger: logger,
 	}

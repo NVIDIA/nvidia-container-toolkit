@@ -19,19 +19,19 @@ package list
 import (
 	"fmt"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
 type command struct {
-	logger *logrus.Logger
+	logger logger.Interface
 }
 
 type config struct{}
 
 // NewCommand constructs a cdi list command with the specified logger
-func NewCommand(logger *logrus.Logger) *cli.Command {
+func NewCommand(logger logger.Interface) *cli.Command {
 	c := command{
 		logger: logger,
 	}

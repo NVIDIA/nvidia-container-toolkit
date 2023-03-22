@@ -20,8 +20,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 )
 
@@ -30,7 +30,7 @@ type nodeLister interface {
 }
 
 type existing struct {
-	logger     *logrus.Logger
+	logger     logger.Interface
 	driverRoot string
 }
 

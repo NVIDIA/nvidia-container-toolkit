@@ -16,12 +16,10 @@
 
 package discover
 
-import (
-	"github.com/sirupsen/logrus"
-)
+import "github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
 // NewMOFEDDiscoverer creates a discoverer for MOFED devices.
-func NewMOFEDDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
+func NewMOFEDDiscoverer(logger logger.Interface, root string) (Discover, error) {
 	devices := NewCharDeviceDiscoverer(
 		logger,
 		[]string{

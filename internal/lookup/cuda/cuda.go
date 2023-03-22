@@ -19,12 +19,12 @@ package cuda
 import (
 	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/sirupsen/logrus"
 )
 
 type cudaLocator struct {
-	logger     *logrus.Logger
+	logger     logger.Interface
 	driverRoot string
 }
 
@@ -32,7 +32,7 @@ type cudaLocator struct {
 type Options func(*cudaLocator)
 
 // WithLogger is an option that configures the logger used by the locator.
-func WithLogger(logger *logrus.Logger) Options {
+func WithLogger(logger logger.Interface) Options {
 	return func(c *cudaLocator) {
 		c.logger = logger
 	}
@@ -53,7 +53,7 @@ func New(opts ...Options) lookup.Locator {
 	}
 
 	if c.logger == nil {
-		c.logger = logrus.StandardLogger()
+		c.logger = logger.New()
 	}
 	if c.driverRoot == "" {
 		c.driverRoot = "/"

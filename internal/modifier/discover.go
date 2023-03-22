@@ -21,19 +21,19 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	"github.com/sirupsen/logrus"
 )
 
 type discoverModifier struct {
-	logger     *logrus.Logger
+	logger     logger.Interface
 	discoverer discover.Discover
 }
 
 // NewModifierFromDiscoverer creates a modifier that applies the discovered
 // modifications to an OCI spec if required by the runtime wrapper.
-func NewModifierFromDiscoverer(logger *logrus.Logger, d discover.Discover) (oci.SpecModifier, error) {
+func NewModifierFromDiscoverer(logger logger.Interface, d discover.Discover) (oci.SpecModifier, error) {
 	m := discoverModifier{
 		logger:     logger,
 		discoverer: d,

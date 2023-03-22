@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type executable struct {
@@ -29,13 +29,13 @@ type executable struct {
 }
 
 // NewExecutableLocator creates a locator to fine executable files in the path. A logger can also be specified.
-func NewExecutableLocator(logger *log.Logger, root string) Locator {
+func NewExecutableLocator(logger logger.Interface, root string) Locator {
 	paths := GetPaths(root)
 
 	return newExecutableLocator(logger, root, paths...)
 }
 
-func newExecutableLocator(logger *log.Logger, root string, paths ...string) *executable {
+func newExecutableLocator(logger logger.Interface, root string, paths ...string) *executable {
 	f := newFileLocator(
 		WithLogger(logger),
 		WithRoot(root),

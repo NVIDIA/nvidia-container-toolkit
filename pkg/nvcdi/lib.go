@@ -20,9 +20,9 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
-	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
@@ -38,7 +38,7 @@ type wrapper struct {
 }
 
 type nvcdilib struct {
-	logger        *logrus.Logger
+	logger        logger.Interface
 	nvmllib       nvml.Interface
 	mode          string
 	devicelib     device.Interface
@@ -66,7 +66,7 @@ func New(opts ...Option) (Interface, error) {
 		l.mode = ModeAuto
 	}
 	if l.logger == nil {
-		l.logger = logrus.StandardLogger()
+		l.logger = logger.New()
 	}
 	if l.deviceNamer == nil {
 		l.deviceNamer, _ = NewDeviceNamer(DeviceNameStrategyIndex)

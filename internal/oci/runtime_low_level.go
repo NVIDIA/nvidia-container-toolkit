@@ -19,14 +19,14 @@ package oci
 import (
 	"fmt"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	log "github.com/sirupsen/logrus"
 )
 
 // NewLowLevelRuntime creates a Runtime that wraps a low-level runtime executable.
 // The executable specified is taken from the list of supplied candidates, with the first match
 // present in the PATH being selected. A logger is also specified.
-func NewLowLevelRuntime(logger *log.Logger, candidates []string) (Runtime, error) {
+func NewLowLevelRuntime(logger logger.Interface, candidates []string) (Runtime, error) {
 	runtimePath, err := findRuntime(logger, candidates)
 	if err != nil {
 		return nil, fmt.Errorf("error locating runtime: %v", err)
@@ -38,7 +38,7 @@ func NewLowLevelRuntime(logger *log.Logger, candidates []string) (Runtime, error
 
 // findRuntime checks elements in a list of supplied candidates for a matching executable in the PATH.
 // The absolute path to the first match is returned.
-func findRuntime(logger *log.Logger, candidates []string) (string, error) {
+func findRuntime(logger logger.Interface, candidates []string) (string, error) {
 	if len(candidates) == 0 {
 		return "", fmt.Errorf("at least one runtime candidate must be specified")
 	}

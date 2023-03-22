@@ -17,13 +17,13 @@
 package modifier
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	"github.com/sirupsen/logrus"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 	var err error
 	moduleRoot, err := test.GetModuleRoot()
 	if err != nil {
-		logrus.Fatalf("error in test setup: could not get module root: %v", err)
+		log.Fatalf("error in test setup: could not get module root: %v", err)
 	}
 	testBinPath := filepath.Join(moduleRoot, "test", "bin")
 

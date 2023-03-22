@@ -22,14 +22,14 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
-	"github.com/sirupsen/logrus"
 )
 
 type symlinkHook struct {
 	None
-	logger        *logrus.Logger
+	logger        logger.Interface
 	driverRoot    string
 	nvidiaCTKPath string
 	csvFiles      []string
@@ -37,7 +37,7 @@ type symlinkHook struct {
 }
 
 // NewCreateSymlinksHook creates a discoverer for a hook that creates required symlinks in the container
-func NewCreateSymlinksHook(logger *logrus.Logger, csvFiles []string, mounts Discover, nvidiaCTKPath string) (Discover, error) {
+func NewCreateSymlinksHook(logger logger.Interface, csvFiles []string, mounts Discover, nvidiaCTKPath string) (Discover, error) {
 	d := symlinkHook{
 		logger:        logger,
 		nvidiaCTKPath: nvidiaCTKPath,

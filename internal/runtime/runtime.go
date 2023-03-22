@@ -61,8 +61,8 @@ func (r rt) Run(argv []string) (rerr error) {
 	if r.modeOverride != "" {
 		cfg.NVIDIAContainerRuntimeConfig.Mode = r.modeOverride
 	}
-	cfg.NVIDIACTKConfig.Path = config.ResolveNVIDIACTKPath(r.logger.Logger, cfg.NVIDIACTKConfig.Path)
-	cfg.NVIDIAContainerRuntimeHookConfig.Path = config.ResolveNVIDIAContainerRuntimeHookPath(r.logger.Logger, cfg.NVIDIAContainerRuntimeHookConfig.Path)
+	cfg.NVIDIACTKConfig.Path = config.ResolveNVIDIACTKPath(r.logger, cfg.NVIDIACTKConfig.Path)
+	cfg.NVIDIAContainerRuntimeHookConfig.Path = config.ResolveNVIDIAContainerRuntimeHookPath(r.logger, cfg.NVIDIAContainerRuntimeHookConfig.Path)
 
 	// Print the config to the output.
 	configJSON, err := json.MarshalIndent(cfg, "", "  ")
@@ -73,7 +73,7 @@ func (r rt) Run(argv []string) (rerr error) {
 	}
 
 	r.logger.Debugf("Command line arguments: %v", argv)
-	runtime, err := newNVIDIAContainerRuntime(r.logger.Logger, cfg, argv)
+	runtime, err := newNVIDIAContainerRuntime(r.logger, cfg, argv)
 	if err != nil {
 		return fmt.Errorf("failed to create NVIDIA Container Runtime: %v", err)
 	}

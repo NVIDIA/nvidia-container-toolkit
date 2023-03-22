@@ -20,14 +20,14 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 // pathRuntime wraps the path that a binary and defines the semanitcs for how to exec into it.
 // This can be used to wrap an OCI-compliant low-level runtime binary, allowing it to be used through the
 // Runtime internface.
 type pathRuntime struct {
-	logger      *log.Logger
+	logger      logger.Interface
 	path        string
 	execRuntime Runtime
 }
@@ -35,7 +35,7 @@ type pathRuntime struct {
 var _ Runtime = (*pathRuntime)(nil)
 
 // NewRuntimeForPath creates a Runtime for the specified logger and path
-func NewRuntimeForPath(logger *log.Logger, path string) (Runtime, error) {
+func NewRuntimeForPath(logger logger.Interface, path string) (Runtime, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, fmt.Errorf("invalid path '%v': %v", path, err)

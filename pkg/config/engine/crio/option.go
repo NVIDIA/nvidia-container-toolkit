@@ -20,12 +20,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 )
 
 type builder struct {
-	path string
+	logger logger.Interface
+	path   string
 }
 
 // Option defines a function that can be used to configure the config builder
@@ -43,13 +45,16 @@ func (b *builder) build() (*Config, error) {
 		empty := toml.Tree{}
 		return (*Config)(&empty), nil
 	}
+	if b.logger == nil {
+		b.logger = logger.New()
+	}
 
-	return loadConfig(b.path)
+	return b.loadConfig(b.path)
 }
 
 // loadConfig loads the cri-o config from disk
-func loadConfig(config string) (*Config, error) {
-	log.Infof("Loading config: %v", config)
+func (b *builder) loadConfig(config string) (*Config, error) {
+	b.logger.Infof("Loading config: %v", config)
 
 	info, err := os.Stat(config)
 	if os.IsExist(err) && info.IsDir() {
@@ -67,7 +72,7 @@ func loadConfig(config string) (*Config, error) {
 		return nil, err
 	}
 
-	log.Infof("Successfully loaded config")
+	b.logger.Infof("Successfully loaded config")
 
 	return (*Config)(cfg), nil
 }

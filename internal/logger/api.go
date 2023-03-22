@@ -14,24 +14,15 @@
 # limitations under the License.
 **/
 
-package nvcdi
+package logger
 
-import (
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-)
-
-const (
-	dxgDeviceNode = "/dev/dxg"
-)
-
-// newDXGDeviceDiscoverer returns a Discoverer for DXG devices under WSL2.
-func newDXGDeviceDiscoverer(logger logger.Interface, driverRoot string) discover.Discover {
-	deviceNodes := discover.NewCharDeviceDiscoverer(
-		logger,
-		[]string{dxgDeviceNode},
-		driverRoot,
-	)
-
-	return deviceNodes
+// Interface defines the API for the logger package
+type Interface interface {
+	Debugf(string, ...interface{})
+	Errorf(string, ...interface{})
+	Info(...interface{})
+	Infof(string, ...interface{})
+	Warn(...interface{})
+	Warnf(string, ...interface{})
+	Warningf(string, ...interface{})
 }

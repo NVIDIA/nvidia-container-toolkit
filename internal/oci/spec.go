@@ -19,8 +19,8 @@ package oci
 import (
 	"fmt"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	"github.com/sirupsen/logrus"
 )
 
 // SpecModifier defines an interace for modifying a (raw) OCI spec
@@ -42,7 +42,7 @@ type Spec interface {
 
 // NewSpec creates fileSpec based on the command line arguments passed to the
 // application using the specified logger.
-func NewSpec(logger *logrus.Logger, args []string) (Spec, error) {
+func NewSpec(logger logger.Interface, args []string) (Spec, error) {
 	bundleDir, err := GetBundleDir(args)
 	if err != nil {
 		return nil, fmt.Errorf("error getting bundle directory: %v", err)

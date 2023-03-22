@@ -25,10 +25,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/pelletier/go-toml"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -249,7 +249,7 @@ func getDistIDLike() []string {
 // This executable is used in hooks and needs to be an absolute path.
 // If the path is specified as an absolute path, it is used directly
 // without checking for existence of an executable at that path.
-func ResolveNVIDIACTKPath(logger *logrus.Logger, nvidiaCTKPath string) string {
+func ResolveNVIDIACTKPath(logger logger.Interface, nvidiaCTKPath string) string {
 	return resolveWithDefault(
 		logger,
 		"NVIDIA Container Toolkit CLI",
@@ -259,7 +259,7 @@ func ResolveNVIDIACTKPath(logger *logrus.Logger, nvidiaCTKPath string) string {
 }
 
 // ResolveNVIDIAContainerRuntimeHookPath resolves the path the nvidia-container-runtime-hook binary.
-func ResolveNVIDIAContainerRuntimeHookPath(logger *logrus.Logger, nvidiaContainerRuntimeHookPath string) string {
+func ResolveNVIDIAContainerRuntimeHookPath(logger logger.Interface, nvidiaContainerRuntimeHookPath string) string {
 	return resolveWithDefault(
 		logger,
 		"NVIDIA Container Runtime Hook",
@@ -271,7 +271,7 @@ func ResolveNVIDIAContainerRuntimeHookPath(logger *logrus.Logger, nvidiaContaine
 // resolveWithDefault resolves the path to the specified binary.
 // If an absolute path is specified, it is used directly without searching for the binary.
 // If the binary cannot be found in the path, the specified default is used instead.
-func resolveWithDefault(logger *logrus.Logger, label string, path string, defaultPath string) string {
+func resolveWithDefault(logger logger.Interface, label string, path string, defaultPath string) string {
 	if filepath.IsAbs(path) {
 		logger.Debugf("Using specified %v path %v", label, path)
 		return path

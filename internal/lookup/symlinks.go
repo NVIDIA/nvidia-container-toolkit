@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
-	"github.com/sirupsen/logrus"
 )
 
 type symlinkChain struct {
@@ -34,7 +34,7 @@ type symlink struct {
 
 // NewSymlinkChainLocator creats a locator that can be used for locating files through symlinks.
 // A logger can also be specified.
-func NewSymlinkChainLocator(logger *logrus.Logger, root string) Locator {
+func NewSymlinkChainLocator(logger logger.Interface, root string) Locator {
 	f := newFileLocator(WithLogger(logger), WithRoot(root))
 	l := symlinkChain{
 		file: *f,
@@ -45,7 +45,7 @@ func NewSymlinkChainLocator(logger *logrus.Logger, root string) Locator {
 
 // NewSymlinkLocator creats a locator that can be used for locating files through symlinks.
 // A logger can also be specified.
-func NewSymlinkLocator(logger *logrus.Logger, root string) Locator {
+func NewSymlinkLocator(logger logger.Interface, root string) Locator {
 	f := newFileLocator(WithLogger(logger), WithRoot(root))
 	l := symlink{
 		file: *f,

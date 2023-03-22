@@ -18,6 +18,7 @@ package runtime
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,7 +27,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	"github.com/sirupsen/logrus"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 	var err error
 	moduleRoot, err := test.GetModuleRoot()
 	if err != nil {
-		logrus.Fatalf("error in test setup: could not get module root: %v", err)
+		log.Fatalf("error in test setup: could not get module root: %v", err)
 	}
 	testBinPath := filepath.Join(moduleRoot, "test", "bin")
 
@@ -51,7 +51,7 @@ func TestMain(m *testing.M) {
 	// Confirm that the environment is configured correctly
 	runcPath, err := exec.LookPath(runcExecutableName)
 	if err != nil || filepath.Join(testBinPath, runcExecutableName) != runcPath {
-		logrus.Fatalf("error in test setup: mock runc path set incorrectly in TestMain(): %v", err)
+		log.Fatalf("error in test setup: mock runc path set incorrectly in TestMain(): %v", err)
 	}
 
 	// RUN TESTS

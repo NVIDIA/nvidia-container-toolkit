@@ -21,13 +21,13 @@ import (
 	"os"
 	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 // file can be used to locate file (or file-like elements) at a specified set of
 // prefixes. The validity of a file is determined by a filter function.
 type file struct {
-	logger     *log.Logger
+	logger     logger.Interface
 	root       string
 	prefixes   []string
 	filter     func(string) error
@@ -46,7 +46,7 @@ func WithRoot(root string) Option {
 }
 
 // WithLogger sets the logger for the file locator
-func WithLogger(logger *log.Logger) Option {
+func WithLogger(logger logger.Interface) Option {
 	return func(f *file) {
 		f.logger = logger
 	}
@@ -93,7 +93,7 @@ func newFileLocator(opts ...Option) *file {
 		opt(f)
 	}
 	if f.logger == nil {
-		f.logger = log.StandardLogger()
+		f.logger = logger.New()
 	}
 	if f.filter == nil {
 		f.filter = assertFile

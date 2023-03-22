@@ -24,13 +24,13 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
-	"github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"golang.org/x/sys/unix"
 )
 
 // Interface is the interface for the system command
 type Interface struct {
-	logger            *logrus.Logger
+	logger            logger.Interface
 	dryRun            bool
 	loadKernelModules bool
 	nvidiaDevices     nvidiaDevices
@@ -39,7 +39,7 @@ type Interface struct {
 // New constructs a system command with the specified options
 func New(opts ...Option) (*Interface, error) {
 	i := &Interface{
-		logger: logrus.StandardLogger(),
+		logger: logger.New(),
 	}
 	for _, opt := range opts {
 		opt(i)
