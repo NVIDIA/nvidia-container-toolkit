@@ -23,7 +23,6 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
@@ -60,23 +59,9 @@ func (m *managementlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 
 // GetCommonEdits returns the common edits for use in managementlib containers.
 func (m *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	locator, err := lookup.NewLibraryLocator(
-		m.logger,
-		m.driverRoot,
-	)
+	version, err := m.getCudaVersion()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create library locator: %v", err)
-	}
-
-	candidates, err := locator.Locate("libcuda.so")
-	if err != nil {
-		return nil, fmt.Errorf("failed to locate libcuda.so: %v", err)
-	}
-	libcudaPath := candidates[0]
-
-	version := strings.TrimPrefix(filepath.Base(libcudaPath), "libcuda.so.")
-	if version == "" {
-		return nil, fmt.Errorf("failed to determine libcuda.so version from path: %q", libcudaPath)
+		return nil, fmt.Errorf("failed to get CUDA version: %v", err)
 	}
 
 	driver, err := newDriverVersionDiscoverer(m.logger, m.driverRoot, m.nvidiaCTKPath, version)
@@ -90,6 +75,30 @@ func (m *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	}
 
 	return edits, nil
+}
+
+// getCudaVersion returns the CUDA version for use in managementlib containers.
+func (m *managementlib) getCudaVersion() (string, error) {
+	version, err := (*nvcdilib)(m).getCudaVersion()
+	if err == nil {
+		return version, nil
+	}
+
+	l := cudaLocator{
+		logger:     m.logger,
+		driverRoot: m.driverRoot,
+	}
+
+	libCudaPaths, err := l.Locate("libcuda.so.*.*.*")
+	if err != nil {
+		return "", fmt.Errorf("failed to locate libcuda.so: %v", err)
+	}
+
+	libCudaPath := libCudaPaths[0]
+
+	version = strings.TrimPrefix(filepath.Base(libCudaPath), "libcuda.so.")
+
+	return version, nil
 }
 
 type managementDiscoverer struct {
