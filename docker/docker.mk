@@ -14,10 +14,10 @@
 
 # Supported OSs by architecture
 AMD64_TARGETS := ubuntu20.04 ubuntu18.04 ubuntu16.04 debian10 debian9
-X86_64_TARGETS := fedora35 centos7 centos8 rhel7 rhel8 amazonlinux2 opensuse-leap15.1
+X86_64_TARGETS := centos7 centos8 rhel7 rhel8 amazonlinux2 opensuse-leap15.1
 PPC64LE_TARGETS := ubuntu18.04 ubuntu16.04 centos7 centos8 rhel7 rhel8
 ARM64_TARGETS := ubuntu20.04 ubuntu18.04
-AARCH64_TARGETS := fedora35 centos8 rhel8 amazonlinux2
+AARCH64_TARGETS := centos8 rhel8 amazonlinux2
 
 # Define top-level build targets
 docker%: SHELL:=/bin/bash
@@ -101,14 +101,6 @@ LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)$(if $(LIBNVI
 --centos%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
 --centos%: CONFIG_TOML_SUFFIX := rpm-yum
 --centos8%: BASEIMAGE = quay.io/centos/centos:stream8
-
-# private fedora target
---fedora%: OS := fedora
---fedora%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
---fedora%: CONFIG_TOML_SUFFIX := rpm-yum
-# The fedora(35) base image has very slow performance when building aarch64 packages.
-# Since our primary concern here is glibc versions, we use the older glibc version available in centos8.
---fedora35%: BASEIMAGE = quay.io/centos/centos:stream8
 
 # private amazonlinux target
 --amazonlinux%: OS := amazonlinux
