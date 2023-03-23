@@ -361,24 +361,28 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 	}
 	defer targetConfig.Close()
 
-	// Set the options in the root toml table
-	config.Set("accept-nvidia-visible-devices-envvar-when-unprivileged", opts.acceptNVIDIAVisibleDevicesWhenUnprivileged)
-	config.Set("accept-nvidia-visible-devices-as-volume-mounts", opts.acceptNVIDIAVisibleDevicesAsVolumeMounts)
-
-	nvidiaContainerCliKey := func(p string) []string {
-		return []string{"nvidia-container-cli", p}
-	}
-
 	// Read the ldconfig path from the config as this may differ per platform
 	// On ubuntu-based systems this ends in `.real`
-	ldconfigPath := fmt.Sprintf("%s", config.GetPath(nvidiaContainerCliKey("ldconfig")))
-
+	ldconfigPath := fmt.Sprintf("%s", config.GetDefault("nvidia-container-cli.ldconfig", "/sbin/ldconfig"))
 	// Use the driver run root as the root:
 	driverLdconfigPath := "@" + filepath.Join(opts.DriverRoot, strings.TrimPrefix(ldconfigPath, "@/"))
 
-	config.SetPath(nvidiaContainerCliKey("root"), opts.DriverRoot)
-	config.SetPath(nvidiaContainerCliKey("path"), nvidiaContainerCliExecutablePath)
-	config.SetPath(nvidiaContainerCliKey("ldconfig"), driverLdconfigPath)
+	configValues := map[string]interface{}{
+		// Set the options in the root toml table
+		"accept-nvidia-visible-devices-envvar-when-unprivileged": opts.acceptNVIDIAVisibleDevicesWhenUnprivileged,
+		"accept-nvidia-visible-devices-as-volume-mounts":         opts.acceptNVIDIAVisibleDevicesAsVolumeMounts,
+		// Set the nvidia-container-cli options
+		"nvidia-container-cli.root":     opts.DriverRoot,
+		"nvidia-container-cli.path":     nvidiaContainerCliExecutablePath,
+		"nvidia-container-cli.ldconfig": driverLdconfigPath,
+		// Set nvidia-ctk options
+		"nvidia-ctk.path": nvidiaCTKPath,
+		// Set the nvidia-container-runtime-hook options
+		"nvidia-container-runtime-hook.skip-mode-detection": opts.ContainerRuntimeHookSkipModeDetection,
+	}
+	for key, value := range configValues {
+		config.Set(key, value)
+	}
 
 	// Set the optional config options
 	optionalConfigValues := map[string]interface{}{
@@ -415,12 +419,6 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 
 		config.Set(key, value)
 	}
-
-	// Set nvidia-ctk options
-	config.Set("nvidia-ctk.path", nvidiaCTKPath)
-
-	// Set the nvidia-container-runtime-hook options
-	config.Set("nvidia-container-runtime-hook.skip-mode-detection", opts.ContainerRuntimeHookSkipModeDetection)
 
 	_, err = config.WriteTo(targetConfig)
 	if err != nil {
