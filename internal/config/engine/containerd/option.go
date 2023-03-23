@@ -30,9 +30,10 @@ const (
 )
 
 type builder struct {
-	path            string
-	runtimeType     string
-	useLegacyConfig bool
+	path                 string
+	runtimeType          string
+	useLegacyConfig      bool
+	containerAnnotations []string
 }
 
 // Option defines a function that can be used to configure the config builder
@@ -59,6 +60,13 @@ func WithUseLegacyConfig(useLegacyConfig bool) Option {
 	}
 }
 
+// WithContainerAnnotations sets the container annotations for the config builder
+func WithContainerAnnotations(containerAnnotations ...string) Option {
+	return func(b *builder) {
+		b.containerAnnotations = containerAnnotations
+	}
+}
+
 func (b *builder) build() (engine.Interface, error) {
 	if b.path == "" {
 		return nil, fmt.Errorf("config path is empty")
@@ -74,6 +82,7 @@ func (b *builder) build() (engine.Interface, error) {
 	}
 	config.RuntimeType = b.runtimeType
 	config.UseDefaultRuntimeName = !b.useLegacyConfig
+	config.ContainerAnnotations = b.containerAnnotations
 
 	version, err := config.parseVersion(b.useLegacyConfig)
 	if err != nil {

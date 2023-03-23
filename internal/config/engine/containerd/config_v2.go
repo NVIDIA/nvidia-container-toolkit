@@ -45,12 +45,14 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name, "privileged_without_host_devices"}, false)
 	}
 
-	cdiAnnotations := []interface{}{"cdi.k8s.io/*"}
-	containerAnnotations, ok := config.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name, "container_annotations"}).([]interface{})
-	if ok && containerAnnotations != nil {
-		cdiAnnotations = append(containerAnnotations, cdiAnnotations...)
+	if len(c.ContainerAnnotations) > 0 {
+		annotations, err := c.getRuntimeAnnotations([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name, "container_annotations"})
+		if err != nil {
+			return err
+		}
+		annotations = append(c.ContainerAnnotations, annotations...)
+		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name, "container_annotations"}, annotations)
 	}
-	config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name, "container_annotations"}, cdiAnnotations)
 
 	config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name, "options", "BinaryName"}, path)
 
@@ -60,6 +62,32 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 
 	*c.Tree = config
 	return nil
+}
+
+func (c *Config) getRuntimeAnnotations(path []string) ([]string, error) {
+	if c == nil || c.Tree == nil {
+		return nil, nil
+	}
+
+	config := *c.Tree
+	if !config.HasPath(path) {
+		return nil, nil
+	}
+	annotationsI, ok := config.GetPath(path).([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid annotations: %v", annotationsI)
+	}
+
+	var annotations []string
+	for _, annotation := range annotationsI {
+		a, ok := annotation.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid annotation: %v", annotation)
+		}
+		annotations = append(annotations, a)
+	}
+
+	return annotations, nil
 }
 
 // DefaultRuntime returns the default runtime for the cri-o config
