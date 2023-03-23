@@ -23,6 +23,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
@@ -84,12 +85,10 @@ func (m *managementlib) getCudaVersion() (string, error) {
 		return version, nil
 	}
 
-	l := cudaLocator{
-		logger:     m.logger,
-		driverRoot: m.driverRoot,
-	}
-
-	libCudaPaths, err := l.Locate("libcuda.so.*.*.*")
+	libCudaPaths, err := cuda.New(
+		cuda.WithLogger(m.logger),
+		cuda.WithDriverRoot(m.driverRoot),
+	).Locate(".*.*.*")
 	if err != nil {
 		return "", fmt.Errorf("failed to locate libcuda.so: %v", err)
 	}
