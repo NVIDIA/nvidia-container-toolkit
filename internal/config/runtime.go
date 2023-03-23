@@ -19,6 +19,7 @@ package config
 import (
 	"fmt"
 
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 )
@@ -52,6 +53,8 @@ type cdiModeConfig struct {
 	SpecDirs []string `toml:"spec-dirs"`
 	// DefaultKind sets the default kind to be used when constructing fully-qualified CDI device names
 	DefaultKind string `toml:"default-kind"`
+	// AnnotationPrefixes sets the allowed prefixes for CDI annotation-based device injection
+	AnnotationPrefixes []string `toml:"annotation-prefixes"`
 }
 
 type csvModeConfig struct {
@@ -98,6 +101,9 @@ func GetDefaultRuntimeConfig() *RuntimeConfig {
 			},
 			CDI: cdiModeConfig{
 				DefaultKind: "nvidia.com/gpu",
+				AnnotationPrefixes: []string{
+					cdi.AnnotationPrefix,
+				},
 			},
 		},
 	}

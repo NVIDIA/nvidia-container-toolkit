@@ -18,6 +18,7 @@ package modifier
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
@@ -67,7 +68,7 @@ func getDevicesFromSpec(logger *logrus.Logger, ociSpec oci.Spec, cfg *config.Con
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
 	}
 
-	_, annotationDevices, err := cdi.ParseAnnotations(rawSpec.Annotations)
+	annotationDevices, err := getAnnotationDevices(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes, rawSpec.Annotations)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse container annotations: %v", err)
 	}
@@ -105,6 +106,38 @@ func getDevicesFromSpec(logger *logrus.Logger, ociSpec oci.Spec, cfg *config.Con
 	logger.Warningf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES: %v", devices)
 
 	return nil, nil
+}
+
+// getAnnotationDevices returns a list of devices specified in the annotations.
+// Keys starting with the specified prefixes are considered and expected to contain a comma-separated list of
+// fully-qualified CDI devices names. If any device name is not fully-quality an error is returned.
+// The list of returned devices is deduplicated.
+func getAnnotationDevices(prefixes []string, annotations map[string]string) ([]string, error) {
+	devicesByKey := make(map[string][]string)
+	for key, value := range annotations {
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(key, prefix) {
+				devicesByKey[key] = strings.Split(value, ",")
+			}
+		}
+	}
+
+	seen := make(map[string]bool)
+	var annotationDevices []string
+	for key, devices := range devicesByKey {
+		for _, device := range devices {
+			if !cdi.IsQualifiedName(device) {
+				return nil, fmt.Errorf("invalid device name %q in annotation %q", device, key)
+			}
+			if seen[device] {
+				continue
+			}
+			annotationDevices = append(annotationDevices, device)
+			seen[device] = true
+		}
+	}
+
+	return annotationDevices, nil
 }
 
 // Modify loads the CDI registry and injects the specified CDI devices into the OCI runtime specification.

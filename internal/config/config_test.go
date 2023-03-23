@@ -71,7 +71,8 @@ func TestGetConfig(t *testing.T) {
 							MountSpecPath: "/etc/nvidia-container-runtime/host-files-for-container.d",
 						},
 						CDI: cdiModeConfig{
-							DefaultKind: "nvidia.com/gpu",
+							DefaultKind:        "nvidia.com/gpu",
+							AnnotationPrefixes: []string{"cdi.k8s.io/"},
 						},
 					},
 				},
@@ -92,6 +93,7 @@ func TestGetConfig(t *testing.T) {
 				"nvidia-container-runtime.runtimes = [\"/some/runtime\",]",
 				"nvidia-container-runtime.mode = \"not-auto\"",
 				"nvidia-container-runtime.modes.cdi.default-kind = \"example.vendor.com/device\"",
+				"nvidia-container-runtime.modes.cdi.annotation-prefixes = [\"cdi.k8s.io/\", \"example.vendor.com/\",]",
 				"nvidia-container-runtime.modes.csv.mount-spec-path = \"/not/etc/nvidia-container-runtime/host-files-for-container.d\"",
 				"nvidia-ctk.path = \"/foo/bar/nvidia-ctk\"",
 			},
@@ -111,6 +113,10 @@ func TestGetConfig(t *testing.T) {
 						},
 						CDI: cdiModeConfig{
 							DefaultKind: "example.vendor.com/device",
+							AnnotationPrefixes: []string{
+								"cdi.k8s.io/",
+								"example.vendor.com/",
+							},
 						},
 					},
 				},
@@ -134,6 +140,7 @@ func TestGetConfig(t *testing.T) {
 				"mode = \"not-auto\"",
 				"[nvidia-container-runtime.modes.cdi]",
 				"default-kind = \"example.vendor.com/device\"",
+				"annotation-prefixes = [\"cdi.k8s.io/\", \"example.vendor.com/\",]",
 				"[nvidia-container-runtime.modes.csv]",
 				"mount-spec-path = \"/not/etc/nvidia-container-runtime/host-files-for-container.d\"",
 				"[nvidia-ctk]",
@@ -155,6 +162,10 @@ func TestGetConfig(t *testing.T) {
 						},
 						CDI: cdiModeConfig{
 							DefaultKind: "example.vendor.com/device",
+							AnnotationPrefixes: []string{
+								"cdi.k8s.io/",
+								"example.vendor.com/",
+							},
 						},
 					},
 				},
