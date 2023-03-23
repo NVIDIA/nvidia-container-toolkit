@@ -4,6 +4,9 @@
 
 * Prefer /run over /var/run when locating nvidia-persistenced and nvidia-fabricmanager sockets.
 * Only initialize NVML for modes that require it when runing `nvidia-ctk cdi generate`
+* [libnvidia-container] Fix segmentation fault when RPC initialization fails.
+* [libnvidia-container] Build centos variants of the NVIDIA Container Library with static libtirpc v1.3.2.
+* [libnvidia-container] Remove make targets for fedora35 as the centos8 packages are compatible.
 
 ## v1.13.0-rc.2
 
