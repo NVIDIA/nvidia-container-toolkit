@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/containerd"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/docker"
 	"github.com/sirupsen/logrus"
@@ -36,8 +37,9 @@ const (
 	defaultNVIDIARuntimeExecutable      = "nvidia-container-runtime"
 	defailtNVIDIARuntimeExpecutablePath = "/usr/bin/nvidia-container-runtime"
 
-	defaultCrioConfigFilePath   = "/etc/crio/crio.conf"
-	defaultDockerConfigFilePath = "/etc/docker/daemon.json"
+	defaultContainerdConfigFilePath = "/etc/containerd/config.toml"
+	defaultCrioConfigFilePath       = "/etc/crio/crio.conf"
+	defaultDockerConfigFilePath     = "/etc/docker/daemon.json"
 )
 
 type command struct {
@@ -90,7 +92,7 @@ func (m command) build() *cli.Command {
 		},
 		&cli.StringFlag{
 			Name:        "runtime",
-			Usage:       "the target runtime engine; one of [crio, docker]",
+			Usage:       "the target runtime engine; one of [containerd, crio, docker]",
 			Value:       defaultRuntime,
 			Destination: &config.runtime,
 		},
@@ -125,14 +127,14 @@ func (m command) build() *cli.Command {
 
 func validateFlags(c *cli.Context, config *config) error {
 	switch config.runtime {
-	case "crio", "docker":
+	case "containerd", "crio", "docker":
 		break
 	default:
 		return fmt.Errorf("unrecognized runtime '%v'", config.runtime)
 	}
 
 	switch config.runtime {
-	case "crio":
+	case "containerd", "crio":
 		if config.nvidiaRuntime.path == defaultNVIDIARuntimeExecutable {
 			config.nvidiaRuntime.path = defailtNVIDIARuntimeExpecutablePath
 		}
@@ -151,6 +153,10 @@ func (m command) configureWrapper(c *cli.Context, config *config) error {
 	var cfg engine.Interface
 	var err error
 	switch config.runtime {
+	case "containerd":
+		cfg, err = containerd.New(
+			containerd.WithPath(configFilePath),
+		)
 	case "crio":
 		cfg, err = crio.New(
 			crio.WithPath(configFilePath),
@@ -197,6 +203,8 @@ func (c *config) resolveConfigFilePath() string {
 		return c.configFilePath
 	}
 	switch c.runtime {
+	case "containerd":
+		return defaultContainerdConfigFilePath
 	case "crio":
 		return defaultCrioConfigFilePath
 	case "docker":

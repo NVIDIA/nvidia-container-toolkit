@@ -2,6 +2,8 @@
 
 ## v1.14.0-rc.1
 
+* Add support for updating containerd configs to the `nvidia-ctk runtime configure` command.
+
 ## v1.13.1
 
 * Update `update-ldcache` hook to only update ldcache if it exists.
