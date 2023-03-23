@@ -46,10 +46,12 @@ type options struct {
 	DriverRoot        string
 	DriverRootCtrPath string
 
-	ContainerRuntimeMode                string
-	ContainerRuntimeModesCdiDefaultKind string
-	ContainerRuntimeDebug               string
-	ContainerRuntimeLogLevel            string
+	ContainerRuntimeMode     string
+	ContainerRuntimeDebug    string
+	ContainerRuntimeLogLevel string
+
+	ContainerRuntimeModesCdiDefaultKind        string
+	ContainerRuntimeModesCDIAnnotationPrefixes cli.StringSlice
 
 	ContainerRuntimeHookSkipModeDetection bool
 
@@ -120,25 +122,33 @@ func main() {
 			EnvVars:     []string{"DRIVER_ROOT_CTR_PATH"},
 		},
 		&cli.StringFlag{
-			Name:        "nvidia-container-runtime-debug",
+			Name:        "nvidia-container-runtime.debug",
+			Aliases:     []string{"nvidia-container-runtime-debug"},
 			Usage:       "Specify the location of the debug log file for the NVIDIA Container Runtime",
 			Destination: &opts.ContainerRuntimeDebug,
 			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_DEBUG"},
 		},
 		&cli.StringFlag{
-			Name:        "nvidia-container-runtime-debug-log-level",
+			Name:        "nvidia-container-runtime.log-level",
+			Aliases:     []string{"nvidia-container-runtime-debug-log-level"},
 			Destination: &opts.ContainerRuntimeLogLevel,
 			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_LOG_LEVEL"},
 		},
 		&cli.StringFlag{
-			Name:        "nvidia-container-runtime-mode",
+			Name:        "nvidia-container-runtime.mode",
+			Aliases:     []string{"nvidia-container-runtime-mode"},
 			Destination: &opts.ContainerRuntimeMode,
 			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODE"},
 		},
 		&cli.StringFlag{
-			Name:        "nvidia-container-runtime-modes.cdi.default-kind",
+			Name:        "nvidia-container-runtime.modes.cdi.default-kind",
 			Destination: &opts.ContainerRuntimeModesCdiDefaultKind,
 			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODES_CDI_DEFAULT_KIND"},
+		},
+		&cli.StringSliceFlag{
+			Name:        "nvidia-container-runtime.modes.cdi.annotation-prefixes",
+			Destination: &opts.ContainerRuntimeModesCDIAnnotationPrefixes,
+			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODES_CDI_ANNOTATION_PREFIXES"},
 		},
 		&cli.BoolFlag{
 			Name:        "nvidia-container-runtime-hook.skip-mode-detection",
@@ -147,7 +157,8 @@ func main() {
 			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_HOOK_SKIP_MODE_DETECTION"},
 		},
 		&cli.StringFlag{
-			Name:        "nvidia-container-cli-debug",
+			Name:        "nvidia-container-cli.debug",
+			Aliases:     []string{"nvidia-container-cli-debug"},
 			Usage:       "Specify the location of the debug log file for the NVIDIA Container CLI",
 			Destination: &opts.ContainerCLIDebug,
 			EnvVars:     []string{"NVIDIA_CONTAINER_CLI_DEBUG"},
@@ -278,7 +289,7 @@ func Install(cli *cli.Context, opts *options) error {
 		return fmt.Errorf("error installing NVIDIA Container Toolkit CLI: %v", err)
 	}
 
-	err = installToolkitConfig(toolkitConfigPath, nvidiaContainerCliExecutable, nvidiaCTKPath, opts)
+	err = installToolkitConfig(cli, toolkitConfigPath, nvidiaContainerCliExecutable, nvidiaCTKPath, opts)
 	if err != nil {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
 	}
@@ -336,7 +347,7 @@ func installLibrary(libName string, toolkitRoot string) error {
 
 // installToolkitConfig installs the config file for the NVIDIA container toolkit ensuring
 // that the settings are updated to match the desired install and nvidia driver directories.
-func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, opts *options) error {
+func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, opts *options) error {
 	log.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
 
 	config, err := toml.LoadFile(nvidiaContainerToolkitConfigSource)
@@ -369,18 +380,39 @@ func installToolkitConfig(toolkitConfigPath string, nvidiaContainerCliExecutable
 	config.SetPath(nvidiaContainerCliKey("path"), nvidiaContainerCliExecutablePath)
 	config.SetPath(nvidiaContainerCliKey("ldconfig"), driverLdconfigPath)
 
-	// Set the debug options if selected
-	debugOptions := map[string]string{
-		"nvidia-container-runtime.debug":                  opts.ContainerRuntimeDebug,
-		"nvidia-container-runtime.log-level":              opts.ContainerRuntimeLogLevel,
-		"nvidia-container-runtime.mode":                   opts.ContainerRuntimeMode,
-		"nvidia-container-runtime.modes.cdi.default-kind": opts.ContainerRuntimeModesCdiDefaultKind,
-		"nvidia-container-cli.debug":                      opts.ContainerCLIDebug,
+	// Set the optional config options
+	optionalConfigValues := map[string]interface{}{
+		"nvidia-container-runtime.debug":                         opts.ContainerRuntimeDebug,
+		"nvidia-container-runtime.log-level":                     opts.ContainerRuntimeLogLevel,
+		"nvidia-container-runtime.mode":                          opts.ContainerRuntimeMode,
+		"nvidia-container-runtime.modes.cdi.annotation-prefixes": opts.ContainerRuntimeModesCDIAnnotationPrefixes,
+		"nvidia-container-runtime.modes.cdi.default-kind":        opts.ContainerRuntimeModesCdiDefaultKind,
+		"nvidia-container-cli.debug":                             opts.ContainerCLIDebug,
 	}
-	for key, value := range debugOptions {
-		if value == "" {
+	for key, value := range optionalConfigValues {
+		if !c.IsSet(key) {
+			log.Infof("Skipping unset option: %v", key)
 			continue
 		}
+		if value == nil {
+			log.Infof("Skipping option with nil value: %v", key)
+			continue
+		}
+
+		switch v := value.(type) {
+		case string:
+			if v == "" {
+				continue
+			}
+		case cli.StringSlice:
+			if len(v.Value()) == 0 {
+				continue
+			}
+			value = v.Value()
+		default:
+			log.Warnf("Unexpected type for option %v=%v: %T", key, value, v)
+		}
+
 		config.Set(key, value)
 	}
 
