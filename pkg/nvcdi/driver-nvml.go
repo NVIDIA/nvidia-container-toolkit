@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
@@ -136,26 +135,25 @@ func NewDriverBinariesDiscoverer(logger *logrus.Logger, driverRoot string) disco
 func getVersionLibs(logger *logrus.Logger, driverRoot string, version string) ([]string, error) {
 	logger.Infof("Using driver version %v", version)
 
-	cache, err := ldcache.New(logger, driverRoot)
+	l := cudaLocator{
+		logger:     logger,
+		driverRoot: driverRoot,
+	}
+	libCudaPaths, err := l.Locate("libcuda.so." + version)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load ldcache: %v", err)
+		return nil, fmt.Errorf("failed to locate libcuda.so.%v: %v", version, err)
 	}
+	libRoot := filepath.Dir(libCudaPaths[0])
 
-	libs32, libs64 := cache.List()
+	libraries := lookup.NewFileLocator(
+		lookup.WithLogger(logger),
+		lookup.WithSearchPaths(libRoot),
+		lookup.WithOptional(true),
+	)
 
-	var libs []string
-	for _, l := range libs64 {
-		if strings.HasSuffix(l, version) {
-			logger.Infof("found 64-bit driver lib: %v", l)
-			libs = append(libs, l)
-		}
-	}
-
-	for _, l := range libs32 {
-		if strings.HasSuffix(l, version) {
-			logger.Infof("found 32-bit driver lib: %v", l)
-			libs = append(libs, l)
-		}
+	libs, err := libraries.Locate("*.so." + version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to locate libraries for driver version %v: %v", version, err)
 	}
 
 	if driverRoot == "/" || driverRoot == "" {
@@ -168,4 +166,44 @@ func getVersionLibs(logger *logrus.Logger, driverRoot string, version string) ([
 	}
 
 	return relative, nil
+}
+
+type cudaLocator struct {
+	logger     *logrus.Logger
+	driverRoot string
+}
+
+// Locate returns the path to the libcuda.so.RMVERSION file.
+func (l *cudaLocator) Locate(pattern string) ([]string, error) {
+	ldcacheLocator, err := lookup.NewLibraryLocator(
+		l.logger,
+		l.driverRoot,
+	)
+	if err != nil {
+		l.logger.Debugf("Failed to create LDCache locator: %v", err)
+	}
+	candidates, err := ldcacheLocator.Locate("libcuda.so")
+	if err == nil {
+		for _, c := range candidates {
+			if match, err := filepath.Match(pattern, filepath.Base(c)); err != nil || !match {
+				l.logger.Debugf("Skipping non-matching candidate %v: %v", c, err)
+				continue
+			}
+			return []string{c}, nil
+		}
+	}
+	l.logger.Debugf("Could not locate %q in LDCache: Checking predefined library paths.", pattern)
+
+	pathLocator := lookup.NewFileLocator(
+		lookup.WithLogger(l.logger),
+		lookup.WithRoot(l.driverRoot),
+		lookup.WithSearchPaths(
+			"/usr/lib64",
+			"/usr/lib/x86_64-linux-gnu",
+			"/usr/lib/aarch64-linux-gnu",
+		),
+		lookup.WithCount(1),
+	)
+
+	return pathLocator.Locate(pattern)
 }
