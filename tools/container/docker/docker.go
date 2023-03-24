@@ -43,8 +43,9 @@ const (
 	defaultSocket       = "/var/run/docker.sock"
 	defaultSetAsDefault = true
 	// defaultRuntimeName specifies the NVIDIA runtime to be use as the default runtime if setting the default runtime is enabled
-	defaultRuntimeName = nvidiaRuntimeName
-	defaultRestartMode = restartModeSignal
+	defaultRuntimeName   = nvidiaRuntimeName
+	defaultRestartMode   = restartModeSignal
+	defaultHostRootMount = "/host"
 
 	reloadBackoff     = 5 * time.Second
 	maxReloadAttempts = 6
@@ -61,12 +62,13 @@ var nvidiaRuntimeBinaries = map[string]string{
 
 // options stores the configuration from the command line or environment variables
 type options struct {
-	config       string
-	socket       string
-	runtimeName  string
-	setAsDefault bool
-	runtimeDir   string
-	restartMode  string
+	config        string
+	socket        string
+	runtimeName   string
+	setAsDefault  bool
+	runtimeDir    string
+	restartMode   string
+	hostRootMount string
 }
 
 func main() {
@@ -109,44 +111,50 @@ func main() {
 	commonFlags := []cli.Flag{
 		&cli.StringFlag{
 			Name:        "config",
-			Aliases:     []string{"c"},
 			Usage:       "Path to docker config file",
 			Value:       defaultConfig,
 			Destination: &options.config,
-			EnvVars:     []string{"DOCKER_CONFIG"},
+			EnvVars:     []string{"DOCKER_CONFIG", "RUNTIME_CONFIG"},
 		},
 		&cli.StringFlag{
 			Name:        "socket",
-			Aliases:     []string{"s"},
 			Usage:       "Path to the docker socket file",
 			Value:       defaultSocket,
 			Destination: &options.socket,
-			EnvVars:     []string{"DOCKER_SOCKET"},
-		},
-		// The flags below are only used by the 'setup' command.
-		&cli.StringFlag{
-			Name:        "runtime-name",
-			Aliases:     []string{"r"},
-			Usage:       "Specify the name of the `nvidia` runtime. If set-as-default is selected, the runtime is used as the default runtime.",
-			Value:       defaultRuntimeName,
-			Destination: &options.runtimeName,
-			EnvVars:     []string{"DOCKER_RUNTIME_NAME"},
-		},
-		&cli.BoolFlag{
-			Name:        "set-as-default",
-			Aliases:     []string{"d"},
-			Usage:       "Set the `nvidia` runtime as the default runtime. If --runtime-name is specified as `nvidia-experimental` the experimental runtime is set as the default runtime instead",
-			Value:       defaultSetAsDefault,
-			Destination: &options.setAsDefault,
-			EnvVars:     []string{"DOCKER_SET_AS_DEFAULT"},
-			Hidden:      true,
+			EnvVars:     []string{"DOCKER_SOCKET", "RUNTIME_SOCKET"},
 		},
 		&cli.StringFlag{
 			Name:        "restart-mode",
 			Usage:       "Specify how docker should be restarted; If 'none' is selected it will not be restarted [signal | none]",
 			Value:       defaultRestartMode,
 			Destination: &options.restartMode,
-			EnvVars:     []string{"DOCKER_RESTART_MODE"},
+			EnvVars:     []string{"DOCKER_RESTART_MODE", "RUNTIME_RESTART_MODE"},
+		},
+		&cli.StringFlag{
+			Name:        "host-root",
+			Usage:       "Specify the path to the host root to be used when restarting docker using systemd",
+			Value:       defaultHostRootMount,
+			Destination: &options.hostRootMount,
+			EnvVars:     []string{"HOST_ROOT_MOUNT"},
+			// Restart using systemd is currently not supported.
+			// We hide this option for the time being.
+			Hidden: true,
+		},
+		&cli.StringFlag{
+			Name:        "runtime-name",
+			Aliases:     []string{"runtime-class", "nvidia-runtime-name"},
+			Usage:       "Specify the name of the `nvidia` runtime. If set-as-default is selected, the runtime is used as the default runtime.",
+			Value:       defaultRuntimeName,
+			Destination: &options.runtimeName,
+			EnvVars:     []string{"DOCKER_RUNTIME_NAME", "NVIDIA_RUNTIME_NAME"},
+		},
+		&cli.BoolFlag{
+			Name:        "set-as-default",
+			Usage:       "Set the `nvidia` runtime as the default runtime. If --runtime-name is specified as `nvidia-experimental` the experimental runtime is set as the default runtime instead",
+			Value:       defaultSetAsDefault,
+			Destination: &options.setAsDefault,
+			EnvVars:     []string{"DOCKER_SET_AS_DEFAULT", "NVIDIA_RUNTIME_SET_AS_DEFAULT"},
+			Hidden:      true,
 		},
 	}
 

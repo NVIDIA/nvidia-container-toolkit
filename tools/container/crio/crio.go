@@ -43,6 +43,7 @@ const (
 
 	// Config-based settings
 	defaultConfig        = "/etc/crio/crio.conf"
+	defaultSocket        = "/var/run/crio/crio.sock"
 	defaultRuntimeClass  = "nvidia"
 	defaultSetAsDefault  = true
 	defaultRestartMode   = restartModeSystemd
@@ -58,6 +59,7 @@ type options struct {
 	runtimeDir   string
 
 	config        string
+	socket        string
 	runtimeClass  string
 	setAsDefault  bool
 	restartMode   string
@@ -105,8 +107,52 @@ func main() {
 	// and 'cleanup' to simplify things.
 	commonFlags := []cli.Flag{
 		&cli.StringFlag{
+			Name:        "config",
+			Usage:       "Path to the cri-o config file",
+			Value:       defaultConfig,
+			Destination: &options.config,
+			EnvVars:     []string{"CRIO_CONFIG", "RUNTIME_CONFIG"},
+		},
+		&cli.StringFlag{
+			Name:        "socket",
+			Usage:       "Path to the crio socket file",
+			Value:       "",
+			Destination: &options.socket,
+			EnvVars:     []string{"CRIO_SOCKET", "RUNTIME_SOCKET"},
+			Hidden:      true,
+		},
+		&cli.StringFlag{
+			Name:        "restart-mode",
+			Usage:       "Specify how cri-o should be restarted;  If 'none' is selected, it will not be restarted [systemd | none]",
+			Value:       defaultRestartMode,
+			Destination: &options.restartMode,
+			EnvVars:     []string{"CRIO_RESTART_MODE", "RUNTIME_RESTART_MODE"},
+		},
+		&cli.StringFlag{
+			Name:        "runtime-class",
+			Aliases:     []string{"runtime-name", "nvidia-runtime-name"},
+			Usage:       "The name of the runtime class to set for the nvidia-container-runtime",
+			Value:       defaultRuntimeClass,
+			Destination: &options.runtimeClass,
+			EnvVars:     []string{"CRIO_RUNTIME_CLASS", "NVIDIA_RUNTIME_NAME"},
+		},
+		&cli.BoolFlag{
+			Name:        "set-as-default",
+			Usage:       "Set nvidia-container-runtime as the default runtime",
+			Value:       defaultSetAsDefault,
+			Destination: &options.setAsDefault,
+			EnvVars:     []string{"CRIO_SET_AS_DEFAULT", "NVIDIA_RUNTIME_SET_AS_DEFAULT"},
+			Hidden:      true,
+		},
+		&cli.StringFlag{
+			Name:        "host-root",
+			Usage:       "Specify the path to the host root to be used when restarting crio using systemd",
+			Value:       defaultHostRootMount,
+			Destination: &options.hostRootMount,
+			EnvVars:     []string{"HOST_ROOT_MOUNT"},
+		},
+		&cli.StringFlag{
 			Name:        "hooks-dir",
-			Aliases:     []string{"d"},
 			Usage:       "path to the cri-o hooks directory",
 			Value:       defaultHooksDir,
 			Destination: &options.hooksDir,
@@ -115,7 +161,6 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:        "hook-filename",
-			Aliases:     []string{"f"},
 			Usage:       "filename of the cri-o hook that will be created / removed in the hooks directory",
 			Value:       defaultHookFilename,
 			Destination: &options.hookFilename,
@@ -129,43 +174,7 @@ func main() {
 			Destination: &options.configMode,
 			EnvVars:     []string{"CRIO_CONFIG_MODE"},
 		},
-		&cli.StringFlag{
-			Name:        "config",
-			Usage:       "Path to the cri-o config file",
-			Value:       defaultConfig,
-			Destination: &options.config,
-			EnvVars:     []string{"CRIO_CONFIG"},
-		},
-		&cli.StringFlag{
-			Name:        "runtime-class",
-			Usage:       "The name of the runtime class to set for the nvidia-container-runtime",
-			Value:       defaultRuntimeClass,
-			Destination: &options.runtimeClass,
-			EnvVars:     []string{"CRIO_RUNTIME_CLASS"},
-		},
 		// The flags below are only used by the 'setup' command.
-		&cli.BoolFlag{
-			Name:        "set-as-default",
-			Usage:       "Set nvidia-container-runtime as the default runtime",
-			Value:       defaultSetAsDefault,
-			Destination: &options.setAsDefault,
-			EnvVars:     []string{"CRIO_SET_AS_DEFAULT"},
-			Hidden:      true,
-		},
-		&cli.StringFlag{
-			Name:        "restart-mode",
-			Usage:       "Specify how cri-o should be restarted;  If 'none' is selected, it will not be restarted [systemd | none]",
-			Value:       defaultRestartMode,
-			Destination: &options.restartMode,
-			EnvVars:     []string{"CRIO_RESTART_MODE"},
-		},
-		&cli.StringFlag{
-			Name:        "host-root",
-			Usage:       "Specify the path to the host root to be used when restarting crio using systemd",
-			Value:       defaultHostRootMount,
-			Destination: &options.hostRootMount,
-			EnvVars:     []string{"HOST_ROOT_MOUNT"},
-		},
 	}
 
 	// Update the subcommand flags with the common subcommand flags
