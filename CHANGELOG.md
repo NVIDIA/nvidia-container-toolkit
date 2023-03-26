@@ -9,9 +9,9 @@
 * Generate a simplified CDI specification by default. This means that entities in the common edits in a spec are not included in device definitions.
 * Also return an error from the nvcdi.New constructor instead of panicing.
 
-* [libnvidia-container] Remove make targets for fedora35 as the centos8 packages are compatible.
-* [libnvidia-container] Build centos variants of the NVIDIA Container Library with static libtirpc v1.3.2.
 * [libnvidia-container] Fix segmentation fault when RPC initialization fails.
+* [libnvidia-container] Build centos variants of the NVIDIA Container Library with static libtirpc v1.3.2.
+* [libnvidia-container] Remove make targets for fedora35 as the centos8 packages are compatible.
 
 ## v1.13.0-rc.2
 
