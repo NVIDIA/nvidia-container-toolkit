@@ -2,15 +2,16 @@
 
 ## v1.13.0-rc.3
 
-* Also return an error from the nvcdi.New constructor instead of panicing.
-* Generate a simplified CDI specification by default. This means that entities in the common edits in a spec are not included in device definitions.
-* Add transformers to deduplicate and simplify CDI specifications.
-* Fix the generation of CDI specifications for management containers when the driver libraries are not in the LDCache.
-* Prefer /run over /var/run when locating nvidia-persistenced and nvidia-fabricmanager sockets.
 * Only initialize NVML for modes that require it when runing `nvidia-ctk cdi generate`.
-* [libnvidia-container] Fix segmentation fault when RPC initialization fails.
-* [libnvidia-container] Build centos variants of the NVIDIA Container Library with static libtirpc v1.3.2.
+* Prefer /run over /var/run when locating nvidia-persistenced and nvidia-fabricmanager sockets.
+* Fix the generation of CDI specifications for management containers when the driver libraries are not in the LDCache.
+* Add transformers to deduplicate and simplify CDI specifications.
+* Generate a simplified CDI specification by default. This means that entities in the common edits in a spec are not included in device definitions.
+* Also return an error from the nvcdi.New constructor instead of panicing.
+
 * [libnvidia-container] Remove make targets for fedora35 as the centos8 packages are compatible.
+* [libnvidia-container] Build centos variants of the NVIDIA Container Library with static libtirpc v1.3.2.
+* [libnvidia-container] Fix segmentation fault when RPC initialization fails.
 
 ## v1.13.0-rc.2
 
