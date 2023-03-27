@@ -18,6 +18,7 @@ package system
 
 import (
 	devchar "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system/create-dev-char-symlinks"
+	devicenodes "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system/create-device-nodes"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -43,6 +44,7 @@ func (m command) build() *cli.Command {
 
 	system.Subcommands = []*cli.Command{
 		devchar.NewCommand(m.logger),
+		devicenodes.NewCommand(m.logger),
 	}
 
 	return &system
