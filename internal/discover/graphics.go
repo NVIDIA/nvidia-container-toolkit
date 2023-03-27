@@ -20,11 +20,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/drm"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
 	"github.com/sirupsen/logrus"
 )
 
@@ -44,9 +46,15 @@ func NewGraphicsDiscoverer(logger *logrus.Logger, devices image.VisibleDevices, 
 
 	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, cfg)
 
+	xorg, err := newXorgDiscoverer(logger, driverRoot, cfg.NvidiaCTKPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Xorg discoverer: %v", err)
+	}
+
 	discover := Merge(
 		Merge(drmDeviceNodes, drmByPathSymlinks),
 		mounts,
+		xorg,
 	)
 
 	return discover, nil
@@ -241,6 +249,112 @@ func newDRMDeviceFilter(logger *logrus.Logger, devices image.VisibleDevices, dri
 	}
 
 	return filter, nil
+}
+
+type xorgHooks struct {
+	libraries     Discover
+	driverVersion string
+	nvidiaCTKPath string
+}
+
+var _ Discover = (*xorgHooks)(nil)
+
+func newXorgDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string) (Discover, error) {
+	libCudaPaths, err := cuda.New(
+		cuda.WithLogger(logger),
+		cuda.WithDriverRoot(driverRoot),
+	).Locate(".*.*.*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to locate libcuda.so: %v", err)
+	}
+	libcudaPath := libCudaPaths[0]
+
+	version := strings.TrimPrefix(filepath.Base(libcudaPath), "libcuda.so.")
+	if version == "" {
+		return nil, fmt.Errorf("failed to determine libcuda.so version from path: %q", libcudaPath)
+	}
+
+	libRoot := filepath.Dir(libcudaPath)
+	xorgLibs := NewMounts(
+		logger,
+		lookup.NewFileLocator(
+			lookup.WithLogger(logger),
+			lookup.WithRoot(driverRoot),
+			lookup.WithSearchPaths(libRoot, "/usr/lib/x86_64-linux-gnu"),
+			lookup.WithCount(1),
+		),
+		driverRoot,
+		[]string{
+			"nvidia/xorg/nvidia_drv.so",
+			fmt.Sprintf("nvidia/xorg/libglxserver_nvidia.so.%s", version),
+		},
+	)
+	xorgHooks := xorgHooks{
+		libraries:     xorgLibs,
+		driverVersion: version,
+		nvidiaCTKPath: FindNvidiaCTK(logger, nvidiaCTKPath),
+	}
+
+	xorgConfg := NewMounts(
+		logger,
+		lookup.NewFileLocator(
+			lookup.WithLogger(logger),
+			lookup.WithRoot(driverRoot),
+			lookup.WithSearchPaths("/usr/share"),
+		),
+		driverRoot,
+		[]string{"X11/xorg.conf.d/10-nvidia.conf"},
+	)
+
+	d := Merge(
+		xorgLibs,
+		xorgConfg,
+		xorgHooks,
+	)
+
+	return d, nil
+}
+
+// Devices returns no devices for Xorg
+func (m xorgHooks) Devices() ([]Device, error) {
+	return nil, nil
+}
+
+// Hooks returns a hook to create symlinks for Xorg libraries
+func (m xorgHooks) Hooks() ([]Hook, error) {
+	mounts, err := m.libraries.Mounts()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get mounts: %v", err)
+	}
+	if len(mounts) == 0 {
+		return nil, nil
+	}
+
+	var target string
+	for _, mount := range mounts {
+		filename := filepath.Base(mount.HostPath)
+		if filename == "libglxserver_nvidia.so."+m.driverVersion {
+			target = mount.Path
+		}
+	}
+
+	if target == "" {
+		return nil, nil
+	}
+
+	link := strings.TrimSuffix(target, "."+m.driverVersion)
+	links := []string{fmt.Sprintf("%s::%s", filepath.Base(target), link)}
+	symlinkHook := CreateCreateSymlinkHook(
+		m.nvidiaCTKPath,
+		links,
+	)
+
+	return symlinkHook.Hooks()
+}
+
+// Mounts returns the libraries required for Xorg
+func (m xorgHooks) Mounts() ([]Mount, error) {
+	return nil, nil
 }
 
 // selectDeviceByPath is a filter that allows devices to be selected by the path
