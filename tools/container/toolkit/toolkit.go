@@ -66,6 +66,8 @@ type options struct {
 
 	acceptNVIDIAVisibleDevicesWhenUnprivileged bool
 	acceptNVIDIAVisibleDevicesAsVolumeMounts   bool
+
+	ignoreErrors bool
 }
 
 func main() {
@@ -204,6 +206,12 @@ func main() {
 			Destination: &opts.cdiKind,
 			EnvVars:     []string{"CDI_KIND"},
 		},
+		&cli.BoolFlag{
+			Name:        "ignore-errors",
+			Usage:       "ignore errors when installing the NVIDIA Container toolkit. This is used for testing purposes only.",
+			Hidden:      true,
+			Destination: &opts.ignoreErrors,
+		},
 	}
 
 	// Update the subcommand flags with the common subcommand flags
@@ -252,46 +260,62 @@ func Install(cli *cli.Context, opts *options) error {
 
 	log.Infof("Removing existing NVIDIA container toolkit installation")
 	err := os.RemoveAll(opts.toolkitRoot)
-	if err != nil {
+	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error removing toolkit directory: %v", err)
+	} else if err != nil {
+		log.Errorf("Ignoring error: %v", fmt.Errorf("error removing toolkit directory: %v", err))
 	}
 
 	toolkitConfigDir := filepath.Join(opts.toolkitRoot, ".config", "nvidia-container-runtime")
 	toolkitConfigPath := filepath.Join(toolkitConfigDir, configFilename)
 
 	err = createDirectories(opts.toolkitRoot, toolkitConfigDir)
-	if err != nil {
+	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("could not create required directories: %v", err)
+	} else if err != nil {
+		log.Errorf("Ignoring error: %v", fmt.Errorf("could not create required directories: %v", err))
 	}
 
 	err = installContainerLibraries(opts.toolkitRoot)
-	if err != nil {
+	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container library: %v", err)
+	} else if err != nil {
+		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container library: %v", err))
 	}
 
 	err = installContainerRuntimes(opts.toolkitRoot, opts.DriverRoot)
-	if err != nil {
+	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container runtime: %v", err)
+	} else if err != nil {
+		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container runtime: %v", err))
 	}
 
 	nvidiaContainerCliExecutable, err := installContainerCLI(opts.toolkitRoot)
-	if err != nil {
+	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container CLI: %v", err)
+	} else if err != nil {
+		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container CLI: %v", err))
 	}
 
 	_, err = installRuntimeHook(opts.toolkitRoot, toolkitConfigPath)
-	if err != nil {
+	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container runtime hook: %v", err)
+	} else if err != nil {
+		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container runtime hook: %v", err))
 	}
 
 	nvidiaCTKPath, err := installContainerToolkitCLI(opts.toolkitRoot)
-	if err != nil {
+	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA Container Toolkit CLI: %v", err)
+	} else if err != nil {
+		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA Container Toolkit CLI: %v", err))
 	}
 
 	err = installToolkitConfig(cli, toolkitConfigPath, nvidiaContainerCliExecutable, nvidiaCTKPath, opts)
-	if err != nil {
+	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
+	} else if err != nil {
+		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container toolkit config: %v", err))
 	}
 
 	return generateCDISpec(opts, nvidiaCTKPath)
@@ -350,7 +374,7 @@ func installLibrary(libName string, toolkitRoot string) error {
 func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, opts *options) error {
 	log.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
 
-	config, err := toml.LoadFile(nvidiaContainerToolkitConfigSource)
+	config, err := loadConfig(nvidiaContainerToolkitConfigSource)
 	if err != nil {
 		return fmt.Errorf("could not open source config file: %v", err)
 	}
@@ -429,6 +453,16 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 	config.WriteTo(os.Stdout)
 
 	return nil
+}
+
+func loadConfig(path string) (*toml.Tree, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return toml.LoadFile(path)
+	} else if os.IsNotExist(err) {
+		return toml.TreeFromMap(nil)
+	}
+	return nil, err
 }
 
 // installContainerToolkitCLI installs the nvidia-ctk CLI executable and wrapper.
