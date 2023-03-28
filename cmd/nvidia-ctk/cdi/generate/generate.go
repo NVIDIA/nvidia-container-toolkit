@@ -26,6 +26,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	specs "github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/sirupsen/logrus"
@@ -45,6 +46,7 @@ type config struct {
 	format             string
 	deviceNameStrategy string
 	driverRoot         string
+	targetDriverRoot   string
 	nvidiaCTKPath      string
 	mode               string
 }
@@ -108,6 +110,12 @@ func (m command) build() *cli.Command {
 			Usage:       "Specify the path to use for the nvidia-ctk in the generated CDI specification. If this is left empty, the path will be searched.",
 			Destination: &cfg.nvidiaCTKPath,
 		},
+		&cli.StringFlag{
+			Name:        "target-driver-root",
+			Usage:       "Specify the NVIDIA GPU driver root to use in the generated CDI specification. Only used if not empty and differs from 'driver-root' used during discovery.",
+			Value:       "",
+			Destination: &cfg.targetDriverRoot,
+		},
 	}
 
 	return &c
@@ -139,6 +147,10 @@ func (m command) validateFlags(c *cli.Context, cfg *config) error {
 	}
 
 	cfg.nvidiaCTKPath = discover.FindNvidiaCTK(m.logger, cfg.nvidiaCTKPath)
+
+	if cfg.targetDriverRoot == "" {
+		cfg.targetDriverRoot = cfg.driverRoot
+	}
 
 	if outputFileFormat := formatFromFilename(cfg.output); outputFileFormat != "" {
 		m.logger.Debugf("Inferred output format as %q from output file name", outputFileFormat)
@@ -223,13 +235,26 @@ func (m command) generateSpec(cfg *config) (spec.Interface, error) {
 		return nil, fmt.Errorf("failed to create edits common for entities: %v", err)
 	}
 
-	return spec.New(
+	spec, err := spec.New(
 		spec.WithVendor("nvidia.com"),
 		spec.WithClass("gpu"),
 		spec.WithDeviceSpecs(deviceSpecs),
 		spec.WithEdits(*commonEdits.ContainerEdits),
 		spec.WithFormat(cfg.format),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	err = transform.NewRootTransformer(
+		cfg.driverRoot,
+		cfg.targetDriverRoot,
+	).Transform(spec.Raw())
+	if err != nil {
+		return nil, fmt.Errorf("failed to transform driver root in CDI spec: %v", err)
+	}
+
+	return spec, err
 }
 
 // MergeDeviceSpecs creates a device with the specified name which combines the edits from the previous devices.
