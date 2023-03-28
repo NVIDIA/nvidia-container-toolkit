@@ -41,6 +41,13 @@ func newBuilder(opts ...Option) *builder {
 	for _, opt := range opts {
 		opt(s)
 	}
+	if s.raw != nil {
+		s.noSimplify = true
+		vendor, class := cdi.ParseQualifier(s.raw.Kind)
+		s.vendor = vendor
+		s.class = class
+	}
+
 	if s.version == "" {
 		s.version = DetectMinimumVersion
 	}
@@ -60,7 +67,6 @@ func newBuilder(opts ...Option) *builder {
 // Build builds a CDI spec form the spec builder.
 func (o *builder) Build() (*spec, error) {
 	raw := o.raw
-
 	if raw == nil {
 		raw = &specs.Spec{
 			Version:        o.version,
@@ -142,5 +148,12 @@ func WithFormat(format string) Option {
 func WithNoSimplify(noSimplify bool) Option {
 	return func(o *builder) {
 		o.noSimplify = noSimplify
+	}
+}
+
+// WithRawSpec sets the raw spec for the spec builder
+func WithRawSpec(raw *specs.Spec) Option {
+	return func(o *builder) {
+		o.raw = raw
 	}
 }

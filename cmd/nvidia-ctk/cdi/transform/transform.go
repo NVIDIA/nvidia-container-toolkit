@@ -14,11 +14,10 @@
 # limitations under the License.
 **/
 
-package cdi
+package transform
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/generate"
-	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/transform"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/transform/root"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -27,7 +26,7 @@ type command struct {
 	logger *logrus.Logger
 }
 
-// NewCommand constructs an info command with the specified logger
+// NewCommand constructs a command with the specified logger
 func NewCommand(logger *logrus.Logger) *cli.Command {
 	c := command{
 		logger: logger,
@@ -35,18 +34,18 @@ func NewCommand(logger *logrus.Logger) *cli.Command {
 	return c.build()
 }
 
-// build
+// build creates the CLI command
 func (m command) build() *cli.Command {
-	// Create the 'hook' command
-	hook := cli.Command{
-		Name:  "cdi",
-		Usage: "Provide tools for interacting with Container Device Interface specifications",
+	c := cli.Command{
+		Name:  "transform",
+		Usage: "Apply a transform to a CDI specification",
 	}
 
-	hook.Subcommands = []*cli.Command{
-		generate.NewCommand(m.logger),
-		transform.NewCommand(m.logger),
+	c.Flags = []cli.Flag{}
+
+	c.Subcommands = []*cli.Command{
+		root.NewCommand(m.logger),
 	}
 
-	return &hook
+	return &c
 }

@@ -47,6 +47,8 @@ type config struct {
 	driverRoot         string
 	nvidiaCTKPath      string
 	mode               string
+	vendor             string
+	class              string
 }
 
 // NewCommand constructs a generate-cdi command with the specified logger
@@ -108,6 +110,20 @@ func (m command) build() *cli.Command {
 			Usage:       "Specify the path to use for the nvidia-ctk in the generated CDI specification. If this is left empty, the path will be searched.",
 			Destination: &cfg.nvidiaCTKPath,
 		},
+		&cli.StringFlag{
+			Name:        "vendor",
+			Aliases:     []string{"cdi-vendor"},
+			Usage:       "the vendor string to use for the generated CDI specification.",
+			Value:       "nvidia.com",
+			Destination: &cfg.vendor,
+		},
+		&cli.StringFlag{
+			Name:        "class",
+			Aliases:     []string{"cdi-class"},
+			Usage:       "the class string to use for the generated CDI specification.",
+			Value:       "gpu",
+			Destination: &cfg.class,
+		},
 	}
 
 	return &c
@@ -149,6 +165,12 @@ func (m command) validateFlags(c *cli.Context, cfg *config) error {
 		}
 	}
 
+	if err := cdi.ValidateVendorName(cfg.vendor); err != nil {
+		return fmt.Errorf("invalid CDI vendor name: %v", err)
+	}
+	if err := cdi.ValidateClassName(cfg.class); err != nil {
+		return fmt.Errorf("invalid CDI class name: %v", err)
+	}
 	return nil
 }
 
@@ -224,8 +246,8 @@ func (m command) generateSpec(cfg *config) (spec.Interface, error) {
 	}
 
 	return spec.New(
-		spec.WithVendor("nvidia.com"),
-		spec.WithClass("gpu"),
+		spec.WithVendor(cfg.vendor),
+		spec.WithClass(cfg.class),
 		spec.WithDeviceSpecs(deviceSpecs),
 		spec.WithEdits(*commonEdits.ContainerEdits),
 		spec.WithFormat(cfg.format),
