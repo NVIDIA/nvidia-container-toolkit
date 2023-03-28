@@ -54,6 +54,8 @@ type options struct {
 	ContainerRuntimeModesCdiDefaultKind        string
 	ContainerRuntimeModesCDIAnnotationPrefixes cli.StringSlice
 
+	ContainerRuntimeRuntimes cli.StringSlice
+
 	ContainerRuntimeHookSkipModeDetection bool
 
 	ContainerCLIDebug string
@@ -152,6 +154,11 @@ func main() {
 			Name:        "nvidia-container-runtime.modes.cdi.annotation-prefixes",
 			Destination: &opts.ContainerRuntimeModesCDIAnnotationPrefixes,
 			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODES_CDI_ANNOTATION_PREFIXES"},
+		},
+		&cli.StringSliceFlag{
+			Name:        "nvidia-container-runtime.runtimes",
+			Destination: &opts.ContainerRuntimeRuntimes,
+			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_RUNTIMES"},
 		},
 		&cli.BoolFlag{
 			Name:        "nvidia-container-runtime-hook.skip-mode-detection",
@@ -416,6 +423,7 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 		"nvidia-container-runtime.mode":                          opts.ContainerRuntimeMode,
 		"nvidia-container-runtime.modes.cdi.annotation-prefixes": opts.ContainerRuntimeModesCDIAnnotationPrefixes,
 		"nvidia-container-runtime.modes.cdi.default-kind":        opts.ContainerRuntimeModesCdiDefaultKind,
+		"nvidia-container-runtime.runtimes":                      opts.ContainerRuntimeRuntimes,
 		"nvidia-container-cli.debug":                             opts.ContainerCLIDebug,
 	}
 	for key, value := range optionalConfigValues {
