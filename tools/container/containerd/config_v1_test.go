@@ -332,6 +332,7 @@ func TestUpdateV1Config(t *testing.T) {
 				Tree:                  config,
 				UseDefaultRuntimeName: true,
 				RuntimeType:           runtimeType,
+				ContainerAnnotations:  []string{"cdi.k8s.io/*"},
 			}
 
 			err = UpdateConfig(v1, o)
@@ -585,6 +586,7 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 				Tree:                  config,
 				UseDefaultRuntimeName: true,
 				RuntimeType:           runtimeType,
+				ContainerAnnotations:  []string{"cdi.k8s.io/*"},
 			}
 
 			err = UpdateConfig(v1, o)

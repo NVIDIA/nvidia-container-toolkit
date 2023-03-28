@@ -72,6 +72,8 @@ type options struct {
 	hostRootMount   string
 	runtimeDir      string
 	useLegacyConfig bool
+
+	ContainerRuntimeModesCDIAnnotationPrefixes cli.StringSlice
 }
 
 func main() {
@@ -173,6 +175,11 @@ func main() {
 			Destination: &options.useLegacyConfig,
 			EnvVars:     []string{"CONTAINERD_USE_LEGACY_CONFIG"},
 		},
+		&cli.StringSliceFlag{
+			Name:        "nvidia-container-runtime-modes.cdi.annotation-prefixes",
+			Destination: &options.ContainerRuntimeModesCDIAnnotationPrefixes,
+			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODES_CDI_ANNOTATION_PREFIXES"},
+		},
 	}
 
 	// Update the subcommand flags with the common subcommand flags
@@ -199,6 +206,7 @@ func Setup(c *cli.Context, o *options) error {
 		containerd.WithPath(o.config),
 		containerd.WithRuntimeType(o.runtimeType),
 		containerd.WithUseLegacyConfig(o.useLegacyConfig),
+		containerd.WithContainerAnnotations(o.containerAnnotationsFromCDIPrefixes()...),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
@@ -241,6 +249,7 @@ func Cleanup(c *cli.Context, o *options) error {
 		containerd.WithPath(o.config),
 		containerd.WithRuntimeType(o.runtimeType),
 		containerd.WithUseLegacyConfig(o.useLegacyConfig),
+		containerd.WithContainerAnnotations(o.containerAnnotationsFromCDIPrefixes()...),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
@@ -433,4 +442,14 @@ func RestartContainerdSystemd(hostRootMount string) error {
 	}
 
 	return nil
+}
+
+// containerAnnotationsFromCDIPrefixes returns the container annotations to set for the given CDI prefixes.
+func (o *options) containerAnnotationsFromCDIPrefixes() []string {
+	var annotations []string
+	for _, prefix := range o.ContainerRuntimeModesCDIAnnotationPrefixes.Value() {
+		annotations = append(annotations, prefix+"*")
+	}
+
+	return annotations
 }

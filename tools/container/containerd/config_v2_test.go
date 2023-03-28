@@ -279,8 +279,9 @@ func TestUpdateV2Config(t *testing.T) {
 			require.NoError(t, err)
 
 			v2 := &containerd.Config{
-				Tree:        config,
-				RuntimeType: runtimeType,
+				Tree:                 config,
+				RuntimeType:          runtimeType,
+				ContainerAnnotations: []string{"cdi.k8s.io/*"},
 			}
 
 			err = UpdateConfig(v2, o)
@@ -520,8 +521,9 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 			require.NoError(t, err)
 
 			v2 := &containerd.Config{
-				Tree:        config,
-				RuntimeType: runtimeType,
+				Tree:                 config,
+				RuntimeType:          runtimeType,
+				ContainerAnnotations: []string{"cdi.k8s.io/*"},
 			}
 
 			err = UpdateConfig(v2, o)

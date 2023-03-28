@@ -26,6 +26,7 @@ type Config struct {
 	*toml.Tree
 	RuntimeType           string
 	UseDefaultRuntimeName bool
+	ContainerAnnotations  []string
 }
 
 // New creates a containerd config with the specified options
