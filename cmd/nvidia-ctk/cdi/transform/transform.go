@@ -17,24 +17,13 @@
 package transform
 
 import (
-	"fmt"
-	"io"
-	"os"
-
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/transform/root"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
 type command struct {
 	logger *logrus.Logger
-}
-
-type options struct {
-	input  string
-	output string
 }
 
 // NewCommand constructs a command with the specified logger
@@ -47,82 +36,16 @@ func NewCommand(logger *logrus.Logger) *cli.Command {
 
 // build creates the CLI command
 func (m command) build() *cli.Command {
-	opts := options{}
-
 	c := cli.Command{
 		Name:  "transform",
 		Usage: "Apply a transform to a CDI specification",
-		Before: func(c *cli.Context) error {
-			return m.validateFlags(c, &opts)
-		},
-		Action: func(c *cli.Context) error {
-			return m.run(c, &opts)
-		},
 	}
 
-	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "input",
-			Usage:       "Specify the file to read the CDI specification from. If this is '-' the specification is read from STDIN",
-			Value:       "-",
-			Destination: &opts.input,
-		},
-		&cli.StringFlag{
-			Name:        "output",
-			Usage:       "Specify the file to output the generated CDI specification to. If this is '' the specification is output to STDOUT",
-			Destination: &opts.output,
-		},
-	}
+	c.Flags = []cli.Flag{}
 
 	c.Subcommands = []*cli.Command{
-		root.NewCommand(m.logger, &opts),
+		root.NewCommand(m.logger),
 	}
 
 	return &c
-}
-
-func (m command) validateFlags(c *cli.Context, opts *options) error {
-	return nil
-}
-
-func (m command) run(c *cli.Context, cfg *options) error {
-	return nil
-}
-
-// Load lodas the input CDI specification
-func (o options) Load() (spec.Interface, error) {
-	contents, err := o.getContents()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read spec contents: %v", err)
-	}
-
-	raw, err := cdi.ParseSpec(contents)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse CDI spec: %v", err)
-	}
-
-	return spec.New(
-		spec.WithRawSpec(raw),
-	)
-}
-
-func (o options) getContents() ([]byte, error) {
-	if o.input == "-" {
-		return io.ReadAll(os.Stdin)
-	}
-
-	return os.ReadFile(o.input)
-}
-
-// Save saves the CDI specification to the output file
-func (o options) Save(s spec.Interface) error {
-	if o.output == "" {
-		_, err := s.WriteTo(os.Stdout)
-		if err != nil {
-			return fmt.Errorf("failed to write CDI spec to STDOUT: %v", err)
-		}
-		return nil
-	}
-
-	return s.Save(o.output)
 }
