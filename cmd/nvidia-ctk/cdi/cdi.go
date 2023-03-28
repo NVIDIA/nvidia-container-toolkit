@@ -18,6 +18,7 @@ package cdi
 
 import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/generate"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/transform"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -44,6 +45,7 @@ func (m command) build() *cli.Command {
 
 	hook.Subcommands = []*cli.Command{
 		generate.NewCommand(m.logger),
+		transform.NewCommand(m.logger),
 	}
 
 	return &hook
