@@ -1,5 +1,9 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.13.0
+
+* Promote 1.13.0-rc.3 to 1.13.0
+
 ## v1.13.0-rc.3
 
 * Only initialize NVML for modes that require it when runing `nvidia-ctk cdi generate`.
@@ -9,11 +13,17 @@
 * Generate a simplified CDI specification by default. This means that entities in the common edits in a spec are not included in device definitions.
 * Also return an error from the nvcdi.New constructor instead of panicing.
 * Detect XOrg libraries for injection and CDI spec generation.
-* Add `nvidia-container-runtime.modes.cdi.annotation-prefixes` config option that allows the CDI annotation prefixes that are read to be overridden.
+* Add `nvidia-ctk system create-device-nodes` command to create control devices.
+* Add `nvidia-ctk cdi transform` command to apply transforms to CDI specifications.
+* Add `--vendor` and `--class` options to `nvidia-ctk cdi generate`
 
 * [libnvidia-container] Fix segmentation fault when RPC initialization fails.
 * [libnvidia-container] Build centos variants of the NVIDIA Container Library with static libtirpc v1.3.2.
 * [libnvidia-container] Remove make targets for fedora35 as the centos8 packages are compatible.
+
+* [toolkit-container] Add `nvidia-container-runtime.modes.cdi.annotation-prefixes` config option that allows the CDI annotation prefixes that are read to be overridden.
+* [toolkit-container] Create device nodes when generating CDI specification for management containers.
+* [toolkit-container] Add `nvidia-container-runtime.runtimes` config option to set the low-level runtime for the NVIDIA Container Runtime
 
 ## v1.13.0-rc.2
 
