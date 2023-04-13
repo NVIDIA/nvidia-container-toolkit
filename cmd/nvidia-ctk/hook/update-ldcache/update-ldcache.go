@@ -84,6 +84,12 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
+	_, err = os.Stat(filepath.Join(containerRoot, "/etc/ld.so.cache"))
+	if err != nil && os.IsNotExist(err) {
+		m.logger.Debugf("No ld.so.cache found, skipping update")
+		return nil
+	}
+
 	err = m.createConfig(containerRoot, cfg.folders.Value())
 	if err != nil {
 		return fmt.Errorf("failed to update ld.so.conf: %v", err)
@@ -103,6 +109,10 @@ func (m command) createConfig(root string, folders []string) error {
 	if len(folders) == 0 {
 		m.logger.Debugf("No folders to add to /etc/ld.so.conf")
 		return nil
+	}
+
+	if err := os.MkdirAll(filepath.Join(root, "/etc/ld.so.conf.d"), 0755); err != nil {
+		return fmt.Errorf("failed to create ld.so.conf.d: %v", err)
 	}
 
 	configFile, err := os.CreateTemp(filepath.Join(root, "/etc/ld.so.conf.d"), "nvcr-*.conf")

@@ -2,7 +2,8 @@
 
 ## v1.13.1
 
-* Bump version to 1.13.1
+* Update `update-ldcache` hook to only update ldcache if it exists.
+* Update `update-ldcache` hook to create `/etc/ld.so.conf.d` folder if it doesn't exist.
 
 ## v1.13.0
 
