@@ -94,7 +94,8 @@ func (l *cudaLocator) Locate(pattern string) ([]string, error) {
 			"/usr/lib64",
 			"/usr/lib/x86_64-linux-gnu",
 			"/usr/lib/aarch64-linux-gnu",
-			"/usr/lib/current",
+			"/usr/lib/x86_64-linux-gnu/nvidia/current",
+			"/usr/lib/aarch64-linux-gnu/nvidia/current",
 		),
 		lookup.WithCount(1),
 	)

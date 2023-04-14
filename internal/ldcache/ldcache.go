@@ -307,11 +307,7 @@ func (c *ldcache) resolve(target string) (string, error) {
 		link = filepath.Join(filepath.Dir(target), link)
 	}
 
-	// Ensure that the returned path is relative to the root.
-	link = filepath.Join(c.root, link)
-
-	c.logger.Debugf("Resolved link: '%v' => '%v'", name, link)
-	return link, nil
+	return c.resolve(link)
 }
 
 // bytesToString converts a byte slice to a string.
