@@ -46,10 +46,7 @@ func NewGraphicsDiscoverer(logger *logrus.Logger, devices image.VisibleDevices, 
 
 	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, cfg)
 
-	xorg, err := newXorgDiscoverer(logger, driverRoot, cfg.NvidiaCTKPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Xorg discoverer: %v", err)
-	}
+	xorg := optionalXorgDiscoverer(logger, driverRoot, cfg.NvidiaCTKPath)
 
 	discover := Merge(
 		Merge(drmDeviceNodes, drmByPathSymlinks),
@@ -258,6 +255,17 @@ type xorgHooks struct {
 }
 
 var _ Discover = (*xorgHooks)(nil)
+
+// optionalXorgDiscoverer creates a discoverer for Xorg libraries.
+// If the creation of the discoverer fails, a None discoverer is returned.
+func optionalXorgDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string) Discover {
+	xorg, err := newXorgDiscoverer(logger, driverRoot, nvidiaCTKPath)
+	if err != nil {
+		logger.Warnf("Failed to create Xorg discoverer: %v; skipping xorg libraries", err)
+		return None{}
+	}
+	return xorg
+}
 
 func newXorgDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string) (Discover, error) {
 	libCudaPaths, err := cuda.New(

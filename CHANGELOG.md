@@ -4,6 +4,7 @@
 
 * Update `update-ldcache` hook to only update ldcache if it exists.
 * Update `update-ldcache` hook to create `/etc/ld.so.conf.d` folder if it doesn't exist.
+* Fix failure when libcuda cannot be located during XOrg library discovery.
 
 ## v1.13.0
 
