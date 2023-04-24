@@ -17,14 +17,13 @@
 package configure
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
+	"path/filepath"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime/nvidia"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/containerd"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/docker"
-	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -32,8 +31,15 @@ import (
 const (
 	defaultRuntime = "docker"
 
-	defaultDockerConfigFilePath = "/etc/docker/daemon.json"
-	defaultCrioConfigFilePath   = "/etc/crio/crio.conf"
+	// defaultNVIDIARuntimeName is the default name to use in configs for the NVIDIA Container Runtime
+	defaultNVIDIARuntimeName = "nvidia"
+	// defaultNVIDIARuntimeExecutable is the default NVIDIA Container Runtime executable file name
+	defaultNVIDIARuntimeExecutable      = "nvidia-container-runtime"
+	defailtNVIDIARuntimeExpecutablePath = "/usr/bin/nvidia-container-runtime"
+
+	defaultContainerdConfigFilePath = "/etc/containerd/config.toml"
+	defaultCrioConfigFilePath       = "/etc/crio/crio.conf"
+	defaultDockerConfigFilePath     = "/etc/docker/daemon.json"
 )
 
 type command struct {
@@ -54,7 +60,12 @@ type config struct {
 	dryRun         bool
 	runtime        string
 	configFilePath string
-	nvidiaOptions  nvidia.Options
+
+	nvidiaRuntime struct {
+		name         string
+		path         string
+		setAsDefault bool
+	}
 }
 
 func (m command) build() *cli.Command {
@@ -65,6 +76,9 @@ func (m command) build() *cli.Command {
 	configure := cli.Command{
 		Name:  "configure",
 		Usage: "Add a runtime to the specified container engine",
+		Before: func(c *cli.Context) error {
+			return validateFlags(c, &config)
+		},
 		Action: func(c *cli.Context) error {
 			return m.configureWrapper(c, &config)
 		},
@@ -78,7 +92,7 @@ func (m command) build() *cli.Command {
 		},
 		&cli.StringFlag{
 			Name:        "runtime",
-			Usage:       "the target runtime engine. One of [crio, docker]",
+			Usage:       "the target runtime engine; one of [containerd, crio, docker]",
 			Value:       defaultRuntime,
 			Destination: &config.runtime,
 		},
@@ -90,124 +104,119 @@ func (m command) build() *cli.Command {
 		&cli.StringFlag{
 			Name:        "nvidia-runtime-name",
 			Usage:       "specify the name of the NVIDIA runtime that will be added",
-			Value:       nvidia.RuntimeName,
-			Destination: &config.nvidiaOptions.RuntimeName,
+			Value:       defaultNVIDIARuntimeName,
+			Destination: &config.nvidiaRuntime.name,
 		},
 		&cli.StringFlag{
-			Name:        "runtime-path",
+			Name:        "nvidia-runtime-path",
+			Aliases:     []string{"runtime-path"},
 			Usage:       "specify the path to the NVIDIA runtime executable",
-			Value:       nvidia.RuntimeExecutable,
-			Destination: &config.nvidiaOptions.RuntimePath,
+			Value:       defaultNVIDIARuntimeExecutable,
+			Destination: &config.nvidiaRuntime.path,
 		},
 		&cli.BoolFlag{
-			Name:        "set-as-default",
-			Usage:       "set the specified runtime as the default runtime",
-			Destination: &config.nvidiaOptions.SetAsDefault,
+			Name:        "nvidia-set-as-default",
+			Aliases:     []string{"set-as-default"},
+			Usage:       "set the NVIDIA runtime as the default runtime",
+			Destination: &config.nvidiaRuntime.setAsDefault,
 		},
 	}
 
 	return &configure
 }
 
-func (m command) configureWrapper(c *cli.Context, config *config) error {
+func validateFlags(c *cli.Context, config *config) error {
 	switch config.runtime {
+	case "containerd", "crio", "docker":
+		break
+	default:
+		return fmt.Errorf("unrecognized runtime '%v'", config.runtime)
+	}
+
+	switch config.runtime {
+	case "containerd", "crio":
+		if config.nvidiaRuntime.path == defaultNVIDIARuntimeExecutable {
+			config.nvidiaRuntime.path = defailtNVIDIARuntimeExpecutablePath
+		}
+		if !filepath.IsAbs(config.nvidiaRuntime.path) {
+			return fmt.Errorf("the NVIDIA runtime path %q is not an absolute path", config.nvidiaRuntime.path)
+		}
+	}
+
+	return nil
+}
+
+// configureWrapper updates the specified container engine config to enable the NVIDIA runtime
+func (m command) configureWrapper(c *cli.Context, config *config) error {
+	configFilePath := config.resolveConfigFilePath()
+
+	var cfg engine.Interface
+	var err error
+	switch config.runtime {
+	case "containerd":
+		cfg, err = containerd.New(
+			containerd.WithPath(configFilePath),
+		)
 	case "crio":
-		return m.configureCrio(c, config)
+		cfg, err = crio.New(
+			crio.WithPath(configFilePath),
+		)
 	case "docker":
-		return m.configureDocker(c, config)
+		cfg, err = docker.New(
+			docker.WithPath(configFilePath),
+		)
+	default:
+		err = fmt.Errorf("unrecognized runtime '%v'", config.runtime)
 	}
-
-	return fmt.Errorf("unrecognized runtime '%v'", config.runtime)
-}
-
-// configureDocker updates the docker config to enable the NVIDIA Container Runtime
-func (m command) configureDocker(c *cli.Context, config *config) error {
-	configFilePath := config.configFilePath
-	if configFilePath == "" {
-		configFilePath = defaultDockerConfigFilePath
-	}
-
-	cfg, err := docker.New(
-		docker.WithPath(configFilePath),
-	)
-	if err != nil {
-		return fmt.Errorf("unable to load config: %v", err)
+	if err != nil || cfg == nil {
+		return fmt.Errorf("unable to load config for runtime %v: %v", config.runtime, err)
 	}
 
 	err = cfg.AddRuntime(
-		config.nvidiaOptions.RuntimeName,
-		config.nvidiaOptions.RuntimePath,
-		config.nvidiaOptions.SetAsDefault,
+		config.nvidiaRuntime.name,
+		config.nvidiaRuntime.path,
+		config.nvidiaRuntime.setAsDefault,
 	)
 	if err != nil {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
 
-	if config.dryRun {
-		output, err := json.MarshalIndent(cfg, "", "    ")
-		if err != nil {
-			return fmt.Errorf("unable to convert to JSON: %v", err)
-		}
-		os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
-		return nil
-	}
-	n, err := cfg.Save(configFilePath)
+	outputPath := config.getOuputConfigPath()
+	n, err := cfg.Save(outputPath)
 	if err != nil {
 		return fmt.Errorf("unable to flush config: %v", err)
 	}
 
 	if n == 0 {
-		m.logger.Infof("Removed empty config from %v", configFilePath)
+		m.logger.Infof("Removed empty config from %v", outputPath)
 	} else {
-		m.logger.Infof("Wrote updated config to %v", configFilePath)
+		m.logger.Infof("Wrote updated config to %v", outputPath)
 	}
-	m.logger.Infof("It is recommended that the docker daemon be restarted.")
+	m.logger.Infof("It is recommended that %v daemon be restarted.", config.runtime)
 
 	return nil
 }
 
-// configureCrio updates the crio config to enable the NVIDIA Container Runtime
-func (m command) configureCrio(c *cli.Context, config *config) error {
-	configFilePath := config.configFilePath
-	if configFilePath == "" {
-		configFilePath = defaultCrioConfigFilePath
+// resolveConfigFilePath returns the default config file path for the configured container engine
+func (c *config) resolveConfigFilePath() string {
+	if c.configFilePath != "" {
+		return c.configFilePath
 	}
+	switch c.runtime {
+	case "containerd":
+		return defaultContainerdConfigFilePath
+	case "crio":
+		return defaultCrioConfigFilePath
+	case "docker":
+		return defaultDockerConfigFilePath
+	}
+	return ""
+}
 
-	cfg, err := crio.New(
-		crio.WithPath(configFilePath),
-	)
-	if err != nil {
-		return fmt.Errorf("unable to load config: %v", err)
+// getOuputConfigPath returns the configured config path or "" if dry-run is enabled
+func (c *config) getOuputConfigPath() string {
+	if c.dryRun {
+		return ""
 	}
-
-	err = cfg.AddRuntime(
-		config.nvidiaOptions.RuntimeName,
-		config.nvidiaOptions.RuntimePath,
-		config.nvidiaOptions.SetAsDefault,
-	)
-	if err != nil {
-		return fmt.Errorf("unable to update config: %v", err)
-	}
-
-	if config.dryRun {
-		output, err := toml.Marshal(cfg)
-		if err != nil {
-			return fmt.Errorf("unable to convert to TOML: %v", err)
-		}
-		os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
-		return nil
-	}
-	n, err := cfg.Save(configFilePath)
-	if err != nil {
-		return fmt.Errorf("unable to flush config: %v", err)
-	}
-
-	if n == 0 {
-		m.logger.Infof("Removed empty config from %v", configFilePath)
-	} else {
-		m.logger.Infof("Wrote updated config to %v", configFilePath)
-	}
-	m.logger.Infof("It is recommended that the cri-o daemon be restarted.")
-
-	return nil
+	return c.resolveConfigFilePath()
 }

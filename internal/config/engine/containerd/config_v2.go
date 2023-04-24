@@ -138,6 +138,11 @@ func (c Config) Save(path string) (int64, error) {
 		return 0, fmt.Errorf("unable to convert to TOML: %v", err)
 	}
 
+	if path == "" {
+		os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
+		return int64(len(output)), nil
+	}
+
 	if len(output) == 0 {
 		err := os.Remove(path)
 		if err != nil {
