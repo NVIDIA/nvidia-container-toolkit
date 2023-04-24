@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/pelletier/go-toml"
 )
 
