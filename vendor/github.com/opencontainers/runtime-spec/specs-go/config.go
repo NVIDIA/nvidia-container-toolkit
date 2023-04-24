@@ -191,6 +191,8 @@ type Linux struct {
 	IntelRdt *LinuxIntelRdt `json:"intelRdt,omitempty"`
 	// Personality contains configuration for the Linux personality syscall
 	Personality *LinuxPersonality `json:"personality,omitempty"`
+	// TimeOffsets specifies the offset for supporting time namespaces.
+	TimeOffsets map[string]LinuxTimeOffset `json:"timeOffsets,omitempty"`
 }
 
 // LinuxNamespace is the configuration for a Linux namespace
@@ -220,6 +222,8 @@ const (
 	UserNamespace LinuxNamespaceType = "user"
 	// CgroupNamespace for isolating cgroup hierarchies
 	CgroupNamespace LinuxNamespaceType = "cgroup"
+	// TimeNamespace for isolating the clocks
+	TimeNamespace LinuxNamespaceType = "time"
 )
 
 // LinuxIDMapping specifies UID/GID mappings
@@ -232,6 +236,14 @@ type LinuxIDMapping struct {
 	Size uint32 `json:"size"`
 }
 
+// LinuxTimeOffset specifies the offset for Time Namespace
+type LinuxTimeOffset struct {
+	// Secs is the offset of clock (in secs) in the container
+	Secs int64 `json:"secs,omitempty"`
+	// Nanosecs is the additional offset for Secs (in nanosecs)
+	Nanosecs uint32 `json:"nanosecs,omitempty"`
+}
+
 // POSIXRlimit type and restrictions
 type POSIXRlimit struct {
 	// Type of the rlimit to set
@@ -242,12 +254,13 @@ type POSIXRlimit struct {
 	Soft uint64 `json:"soft"`
 }
 
-// LinuxHugepageLimit structure corresponds to limiting kernel hugepages
+// LinuxHugepageLimit structure corresponds to limiting kernel hugepages.
+// Default to reservation limits if supported. Otherwise fallback to page fault limits.
 type LinuxHugepageLimit struct {
-	// Pagesize is the hugepage size
-	// Format: "<size><unit-prefix>B' (e.g. 64KB, 2MB, 1GB, etc.)
+	// Pagesize is the hugepage size.
+	// Format: "<size><unit-prefix>B' (e.g. 64KB, 2MB, 1GB, etc.).
 	Pagesize string `json:"pageSize"`
-	// Limit is the limit of "hugepagesize" hugetlb usage
+	// Limit is the limit of "hugepagesize" hugetlb reservations (if supported) or usage.
 	Limit uint64 `json:"limit"`
 }
 
@@ -319,6 +332,10 @@ type LinuxMemory struct {
 	DisableOOMKiller *bool `json:"disableOOMKiller,omitempty"`
 	// Enables hierarchical memory accounting
 	UseHierarchy *bool `json:"useHierarchy,omitempty"`
+	// CheckBeforeUpdate enables checking if a new memory limit is lower
+	// than the current usage during update, and if so, rejecting the new
+	// limit.
+	CheckBeforeUpdate *bool `json:"checkBeforeUpdate,omitempty"`
 }
 
 // LinuxCPU for Linux cgroup 'cpu' resource management
@@ -327,6 +344,9 @@ type LinuxCPU struct {
 	Shares *uint64 `json:"shares,omitempty"`
 	// CPU hardcap limit (in usecs). Allowed cpu time in a given period.
 	Quota *int64 `json:"quota,omitempty"`
+	// CPU hardcap burst limit (in usecs). Allowed accumulated cpu time additionally for burst in a
+	// given period.
+	Burst *uint64 `json:"burst,omitempty"`
 	// CPU period to be used for hardcapping (in usecs).
 	Period *uint64 `json:"period,omitempty"`
 	// How much time realtime scheduling may use (in usecs).
@@ -375,7 +395,7 @@ type LinuxResources struct {
 	Pids *LinuxPids `json:"pids,omitempty"`
 	// BlockIO restriction configuration
 	BlockIO *LinuxBlockIO `json:"blockIO,omitempty"`
-	// Hugetlb limit (in bytes)
+	// Hugetlb limits (in bytes). Default to reservation limits if supported.
 	HugepageLimits []LinuxHugepageLimit `json:"hugepageLimits,omitempty"`
 	// Network restriction configuration
 	Network *LinuxNetwork `json:"network,omitempty"`
@@ -645,6 +665,10 @@ const (
 	// LinuxSeccompFlagSpecAllow can be used to disable Speculative Store
 	// Bypass mitigation. (since Linux 4.17)
 	LinuxSeccompFlagSpecAllow LinuxSeccompFlag = "SECCOMP_FILTER_FLAG_SPEC_ALLOW"
+
+	// LinuxSeccompFlagWaitKillableRecv can be used to switch to the wait
+	// killable semantics. (since Linux 5.19)
+	LinuxSeccompFlagWaitKillableRecv LinuxSeccompFlag = "SECCOMP_FILTER_FLAG_WAIT_KILLABLE_RECV"
 )
 
 // Additional architectures permitted to be used for system calls
