@@ -62,7 +62,12 @@ make -C "${NVIDIA_CONTAINER_TOOLKIT_ROOT}" \
     LIBNVIDIA_CONTAINER_TAG="${LIBNVIDIA_CONTAINER_TAG}" \
         "${TARGET}"
 
-if [[ -z ${NVIDIA_CONTAINER_TOOLKIT_TAG} ]]; then
+# If required we also build the nvidia-container-runtime and nvidia-docker packages.
+# Since these are essentially meta packages intended to allow for users to
+# transition from older installation workflows, we skip these for rc builds
+# (NVIDIA_CONTAINER_TOOLKIT_TAG != "") and releases with a non-zero patch
+# version of 0.
+if [[ -z ${NVIDIA_CONTAINER_TOOLKIT_TAG} && "${NVIDIA_CONTAINER_TOOLKIT_VERSION%.0}" != "${NVIDIA_CONTAINER_TOOLKIT_VERSION}" ]]; then
     # We set the TOOLKIT_VERSION, TOOLKIT_TAG for the nvidia-container-runtime and nvidia-docker targets
     # The LIB_TAG is also overridden to match the TOOLKIT_TAG.
     # Build nvidia-container-runtime
@@ -82,5 +87,5 @@ if [[ -z ${NVIDIA_CONTAINER_TOOLKIT_TAG} ]]; then
             ${TARGET}
 
 else
-    echo "Skipping nvidia-container-runtime and nvidia-docker builds for release candidate"
+    echo "Skipping nvidia-container-runtime and nvidia-docker builds."
 fi

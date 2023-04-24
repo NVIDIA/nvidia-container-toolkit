@@ -45,17 +45,21 @@ function skip-for-release-candidate() {
         return 0
     fi
 
-    # We allow all other packages for non-rc versions.
-    if [[ "${VERSION/rc./}" == "${VERSION}" ]]; then
-        return 1
+    local is_non_patch_full_release=1
+    # We allow all other packages for non-rc and non-patch release versions.
+    if [[ "${VERSION/rc./}" != "${VERSION}" ]]; then
+        is_non_patch_full_release=0
+    fi
+    if [[ "${VERSION%.0}" == "${VERSION}" ]]; then
+        is_non_patch_full_release=0
     fi
 
     local package_name=$1
     if [[ "${package_name/"nvidia-docker2"/}" != "${package_name}" ]]; then
-        return 0
+        return ${is_non_patch_full_release}
     fi
     if [[ "${package_name/"nvidia-container-runtime"/}" != "${package_name}" ]]; then
-        return 0
+        return ${is_non_patch_full_release}
     fi
     return 1
 }
