@@ -14,28 +14,28 @@ var _ Spec = &SpecMock{}
 
 // SpecMock is a mock implementation of Spec.
 //
-// 	func TestSomethingThatUsesSpec(t *testing.T) {
+//	func TestSomethingThatUsesSpec(t *testing.T) {
 //
-// 		// make and configure a mocked Spec
-// 		mockedSpec := &SpecMock{
-// 			FlushFunc: func() error {
-// 				panic("mock out the Flush method")
-// 			},
-// 			LoadFunc: func() (*specs.Spec, error) {
-// 				panic("mock out the Load method")
-// 			},
-// 			LookupEnvFunc: func(s string) (string, bool) {
-// 				panic("mock out the LookupEnv method")
-// 			},
-// 			ModifyFunc: func(specModifier SpecModifier) error {
-// 				panic("mock out the Modify method")
-// 			},
-// 		}
+//		// make and configure a mocked Spec
+//		mockedSpec := &SpecMock{
+//			FlushFunc: func() error {
+//				panic("mock out the Flush method")
+//			},
+//			LoadFunc: func() (*specs.Spec, error) {
+//				panic("mock out the Load method")
+//			},
+//			LookupEnvFunc: func(s string) (string, bool) {
+//				panic("mock out the LookupEnv method")
+//			},
+//			ModifyFunc: func(specModifier SpecModifier) error {
+//				panic("mock out the Modify method")
+//			},
+//		}
 //
-// 		// use mockedSpec in code that requires Spec
-// 		// and then make assertions.
+//		// use mockedSpec in code that requires Spec
+//		// and then make assertions.
 //
-// 	}
+//	}
 type SpecMock struct {
 	// FlushFunc mocks the Flush method.
 	FlushFunc func() error
@@ -92,7 +92,8 @@ func (mock *SpecMock) Flush() error {
 
 // FlushCalls gets all the calls that were made to Flush.
 // Check the length with:
-//     len(mockedSpec.FlushCalls())
+//
+//	len(mockedSpec.FlushCalls())
 func (mock *SpecMock) FlushCalls() []struct {
 } {
 	var calls []struct {
@@ -122,7 +123,8 @@ func (mock *SpecMock) Load() (*specs.Spec, error) {
 
 // LoadCalls gets all the calls that were made to Load.
 // Check the length with:
-//     len(mockedSpec.LoadCalls())
+//
+//	len(mockedSpec.LoadCalls())
 func (mock *SpecMock) LoadCalls() []struct {
 } {
 	var calls []struct {
@@ -155,7 +157,8 @@ func (mock *SpecMock) LookupEnv(s string) (string, bool) {
 
 // LookupEnvCalls gets all the calls that were made to LookupEnv.
 // Check the length with:
-//     len(mockedSpec.LookupEnvCalls())
+//
+//	len(mockedSpec.LookupEnvCalls())
 func (mock *SpecMock) LookupEnvCalls() []struct {
 	S string
 } {
@@ -189,7 +192,8 @@ func (mock *SpecMock) Modify(specModifier SpecModifier) error {
 
 // ModifyCalls gets all the calls that were made to Modify.
 // Check the length with:
-//     len(mockedSpec.ModifyCalls())
+//
+//	len(mockedSpec.ModifyCalls())
 func (mock *SpecMock) ModifyCalls() []struct {
 	SpecModifier SpecModifier
 } {

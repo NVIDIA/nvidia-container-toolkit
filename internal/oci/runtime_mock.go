@@ -13,19 +13,19 @@ var _ Runtime = &RuntimeMock{}
 
 // RuntimeMock is a mock implementation of Runtime.
 //
-// 	func TestSomethingThatUsesRuntime(t *testing.T) {
+//	func TestSomethingThatUsesRuntime(t *testing.T) {
 //
-// 		// make and configure a mocked Runtime
-// 		mockedRuntime := &RuntimeMock{
-// 			ExecFunc: func(strings []string) error {
-// 				panic("mock out the Exec method")
-// 			},
-// 		}
+//		// make and configure a mocked Runtime
+//		mockedRuntime := &RuntimeMock{
+//			ExecFunc: func(strings []string) error {
+//				panic("mock out the Exec method")
+//			},
+//		}
 //
-// 		// use mockedRuntime in code that requires Runtime
-// 		// and then make assertions.
+//		// use mockedRuntime in code that requires Runtime
+//		// and then make assertions.
 //
-// 	}
+//	}
 type RuntimeMock struct {
 	// ExecFunc mocks the Exec method.
 	ExecFunc func(strings []string) error
@@ -62,7 +62,8 @@ func (mock *RuntimeMock) Exec(strings []string) error {
 
 // ExecCalls gets all the calls that were made to Exec.
 // Check the length with:
-//     len(mockedRuntime.ExecCalls())
+//
+//	len(mockedRuntime.ExecCalls())
 func (mock *RuntimeMock) ExecCalls() []struct {
 	Strings []string
 } {
