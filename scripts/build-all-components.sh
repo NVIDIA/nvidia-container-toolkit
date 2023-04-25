@@ -36,6 +36,8 @@ fi
 
 TARGET=$1
 
+source "${SCRIPTS_DIR}"/utils.sh
+
 : "${DIST_DIR:=${PROJECT_ROOT}/dist}"
 export DIST_DIR
 
@@ -67,24 +69,43 @@ make -C "${NVIDIA_CONTAINER_TOOLKIT_ROOT}" \
 # transition from older installation workflows, we skip these for rc builds
 # (NVIDIA_CONTAINER_TOOLKIT_TAG != "") and releases with a non-zero patch
 # version of 0.
-if [[ -z ${NVIDIA_CONTAINER_TOOLKIT_TAG} && "${NVIDIA_CONTAINER_TOOLKIT_VERSION%.0}" != "${NVIDIA_CONTAINER_TOOLKIT_VERSION}" ]]; then
+if [[ -n ${FORCE_META_PACKAGES} || -z ${NVIDIA_CONTAINER_TOOLKIT_TAG} && "${NVIDIA_CONTAINER_TOOLKIT_VERSION%.0}" != "${NVIDIA_CONTAINER_TOOLKIT_VERSION}" ]]; then
+    package_format=$(package_type ${TARGET})
+
     # We set the TOOLKIT_VERSION, TOOLKIT_TAG for the nvidia-container-runtime and nvidia-docker targets
     # The LIB_TAG is also overridden to match the TOOLKIT_TAG.
-    # Build nvidia-container-runtime
-    make -C ${NVIDIA_CONTAINER_RUNTIME_ROOT} \
-        LIB_VERSION="${NVIDIA_CONTAINER_RUNTIME_VERSION}" \
-        LIB_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
-        TOOLKIT_VERSION="${NVIDIA_CONTAINER_TOOLKIT_VERSION}" \
-        TOOLKIT_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
-            ${TARGET}
 
-    # Build nvidia-docker2
-    make -C ${NVIDIA_DOCKER_ROOT} \
-        LIB_VERSION="${NVIDIA_DOCKER_VERSION}" \
-        LIB_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
-        TOOLKIT_VERSION="${NVIDIA_CONTAINER_TOOLKIT_VERSION}" \
-        TOOLKIT_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
-            ${TARGET}
+    # Build nvidia-container-runtime if required
+    package_name="nvidia-container-runtime"
+    package_version=${NVIDIA_CONTAINER_RUNTIME_VERSION}${NVIDIA_CONTAINER_TOOLKIT_TAG:+~${NVIDIA_CONTAINER_TOOLKIT_TAG}}-1
+    package_pattern=${DIST_DIR}/${package_format}/all/${package_name}?${package_version}?*.${package_format}
+    package=$(ls ${package_pattern}) || echo ""
+    if [[ -z ${package} ]]; then
+        echo "${package_name} does not exist"
+        make -C ${NVIDIA_CONTAINER_RUNTIME_ROOT} \
+            LIB_VERSION="${NVIDIA_CONTAINER_RUNTIME_VERSION}" \
+            LIB_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
+            TOOLKIT_VERSION="${NVIDIA_CONTAINER_TOOLKIT_VERSION}" \
+            TOOLKIT_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
+                ${TARGET}
+    fi
+    cp ${package_pattern} ${DIST_DIR}/$(get_package_target ${TARGET})/
+
+    # Build nvidia-docker2 if required
+    package_name="nvidia-docker2"
+    package_version=${NVIDIA_DOCKER_VERSION}${NVIDIA_CONTAINER_TOOLKIT_TAG:+~${NVIDIA_CONTAINER_TOOLKIT_TAG}}-1
+    package_pattern=${DIST_DIR}/${package_format}/all/${package_name}?${package_version}?*.${package_format}
+    package=$(ls ${package_pattern}) || echo ""
+    if [[ -z ${package} ]]; then
+        echo "${package_name} does not exist"
+        make -C ${NVIDIA_DOCKER_ROOT} \
+            LIB_VERSION="${NVIDIA_DOCKER_VERSION}" \
+            LIB_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
+            TOOLKIT_VERSION="${NVIDIA_CONTAINER_TOOLKIT_VERSION}" \
+            TOOLKIT_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
+                ${TARGET}
+    fi
+    cp ${package_pattern} ${DIST_DIR}/$(get_package_target ${TARGET})/
 
 else
     echo "Skipping nvidia-container-runtime and nvidia-docker builds."

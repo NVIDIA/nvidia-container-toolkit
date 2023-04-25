@@ -34,3 +34,10 @@ function get_artifactory_repository() {
         ;;
     esac
 }
+
+function get_package_target() {
+    local target=$1
+    local dist=${target%-*}
+    local arch=${target##*-}
+    echo "${dist}/${arch}"
+}
