@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/containerd"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/crio"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/docker"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/docker"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )

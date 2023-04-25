@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/docker"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/docker"
 	"github.com/stretchr/testify/require"
 )
 
