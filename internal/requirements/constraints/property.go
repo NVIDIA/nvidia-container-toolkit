@@ -23,8 +23,9 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-//go:generate moq -stub -out property_mock.go . Property
 // Property represents a property that is used to check requirements
+//
+//go:generate moq -stub -out property_mock.go . Property
 type Property interface {
 	Name() string
 	Value() (string, error)
