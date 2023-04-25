@@ -13,28 +13,22 @@ var _ Locator = &LocatorMock{}
 
 // LocatorMock is a mock implementation of Locator.
 //
-// 	func TestSomethingThatUsesLocator(t *testing.T) {
+//	func TestSomethingThatUsesLocator(t *testing.T) {
 //
-// 		// make and configure a mocked Locator
-// 		mockedLocator := &LocatorMock{
-// 			LocateFunc: func(s string) ([]string, error) {
-// 				panic("mock out the Locate method")
-// 			},
-// 			RelativeFunc: func(s string) (string, error) {
-// 				panic("mock out the Relative method")
-// 			},
-// 		}
+//		// make and configure a mocked Locator
+//		mockedLocator := &LocatorMock{
+//			LocateFunc: func(s string) ([]string, error) {
+//				panic("mock out the Locate method")
+//			},
+//		}
 //
-// 		// use mockedLocator in code that requires Locator
-// 		// and then make assertions.
+//		// use mockedLocator in code that requires Locator
+//		// and then make assertions.
 //
-// 	}
+//	}
 type LocatorMock struct {
 	// LocateFunc mocks the Locate method.
 	LocateFunc func(s string) ([]string, error)
-
-	// RelativeFunc mocks the Relative method.
-	RelativeFunc func(s string) (string, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -43,14 +37,8 @@ type LocatorMock struct {
 			// S is the s argument value.
 			S string
 		}
-		// Relative holds details about calls to the Relative method.
-		Relative []struct {
-			// S is the s argument value.
-			S string
-		}
 	}
-	lockLocate   sync.RWMutex
-	lockRelative sync.RWMutex
+	lockLocate sync.RWMutex
 }
 
 // Locate calls LocateFunc.
@@ -75,7 +63,8 @@ func (mock *LocatorMock) Locate(s string) ([]string, error) {
 
 // LocateCalls gets all the calls that were made to Locate.
 // Check the length with:
-//     len(mockedLocator.LocateCalls())
+//
+//	len(mockedLocator.LocateCalls())
 func (mock *LocatorMock) LocateCalls() []struct {
 	S string
 } {
@@ -85,40 +74,5 @@ func (mock *LocatorMock) LocateCalls() []struct {
 	mock.lockLocate.RLock()
 	calls = mock.calls.Locate
 	mock.lockLocate.RUnlock()
-	return calls
-}
-
-// Relative calls RelativeFunc.
-func (mock *LocatorMock) Relative(s string) (string, error) {
-	callInfo := struct {
-		S string
-	}{
-		S: s,
-	}
-	mock.lockRelative.Lock()
-	mock.calls.Relative = append(mock.calls.Relative, callInfo)
-	mock.lockRelative.Unlock()
-	if mock.RelativeFunc == nil {
-		var (
-			sOut   string
-			errOut error
-		)
-		return sOut, errOut
-	}
-	return mock.RelativeFunc(s)
-}
-
-// RelativeCalls gets all the calls that were made to Relative.
-// Check the length with:
-//     len(mockedLocator.RelativeCalls())
-func (mock *LocatorMock) RelativeCalls() []struct {
-	S string
-} {
-	var calls []struct {
-		S string
-	}
-	mock.lockRelative.RLock()
-	calls = mock.calls.Relative
-	mock.lockRelative.RUnlock()
 	return calls
 }
