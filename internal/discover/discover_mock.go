@@ -13,25 +13,25 @@ var _ Discover = &DiscoverMock{}
 
 // DiscoverMock is a mock implementation of Discover.
 //
-// 	func TestSomethingThatUsesDiscover(t *testing.T) {
+//	func TestSomethingThatUsesDiscover(t *testing.T) {
 //
-// 		// make and configure a mocked Discover
-// 		mockedDiscover := &DiscoverMock{
-// 			DevicesFunc: func() ([]Device, error) {
-// 				panic("mock out the Devices method")
-// 			},
-// 			HooksFunc: func() ([]Hook, error) {
-// 				panic("mock out the Hooks method")
-// 			},
-// 			MountsFunc: func() ([]Mount, error) {
-// 				panic("mock out the Mounts method")
-// 			},
-// 		}
+//		// make and configure a mocked Discover
+//		mockedDiscover := &DiscoverMock{
+//			DevicesFunc: func() ([]Device, error) {
+//				panic("mock out the Devices method")
+//			},
+//			HooksFunc: func() ([]Hook, error) {
+//				panic("mock out the Hooks method")
+//			},
+//			MountsFunc: func() ([]Mount, error) {
+//				panic("mock out the Mounts method")
+//			},
+//		}
 //
-// 		// use mockedDiscover in code that requires Discover
-// 		// and then make assertions.
+//		// use mockedDiscover in code that requires Discover
+//		// and then make assertions.
 //
-// 	}
+//	}
 type DiscoverMock struct {
 	// DevicesFunc mocks the Devices method.
 	DevicesFunc func() ([]Device, error)
@@ -78,7 +78,8 @@ func (mock *DiscoverMock) Devices() ([]Device, error) {
 
 // DevicesCalls gets all the calls that were made to Devices.
 // Check the length with:
-//     len(mockedDiscover.DevicesCalls())
+//
+//	len(mockedDiscover.DevicesCalls())
 func (mock *DiscoverMock) DevicesCalls() []struct {
 } {
 	var calls []struct {
@@ -108,7 +109,8 @@ func (mock *DiscoverMock) Hooks() ([]Hook, error) {
 
 // HooksCalls gets all the calls that were made to Hooks.
 // Check the length with:
-//     len(mockedDiscover.HooksCalls())
+//
+//	len(mockedDiscover.HooksCalls())
 func (mock *DiscoverMock) HooksCalls() []struct {
 } {
 	var calls []struct {
@@ -138,7 +140,8 @@ func (mock *DiscoverMock) Mounts() ([]Mount, error) {
 
 // MountsCalls gets all the calls that were made to Mounts.
 // Check the length with:
-//     len(mockedDiscover.MountsCalls())
+//
+//	len(mockedDiscover.MountsCalls())
 func (mock *DiscoverMock) MountsCalls() []struct {
 } {
 	var calls []struct {

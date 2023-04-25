@@ -13,31 +13,31 @@ var _ Property = &PropertyMock{}
 
 // PropertyMock is a mock implementation of Property.
 //
-// 	func TestSomethingThatUsesProperty(t *testing.T) {
+//	func TestSomethingThatUsesProperty(t *testing.T) {
 //
-// 		// make and configure a mocked Property
-// 		mockedProperty := &PropertyMock{
-// 			CompareToFunc: func(s string) (int, error) {
-// 				panic("mock out the CompareTo method")
-// 			},
-// 			NameFunc: func() string {
-// 				panic("mock out the Name method")
-// 			},
-// 			StringFunc: func() string {
-// 				panic("mock out the String method")
-// 			},
-// 			ValidateFunc: func(s string) error {
-// 				panic("mock out the Validate method")
-// 			},
-// 			ValueFunc: func() (string, error) {
-// 				panic("mock out the Value method")
-// 			},
-// 		}
+//		// make and configure a mocked Property
+//		mockedProperty := &PropertyMock{
+//			CompareToFunc: func(s string) (int, error) {
+//				panic("mock out the CompareTo method")
+//			},
+//			NameFunc: func() string {
+//				panic("mock out the Name method")
+//			},
+//			StringFunc: func() string {
+//				panic("mock out the String method")
+//			},
+//			ValidateFunc: func(s string) error {
+//				panic("mock out the Validate method")
+//			},
+//			ValueFunc: func() (string, error) {
+//				panic("mock out the Value method")
+//			},
+//		}
 //
-// 		// use mockedProperty in code that requires Property
-// 		// and then make assertions.
+//		// use mockedProperty in code that requires Property
+//		// and then make assertions.
 //
-// 	}
+//	}
 type PropertyMock struct {
 	// CompareToFunc mocks the CompareTo method.
 	CompareToFunc func(s string) (int, error)
@@ -105,7 +105,8 @@ func (mock *PropertyMock) CompareTo(s string) (int, error) {
 
 // CompareToCalls gets all the calls that were made to CompareTo.
 // Check the length with:
-//     len(mockedProperty.CompareToCalls())
+//
+//	len(mockedProperty.CompareToCalls())
 func (mock *PropertyMock) CompareToCalls() []struct {
 	S string
 } {
@@ -136,7 +137,8 @@ func (mock *PropertyMock) Name() string {
 
 // NameCalls gets all the calls that were made to Name.
 // Check the length with:
-//     len(mockedProperty.NameCalls())
+//
+//	len(mockedProperty.NameCalls())
 func (mock *PropertyMock) NameCalls() []struct {
 } {
 	var calls []struct {
@@ -165,7 +167,8 @@ func (mock *PropertyMock) String() string {
 
 // StringCalls gets all the calls that were made to String.
 // Check the length with:
-//     len(mockedProperty.StringCalls())
+//
+//	len(mockedProperty.StringCalls())
 func (mock *PropertyMock) StringCalls() []struct {
 } {
 	var calls []struct {
@@ -197,7 +200,8 @@ func (mock *PropertyMock) Validate(s string) error {
 
 // ValidateCalls gets all the calls that were made to Validate.
 // Check the length with:
-//     len(mockedProperty.ValidateCalls())
+//
+//	len(mockedProperty.ValidateCalls())
 func (mock *PropertyMock) ValidateCalls() []struct {
 	S string
 } {
@@ -229,7 +233,8 @@ func (mock *PropertyMock) Value() (string, error) {
 
 // ValueCalls gets all the calls that were made to Value.
 // Check the length with:
-//     len(mockedProperty.ValueCalls())
+//
+//	len(mockedProperty.ValueCalls())
 func (mock *PropertyMock) ValueCalls() []struct {
 } {
 	var calls []struct {

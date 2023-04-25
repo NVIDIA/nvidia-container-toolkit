@@ -13,22 +13,22 @@ var _ Constraint = &ConstraintMock{}
 
 // ConstraintMock is a mock implementation of Constraint.
 //
-// 	func TestSomethingThatUsesConstraint(t *testing.T) {
+//	func TestSomethingThatUsesConstraint(t *testing.T) {
 //
-// 		// make and configure a mocked Constraint
-// 		mockedConstraint := &ConstraintMock{
-// 			AssertFunc: func() error {
-// 				panic("mock out the Assert method")
-// 			},
-// 			StringFunc: func() string {
-// 				panic("mock out the String method")
-// 			},
-// 		}
+//		// make and configure a mocked Constraint
+//		mockedConstraint := &ConstraintMock{
+//			AssertFunc: func() error {
+//				panic("mock out the Assert method")
+//			},
+//			StringFunc: func() string {
+//				panic("mock out the String method")
+//			},
+//		}
 //
-// 		// use mockedConstraint in code that requires Constraint
-// 		// and then make assertions.
+//		// use mockedConstraint in code that requires Constraint
+//		// and then make assertions.
 //
-// 	}
+//	}
 type ConstraintMock struct {
 	// AssertFunc mocks the Assert method.
 	AssertFunc func() error
@@ -67,7 +67,8 @@ func (mock *ConstraintMock) Assert() error {
 
 // AssertCalls gets all the calls that were made to Assert.
 // Check the length with:
-//     len(mockedConstraint.AssertCalls())
+//
+//	len(mockedConstraint.AssertCalls())
 func (mock *ConstraintMock) AssertCalls() []struct {
 } {
 	var calls []struct {
@@ -96,7 +97,8 @@ func (mock *ConstraintMock) String() string {
 
 // StringCalls gets all the calls that were made to String.
 // Check the length with:
-//     len(mockedConstraint.StringCalls())
+//
+//	len(mockedConstraint.StringCalls())
 func (mock *ConstraintMock) StringCalls() []struct {
 } {
 	var calls []struct {
