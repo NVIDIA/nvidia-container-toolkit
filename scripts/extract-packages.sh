@@ -94,19 +94,6 @@ function extract-all() {
     local dist=$1
 
     echo "Extracting packages for ${dist} from ${PACKAGE_IMAGE}"
-
-    if [ $dist == "ubuntu18.04" ]; then
-        set -x
-        # We need to publish the libnvidia-container0 packages to the kitmaker repository as a once off operation.
-        # We include the packages here so that these will be added to the archive for the ubuntu18.04 arm64 packages.
-        mkdir -p "${ARTIFACTS_DIR}/packages/ubuntu18.04/arm64/"
-        curl -L "https://nvidia.github.io/libnvidia-container/ubuntu18.04/arm64/libnvidia-container0_0.10.0+jetpack_arm64.deb" \
-            --output "${ARTIFACTS_DIR}/packages/ubuntu18.04/arm64/libnvidia-container0_0.10.0+jetpack_arm64.deb"
-        curl -L "https://nvidia.github.io/libnvidia-container/ubuntu18.04/arm64/libnvidia-container0_0.11.0+jetpack_arm64.deb" \
-            --output "${ARTIFACTS_DIR}/packages/ubuntu18.04/arm64/libnvidia-container0_0.11.0+jetpack_arm64.deb"
-        set +x
-    fi
-
     # Extract every file for the specified dist-arch combiniation in MANIFEST.txt
     grep "/${dist}/" "${ARTIFACTS_DIR}/manifest.txt" | while read -r f ; do
         package_name="$(basename "$f")"
