@@ -95,7 +95,8 @@ if [[ -n ${FORCE_META_PACKAGES} || -z ${NVIDIA_CONTAINER_TOOLKIT_TAG} && "${NVID
                 ${TARGET}
     fi
     if [[ -n ${package_target} ]]; then
-        cp ${package_pattern} ${DIST_DIR}/${package_target}/
+        mkdir -p ${DIST_DIR}/${package_target}/
+        cp -p ${package_pattern} ${DIST_DIR}/${package_target}/
     fi
 
     # Build nvidia-docker2 if required
@@ -113,7 +114,8 @@ if [[ -n ${FORCE_META_PACKAGES} || -z ${NVIDIA_CONTAINER_TOOLKIT_TAG} && "${NVID
                 ${TARGET}
     fi
     if [[ -n ${package_target} ]]; then
-        cp ${package_pattern} ${DIST_DIR}/${package_target}/
+        mkdir -p ${DIST_DIR}/${package_target}/
+        cp -p ${package_pattern} ${DIST_DIR}/${package_target}/
     fi
 
 else
