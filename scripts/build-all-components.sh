@@ -51,18 +51,22 @@ echo "Building ${TARGET} for all packages to ${DIST_DIR}"
 
 "${SCRIPTS_DIR}/get-component-versions.sh"
 
-# Build libnvidia-container
-make -C "${LIBNVIDIA_CONTAINER_ROOT}" -f mk/docker.mk "${TARGET}"
-
 if [[ -z "${NVIDIA_CONTAINER_TOOLKIT_VERSION}" || -z "${LIBNVIDIA_CONTAINER_VERSION}" ]]; then
 eval $(${SCRIPTS_DIR}/get-component-versions.sh)
 fi
 
+# Build libnvidia-container
+if [[ -z ${SKIP_LIBNVIDIA_CONTAINER} ]]; then
+    make -C "${LIBNVIDIA_CONTAINER_ROOT}" -f mk/docker.mk "${TARGET}"
+fi
+
+if [[ -z ${SKIP_NVIDIA_CONTAINER_TOOLKIT} ]]; then
 # Build nvidia-container-toolkit
 make -C "${NVIDIA_CONTAINER_TOOLKIT_ROOT}" \
     LIBNVIDIA_CONTAINER_VERSION="${LIBNVIDIA_CONTAINER_VERSION}" \
     LIBNVIDIA_CONTAINER_TAG="${LIBNVIDIA_CONTAINER_TAG}" \
         "${TARGET}"
+fi
 
 # If required we also build the nvidia-container-runtime and nvidia-docker packages.
 # Since these are essentially meta packages intended to allow for users to
@@ -71,6 +75,7 @@ make -C "${NVIDIA_CONTAINER_TOOLKIT_ROOT}" \
 # version of 0.
 if [[ -n ${FORCE_META_PACKAGES} || -z ${NVIDIA_CONTAINER_TOOLKIT_TAG} && "${NVIDIA_CONTAINER_TOOLKIT_VERSION%.0}" != "${NVIDIA_CONTAINER_TOOLKIT_VERSION}" ]]; then
     package_format=$(package_type ${TARGET})
+    package_target=$(get_package_target ${TARGET})
 
     # We set the TOOLKIT_VERSION, TOOLKIT_TAG for the nvidia-container-runtime and nvidia-docker targets
     # The LIB_TAG is also overridden to match the TOOLKIT_TAG.
@@ -89,7 +94,9 @@ if [[ -n ${FORCE_META_PACKAGES} || -z ${NVIDIA_CONTAINER_TOOLKIT_TAG} && "${NVID
             TOOLKIT_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
                 ${TARGET}
     fi
-    cp ${package_pattern} ${DIST_DIR}/$(get_package_target ${TARGET})/
+    if [[ -n ${package_target} ]]; then
+        cp ${package_pattern} ${DIST_DIR}/${package_target}/
+    fi
 
     # Build nvidia-docker2 if required
     package_name="nvidia-docker2"
@@ -105,7 +112,9 @@ if [[ -n ${FORCE_META_PACKAGES} || -z ${NVIDIA_CONTAINER_TOOLKIT_TAG} && "${NVID
             TOOLKIT_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
                 ${TARGET}
     fi
-    cp ${package_pattern} ${DIST_DIR}/$(get_package_target ${TARGET})/
+    if [[ -n ${package_target} ]]; then
+        cp ${package_pattern} ${DIST_DIR}/${package_target}/
+    fi
 
 else
     echo "Skipping nvidia-container-runtime and nvidia-docker builds."

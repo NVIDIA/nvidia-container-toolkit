@@ -102,8 +102,30 @@ unit-tests:
     name: ${ARTIFACTS_NAME}
     paths:
       - ${ARTIFACTS_ROOT}
+  needs:
+    - job: package-meta-packages
+      artifacts: true
 
 # Define the package build targets
+package-meta-packages:
+  extends:
+    - .package-artifacts
+  stage: package-build
+  variables:
+    SKIP_LIBNVIDIA_CONTAINER: "yes"
+    SKIP_NVIDIA_CONTAINER_TOOLKIT: "yes"
+  parallel:
+    matrix:
+      - PACKAGING: [deb, rpm]
+  before_script:
+    - apk add --no-cache coreutils build-base sed git bash make
+  script:
+    - ./scripts/build-packages.sh ${PACKAGING}
+  artifacts:
+    name: ${ARTIFACTS_NAME}
+    paths:
+      - ${ARTIFACTS_ROOT}
+
 package-amazonlinux2-aarch64:
   extends:
     - .package-build

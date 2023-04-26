@@ -16,6 +16,10 @@ function package_type() {
         ;;
     ubuntu*) pkg_type=deb
         ;;
+    deb) pkg_type=deb
+        ;;
+    rpm) pkg_type=rpm
+        ;;
     *) exit 1
         ;;
     esac
@@ -39,5 +43,13 @@ function get_package_target() {
     local target=$1
     local dist=${target%-*}
     local arch=${target##*-}
-    echo "${dist}/${arch}"
+
+    case ${target} in
+    deb) echo ""
+        ;;
+    rpm) echo ""
+        ;;
+    *) echo "${dist}/${arch}"
+        ;;
+    esac
 }
