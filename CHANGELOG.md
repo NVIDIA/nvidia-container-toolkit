@@ -3,6 +3,7 @@
 ## v1.14.0-rc.1
 
 * Add support for updating containerd configs to the `nvidia-ctk runtime configure` command.
+* Create file in `etc/ld.so.conf.d` with permissions `644` to support non-root containers.
 
 ## v1.13.1
 

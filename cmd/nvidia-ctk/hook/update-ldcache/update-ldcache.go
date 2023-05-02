@@ -135,5 +135,10 @@ func (m command) createConfig(root string, folders []string) error {
 		configured[folder] = true
 	}
 
+	// The created file needs to be world readable for the cases where the container is run as a non-root user.
+	if err := os.Chmod(configFile.Name(), 0644); err != nil {
+		return fmt.Errorf("failed to chmod config file: %v", err)
+	}
+
 	return nil
 }
