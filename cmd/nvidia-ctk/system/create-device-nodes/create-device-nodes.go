@@ -50,7 +50,7 @@ func (m command) build() *cli.Command {
 
 	c := cli.Command{
 		Name:  "create-device-nodes",
-		Usage: "A utility to create NVIDIA device ndoes",
+		Usage: "A utility to create NVIDIA device nodes",
 		Before: func(c *cli.Context) error {
 			return m.validateFlags(c, &opts)
 		},
