@@ -4,6 +4,7 @@
 
 * Add support for updating containerd configs to the `nvidia-ctk runtime configure` command.
 * Create file in `etc/ld.so.conf.d` with permissions `644` to support non-root containers.
+* Generate CDI specification files with `644` permissions to allow rootless applications (e.g. podman)
 
 ## v1.13.1
 
