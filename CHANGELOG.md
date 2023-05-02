@@ -2,6 +2,8 @@
 
 ## v1.13.3
 
+* Generate CDI specification files with `644` permissions to allow rootless applications (e.g. podman).
+
 * [toolkit-container] Allow same envars for all runtime configs
 
 ## v1.13.2

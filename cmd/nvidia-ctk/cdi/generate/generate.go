@@ -251,6 +251,7 @@ func (m command) generateSpec(cfg *config) (spec.Interface, error) {
 		spec.WithDeviceSpecs(deviceSpecs),
 		spec.WithEdits(*commonEdits.ContainerEdits),
 		spec.WithFormat(cfg.format),
+		spec.WithPermissions(0644),
 	)
 }
 
