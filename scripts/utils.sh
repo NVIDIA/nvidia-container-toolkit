@@ -16,6 +16,10 @@ function package_type() {
         ;;
     ubuntu*) pkg_type=deb
         ;;
+    deb) pkg_type=deb
+        ;;
+    rpm) pkg_type=rpm
+        ;;
     *) exit 1
         ;;
     esac
@@ -31,6 +35,21 @@ function get_artifactory_repository() {
     rpm) echo "sw-gpu-cloudnative-rpm-local"
         ;;
     *) echo "sw-gpu-cloudnative-generic-local"
+        ;;
+    esac
+}
+
+function get_package_target() {
+    local target=$1
+    local dist=${target%-*}
+    local arch=${target##*-}
+
+    case ${target} in
+    deb) echo ""
+        ;;
+    rpm) echo ""
+        ;;
+    *) echo "${dist}/${arch}"
         ;;
     esac
 }
