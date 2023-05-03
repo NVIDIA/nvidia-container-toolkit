@@ -96,8 +96,9 @@ func (o *builder) Build() (*spec, error) {
 	}
 
 	s := spec{
-		Spec:   raw,
-		format: o.format,
+		Spec:        raw,
+		format:      o.format,
+		permissions: o.permissions,
 	}
 
 	return &s, nil
