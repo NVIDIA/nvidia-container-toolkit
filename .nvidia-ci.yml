@@ -181,6 +181,13 @@ scan-ubi8-arm64:
     - image-ubi8
     - scan-ubi8-amd64
 
+scan-packaging:
+  extends:
+    - .dist-packaging
+    - .scan
+  needs:
+    - image-packaging
+
 # Define external release helpers
 .release:ngc:
   extends:
@@ -238,4 +245,9 @@ release:ngc-ubuntu20.04:
 release:ngc-ubi8:
   extends:
     - .dist-ubi8
+    - .release:ngc
+
+release:ngc-packaging:
+  extends:
+    - .dist-packaging
     - .release:ngc
