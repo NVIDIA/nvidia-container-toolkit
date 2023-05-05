@@ -13,11 +13,3 @@
 # limitations under the License.
 
 DOCKER_BUILD_PLATFORM_OPTIONS = --platform=linux/amd64
-
-$(PUSH_TARGETS): push-%:
-	$(DOCKER) tag "$(IMAGE)" "$(OUT_IMAGE)"
-	$(DOCKER) push "$(OUT_IMAGE)"
-
-push-short:
-	$(DOCKER) tag "$(IMAGE_NAME):$(VERSION)-$(DEFAULT_PUSH_TARGET)" "$(OUT_IMAGE_NAME):$(OUT_IMAGE_VERSION)"
-	$(DOCKER) push "$(OUT_IMAGE_NAME):$(OUT_IMAGE_VERSION)"
