@@ -67,13 +67,6 @@ fi
 
 KITMAKER_SCRATCH="${KITMAKER_DIR}/.scratch"
 
-# extract_info extracts the value of the specified variable from the manifest.txt file.
-function extract_info() {
-    local variable=$1
-    local value=$(cat "${ARTIFACTS_DIR}/manifest.txt" | grep "#${variable}=" | sed -e "s/#${variable}=//" | tr -d '\r')
-    echo $value
-}
-
 IMAGE_EPOCH=$(extract_info "IMAGE_EPOCH")
 # Note we use the main branch for the kitmaker archive.
 GIT_BRANCH=main
@@ -128,8 +121,6 @@ function create_archive() {
     rmdir "${scratch_dir}/.packages"
     rmdir "${scratch_dir}"
 }
-
-function join_by { local IFS="$1"; shift; echo "$*"; }
 
 function optionally_add_property() {
     local property=$1
