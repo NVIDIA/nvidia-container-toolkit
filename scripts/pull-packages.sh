@@ -55,4 +55,4 @@ docker run --rm \
     -u $(id -u):$(id -g) \
     --entrypoint="bash" \
         ${IMAGE} \
-        -c "cp -R /artifacts/packages/* ${DIST_DIR}"
+        -c "cp --preserve=timestamps -R /artifacts/* ${DIST_DIR}"

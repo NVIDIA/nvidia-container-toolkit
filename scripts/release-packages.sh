@@ -189,7 +189,7 @@ git -C ${PACKAGE_REPO_ROOT} reset --hard ${UPSTREAM_REFERENCE}
 git -C ${PACKAGE_REPO_ROOT} clean -fdx ${REPO}
 
 for target in ${targets[@]}; do
-    sync ${target} ${PACKAGE_CACHE} ${PACKAGE_REPO_ROOT}/${REPO}
+    sync ${target} ${PACKAGE_CACHE}/packages ${PACKAGE_REPO_ROOT}/${REPO}
 done
 
 git -C ${PACKAGE_REPO_ROOT} add ${REPO}
