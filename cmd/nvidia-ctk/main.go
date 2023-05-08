@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook"
 	infoCLI "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime"
@@ -32,16 +33,16 @@ import (
 
 var logger = log.New()
 
-// config defines the options that can be set for the CLI through config files,
+// options defines the options that can be set for the CLI through config files,
 // environment variables, or command line flags
-type config struct {
+type options struct {
 	// Debug indicates whether the CLI is started in "debug" mode
 	Debug bool
 }
 
 func main() {
-	// Create a config struct to hold the parsed environment variables or command line flags
-	config := config{}
+	// Create a options struct to hold the parsed environment variables or command line flags
+	opts := options{}
 
 	// Create the top-level CLI
 	c := cli.NewApp()
@@ -57,7 +58,7 @@ func main() {
 			Name:        "debug",
 			Aliases:     []string{"d"},
 			Usage:       "Enable debug-level logging",
-			Destination: &config.Debug,
+			Destination: &opts.Debug,
 			EnvVars:     []string{"NVIDIA_CTK_DEBUG"},
 		},
 	}
@@ -65,7 +66,7 @@ func main() {
 	// Set log-level for all subcommands
 	c.Before = func(c *cli.Context) error {
 		logLevel := log.InfoLevel
-		if config.Debug {
+		if opts.Debug {
 			logLevel = log.DebugLevel
 		}
 		logger.SetLevel(logLevel)
@@ -79,6 +80,7 @@ func main() {
 		infoCLI.NewCommand(logger),
 		cdi.NewCommand(logger),
 		system.NewCommand(logger),
+		config.NewCommand(logger),
 	}
 
 	// Run the CLI

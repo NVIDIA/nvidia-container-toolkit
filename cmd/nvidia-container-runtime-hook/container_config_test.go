@@ -496,7 +496,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			getConfig := func() {
 				hookConfig := tc.hookConfig
 				if hookConfig == nil {
-					defaultConfig := getDefaultHookConfig()
+					defaultConfig, _ := getDefaultHookConfig()
 					hookConfig = &defaultConfig
 				}
 				config = getNvidiaConfig(hookConfig, tc.env, nil, tc.privileged)
@@ -708,7 +708,7 @@ func TestDeviceListSourcePriority(t *testing.T) {
 				env := map[string]string{
 					envNVVisibleDevices: tc.envvarDevices,
 				}
-				hookConfig := getDefaultHookConfig()
+				hookConfig, _ := getDefaultHookConfig()
 				hookConfig.AcceptEnvvarUnprivileged = tc.acceptUnprivileged
 				hookConfig.AcceptDeviceListAsVolumeMounts = tc.acceptMounts
 				devices = getDevices(&hookConfig, env, tc.mountDevices, tc.privileged)

@@ -89,7 +89,8 @@ func TestGetHookConfig(t *testing.T) {
 
 			var config HookConfig
 			getHookConfig := func() {
-				config = getHookConfig()
+				c, _ := getHookConfig()
+				config = *c
 			}
 
 			if tc.expectedPanic {

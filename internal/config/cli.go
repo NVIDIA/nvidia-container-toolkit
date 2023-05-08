@@ -16,33 +16,7 @@
 
 package config
 
-import (
-	"github.com/pelletier/go-toml"
-)
-
 // ContainerCLIConfig stores the options for the nvidia-container-cli
 type ContainerCLIConfig struct {
-	Root string
-}
-
-// getContainerCLIConfigFrom reads the nvidia container runtime config from the specified toml Tree.
-func getContainerCLIConfigFrom(toml *toml.Tree) *ContainerCLIConfig {
-	cfg := getDefaultContainerCLIConfig()
-
-	if toml == nil {
-		return cfg
-	}
-
-	cfg.Root = toml.GetDefault("nvidia-container-cli.root", cfg.Root).(string)
-
-	return cfg
-}
-
-// getDefaultContainerCLIConfig defines the default values for the config
-func getDefaultContainerCLIConfig() *ContainerCLIConfig {
-	c := ContainerCLIConfig{
-		Root: "",
-	}
-
-	return &c
+	Root string `toml:"root"`
 }

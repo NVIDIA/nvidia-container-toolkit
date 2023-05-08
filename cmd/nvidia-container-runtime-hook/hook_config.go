@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -48,8 +49,18 @@ type HookConfig struct {
 	NVIDIAContainerRuntimeHook config.RuntimeHookConfig `toml:"nvidia-container-runtime-hook"`
 }
 
-func getDefaultHookConfig() HookConfig {
-	return HookConfig{
+func getDefaultHookConfig() (HookConfig, error) {
+	rtConfig, err := config.GetDefaultRuntimeConfig()
+	if err != nil {
+		return HookConfig{}, err
+	}
+
+	rtHookConfig, err := config.GetDefaultRuntimeHookConfig()
+	if err != nil {
+		return HookConfig{}, err
+	}
+
+	c := HookConfig{
 		DisableRequire:                 false,
 		SwarmResource:                  nil,
 		AcceptEnvvarUnprivileged:       true,
@@ -67,28 +78,37 @@ func getDefaultHookConfig() HookConfig {
 			User:        nil,
 			Ldconfig:    nil,
 		},
-		NVIDIAContainerRuntime:     *config.GetDefaultRuntimeConfig(),
-		NVIDIAContainerRuntimeHook: *config.GetDefaultRuntimeHookConfig(),
+		NVIDIAContainerRuntime:     *rtConfig,
+		NVIDIAContainerRuntimeHook: *rtHookConfig,
 	}
+
+	return c, nil
 }
 
-func getHookConfig() (config HookConfig) {
+func getHookConfig() (*HookConfig, error) {
 	var err error
+	var config HookConfig
 
 	if len(*configflag) > 0 {
-		config = getDefaultHookConfig()
+		config, err = getDefaultHookConfig()
+		if err != nil {
+			return nil, fmt.Errorf("couldn't get default configuration: %v", err)
+		}
 		_, err = toml.DecodeFile(*configflag, &config)
 		if err != nil {
-			log.Panicln("couldn't open configuration file:", err)
+			return nil, fmt.Errorf("couldn't open configuration file: %v", err)
 		}
 	} else {
 		for _, p := range defaultPaths {
-			config = getDefaultHookConfig()
+			config, err = getDefaultHookConfig()
+			if err != nil {
+				return nil, fmt.Errorf("couldn't get default configuration: %v", err)
+			}
 			_, err = toml.DecodeFile(p, &config)
 			if err == nil {
 				break
 			} else if !os.IsNotExist(err) {
-				log.Panicln("couldn't open default configuration file:", err)
+				return nil, fmt.Errorf("couldn't open default configuration file: %v", err)
 			}
 		}
 	}
@@ -102,7 +122,7 @@ func getHookConfig() (config HookConfig) {
 		log.Panicf("Invalid value for config option '%v'; %v (supported: %v)\n", configName, config.SupportedDriverCapabilities, allDriverCapabilities)
 	}
 
-	return config
+	return &config, nil
 }
 
 // getConfigOption returns the toml config option associated with the
