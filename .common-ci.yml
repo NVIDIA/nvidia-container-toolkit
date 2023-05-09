@@ -79,34 +79,24 @@ trigger-pipeline:
     - !reference [.main-or-manual, rules]
   variables:
     DIST: centos7
-    CVE_UPDATES: "cyrus-sasl-lib"
-    PACKAGE_REPO_TYPE: rpm
 
 .dist-centos8:
   variables:
     DIST: centos8
-    CVE_UPDATES: "cyrus-sasl-lib"
-    PACKAGE_REPO_TYPE: rpm
 
 .dist-ubi8:
   rules:
     - !reference [.main-or-manual, rules]
   variables:
     DIST: ubi8
-    CVE_UPDATES: "cyrus-sasl-lib"
-    PACKAGE_REPO_TYPE: rpm
 
 .dist-ubuntu18.04:
   variables:
     DIST: ubuntu18.04
-    CVE_UPDATES: "libsasl2-2 libsasl2-modules-db"
-    PACKAGE_REPO_TYPE: debian
 
 .dist-ubuntu20.04:
   variables:
     DIST: ubuntu20.04
-    CVE_UPDATES: "libsasl2-2 libsasl2-modules-db"
-    PACKAGE_REPO_TYPE: debian
 
 .dist-packaging:
   variables:
