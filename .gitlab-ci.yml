@@ -126,18 +126,6 @@ package-meta-packages:
     paths:
       - ${ARTIFACTS_ROOT}
 
-package-amazonlinux2-aarch64:
-  extends:
-    - .package-build
-    - .dist-amazonlinux2
-    - .arch-aarch64
-
-package-amazonlinux2-x86_64:
-  extends:
-    - .package-build
-    - .dist-amazonlinux2
-    - .arch-x86_64
-
 package-centos7-x86_64:
   extends:
     - .package-build
@@ -160,18 +148,6 @@ package-centos8-x86_64:
   extends:
     - .package-build
     - .dist-centos8
-    - .arch-x86_64
-
-package-debian10-amd64:
-  extends:
-    - .package-build
-    - .dist-debian10
-    - .arch-amd64
-
-package-opensuse-leap15.1-x86_64:
-  extends:
-    - .package-build
-    - .dist-opensuse-leap15.1
     - .arch-x86_64
 
 package-ubuntu18.04-amd64:

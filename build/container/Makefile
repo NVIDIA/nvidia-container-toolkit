@@ -144,15 +144,11 @@ $(TEST_TARGETS): test-%:
 test-packaging: DIST = packaging
 test-packaging:
 	@echo "Testing package image contents"
-	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/amazonlinux2/aarch64" || echo "Missing amazonlinux2/aarch64"
-	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/amazonlinux2/x86_64" || echo "Missing amazonlinux2/x86_64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos7/ppc64le" || echo "Missing centos7/ppc64le"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos7/x86_64" || echo "Missing centos7/x86_64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos8/aarch64" || echo "Missing centos8/aarch64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos8/ppc64le" || echo "Missing centos8/ppc64le"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos8/x86_64" || echo "Missing centos8/x86_64"
-	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/debian10/amd64" || echo "Missing debian10/amd64"
-	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/opensuse-leap15.1/x86_64" || echo "Missing opensuse-leap15.1/x86_64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/ubuntu18.04/amd64" || echo "Missing ubuntu18.04/amd64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/ubuntu18.04/arm64" || echo "Missing ubuntu18.04/arm64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/ubuntu18.04/ppc64le" || echo "Missing ubuntu18.04/ppc64le"

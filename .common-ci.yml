@@ -74,13 +74,6 @@ trigger-pipeline:
     - when: always
 
 # Define the distribution targets
-.dist-amazonlinux2:
-  rules:
-    - !reference [.main-or-manual, rules]
-  variables:
-    DIST: amazonlinux2
-    PACKAGE_REPO_TYPE: rpm
-
 .dist-centos7:
   rules:
     - !reference [.main-or-manual, rules]
@@ -93,20 +86,6 @@ trigger-pipeline:
   variables:
     DIST: centos8
     CVE_UPDATES: "cyrus-sasl-lib"
-    PACKAGE_REPO_TYPE: rpm
-
-.dist-debian10:
-  rules:
-    - !reference [.main-or-manual, rules]
-  variables:
-    DIST: debian10
-    PACKAGE_REPO_TYPE: debian
-
-.dist-opensuse-leap15.1:
-  rules:
-    - !reference [.main-or-manual, rules]
-  variables:
-    DIST: opensuse-leap15.1
     PACKAGE_REPO_TYPE: rpm
 
 .dist-ubi8:
