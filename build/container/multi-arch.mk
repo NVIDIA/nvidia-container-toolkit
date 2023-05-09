@@ -16,17 +16,6 @@ PUSH_ON_BUILD ?= false
 DOCKER_BUILD_OPTIONS = --output=type=image,push=$(PUSH_ON_BUILD)
 DOCKER_BUILD_PLATFORM_OPTIONS = --platform=linux/amd64,linux/arm64
 
-REGCTL ?= regctl
-$(PUSH_TARGETS): push-%:
-	$(REGCTL) \
-	        image copy \
-	        $(IMAGE) $(OUT_IMAGE)
-
-push-short:
-	$(REGCTL) \
-	        image copy \
-	        $(IMAGE) $(OUT_IMAGE_NAME):$(OUT_IMAGE_VERSION)
-
 # We only have x86_64 packages for centos7
 build-centos7: DOCKER_BUILD_PLATFORM_OPTIONS = --platform=linux/amd64
 

@@ -14,6 +14,7 @@
 
 BUILD_MULTI_ARCH_IMAGES ?= false
 DOCKER ?= docker
+REGCTL ?= regctl
 
 BUILDX =
 ifeq ($(BUILD_MULTI_ARCH_IMAGES),true)
@@ -73,6 +74,14 @@ endif
 
 push-%: DIST = $(*)
 push-short: DIST = $(DEFAULT_PUSH_TARGET)
+
+# Define the push targets
+$(PUSH_TARGETS): push-%:
+	$(CURDIR)/scripts/publish-image.sh $(IMAGE) $(OUT_IMAGE)
+
+push-short:
+	$(CURDIR)/scripts/publish-image.sh $(IMAGE) $(OUT_IMAGE)
+
 
 build-%: DIST = $(*)
 build-%: DOCKERFILE = $(CURDIR)/build/container/Dockerfile.$(DOCKERFILE_SUFFIX)
