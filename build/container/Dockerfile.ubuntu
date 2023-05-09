@@ -95,11 +95,4 @@ LABEL description="See summary"
 
 RUN mkdir /licenses && mv /NGC-DL-CONTAINER-LICENSE /licenses/NGC-DL-CONTAINER-LICENSE
 
-# Install / upgrade packages here that are required to resolve CVEs
-ARG CVE_UPDATES
-RUN if [ -n "${CVE_UPDATES}" ]; then \
-        apt-get update && apt-get upgrade -y ${CVE_UPDATES} && \
-        rm -rf /var/lib/apt/lists/*; \
-    fi
-
 ENTRYPOINT ["/work/nvidia-toolkit"]
