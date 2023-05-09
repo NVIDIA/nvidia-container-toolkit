@@ -1,3 +1,17 @@
+# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 # package_type returns the packaging type (deb or rpm) for the specfied distribution.
 # An error is returned if the ditribution is unsupported.
@@ -53,3 +67,48 @@ function get_package_target() {
         ;;
     esac
 }
+
+# extract-file copies a file from a specified image.
+# If regctl is available this is used, otherwise a docker container is run and the file is copied from
+# there.
+function copy_file() {
+    local image=$1
+    local path_in_image=$2
+    local path_on_host=$3
+    if command -v regctl > /dev/null; then
+        regctl image get-file "${image}" "${path_in_image}" "${path_on_host}"
+    else
+        # Note this will only work for destinations where the `path_on_host` is in `pwd`
+        docker run --rm \
+        -v "$(pwd):$(pwd)" \
+        -w "$(pwd)" \
+        -u "$(id -u):$(id -g)" \
+        --entrypoint="bash" \
+            "${image}" \
+            -c "cp ${path_in_image} ${path_on_host}"
+    fi
+}
+
+# extract_info extracts the value of the specified variable from the manifest.txt file.
+function extract_from_manifest() {
+    local variable=$1
+    local manifest=$2
+    local value=$(cat ${manifest} | grep "#${variable}=" | sed -e "s/#${variable}=//" | tr -d '\r')
+    echo $value
+}
+
+# extract_info extracts the value of the specified variable from the manifest.txt file.
+function extract_info() {
+    extract_from_manifest $1 "${ARTIFACTS_DIR}/manifest.txt"
+}
+
+function get_version_from_image() {
+    local image=$1
+    local manifest="manifest-${2}.txt"
+    copy_file ${image} "/artifacts/manifest.txt" ${manifest}
+    version=$(extract_from_manifest "PACKAGE_VERSION" ${manifest})
+    echo "v${version/\~/-}"
+    rm -f ${manifest}
+}
+
+function join_by { local IFS="$1"; shift; echo "$*"; }

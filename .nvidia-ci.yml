@@ -37,6 +37,7 @@ variables:
   STAGING_VERSION: ${CI_COMMIT_SHORT_SHA}
   ARTIFACTORY_REPO_BASE: "https://urm.nvidia.com/artifactory/sw-gpu-cloudnative"
   KITMAKER_RELEASE_FOLDER: "kitmaker"
+  PACKAGE_ARCHIVE_RELEASE_FOLDER: "releases"
 
 .image-pull:
   stage: image-build
@@ -222,6 +223,23 @@ scan-packaging:
 release:packages:kitmaker:
   extends:
     - .release:packages
+
+release:archive:
+  extends:
+    - .release:external
+  needs:
+    - image-packaging
+  variables:
+    VERSION: "${CI_COMMIT_SHORT_SHA}"
+    PACKAGE_REGISTRY: "${CI_REGISTRY}"
+    PACKAGE_REGISTRY_USER: "${CI_REGISTRY_USER}"
+    PACKAGE_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
+    PACKAGE_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
+    PACKAGE_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}-packaging"
+    PACKAGE_ARCHIVE_ARTIFACTORY_REPO: "${ARTIFACTORY_REPO_BASE}-generic-local/${PACKAGE_ARCHIVE_RELEASE_FOLDER}"
+  script:
+    - apk add --no-cache bash git
+    - ./scripts/archive-packages.sh "${PACKAGE_ARCHIVE_ARTIFACTORY_REPO}"
 
 release:staging-ubuntu20.04:
   extends:

@@ -31,6 +31,8 @@ if [[ $# -lt 1 || $# -gt 2 ]]; then
     assert_usage $*
 fi
 
+source "${SCRIPTS_DIR}"/utils.sh
+
 PACKAGE_REPO_ROOT=$1
 if [[ ! -d ${PACKAGE_REPO_ROOT} ]]; then
     echo "The specified PACKAGE_REPO_ROOT '${PACKAGE_REPO_ROOT}' must exist"
@@ -42,21 +44,20 @@ if [[ $# -ge 2 ]]; then
     REFERENCE=$2
 fi
 
-eval $(${SCRIPTS_DIR}/get-component-versions.sh)
-
-TAG=v"${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}"
 SHA=$(git rev-parse --short=8 ${REFERENCE})
+IMAGE_NAME="registry.gitlab.com/nvidia/container-toolkit/container-toolkit/staging/container-toolkit"
+IMAGE_TAG=${SHA}-packaging
+
+VERSION="$(get_version_from_image ${IMAGE_NAME}:${IMAGE_TAG} ${SHA})"
 
 REPO="experimental"
-if [[ ${TAG/rc./} == ${TAG} ]]; then
+if [[ ${VERSION/rc./} == ${VERSION} ]]; then
     REPO="stable"
 fi
 
-PACKAGE_CACHE=release-${TAG}-${REPO}
+PACKAGE_CACHE=release-${VERSION}-${REPO}
 
-echo "Fetching packages with SHA '${SHA}' as tag '${TAG}' to ${PACKAGE_CACHE}"
-IMAGE_NAME="registry.gitlab.com/nvidia/container-toolkit/container-toolkit/staging/container-toolkit"
-IMAGE_TAG=${SHA}-packaging
+echo "Fetching packages with SHA '${SHA}' as tag '${VERSION}' to ${PACKAGE_CACHE}"
 ${SCRIPTS_DIR}/pull-packages.sh \
     ${IMAGE_NAME}:${IMAGE_TAG} \
     ${PACKAGE_CACHE}
@@ -189,7 +190,7 @@ git -C ${PACKAGE_REPO_ROOT} reset --hard ${UPSTREAM_REFERENCE}
 git -C ${PACKAGE_REPO_ROOT} clean -fdx ${REPO}
 
 for target in ${targets[@]}; do
-    sync ${target} ${PACKAGE_CACHE} ${PACKAGE_REPO_ROOT}/${REPO}
+    sync ${target} ${PACKAGE_CACHE}/packages ${PACKAGE_REPO_ROOT}/${REPO}
 done
 
 git -C ${PACKAGE_REPO_ROOT} add ${REPO}
@@ -197,7 +198,7 @@ git -C ${PACKAGE_REPO_ROOT} add ${REPO}
 if [[ ${REPO} == "stable" ]]; then
 # Stable release
 git -C ${PACKAGE_REPO_ROOT} commit -s -F- <<EOF
-Add packages for NVIDIA Container Toolkit ${TAG} release
+Add packages for NVIDIA Container Toolkit ${VERSION} release
 
 These include:
 * libnvidia-container* ${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}
@@ -208,7 +209,7 @@ EOF
 else
 # Experimental / release candidate release
 git -C ${PACKAGE_REPO_ROOT} commit -s -F- <<EOF
-Add packages for NVIDIA Container Toolkit ${TAG} ${REPO} release
+Add packages for NVIDIA Container Toolkit ${VERSION} ${REPO} release
 
 These include:
 * libnvidia-container* ${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}
@@ -246,12 +247,12 @@ function sign() {
 sign deb
 
 git -C ${PACKAGE_REPO_ROOT} add ${REPO}
-git -C ${PACKAGE_REPO_ROOT} commit -s -m "TOFIX: Sign deb packages for ${TAG} in ${REPO}"
+git -C ${PACKAGE_REPO_ROOT} commit -s -m "TOFIX: Sign deb packages for ${VERSION} in ${REPO}"
 
 sign rpm
 
 git -C ${PACKAGE_REPO_ROOT} add ${REPO}
-git -C ${PACKAGE_REPO_ROOT} commit -s -m "TOFIX: Sign rpm packages for ${TAG} in ${REPO}"
+git -C ${PACKAGE_REPO_ROOT} commit -s -m "TOFIX: Sign rpm packages for ${VERSION} in ${REPO}"
 
 echo "To publish changes, go to ${PACKAGE_REPO_ROOT} and run: "
 echo "   git rebase -i ${UPSTREAM_REFERENCE}"
