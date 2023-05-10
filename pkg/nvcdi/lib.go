@@ -45,6 +45,8 @@ type nvcdilib struct {
 	driverRoot    string
 	nvidiaCTKPath string
 
+	csvFiles []string
+
 	vendor string
 	class  string
 
@@ -80,6 +82,15 @@ func New(opts ...Option) (Interface, error) {
 
 	var lib Interface
 	switch l.resolveMode() {
+	case ModeCSV:
+		if len(l.csvFiles) == 0 {
+			l.csvFiles = []string{
+				"/etc/nvidia-container-runtime/host-files-for-container.d/l4t.csv",
+				"/etc/nvidia-container-runtime/host-files-for-container.d/drivers.csv",
+				"/etc/nvidia-container-runtime/host-files-for-container.d/devices.csv",
+			}
+		}
+		lib = (*csvlib)(l)
 	case ModeManagement:
 		if l.vendor == "" {
 			l.vendor = "management.nvidia.com"
