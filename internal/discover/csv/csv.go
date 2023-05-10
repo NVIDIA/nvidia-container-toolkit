@@ -33,6 +33,22 @@ const (
 	DefaultMountSpecPath = "/etc/nvidia-container-runtime/host-files-for-container.d"
 )
 
+// DefaultFileList returns the list of CSV files that are used by default.
+func DefaultFileList() []string {
+	files := []string{
+		"devices.csv",
+		"drivers.csv",
+		"l4t.csv",
+	}
+
+	var paths []string
+	for _, file := range files {
+		paths = append(paths, filepath.Join(DefaultMountSpecPath, file))
+	}
+
+	return paths
+}
+
 // GetFileList returns the (non-recursive) list of CSV files in the specified
 // folder
 func GetFileList(root string) ([]string, error) {

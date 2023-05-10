@@ -19,6 +19,7 @@ package nvcdi
 import (
 	"fmt"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"github.com/sirupsen/logrus"
@@ -84,11 +85,7 @@ func New(opts ...Option) (Interface, error) {
 	switch l.resolveMode() {
 	case ModeCSV:
 		if len(l.csvFiles) == 0 {
-			l.csvFiles = []string{
-				"/etc/nvidia-container-runtime/host-files-for-container.d/l4t.csv",
-				"/etc/nvidia-container-runtime/host-files-for-container.d/drivers.csv",
-				"/etc/nvidia-container-runtime/host-files-for-container.d/devices.csv",
-			}
+			l.csvFiles = csv.DefaultFileList()
 		}
 		lib = (*csvlib)(l)
 	case ModeManagement:

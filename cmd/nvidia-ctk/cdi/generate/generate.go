@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
@@ -48,6 +49,10 @@ type options struct {
 	mode               string
 	vendor             string
 	class              string
+
+	csv struct {
+		files cli.StringSlice
+	}
 }
 
 // NewCommand constructs a generate-cdi command with the specified logger
@@ -123,13 +128,18 @@ func (m command) build() *cli.Command {
 			Value:       "gpu",
 			Destination: &opts.class,
 		},
+		&cli.StringSliceFlag{
+			Name:        "csv.file",
+			Usage:       "The path to the list of CSV files to use when generating the CDI specification in CDI mode.",
+			Value:       cli.NewStringSlice(csv.DefaultFileList()...),
+			Destination: &opts.csv.files,
+		},
 	}
 
 	return &c
 }
 
 func (m command) validateFlags(c *cli.Context, opts *options) error {
-
 	opts.format = strings.ToLower(opts.format)
 	switch opts.format {
 	case spec.FormatJSON:
@@ -141,6 +151,7 @@ func (m command) validateFlags(c *cli.Context, opts *options) error {
 	opts.mode = strings.ToLower(opts.mode)
 	switch opts.mode {
 	case nvcdi.ModeAuto:
+	case nvcdi.ModeCSV:
 	case nvcdi.ModeNvml:
 	case nvcdi.ModeWsl:
 	case nvcdi.ModeManagement:
@@ -215,6 +226,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithNVIDIACTKPath(opts.nvidiaCTKPath),
 		nvcdi.WithDeviceNamer(deviceNamer),
 		nvcdi.WithMode(string(opts.mode)),
+		nvcdi.WithCSVFiles(opts.csv.files.Value()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)
