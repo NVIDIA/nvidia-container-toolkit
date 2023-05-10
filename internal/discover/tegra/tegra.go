@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/sirupsen/logrus"
 )
 
@@ -55,11 +56,22 @@ func New(opts ...Option) (discover.Discover, error) {
 		return nil, fmt.Errorf("failed to create ldcach update hook discoverer: %v", err)
 	}
 
+	tegraSystemMounts := discover.NewMounts(
+		o.logger,
+		lookup.NewFileLocator(lookup.WithLogger(o.logger)),
+		"",
+		[]string{
+			"/etc/nv_tegra_release",
+			"/sys/devices/soc0/family",
+		},
+	)
+
 	d := discover.Merge(
 		csvDiscoverer,
 		createSymlinksHook,
 		// The ldcacheUpdateHook is added last to ensure that the created symlinks are included
 		ldcacheUpdateHook,
+		tegraSystemMounts,
 	)
 
 	return d, nil
