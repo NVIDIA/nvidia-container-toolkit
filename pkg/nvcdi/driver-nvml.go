@@ -86,11 +86,7 @@ func NewDriverLibraryDiscoverer(logger *logrus.Logger, driverRoot string, nvidia
 		libraryPaths,
 	)
 
-	cfg := &discover.Config{
-		DriverRoot:    driverRoot,
-		NvidiaCTKPath: nvidiaCTKPath,
-	}
-	hooks, _ := discover.NewLDCacheUpdateHook(logger, libraries, cfg)
+	hooks, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCTKPath)
 
 	d := discover.Merge(
 		libraries,

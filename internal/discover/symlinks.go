@@ -33,10 +33,10 @@ type symlinks struct {
 }
 
 // NewCreateSymlinksHook creates a discoverer for a hook that creates required symlinks in the container
-func NewCreateSymlinksHook(logger *logrus.Logger, csvFiles []string, mounts Discover, cfg *Config) (Discover, error) {
+func NewCreateSymlinksHook(logger *logrus.Logger, csvFiles []string, mounts Discover, nvidiaCTKPath string) (Discover, error) {
 	d := symlinks{
 		logger:        logger,
-		nvidiaCTKPath: FindNvidiaCTK(logger, cfg.NvidiaCTKPath),
+		nvidiaCTKPath: nvidiaCTKPath,
 		csvFiles:      csvFiles,
 		mountsFrom:    mounts,
 	}

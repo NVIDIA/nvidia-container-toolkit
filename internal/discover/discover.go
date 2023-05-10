@@ -16,12 +16,6 @@
 
 package discover
 
-// Config represents the configuration options for discovery
-type Config struct {
-	DriverRoot    string
-	NvidiaCTKPath string
-}
-
 // Device represents a discovered character device.
 type Device struct {
 	HostPath string

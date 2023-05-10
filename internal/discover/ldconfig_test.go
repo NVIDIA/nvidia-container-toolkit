@@ -31,11 +31,6 @@ const (
 func TestLDCacheUpdateHook(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
-	cfg := Config{
-		DriverRoot:    "/",
-		NvidiaCTKPath: testNvidiaCTKPath,
-	}
-
 	testCases := []struct {
 		description   string
 		mounts        []Mount
@@ -95,7 +90,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 				Lifecycle: "createContainer",
 			}
 
-			d, err := NewLDCacheUpdateHook(logger, mountMock, &cfg)
+			d, err := NewLDCacheUpdateHook(logger, mountMock, testNvidiaCTKPath)
 			require.NoError(t, err)
 
 			hooks, err := d.Hooks()

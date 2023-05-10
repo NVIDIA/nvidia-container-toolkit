@@ -25,10 +25,10 @@ import (
 )
 
 // NewLDCacheUpdateHook creates a discoverer that updates the ldcache for the specified mounts. A logger can also be specified
-func NewLDCacheUpdateHook(logger *logrus.Logger, mounts Discover, cfg *Config) (Discover, error) {
+func NewLDCacheUpdateHook(logger *logrus.Logger, mounts Discover, nvidiaCTKPath string) (Discover, error) {
 	d := ldconfig{
 		logger:        logger,
-		nvidiaCTKPath: FindNvidiaCTK(logger, cfg.NvidiaCTKPath),
+		nvidiaCTKPath: nvidiaCTKPath,
 		mountsFrom:    mounts,
 	}
 

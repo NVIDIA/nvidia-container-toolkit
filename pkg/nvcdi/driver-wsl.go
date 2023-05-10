@@ -90,11 +90,7 @@ func newWSLDriverStoreDiscoverer(logger *logrus.Logger, driverRoot string, nvidi
 	links := []string{fmt.Sprintf("%s::%s", target, link)}
 	symlinkHook := discover.CreateCreateSymlinkHook(nvidiaCTKPath, links)
 
-	cfg := &discover.Config{
-		DriverRoot:    driverRoot,
-		NvidiaCTKPath: nvidiaCTKPath,
-	}
-	ldcacheHook, _ := discover.NewLDCacheUpdateHook(logger, libraries, cfg)
+	ldcacheHook, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCTKPath)
 
 	d := discover.Merge(
 		libraries,

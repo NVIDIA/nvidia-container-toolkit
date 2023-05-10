@@ -31,9 +31,7 @@ import (
 )
 
 // NewGraphicsDiscoverer returns the discoverer for graphics tools such as Vulkan.
-func NewGraphicsDiscoverer(logger *logrus.Logger, devices image.VisibleDevices, cfg *Config) (Discover, error) {
-	driverRoot := cfg.DriverRoot
-
+func NewGraphicsDiscoverer(logger *logrus.Logger, devices image.VisibleDevices, driverRoot string, nvidiaCTKPath string) (Discover, error) {
 	mounts, err := NewGraphicsMountsDiscoverer(logger, driverRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mounts discoverer: %v", err)
@@ -44,9 +42,9 @@ func NewGraphicsDiscoverer(logger *logrus.Logger, devices image.VisibleDevices, 
 		return nil, fmt.Errorf("failed to create DRM device discoverer: %v", err)
 	}
 
-	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, cfg)
+	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, driverRoot, nvidiaCTKPath)
 
-	xorg := optionalXorgDiscoverer(logger, driverRoot, cfg.NvidiaCTKPath)
+	xorg := optionalXorgDiscoverer(logger, driverRoot, nvidiaCTKPath)
 
 	discover := Merge(
 		Merge(drmDeviceNodes, drmByPathSymlinks),
@@ -106,11 +104,11 @@ type drmDevicesByPath struct {
 }
 
 // newCreateDRMByPathSymlinks creates a discoverer for a hook to create the by-path symlinks for DRM devices discovered by the specified devices discoverer
-func newCreateDRMByPathSymlinks(logger *logrus.Logger, devices Discover, cfg *Config) Discover {
+func newCreateDRMByPathSymlinks(logger *logrus.Logger, devices Discover, driverRoot string, nvidiaCTKPath string) Discover {
 	d := drmDevicesByPath{
 		logger:        logger,
-		nvidiaCTKPath: FindNvidiaCTK(logger, cfg.NvidiaCTKPath),
-		driverRoot:    cfg.DriverRoot,
+		nvidiaCTKPath: nvidiaCTKPath,
+		driverRoot:    driverRoot,
 		devicesFrom:   devices,
 	}
 
@@ -300,7 +298,7 @@ func newXorgDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath s
 	xorgHooks := xorgHooks{
 		libraries:     xorgLibs,
 		driverVersion: version,
-		nvidiaCTKPath: FindNvidiaCTK(logger, nvidiaCTKPath),
+		nvidiaCTKPath: nvidiaCTKPath,
 	}
 
 	xorgConfg := NewMounts(
