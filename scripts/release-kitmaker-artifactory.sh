@@ -68,8 +68,6 @@ fi
 KITMAKER_SCRATCH="${KITMAKER_DIR}/.scratch"
 
 IMAGE_EPOCH=$(extract_info "IMAGE_EPOCH")
-# Note we use the main branch for the kitmaker archive.
-GIT_BRANCH=main
 GIT_COMMIT=$(extract_info "GIT_COMMIT")
 GIT_COMMIT_SHORT=$(extract_info "GIT_COMMIT_SHORT")
 VERSION=$(extract_info "PACKAGE_VERSION")
@@ -78,15 +76,16 @@ VERSION=$(extract_info "PACKAGE_VERSION")
 # add_distro adds the specified component, os, and arch to the .package folder from which a kitmaker archive is generated.
 function add_distro() {
     local component=$1
-    local os=$2
-    local arch=$3
+    local branch=$2
+    local os=$3
+    local arch=$4
 
-    local package_dist=$4
-    local package_arch=$5
+    local package_dist=$5
+    local package_arch=$6
 
     local name="${component}-${os}-${arch}"
 
-    local scratch_dir="${KITMAKER_SCRATCH}/${name}/${component}"
+    local scratch_dir="${KITMAKER_SCRATCH}/${name}/${branch}/${component}"
     local packages_dir="${scratch_dir}/.packages"
 
     mkdir -p "${packages_dir}"
@@ -99,15 +98,18 @@ function add_distro() {
 # create_archive creates a kitmaker archive for the specified component, os, and arch.
 function create_archive() {
     local component=$1
-    local os=$2
-    local arch=$3
-    local version=$4
+    local branch=$2
+    local os=$3
+    local arch=$4
+    local version=$5
 
     local name="${component}-${os}-${arch}"
-    local archive="${KITMAKER_DIR}/${name}-${version}.tar.gz"
+    local archive="${KITMAKER_DIR}/${branch}/${name}-${version}.tar.gz"
 
-    local scratch_dir="${KITMAKER_SCRATCH}/${name}/${component}"
+    local scratch_dir="${KITMAKER_SCRATCH}/${name}/${branch}/${component}"
     local packages_dir="${scratch_dir}/.packages/"
+
+    mkdir -p $(dirname "${archive}")
 
     tar zcvf "${archive}" -C "${scratch_dir}/.." "${component}"
     echo "Created: ${archive}"
@@ -132,14 +134,14 @@ function optionally_add_property() {
 
 function upload_archive() {
     local component=$1
-    local os=$2
-    local arch=$3
-    local version=$4
-
-    local package_builds=$(join_by , ${@:5})
+    local branch=$2
+    local os=$3
+    local arch=$4
+    local version=$5
+    local package_builds=$(join_by , ${@:6})
 
     local name="${component}-${os}-${arch}"
-    local archive="${KITMAKER_DIR}/${name}-${version}.tar.gz"
+    local archive="${KITMAKER_DIR}/${branch}/${name}-${version}.tar.gz"
 
     if [ ! -r "${archive}" ]; then
         echo "ERROR: File not found or not readable: ${archive}"
@@ -147,7 +149,7 @@ function upload_archive() {
     fi
     local sha1_checksum=$(sha1sum -b "${archive}" | awk '{ print $1 }')
 
-    local upload_url="${KITMAKER_ARTIFACTORY_REPO}/${GIT_BRANCH}/${component}/${os}-${arch}/${version}/$(basename ${archive})"
+    local upload_url="${KITMAKER_ARTIFACTORY_REPO}/${branch}/${component}/${os}-${arch}/${version}/$(basename ${archive})"
 
     local props=()
     # Required KITMAKER properties:
@@ -157,7 +159,7 @@ function upload_archive() {
     props+=("arch=${arch}")
     props+=("platform=${os}-${arch}")
     props+=("changelist=${GIT_COMMIT_SHORT}")
-    props+=("branch=${GIT_BRANCH}")
+    props+=("branch=${branch}")
     props+=("source=https://gitlab.com/nvidia/container-toolkit/container-toolkit")
     # Package properties:
     props+=("package.epoch=${IMAGE_EPOCH}")
@@ -196,28 +198,30 @@ kitmaker_os="linux"
 
 # create_and_upload creates a kitmaker archive for the specified component, os, and arch and uploads it.
 function create_and_upload() {
-    local kitmaker_arch=$1
-    local builds=${@:2}
+    local branch=$1
+    local kitmaker_arch=$2
+    local builds=${@:3}
 
     for build in ${builds}; do
         local package_dist=$(echo ${build} | cut -d- -f1)
         local package_arch=$(echo ${build} | cut -d- -f2)
 
-        add_distro "${component}" "${kitmaker_os}" "${kitmaker_arch}" "${package_dist}" "${package_arch}"
+        add_distro "${component}" "${branch}" "${kitmaker_os}" "${kitmaker_arch}" "${package_dist}" "${package_arch}"
     done
 
-    create_archive "${component}" "${kitmaker_os}" "${kitmaker_arch}" "${kitmaker_version}"
-    upload_archive "${component}" "${kitmaker_os}" "${kitmaker_arch}" "${kitmaker_version}" ${builds}
+    create_archive "${component}" "${branch}" "${kitmaker_os}" "${kitmaker_arch}" "${kitmaker_version}"
+    upload_archive "${component}" "${branch}" "${kitmaker_os}" "${kitmaker_arch}" "${kitmaker_version}" ${builds}
 }
 
 # Create archive for x86_64 linux distributions
-create_and_upload "x86_64" "ubuntu18.04-amd64" "centos8-x86_64"
+create_and_upload "main" "x86_64" "ubuntu18.04-amd64" "centos8-x86_64"
+create_and_upload "centos7" "x86_64" "centos7-x86_64"
 
 # Create archive for sbsa linux distributions
-create_and_upload "sbsa" "ubuntu18.04-arm64" "centos8-aarch64"
+create_and_upload "main" "sbsa" "ubuntu18.04-arm64" "centos8-aarch64"
 # Create archive for aarch64 linux distributions
 # NOTE: From the perspective of the NVIDIA Container Toolkit aarch64 is just a duplicate of sbsa
-create_and_upload "aarch64" "ubuntu18.04-arm64" "centos8-aarch64"
+create_and_upload "main" "aarch64" "ubuntu18.04-arm64" "centos8-aarch64"
 
 # Create archive for ppc64le linux distributions
-create_and_upload "ppc64le" "ubuntu18.04-ppc64le" "centos8-ppc64le"
+create_and_upload "main" "ppc64le" "ubuntu18.04-ppc64le" "centos8-ppc64le"
