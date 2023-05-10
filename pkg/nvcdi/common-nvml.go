@@ -44,7 +44,7 @@ func newCommonNVMLDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTK
 		},
 	)
 
-	graphicsMounts, err := discover.NewGraphicsMountsDiscoverer(logger, driverRoot)
+	graphicsMounts, err := discover.NewGraphicsMountsDiscoverer(logger, driverRoot, nvidiaCTKPath)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing discoverer for graphics mounts: %v", err)
 	}

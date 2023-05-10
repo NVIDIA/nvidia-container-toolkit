@@ -32,7 +32,7 @@ import (
 
 // NewGraphicsDiscoverer returns the discoverer for graphics tools such as Vulkan.
 func NewGraphicsDiscoverer(logger *logrus.Logger, devices image.VisibleDevices, driverRoot string, nvidiaCTKPath string) (Discover, error) {
-	mounts, err := NewGraphicsMountsDiscoverer(logger, driverRoot)
+	mounts, err := NewGraphicsMountsDiscoverer(logger, driverRoot, nvidiaCTKPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mounts discoverer: %v", err)
 	}
@@ -44,19 +44,16 @@ func NewGraphicsDiscoverer(logger *logrus.Logger, devices image.VisibleDevices, 
 
 	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, driverRoot, nvidiaCTKPath)
 
-	xorg := optionalXorgDiscoverer(logger, driverRoot, nvidiaCTKPath)
-
 	discover := Merge(
 		Merge(drmDeviceNodes, drmByPathSymlinks),
 		mounts,
-		xorg,
 	)
 
 	return discover, nil
 }
 
 // NewGraphicsMountsDiscoverer creates a discoverer for the mounts required by graphics tools such as vulkan.
-func NewGraphicsMountsDiscoverer(logger *logrus.Logger, driverRoot string) (Discover, error) {
+func NewGraphicsMountsDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath string) (Discover, error) {
 	locator, err := lookup.NewLibraryLocator(logger, driverRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct library locator: %v", err)
@@ -87,9 +84,12 @@ func NewGraphicsMountsDiscoverer(logger *logrus.Logger, driverRoot string) (Disc
 		},
 	)
 
+	xorg := optionalXorgDiscoverer(logger, driverRoot, nvidiaCTKPath)
+
 	discover := Merge(
 		libraries,
 		jsonMounts,
+		xorg,
 	)
 
 	return discover, nil
