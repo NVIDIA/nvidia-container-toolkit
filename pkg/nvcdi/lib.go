@@ -167,6 +167,16 @@ func (l *nvcdilib) resolveMode() (rmode string) {
 		return ModeWsl
 	}
 
+	isNvml, reason := l.infolib.HasNvml()
+	l.logger.Debugf("Is NVML-based system? %v: %v", isNvml, reason)
+
+	isTegra, reason := l.infolib.IsTegraSystem()
+	l.logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
+
+	if isTegra && !isNvml {
+		return ModeCSV
+	}
+
 	return ModeNvml
 }
 
