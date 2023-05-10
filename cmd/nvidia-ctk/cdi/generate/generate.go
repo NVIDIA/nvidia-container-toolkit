@@ -40,7 +40,7 @@ type command struct {
 	logger *logrus.Logger
 }
 
-type config struct {
+type options struct {
 	output             string
 	format             string
 	deviceNameStrategy string
@@ -61,17 +61,17 @@ func NewCommand(logger *logrus.Logger) *cli.Command {
 
 // build creates the CLI command
 func (m command) build() *cli.Command {
-	cfg := config{}
+	opts := options{}
 
 	// Create the 'generate-cdi' command
 	c := cli.Command{
 		Name:  "generate",
 		Usage: "Generate CDI specifications for use with CDI-enabled runtimes",
 		Before: func(c *cli.Context) error {
-			return m.validateFlags(c, &cfg)
+			return m.validateFlags(c, &opts)
 		},
 		Action: func(c *cli.Context) error {
-			return m.run(c, &cfg)
+			return m.run(c, &opts)
 		},
 	}
 
@@ -79,109 +79,109 @@ func (m command) build() *cli.Command {
 		&cli.StringFlag{
 			Name:        "output",
 			Usage:       "Specify the file to output the generated CDI specification to. If this is '' the specification is output to STDOUT",
-			Destination: &cfg.output,
+			Destination: &opts.output,
 		},
 		&cli.StringFlag{
 			Name:        "format",
 			Usage:       "The output format for the generated spec [json | yaml]. This overrides the format defined by the output file extension (if specified).",
 			Value:       spec.FormatYAML,
-			Destination: &cfg.format,
+			Destination: &opts.format,
 		},
 		&cli.StringFlag{
 			Name:        "mode",
 			Aliases:     []string{"discovery-mode"},
 			Usage:       "The mode to use when discovering the available entities. One of [auto | nvml | wsl]. If mode is set to 'auto' the mode will be determined based on the system configuration.",
 			Value:       nvcdi.ModeAuto,
-			Destination: &cfg.mode,
+			Destination: &opts.mode,
 		},
 		&cli.StringFlag{
 			Name:        "device-name-strategy",
 			Usage:       "Specify the strategy for generating device names. One of [index | uuid | type-index]",
 			Value:       nvcdi.DeviceNameStrategyIndex,
-			Destination: &cfg.deviceNameStrategy,
+			Destination: &opts.deviceNameStrategy,
 		},
 		&cli.StringFlag{
 			Name:        "driver-root",
 			Usage:       "Specify the NVIDIA GPU driver root to use when discovering the entities that should be included in the CDI specification.",
-			Destination: &cfg.driverRoot,
+			Destination: &opts.driverRoot,
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-ctk-path",
 			Usage:       "Specify the path to use for the nvidia-ctk in the generated CDI specification. If this is left empty, the path will be searched.",
-			Destination: &cfg.nvidiaCTKPath,
+			Destination: &opts.nvidiaCTKPath,
 		},
 		&cli.StringFlag{
 			Name:        "vendor",
 			Aliases:     []string{"cdi-vendor"},
 			Usage:       "the vendor string to use for the generated CDI specification.",
 			Value:       "nvidia.com",
-			Destination: &cfg.vendor,
+			Destination: &opts.vendor,
 		},
 		&cli.StringFlag{
 			Name:        "class",
 			Aliases:     []string{"cdi-class"},
 			Usage:       "the class string to use for the generated CDI specification.",
 			Value:       "gpu",
-			Destination: &cfg.class,
+			Destination: &opts.class,
 		},
 	}
 
 	return &c
 }
 
-func (m command) validateFlags(c *cli.Context, cfg *config) error {
+func (m command) validateFlags(c *cli.Context, opts *options) error {
 
-	cfg.format = strings.ToLower(cfg.format)
-	switch cfg.format {
+	opts.format = strings.ToLower(opts.format)
+	switch opts.format {
 	case spec.FormatJSON:
 	case spec.FormatYAML:
 	default:
-		return fmt.Errorf("invalid output format: %v", cfg.format)
+		return fmt.Errorf("invalid output format: %v", opts.format)
 	}
 
-	cfg.mode = strings.ToLower(cfg.mode)
-	switch cfg.mode {
+	opts.mode = strings.ToLower(opts.mode)
+	switch opts.mode {
 	case nvcdi.ModeAuto:
 	case nvcdi.ModeNvml:
 	case nvcdi.ModeWsl:
 	case nvcdi.ModeManagement:
 	default:
-		return fmt.Errorf("invalid discovery mode: %v", cfg.mode)
+		return fmt.Errorf("invalid discovery mode: %v", opts.mode)
 	}
 
-	_, err := nvcdi.NewDeviceNamer(cfg.deviceNameStrategy)
+	_, err := nvcdi.NewDeviceNamer(opts.deviceNameStrategy)
 	if err != nil {
 		return err
 	}
 
 	cfg.nvidiaCTKPath = discover.FindNvidiaCTK(m.logger, cfg.nvidiaCTKPath)
 
-	if outputFileFormat := formatFromFilename(cfg.output); outputFileFormat != "" {
+	if outputFileFormat := formatFromFilename(opts.output); outputFileFormat != "" {
 		m.logger.Debugf("Inferred output format as %q from output file name", outputFileFormat)
 		if !c.IsSet("format") {
-			cfg.format = outputFileFormat
-		} else if outputFileFormat != cfg.format {
-			m.logger.Warningf("Requested output format %q does not match format implied by output file name: %q", cfg.format, outputFileFormat)
+			opts.format = outputFileFormat
+		} else if outputFileFormat != opts.format {
+			m.logger.Warningf("Requested output format %q does not match format implied by output file name: %q", opts.format, outputFileFormat)
 		}
 	}
 
-	if err := cdi.ValidateVendorName(cfg.vendor); err != nil {
+	if err := cdi.ValidateVendorName(opts.vendor); err != nil {
 		return fmt.Errorf("invalid CDI vendor name: %v", err)
 	}
-	if err := cdi.ValidateClassName(cfg.class); err != nil {
+	if err := cdi.ValidateClassName(opts.class); err != nil {
 		return fmt.Errorf("invalid CDI class name: %v", err)
 	}
 	return nil
 }
 
-func (m command) run(c *cli.Context, cfg *config) error {
-	spec, err := m.generateSpec(cfg)
+func (m command) run(c *cli.Context, opts *options) error {
+	spec, err := m.generateSpec(opts)
 	if err != nil {
 		return fmt.Errorf("failed to generate CDI spec: %v", err)
 	}
 	m.logger.Infof("Generated CDI spec with version %v", spec.Raw().Version)
 
-	if cfg.output == "" {
+	if opts.output == "" {
 		_, err := spec.WriteTo(os.Stdout)
 		if err != nil {
 			return fmt.Errorf("failed to write CDI spec to STDOUT: %v", err)
@@ -189,7 +189,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return nil
 	}
 
-	return spec.Save(cfg.output)
+	return spec.Save(opts.output)
 }
 
 func formatFromFilename(filename string) string {
@@ -204,18 +204,18 @@ func formatFromFilename(filename string) string {
 	return ""
 }
 
-func (m command) generateSpec(cfg *config) (spec.Interface, error) {
-	deviceNamer, err := nvcdi.NewDeviceNamer(cfg.deviceNameStrategy)
+func (m command) generateSpec(opts *options) (spec.Interface, error) {
+	deviceNamer, err := nvcdi.NewDeviceNamer(opts.deviceNameStrategy)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device namer: %v", err)
 	}
 
 	cdilib, err := nvcdi.New(
 		nvcdi.WithLogger(m.logger),
-		nvcdi.WithDriverRoot(cfg.driverRoot),
-		nvcdi.WithNVIDIACTKPath(cfg.nvidiaCTKPath),
+		nvcdi.WithDriverRoot(opts.driverRoot),
+		nvcdi.WithNVIDIACTKPath(opts.nvidiaCTKPath),
 		nvcdi.WithDeviceNamer(deviceNamer),
-		nvcdi.WithMode(string(cfg.mode)),
+		nvcdi.WithMode(string(opts.mode)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)
@@ -246,11 +246,11 @@ func (m command) generateSpec(cfg *config) (spec.Interface, error) {
 	}
 
 	return spec.New(
-		spec.WithVendor(cfg.vendor),
-		spec.WithClass(cfg.class),
+		spec.WithVendor(opts.vendor),
+		spec.WithClass(opts.class),
 		spec.WithDeviceSpecs(deviceSpecs),
 		spec.WithEdits(*commonEdits.ContainerEdits),
-		spec.WithFormat(cfg.format),
+		spec.WithFormat(opts.format),
 		spec.WithPermissions(0644),
 	)
 }
