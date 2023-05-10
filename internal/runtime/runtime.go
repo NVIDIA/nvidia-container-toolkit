@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
@@ -65,7 +64,7 @@ func (r rt) Run(argv []string) (rerr error) {
 	if r.modeOverride != "" {
 		cfg.NVIDIAContainerRuntimeConfig.Mode = r.modeOverride
 	}
-	cfg.NVIDIACTKConfig.Path = discover.FindNvidiaCTK(r.logger.Logger, cfg.NVIDIACTKConfig.Path)
+	cfg.NVIDIACTKConfig.Path = config.ResolveNVIDIACTKPath(r.logger.Logger, cfg.NVIDIACTKConfig.Path)
 
 	// Print the config to the output.
 	configJSON, err := json.MarshalIndent(cfg, "", "  ")
