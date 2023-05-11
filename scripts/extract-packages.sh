@@ -113,3 +113,4 @@ copy-file "${PACKAGE_IMAGE}" "/artifacts/manifest.txt" "${ARTIFACTS_DIR}/manifes
 
 extract-all ubuntu18.04
 extract-all centos8
+extract-all centos7
