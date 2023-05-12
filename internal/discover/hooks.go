@@ -19,14 +19,7 @@ package discover
 import (
 	"path/filepath"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
-	"github.com/sirupsen/logrus"
-)
-
-const (
-	nvidiaCTKExecutable      = "nvidia-ctk"
-	nvidiaCTKDefaultFilePath = "/usr/bin/nvidia-ctk"
 )
 
 var _ Discover = (*Hook)(nil)
@@ -71,33 +64,4 @@ func CreateNvidiaCTKHook(nvidiaCTKPath string, hookName string, additionalArgs .
 		Path:      nvidiaCTKPath,
 		Args:      append([]string{filepath.Base(nvidiaCTKPath), "hook", hookName}, additionalArgs...),
 	}
-}
-
-// FindNvidiaCTK locates the nvidia-ctk executable to be used in hooks.
-// If an nvidia-ctk path is specified as an absolute path, it is used directly
-// without checking for existence of an executable at that path.
-func FindNvidiaCTK(logger *logrus.Logger, nvidiaCTKPath string) string {
-	if filepath.IsAbs(nvidiaCTKPath) {
-		logger.Debugf("Using specified NVIDIA Container Toolkit CLI path %v", nvidiaCTKPath)
-		return nvidiaCTKPath
-	}
-
-	if nvidiaCTKPath == "" {
-		nvidiaCTKPath = nvidiaCTKExecutable
-	}
-	logger.Debugf("Locating NVIDIA Container Toolkit CLI as %v", nvidiaCTKPath)
-	lookup := lookup.NewExecutableLocator(logger, "")
-	hookPath := nvidiaCTKDefaultFilePath
-	targets, err := lookup.Locate(nvidiaCTKPath)
-	if err != nil {
-		logger.Warnf("Failed to locate %v: %v", nvidiaCTKPath, err)
-	} else if len(targets) == 0 {
-		logger.Warnf("%v not found", nvidiaCTKPath)
-	} else {
-		logger.Debugf("Found %v candidates: %v", nvidiaCTKPath, targets)
-		hookPath = targets[0]
-	}
-	logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
-
-	return hookPath
 }

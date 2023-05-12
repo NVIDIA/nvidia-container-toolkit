@@ -61,11 +61,6 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 	}
 	logger.Infof("Constructing modifier from config: %+v", *cfg)
 
-	config := &discover.Config{
-		DriverRoot:    cfg.NVIDIAContainerCLIConfig.Root,
-		NvidiaCTKPath: cfg.NVIDIACTKConfig.Path,
-	}
-
 	if err := checkRequirements(logger, image); err != nil {
 		return nil, fmt.Errorf("requirements not met: %v", err)
 	}
@@ -79,17 +74,17 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 		csvFiles = csv.BaseFilesOnly(csvFiles)
 	}
 
-	csvDiscoverer, err := discover.NewFromCSVFiles(logger, csvFiles, config.DriverRoot)
+	csvDiscoverer, err := discover.NewFromCSVFiles(logger, csvFiles, cfg.NVIDIAContainerCLIConfig.Root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
 	}
 
-	createSymlinksHook, err := discover.NewCreateSymlinksHook(logger, csvFiles, csvDiscoverer, config)
+	createSymlinksHook, err := discover.NewCreateSymlinksHook(logger, csvFiles, csvDiscoverer, cfg.NVIDIACTKConfig.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create symlink hook discoverer: %v", err)
 	}
 
-	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(logger, csvDiscoverer, config)
+	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(logger, csvDiscoverer, cfg.NVIDIACTKConfig.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ldcach update hook discoverer: %v", err)
 	}

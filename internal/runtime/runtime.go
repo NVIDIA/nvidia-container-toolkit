@@ -44,10 +44,6 @@ func (r rt) Run(argv []string) (rerr error) {
 	if err != nil {
 		return fmt.Errorf("error loading config: %v", err)
 	}
-	if r.modeOverride != "" {
-		cfg.NVIDIAContainerRuntimeConfig.Mode = r.modeOverride
-	}
-
 	err = r.logger.Update(
 		cfg.NVIDIAContainerRuntimeConfig.DebugFilePath,
 		cfg.NVIDIAContainerRuntimeConfig.LogLevel,
@@ -62,6 +58,13 @@ func (r rt) Run(argv []string) (rerr error) {
 		}
 		r.logger.Reset()
 	}()
+
+	// We apply some config updates here to ensure that the config is valid in
+	// all cases.
+	if r.modeOverride != "" {
+		cfg.NVIDIAContainerRuntimeConfig.Mode = r.modeOverride
+	}
+	cfg.NVIDIACTKConfig.Path = config.ResolveNVIDIACTKPath(r.logger.Logger, cfg.NVIDIACTKConfig.Path)
 
 	// Print the config to the output.
 	configJSON, err := json.MarshalIndent(cfg, "", "  ")

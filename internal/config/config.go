@@ -22,15 +22,21 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/pelletier/go-toml"
+	"github.com/sirupsen/logrus"
 )
 
 const (
 	configOverride = "XDG_CONFIG_HOME"
 	configFilePath = "nvidia-container-runtime/config.toml"
+
+	nvidiaCTKExecutable      = "nvidia-ctk"
+	nvidiaCTKDefaultFilePath = "/usr/bin/nvidia-ctk"
 )
 
 var (
@@ -181,7 +187,7 @@ func GetDefaultConfigToml() (*toml.Tree, error) {
 	tree.Set("nvidia-container-runtime.modes.cdi.annotation-prefixes", []string{cdi.AnnotationPrefix})
 
 	// nvidia-ctk
-	tree.Set("nvidia-ctk.path", "nvidia-ctk")
+	tree.Set("nvidia-ctk.path", nvidiaCTKExecutable)
 
 	return tree, nil
 }
@@ -231,4 +237,34 @@ func getDistIDLike() []string {
 		}
 	}
 	return nil
+}
+
+// ResolveNVIDIACTKPath resolves the path to the nvidia-ctk binary.
+// This executable is used in hooks and needs to be an absolute path.
+// If the path is specified as an absolute path, it is used directly
+// without checking for existence of an executable at that path.
+func ResolveNVIDIACTKPath(logger *logrus.Logger, nvidiaCTKPath string) string {
+	if filepath.IsAbs(nvidiaCTKPath) {
+		logger.Debugf("Using specified NVIDIA Container Toolkit CLI path %v", nvidiaCTKPath)
+		return nvidiaCTKPath
+	}
+
+	if nvidiaCTKPath == "" {
+		nvidiaCTKPath = nvidiaCTKExecutable
+	}
+	logger.Debugf("Locating NVIDIA Container Toolkit CLI as %v", nvidiaCTKPath)
+	lookup := lookup.NewExecutableLocator(logger, "")
+	hookPath := nvidiaCTKDefaultFilePath
+	targets, err := lookup.Locate(nvidiaCTKPath)
+	if err != nil {
+		logger.Warnf("Failed to locate %v: %v", nvidiaCTKPath, err)
+	} else if len(targets) == 0 {
+		logger.Warnf("%v not found", nvidiaCTKPath)
+	} else {
+		logger.Debugf("Found %v candidates: %v", nvidiaCTKPath, targets)
+		hookPath = targets[0]
+	}
+	logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
+
+	return hookPath
 }
