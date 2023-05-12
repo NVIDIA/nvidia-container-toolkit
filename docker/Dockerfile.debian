@@ -53,15 +53,6 @@ ARG GIT_COMMIT
 ENV GIT_COMMIT ${GIT_COMMIT}
 RUN make PREFIX=${DIST_DIR} cmds
 
-ARG CONFIG_TOML_SUFFIX
-ENV CONFIG_TOML_SUFFIX ${CONFIG_TOML_SUFFIX}
-COPY config/config.toml.${CONFIG_TOML_SUFFIX} $DIST_DIR/config.toml
-
-# Debian Jessie still had ldconfig.real
-RUN if [ "$(lsb_release -cs)" = "jessie" ]; then \
-       sed -i 's;"@/sbin/ldconfig";"@/sbin/ldconfig.real";' $DIST_DIR/config.toml; \
-    fi
-
 WORKDIR $DIST_DIR
 COPY packaging/debian ./debian
 

@@ -12,6 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This list represents the distribution-architecture pairs that are actually published
+# to the relevant repositories. This targets forwarded to the build-all-components script
+# can be overridden by specifying command line arguments.
+all=(
+    centos7-x86_64
+    centos8-aarch64
+    centos8-ppc64le
+    centos8-x86_64
+    ubuntu18.04-amd64
+    ubuntu18.04-arm64
+    ubuntu18.04-ppc64le
+)
 
 # package_type returns the packaging type (deb or rpm) for the specfied distribution.
 # An error is returned if the ditribution is unsupported.

@@ -23,22 +23,7 @@ set -e
 
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 
-# This list represents the distribution-architecture pairs that are actually published
-# to the relevant repositories. This targets forwarded to the build-all-components script
-# can be overridden by specifying command line arguments.
-all=(
-    amazonlinux2-aarch64
-    amazonlinux2-x86_64
-    centos7-x86_64
-    centos8-aarch64
-    centos8-ppc64le
-    centos8-x86_64
-    debian10-amd64
-    opensuse-leap15.1-x86_64
-    ubuntu18.04-amd64
-    ubuntu18.04-arm64
-    ubuntu18.04-ppc64le
-)
+source "${SCRIPTS_DIR}"/utils.sh
 
 if [[ $# -gt 0 ]]; then
     targets=($*)

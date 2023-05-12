@@ -99,13 +99,11 @@ LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)$(if $(LIBNVI
 # private centos target
 --centos%: OS := centos
 --centos%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
---centos%: CONFIG_TOML_SUFFIX := rpm-yum
 --centos8%: BASEIMAGE = quay.io/centos/centos:stream8
 
 # private amazonlinux target
 --amazonlinux%: OS := amazonlinux
 --amazonlinux%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
---amazonlinux%: CONFIG_TOML_SUFFIX := rpm-yum
 
 # private opensuse-leap target
 --opensuse-leap%: OS = opensuse-leap
@@ -116,12 +114,8 @@ LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)$(if $(LIBNVI
 --rhel%: VERSION = $(patsubst rhel%-$(ARCH),%,$(TARGET_PLATFORM))
 --rhel%: ARTIFACTS_DIR = $(DIST_DIR)/rhel$(VERSION)/$(ARCH)
 --rhel%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
---rhel%: CONFIG_TOML_SUFFIX := rpm-yum
 --rhel8%: BASEIMAGE = quay.io/centos/centos:stream8
 
-
-# We allow the CONFIG_TOML_SUFFIX to be overridden.
-CONFIG_TOML_SUFFIX ?= $(OS)
 
 docker-build-%:
 	@echo "Building for $(TARGET_PLATFORM)"
@@ -136,7 +130,6 @@ docker-build-%:
 	    --build-arg PKG_VERS="$(PACKAGE_VERSION)" \
 	    --build-arg PKG_REV="$(PACKAGE_REVISION)" \
 	    --build-arg LIBNVIDIA_CONTAINER_TOOLS_VERSION="$(LIBNVIDIA_CONTAINER_TOOLS_VERSION)" \
-	    --build-arg CONFIG_TOML_SUFFIX="$(CONFIG_TOML_SUFFIX)" \
 	    --build-arg GIT_COMMIT="$(GIT_COMMIT)" \
 	    --tag $(BUILDIMAGE) \
 	    --file $(DOCKERFILE) .
