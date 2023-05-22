@@ -17,13 +17,114 @@
 package transform
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/stretchr/testify/require"
 )
 
-func TestSimplify(t *testing.T) {
+func TestMergeDeviceSpecs(t *testing.T) {
+	testCases := []struct {
+		description      string
+		deviceSpecs      []specs.Device
+		mergedDeviceName string
+		createError      error
+		expectedError    error
+		expected         *specs.Device
+	}{
+		{
+			description:      "no devices",
+			mergedDeviceName: "all",
+			expected: &specs.Device{
+				Name: "all",
+			},
+		},
+		{
+			description:      "one device",
+			mergedDeviceName: "all",
+			deviceSpecs: []specs.Device{
+				{
+					Name: "gpu0",
+					ContainerEdits: specs.ContainerEdits{
+						Env: []string{"GPU=0"},
+					},
+				},
+			},
+			expected: &specs.Device{
+				Name: "all",
+				ContainerEdits: specs.ContainerEdits{
+					Env: []string{"GPU=0"},
+				},
+			},
+		},
+		{
+			description:      "two devices",
+			mergedDeviceName: "all",
+			deviceSpecs: []specs.Device{
+				{
+					Name: "gpu0",
+					ContainerEdits: specs.ContainerEdits{
+						Env: []string{"GPU=0"},
+					},
+				},
+				{
+					Name: "gpu1",
+					ContainerEdits: specs.ContainerEdits{
+						Env: []string{"GPU=1"},
+					},
+				},
+			},
+			expected: &specs.Device{
+				Name: "all",
+				ContainerEdits: specs.ContainerEdits{
+					Env: []string{"GPU=0", "GPU=1"},
+				},
+			},
+		},
+		{
+			description:      "has merged device",
+			mergedDeviceName: "gpu0",
+			deviceSpecs: []specs.Device{
+				{
+					Name: "gpu0",
+					ContainerEdits: specs.ContainerEdits{
+						Env: []string{"GPU=0"},
+					},
+				},
+			},
+		},
+		{
+			description:      "invalid merged device name",
+			mergedDeviceName: ".-not-valid",
+			createError:      fmt.Errorf("invalid device name %q", ".-not-valid"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			_, err := NewMergedDevice(
+				WithName(tc.mergedDeviceName),
+			)
+			if tc.createError != nil {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			device, err := mergeDeviceSpecs(tc.deviceSpecs, tc.mergedDeviceName)
+			if tc.expectedError != nil {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			require.EqualValues(t, tc.expected, device)
+		})
+	}
+}
+
+func TestMergedDevice(t *testing.T) {
 	testCases := []struct {
 		description   string
 		spec          *specs.Spec
@@ -31,82 +132,7 @@ func TestSimplify(t *testing.T) {
 		expectedSpec  *specs.Spec
 	}{
 		{
-			description: "nil spec is a no-op",
-		},
-		{
-			description:  "empty spec is simplified",
-			spec:         &specs.Spec{},
-			expectedSpec: &specs.Spec{},
-		},
-		{
-			description: "simplify does not allow empty device",
-			spec: &specs.Spec{
-				Devices: []specs.Device{
-					{
-						Name: "device0",
-						ContainerEdits: specs.ContainerEdits{
-							Env: []string{"FOO=BAR"},
-						},
-					},
-				},
-				ContainerEdits: specs.ContainerEdits{
-					Env: []string{"FOO=BAR"},
-				},
-			},
-			expectedSpec: &specs.Spec{
-				Devices: []specs.Device{
-					{
-						Name: "device0",
-						ContainerEdits: specs.ContainerEdits{
-							Env: []string{"FOO=BAR"},
-						},
-					},
-				},
-				ContainerEdits: specs.ContainerEdits{
-					Env: []string{"FOO=BAR"},
-				},
-			},
-		},
-		{
-			description: "simplify removes common entities",
-			spec: &specs.Spec{
-				Devices: []specs.Device{
-					{
-						Name: "device0",
-						ContainerEdits: specs.ContainerEdits{
-							Env: []string{"FOO=BAR"},
-							DeviceNodes: []*specs.DeviceNode{
-								{
-									Path: "/dev/gpu0",
-								},
-							},
-						},
-					},
-				},
-				ContainerEdits: specs.ContainerEdits{
-					Env: []string{"FOO=BAR"},
-				},
-			},
-			expectedSpec: &specs.Spec{
-				Devices: []specs.Device{
-					{
-						Name: "device0",
-						ContainerEdits: specs.ContainerEdits{
-							DeviceNodes: []*specs.DeviceNode{
-								{
-									Path: "/dev/gpu0",
-								},
-							},
-						},
-					},
-				},
-				ContainerEdits: specs.ContainerEdits{
-					Env: []string{"FOO=BAR"},
-				},
-			},
-		},
-		{
-			description: "simplify removes hooks",
+			description: "duplicate hooks are removed",
 			spec: &specs.Spec{
 				Devices: []specs.Device{
 					{
@@ -125,23 +151,6 @@ func TestSimplify(t *testing.T) {
 						Name: "gpu1",
 						ContainerEdits: specs.ContainerEdits{
 							Hooks: []*specs.Hook{
-								{
-									HookName: "createContainer",
-									Path:     "/usr/bin/nvidia-ctk",
-									Args:     []string{"nvidia-ctk", "hook", "chmod", "--mode", "755", "--path", "/dev/dri"},
-								},
-							},
-						},
-					},
-					{
-						Name: "all",
-						ContainerEdits: specs.ContainerEdits{
-							Hooks: []*specs.Hook{
-								{
-									HookName: "createContainer",
-									Path:     "/usr/bin/nvidia-ctk",
-									Args:     []string{"nvidia-ctk", "hook", "chmod", "--mode", "755", "--path", "/dev/dri"},
-								},
 								{
 									HookName: "createContainer",
 									Path:     "/usr/bin/nvidia-ctk",
@@ -197,9 +206,10 @@ func TestSimplify(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			s := simplify{}
+			m, err := NewMergedDevice()
+			require.NoError(t, err)
 
-			err := s.Transform(tc.spec)
+			err = m.Transform(tc.spec)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 				return
@@ -207,7 +217,6 @@ func TestSimplify(t *testing.T) {
 			require.NoError(t, err)
 
 			require.EqualValues(t, tc.expectedSpec, tc.spec)
-
 		})
 	}
 }

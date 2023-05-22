@@ -17,6 +17,7 @@
 package nvcdi
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
@@ -85,5 +86,13 @@ func WithVendor(vendor string) Option {
 func WithClass(class string) Option {
 	return func(o *nvcdilib) {
 		o.class = class
+	}
+}
+
+// WithMergedDeviceOptions sets the merged device options for the library
+// If these are not set, no merged device will be generated.
+func WithMergedDeviceOptions(opts ...transform.MergedDeviceOption) Option {
+	return func(o *nvcdilib) {
+		o.mergedDeviceOptions = opts
 	}
 }

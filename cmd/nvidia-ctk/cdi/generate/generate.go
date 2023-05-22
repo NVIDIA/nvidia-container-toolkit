@@ -23,11 +23,10 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
-	specs "github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -225,20 +224,6 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device CDI specs: %v", err)
 	}
-	var hasAll bool
-	for _, deviceSpec := range deviceSpecs {
-		if deviceSpec.Name == allDeviceName {
-			hasAll = true
-			break
-		}
-	}
-	if !hasAll {
-		allDevice, err := MergeDeviceSpecs(deviceSpecs, allDeviceName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create CDI specification for %q device: %v", allDeviceName, err)
-		}
-		deviceSpecs = append(deviceSpecs, allDevice)
-	}
 
 	commonEdits, err := cdilib.GetCommonEdits()
 	if err != nil {
@@ -251,34 +236,10 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		spec.WithDeviceSpecs(deviceSpecs),
 		spec.WithEdits(*commonEdits.ContainerEdits),
 		spec.WithFormat(opts.format),
+		spec.WithMergedDeviceOptions(
+			transform.WithName(allDeviceName),
+			transform.WithSkipIfExists(true),
+		),
 		spec.WithPermissions(0644),
 	)
-}
-
-// MergeDeviceSpecs creates a device with the specified name which combines the edits from the previous devices.
-// If a device of the specified name already exists, an error is returned.
-func MergeDeviceSpecs(deviceSpecs []specs.Device, mergedDeviceName string) (specs.Device, error) {
-	if err := cdi.ValidateDeviceName(mergedDeviceName); err != nil {
-		return specs.Device{}, fmt.Errorf("invalid device name %q: %v", mergedDeviceName, err)
-	}
-	for _, d := range deviceSpecs {
-		if d.Name == mergedDeviceName {
-			return specs.Device{}, fmt.Errorf("device %q already exists", mergedDeviceName)
-		}
-	}
-
-	mergedEdits := edits.NewContainerEdits()
-
-	for _, d := range deviceSpecs {
-		edit := cdi.ContainerEdits{
-			ContainerEdits: &d.ContainerEdits,
-		}
-		mergedEdits.Append(&edit)
-	}
-
-	merged := specs.Device{
-		Name:           mergedDeviceName,
-		ContainerEdits: *mergedEdits.ContainerEdits,
-	}
-	return merged, nil
 }
