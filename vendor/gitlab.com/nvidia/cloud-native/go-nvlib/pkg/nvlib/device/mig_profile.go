@@ -19,6 +19,7 @@ package device
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -36,6 +37,7 @@ type MigProfile interface {
 	String() string
 	GetInfo() MigProfileInfo
 	Equals(other MigProfile) bool
+	Matches(profile string) bool
 }
 
 // MigProfileInfo holds all info associated with a specific MIG profile
@@ -55,11 +57,12 @@ var _ MigProfile = &MigProfileInfo{}
 func (d *devicelib) NewMigProfile(giProfileID, ciProfileID, ciEngProfileID int, migMemorySizeMB, deviceMemorySizeBytes uint64) (MigProfile, error) {
 	giSlices := 0
 	switch giProfileID {
-	case nvml.GPU_INSTANCE_PROFILE_1_SLICE:
+	case nvml.GPU_INSTANCE_PROFILE_1_SLICE,
+		nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV1,
+		nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV2:
 		giSlices = 1
-	case nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV1:
-		giSlices = 1
-	case nvml.GPU_INSTANCE_PROFILE_2_SLICE:
+	case nvml.GPU_INSTANCE_PROFILE_2_SLICE,
+		nvml.GPU_INSTANCE_PROFILE_2_SLICE_REV1:
 		giSlices = 2
 	case nvml.GPU_INSTANCE_PROFILE_3_SLICE:
 		giSlices = 3
@@ -77,7 +80,8 @@ func (d *devicelib) NewMigProfile(giProfileID, ciProfileID, ciEngProfileID int, 
 
 	ciSlices := 0
 	switch ciProfileID {
-	case nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE:
+	case nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE,
+		nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1:
 		ciSlices = 1
 	case nvml.COMPUTE_INSTANCE_PROFILE_2_SLICE:
 		ciSlices = 2
@@ -97,7 +101,8 @@ func (d *devicelib) NewMigProfile(giProfileID, ciProfileID, ciEngProfileID int, 
 
 	var attrs []string
 	switch giProfileID {
-	case nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV1:
+	case nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV1,
+		nvml.GPU_INSTANCE_PROFILE_2_SLICE_REV1:
 		attrs = append(attrs, AttributeMediaExtensions)
 	}
 
@@ -114,90 +119,30 @@ func (d *devicelib) NewMigProfile(giProfileID, ciProfileID, ciEngProfileID int, 
 	return p, nil
 }
 
+// AssertValidMigProfileFormat checks if the string is in the proper format to represent a MIG profile
+func (d *devicelib) AssertValidMigProfileFormat(profile string) error {
+	_, _, _, _, err := parseMigProfile(profile)
+	return err
+}
+
 // ParseMigProfile converts a string representation of a MigProfile into an object
 func (d *devicelib) ParseMigProfile(profile string) (MigProfile, error) {
-	var err error
-	var c, g, gb int
-	var attrs []string
-
-	if len(profile) == 0 {
-		return nil, fmt.Errorf("empty Profile string")
-	}
-
-	split := strings.SplitN(profile, "+", 2)
-	if len(split) == 2 {
-		attrs, err = parseMigProfileAttributes(split[1])
-		if err != nil {
-			return nil, fmt.Errorf("error parsing attributes following '+' in Profile string: %v", err)
-		}
-	}
-
-	c, g, gb, err = parseMigProfileFields(split[0])
+	profiles, err := d.GetMigProfiles()
 	if err != nil {
-		return nil, fmt.Errorf("error parsing '.' separated fields in Profile string: %v", err)
+		return nil, fmt.Errorf("error getting list of possible MIG profiles: %v", err)
 	}
 
-	p := &MigProfileInfo{
-		C:          c,
-		G:          g,
-		GB:         gb,
-		Attributes: attrs,
-	}
-
-	switch c {
-	case 1:
-		p.CIProfileID = nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE
-	case 2:
-		p.CIProfileID = nvml.COMPUTE_INSTANCE_PROFILE_2_SLICE
-	case 3:
-		p.CIProfileID = nvml.COMPUTE_INSTANCE_PROFILE_3_SLICE
-	case 4:
-		p.CIProfileID = nvml.COMPUTE_INSTANCE_PROFILE_4_SLICE
-	case 6:
-		p.CIProfileID = nvml.COMPUTE_INSTANCE_PROFILE_6_SLICE
-	case 7:
-		p.CIProfileID = nvml.COMPUTE_INSTANCE_PROFILE_7_SLICE
-	case 8:
-		p.CIProfileID = nvml.COMPUTE_INSTANCE_PROFILE_8_SLICE
-	default:
-		return nil, fmt.Errorf("unknown Compute Instance slice size: %v", c)
-	}
-
-	switch g {
-	case 1:
-		p.GIProfileID = nvml.GPU_INSTANCE_PROFILE_1_SLICE
-	case 2:
-		p.GIProfileID = nvml.GPU_INSTANCE_PROFILE_2_SLICE
-	case 3:
-		p.GIProfileID = nvml.GPU_INSTANCE_PROFILE_3_SLICE
-	case 4:
-		p.GIProfileID = nvml.GPU_INSTANCE_PROFILE_4_SLICE
-	case 6:
-		p.GIProfileID = nvml.GPU_INSTANCE_PROFILE_6_SLICE
-	case 7:
-		p.GIProfileID = nvml.GPU_INSTANCE_PROFILE_7_SLICE
-	case 8:
-		p.GIProfileID = nvml.GPU_INSTANCE_PROFILE_8_SLICE
-	default:
-		return nil, fmt.Errorf("unknown GPU Instance slice size: %v", g)
-	}
-
-	p.CIEngProfileID = nvml.COMPUTE_INSTANCE_ENGINE_PROFILE_SHARED
-
-	for _, a := range attrs {
-		switch a {
-		case AttributeMediaExtensions:
-			p.GIProfileID = nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV1
-		default:
-			return nil, fmt.Errorf("unknown Profile attribute: %v", a)
+	for _, p := range profiles {
+		if p.Matches(profile) {
+			return p, nil
 		}
 	}
 
-	return p, nil
+	return nil, fmt.Errorf("unable to parse profile string into a valid profile")
 }
 
 // String returns the string representation of a Profile
-func (p *MigProfileInfo) String() string {
+func (p MigProfileInfo) String() string {
 	var suffix string
 	if len(p.Attributes) > 0 {
 		suffix = "+" + strings.Join(p.Attributes, ",")
@@ -209,35 +154,89 @@ func (p *MigProfileInfo) String() string {
 }
 
 // GetInfo returns detailed info about a Profile
-func (p *MigProfileInfo) GetInfo() MigProfileInfo {
-	return *p
+func (p MigProfileInfo) GetInfo() MigProfileInfo {
+	return p
 }
 
 // Equals checks if two Profiles are identical or not
-func (p *MigProfileInfo) Equals(other MigProfile) bool {
-	switch o := other.(type) {
-	case *MigProfileInfo:
-		if p.C != o.C {
-			return false
-		}
-		if p.G != o.G {
-			return false
-		}
-		if p.GB != o.GB {
-			return false
-		}
-		if p.GIProfileID != o.GIProfileID {
-			return false
-		}
-		if p.CIProfileID != o.CIProfileID {
-			return false
-		}
-		if p.CIEngProfileID != o.CIEngProfileID {
-			return false
-		}
-		return true
+func (p MigProfileInfo) Equals(other MigProfile) bool {
+	o := other.GetInfo()
+	if p.C != o.C {
+		return false
 	}
-	return false
+	if p.G != o.G {
+		return false
+	}
+	if p.GB != o.GB {
+		return false
+	}
+	if p.GIProfileID != o.GIProfileID {
+		return false
+	}
+	if p.CIProfileID != o.CIProfileID {
+		return false
+	}
+	if p.CIEngProfileID != o.CIEngProfileID {
+		return false
+	}
+	return true
+}
+
+// Matches checks if a MigProfile matches the string passed in
+func (p MigProfileInfo) Matches(profile string) bool {
+	c, g, gb, attrs, err := parseMigProfile(profile)
+	if err != nil {
+		return false
+	}
+	if c != p.C {
+		return false
+	}
+	if g != p.G {
+		return false
+	}
+	if gb != p.GB {
+		return false
+	}
+	if len(attrs) != len(p.Attributes) {
+		return false
+	}
+	sort.Strings(attrs)
+	sort.Strings(p.Attributes)
+	for i, a := range p.Attributes {
+		if a != attrs[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func parseMigProfile(profile string) (int, int, int, []string, error) {
+	// If we are handed the empty string, we cannot parse it
+	if profile == "" {
+		return -1, -1, -1, nil, fmt.Errorf("profile is the empty string")
+	}
+
+	// Split by + to separate out attributes
+	split := strings.SplitN(profile, "+", 2)
+
+	// Check to make sure the c, g, and gb values match
+	c, g, gb, err := parseMigProfileFields(split[0])
+	if err != nil {
+		return -1, -1, -1, nil, fmt.Errorf("cannot parse fields of '%v': %v", profile, err)
+	}
+
+	// If we have no attributes we are done
+	if len(split) == 1 {
+		return c, g, gb, nil, nil
+	}
+
+	// Make sure we have the same set of attributes
+	attrs, err := parseMigProfileAttributes(split[1])
+	if err != nil {
+		return -1, -1, -1, nil, fmt.Errorf("cannot parse attributes of '%v': %v", profile, err)
+	}
+
+	return c, g, gb, attrs, nil
 }
 
 func parseMigProfileField(s string, field string) (int, error) {

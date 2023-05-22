@@ -22,6 +22,7 @@ import (
 
 // Interface provides the API to the 'device' package
 type Interface interface {
+	AssertValidMigProfileFormat(profile string) error
 	GetDevices() ([]Device, error)
 	GetMigDevices() ([]MigDevice, error)
 	GetMigProfiles() ([]MigProfile, error)
@@ -39,6 +40,8 @@ type Interface interface {
 type devicelib struct {
 	nvml           nvml.Interface
 	skippedDevices map[string]struct{}
+	verifySymbols  *bool
+	migProfiles    []MigProfile
 }
 
 var _ Interface = &devicelib{}
@@ -51,6 +54,10 @@ func New(opts ...Option) Interface {
 	}
 	if d.nvml == nil {
 		d.nvml = nvml.New()
+	}
+	if d.verifySymbols == nil {
+		verify := true
+		d.verifySymbols = &verify
 	}
 	if d.skippedDevices == nil {
 		WithSkippedDevices(
@@ -65,6 +72,13 @@ func New(opts ...Option) Interface {
 func WithNvml(nvml nvml.Interface) Option {
 	return func(d *devicelib) {
 		d.nvml = nvml
+	}
+}
+
+// WithVerifySymbols provides an option to toggle whether to verify select symbols exist in dynamic libraries before calling them
+func WithVerifySymbols(verify bool) Option {
+	return func(d *devicelib) {
+		d.verifySymbols = &verify
 	}
 }
 

@@ -26,6 +26,9 @@ import (
 // Device defines the set of extended functions associated with a device.Device
 type Device interface {
 	nvml.Device
+	GetArchitectureAsString() (string, error)
+	GetBrandAsString() (string, error)
+	GetCudaComputeCapabilityAsString() (string, error)
 	GetMigDevices() ([]MigDevice, error)
 	GetMigProfiles() ([]MigProfile, error)
 	IsMigCapable() (bool, error)
@@ -36,7 +39,8 @@ type Device interface {
 
 type device struct {
 	nvml.Device
-	lib *devicelib
+	lib         *devicelib
+	migProfiles []MigProfile
 }
 
 var _ Device = &device{}
@@ -57,12 +61,98 @@ func (d *devicelib) NewDeviceByUUID(uuid string) (Device, error) {
 
 // newDevice creates a device from an nvml.Device
 func (d *devicelib) newDevice(dev nvml.Device) (*device, error) {
-	return &device{dev, d}, nil
+	return &device{dev, d, nil}, nil
+}
+
+// GetArchitectureAsString returns the Device architecture as a string
+func (d *device) GetArchitectureAsString() (string, error) {
+	arch, ret := d.GetArchitecture()
+	if ret != nvml.SUCCESS {
+		return "", fmt.Errorf("error getting device architecture: %v", ret)
+	}
+	switch arch {
+	case nvml.DEVICE_ARCH_KEPLER:
+		return "Kepler", nil
+	case nvml.DEVICE_ARCH_MAXWELL:
+		return "Maxwell", nil
+	case nvml.DEVICE_ARCH_PASCAL:
+		return "Pascal", nil
+	case nvml.DEVICE_ARCH_VOLTA:
+		return "Volta", nil
+	case nvml.DEVICE_ARCH_TURING:
+		return "Turing", nil
+	case nvml.DEVICE_ARCH_AMPERE:
+		return "Ampere", nil
+	case nvml.DEVICE_ARCH_ADA:
+		return "Ada", nil
+	case nvml.DEVICE_ARCH_HOPPER:
+		return "Hopper", nil
+	case nvml.DEVICE_ARCH_UNKNOWN:
+		return "Unknown", nil
+	}
+	return "", fmt.Errorf("error interpreting device architecture as string: %v", arch)
+}
+
+// GetBrandAsString returns the Device architecture as a string
+func (d *device) GetBrandAsString() (string, error) {
+	brand, ret := d.GetBrand()
+	if ret != nvml.SUCCESS {
+		return "", fmt.Errorf("error getting device brand: %v", ret)
+	}
+	switch brand {
+	case nvml.BRAND_UNKNOWN:
+		return "Unknown", nil
+	case nvml.BRAND_QUADRO:
+		return "Quadro", nil
+	case nvml.BRAND_TESLA:
+		return "Tesla", nil
+	case nvml.BRAND_NVS:
+		return "NVS", nil
+	case nvml.BRAND_GRID:
+		return "Grid", nil
+	case nvml.BRAND_GEFORCE:
+		return "GeForce", nil
+	case nvml.BRAND_TITAN:
+		return "Titan", nil
+	case nvml.BRAND_NVIDIA_VAPPS:
+		return "NvidiaVApps", nil
+	case nvml.BRAND_NVIDIA_VPC:
+		return "NvidiaVPC", nil
+	case nvml.BRAND_NVIDIA_VCS:
+		return "NvidiaVCS", nil
+	case nvml.BRAND_NVIDIA_VWS:
+		return "NvidiaVWS", nil
+	// Deprecated in favor of nvml.BRAND_NVIDIA_CLOUD_GAMING
+	//case nvml.BRAND_NVIDIA_VGAMING:
+	//	return "VGaming", nil
+	case nvml.BRAND_NVIDIA_CLOUD_GAMING:
+		return "NvidiaCloudGaming", nil
+	case nvml.BRAND_QUADRO_RTX:
+		return "QuadroRTX", nil
+	case nvml.BRAND_NVIDIA_RTX:
+		return "NvidiaRTX", nil
+	case nvml.BRAND_NVIDIA:
+		return "Nvidia", nil
+	case nvml.BRAND_GEFORCE_RTX:
+		return "GeForceRTX", nil
+	case nvml.BRAND_TITAN_RTX:
+		return "TitanRTX", nil
+	}
+	return "", fmt.Errorf("error interpreting device brand as string: %v", brand)
+}
+
+// GetCudaComputeCapabilityAsString returns the Device's CUDA compute capability as a version string
+func (d *device) GetCudaComputeCapabilityAsString() (string, error) {
+	major, minor, ret := d.GetCudaComputeCapability()
+	if ret != nvml.SUCCESS {
+		return "", fmt.Errorf("error getting CUDA compute capability: %v", ret)
+	}
+	return fmt.Sprintf("%d.%d", major, minor), nil
 }
 
 // IsMigCapable checks if a device is capable of having MIG paprtitions created on it
 func (d *device) IsMigCapable() (bool, error) {
-	err := nvmlLookupSymbol("nvmlDeviceGetMigMode")
+	err := d.lib.nvmlLookupSymbol("nvmlDeviceGetMigMode")
 	if err != nil {
 		return false, nil
 	}
@@ -80,7 +170,7 @@ func (d *device) IsMigCapable() (bool, error) {
 
 // IsMigEnabled checks if a device has MIG mode currently enabled on it
 func (d *device) IsMigEnabled() (bool, error) {
-	err := nvmlLookupSymbol("nvmlDeviceGetMigMode")
+	err := d.lib.nvmlLookupSymbol("nvmlDeviceGetMigMode")
 	if err != nil {
 		return false, nil
 	}
@@ -98,6 +188,14 @@ func (d *device) IsMigEnabled() (bool, error) {
 
 // VisitMigDevices walks a top-level device and invokes a callback function for each MIG device configured on it
 func (d *device) VisitMigDevices(visit func(int, MigDevice) error) error {
+	capable, err := d.IsMigCapable()
+	if err != nil {
+		return fmt.Errorf("error checking if GPU is MIG capable: %v", err)
+	}
+	if !capable {
+		return nil
+	}
+
 	count, ret := nvml.Device(d).GetMaxMigDeviceCount()
 	if ret != nvml.SUCCESS {
 		return fmt.Errorf("error getting max MIG device count: %v", ret)
@@ -161,6 +259,23 @@ func (d *device) VisitMigProfiles(visit func(MigProfile) error) error {
 					return fmt.Errorf("error creating MIG profile: %v", err)
 				}
 
+				// NOTE: The NVML API doesn't currently let us query the set of
+				// valid Compute Instance profiles without first instantiating
+				// a GPU Instance to check against. In theory, it should be
+				// possible to get this information without a reference to a
+				// GPU instance, but no API is provided for that at the moment.
+				// We run the checks below to weed out invalid profiles
+				// heuristically, given what we know about how they are
+				// physically constructed. In the future we should do this via
+				// NVML once a proper API for this exists.
+				pi := p.GetInfo()
+				if pi.C > pi.G {
+					continue
+				}
+				if (pi.C < pi.G) && ((pi.C * 2) > (pi.G + 1)) {
+					continue
+				}
+
 				err = visit(p)
 				if err != nil {
 					return fmt.Errorf("error visiting MIG profile: %v", err)
@@ -186,6 +301,12 @@ func (d *device) GetMigDevices() ([]MigDevice, error) {
 
 // GetMigProfiles gets the set of unique MIG profiles associated with a top-level device
 func (d *device) GetMigProfiles() ([]MigProfile, error) {
+	// Return the cached list if available
+	if d.migProfiles != nil {
+		return d.migProfiles, nil
+	}
+
+	// Otherwise generate it...
 	var profiles []MigProfile
 	err := d.VisitMigProfiles(func(p MigProfile) error {
 		profiles = append(profiles, p)
@@ -194,6 +315,9 @@ func (d *device) GetMigProfiles() ([]MigProfile, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// And cache it before returning
+	d.migProfiles = profiles
 	return profiles, nil
 }
 
@@ -321,6 +445,12 @@ func (d *devicelib) GetMigDevices() ([]MigDevice, error) {
 
 // GetMigProfiles gets the set of unique MIG profiles across all top-level devices
 func (d *devicelib) GetMigProfiles() ([]MigProfile, error) {
+	// Return the cached list if available
+	if d.migProfiles != nil {
+		return d.migProfiles, nil
+	}
+
+	// Otherwise generate it...
 	var profiles []MigProfile
 	err := d.VisitMigProfiles(func(p MigProfile) error {
 		profiles = append(profiles, p)
@@ -329,11 +459,20 @@ func (d *devicelib) GetMigProfiles() ([]MigProfile, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// And cache it before returning
+	d.migProfiles = profiles
 	return profiles, nil
 }
 
 // nvmlLookupSymbol checks to see if the given symbol is present in the NVML library
-func nvmlLookupSymbol(symbol string) error {
+func (d *devicelib) nvmlLookupSymbol(symbol string) error {
+	// If devicelib is configured to not verify symbols, then we short-circuit here
+	if !*d.verifySymbols {
+		return nil
+	}
+
+	// Otherwise we lookup the provided symbol and verify it is available
 	lib := dl.New("libnvidia-ml.so.1", dl.RTLD_LAZY|dl.RTLD_GLOBAL)
 	if lib == nil {
 		return fmt.Errorf("error instantiating DynamicLibrary for NVML")
