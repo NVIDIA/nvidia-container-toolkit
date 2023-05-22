@@ -88,7 +88,7 @@ func (m *managementlib) getCudaVersion() (string, error) {
 	libCudaPaths, err := cuda.New(
 		cuda.WithLogger(m.logger),
 		cuda.WithDriverRoot(m.driverRoot),
-	).Locate(".*.*.*")
+	).Locate(".*.*")
 	if err != nil {
 		return "", fmt.Errorf("failed to locate libcuda.so: %v", err)
 	}
