@@ -269,7 +269,7 @@ func newXorgDiscoverer(logger *logrus.Logger, driverRoot string, nvidiaCTKPath s
 	libCudaPaths, err := cuda.New(
 		cuda.WithLogger(logger),
 		cuda.WithDriverRoot(driverRoot),
-	).Locate(".*.*.*")
+	).Locate(".*.*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to locate libcuda.so: %v", err)
 	}
