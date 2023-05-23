@@ -31,7 +31,7 @@ else
     targets=${all[@]}
 fi
 
-if [[ -z ${SKIP_UPDATE_COMPONENTS} ]]; then
+if [[ x"${SKIP_UPDATE_COMPONENTS}" != x"yes" ]]; then
     echo "Updating components"
     "${SCRIPTS_DIR}/update-components.sh"
     if [[ -n $(git status -s third_party) && ${ALLOW_LOCAL_COMPONENT_CHANGES} != "true" ]]; then
