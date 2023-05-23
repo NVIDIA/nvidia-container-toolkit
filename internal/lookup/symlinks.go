@@ -18,9 +18,9 @@ package lookup
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 	"github.com/sirupsen/logrus"
 )
 
@@ -74,16 +74,9 @@ func (p symlinkChain) Locate(pattern string) ([]string, error) {
 		}
 		found[candidate] = true
 
-		info, err := os.Lstat(candidate)
+		target, err := symlinks.Resolve(candidate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get file info: %v", info)
-		}
-		if info.Mode()&os.ModeSymlink == 0 {
-			continue
-		}
-		target, err := os.Readlink(candidate)
-		if err != nil {
-			return nil, fmt.Errorf("error checking symlink: %v", err)
+			return nil, fmt.Errorf("error resolving symlink: %v", err)
 		}
 
 		if !filepath.IsAbs(target) {

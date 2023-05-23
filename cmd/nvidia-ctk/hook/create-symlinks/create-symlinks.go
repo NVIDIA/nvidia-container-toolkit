@@ -24,6 +24,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -125,21 +126,18 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	created := make(map[string]bool)
 	// candidates is a list of absolute paths to symlinks in a chain, or the final target of the chain.
 	for _, candidate := range candidates {
-		targets, err := m.Locate(candidate)
+		target, err := symlinks.Resolve(candidate)
 		if err != nil {
 			m.logger.Debugf("Skipping invalid link: %v", err)
 			continue
-		} else if len(targets) != 1 {
-			m.logger.Debugf("Unexepected number of targets: %v", targets)
-			continue
-		} else if targets[0] == candidate {
+		} else if target == candidate {
 			m.logger.Debugf("%v is not a symlink", candidate)
 			continue
 		}
 
-		err = m.createLink(created, cfg.hostRoot, containerRoot, targets[0], candidate)
+		err = m.createLink(created, cfg.hostRoot, containerRoot, target, candidate)
 		if err != nil {
-			m.logger.Warnf("Failed to create link %v: %v", []string{targets[0], candidate}, err)
+			m.logger.Warnf("Failed to create link %v: %v", []string{target, candidate}, err)
 		}
 	}
 

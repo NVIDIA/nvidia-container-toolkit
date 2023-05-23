@@ -29,6 +29,7 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -288,16 +289,7 @@ func (c *ldcache) resolve(target string) (string, error) {
 
 	c.logger.Debugf("checking %v", string(name))
 
-	info, err := os.Lstat(name)
-	if err != nil {
-		return "", fmt.Errorf("failed to get file info: %v", info)
-	}
-	if info.Mode()&os.ModeSymlink == 0 {
-		c.logger.Debugf("Resolved regular file: %v", name)
-		return name, nil
-	}
-
-	link, err := os.Readlink(name)
+	link, err := symlinks.Resolve(name)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve symlink: %v", err)
 	}
