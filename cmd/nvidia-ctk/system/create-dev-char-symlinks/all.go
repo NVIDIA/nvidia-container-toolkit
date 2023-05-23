@@ -40,12 +40,23 @@ func newAllPossible(logger *logrus.Logger, driverRoot string) (nodeLister, error
 	if err != nil {
 		return nil, fmt.Errorf("failed reading device majors: %v", err)
 	}
+
+	var requiredMajors []devices.Name
 	migCaps, err := nvcaps.NewMigCaps()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read MIG caps: %v", err)
 	}
 	if migCaps == nil {
 		migCaps = make(nvcaps.MigCaps)
+	} else {
+		requiredMajors = append(requiredMajors, devices.NVIDIACaps)
+	}
+
+	requiredMajors = append(requiredMajors, devices.NVIDIAGPU, devices.NVIDIAUVM)
+	for _, name := range requiredMajors {
+		if !deviceMajors.Exists(name) {
+			return nil, fmt.Errorf("missing required device major %s", name)
+		}
 	}
 
 	l := allPossible{
