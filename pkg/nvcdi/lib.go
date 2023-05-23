@@ -19,6 +19,7 @@ package nvcdi
 import (
 	"fmt"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"github.com/sirupsen/logrus"
@@ -44,6 +45,8 @@ type nvcdilib struct {
 	deviceNamer   DeviceNamer
 	driverRoot    string
 	nvidiaCTKPath string
+
+	csvFiles []string
 
 	vendor string
 	class  string
@@ -80,6 +83,11 @@ func New(opts ...Option) (Interface, error) {
 
 	var lib Interface
 	switch l.resolveMode() {
+	case ModeCSV:
+		if len(l.csvFiles) == 0 {
+			l.csvFiles = csv.DefaultFileList()
+		}
+		lib = (*csvlib)(l)
 	case ModeManagement:
 		if l.vendor == "" {
 			l.vendor = "management.nvidia.com"
@@ -154,6 +162,16 @@ func (l *nvcdilib) resolveMode() (rmode string) {
 
 	if isWSL {
 		return ModeWsl
+	}
+
+	isNvml, reason := l.infolib.HasNvml()
+	l.logger.Debugf("Is NVML-based system? %v: %v", isNvml, reason)
+
+	isTegra, reason := l.infolib.IsTegraSystem()
+	l.logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
+
+	if isTegra && !isNvml {
+		return ModeCSV
 	}
 
 	return ModeNvml

@@ -24,6 +24,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/tegra"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements"
 	"github.com/sirupsen/logrus"
@@ -74,26 +75,11 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 		csvFiles = csv.BaseFilesOnly(csvFiles)
 	}
 
-	csvDiscoverer, err := discover.NewFromCSVFiles(logger, csvFiles, cfg.NVIDIAContainerCLIConfig.Root)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
-	}
-
-	createSymlinksHook, err := discover.NewCreateSymlinksHook(logger, csvFiles, csvDiscoverer, cfg.NVIDIACTKConfig.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create symlink hook discoverer: %v", err)
-	}
-
-	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(logger, csvDiscoverer, cfg.NVIDIACTKConfig.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create ldcach update hook discoverer: %v", err)
-	}
-
-	d := discover.Merge(
-		csvDiscoverer,
-		createSymlinksHook,
-		// The ldcacheUpdateHook is added last to ensure that the created symlinks are included
-		ldcacheUpdateHook,
+	d, err := tegra.New(
+		tegra.WithLogger(logger),
+		tegra.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
+		tegra.WithNVIDIACTKPath(cfg.NVIDIACTKConfig.Path),
+		tegra.WithCSVFiles(csvFiles),
 	)
 
 	discoverModifier, err := NewModifierFromDiscoverer(logger, d)

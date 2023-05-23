@@ -36,6 +36,9 @@ const (
 	ModeGds = "gds"
 	// ModeMofed configures the CDI spec generator to generate a MOFED spec.
 	ModeMofed = "mofed"
+	// ModeCSV configures the CDI spec generator to generate a spec based on the contents of CSV
+	// mountspec files.
+	ModeCSV = "csv"
 )
 
 // Interface defines the API for the nvcdi package

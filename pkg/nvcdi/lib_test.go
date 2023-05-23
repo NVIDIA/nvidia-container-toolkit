@@ -28,9 +28,10 @@ func TestResolveMode(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
 	testCases := []struct {
-		mode string
-		// TODO: This should be a proper mock
+		mode      string
+		isTegra   bool
 		hasDXCore bool
+		hasNVML   bool
 		expected  string
 	}{
 		{
@@ -41,11 +42,34 @@ func TestResolveMode(t *testing.T) {
 		{
 			mode:      "auto",
 			hasDXCore: false,
+			isTegra:   true,
+			hasNVML:   false,
+			expected:  "csv",
+		},
+		{
+			mode:      "auto",
+			hasDXCore: false,
+			isTegra:   false,
+			hasNVML:   false,
+			expected:  "nvml",
+		},
+		{
+			mode:      "auto",
+			hasDXCore: false,
+			isTegra:   true,
+			hasNVML:   true,
+			expected:  "nvml",
+		},
+		{
+			mode:      "auto",
+			hasDXCore: false,
+			isTegra:   false,
 			expected:  "nvml",
 		},
 		{
 			mode:      "nvml",
 			hasDXCore: true,
+			isTegra:   true,
 			expected:  "nvml",
 		},
 		{
@@ -65,7 +89,7 @@ func TestResolveMode(t *testing.T) {
 			l := nvcdilib{
 				logger:  logger,
 				mode:    tc.mode,
-				infolib: infoMock(tc.hasDXCore),
+				infolib: infoMock{hasDXCore: tc.hasDXCore, isTegra: tc.isTegra, hasNVML: tc.hasNVML},
 			}
 
 			require.Equal(t, tc.expected, l.resolveMode())
@@ -73,16 +97,20 @@ func TestResolveMode(t *testing.T) {
 	}
 }
 
-type infoMock bool
+type infoMock struct {
+	hasDXCore bool
+	isTegra   bool
+	hasNVML   bool
+}
 
 func (i infoMock) HasDXCore() (bool, string) {
-	return bool(i), ""
+	return bool(i.hasDXCore), ""
 }
 
 func (i infoMock) HasNvml() (bool, string) {
-	panic("should not be called")
+	return bool(i.hasNVML), ""
 }
 
 func (i infoMock) IsTegraSystem() (bool, string) {
-	panic("should not be called")
+	return bool(i.isTegra), ""
 }

@@ -96,3 +96,10 @@ func WithMergedDeviceOptions(opts ...transform.MergedDeviceOption) Option {
 		o.mergedDeviceOptions = opts
 	}
 }
+
+// WithCSVFiles sets the CSV files for the library
+func WithCSVFiles(csvFiles []string) Option {
+	return func(o *nvcdilib) {
+		o.csvFiles = csvFiles
+	}
+}
