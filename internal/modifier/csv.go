@@ -81,6 +81,9 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 		tegra.WithNVIDIACTKPath(cfg.NVIDIACTKConfig.Path),
 		tegra.WithCSVFiles(csvFiles),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct discoverer: %v", err)
+	}
 
 	discoverModifier, err := NewModifierFromDiscoverer(logger, d)
 	if err != nil {
