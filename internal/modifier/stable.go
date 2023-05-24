@@ -38,7 +38,7 @@ func NewStableRuntimeModifier(logger *logrus.Logger, cfg *config.Config) oci.Spe
 // prestart hook. If the hook is already present, no modification is made.
 type stableRuntimeModifier struct {
 	logger *logrus.Logger
-	cfg *config.Config
+	cfg    *config.Config
 }
 
 // Modify applies the required modification to the incoming OCI spec, inserting the nvidia-container-runtime-hook
@@ -68,7 +68,7 @@ func (m stableRuntimeModifier) Modify(spec *specs.Spec) error {
 		}
 		path = candidates[0]
 	}
-	
+
 	m.logger.Infof("Using prestart hook path: %v", path)
 	args := []string{path}
 	if spec.Hooks == nil {

@@ -411,7 +411,7 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 		"nvidia-ctk.path": nvidiaCTKPath,
 		// Set the nvidia-container-runtime-hook options
 		"nvidia-container-runtime-hook.skip-mode-detection": opts.ContainerRuntimeHookSkipModeDetection,
-		"nvidia-container-runtime-hook.path": nvidiaContainerRuntimeHookPath,
+		"nvidia-container-runtime-hook.path":                nvidiaContainerRuntimeHookPath,
 	}
 	for key, value := range configValues {
 		config.Set(key, value)
