@@ -126,6 +126,12 @@ package-meta-packages:
     paths:
       - ${ARTIFACTS_ROOT}
 
+package-centos7-aarch64:
+  extends:
+    - .package-build
+    - .dist-centos7
+    - .arch-aarch64
+
 package-centos7-x86_64:
   extends:
     - .package-build
@@ -240,6 +246,8 @@ image-packaging:
     - job: package-amazonlinux2-aarch64
       optional: true
     - job: package-amazonlinux2-x86_64
+      optional: true
+    - job: package-centos7-aarch64
       optional: true
     - job: package-centos7-x86_64
       optional: true
