@@ -305,7 +305,7 @@ func Install(cli *cli.Context, opts *options) error {
 		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container CLI: %v", err))
 	}
 
-	_, err = installRuntimeHook(opts.toolkitRoot, toolkitConfigPath)
+	nvidiaContainerRuntimeHookPath, err := installRuntimeHook(opts.toolkitRoot, toolkitConfigPath)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container runtime hook: %v", err)
 	} else if err != nil {
@@ -319,7 +319,7 @@ func Install(cli *cli.Context, opts *options) error {
 		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA Container Toolkit CLI: %v", err))
 	}
 
-	err = installToolkitConfig(cli, toolkitConfigPath, nvidiaContainerCliExecutable, nvidiaCTKPath, opts)
+	err = installToolkitConfig(cli, toolkitConfigPath, nvidiaContainerCliExecutable, nvidiaCTKPath, nvidiaContainerRuntimeHookPath, opts)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
 	} else if err != nil {
@@ -379,7 +379,7 @@ func installLibrary(libName string, toolkitRoot string) error {
 
 // installToolkitConfig installs the config file for the NVIDIA container toolkit ensuring
 // that the settings are updated to match the desired install and nvidia driver directories.
-func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, opts *options) error {
+func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, nvidaContainerRuntimeHookPath string, opts *options) error {
 	log.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
 
 	config, err := loadConfig(nvidiaContainerToolkitConfigSource)
@@ -410,6 +410,7 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 		// Set nvidia-ctk options
 		"nvidia-ctk.path": nvidiaCTKPath,
 		// Set the nvidia-container-runtime-hook options
+		"nvidia-container-runtime-hook.path":                nvidaContainerRuntimeHookPath,
 		"nvidia-container-runtime-hook.skip-mode-detection": opts.ContainerRuntimeHookSkipModeDetection,
 	}
 	for key, value := range configValues {
