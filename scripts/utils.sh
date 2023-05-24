@@ -16,6 +16,7 @@
 # to the relevant repositories. This targets forwarded to the build-all-components script
 # can be overridden by specifying command line arguments.
 all=(
+    centos7-aarch64
     centos7-x86_64
     centos8-aarch64
     centos8-ppc64le
