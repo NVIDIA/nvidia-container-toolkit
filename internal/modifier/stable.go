@@ -28,8 +28,8 @@ import (
 
 // NewStableRuntimeModifier creates an OCI spec modifier that inserts the NVIDIA Container Runtime Hook into an OCI
 // spec. The specified logger is used to capture log output.
-func NewStableRuntimeModifier(logger *logrus.Logger) oci.SpecModifier {
-	m := stableRuntimeModifier{logger: logger}
+func NewStableRuntimeModifier(logger *logrus.Logger, cfg *config.Config) oci.SpecModifier {
+	m := stableRuntimeModifier{logger: logger, cfg: cfg}
 
 	return &m
 }
@@ -38,6 +38,7 @@ func NewStableRuntimeModifier(logger *logrus.Logger) oci.SpecModifier {
 // prestart hook. If the hook is already present, no modification is made.
 type stableRuntimeModifier struct {
 	logger *logrus.Logger
+	cfg *config.Config
 }
 
 // Modify applies the required modification to the incoming OCI spec, inserting the nvidia-container-runtime-hook
@@ -52,17 +53,22 @@ func (m stableRuntimeModifier) Modify(spec *specs.Spec) error {
 			}
 		}
 	}
-
-	// We create a locator and look for the NVIDIA Container Runtime Hook in the path.
-	candidates, err := lookup.NewExecutableLocator(m.logger, "").Locate(config.NVIDIAContainerRuntimeHookExecutable)
-	if err != nil {
-		return fmt.Errorf("failed to locate NVIDIA Container Runtime Hook: %v", err)
+	var path string
+	if m.cfg.NVIDIAContainerRuntimeHookConfig.Path != "" {
+		path = m.cfg.NVIDIAContainerRuntimeHookConfig.Path
+	} else {
+		// We create a locator and look for the NVIDIA Container Runtime Hook in the path.
+		m.logger.Warn("found no path configured in NVIDIA Container Runtime Hook config, looking in root")
+		candidates, err := lookup.NewExecutableLocator(m.logger, "").Locate(config.NVIDIAContainerRuntimeHookExecutable)
+		if err != nil {
+			return fmt.Errorf("failed to locate NVIDIA Container Runtime Hook: %v", err)
+		}
+		if len(candidates) > 1 {
+			m.logger.Debugf("Using %v from multiple NVIDIA Container Runtime Hook candidates: %v", path, candidates)
+		}
+		path = candidates[0]
 	}
-	path := candidates[0]
-	if len(candidates) > 1 {
-		m.logger.Debugf("Using %v from multiple NVIDIA Container Runtime Hook candidates: %v", path, candidates)
-	}
-
+	
 	m.logger.Infof("Using prestart hook path: %v", path)
 	args := []string{path}
 	if spec.Hooks == nil {

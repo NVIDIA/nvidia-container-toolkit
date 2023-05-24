@@ -19,7 +19,9 @@ package config
 // RuntimeHookConfig stores the config options for the NVIDIA Container Runtime
 type RuntimeHookConfig struct {
 	// SkipModeDetection disables the mode check for the runtime hook.
-	SkipModeDetection bool `toml:"skip-mode-detection"`
+	SkipModeDetection  bool `toml:"skip-mode-detection"`
+	// The path where the NVIDIA Container Runtime Hook is installed
+	Path string  `toml:"path"`
 }
 
 // GetDefaultRuntimeHookConfig defines the default values for the config
