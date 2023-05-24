@@ -20,8 +20,14 @@ var _ Device = &DeviceMock{}
 //			CreateGpuInstanceWithPlacementFunc: func(gpuInstanceProfileInfo *GpuInstanceProfileInfo, gpuInstancePlacement *GpuInstancePlacement) (GpuInstance, Return) {
 //				panic("mock out the CreateGpuInstanceWithPlacement method")
 //			},
+//			GetArchitectureFunc: func() (DeviceArchitecture, Return) {
+//				panic("mock out the GetArchitecture method")
+//			},
 //			GetAttributesFunc: func() (DeviceAttributes, Return) {
 //				panic("mock out the GetAttributes method")
+//			},
+//			GetBrandFunc: func() (BrandType, Return) {
+//				panic("mock out the GetBrand method")
 //			},
 //			GetComputeInstanceIdFunc: func() (int, Return) {
 //				panic("mock out the GetComputeInstanceId method")
@@ -96,8 +102,14 @@ type DeviceMock struct {
 	// CreateGpuInstanceWithPlacementFunc mocks the CreateGpuInstanceWithPlacement method.
 	CreateGpuInstanceWithPlacementFunc func(gpuInstanceProfileInfo *GpuInstanceProfileInfo, gpuInstancePlacement *GpuInstancePlacement) (GpuInstance, Return)
 
+	// GetArchitectureFunc mocks the GetArchitecture method.
+	GetArchitectureFunc func() (DeviceArchitecture, Return)
+
 	// GetAttributesFunc mocks the GetAttributes method.
 	GetAttributesFunc func() (DeviceAttributes, Return)
+
+	// GetBrandFunc mocks the GetBrand method.
+	GetBrandFunc func() (BrandType, Return)
 
 	// GetComputeInstanceIdFunc mocks the GetComputeInstanceId method.
 	GetComputeInstanceIdFunc func() (int, Return)
@@ -171,8 +183,14 @@ type DeviceMock struct {
 			// GpuInstancePlacement is the gpuInstancePlacement argument value.
 			GpuInstancePlacement *GpuInstancePlacement
 		}
+		// GetArchitecture holds details about calls to the GetArchitecture method.
+		GetArchitecture []struct {
+		}
 		// GetAttributes holds details about calls to the GetAttributes method.
 		GetAttributes []struct {
+		}
+		// GetBrand holds details about calls to the GetBrand method.
+		GetBrand []struct {
 		}
 		// GetComputeInstanceId holds details about calls to the GetComputeInstanceId method.
 		GetComputeInstanceId []struct {
@@ -255,7 +273,9 @@ type DeviceMock struct {
 		}
 	}
 	lockCreateGpuInstanceWithPlacement     sync.RWMutex
+	lockGetArchitecture                    sync.RWMutex
 	lockGetAttributes                      sync.RWMutex
+	lockGetBrand                           sync.RWMutex
 	lockGetComputeInstanceId               sync.RWMutex
 	lockGetCudaComputeCapability           sync.RWMutex
 	lockGetDeviceHandleFromMigDeviceHandle sync.RWMutex
@@ -315,6 +335,33 @@ func (mock *DeviceMock) CreateGpuInstanceWithPlacementCalls() []struct {
 	return calls
 }
 
+// GetArchitecture calls GetArchitectureFunc.
+func (mock *DeviceMock) GetArchitecture() (DeviceArchitecture, Return) {
+	if mock.GetArchitectureFunc == nil {
+		panic("DeviceMock.GetArchitectureFunc: method is nil but Device.GetArchitecture was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetArchitecture.Lock()
+	mock.calls.GetArchitecture = append(mock.calls.GetArchitecture, callInfo)
+	mock.lockGetArchitecture.Unlock()
+	return mock.GetArchitectureFunc()
+}
+
+// GetArchitectureCalls gets all the calls that were made to GetArchitecture.
+// Check the length with:
+//
+//	len(mockedDevice.GetArchitectureCalls())
+func (mock *DeviceMock) GetArchitectureCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetArchitecture.RLock()
+	calls = mock.calls.GetArchitecture
+	mock.lockGetArchitecture.RUnlock()
+	return calls
+}
+
 // GetAttributes calls GetAttributesFunc.
 func (mock *DeviceMock) GetAttributes() (DeviceAttributes, Return) {
 	if mock.GetAttributesFunc == nil {
@@ -339,6 +386,33 @@ func (mock *DeviceMock) GetAttributesCalls() []struct {
 	mock.lockGetAttributes.RLock()
 	calls = mock.calls.GetAttributes
 	mock.lockGetAttributes.RUnlock()
+	return calls
+}
+
+// GetBrand calls GetBrandFunc.
+func (mock *DeviceMock) GetBrand() (BrandType, Return) {
+	if mock.GetBrandFunc == nil {
+		panic("DeviceMock.GetBrandFunc: method is nil but Device.GetBrand was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetBrand.Lock()
+	mock.calls.GetBrand = append(mock.calls.GetBrand, callInfo)
+	mock.lockGetBrand.Unlock()
+	return mock.GetBrandFunc()
+}
+
+// GetBrandCalls gets all the calls that were made to GetBrand.
+// Check the length with:
+//
+//	len(mockedDevice.GetBrandCalls())
+func (mock *DeviceMock) GetBrandCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetBrand.RLock()
+	calls = mock.calls.GetBrand
+	mock.lockGetBrand.RUnlock()
 	return calls
 }
 
