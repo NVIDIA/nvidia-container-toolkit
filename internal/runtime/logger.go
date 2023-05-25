@@ -17,6 +17,7 @@
 package runtime
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -43,7 +44,7 @@ func NewLogger() *Logger {
 }
 
 // Update constructs a Logger with a preddefined formatter
-func (l *Logger) Update(filename string, logLevel string, argv []string) error {
+func (l *Logger) Update(filename string, logLevel string, argv []string) {
 
 	configFromArgs := parseArgs(argv)
 
@@ -61,7 +62,7 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) error {
 	if !configFromArgs.version {
 		configLogFile, err := createLogFile(filename)
 		if err != nil {
-			return fmt.Errorf("error opening debug log file: %v", err)
+			argLogFileError = errors.Join(argLogFileError, err)
 		}
 		if configLogFile != nil {
 			logFiles = append(logFiles, configLogFile)
@@ -71,7 +72,7 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) error {
 		if argLogFile != nil {
 			logFiles = append(logFiles, argLogFile)
 		}
-		argLogFileError = err
+		argLogFileError = errors.Join(argLogFileError, err)
 	}
 	defer func() {
 		if argLogFileError != nil {
@@ -119,8 +120,6 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) error {
 		previousLogger: l.Logger,
 		logFiles:       logFiles,
 	}
-
-	return nil
 }
 
 // Reset closes the log file (if any) and resets the logger output to what it
