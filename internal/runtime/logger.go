@@ -156,11 +156,16 @@ func (l *Logger) Reset() error {
 }
 
 func createLogFile(filename string) (*os.File, error) {
-	if filename != "" && filename != os.DevNull {
-		return os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if filename == "" || filename == os.DevNull {
+		return nil, nil
 	}
-
-	return nil, nil
+	if dir := filepath.Dir(filepath.Clean(filename)); dir != "." {
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 }
 
 type loggerConfig struct {
