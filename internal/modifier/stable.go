@@ -17,10 +17,8 @@
 package modifier
 
 import (
-	"fmt"
+	"path/filepath"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
@@ -28,8 +26,11 @@ import (
 
 // NewStableRuntimeModifier creates an OCI spec modifier that inserts the NVIDIA Container Runtime Hook into an OCI
 // spec. The specified logger is used to capture log output.
-func NewStableRuntimeModifier(logger *logrus.Logger) oci.SpecModifier {
-	m := stableRuntimeModifier{logger: logger}
+func NewStableRuntimeModifier(logger *logrus.Logger, nvidiaContainerRuntimeHookPath string) oci.SpecModifier {
+	m := stableRuntimeModifier{
+		logger:                         logger,
+		nvidiaContainerRuntimeHookPath: nvidiaContainerRuntimeHookPath,
+	}
 
 	return &m
 }
@@ -37,7 +38,8 @@ func NewStableRuntimeModifier(logger *logrus.Logger) oci.SpecModifier {
 // stableRuntimeModifier modifies an OCI spec inplace, inserting the nvidia-container-runtime-hook as a
 // prestart hook. If the hook is already present, no modification is made.
 type stableRuntimeModifier struct {
-	logger *logrus.Logger
+	logger                         *logrus.Logger
+	nvidiaContainerRuntimeHookPath string
 }
 
 // Modify applies the required modification to the incoming OCI spec, inserting the nvidia-container-runtime-hook
@@ -53,18 +55,9 @@ func (m stableRuntimeModifier) Modify(spec *specs.Spec) error {
 		}
 	}
 
-	// We create a locator and look for the NVIDIA Container Runtime Hook in the path.
-	candidates, err := lookup.NewExecutableLocator(m.logger, "").Locate(config.NVIDIAContainerRuntimeHookExecutable)
-	if err != nil {
-		return fmt.Errorf("failed to locate NVIDIA Container Runtime Hook: %v", err)
-	}
-	path := candidates[0]
-	if len(candidates) > 1 {
-		m.logger.Debugf("Using %v from multiple NVIDIA Container Runtime Hook candidates: %v", path, candidates)
-	}
-
+	path := m.nvidiaContainerRuntimeHookPath
 	m.logger.Infof("Using prestart hook path: %v", path)
-	args := []string{path}
+	args := []string{filepath.Base(path)}
 	if spec.Hooks == nil {
 		spec.Hooks = &specs.Hooks{}
 	}

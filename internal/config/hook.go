@@ -24,6 +24,9 @@ import (
 
 // RuntimeHookConfig stores the config options for the NVIDIA Container Runtime
 type RuntimeHookConfig struct {
+	// Path specifies the path to the NVIDIA Container Runtime hook binary.
+	// If an executable name is specified, this will be resolved in the path.
+	Path string `toml:"path"`
 	// SkipModeDetection disables the mode check for the runtime hook.
 	SkipModeDetection bool `toml:"skip-mode-detection"`
 }
@@ -55,6 +58,7 @@ func getRuntimeHookConfigFrom(toml *toml.Tree) (*RuntimeHookConfig, error) {
 // GetDefaultRuntimeHookConfig defines the default values for the config
 func GetDefaultRuntimeHookConfig() *RuntimeHookConfig {
 	c := RuntimeHookConfig{
+		Path:              NVIDIAContainerRuntimeHookExecutable,
 		SkipModeDetection: false,
 	}
 

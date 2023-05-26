@@ -63,6 +63,10 @@ func (r rt) Run(argv []string) (rerr error) {
 		r.logger.Reset()
 	}()
 
+	// We apply some config updates here to ensure that the config is valid in
+	// all cases.
+	cfg.NVIDIAContainerRuntimeHookConfig.Path = config.ResolveNVIDIAContainerRuntimeHookPath(r.logger.Logger, cfg.NVIDIAContainerRuntimeHookConfig.Path)
+
 	// Print the config to the output.
 	configJSON, err := json.MarshalIndent(cfg, "", "  ")
 	if err == nil {

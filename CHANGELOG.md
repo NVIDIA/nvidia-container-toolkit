@@ -2,6 +2,8 @@
 
 ## v1.13.2
 
+* Add `nvidia-container-runtime-hook.path` config option to specify NVIDIA Container Runtime Hook path explicitly.
+
 ## v1.13.1
 
 * Update `update-ldcache` hook to only update ldcache if it exists.

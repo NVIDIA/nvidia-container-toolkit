@@ -76,6 +76,9 @@ func TestGetConfig(t *testing.T) {
 						},
 					},
 				},
+				NVIDIAContainerRuntimeHookConfig: RuntimeHookConfig{
+					Path: "nvidia-container-runtime-hook",
+				},
 				NVIDIACTKConfig: CTKConfig{
 					Path: "nvidia-ctk",
 				},
@@ -95,6 +98,7 @@ func TestGetConfig(t *testing.T) {
 				"nvidia-container-runtime.modes.cdi.default-kind = \"example.vendor.com/device\"",
 				"nvidia-container-runtime.modes.cdi.annotation-prefixes = [\"cdi.k8s.io/\", \"example.vendor.com/\",]",
 				"nvidia-container-runtime.modes.csv.mount-spec-path = \"/not/etc/nvidia-container-runtime/host-files-for-container.d\"",
+				"nvidia-container-runtime-hook.path = \"/foo/bar/nvidia-container-runtime-hook\"",
 				"nvidia-ctk.path = \"/foo/bar/nvidia-ctk\"",
 			},
 			expectedConfig: &Config{
@@ -120,6 +124,9 @@ func TestGetConfig(t *testing.T) {
 						},
 					},
 				},
+				NVIDIAContainerRuntimeHookConfig: RuntimeHookConfig{
+					Path: "/foo/bar/nvidia-container-runtime-hook",
+				},
 				NVIDIACTKConfig: CTKConfig{
 					Path: "/foo/bar/nvidia-ctk",
 				},
@@ -143,6 +150,8 @@ func TestGetConfig(t *testing.T) {
 				"annotation-prefixes = [\"cdi.k8s.io/\", \"example.vendor.com/\",]",
 				"[nvidia-container-runtime.modes.csv]",
 				"mount-spec-path = \"/not/etc/nvidia-container-runtime/host-files-for-container.d\"",
+				"[nvidia-container-runtime-hook]",
+				"path = \"/foo/bar/nvidia-container-runtime-hook\"",
 				"[nvidia-ctk]",
 				"path = \"/foo/bar/nvidia-ctk\"",
 			},
@@ -168,6 +177,9 @@ func TestGetConfig(t *testing.T) {
 							},
 						},
 					},
+				},
+				NVIDIAContainerRuntimeHookConfig: RuntimeHookConfig{
+					Path: "/foo/bar/nvidia-container-runtime-hook",
 				},
 				NVIDIACTKConfig: CTKConfig{
 					Path: "/foo/bar/nvidia-ctk",

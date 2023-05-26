@@ -21,13 +21,19 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/pelletier/go-toml"
+	"github.com/sirupsen/logrus"
 )
 
 const (
 	configOverride = "XDG_CONFIG_HOME"
 	configFilePath = "nvidia-container-runtime/config.toml"
+
+	nvidiaContainerRuntimeHookExecutable  = "nvidia-container-runtime-hook"
+	nvidiaContainerRuntimeHookDefaultPath = "/usr/bin/nvidia-container-runtime-hook"
 )
 
 var (
@@ -123,4 +129,42 @@ func getDefaultConfig() *Config {
 	}
 
 	return &c
+}
+
+// ResolveNVIDIAContainerRuntimeHookPath resolves the path the nvidia-container-runtime-hook binary.
+func ResolveNVIDIAContainerRuntimeHookPath(logger *logrus.Logger, nvidiaContainerRuntimeHookPath string) string {
+	return resolveWithDefault(
+		logger,
+		"NVIDIA Container Runtime Hook",
+		nvidiaContainerRuntimeHookPath,
+		nvidiaContainerRuntimeHookDefaultPath,
+	)
+}
+
+// resolveWithDefault resolves the path to the specified binary.
+// If an absolute path is specified, it is used directly without searching for the binary.
+// If the binary cannot be found in the path, the specified default is used instead.
+func resolveWithDefault(logger *logrus.Logger, label string, path string, defaultPath string) string {
+	if filepath.IsAbs(path) {
+		logger.Debugf("Using specified %v path %v", label, path)
+		return path
+	}
+
+	if path == "" {
+		path = filepath.Base(defaultPath)
+	}
+	logger.Debugf("Locating %v as %v", label, path)
+	lookup := lookup.NewExecutableLocator(logger, "")
+
+	resolvedPath := defaultPath
+	targets, err := lookup.Locate(path)
+	if err != nil {
+		logger.Warnf("Failed to locate %v: %v", path, err)
+	} else {
+		logger.Debugf("Found %v candidates: %v", path, targets)
+		resolvedPath = targets[0]
+	}
+	logger.Debugf("Using %v path %v", label, path)
+
+	return resolvedPath
 }
