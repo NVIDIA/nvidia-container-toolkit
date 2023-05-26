@@ -65,6 +65,7 @@ func (r rt) Run(argv []string) (rerr error) {
 		cfg.NVIDIAContainerRuntimeConfig.Mode = r.modeOverride
 	}
 	cfg.NVIDIACTKConfig.Path = config.ResolveNVIDIACTKPath(r.logger.Logger, cfg.NVIDIACTKConfig.Path)
+	cfg.NVIDIAContainerRuntimeHookConfig.Path = config.ResolveNVIDIAContainerRuntimeHookPath(r.logger.Logger, cfg.NVIDIAContainerRuntimeHookConfig.Path)
 
 	// Print the config to the output.
 	configJSON, err := json.MarshalIndent(cfg, "", "  ")

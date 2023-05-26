@@ -9,6 +9,7 @@
 * Add support for generating merged devices (e.g. `all` device) to the nvcdi API.
 * Use *.* pattern to locate libcuda.so when generating a CDI specification to support platforms where a patch version is not specified.
 * Update go-nvlib to skip devices that are not MIG capable when generating CDI specifications.
+* Add `nvidia-container-runtime-hook.path` config option to specify NVIDIA Container Runtime Hook path explicitly.
 
 ## v1.13.1
 

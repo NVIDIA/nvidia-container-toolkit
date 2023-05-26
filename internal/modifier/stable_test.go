@@ -79,7 +79,7 @@ func TestAddHookModifier(t *testing.T) {
 					Prestart: []specs.Hook{
 						{
 							Path: testHookPath,
-							Args: []string{testHookPath, "prestart"},
+							Args: []string{"nvidia-container-runtime-hook", "prestart"},
 						},
 					},
 				},
@@ -95,7 +95,7 @@ func TestAddHookModifier(t *testing.T) {
 					Prestart: []specs.Hook{
 						{
 							Path: testHookPath,
-							Args: []string{testHookPath, "prestart"},
+							Args: []string{"nvidia-container-runtime-hook", "prestart"},
 						},
 					},
 				},
@@ -141,7 +141,7 @@ func TestAddHookModifier(t *testing.T) {
 						},
 						{
 							Path: testHookPath,
-							Args: []string{testHookPath, "prestart"},
+							Args: []string{"nvidia-container-runtime-hook", "prestart"},
 						},
 					},
 				},
@@ -154,7 +154,7 @@ func TestAddHookModifier(t *testing.T) {
 
 		t.Run(tc.description, func(t *testing.T) {
 
-			m := NewStableRuntimeModifier(logger)
+			m := NewStableRuntimeModifier(logger, testHookPath)
 
 			err := m.Modify(&tc.spec)
 			if tc.expectedError != nil {

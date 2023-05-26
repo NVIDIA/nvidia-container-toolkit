@@ -37,6 +37,9 @@ const (
 
 	nvidiaCTKExecutable      = "nvidia-ctk"
 	nvidiaCTKDefaultFilePath = "/usr/bin/nvidia-ctk"
+
+	nvidiaContainerRuntimeHookExecutable  = "nvidia-container-runtime-hook"
+	nvidiaContainerRuntimeHookDefaultPath = "/usr/bin/nvidia-container-runtime-hook"
 )
 
 var (
@@ -189,6 +192,9 @@ func GetDefaultConfigToml() (*toml.Tree, error) {
 	// nvidia-ctk
 	tree.Set("nvidia-ctk.path", nvidiaCTKExecutable)
 
+	// nvidia-container-runtime-hook
+	tree.Set("nvidia-container-runtime-hook.path", nvidiaContainerRuntimeHookExecutable)
+
 	return tree, nil
 }
 
@@ -244,27 +250,48 @@ func getDistIDLike() []string {
 // If the path is specified as an absolute path, it is used directly
 // without checking for existence of an executable at that path.
 func ResolveNVIDIACTKPath(logger *logrus.Logger, nvidiaCTKPath string) string {
-	if filepath.IsAbs(nvidiaCTKPath) {
-		logger.Debugf("Using specified NVIDIA Container Toolkit CLI path %v", nvidiaCTKPath)
-		return nvidiaCTKPath
+	return resolveWithDefault(
+		logger,
+		"NVIDIA Container Toolkit CLI",
+		nvidiaCTKPath,
+		nvidiaCTKDefaultFilePath,
+	)
+}
+
+// ResolveNVIDIAContainerRuntimeHookPath resolves the path the nvidia-container-runtime-hook binary.
+func ResolveNVIDIAContainerRuntimeHookPath(logger *logrus.Logger, nvidiaContainerRuntimeHookPath string) string {
+	return resolveWithDefault(
+		logger,
+		"NVIDIA Container Runtime Hook",
+		nvidiaContainerRuntimeHookPath,
+		nvidiaContainerRuntimeHookDefaultPath,
+	)
+}
+
+// resolveWithDefault resolves the path to the specified binary.
+// If an absolute path is specified, it is used directly without searching for the binary.
+// If the binary cannot be found in the path, the specified default is used instead.
+func resolveWithDefault(logger *logrus.Logger, label string, path string, defaultPath string) string {
+	if filepath.IsAbs(path) {
+		logger.Debugf("Using specified %v path %v", label, path)
+		return path
 	}
 
-	if nvidiaCTKPath == "" {
-		nvidiaCTKPath = nvidiaCTKExecutable
+	if path == "" {
+		path = filepath.Base(defaultPath)
 	}
-	logger.Debugf("Locating NVIDIA Container Toolkit CLI as %v", nvidiaCTKPath)
+	logger.Debugf("Locating %v as %v", label, path)
 	lookup := lookup.NewExecutableLocator(logger, "")
-	hookPath := nvidiaCTKDefaultFilePath
-	targets, err := lookup.Locate(nvidiaCTKPath)
-	if err != nil {
-		logger.Warnf("Failed to locate %v: %v", nvidiaCTKPath, err)
-	} else if len(targets) == 0 {
-		logger.Warnf("%v not found", nvidiaCTKPath)
-	} else {
-		logger.Debugf("Found %v candidates: %v", nvidiaCTKPath, targets)
-		hookPath = targets[0]
-	}
-	logger.Debugf("Using NVIDIA Container Toolkit CLI path %v", hookPath)
 
-	return hookPath
+	resolvedPath := defaultPath
+	targets, err := lookup.Locate(path)
+	if err != nil {
+		logger.Warnf("Failed to locate %v: %v", path, err)
+	} else {
+		logger.Debugf("Found %v candidates: %v", path, targets)
+		resolvedPath = targets[0]
+	}
+	logger.Debugf("Using %v path %v", label, path)
+
+	return resolvedPath
 }
