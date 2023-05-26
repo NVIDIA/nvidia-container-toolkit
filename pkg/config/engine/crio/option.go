@@ -22,7 +22,6 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/pelletier/go-toml"
-	log "github.com/sirupsen/logrus"
 )
 
 type builder struct {
@@ -32,6 +31,13 @@ type builder struct {
 
 // Option defines a function that can be used to configure the config builder
 type Option func(*builder)
+
+// WithLogger sets the logger for the config builder
+func WithLogger(logger logger.Interface) Option {
+	return func(b *builder) {
+		b.logger = logger
+	}
+}
 
 // WithPath sets the path for the config builder
 func WithPath(path string) Option {
@@ -64,7 +70,7 @@ func (b *builder) loadConfig(config string) (*Config, error) {
 	configFile := config
 	if os.IsNotExist(err) {
 		configFile = "/dev/null"
-		log.Infof("Config file does not exist, creating new one")
+		b.logger.Infof("Config file does not exist, creating new one")
 	}
 
 	cfg, err := toml.LoadFile(configFile)

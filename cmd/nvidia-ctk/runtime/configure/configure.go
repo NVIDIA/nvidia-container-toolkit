@@ -155,14 +155,17 @@ func (m command) configureWrapper(c *cli.Context, config *config) error {
 	switch config.runtime {
 	case "containerd":
 		cfg, err = containerd.New(
+			containerd.WithLogger(m.logger),
 			containerd.WithPath(configFilePath),
 		)
 	case "crio":
 		cfg, err = crio.New(
+			crio.WithLogger(m.logger),
 			crio.WithPath(configFilePath),
 		)
 	case "docker":
 		cfg, err = docker.New(
+			docker.WithLogger(m.logger),
 			docker.WithPath(configFilePath),
 		)
 	default:
