@@ -35,13 +35,13 @@ func NewCommand(logger *logrus.Logger) *cli.Command {
 
 // build
 func (m command) build() *cli.Command {
-	// Create the 'hook' command
-	hook := cli.Command{
+	// Create the 'info' command
+	info := cli.Command{
 		Name:  "info",
 		Usage: "Provide information about the system",
 	}
 
-	hook.Subcommands = []*cli.Command{}
+	info.Subcommands = []*cli.Command{}
 
-	return &hook
+	return &info
 }
