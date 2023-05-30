@@ -293,6 +293,9 @@ func (c *ldcache) resolve(target string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve symlink: %v", err)
 	}
+	if link == name {
+		return name, nil
+	}
 
 	// We return absolute paths for all targets
 	if !filepath.IsAbs(link) || strings.HasPrefix(link, ".") {
