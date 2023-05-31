@@ -10,6 +10,9 @@
 * Use *.* pattern to locate libcuda.so when generating a CDI specification to support platforms where a patch version is not specified.
 * Update go-nvlib to skip devices that are not MIG capable when generating CDI specifications.
 * Add `nvidia-container-runtime-hook.path` config option to specify NVIDIA Container Runtime Hook path explicitly.
+* Fix bug in creation of `/dev/char` symlinks by failing operation if kernel modules are not loaded.
+* Add option to load kernel modules when creating device nodes
+* Add option to create device nodes when creating `/dev/char` symlinks
 
 ## v1.13.1
 

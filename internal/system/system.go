@@ -19,6 +19,7 @@ package system
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -29,10 +30,10 @@ import (
 
 // Interface is the interface for the system command
 type Interface struct {
-	logger *logrus.Logger
-	dryRun bool
-
-	nvidiaDevices nvidiaDevices
+	logger            *logrus.Logger
+	dryRun            bool
+	loadKernelModules bool
+	nvidiaDevices     nvidiaDevices
 }
 
 // New constructs a system command with the specified options
@@ -42,6 +43,12 @@ func New(opts ...Option) (*Interface, error) {
 	}
 	for _, opt := range opts {
 		opt(i)
+	}
+
+	if i.loadKernelModules {
+		if err := i.LoadNVIDIAKernelModules(); err != nil {
+			return nil, fmt.Errorf("failed to load kernel modules: %v", err)
+		}
 	}
 
 	devices, err := devices.GetNVIDIADevices()
@@ -106,6 +113,26 @@ func (m *Interface) createDeviceNode(path string, major int, minor int) error {
 		return err
 	}
 	return unix.Chmod(path, 0666)
+}
+
+// LoadNVIDIAKernelModules loads the NVIDIA kernel modules.
+func (m *Interface) LoadNVIDIAKernelModules() error {
+	modules := []string{"nvidia", "nvidia-uvm", "nvidia-modeset"}
+
+	for _, module := range modules {
+		if m.dryRun {
+			m.logger.Infof("Running: /sbin/modprobe %s", module)
+			continue
+		}
+		cmd := exec.Command("/sbin/modprobe", module)
+
+		if output, err := cmd.CombinedOutput(); err != nil {
+			m.logger.Debugf("Failed to load kernel module %s: %v", module, string(output))
+			return fmt.Errorf("failed to load kernel module %s: %v", module, err)
+		}
+	}
+
+	return nil
 }
 
 type nvidiaDevices struct {
