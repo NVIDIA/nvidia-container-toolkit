@@ -18,6 +18,7 @@ package devices
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -72,7 +73,14 @@ func (d devices) Get(name Name) (Major, bool) {
 
 // GetNVIDIADevices returns the set of NVIDIA Devices on the machine
 func GetNVIDIADevices() (Devices, error) {
-	devicesFile, err := os.Open(procDevicesPath)
+	return nvidiaDevices(procDevicesPath)
+}
+
+// nvidiaDevices returns the set of NVIDIA Devices from the specified devices file.
+// This is useful for testing since we may be testing on a system where `/proc/devices` does
+// contain a reference to NVIDIA devices.
+func nvidiaDevices(devicesPath string) (Devices, error) {
+	devicesFile, err := os.Open(devicesPath)
 	if os.IsNotExist(err) {
 		return nil, nil
 	}
@@ -81,20 +89,28 @@ func GetNVIDIADevices() (Devices, error) {
 	}
 	defer devicesFile.Close()
 
-	return nvidiaDeviceFrom(devicesFile), nil
+	return nvidiaDeviceFrom(devicesFile)
 }
 
-func nvidiaDeviceFrom(reader io.Reader) devices {
+var errNoNvidiaDevices = errors.New("no NVIDIA devices found")
+
+func nvidiaDeviceFrom(reader io.Reader) (devices, error) {
 	allDevices := devicesFrom(reader)
 	nvidiaDevices := make(devices)
+
+	var hasNvidiaDevices bool
 	for n, d := range allDevices {
 		if !strings.HasPrefix(string(n), nvidiaDevicePrefix) {
 			continue
 		}
 		nvidiaDevices[n] = d
+		hasNvidiaDevices = true
 	}
 
-	return nvidiaDevices
+	if !hasNvidiaDevices {
+		return nil, errNoNvidiaDevices
+	}
+	return nvidiaDevices, nil
 }
 
 func devicesFrom(reader io.Reader) devices {
