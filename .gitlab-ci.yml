@@ -216,10 +216,9 @@ image-ubi8:
     - .package-artifacts
     - .dist-ubi8
   needs:
-    # Note: The ubi8 image uses the centos8 packages
-    - package-centos8-aarch64
-    - package-centos8-x86_64
-    - package-centos8-ppc64le
+    # Note: The ubi8 image uses the centos7 packages
+    - package-centos7-aarch64
+    - package-centos7-x86_64
 
 image-ubuntu20.04:
   extends:
