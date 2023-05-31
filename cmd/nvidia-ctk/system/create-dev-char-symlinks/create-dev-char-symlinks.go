@@ -24,6 +24,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/system"
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -38,11 +39,12 @@ type command struct {
 }
 
 type config struct {
-	devCharPath string
-	driverRoot  string
-	dryRun      bool
-	watch       bool
-	createAll   bool
+	devCharPath       string
+	driverRoot        string
+	dryRun            bool
+	watch             bool
+	createAll         bool
+	loadKernelModules bool
 }
 
 // NewCommand constructs a command sub-command with the specified logger
@@ -98,6 +100,12 @@ func (m command) build() *cli.Command {
 			EnvVars:     []string{"CREATE_ALL"},
 		},
 		&cli.BoolFlag{
+			Name:        "load-kernel-modules",
+			Usage:       "Load the NVIDIA kernel modules before creating symlinks. This is only applicable when --create-all is set.",
+			Destination: &cfg.loadKernelModules,
+			EnvVars:     []string{"LOAD_KERNEL_MODULES"},
+		},
+		&cli.BoolFlag{
 			Name:        "dry-run",
 			Usage:       "If set, the command will not create any symlinks.",
 			Value:       false,
@@ -112,6 +120,11 @@ func (m command) build() *cli.Command {
 func (m command) validateFlags(r *cli.Context, cfg *config) error {
 	if cfg.createAll && cfg.watch {
 		return fmt.Errorf("create-all and watch are mutually exclusive")
+	}
+
+	if cfg.loadKernelModules && !cfg.createAll {
+		m.logger.Warn("load-kernel-modules is only applicable when create-all is set; ignoring")
+		cfg.loadKernelModules = false
 	}
 
 	return nil
@@ -137,6 +150,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		WithDriverRoot(cfg.driverRoot),
 		WithDryRun(cfg.dryRun),
 		WithCreateAll(cfg.createAll),
+		WithLoadKernelModules(cfg.loadKernelModules),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create symlink creator: %v", err)
@@ -186,12 +200,13 @@ create:
 }
 
 type linkCreator struct {
-	logger      *logrus.Logger
-	lister      nodeLister
-	driverRoot  string
-	devCharPath string
-	dryRun      bool
-	createAll   bool
+	logger            *logrus.Logger
+	lister            nodeLister
+	driverRoot        string
+	devCharPath       string
+	dryRun            bool
+	createAll         bool
+	loadKernelModules bool
 }
 
 // Creator is an interface for creating symlinks to /dev/nv* devices in /dev/char.
@@ -216,6 +231,19 @@ func NewSymlinkCreator(opts ...Option) (Creator, error) {
 	}
 	if c.devCharPath == "" {
 		c.devCharPath = defaultDevCharPath
+	}
+
+	if c.loadKernelModules {
+		s, err := system.New(
+			system.WithLogger(c.logger),
+			system.WithDryRun(c.dryRun),
+		)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.LoadNVIDIAKernelModules(); err != nil {
+			return nil, fmt.Errorf("failed to load NVIDIA kernel modules: %v", err)
+		}
 	}
 
 	if c.createAll {
@@ -262,6 +290,13 @@ func WithLogger(logger *logrus.Logger) Option {
 func WithCreateAll(createAll bool) Option {
 	return func(lc *linkCreator) {
 		lc.createAll = createAll
+	}
+}
+
+// WithLoadKernelModules sets the loadKernelModules flag for the linkCreator.
+func WithLoadKernelModules(loadKernelModules bool) Option {
+	return func(lc *linkCreator) {
+		lc.loadKernelModules = loadKernelModules
 	}
 }
 
