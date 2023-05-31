@@ -4,6 +4,8 @@
 
 * Add `nvidia-container-runtime-hook.path` config option to specify NVIDIA Container Runtime Hook path explicitly.
 * Fix bug in creation of `/dev/char` symlinks by failing operation if kernel modules are not loaded.
+* Add option to load kernel modules when creating device nodes
+* Add option to create device nodes when creating `/dev/char` symlinks
 
 ## v1.13.1
 

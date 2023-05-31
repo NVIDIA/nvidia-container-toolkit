@@ -24,6 +24,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/system"
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -38,11 +39,13 @@ type command struct {
 }
 
 type config struct {
-	devCharPath string
-	driverRoot  string
-	dryRun      bool
-	watch       bool
-	createAll   bool
+	devCharPath       string
+	driverRoot        string
+	dryRun            bool
+	watch             bool
+	createAll         bool
+	createDeviceNodes bool
+	loadKernelModules bool
 }
 
 // NewCommand constructs a command sub-command with the specified logger
@@ -98,6 +101,18 @@ func (m command) build() *cli.Command {
 			EnvVars:     []string{"CREATE_ALL"},
 		},
 		&cli.BoolFlag{
+			Name:        "load-kernel-modules",
+			Usage:       "Load the NVIDIA kernel modules before creating symlinks. This is only applicable when --create-all is set.",
+			Destination: &cfg.loadKernelModules,
+			EnvVars:     []string{"LOAD_KERNEL_MODULES"},
+		},
+		&cli.BoolFlag{
+			Name:        "create-device-nodes",
+			Usage:       "Create the NVIDIA control device nodes in the driver root if they do not exist. This is only applicable when --create-all is set",
+			Destination: &cfg.createDeviceNodes,
+			EnvVars:     []string{"CREATE_DEVICE_NODES"},
+		},
+		&cli.BoolFlag{
 			Name:        "dry-run",
 			Usage:       "If set, the command will not create any symlinks.",
 			Value:       false,
@@ -112,6 +127,16 @@ func (m command) build() *cli.Command {
 func (m command) validateFlags(r *cli.Context, cfg *config) error {
 	if cfg.createAll && cfg.watch {
 		return fmt.Errorf("create-all and watch are mutually exclusive")
+	}
+
+	if cfg.loadKernelModules && !cfg.createAll {
+		m.logger.Warn("load-kernel-modules is only applicable when create-all is set; ignoring")
+		cfg.loadKernelModules = false
+	}
+
+	if cfg.createDeviceNodes && !cfg.createAll {
+		m.logger.Warn("create-device-nodes is only applicable when create-all is set; ignoring")
+		cfg.createDeviceNodes = false
 	}
 
 	return nil
@@ -137,6 +162,8 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		WithDriverRoot(cfg.driverRoot),
 		WithDryRun(cfg.dryRun),
 		WithCreateAll(cfg.createAll),
+		WithLoadKernelModules(cfg.loadKernelModules),
+		WithCreateDeviceNodes(cfg.createDeviceNodes),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create symlink creator: %v", err)
@@ -186,12 +213,14 @@ create:
 }
 
 type linkCreator struct {
-	logger      *logrus.Logger
-	lister      nodeLister
-	driverRoot  string
-	devCharPath string
-	dryRun      bool
-	createAll   bool
+	logger            *logrus.Logger
+	lister            nodeLister
+	driverRoot        string
+	devCharPath       string
+	dryRun            bool
+	createAll         bool
+	createDeviceNodes bool
+	loadKernelModules bool
 }
 
 // Creator is an interface for creating symlinks to /dev/nv* devices in /dev/char.
@@ -218,6 +247,10 @@ func NewSymlinkCreator(opts ...Option) (Creator, error) {
 		c.devCharPath = defaultDevCharPath
 	}
 
+	if err := c.setup(); err != nil {
+		return nil, err
+	}
+
 	if c.createAll {
 		lister, err := newAllPossible(c.logger, c.driverRoot)
 		if err != nil {
@@ -228,6 +261,34 @@ func NewSymlinkCreator(opts ...Option) (Creator, error) {
 		c.lister = existing{c.logger, c.driverRoot}
 	}
 	return c, nil
+}
+
+func (m linkCreator) setup() error {
+	if !m.loadKernelModules && !m.createDeviceNodes {
+		return nil
+	}
+
+	s, err := system.New(
+		system.WithLogger(m.logger),
+		system.WithDryRun(m.dryRun),
+	)
+	if err != nil {
+		return err
+	}
+
+	if m.loadKernelModules {
+		if err := s.LoadNVIDIAKernelModules(); err != nil {
+			return fmt.Errorf("failed to load NVIDIA kernel modules: %v", err)
+		}
+	}
+
+	if m.createDeviceNodes {
+		if err := s.CreateNVIDIAControlDeviceNodesAt(m.driverRoot); err != nil {
+			return fmt.Errorf("failed to create NVIDIA device nodes: %v", err)
+		}
+	}
+
+	return nil
 }
 
 // WithDriverRoot sets the driver root path.
@@ -262,6 +323,20 @@ func WithLogger(logger *logrus.Logger) Option {
 func WithCreateAll(createAll bool) Option {
 	return func(lc *linkCreator) {
 		lc.createAll = createAll
+	}
+}
+
+// WithLoadKernelModules sets the loadKernelModules flag for the linkCreator.
+func WithLoadKernelModules(loadKernelModules bool) Option {
+	return func(lc *linkCreator) {
+		lc.loadKernelModules = loadKernelModules
+	}
+}
+
+// WithCreateDeviceNodes sets the createDeviceNodes flag for the linkCreator.
+func WithCreateDeviceNodes(createDeviceNodes bool) Option {
+	return func(lc *linkCreator) {
+		lc.createDeviceNodes = createDeviceNodes
 	}
 }
 

@@ -34,6 +34,8 @@ type options struct {
 	dryRun bool
 
 	control bool
+
+	loadKernelModules bool
 }
 
 // NewCommand constructs a command sub-command with the specified logger
@@ -73,6 +75,11 @@ func (m command) build() *cli.Command {
 			Destination: &opts.control,
 		},
 		&cli.BoolFlag{
+			Name:        "load-kernel-modules",
+			Usage:       "load the NVIDIA Kernel Modules before creating devices nodes",
+			Destination: &opts.loadKernelModules,
+		},
+		&cli.BoolFlag{
 			Name:        "dry-run",
 			Usage:       "if set, the command will not create any symlinks.",
 			Value:       false,
@@ -92,6 +99,7 @@ func (m command) run(c *cli.Context, opts *options) error {
 	s, err := system.New(
 		system.WithLogger(m.logger),
 		system.WithDryRun(opts.dryRun),
+		system.WithLoadKernelModules(opts.loadKernelModules),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create library: %v", err)
