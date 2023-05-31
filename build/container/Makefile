@@ -118,7 +118,7 @@ build-ubuntu%: LIBNVIDIA_CONTAINER0_DEPENDENCY=$(LIBNVIDIA_CONTAINER0_VERSION)
 
 build-ubi8: BASE_DIST := ubi8
 build-ubi8: DOCKERFILE_SUFFIX := centos
-build-ubi8: PACKAGE_DIST = centos8
+build-ubi8: PACKAGE_DIST = centos7
 
 build-centos7: BASE_DIST = $(*)
 build-centos7: DOCKERFILE_SUFFIX := centos
@@ -143,7 +143,7 @@ $(TEST_TARGETS): test-%:
 test-packaging: DIST = packaging
 test-packaging:
 	@echo "Testing package image contents"
-	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos7/ppc64le" || echo "Missing centos7/ppc64le"
+	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos7/aarch64" || echo "Missing centos7/aarch64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos7/x86_64" || echo "Missing centos7/x86_64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos8/aarch64" || echo "Missing centos8/aarch64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos8/ppc64le" || echo "Missing centos8/ppc64le"
