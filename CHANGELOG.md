@@ -3,6 +3,7 @@
 ## v1.13.2
 
 * Add `nvidia-container-runtime-hook.path` config option to specify NVIDIA Container Runtime Hook path explicitly.
+* Fix bug in creation of `/dev/char` symlinks by failing operation if kernel modules are not loaded.
 
 ## v1.13.1
 
