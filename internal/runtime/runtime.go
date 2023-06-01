@@ -44,14 +44,11 @@ func (r rt) Run(argv []string) (rerr error) {
 	if err != nil {
 		return fmt.Errorf("error loading config: %v", err)
 	}
-	err = r.logger.Update(
+	r.logger.Update(
 		cfg.NVIDIAContainerRuntimeConfig.DebugFilePath,
 		cfg.NVIDIAContainerRuntimeConfig.LogLevel,
 		argv,
 	)
-	if err != nil {
-		return fmt.Errorf("failed to set up logger: %v", err)
-	}
 	defer func() {
 		if rerr != nil {
 			r.logger.Errorf("%v", rerr)
