@@ -44,18 +44,11 @@ func (r rt) Run(argv []string) (rerr error) {
 	if err != nil {
 		return fmt.Errorf("error loading config: %v", err)
 	}
-	if r.modeOverride != "" {
-		cfg.NVIDIAContainerRuntimeConfig.Mode = r.modeOverride
-	}
-
-	err = r.logger.Update(
+	r.logger.Update(
 		cfg.NVIDIAContainerRuntimeConfig.DebugFilePath,
 		cfg.NVIDIAContainerRuntimeConfig.LogLevel,
 		argv,
 	)
-	if err != nil {
-		return fmt.Errorf("failed to set up logger: %v", err)
-	}
 	defer func() {
 		if rerr != nil {
 			r.logger.Errorf("%v", rerr)
@@ -65,6 +58,9 @@ func (r rt) Run(argv []string) (rerr error) {
 
 	// We apply some config updates here to ensure that the config is valid in
 	// all cases.
+	if r.modeOverride != "" {
+		cfg.NVIDIAContainerRuntimeConfig.Mode = r.modeOverride
+	}
 	cfg.NVIDIAContainerRuntimeHookConfig.Path = config.ResolveNVIDIAContainerRuntimeHookPath(r.logger.Logger, cfg.NVIDIAContainerRuntimeHookConfig.Path)
 
 	// Print the config to the output.

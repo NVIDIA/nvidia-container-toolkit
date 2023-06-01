@@ -6,6 +6,7 @@
 * Fix bug in creation of `/dev/char` symlinks by failing operation if kernel modules are not loaded.
 * Add option to load kernel modules when creating device nodes
 * Add option to create device nodes when creating `/dev/char` symlinks
+* Treat failures to open debug log files as non-fatal.
 
 ## v1.13.1
 
