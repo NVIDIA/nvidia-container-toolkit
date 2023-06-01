@@ -7,6 +7,7 @@
 * Add option to load kernel modules when creating device nodes
 * Add option to create device nodes when creating `/dev/char` symlinks
 * Treat failures to open debug log files as non-fatal.
+* Bump CUDA base image version to 12.1.1.
 
 ## v1.13.1
 
