@@ -30,7 +30,7 @@ NVIDIA_CONTAINER_RUNTIME_VERSION := 3.14.0
 # Specify the expected libnvidia-container0 version for arm64-based ubuntu builds.
 LIBNVIDIA_CONTAINER0_VERSION := 0.10.0+jetpack
 
-CUDA_VERSION := 12.1.0
+CUDA_VERSION := 12.1.1
 GOLANG_VERSION := 1.20.3
 
 GIT_COMMIT ?= $(shell git describe --match="" --dirty --long --always --abbrev=40 2> /dev/null || echo "")

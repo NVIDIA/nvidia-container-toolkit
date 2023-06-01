@@ -13,6 +13,7 @@
 * Fix bug in creation of `/dev/char` symlinks by failing operation if kernel modules are not loaded.
 * Add option to load kernel modules when creating device nodes
 * Add option to create device nodes when creating `/dev/char` symlinks
+* Bump CUDA base image version to 12.1.1.
 
 ## v1.13.1
 
