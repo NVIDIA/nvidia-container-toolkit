@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier"
@@ -61,6 +62,16 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 
 // newSpecModifier is a factory method that creates constructs an OCI spec modifer based on the provided config.
 func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec, argv []string) (oci.SpecModifier, error) {
+	rawSpec, err := ociSpec.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
+	}
+
+	image, err := image.NewCUDAImageFromSpec(rawSpec)
+	if err != nil {
+		return nil, err
+	}
+
 	mode := info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode)
 	modeModifier, err := newModeModifier(logger, mode, cfg, ociSpec, argv)
 	if err != nil {
@@ -71,17 +82,17 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		return modeModifier, nil
 	}
 
-	graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, ociSpec)
+	graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, image)
 	if err != nil {
 		return nil, err
 	}
 
-	gdsModifier, err := modifier.NewGDSModifier(logger, cfg, ociSpec)
+	gdsModifier, err := modifier.NewGDSModifier(logger, cfg, image)
 	if err != nil {
 		return nil, err
 	}
 
-	mofedModifier, err := modifier.NewMOFEDModifier(logger, cfg, ociSpec)
+	mofedModifier, err := modifier.NewMOFEDModifier(logger, cfg, image)
 	if err != nil {
 		return nil, err
 	}

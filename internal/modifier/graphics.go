@@ -28,17 +28,7 @@ import (
 
 // NewGraphicsModifier constructs a modifier that injects graphics-related modifications into an OCI runtime specification.
 // The value of the NVIDIA_DRIVER_CAPABILITIES environment variable is checked to determine if this modification should be made.
-func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
-	rawSpec, err := ociSpec.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
-	}
-
-	image, err := image.NewCUDAImageFromSpec(rawSpec)
-	if err != nil {
-		return nil, err
-	}
-
+func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
 	if required, reason := requiresGraphicsModifier(image); !required {
 		logger.Infof("No graphics modifier required: %v", reason)
 		return nil, nil
