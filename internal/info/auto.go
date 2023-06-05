@@ -17,7 +17,9 @@
 package info
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
 )
 
@@ -32,23 +34,27 @@ type resolver struct {
 }
 
 // ResolveAutoMode determines the correct mode for the platform if set to "auto"
-func ResolveAutoMode(logger logger.Interface, mode string) (rmode string) {
+func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rmode string) {
 	nvinfo := info.New()
 	r := resolver{
 		logger: logger,
 		info:   nvinfo,
 	}
-	return r.resolveMode(mode)
+	return r.resolveMode(mode, image)
 }
 
 // resolveMode determines the correct mode for the platform if set to "auto"
-func (r resolver) resolveMode(mode string) (rmode string) {
+func (r resolver) resolveMode(mode string, image image.CUDA) (rmode string) {
 	if mode != "auto" {
 		return mode
 	}
 	defer func() {
 		r.logger.Infof("Auto-detected mode as '%v'", rmode)
 	}()
+
+	if onlyFullyQualifiedCDIDevices(image) {
+		return "cdi"
+	}
 
 	isTegra, reason := r.info.IsTegraSystem()
 	r.logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
@@ -61,4 +67,15 @@ func (r resolver) resolveMode(mode string) (rmode string) {
 	}
 
 	return "legacy"
+}
+
+func onlyFullyQualifiedCDIDevices(image image.CUDA) bool {
+	var hasCDIdevice bool
+	for _, device := range image.DevicesFromEnvvars("NVIDIA_VISIBLE_DEVICES").List() {
+		if !cdi.IsQualifiedName(device) {
+			return false
+		}
+		hasCDIdevice = true
+	}
+	return hasCDIdevice
 }
