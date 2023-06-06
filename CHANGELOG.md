@@ -15,6 +15,8 @@
 * Add option to create device nodes when creating `/dev/char` symlinks
 * Bump CUDA base image version to 12.1.1.
 
+* [libnvidia-container] Support OpenSSL 3 with the Encrypt/Decrypt library
+
 ## v1.13.1
 
 * Update `update-ldcache` hook to only update ldcache if it exists.
