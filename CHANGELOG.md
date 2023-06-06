@@ -5,6 +5,7 @@
 * Generate CDI specification files with `644` permissions to allow rootless applications (e.g. podman).
 * Fix bug causing incorrect nvidia-smi symlink to be created on WSL2 systems with multiple driver roots.
 * Fix bug when using driver versions that do not include a patch component in their version number.
+* Skip additional modifications in CDI mode.
 
 * [toolkit-container] Allow same envars for all runtime configs
 
