@@ -22,3 +22,29 @@ import "github.com/sirupsen/logrus"
 func New() Interface {
 	return logrus.StandardLogger()
 }
+
+// NullLogger is a logger that does nothing
+type NullLogger struct{}
+
+var _ Interface = (*NullLogger)(nil)
+
+// Debugf is a no-op for the null logger
+func (l *NullLogger) Debugf(string, ...interface{}) {}
+
+// Errorf is a no-op for the null logger
+func (l *NullLogger) Errorf(string, ...interface{}) {}
+
+// Info is a no-op for the null logger
+func (l *NullLogger) Info(...interface{}) {}
+
+// Infof is a no-op for the null logger
+func (l *NullLogger) Infof(string, ...interface{}) {}
+
+// Warn is a no-op for the null logger
+func (l *NullLogger) Warn(...interface{}) {}
+
+// Warnf is a no-op for the null logger
+func (l *NullLogger) Warnf(string, ...interface{}) {}
+
+// Warningf is a no-op for the null logger
+func (l *NullLogger) Warningf(string, ...interface{}) {}

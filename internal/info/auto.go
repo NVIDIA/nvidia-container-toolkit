@@ -16,17 +16,13 @@
 
 package info
 
-import "gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
-
-// Logger is a basic interface for logging to allow these functions to be called
-// from code where logrus is not used.
-type Logger interface {
-	Infof(string, ...interface{})
-	Debugf(string, ...interface{})
-}
+import (
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
+)
 
 // ResolveAutoMode determines the correct mode for the platform if set to "auto"
-func ResolveAutoMode(logger Logger, mode string) (rmode string) {
+func ResolveAutoMode(logger logger.Interface, mode string) (rmode string) {
 	if mode != "auto" {
 		return mode
 	}
