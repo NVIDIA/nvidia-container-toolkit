@@ -40,11 +40,8 @@ func (l *NullLogger) Info(...interface{}) {}
 // Infof is a no-op for the null logger
 func (l *NullLogger) Infof(string, ...interface{}) {}
 
-// Warn is a no-op for the null logger
-func (l *NullLogger) Warn(...interface{}) {}
-
-// Warnf is a no-op for the null logger
-func (l *NullLogger) Warnf(string, ...interface{}) {}
+// Warning is a no-op for the null logger
+func (l *NullLogger) Warning(...interface{}) {}
 
 // Warningf is a no-op for the null logger
 func (l *NullLogger) Warningf(string, ...interface{}) {}

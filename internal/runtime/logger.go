@@ -52,7 +52,7 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) {
 	level, logLevelError := configFromArgs.getLevel(logLevel)
 	defer func() {
 		if logLevelError != nil {
-			l.Warn(logLevelError)
+			l.Warning(logLevelError)
 		}
 	}()
 
@@ -77,7 +77,7 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) {
 	}
 	defer func() {
 		if argLogFileError != nil {
-			l.Warnf("Failed to open log file: %v", argLogFileError)
+			l.Warningf("Failed to open log file: %v", argLogFileError)
 		}
 	}()
 

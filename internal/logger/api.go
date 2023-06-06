@@ -22,7 +22,6 @@ type Interface interface {
 	Errorf(string, ...interface{})
 	Info(...interface{})
 	Infof(string, ...interface{})
-	Warn(...interface{})
-	Warnf(string, ...interface{})
+	Warning(...interface{})
 	Warningf(string, ...interface{})
 }

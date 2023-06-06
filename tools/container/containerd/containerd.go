@@ -311,11 +311,11 @@ func SignalContainerd(socket string) error {
 		if i == maxReloadAttempts-1 {
 			break
 		}
-		log.Warnf("Error signaling containerd, attempt %v/%v: %v", i+1, maxReloadAttempts, err)
+		log.Warningf("Error signaling containerd, attempt %v/%v: %v", i+1, maxReloadAttempts, err)
 		time.Sleep(reloadBackoff)
 	}
 	if err != nil {
-		log.Warnf("Max retries reached %v/%v, aborting", maxReloadAttempts, maxReloadAttempts)
+		log.Warningf("Max retries reached %v/%v, aborting", maxReloadAttempts, maxReloadAttempts)
 		return err
 	}
 

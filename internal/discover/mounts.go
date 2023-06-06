@@ -75,11 +75,11 @@ func (d *mounts) Mounts() ([]Mount, error) {
 		d.logger.Debugf("Locating %v", candidate)
 		located, err := d.lookup.Locate(candidate)
 		if err != nil {
-			d.logger.Warnf("Could not locate %v: %v", candidate, err)
+			d.logger.Warningf("Could not locate %v: %v", candidate, err)
 			continue
 		}
 		if len(located) == 0 {
-			d.logger.Warnf("Missing %v", candidate)
+			d.logger.Warningf("Missing %v", candidate)
 			continue
 		}
 		d.logger.Debugf("Located %v as %v", candidate, located)

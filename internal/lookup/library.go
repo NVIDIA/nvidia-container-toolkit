@@ -58,7 +58,7 @@ func (l library) Locate(libname string) ([]string, error) {
 
 	paths32, paths64 := l.cache.Lookup(libname)
 	if len(paths32) > 0 {
-		l.logger.Warnf("Ignoring 32-bit libraries for %v: %v", libname, paths32)
+		l.logger.Warningf("Ignoring 32-bit libraries for %v: %v", libname, paths32)
 	}
 
 	if len(paths64) == 0 {

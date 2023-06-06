@@ -130,12 +130,12 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 	}
 
 	if cfg.loadKernelModules && !cfg.createAll {
-		m.logger.Warn("load-kernel-modules is only applicable when create-all is set; ignoring")
+		m.logger.Warning("load-kernel-modules is only applicable when create-all is set; ignoring")
 		cfg.loadKernelModules = false
 	}
 
 	if cfg.createDeviceNodes && !cfg.createAll {
-		m.logger.Warn("create-device-nodes is only applicable when create-all is set; ignoring")
+		m.logger.Warning("create-device-nodes is only applicable when create-all is set; ignoring")
 		cfg.createDeviceNodes = false
 	}
 
@@ -365,7 +365,7 @@ func (m linkCreator) CreateLinks() error {
 
 		err = os.Symlink(target, linkPath)
 		if err != nil {
-			m.logger.Warnf("Could not create symlink: %v", err)
+			m.logger.Warningf("Could not create symlink: %v", err)
 		}
 	}
 

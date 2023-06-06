@@ -134,7 +134,7 @@ func (o Options) RevertConfig(cfg engine.Interface) error {
 func (o Options) Restart(service string, withSignal func(string) error) error {
 	switch o.RestartMode {
 	case restartModeNone:
-		logrus.Warnf("Skipping restart of %v due to --restart-mode=%v", service, o.RestartMode)
+		logrus.Warningf("Skipping restart of %v due to --restart-mode=%v", service, o.RestartMode)
 		return nil
 	case restartModeSignal:
 		return withSignal(o.Socket)

@@ -129,7 +129,7 @@ func (d symlinkHook) getCSVFileSymlinks() []string {
 			}
 			targets, err := chainLocator.Locate(ms.Path)
 			if err != nil {
-				d.logger.Warnf("Failed to locate symlink %v", ms.Path)
+				d.logger.Warningf("Failed to locate symlink %v", ms.Path)
 			}
 			candidates = append(candidates, targets...)
 		}

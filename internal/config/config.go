@@ -286,7 +286,7 @@ func resolveWithDefault(logger logger.Interface, label string, path string, defa
 	resolvedPath := defaultPath
 	targets, err := lookup.Locate(path)
 	if err != nil {
-		logger.Warnf("Failed to locate %v: %v", path, err)
+		logger.Warningf("Failed to locate %v: %v", path, err)
 	} else {
 		logger.Debugf("Found %v candidates: %v", path, targets)
 		resolvedPath = targets[0]

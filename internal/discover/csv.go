@@ -29,7 +29,7 @@ import (
 // single CSV files.
 func NewFromCSVFiles(logger logger.Interface, files []string, driverRoot string) (Discover, error) {
 	if len(files) == 0 {
-		logger.Warnf("No CSV files specified")
+		logger.Warningf("No CSV files specified")
 		return None{}, nil
 	}
 
@@ -46,7 +46,7 @@ func NewFromCSVFiles(logger logger.Interface, files []string, driverRoot string)
 	for _, filename := range files {
 		targets, err := loadCSVFile(logger, filename)
 		if err != nil {
-			logger.Warnf("Skipping CSV file %v: %v", filename, err)
+			logger.Warningf("Skipping CSV file %v: %v", filename, err)
 			continue
 		}
 		mountSpecs = append(mountSpecs, targets...)

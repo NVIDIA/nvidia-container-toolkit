@@ -259,7 +259,7 @@ var _ Discover = (*xorgHooks)(nil)
 func optionalXorgDiscoverer(logger logger.Interface, driverRoot string, nvidiaCTKPath string) Discover {
 	xorg, err := newXorgDiscoverer(logger, driverRoot, nvidiaCTKPath)
 	if err != nil {
-		logger.Warnf("Failed to create Xorg discoverer: %v; skipping xorg libraries", err)
+		logger.Warningf("Failed to create Xorg discoverer: %v; skipping xorg libraries", err)
 		return None{}
 	}
 	return xorg

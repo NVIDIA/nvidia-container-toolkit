@@ -65,7 +65,7 @@ func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, nvi
 		searchPaths = append(searchPaths, path)
 	}
 	if len(searchPaths) > 1 {
-		logger.Warnf("Found multiple driver store paths: %v", searchPaths)
+		logger.Warningf("Found multiple driver store paths: %v", searchPaths)
 	}
 	driverStorePath := searchPaths[0]
 	searchPaths = append(searchPaths, "/usr/lib/wsl/lib")

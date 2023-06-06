@@ -192,8 +192,8 @@ func initialize() error {
 
 	err = unix.Flock(int(f.Fd()), unix.LOCK_EX|unix.LOCK_NB)
 	if err != nil {
-		log.Warnf("Unable to get exclusive lock on '%v'", pidFile)
-		log.Warnf("This normally means an instance of the NVIDIA toolkit Container is already running, aborting")
+		log.Warningf("Unable to get exclusive lock on '%v'", pidFile)
+		log.Warningf("This normally means an instance of the NVIDIA toolkit Container is already running, aborting")
 		return fmt.Errorf("unable to get flock on pidfile: %v", err)
 	}
 
@@ -288,6 +288,6 @@ func shutdown() {
 
 	err := os.Remove(pidFile)
 	if err != nil {
-		log.Warnf("Unable to remove pidfile: %v", err)
+		log.Warningf("Unable to remove pidfile: %v", err)
 	}
 }

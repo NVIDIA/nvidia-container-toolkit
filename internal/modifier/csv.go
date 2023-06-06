@@ -115,14 +115,14 @@ func checkRequirements(logger logger.Interface, image image.CUDA) error {
 
 	cudaVersion, err := cuda.Version()
 	if err != nil {
-		logger.Warnf("Failed to get CUDA version: %v", err)
+		logger.Warningf("Failed to get CUDA version: %v", err)
 	} else {
 		r.AddVersionProperty(requirements.CUDA, cudaVersion)
 	}
 
 	compteCapability, err := cuda.ComputeCapability(0)
 	if err != nil {
-		logger.Warnf("Failed to get CUDA Compute Capability: %v", err)
+		logger.Warningf("Failed to get CUDA Compute Capability: %v", err)
 	} else {
 		r.AddVersionProperty(requirements.ARCH, compteCapability)
 	}

@@ -117,7 +117,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 			}
 			targets, err := chainLocator.Locate(ms.Path)
 			if err != nil {
-				m.logger.Warnf("Failed to locate symlink %v", ms.Path)
+				m.logger.Warningf("Failed to locate symlink %v", ms.Path)
 			}
 			candidates = append(candidates, targets...)
 		}
@@ -137,7 +137,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 
 		err = m.createLink(created, cfg.hostRoot, containerRoot, target, candidate)
 		if err != nil {
-			m.logger.Warnf("Failed to create link %v: %v", []string{target, candidate}, err)
+			m.logger.Warningf("Failed to create link %v: %v", []string{target, candidate}, err)
 		}
 	}
 
@@ -145,13 +145,13 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	for _, l := range links {
 		parts := strings.Split(l, "::")
 		if len(parts) != 2 {
-			m.logger.Warnf("Invalid link specification %v", l)
+			m.logger.Warningf("Invalid link specification %v", l)
 			continue
 		}
 
 		err := m.createLink(created, cfg.hostRoot, containerRoot, parts[0], parts[1])
 		if err != nil {
-			m.logger.Warnf("Failed to create link %v: %v", parts, err)
+			m.logger.Warningf("Failed to create link %v: %v", parts, err)
 		}
 	}
 
@@ -162,7 +162,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 func (m command) createLink(created map[string]bool, hostRoot string, containerRoot string, target string, link string) error {
 	linkPath, err := changeRoot(hostRoot, containerRoot, link)
 	if err != nil {
-		m.logger.Warnf("Failed to resolve path for link %v relative to %v: %v", link, containerRoot, err)
+		m.logger.Warningf("Failed to resolve path for link %v relative to %v: %v", link, containerRoot, err)
 	}
 	if created[linkPath] {
 		m.logger.Debugf("Link %v already created", linkPath)
@@ -171,7 +171,7 @@ func (m command) createLink(created map[string]bool, hostRoot string, containerR
 
 	targetPath, err := changeRoot(hostRoot, "/", target)
 	if err != nil {
-		m.logger.Warnf("Failed to resolve path for target %v relative to %v: %v", target, "/", err)
+		m.logger.Warningf("Failed to resolve path for target %v relative to %v: %v", target, "/", err)
 	}
 
 	m.logger.Infof("Symlinking %v to %v", linkPath, targetPath)
