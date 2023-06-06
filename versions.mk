@@ -13,7 +13,7 @@
 # limitations under the License.
 
 LIB_NAME := nvidia-container-toolkit
-LIB_VERSION := 1.13.1
+LIB_VERSION := 1.13.2
 LIB_TAG :=
 
 # The package version is the combination of the library version and tag.
@@ -30,8 +30,8 @@ NVIDIA_CONTAINER_RUNTIME_VERSION := 3.13.0
 # Specify the expected libnvidia-container0 version for arm64-based ubuntu builds.
 LIBNVIDIA_CONTAINER0_VERSION := 0.10.0+jetpack
 
-CUDA_VERSION := 12.1.0
-GOLANG_VERSION := 1.18.8
+CUDA_VERSION := 12.1.1
+GOLANG_VERSION := 1.20.3
 
 GIT_COMMIT ?= $(shell git describe --match="" --dirty --long --always --abbrev=40 2> /dev/null || echo "")
 GIT_COMMIT_SHORT ?= $(shell git rev-parse --short HEAD 2> /dev/null || echo "")

@@ -1,7 +1,7 @@
 [submodule "third_party/libnvidia-container"]
 	path = third_party/libnvidia-container
 	url = https://gitlab.com/nvidia/container-toolkit/libnvidia-container.git
-	branch = main
+	branch = release-1.13
 [submodule "third_party/nvidia-container-runtime"]
 	path = third_party/nvidia-container-runtime
 	url = https://gitlab.com/nvidia/container-toolkit/container-runtime.git

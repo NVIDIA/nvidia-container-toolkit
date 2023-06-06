@@ -45,21 +45,23 @@ func TestNvidiaDevices(t *testing.T) {
 
 func TestProcessDeviceFile(t *testing.T) {
 	testCases := []struct {
-		lines    []string
-		expected devices
+		lines         []string
+		expected      devices
+		expectedError error
 	}{
-		{[]string{}, make(devices)},
-		{[]string{"Not a valid line:"}, make(devices)},
-		{[]string{"195 nvidia-frontend"}, devices{"nvidia-frontend": 195}},
-		{[]string{"195 nvidia-frontend", "235 nvidia-caps"}, devices{"nvidia-frontend": 195, "nvidia-caps": 235}},
-		{[]string{"  195 nvidia-frontend"}, devices{"nvidia-frontend": 195}},
-		{[]string{"Not a valid line:", "", "195 nvidia-frontend"}, devices{"nvidia-frontend": 195}},
-		{[]string{"195 not-nvidia-frontend"}, make(devices)},
+		{lines: []string{}, expectedError: errNoNvidiaDevices},
+		{lines: []string{"Not a valid line:"}, expectedError: errNoNvidiaDevices},
+		{lines: []string{"195 nvidia-frontend"}, expected: devices{"nvidia-frontend": 195}},
+		{lines: []string{"195 nvidia-frontend", "235 nvidia-caps"}, expected: devices{"nvidia-frontend": 195, "nvidia-caps": 235}},
+		{lines: []string{"  195 nvidia-frontend"}, expected: devices{"nvidia-frontend": 195}},
+		{lines: []string{"Not a valid line:", "", "195 nvidia-frontend"}, expected: devices{"nvidia-frontend": 195}},
+		{lines: []string{"195 not-nvidia-frontend"}, expectedError: errNoNvidiaDevices},
 	}
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("testcase %d", i), func(t *testing.T) {
 			contents := strings.NewReader(strings.Join(tc.lines, "\n"))
-			d := nvidiaDeviceFrom(contents)
+			d, err := nvidiaDeviceFrom(contents)
+			require.ErrorIs(t, err, tc.expectedError)
 
 			require.EqualValues(t, tc.expected, d)
 		})

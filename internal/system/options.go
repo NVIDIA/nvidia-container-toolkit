@@ -34,3 +34,10 @@ func WithDryRun(dryRun bool) Option {
 		i.dryRun = dryRun
 	}
 }
+
+// WithLoadKernelModules sets the load kernel modules flag
+func WithLoadKernelModules(loadKernelModules bool) Option {
+	return func(i *Interface) {
+		i.loadKernelModules = loadKernelModules
+	}
+}

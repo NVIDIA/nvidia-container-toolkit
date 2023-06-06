@@ -172,7 +172,7 @@ func TestDuplicateHook(t *testing.T) {
 // addNVIDIAHook is a basic wrapper for an addHookModifier that is used for
 // testing.
 func addNVIDIAHook(spec *specs.Spec) error {
-	m := modifier.NewStableRuntimeModifier(logrus.StandardLogger())
+	m := modifier.NewStableRuntimeModifier(logrus.StandardLogger(), nvidiaHook)
 	return m.Modify(spec)
 }
 

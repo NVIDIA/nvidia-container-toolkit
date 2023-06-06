@@ -99,7 +99,7 @@ func newSpecModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec
 func newModeModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec, argv []string) (oci.SpecModifier, error) {
 	switch info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode) {
 	case "legacy":
-		return modifier.NewStableRuntimeModifier(logger), nil
+		return modifier.NewStableRuntimeModifier(logger, cfg.NVIDIAContainerRuntimeHookConfig.Path), nil
 	case "csv":
 		return modifier.NewCSVModifier(logger, cfg, ociSpec)
 	case "cdi":
