@@ -52,18 +52,19 @@ const (
 
 // options stores the configuration from the command linek or environment variables
 type options struct {
-	configMode string
-
-	hooksDir     string
-	hookFilename string
-	runtimeDir   string
-
 	config        string
 	socket        string
 	runtimeClass  string
+	runtimeDir    string
 	setAsDefault  bool
 	restartMode   string
 	hostRootMount string
+
+	configMode string
+
+	// hook-specific options
+	hooksDir     string
+	hookFilename string
 }
 
 func main() {
@@ -95,6 +96,10 @@ func main() {
 	cleanup.Action = func(c *cli.Context) error {
 		return Cleanup(c, &options)
 	}
+	cleanup.Before = func(c *cli.Context) error {
+		return ParseArgs(c, &options)
+	}
+
 	// Register the subcommands with the top-level CLI
 	c.Commands = []*cli.Command{
 		&setup,
@@ -135,6 +140,13 @@ func main() {
 			Value:       defaultRuntimeClass,
 			Destination: &options.runtimeClass,
 			EnvVars:     []string{"CRIO_RUNTIME_CLASS", "NVIDIA_RUNTIME_NAME"},
+		},
+		&cli.StringFlag{
+			Name:        "nvidia-runtime-dir",
+			Aliases:     []string{"runtime-dir"},
+			Usage:       "The path where the nvidia-container-runtime binaries are located. If this is not specified, the first argument will be used instead",
+			Destination: &options.runtimeDir,
+			EnvVars:     []string{"NVIDIA_RUNTIME_DIR"},
 		},
 		&cli.BoolFlag{
 			Name:        "set-as-default",
@@ -314,13 +326,20 @@ func cleanupConfig(o *options) error {
 
 // ParseArgs parses the command line arguments to the CLI
 func ParseArgs(c *cli.Context, o *options) error {
+	if o.runtimeDir != "" {
+		log.Debug("Runtime directory already set")
+		return nil
+	}
+
 	args := c.Args()
 
 	log.Infof("Parsing arguments: %v", args.Slice())
 	if c.NArg() != 1 {
 		return fmt.Errorf("incorrect number of arguments")
 	}
+
 	o.runtimeDir = args.Get(0)
+
 	log.Infof("Successfully parsed arguments")
 
 	return nil
