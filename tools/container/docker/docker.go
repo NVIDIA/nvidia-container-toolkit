@@ -23,9 +23,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/docker"
-	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )
@@ -56,13 +55,7 @@ const (
 
 // options stores the configuration from the command line or environment variables
 type options struct {
-	config        string
-	socket        string
-	runtimeName   string
-	runtimeDir    string
-	setAsDefault  bool
-	restartMode   string
-	hostRootMount string
+	container.Options
 }
 
 func main() {
@@ -83,7 +76,7 @@ func main() {
 		return Setup(c, &options)
 	}
 	setup.Before = func(c *cli.Context) error {
-		return ParseArgs(c, &options)
+		return container.ParseArgs(c, &options.Options)
 	}
 
 	// Create the 'cleanup' subcommand
@@ -95,7 +88,7 @@ func main() {
 		return Cleanup(c, &options)
 	}
 	cleanup.Before = func(c *cli.Context) error {
-		return ParseArgs(c, &options)
+		return container.ParseArgs(c, &options.Options)
 	}
 
 	// Register the subcommands with the top-level CLI
@@ -113,28 +106,28 @@ func main() {
 			Name:        "config",
 			Usage:       "Path to docker config file",
 			Value:       defaultConfig,
-			Destination: &options.config,
+			Destination: &options.Config,
 			EnvVars:     []string{"DOCKER_CONFIG", "RUNTIME_CONFIG"},
 		},
 		&cli.StringFlag{
 			Name:        "socket",
 			Usage:       "Path to the docker socket file",
 			Value:       defaultSocket,
-			Destination: &options.socket,
+			Destination: &options.Socket,
 			EnvVars:     []string{"DOCKER_SOCKET", "RUNTIME_SOCKET"},
 		},
 		&cli.StringFlag{
 			Name:        "restart-mode",
 			Usage:       "Specify how docker should be restarted; If 'none' is selected it will not be restarted [signal | none]",
 			Value:       defaultRestartMode,
-			Destination: &options.restartMode,
+			Destination: &options.RestartMode,
 			EnvVars:     []string{"DOCKER_RESTART_MODE", "RUNTIME_RESTART_MODE"},
 		},
 		&cli.StringFlag{
 			Name:        "host-root",
 			Usage:       "Specify the path to the host root to be used when restarting docker using systemd",
 			Value:       defaultHostRootMount,
-			Destination: &options.hostRootMount,
+			Destination: &options.HostRootMount,
 			EnvVars:     []string{"HOST_ROOT_MOUNT"},
 			// Restart using systemd is currently not supported.
 			// We hide this option for the time being.
@@ -145,21 +138,21 @@ func main() {
 			Aliases:     []string{"runtime-class", "nvidia-runtime-name"},
 			Usage:       "Specify the name of the `nvidia` runtime. If set-as-default is selected, the runtime is used as the default runtime.",
 			Value:       defaultRuntimeName,
-			Destination: &options.runtimeName,
+			Destination: &options.RuntimeName,
 			EnvVars:     []string{"DOCKER_RUNTIME_NAME", "NVIDIA_RUNTIME_NAME"},
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-runtime-dir",
 			Aliases:     []string{"runtime-dir"},
 			Usage:       "The path where the nvidia-container-runtime binaries are located. If this is not specified, the first argument will be used instead",
-			Destination: &options.runtimeDir,
+			Destination: &options.RuntimeDir,
 			EnvVars:     []string{"NVIDIA_RUNTIME_DIR"},
 		},
 		&cli.BoolFlag{
 			Name:        "set-as-default",
 			Usage:       "Set the `nvidia` runtime as the default runtime. If --runtime-name is specified as `nvidia-experimental` the experimental runtime is set as the default runtime instead",
 			Value:       defaultSetAsDefault,
-			Destination: &options.setAsDefault,
+			Destination: &options.SetAsDefault,
 			EnvVars:     []string{"DOCKER_SET_AS_DEFAULT", "NVIDIA_RUNTIME_SET_AS_DEFAULT"},
 			Hidden:      true,
 		},
@@ -181,21 +174,15 @@ func Setup(c *cli.Context, o *options) error {
 	log.Infof("Starting 'setup' for %v", c.App.Name)
 
 	cfg, err := docker.New(
-		docker.WithPath(o.config),
+		docker.WithPath(o.Config),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	err = UpdateConfig(cfg, o)
+	err = o.Configure(cfg)
 	if err != nil {
-		return fmt.Errorf("unable to update config: %v", err)
-	}
-
-	log.Infof("Flushing docker config to %v", o.config)
-	_, err = cfg.Save(o.config)
-	if err != nil {
-		return fmt.Errorf("unable to flush config: %v", err)
+		return fmt.Errorf("unable to configure docker: %v", err)
 	}
 
 	err = RestartDocker(o)
@@ -213,24 +200,15 @@ func Cleanup(c *cli.Context, o *options) error {
 	log.Infof("Starting 'cleanup' for %v", c.App.Name)
 
 	cfg, err := docker.New(
-		docker.WithPath(o.config),
+		docker.WithPath(o.Config),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	err = RevertConfig(cfg, o)
+	err = o.Unconfigure(cfg)
 	if err != nil {
-		return fmt.Errorf("unable to update config: %v", err)
-	}
-
-	log.Infof("Flushing docker config to %v", o.config)
-	n, err := cfg.Save(o.config)
-	if err != nil {
-		return fmt.Errorf("unable to flush config: %v", err)
-	}
-	if n == 0 {
-		log.Infof("Config file is empty, removed")
+		return fmt.Errorf("unable to unconfigure docker: %v", err)
 	}
 
 	err = RestartDocker(o)
@@ -243,73 +221,18 @@ func Cleanup(c *cli.Context, o *options) error {
 	return nil
 }
 
-// ParseArgs parses the command line arguments to the CLI
-func ParseArgs(c *cli.Context, o *options) error {
-	if o.runtimeDir != "" {
-		log.Debug("Runtime directory already set")
-		return nil
-	}
-
-	args := c.Args()
-
-	log.Infof("Parsing arguments: %v", args.Slice())
-	if c.NArg() != 1 {
-		return fmt.Errorf("incorrect number of arguments")
-	}
-
-	o.runtimeDir = args.Get(0)
-
-	log.Infof("Successfully parsed arguments")
-
-	return nil
-}
-
-// UpdateConfig updates the docker config to include the nvidia runtimes
-func UpdateConfig(cfg engine.Interface, o *options) error {
-	runtimes := operator.GetRuntimes(
-		operator.WithNvidiaRuntimeName(o.runtimeName),
-		operator.WithSetAsDefault(o.setAsDefault),
-		operator.WithRoot(o.runtimeDir),
-	)
-	for name, runtime := range runtimes {
-		err := cfg.AddRuntime(name, runtime.Path, runtime.SetAsDefault)
-		if err != nil {
-			return fmt.Errorf("failed to update runtime %q: %v", name, err)
-		}
-	}
-
-	return nil
-}
-
-// RevertConfig reverts the docker config to remove the nvidia runtime
-func RevertConfig(cfg engine.Interface, o *options) error {
-	runtimes := operator.GetRuntimes(
-		operator.WithNvidiaRuntimeName(o.runtimeName),
-		operator.WithSetAsDefault(o.setAsDefault),
-		operator.WithRoot(o.runtimeDir),
-	)
-	for name := range runtimes {
-		err := cfg.RemoveRuntime(name)
-		if err != nil {
-			return fmt.Errorf("failed to remove runtime %q: %v", name, err)
-		}
-	}
-
-	return nil
-}
-
 // RestartDocker restarts docker depending on the value of restartModeFlag
 func RestartDocker(o *options) error {
-	switch o.restartMode {
+	switch o.RestartMode {
 	case restartModeNone:
-		log.Warnf("Skipping sending signal to docker due to --restart-mode=%v", o.restartMode)
+		log.Warnf("Skipping sending signal to docker due to --restart-mode=%v", o.RestartMode)
 	case restartModeSignal:
-		err := SignalDocker(o.socket)
+		err := SignalDocker(o.Socket)
 		if err != nil {
 			return fmt.Errorf("unable to signal docker: %v", err)
 		}
 	default:
-		return fmt.Errorf("invalid restart mode specified: %v", o.restartMode)
+		return fmt.Errorf("invalid restart mode specified: %v", o.RestartMode)
 	}
 
 	return nil
