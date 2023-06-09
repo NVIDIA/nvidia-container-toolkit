@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/containerd"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 	"github.com/pelletier/go-toml"
 	"github.com/stretchr/testify/require"
 )
@@ -34,38 +35,38 @@ func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
 
 	testCases := []struct {
 		setAsDefault               bool
-		runtimeClass               string
+		runtimeName                string
 		expectedDefaultRuntimeName interface{}
 	}{
 		{},
 		{
 			setAsDefault:               false,
-			runtimeClass:               "nvidia",
+			runtimeName:                "nvidia",
 			expectedDefaultRuntimeName: nil,
 		},
 		{
 			setAsDefault:               false,
-			runtimeClass:               "NAME",
+			runtimeName:                "NAME",
 			expectedDefaultRuntimeName: nil,
 		},
 		{
 			setAsDefault:               false,
-			runtimeClass:               "nvidia-experimental",
+			runtimeName:                "nvidia-experimental",
 			expectedDefaultRuntimeName: nil,
 		},
 		{
 			setAsDefault:               true,
-			runtimeClass:               "nvidia",
+			runtimeName:                "nvidia",
 			expectedDefaultRuntimeName: "nvidia",
 		},
 		{
 			setAsDefault:               true,
-			runtimeClass:               "NAME",
+			runtimeName:                "NAME",
 			expectedDefaultRuntimeName: "NAME",
 		},
 		{
 			setAsDefault:               true,
-			runtimeClass:               "nvidia-experimental",
+			runtimeName:                "nvidia-experimental",
 			expectedDefaultRuntimeName: "nvidia-experimental",
 		},
 	}
@@ -73,9 +74,11 @@ func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			o := &options{
-				setAsDefault: tc.setAsDefault,
-				runtimeClass: tc.runtimeClass,
-				runtimeDir:   runtimeDir,
+				Options: container.Options{
+					RuntimeName:  tc.runtimeName,
+					RuntimeDir:   runtimeDir,
+					SetAsDefault: tc.setAsDefault,
+				},
 			}
 
 			config, err := toml.TreeFromMap(map[string]interface{}{})
@@ -86,7 +89,7 @@ func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
 				RuntimeType: runtimeType,
 			}
 
-			err = UpdateConfig(v2, o)
+			err = o.UpdateConfig(v2)
 			require.NoError(t, err)
 
 			defaultRuntimeName := config.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"})
@@ -100,11 +103,11 @@ func TestUpdateV2Config(t *testing.T) {
 	const expectedVersion = int64(2)
 
 	testCases := []struct {
-		runtimeClass   string
+		runtimeName    string
 		expectedConfig map[string]interface{}
 	}{
 		{
-			runtimeClass: "nvidia",
+			runtimeName: "nvidia",
 			expectedConfig: map[string]interface{}{
 				"version": int64(2),
 				"plugins": map[string]interface{}{
@@ -158,7 +161,7 @@ func TestUpdateV2Config(t *testing.T) {
 			},
 		},
 		{
-			runtimeClass: "NAME",
+			runtimeName: "NAME",
 			expectedConfig: map[string]interface{}{
 				"version": int64(2),
 				"plugins": map[string]interface{}{
@@ -212,7 +215,7 @@ func TestUpdateV2Config(t *testing.T) {
 			},
 		},
 		{
-			runtimeClass: "nvidia-experimental",
+			runtimeName: "nvidia-experimental",
 			expectedConfig: map[string]interface{}{
 				"version": int64(2),
 				"plugins": map[string]interface{}{
@@ -270,9 +273,11 @@ func TestUpdateV2Config(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			o := &options{
-				runtimeClass: tc.runtimeClass,
-				runtimeType:  runtimeType,
-				runtimeDir:   runtimeDir,
+				Options: container.Options{
+					RuntimeName: tc.runtimeName,
+					RuntimeDir:  runtimeDir,
+				},
+				runtimeType: runtimeType,
 			}
 
 			config, err := toml.TreeFromMap(map[string]interface{}{})
@@ -284,7 +289,7 @@ func TestUpdateV2Config(t *testing.T) {
 				ContainerAnnotations: []string{"cdi.k8s.io/*"},
 			}
 
-			err = UpdateConfig(v2, o)
+			err = o.UpdateConfig(v2)
 			require.NoError(t, err)
 
 			expected, err := toml.TreeFromMap(tc.expectedConfig)
@@ -300,11 +305,11 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 	const runtimeDir = "/test/runtime/dir"
 
 	testCases := []struct {
-		runtimeClass   string
+		runtimeName    string
 		expectedConfig map[string]interface{}
 	}{
 		{
-			runtimeClass: "nvidia",
+			runtimeName: "nvidia",
 			expectedConfig: map[string]interface{}{
 				"version": int64(2),
 				"plugins": map[string]interface{}{
@@ -372,7 +377,7 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 			},
 		},
 		{
-			runtimeClass: "NAME",
+			runtimeName: "NAME",
 			expectedConfig: map[string]interface{}{
 				"version": int64(2),
 				"plugins": map[string]interface{}{
@@ -440,7 +445,7 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 			},
 		},
 		{
-			runtimeClass: "nvidia-experimental",
+			runtimeName: "nvidia-experimental",
 			expectedConfig: map[string]interface{}{
 				"version": int64(2),
 				"plugins": map[string]interface{}{
@@ -512,9 +517,10 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			o := &options{
-				runtimeClass: tc.runtimeClass,
-				runtimeType:  runtimeType,
-				runtimeDir:   runtimeDir,
+				Options: container.Options{
+					RuntimeName: tc.runtimeName,
+					RuntimeDir:  runtimeDir,
+				},
 			}
 
 			config, err := toml.TreeFromMap(runcConfigMapV2("/runc-binary"))
@@ -526,7 +532,7 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 				ContainerAnnotations: []string{"cdi.k8s.io/*"},
 			}
 
-			err = UpdateConfig(v2, o)
+			err = o.UpdateConfig(v2)
 			require.NoError(t, err)
 
 			expected, err := toml.TreeFromMap(tc.expectedConfig)
@@ -585,7 +591,9 @@ func TestRevertV2Config(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			o := &options{
-				runtimeClass: "nvidia",
+				Options: container.Options{
+					RuntimeName: "nvidia",
+				},
 			}
 
 			config, err := toml.TreeFromMap(tc.config)
@@ -599,7 +607,7 @@ func TestRevertV2Config(t *testing.T) {
 				RuntimeType: runtimeType,
 			}
 
-			err = RevertConfig(v2, o)
+			err = o.RevertConfig(v2)
 			require.NoError(t, err)
 
 			configContents, _ := toml.Marshal(config)
