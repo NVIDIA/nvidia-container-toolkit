@@ -23,6 +23,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/docker"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 	log "github.com/sirupsen/logrus"
@@ -65,7 +66,7 @@ func main() {
 	c := cli.NewApp()
 	c.Name = "docker"
 	c.Usage = "Update docker config with the nvidia runtime"
-	c.Version = "0.1.0"
+	c.Version = info.GetVersionString()
 
 	// Create the 'setup' subcommand
 	setup := cli.Command{}

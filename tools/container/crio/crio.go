@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 	log "github.com/sirupsen/logrus"
@@ -67,8 +68,7 @@ func main() {
 	c := cli.NewApp()
 	c.Name = "crio"
 	c.Usage = "Update cri-o hooks to include the NVIDIA runtime hook"
-	c.ArgsUsage = "<toolkit_dirname>"
-	c.Version = "0.1.0"
+	c.Version = info.GetVersionString()
 
 	// Create the 'setup' subcommand
 	setup := cli.Command{}
