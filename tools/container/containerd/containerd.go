@@ -63,15 +63,17 @@ var nvidiaRuntimeBinaries = map[string]string{
 
 // options stores the configuration from the command line or environment variables
 type options struct {
-	config          string
-	socket          string
-	runtimeClass    string
-	runtimeType     string
-	setAsDefault    bool
-	restartMode     string
-	hostRootMount   string
-	runtimeDir      string
+	config        string
+	socket        string
+	runtimeClass  string
+	runtimeDir    string
+	setAsDefault  bool
+	restartMode   string
+	hostRootMount string
+
+	// containerd-specific options
 	useLegacyConfig bool
+	runtimeType     string
 
 	ContainerRuntimeModesCDIAnnotationPrefixes cli.StringSlice
 }
@@ -93,6 +95,9 @@ func main() {
 	setup.Action = func(c *cli.Context) error {
 		return Setup(c, &options)
 	}
+	setup.Before = func(c *cli.Context) error {
+		return ParseArgs(c, &options)
+	}
 
 	// Create the 'cleanup' subcommand
 	cleanup := cli.Command{}
@@ -101,6 +106,9 @@ func main() {
 	cleanup.ArgsUsage = "<runtime_dirname>"
 	cleanup.Action = func(c *cli.Context) error {
 		return Cleanup(c, &options)
+	}
+	cleanup.Before = func(c *cli.Context) error {
+		return ParseArgs(c, &options)
 	}
 
 	// Register the subcommands with the top-level CLI
@@ -142,6 +150,13 @@ func main() {
 			Value:       defaultRuntimeClass,
 			Destination: &options.runtimeClass,
 			EnvVars:     []string{"CONTAINERD_RUNTIME_CLASS", "NVIDIA_RUNTIME_NAME"},
+		},
+		&cli.StringFlag{
+			Name:        "nvidia-runtime-dir",
+			Aliases:     []string{"runtime-dir"},
+			Usage:       "The path where the nvidia-container-runtime binaries are located. If this is not specified, the first argument will be used instead",
+			Destination: &options.runtimeDir,
+			EnvVars:     []string{"NVIDIA_RUNTIME_DIR"},
 		},
 		&cli.BoolFlag{
 			Name:        "set-as-default",
@@ -192,12 +207,6 @@ func main() {
 func Setup(c *cli.Context, o *options) error {
 	log.Infof("Starting 'setup' for %v", c.App.Name)
 
-	runtimeDir, err := ParseArgs(c)
-	if err != nil {
-		return fmt.Errorf("unable to parse args: %v", err)
-	}
-	o.runtimeDir = runtimeDir
-
 	cfg, err := containerd.New(
 		containerd.WithPath(o.config),
 		containerd.WithRuntimeType(o.runtimeType),
@@ -236,11 +245,6 @@ func Setup(c *cli.Context, o *options) error {
 func Cleanup(c *cli.Context, o *options) error {
 	log.Infof("Starting 'cleanup' for %v", c.App.Name)
 
-	_, err := ParseArgs(c)
-	if err != nil {
-		return fmt.Errorf("unable to parse args: %v", err)
-	}
-
 	cfg, err := containerd.New(
 		containerd.WithPath(o.config),
 		containerd.WithRuntimeType(o.runtimeType),
@@ -276,17 +280,24 @@ func Cleanup(c *cli.Context, o *options) error {
 }
 
 // ParseArgs parses the command line arguments to the CLI
-func ParseArgs(c *cli.Context) (string, error) {
+func ParseArgs(c *cli.Context, o *options) error {
+	if o.runtimeDir != "" {
+		log.Debug("Runtime directory already set")
+		return nil
+	}
+
 	args := c.Args()
 
 	log.Infof("Parsing arguments: %v", args.Slice())
-	if args.Len() != 1 {
-		return "", fmt.Errorf("incorrect number of arguments")
+	if c.NArg() != 1 {
+		return fmt.Errorf("incorrect number of arguments")
 	}
-	runtimeDir := args.Get(0)
+
+	o.runtimeDir = args.Get(0)
+
 	log.Infof("Successfully parsed arguments")
 
-	return runtimeDir, nil
+	return nil
 }
 
 // UpdateConfig updates the containerd config to include the nvidia-container-runtime
