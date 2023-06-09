@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/containerd"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
@@ -78,7 +79,7 @@ func main() {
 	c := cli.NewApp()
 	c.Name = "containerd"
 	c.Usage = "Update a containerd config with the nvidia-container-runtime"
-	c.Version = "0.1.0"
+	c.Version = info.GetVersionString()
 
 	// Create the 'setup' subcommand
 	setup := cli.Command{}
