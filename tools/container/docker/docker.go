@@ -31,9 +31,6 @@ import (
 )
 
 const (
-	restartModeSignal = "signal"
-	restartModeNone   = "none"
-
 	nvidiaRuntimeName               = "nvidia"
 	nvidiaRuntimeBinary             = "nvidia-container-runtime"
 	nvidiaExperimentalRuntimeName   = "nvidia-experimental"
@@ -44,7 +41,7 @@ const (
 	defaultSetAsDefault = true
 	// defaultRuntimeName specifies the NVIDIA runtime to be use as the default runtime if setting the default runtime is enabled
 	defaultRuntimeName   = nvidiaRuntimeName
-	defaultRestartMode   = restartModeSignal
+	defaultRestartMode   = "signal"
 	defaultHostRootMount = "/host"
 
 	reloadBackoff     = 5 * time.Second
@@ -119,7 +116,7 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:        "restart-mode",
-			Usage:       "Specify how docker should be restarted; If 'none' is selected it will not be restarted [signal | none]",
+			Usage:       "Specify how docker should be restarted; If 'none' is selected it will not be restarted [signal | systemd | none ]",
 			Value:       defaultRestartMode,
 			Destination: &options.RestartMode,
 			EnvVars:     []string{"DOCKER_RESTART_MODE", "RUNTIME_RESTART_MODE"},
@@ -224,19 +221,7 @@ func Cleanup(c *cli.Context, o *options) error {
 
 // RestartDocker restarts docker depending on the value of restartModeFlag
 func RestartDocker(o *options) error {
-	switch o.RestartMode {
-	case restartModeNone:
-		log.Warnf("Skipping sending signal to docker due to --restart-mode=%v", o.RestartMode)
-	case restartModeSignal:
-		err := SignalDocker(o.Socket)
-		if err != nil {
-			return fmt.Errorf("unable to signal docker: %v", err)
-		}
-	default:
-		return fmt.Errorf("invalid restart mode specified: %v", o.RestartMode)
-	}
-
-	return nil
+	return o.Restart("docker", SignalDocker)
 }
 
 // SignalDocker sends a SIGHUP signal to docker daemon

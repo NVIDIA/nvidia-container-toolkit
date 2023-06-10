@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
@@ -32,9 +31,6 @@ import (
 )
 
 const (
-	restartModeSystemd = "systemd"
-	restartModeNone    = "none"
-
 	defaultConfigMode = "hook"
 
 	// Hook-based settings
@@ -46,7 +42,7 @@ const (
 	defaultSocket        = "/var/run/crio/crio.sock"
 	defaultRuntimeClass  = "nvidia"
 	defaultSetAsDefault  = true
-	defaultRestartMode   = restartModeSystemd
+	defaultRestartMode   = "systemd"
 	defaultHostRootMount = "/host"
 )
 
@@ -117,7 +113,8 @@ func main() {
 			Value:       "",
 			Destination: &options.Socket,
 			EnvVars:     []string{"CRIO_SOCKET", "RUNTIME_SOCKET"},
-			Hidden:      true,
+			// Note: We hide this option since restarting cri-o via a socket is not supported.
+			Hidden: true,
 		},
 		&cli.StringFlag{
 			Name:        "restart-mode",
@@ -179,7 +176,6 @@ func main() {
 			Destination: &options.configMode,
 			EnvVars:     []string{"CRIO_CONFIG_MODE"},
 		},
-		// The flags below are only used by the 'setup' command.
 	}
 
 	// Update the subcommand flags with the common subcommand flags
@@ -341,31 +337,5 @@ func generateOciHook(toolkitDir string) podmanHook {
 
 // RestartCrio restarts crio depending on the value of restartModeFlag
 func RestartCrio(o *options) error {
-	switch o.RestartMode {
-	case restartModeNone:
-		log.Warnf("Skipping restart of crio due to --restart-mode=%v", o.RestartMode)
-		return nil
-	case restartModeSystemd:
-		return RestartCrioSystemd(o.HostRootMount)
-	default:
-		return fmt.Errorf("invalid restart mode specified: %v", o.RestartMode)
-	}
-}
-
-// RestartCrioSystemd restarts cri-o using systemctl
-func RestartCrioSystemd(hostRootMount string) error {
-	log.Infof("Restarting cri-o using systemd and host root mounted at %v", hostRootMount)
-
-	command := "chroot"
-	args := []string{hostRootMount, "systemctl", "restart", "crio"}
-
-	cmd := exec.Command(command, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error restarting crio using systemd: %v", err)
-	}
-
-	return nil
+	return o.Restart("crio", func(string) error { return fmt.Errorf("supporting crio via signal is unsupported") })
 }
