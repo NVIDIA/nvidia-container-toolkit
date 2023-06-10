@@ -18,11 +18,19 @@ package container
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+)
+
+const (
+	restartModeNone    = "none"
+	restartModeSignal  = "signal"
+	restartModeSystemd = "systemd"
 )
 
 // Options defines the shared options for the CLIs to configure containers runtimes.
@@ -117,6 +125,44 @@ func (o Options) RevertConfig(cfg engine.Interface) error {
 		if err != nil {
 			return fmt.Errorf("failed to remove runtime %q: %v", name, err)
 		}
+	}
+
+	return nil
+}
+
+// Restart restarts the specified service
+func (o Options) Restart(service string, withSignal func(string) error) error {
+	switch o.RestartMode {
+	case restartModeNone:
+		logrus.Warnf("Skipping restart of %v due to --restart-mode=%v", service, o.RestartMode)
+		return nil
+	case restartModeSignal:
+		return withSignal(o.Socket)
+	case restartModeSystemd:
+		return o.SystemdRestart(service)
+	}
+
+	return fmt.Errorf("invalid restart mode specified: %v", o.RestartMode)
+}
+
+// SystemdRestart restarts the specified service using systemd
+func (o Options) SystemdRestart(service string) error {
+	var args []string
+	var msg string
+	if o.HostRootMount != "" {
+		msg = " on host"
+		args = append(args, "chroot", o.HostRootMount)
+	}
+	args = append(args, "systemctl", "restart", service)
+
+	logrus.Infof("Restarting %v%v using systemd: %v", service, msg, args)
+
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error restarting %v using systemd: %v", service, err)
 	}
 
 	return nil
