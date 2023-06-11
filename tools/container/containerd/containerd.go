@@ -31,11 +31,6 @@ import (
 )
 
 const (
-	nvidiaRuntimeName               = "nvidia"
-	nvidiaRuntimeBinary             = "nvidia-container-runtime"
-	nvidiaExperimentalRuntimeName   = "nvidia-experimental"
-	nvidiaExperimentalRuntimeBinary = "nvidia-container-runtime.experimental"
-
 	defaultConfig        = "/etc/containerd/config.toml"
 	defaultSocket        = "/run/containerd/containerd.sock"
 	defaultRuntimeClass  = "nvidia"
@@ -49,12 +44,6 @@ const (
 
 	socketMessageToGetPID = ""
 )
-
-// nvidiaRuntimeBinaries defines a map of runtime names to binary names
-var nvidiaRuntimeBinaries = map[string]string{
-	nvidiaRuntimeName:             nvidiaRuntimeBinary,
-	nvidiaExperimentalRuntimeName: nvidiaExperimentalRuntimeBinary,
-}
 
 // options stores the configuration from the command line or environment variables
 type options struct {

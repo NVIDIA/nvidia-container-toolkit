@@ -31,23 +31,17 @@ import (
 )
 
 const (
-	nvidiaRuntimeName               = "nvidia"
-	nvidiaRuntimeBinary             = "nvidia-container-runtime"
-	nvidiaExperimentalRuntimeName   = "nvidia-experimental"
-	nvidiaExperimentalRuntimeBinary = "nvidia-container-runtime.experimental"
-
 	defaultConfig       = "/etc/docker/daemon.json"
 	defaultSocket       = "/var/run/docker.sock"
 	defaultSetAsDefault = true
 	// defaultRuntimeName specifies the NVIDIA runtime to be use as the default runtime if setting the default runtime is enabled
-	defaultRuntimeName   = nvidiaRuntimeName
+	defaultRuntimeName   = "nvidia"
 	defaultRestartMode   = "signal"
 	defaultHostRootMount = "/host"
 
 	reloadBackoff     = 5 * time.Second
 	maxReloadAttempts = 6
 
-	defaultDockerRuntime  = "runc"
 	socketMessageToGetPID = "GET /info HTTP/1.0\r\n\r\n"
 )
 
