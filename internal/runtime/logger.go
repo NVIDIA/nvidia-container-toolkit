@@ -26,20 +26,21 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/sirupsen/logrus"
 )
 
 // Logger adds a way to manage output to a log file to a logrus.Logger
 type Logger struct {
-	*logrus.Logger
-	previousLogger *logrus.Logger
+	logger.Interface
+	previousLogger logger.Interface
 	logFiles       []*os.File
 }
 
 // NewLogger creates an empty logger
 func NewLogger() *Logger {
 	return &Logger{
-		Logger: logrus.New(),
+		Interface: logrus.New(),
 	}
 }
 
@@ -51,7 +52,7 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) {
 	level, logLevelError := configFromArgs.getLevel(logLevel)
 	defer func() {
 		if logLevelError != nil {
-			l.Warn(logLevelError)
+			l.Warning(logLevelError)
 		}
 	}()
 
@@ -76,7 +77,7 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) {
 	}
 	defer func() {
 		if argLogFileError != nil {
-			l.Warnf("Failed to open log file: %v", argLogFileError)
+			l.Warningf("Failed to open log file: %v", argLogFileError)
 		}
 	}()
 
@@ -116,8 +117,8 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) {
 	}
 
 	*l = Logger{
-		Logger:         newLogger,
-		previousLogger: l.Logger,
+		Interface:      newLogger,
+		previousLogger: l.Interface,
 		logFiles:       logFiles,
 	}
 }
@@ -130,7 +131,7 @@ func (l *Logger) Reset() error {
 		if previous == nil {
 			previous = logrus.New()
 		}
-		l.Logger = previous
+		l.Interface = previous
 		l.previousLogger = nil
 		l.logFiles = nil
 	}()

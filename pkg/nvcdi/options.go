@@ -17,8 +17,8 @@
 package nvcdi
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
-	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
@@ -48,7 +48,7 @@ func WithDriverRoot(root string) Option {
 }
 
 // WithLogger sets the logger for the library
-func WithLogger(logger *logrus.Logger) Option {
+func WithLogger(logger logger.Interface) Option {
 	return func(l *nvcdilib) {
 		l.logger = logger
 	}

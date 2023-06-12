@@ -17,6 +17,7 @@
 package containerd
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/pelletier/go-toml"
 )
@@ -34,6 +35,10 @@ func New(opts ...Option) (engine.Interface, error) {
 	b := &builder{}
 	for _, opt := range opts {
 		opt(b)
+	}
+
+	if b.logger == nil {
+		b.logger = logger.New()
 	}
 
 	return b.build()

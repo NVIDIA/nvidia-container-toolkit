@@ -21,11 +21,11 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
-	log "github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type library struct {
-	logger  *log.Logger
+	logger  logger.Interface
 	symlink Locator
 	cache   ldcache.LDCache
 }
@@ -33,7 +33,7 @@ type library struct {
 var _ Locator = (*library)(nil)
 
 // NewLibraryLocator creates a library locator using the specified logger.
-func NewLibraryLocator(logger *log.Logger, root string) (Locator, error) {
+func NewLibraryLocator(logger logger.Interface, root string) (Locator, error) {
 	cache, err := ldcache.New(logger, root)
 	if err != nil {
 		return nil, fmt.Errorf("error loading ldcache: %v", err)
@@ -58,7 +58,7 @@ func (l library) Locate(libname string) ([]string, error) {
 
 	paths32, paths64 := l.cache.Lookup(libname)
 	if len(paths32) > 0 {
-		l.logger.Warnf("Ignoring 32-bit libraries for %v: %v", libname, paths32)
+		l.logger.Warningf("Ignoring 32-bit libraries for %v: %v", libname, paths32)
 	}
 
 	if len(paths64) == 0 {

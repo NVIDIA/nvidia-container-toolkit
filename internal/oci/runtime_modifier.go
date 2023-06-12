@@ -19,11 +19,11 @@ package oci
 import (
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type modifyingRuntimeWrapper struct {
-	logger   *log.Logger
+	logger   logger.Interface
 	runtime  Runtime
 	ociSpec  Spec
 	modifier SpecModifier
@@ -33,7 +33,7 @@ var _ Runtime = (*modifyingRuntimeWrapper)(nil)
 
 // NewModifyingRuntimeWrapper creates a runtime wrapper that applies the specified modifier to the OCI specification
 // before invoking the wrapped runtime. If the modifier is nil, the input runtime is returned.
-func NewModifyingRuntimeWrapper(logger *log.Logger, runtime Runtime, spec Spec, modifier SpecModifier) Runtime {
+func NewModifyingRuntimeWrapper(logger logger.Interface, runtime Runtime, spec Spec, modifier SpecModifier) Runtime {
 	if modifier == nil {
 		logger.Infof("Using low-level runtime with no modification")
 		return runtime

@@ -16,7 +16,7 @@
 
 package discover
 
-import "github.com/sirupsen/logrus"
+import "github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
 // Filter defines an interface for filtering discovered entities
 type Filter interface {
@@ -26,12 +26,12 @@ type Filter interface {
 // filtered represents a filtered discoverer
 type filtered struct {
 	Discover
-	logger *logrus.Logger
+	logger logger.Interface
 	filter Filter
 }
 
 // newFilteredDisoverer creates a discoverer that applies the specified filter to the returned entities of the discoverer
-func newFilteredDisoverer(logger *logrus.Logger, applyTo Discover, filter Filter) Discover {
+func newFilteredDisoverer(logger logger.Interface, applyTo Discover, filter Filter) Discover {
 	return filtered{
 		Discover: applyTo,
 		logger:   logger,

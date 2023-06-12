@@ -16,13 +16,13 @@
 
 package system
 
-import "github.com/sirupsen/logrus"
+import "github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
 // Option is a functional option for the system command
 type Option func(*Interface)
 
 // WithLogger sets the logger for the system command
-func WithLogger(logger *logrus.Logger) Option {
+func WithLogger(logger logger.Interface) Option {
 	return func(i *Interface) {
 		i.logger = logger
 	}

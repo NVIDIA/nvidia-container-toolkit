@@ -23,15 +23,23 @@ import (
 	"io/ioutil"
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type builder struct {
-	path string
+	logger logger.Interface
+	path   string
 }
 
 // Option defines a function that can be used to configure the config builder
 type Option func(*builder)
+
+// WithLogger sets the logger for the config builder
+func WithLogger(logger logger.Interface) Option {
+	return func(b *builder) {
+		b.logger = logger
+	}
+}
 
 // WithPath sets the path for the config builder
 func WithPath(path string) Option {
@@ -46,12 +54,12 @@ func (b *builder) build() (*Config, error) {
 		return &empty, nil
 	}
 
-	return loadConfig(b.path)
+	return b.loadConfig(b.path)
 }
 
 // loadConfig loads the docker config from disk
-func loadConfig(configFilePath string) (*Config, error) {
-	log.Infof("Loading docker config from %v", configFilePath)
+func (b *builder) loadConfig(configFilePath string) (*Config, error) {
+	b.logger.Infof("Loading docker config from %v", configFilePath)
 
 	info, err := os.Stat(configFilePath)
 	if os.IsExist(err) && info.IsDir() {
@@ -61,7 +69,7 @@ func loadConfig(configFilePath string) (*Config, error) {
 	cfg := make(Config)
 
 	if os.IsNotExist(err) {
-		log.Infof("Config file does not exist, creating new one")
+		b.logger.Infof("Config file does not exist, creating new one")
 		return &cfg, nil
 	}
 
@@ -75,6 +83,6 @@ func loadConfig(configFilePath string) (*Config, error) {
 		return nil, err
 	}
 
-	log.Infof("Successfully loaded config")
+	b.logger.Infof("Successfully loaded config")
 	return &cfg, nil
 }

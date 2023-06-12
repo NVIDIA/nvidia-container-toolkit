@@ -50,7 +50,7 @@ func installContainerRuntimes(toolkitDir string, driverRoot string) error {
 	// Install the experimental runtime and treat failures as non-fatal.
 	err := installExperimentalRuntime(toolkitDir, driverRoot)
 	if err != nil {
-		log.Warnf("Could not install experimental runtime: %v", err)
+		log.Warningf("Could not install experimental runtime: %v", err)
 	}
 
 	return nil
@@ -60,7 +60,7 @@ func installContainerRuntimes(toolkitDir string, driverRoot string) error {
 func installExperimentalRuntime(toolkitDir string, driverRoot string) error {
 	libraryRoot, err := findLibraryRoot(driverRoot)
 	if err != nil {
-		log.Warnf("Error finding library path for root %v: %v", driverRoot, err)
+		log.Warningf("Error finding library path for root %v: %v", driverRoot, err)
 	}
 	log.Infof("Using library root %v", libraryRoot)
 

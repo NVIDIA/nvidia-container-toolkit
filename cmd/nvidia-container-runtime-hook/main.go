@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
@@ -188,11 +189,11 @@ func main() {
 	}
 }
 
-// logInterceptor implements the info.Logger interface to allow for logging from this function.
-type logInterceptor struct{}
+// logInterceptor implements the logger.Interface to allow for logging from executable.
+type logInterceptor struct {
+	logger.NullLogger
+}
 
 func (l *logInterceptor) Infof(format string, args ...interface{}) {
 	log.Printf(format, args...)
 }
-
-func (l *logInterceptor) Debugf(format string, args ...interface{}) {}

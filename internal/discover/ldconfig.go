@@ -21,11 +21,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 // NewLDCacheUpdateHook creates a discoverer that updates the ldcache for the specified mounts. A logger can also be specified
-func NewLDCacheUpdateHook(logger *logrus.Logger, mounts Discover, nvidiaCTKPath string) (Discover, error) {
+func NewLDCacheUpdateHook(logger logger.Interface, mounts Discover, nvidiaCTKPath string) (Discover, error) {
 	d := ldconfig{
 		logger:        logger,
 		nvidiaCTKPath: nvidiaCTKPath,
@@ -37,7 +37,7 @@ func NewLDCacheUpdateHook(logger *logrus.Logger, mounts Discover, nvidiaCTKPath 
 
 type ldconfig struct {
 	None
-	logger        *logrus.Logger
+	logger        logger.Interface
 	nvidiaCTKPath string
 	mountsFrom    Discover
 }

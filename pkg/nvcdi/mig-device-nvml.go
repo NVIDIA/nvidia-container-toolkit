@@ -21,10 +21,10 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
-	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
@@ -75,7 +75,7 @@ func (l *nvmllib) GetMIGDeviceEdits(parent device.Device, mig device.MigDevice) 
 }
 
 // GetEditsForComputeInstance returns the CDI edits for a particular compute instance defined by the (gpu, gi, ci) tuple
-func GetEditsForComputeInstance(logger *logrus.Logger, driverRoot string, gpu int, gi int, ci int) (*cdi.ContainerEdits, error) {
+func GetEditsForComputeInstance(logger logger.Interface, driverRoot string, gpu int, gi int, ci int) (*cdi.ContainerEdits, error) {
 	computeInstance, err := newComputeInstanceDiscoverer(logger, driverRoot, gpu, gi, ci)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for Compute Instance: %v", err)
@@ -90,7 +90,7 @@ func GetEditsForComputeInstance(logger *logrus.Logger, driverRoot string, gpu in
 }
 
 // newComputeInstanceDiscoverer returns a discoverer for the specified compute instance
-func newComputeInstanceDiscoverer(logger *logrus.Logger, driverRoot string, gpu int, gi int, ci int) (discover.Discover, error) {
+func newComputeInstanceDiscoverer(logger logger.Interface, driverRoot string, gpu int, gi int, ci int) (discover.Discover, error) {
 	parentPath := fmt.Sprintf("/dev/nvidia%d", gpu)
 
 	migCaps, err := nvcaps.NewMigCaps()

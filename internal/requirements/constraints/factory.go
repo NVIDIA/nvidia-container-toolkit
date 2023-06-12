@@ -20,16 +20,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type factory struct {
-	logger     *logrus.Logger
+	logger     logger.Interface
 	properties map[string]Property
 }
 
 // New creates a new constraint for the supplied requirements and properties
-func New(logger *logrus.Logger, requirements []string, properties map[string]Property) (Constraint, error) {
+func New(logger logger.Interface, requirements []string, properties map[string]Property) (Constraint, error) {
 	if len(requirements) == 0 {
 		return &always{}, nil
 	}

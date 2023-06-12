@@ -19,13 +19,13 @@ package createdevicenodes
 import (
 	"fmt"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/system"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
 type command struct {
-	logger *logrus.Logger
+	logger logger.Interface
 }
 
 type options struct {
@@ -39,7 +39,7 @@ type options struct {
 }
 
 // NewCommand constructs a command sub-command with the specified logger
-func NewCommand(logger *logrus.Logger) *cli.Command {
+func NewCommand(logger logger.Interface) *cli.Command {
 	c := command{
 		logger: logger,
 	}

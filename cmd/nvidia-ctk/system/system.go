@@ -20,16 +20,16 @@ import (
 	devchar "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system/create-dev-char-symlinks"
 	devicenodes "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system/create-device-nodes"
 	ldcache "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system/print-ldcache"
-	"github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/urfave/cli/v2"
 )
 
 type command struct {
-	logger *logrus.Logger
+	logger logger.Interface
 }
 
 // NewCommand constructs a runtime command with the specified logger
-func NewCommand(logger *logrus.Logger) *cli.Command {
+func NewCommand(logger logger.Interface) *cli.Command {
 	c := command{
 		logger: logger,
 	}

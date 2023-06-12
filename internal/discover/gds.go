@@ -17,19 +17,19 @@
 package discover
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/sirupsen/logrus"
 )
 
 type gdsDeviceDiscoverer struct {
 	None
-	logger  *logrus.Logger
+	logger  logger.Interface
 	devices Discover
 	mounts  Discover
 }
 
 // NewGDSDiscoverer creates a discoverer for GPUDirect Storage devices and mounts.
-func NewGDSDiscoverer(logger *logrus.Logger, root string) (Discover, error) {
+func NewGDSDiscoverer(logger logger.Interface, root string) (Discover, error) {
 	devices := NewCharDeviceDiscoverer(
 		logger,
 		[]string{"/dev/nvidia-fs*"},

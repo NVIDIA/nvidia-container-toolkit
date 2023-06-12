@@ -20,21 +20,21 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	ociSpecs "github.com/opencontainers/runtime-spec/specs-go"
-	"github.com/sirupsen/logrus"
 )
 
 type edits struct {
 	cdi.ContainerEdits
-	logger *logrus.Logger
+	logger logger.Interface
 }
 
 // NewSpecEdits creates a SpecModifier that defines the required OCI spec edits (as CDI ContainerEdits) from the specified
 // discoverer.
-func NewSpecEdits(logger *logrus.Logger, d discover.Discover) (oci.SpecModifier, error) {
+func NewSpecEdits(logger logger.Interface, d discover.Discover) (oci.SpecModifier, error) {
 	c, err := FromDiscoverer(d)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing container edits: %v", err)

@@ -21,13 +21,13 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/sirupsen/logrus"
 )
 
 // newNVIDIAContainerRuntime is a factory method that constructs a runtime based on the selected configuration and specified logger
-func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.Config, argv []string) (oci.Runtime, error) {
+func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv []string) (oci.Runtime, error) {
 	lowLevelRuntime, err := oci.NewLowLevelRuntime(logger, cfg.NVIDIAContainerRuntimeConfig.Runtimes)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing low-level runtime: %v", err)
@@ -60,7 +60,7 @@ func newNVIDIAContainerRuntime(logger *logrus.Logger, cfg *config.Config, argv [
 }
 
 // newSpecModifier is a factory method that creates constructs an OCI spec modifer based on the provided config.
-func newSpecModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec, argv []string) (oci.SpecModifier, error) {
+func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec, argv []string) (oci.SpecModifier, error) {
 	mode := info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode)
 	modeModifier, err := newModeModifier(logger, mode, cfg, ociSpec, argv)
 	if err != nil {
@@ -95,7 +95,7 @@ func newSpecModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec
 	return modifiers, nil
 }
 
-func newModeModifier(logger *logrus.Logger, mode string, cfg *config.Config, ociSpec oci.Spec, argv []string) (oci.SpecModifier, error) {
+func newModeModifier(logger logger.Interface, mode string, cfg *config.Config, ociSpec oci.Spec, argv []string) (oci.SpecModifier, error) {
 	switch mode {
 	case "legacy":
 		return modifier.NewStableRuntimeModifier(logger, cfg.NVIDIAContainerRuntimeHookConfig.Path), nil

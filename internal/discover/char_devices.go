@@ -17,8 +17,8 @@
 package discover
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/sirupsen/logrus"
 )
 
 // charDevices is a discover for a list of character devices
@@ -27,7 +27,7 @@ type charDevices mounts
 var _ Discover = (*charDevices)(nil)
 
 // NewCharDeviceDiscoverer creates a discoverer which locates the specified set of device nodes.
-func NewCharDeviceDiscoverer(logger *logrus.Logger, devices []string, root string) Discover {
+func NewCharDeviceDiscoverer(logger logger.Interface, devices []string, root string) Discover {
 	locator := lookup.NewCharDeviceLocator(
 		lookup.WithLogger(logger),
 		lookup.WithRoot(root),
@@ -37,7 +37,7 @@ func NewCharDeviceDiscoverer(logger *logrus.Logger, devices []string, root strin
 }
 
 // NewDeviceDiscoverer creates a discoverer which locates the specified set of device nodes using the specified locator.
-func NewDeviceDiscoverer(logger *logrus.Logger, locator lookup.Locator, root string, devices []string) Discover {
+func NewDeviceDiscoverer(logger logger.Interface, locator lookup.Locator, root string, devices []string) Discover {
 	m := NewMounts(logger, locator, root, devices).(*mounts)
 
 	return (*charDevices)(m)

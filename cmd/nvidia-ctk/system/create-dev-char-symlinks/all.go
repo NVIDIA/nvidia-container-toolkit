@@ -21,13 +21,13 @@ import (
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
-	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci"
 )
 
 type allPossible struct {
-	logger       *logrus.Logger
+	logger       logger.Interface
 	driverRoot   string
 	deviceMajors devices.Devices
 	migCaps      nvcaps.MigCaps
@@ -35,7 +35,7 @@ type allPossible struct {
 
 // newAllPossible returns a new allPossible device node lister.
 // This lister lists all possible device nodes for NVIDIA GPUs, control devices, and capability devices.
-func newAllPossible(logger *logrus.Logger, driverRoot string) (nodeLister, error) {
+func newAllPossible(logger logger.Interface, driverRoot string) (nodeLister, error) {
 	deviceMajors, err := devices.GetNVIDIADevices()
 	if err != nil {
 		return nil, fmt.Errorf("failed reading device majors: %v", err)

@@ -25,14 +25,14 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/tegra"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements"
-	"github.com/sirupsen/logrus"
 )
 
 // csvMode represents the modifications as performed by the csv runtime mode
 type csvMode struct {
-	logger     *logrus.Logger
+	logger     logger.Interface
 	discoverer discover.Discover
 }
 
@@ -45,7 +45,7 @@ const (
 
 // NewCSVModifier creates a modifier that applies modications to an OCI spec if required by the runtime wrapper.
 // The modifications are defined by CSV MountSpecs.
-func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
+func NewCSVModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
 	rawSpec, err := ociSpec.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
@@ -98,7 +98,7 @@ func NewCSVModifier(logger *logrus.Logger, cfg *config.Config, ociSpec oci.Spec)
 	return modifiers, nil
 }
 
-func checkRequirements(logger *logrus.Logger, image image.CUDA) error {
+func checkRequirements(logger logger.Interface, image image.CUDA) error {
 	if image.HasDisableRequire() {
 		// TODO: We could print the real value here instead
 		logger.Debugf("NVIDIA_DISABLE_REQUIRE=%v; skipping requirement checks", true)
@@ -115,14 +115,14 @@ func checkRequirements(logger *logrus.Logger, image image.CUDA) error {
 
 	cudaVersion, err := cuda.Version()
 	if err != nil {
-		logger.Warnf("Failed to get CUDA version: %v", err)
+		logger.Warningf("Failed to get CUDA version: %v", err)
 	} else {
 		r.AddVersionProperty(requirements.CUDA, cudaVersion)
 	}
 
 	compteCapability, err := cuda.ComputeCapability(0)
 	if err != nil {
-		logger.Warnf("Failed to get CUDA Compute Capability: %v", err)
+		logger.Warningf("Failed to get CUDA Compute Capability: %v", err)
 	} else {
 		r.AddVersionProperty(requirements.ARCH, compteCapability)
 	}

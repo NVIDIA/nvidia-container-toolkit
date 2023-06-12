@@ -448,7 +448,7 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 			}
 			value = v.Value()
 		default:
-			log.Warnf("Unexpected type for option %v=%v: %T", key, value, v)
+			log.Warningf("Unexpected type for option %v=%v: %T", key, value, v)
 		}
 
 		config.Set(key, value)

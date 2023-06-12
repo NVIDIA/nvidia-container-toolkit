@@ -26,12 +26,10 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
+	"github.com/sirupsen/logrus"
 
-	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )
-
-var logger = log.New()
 
 // options defines the options that can be set for the CLI through config files,
 // environment variables, or command line flags
@@ -41,6 +39,8 @@ type options struct {
 }
 
 func main() {
+	logger := logrus.New()
+
 	// Create a options struct to hold the parsed environment variables or command line flags
 	opts := options{}
 
@@ -65,9 +65,9 @@ func main() {
 
 	// Set log-level for all subcommands
 	c.Before = func(c *cli.Context) error {
-		logLevel := log.InfoLevel
+		logLevel := logrus.InfoLevel
 		if opts.Debug {
-			logLevel = log.DebugLevel
+			logLevel = logrus.DebugLevel
 		}
 		logger.SetLevel(logLevel)
 		return nil
@@ -86,7 +86,7 @@ func main() {
 	// Run the CLI
 	err := c.Run(os.Args)
 	if err != nil {
-		log.Errorf("%v", err)
-		log.Exit(1)
+		logger.Errorf("%v", err)
+		os.Exit(1)
 	}
 }

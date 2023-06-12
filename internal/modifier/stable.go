@@ -19,14 +19,14 @@ package modifier
 import (
 	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	"github.com/sirupsen/logrus"
 )
 
 // NewStableRuntimeModifier creates an OCI spec modifier that inserts the NVIDIA Container Runtime Hook into an OCI
 // spec. The specified logger is used to capture log output.
-func NewStableRuntimeModifier(logger *logrus.Logger, nvidiaContainerRuntimeHookPath string) oci.SpecModifier {
+func NewStableRuntimeModifier(logger logger.Interface, nvidiaContainerRuntimeHookPath string) oci.SpecModifier {
 	m := stableRuntimeModifier{
 		logger:                         logger,
 		nvidiaContainerRuntimeHookPath: nvidiaContainerRuntimeHookPath,
@@ -38,7 +38,7 @@ func NewStableRuntimeModifier(logger *logrus.Logger, nvidiaContainerRuntimeHookP
 // stableRuntimeModifier modifies an OCI spec inplace, inserting the nvidia-container-runtime-hook as a
 // prestart hook. If the hook is already present, no modification is made.
 type stableRuntimeModifier struct {
-	logger                         *logrus.Logger
+	logger                         logger.Interface
 	nvidiaContainerRuntimeHookPath string
 }
 

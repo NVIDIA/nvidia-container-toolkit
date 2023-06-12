@@ -22,8 +22,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/sirupsen/logrus"
 )
 
 // mounts is a generic discoverer for Mounts. It is customized by specifying the
@@ -31,7 +31,7 @@ import (
 // based on the entry in the list.
 type mounts struct {
 	None
-	logger   *logrus.Logger
+	logger   logger.Interface
 	lookup   lookup.Locator
 	root     string
 	required []string
@@ -42,12 +42,12 @@ type mounts struct {
 var _ Discover = (*mounts)(nil)
 
 // NewMounts creates a discoverer for the required mounts using the specified locator.
-func NewMounts(logger *logrus.Logger, lookup lookup.Locator, root string, required []string) Discover {
+func NewMounts(logger logger.Interface, lookup lookup.Locator, root string, required []string) Discover {
 	return newMounts(logger, lookup, root, required)
 }
 
 // newMounts creates a discoverer for the required mounts using the specified locator.
-func newMounts(logger *logrus.Logger, lookup lookup.Locator, root string, required []string) *mounts {
+func newMounts(logger logger.Interface, lookup lookup.Locator, root string, required []string) *mounts {
 	return &mounts{
 		logger:   logger,
 		lookup:   lookup,
@@ -75,11 +75,11 @@ func (d *mounts) Mounts() ([]Mount, error) {
 		d.logger.Debugf("Locating %v", candidate)
 		located, err := d.lookup.Locate(candidate)
 		if err != nil {
-			d.logger.Warnf("Could not locate %v: %v", candidate, err)
+			d.logger.Warningf("Could not locate %v: %v", candidate, err)
 			continue
 		}
 		if len(located) == 0 {
-			d.logger.Warnf("Missing %v", candidate)
+			d.logger.Warningf("Missing %v", candidate)
 			continue
 		}
 		d.logger.Debugf("Located %v as %v", candidate, located)

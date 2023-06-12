@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 // NewDirectoryLocator creates a Locator that can be used to find directories at the specified root. A logger
 // is also specified.
-func NewDirectoryLocator(logger *log.Logger, root string) Locator {
+func NewDirectoryLocator(logger logger.Interface, root string) Locator {
 	return NewFileLocator(
 		WithLogger(logger),
 		WithRoot(root),

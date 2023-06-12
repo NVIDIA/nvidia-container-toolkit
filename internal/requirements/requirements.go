@@ -17,19 +17,19 @@
 package requirements
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements/constraints"
-	"github.com/sirupsen/logrus"
 )
 
 // Requirements represents a collection of requirements that can be compared to properties
 type Requirements struct {
-	logger       *logrus.Logger
+	logger       logger.Interface
 	requirements []string
 	properties   map[string]constraints.Property
 }
 
 // New creates a new set of requirements
-func New(logger *logrus.Logger, requirements []string) *Requirements {
+func New(logger logger.Interface, requirements []string) *Requirements {
 	r := Requirements{
 		logger:       logger,
 		requirements: requirements,

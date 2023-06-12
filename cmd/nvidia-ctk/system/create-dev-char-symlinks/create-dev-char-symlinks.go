@@ -24,9 +24,9 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/system"
 	"github.com/fsnotify/fsnotify"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
@@ -35,7 +35,7 @@ const (
 )
 
 type command struct {
-	logger *logrus.Logger
+	logger logger.Interface
 }
 
 type config struct {
@@ -49,7 +49,7 @@ type config struct {
 }
 
 // NewCommand constructs a command sub-command with the specified logger
-func NewCommand(logger *logrus.Logger) *cli.Command {
+func NewCommand(logger logger.Interface) *cli.Command {
 	c := command{
 		logger: logger,
 	}
@@ -130,12 +130,12 @@ func (m command) validateFlags(r *cli.Context, cfg *config) error {
 	}
 
 	if cfg.loadKernelModules && !cfg.createAll {
-		m.logger.Warn("load-kernel-modules is only applicable when create-all is set; ignoring")
+		m.logger.Warning("load-kernel-modules is only applicable when create-all is set; ignoring")
 		cfg.loadKernelModules = false
 	}
 
 	if cfg.createDeviceNodes && !cfg.createAll {
-		m.logger.Warn("create-device-nodes is only applicable when create-all is set; ignoring")
+		m.logger.Warning("create-device-nodes is only applicable when create-all is set; ignoring")
 		cfg.createDeviceNodes = false
 	}
 
@@ -213,7 +213,7 @@ create:
 }
 
 type linkCreator struct {
-	logger            *logrus.Logger
+	logger            logger.Interface
 	lister            nodeLister
 	driverRoot        string
 	devCharPath       string
@@ -238,7 +238,7 @@ func NewSymlinkCreator(opts ...Option) (Creator, error) {
 		opt(&c)
 	}
 	if c.logger == nil {
-		c.logger = logrus.StandardLogger()
+		c.logger = logger.New()
 	}
 	if c.driverRoot == "" {
 		c.driverRoot = "/"
@@ -313,7 +313,7 @@ func WithDryRun(dryRun bool) Option {
 }
 
 // WithLogger sets the logger.
-func WithLogger(logger *logrus.Logger) Option {
+func WithLogger(logger logger.Interface) Option {
 	return func(c *linkCreator) {
 		c.logger = logger
 	}
@@ -365,7 +365,7 @@ func (m linkCreator) CreateLinks() error {
 
 		err = os.Symlink(target, linkPath)
 		if err != nil {
-			m.logger.Warnf("Could not create symlink: %v", err)
+			m.logger.Warningf("Could not create symlink: %v", err)
 		}
 	}
 

@@ -22,12 +22,12 @@ import (
 	"os"
 
 	nvctkConfig "github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/sirupsen/logrus"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/urfave/cli/v2"
 )
 
 type command struct {
-	logger *logrus.Logger
+	logger logger.Interface
 }
 
 // options stores the subcommand options
@@ -36,7 +36,7 @@ type options struct {
 }
 
 // NewCommand constructs a default command with the specified logger
-func NewCommand(logger *logrus.Logger) *cli.Command {
+func NewCommand(logger logger.Interface) *cli.Command {
 	c := command{
 		logger: logger,
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,7 +14,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	"github.com/sirupsen/logrus"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
 
@@ -42,7 +43,7 @@ func TestMain(m *testing.M) {
 	var err error
 	moduleRoot, err := test.GetModuleRoot()
 	if err != nil {
-		logrus.Fatalf("error in test setup: could not get module root: %v", err)
+		log.Fatalf("error in test setup: could not get module root: %v", err)
 	}
 	testBinPath := filepath.Join(moduleRoot, "test", "bin")
 	testInputPath := filepath.Join(moduleRoot, "test", "input")
@@ -54,11 +55,11 @@ func TestMain(m *testing.M) {
 	// Confirm that the environment is configured correctly
 	runcPath, err := exec.LookPath(runcExecutableName)
 	if err != nil || filepath.Join(testBinPath, runcExecutableName) != runcPath {
-		logrus.Fatalf("error in test setup: mock runc path set incorrectly in TestMain(): %v", err)
+		log.Fatalf("error in test setup: mock runc path set incorrectly in TestMain(): %v", err)
 	}
 	hookPath, err := exec.LookPath(nvidiaHook)
 	if err != nil || filepath.Join(testBinPath, nvidiaHook) != hookPath {
-		logrus.Fatalf("error in test setup: mock hook path set incorrectly in TestMain(): %v", err)
+		log.Fatalf("error in test setup: mock hook path set incorrectly in TestMain(): %v", err)
 	}
 
 	// Store the root and binary paths in the test Config
@@ -172,7 +173,8 @@ func TestDuplicateHook(t *testing.T) {
 // addNVIDIAHook is a basic wrapper for an addHookModifier that is used for
 // testing.
 func addNVIDIAHook(spec *specs.Spec) error {
-	m := modifier.NewStableRuntimeModifier(logrus.StandardLogger(), nvidiaHook)
+	logger, _ := testlog.NewNullLogger()
+	m := modifier.NewStableRuntimeModifier(logger, nvidiaHook)
 	return m.Modify(spec)
 }
 

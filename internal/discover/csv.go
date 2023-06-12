@@ -20,16 +20,16 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/sirupsen/logrus"
 )
 
 // NewFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
 // The constructed discoverer is comprised of a list, with each element in the list being associated with a
 // single CSV files.
-func NewFromCSVFiles(logger *logrus.Logger, files []string, driverRoot string) (Discover, error) {
+func NewFromCSVFiles(logger logger.Interface, files []string, driverRoot string) (Discover, error) {
 	if len(files) == 0 {
-		logger.Warnf("No CSV files specified")
+		logger.Warningf("No CSV files specified")
 		return None{}, nil
 	}
 
@@ -46,7 +46,7 @@ func NewFromCSVFiles(logger *logrus.Logger, files []string, driverRoot string) (
 	for _, filename := range files {
 		targets, err := loadCSVFile(logger, filename)
 		if err != nil {
-			logger.Warnf("Skipping CSV file %v: %v", filename, err)
+			logger.Warningf("Skipping CSV file %v: %v", filename, err)
 			continue
 		}
 		mountSpecs = append(mountSpecs, targets...)
@@ -56,7 +56,7 @@ func NewFromCSVFiles(logger *logrus.Logger, files []string, driverRoot string) (
 }
 
 // loadCSVFile loads the specified CSV file and returns the list of mount specs
-func loadCSVFile(logger *logrus.Logger, filename string) ([]*csv.MountSpec, error) {
+func loadCSVFile(logger logger.Interface, filename string) ([]*csv.MountSpec, error) {
 	// Create a discoverer for each file-kind combination
 	targets, err := csv.NewCSVFileParser(logger, filename).Parse()
 	if err != nil {
@@ -71,7 +71,7 @@ func loadCSVFile(logger *logrus.Logger, filename string) ([]*csv.MountSpec, erro
 
 // newFromMountSpecs creates a discoverer for the CSV file. A logger is also supplied.
 // A list of csvDiscoverers is returned, with each being associated with a single MountSpecType.
-func newFromMountSpecs(logger *logrus.Logger, locators map[csv.MountSpecType]lookup.Locator, driverRoot string, targets []*csv.MountSpec) (Discover, error) {
+func newFromMountSpecs(logger logger.Interface, locators map[csv.MountSpecType]lookup.Locator, driverRoot string, targets []*csv.MountSpec) (Discover, error) {
 	if len(targets) == 0 {
 		return &None{}, nil
 	}
