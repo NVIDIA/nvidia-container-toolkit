@@ -20,33 +20,23 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/exec"
 	"syscall"
 	"time"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
-	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )
 
 const (
-	restartModeSignal  = "signal"
-	restartModeSystemd = "systemd"
-	restartModeNone    = "none"
-
-	nvidiaRuntimeName               = "nvidia"
-	nvidiaRuntimeBinary             = "nvidia-container-runtime"
-	nvidiaExperimentalRuntimeName   = "nvidia-experimental"
-	nvidiaExperimentalRuntimeBinary = "nvidia-container-runtime.experimental"
-
 	defaultConfig        = "/etc/containerd/config.toml"
 	defaultSocket        = "/run/containerd/containerd.sock"
 	defaultRuntimeClass  = "nvidia"
 	defaultRuntmeType    = "io.containerd.runc.v2"
 	defaultSetAsDefault  = true
-	defaultRestartMode   = restartModeSignal
+	defaultRestartMode   = "signal"
 	defaultHostRootMount = "/host"
 
 	reloadBackoff     = 5 * time.Second
@@ -55,23 +45,13 @@ const (
 	socketMessageToGetPID = ""
 )
 
-// nvidiaRuntimeBinaries defines a map of runtime names to binary names
-var nvidiaRuntimeBinaries = map[string]string{
-	nvidiaRuntimeName:             nvidiaRuntimeBinary,
-	nvidiaExperimentalRuntimeName: nvidiaExperimentalRuntimeBinary,
-}
-
 // options stores the configuration from the command line or environment variables
 type options struct {
-	config          string
-	socket          string
-	runtimeClass    string
-	runtimeType     string
-	setAsDefault    bool
-	restartMode     string
-	hostRootMount   string
-	runtimeDir      string
+	container.Options
+
+	// containerd-specific options
 	useLegacyConfig bool
+	runtimeType     string
 
 	ContainerRuntimeModesCDIAnnotationPrefixes cli.StringSlice
 }
@@ -83,7 +63,7 @@ func main() {
 	c := cli.NewApp()
 	c.Name = "containerd"
 	c.Usage = "Update a containerd config with the nvidia-container-runtime"
-	c.Version = "0.1.0"
+	c.Version = info.GetVersionString()
 
 	// Create the 'setup' subcommand
 	setup := cli.Command{}
@@ -93,6 +73,9 @@ func main() {
 	setup.Action = func(c *cli.Context) error {
 		return Setup(c, &options)
 	}
+	setup.Before = func(c *cli.Context) error {
+		return container.ParseArgs(c, &options.Options)
+	}
 
 	// Create the 'cleanup' subcommand
 	cleanup := cli.Command{}
@@ -101,6 +84,9 @@ func main() {
 	cleanup.ArgsUsage = "<runtime_dirname>"
 	cleanup.Action = func(c *cli.Context) error {
 		return Cleanup(c, &options)
+	}
+	cleanup.Before = func(c *cli.Context) error {
+		return container.ParseArgs(c, &options.Options)
 	}
 
 	// Register the subcommands with the top-level CLI
@@ -116,57 +102,53 @@ func main() {
 	commonFlags := []cli.Flag{
 		&cli.StringFlag{
 			Name:        "config",
-			Aliases:     []string{"c"},
 			Usage:       "Path to the containerd config file",
 			Value:       defaultConfig,
-			Destination: &options.config,
-			EnvVars:     []string{"CONTAINERD_CONFIG"},
+			Destination: &options.Config,
+			EnvVars:     []string{"CONTAINERD_CONFIG", "RUNTIME_CONFIG"},
 		},
 		&cli.StringFlag{
 			Name:        "socket",
-			Aliases:     []string{"s"},
 			Usage:       "Path to the containerd socket file",
 			Value:       defaultSocket,
-			Destination: &options.socket,
-			EnvVars:     []string{"CONTAINERD_SOCKET"},
-		},
-		&cli.StringFlag{
-			Name:        "runtime-class",
-			Aliases:     []string{"r"},
-			Usage:       "The name of the runtime class to set for the nvidia-container-runtime",
-			Value:       defaultRuntimeClass,
-			Destination: &options.runtimeClass,
-			EnvVars:     []string{"CONTAINERD_RUNTIME_CLASS"},
-		},
-		&cli.StringFlag{
-			Name:        "runtime-type",
-			Usage:       "The runtime_type to use for the configured runtime classes",
-			Value:       defaultRuntmeType,
-			Destination: &options.runtimeType,
-			EnvVars:     []string{"CONTAINERD_RUNTIME_TYPE"},
-		},
-		// The flags below are only used by the 'setup' command.
-		&cli.BoolFlag{
-			Name:        "set-as-default",
-			Aliases:     []string{"d"},
-			Usage:       "Set nvidia-container-runtime as the default runtime",
-			Value:       defaultSetAsDefault,
-			Destination: &options.setAsDefault,
-			EnvVars:     []string{"CONTAINERD_SET_AS_DEFAULT"},
-			Hidden:      true,
+			Destination: &options.Socket,
+			EnvVars:     []string{"CONTAINERD_SOCKET", "RUNTIME_SOCKET"},
 		},
 		&cli.StringFlag{
 			Name:        "restart-mode",
 			Usage:       "Specify how containerd should be restarted;  If 'none' is selected, it will not be restarted [signal | systemd | none]",
 			Value:       defaultRestartMode,
-			Destination: &options.restartMode,
-			EnvVars:     []string{"CONTAINERD_RESTART_MODE"},
+			Destination: &options.RestartMode,
+			EnvVars:     []string{"CONTAINERD_RESTART_MODE", "RUNTIME_RESTART_MODE"},
+		},
+		&cli.StringFlag{
+			Name:        "runtime-class",
+			Aliases:     []string{"runtime-name", "nvidia-runtime-name"},
+			Usage:       "The name of the runtime class to set for the nvidia-container-runtime",
+			Value:       defaultRuntimeClass,
+			Destination: &options.RuntimeName,
+			EnvVars:     []string{"CONTAINERD_RUNTIME_CLASS", "NVIDIA_RUNTIME_NAME"},
+		},
+		&cli.StringFlag{
+			Name:        "nvidia-runtime-dir",
+			Aliases:     []string{"runtime-dir"},
+			Usage:       "The path where the nvidia-container-runtime binaries are located. If this is not specified, the first argument will be used instead",
+			Destination: &options.RuntimeDir,
+			EnvVars:     []string{"NVIDIA_RUNTIME_DIR"},
+		},
+		&cli.BoolFlag{
+			Name:        "set-as-default",
+			Usage:       "Set nvidia-container-runtime as the default runtime",
+			Value:       defaultSetAsDefault,
+			Destination: &options.SetAsDefault,
+			EnvVars:     []string{"CONTAINERD_SET_AS_DEFAULT", "NVIDIA_RUNTIME_SET_AS_DEFAULT"},
+			Hidden:      true,
 		},
 		&cli.StringFlag{
 			Name:        "host-root",
 			Usage:       "Specify the path to the host root to be used when restarting containerd using systemd",
 			Value:       defaultHostRootMount,
-			Destination: &options.hostRootMount,
+			Destination: &options.HostRootMount,
 			EnvVars:     []string{"HOST_ROOT_MOUNT"},
 		},
 		&cli.BoolFlag{
@@ -174,6 +156,13 @@ func main() {
 			Usage:       "Specify whether a legacy (pre v1.3) config should be used",
 			Destination: &options.useLegacyConfig,
 			EnvVars:     []string{"CONTAINERD_USE_LEGACY_CONFIG"},
+		},
+		&cli.StringFlag{
+			Name:        "runtime-type",
+			Usage:       "The runtime_type to use for the configured runtime classes",
+			Value:       defaultRuntmeType,
+			Destination: &options.runtimeType,
+			EnvVars:     []string{"CONTAINERD_RUNTIME_TYPE"},
 		},
 		&cli.StringSliceFlag{
 			Name:        "nvidia-container-runtime-modes.cdi.annotation-prefixes",
@@ -196,14 +185,8 @@ func main() {
 func Setup(c *cli.Context, o *options) error {
 	log.Infof("Starting 'setup' for %v", c.App.Name)
 
-	runtimeDir, err := ParseArgs(c)
-	if err != nil {
-		return fmt.Errorf("unable to parse args: %v", err)
-	}
-	o.runtimeDir = runtimeDir
-
 	cfg, err := containerd.New(
-		containerd.WithPath(o.config),
+		containerd.WithPath(o.Config),
 		containerd.WithRuntimeType(o.runtimeType),
 		containerd.WithUseLegacyConfig(o.useLegacyConfig),
 		containerd.WithContainerAnnotations(o.containerAnnotationsFromCDIPrefixes()...),
@@ -212,18 +195,9 @@ func Setup(c *cli.Context, o *options) error {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	err = UpdateConfig(cfg, o)
+	err = o.Configure(cfg)
 	if err != nil {
-		return fmt.Errorf("unable to update config: %v", err)
-	}
-
-	log.Infof("Flushing containerd config to %v", o.config)
-	n, err := cfg.Save(o.config)
-	if err != nil {
-		return fmt.Errorf("unable to flush config: %v", err)
-	}
-	if n == 0 {
-		log.Infof("Config file is empty, removed")
+		return fmt.Errorf("unable to configure containerd: %v", err)
 	}
 
 	err = RestartContainerd(o)
@@ -240,13 +214,8 @@ func Setup(c *cli.Context, o *options) error {
 func Cleanup(c *cli.Context, o *options) error {
 	log.Infof("Starting 'cleanup' for %v", c.App.Name)
 
-	_, err := ParseArgs(c)
-	if err != nil {
-		return fmt.Errorf("unable to parse args: %v", err)
-	}
-
 	cfg, err := containerd.New(
-		containerd.WithPath(o.config),
+		containerd.WithPath(o.Config),
 		containerd.WithRuntimeType(o.runtimeType),
 		containerd.WithUseLegacyConfig(o.useLegacyConfig),
 		containerd.WithContainerAnnotations(o.containerAnnotationsFromCDIPrefixes()...),
@@ -255,18 +224,9 @@ func Cleanup(c *cli.Context, o *options) error {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	err = RevertConfig(cfg, o)
+	err = o.Unconfigure(cfg)
 	if err != nil {
-		return fmt.Errorf("unable to update config: %v", err)
-	}
-
-	log.Infof("Flushing containerd config to %v", o.config)
-	n, err := cfg.Save(o.config)
-	if err != nil {
-		return fmt.Errorf("unable to flush config: %v", err)
-	}
-	if n == 0 {
-		log.Infof("Config file is empty, removed")
+		return fmt.Errorf("unable to unconfigure containerd: %v", err)
 	}
 
 	err = RestartContainerd(o)
@@ -279,80 +239,18 @@ func Cleanup(c *cli.Context, o *options) error {
 	return nil
 }
 
-// ParseArgs parses the command line arguments to the CLI
-func ParseArgs(c *cli.Context) (string, error) {
-	args := c.Args()
-
-	log.Infof("Parsing arguments: %v", args.Slice())
-	if args.Len() != 1 {
-		return "", fmt.Errorf("incorrect number of arguments")
-	}
-	runtimeDir := args.Get(0)
-	log.Infof("Successfully parsed arguments")
-
-	return runtimeDir, nil
-}
-
-// UpdateConfig updates the containerd config to include the nvidia-container-runtime
-func UpdateConfig(cfg engine.Interface, o *options) error {
-	runtimes := operator.GetRuntimes(
-		operator.WithNvidiaRuntimeName(o.runtimeClass),
-		operator.WithSetAsDefault(o.setAsDefault),
-		operator.WithRoot(o.runtimeDir),
-	)
-	for class, runtime := range runtimes {
-		err := cfg.AddRuntime(class, runtime.Path, runtime.SetAsDefault)
-		if err != nil {
-			return fmt.Errorf("unable to update config for runtime class '%v': %v", class, err)
-		}
-	}
-
-	return nil
-}
-
-// RevertConfig reverts the containerd config to remove the nvidia-container-runtime
-func RevertConfig(cfg engine.Interface, o *options) error {
-	runtimes := operator.GetRuntimes(
-		operator.WithNvidiaRuntimeName(o.runtimeClass),
-		operator.WithSetAsDefault(o.setAsDefault),
-		operator.WithRoot(o.runtimeDir),
-	)
-	for class := range runtimes {
-		err := cfg.RemoveRuntime(class)
-		if err != nil {
-			return fmt.Errorf("unable to revert config for runtime class '%v': %v", class, err)
-		}
-	}
-	return nil
-}
-
 // RestartContainerd restarts containerd depending on the value of restartModeFlag
 func RestartContainerd(o *options) error {
-	switch o.restartMode {
-	case restartModeNone:
-		log.Warnf("Skipping sending signal to containerd due to --restart-mode=%v", o.restartMode)
-		return nil
-	case restartModeSignal:
-		err := SignalContainerd(o)
-		if err != nil {
-			return fmt.Errorf("unable to signal containerd: %v", err)
-		}
-	case restartModeSystemd:
-		return RestartContainerdSystemd(o.hostRootMount)
-	default:
-		return fmt.Errorf("Invalid restart mode specified: %v", o.restartMode)
-	}
-
-	return nil
+	return o.Restart("containerd", SignalContainerd)
 }
 
 // SignalContainerd sends a SIGHUP signal to the containerd daemon
-func SignalContainerd(o *options) error {
+func SignalContainerd(socket string) error {
 	log.Infof("Sending SIGHUP signal to containerd")
 
 	// Wrap the logic to perform the SIGHUP in a function so we can retry it on failure
 	retriable := func() error {
-		conn, err := net.Dial("unix", o.socket)
+		conn, err := net.Dial("unix", socket)
 		if err != nil {
 			return fmt.Errorf("unable to dial: %v", err)
 		}
@@ -422,24 +320,6 @@ func SignalContainerd(o *options) error {
 	}
 
 	log.Infof("Successfully signaled containerd")
-
-	return nil
-}
-
-// RestartContainerdSystemd restarts containerd using systemctl
-func RestartContainerdSystemd(hostRootMount string) error {
-	log.Infof("Restarting containerd using systemd and host root mounted at %v", hostRootMount)
-
-	command := "chroot"
-	args := []string{hostRootMount, "systemctl", "restart", "containerd"}
-
-	cmd := exec.Command(command, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error restarting containerd using systemd: %v", err)
-	}
 
 	return nil
 }

@@ -23,50 +23,31 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/docker"
-	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )
 
 const (
-	restartModeSignal = "signal"
-	restartModeNone   = "none"
-
-	nvidiaRuntimeName               = "nvidia"
-	nvidiaRuntimeBinary             = "nvidia-container-runtime"
-	nvidiaExperimentalRuntimeName   = "nvidia-experimental"
-	nvidiaExperimentalRuntimeBinary = "nvidia-container-runtime.experimental"
-
 	defaultConfig       = "/etc/docker/daemon.json"
 	defaultSocket       = "/var/run/docker.sock"
 	defaultSetAsDefault = true
 	// defaultRuntimeName specifies the NVIDIA runtime to be use as the default runtime if setting the default runtime is enabled
-	defaultRuntimeName = nvidiaRuntimeName
-	defaultRestartMode = restartModeSignal
+	defaultRuntimeName   = "nvidia"
+	defaultRestartMode   = "signal"
+	defaultHostRootMount = "/host"
 
 	reloadBackoff     = 5 * time.Second
 	maxReloadAttempts = 6
 
-	defaultDockerRuntime  = "runc"
 	socketMessageToGetPID = "GET /info HTTP/1.0\r\n\r\n"
 )
 
-// nvidiaRuntimeBinaries defines a map of runtime names to binary names
-var nvidiaRuntimeBinaries = map[string]string{
-	nvidiaRuntimeName:             nvidiaRuntimeBinary,
-	nvidiaExperimentalRuntimeName: nvidiaExperimentalRuntimeBinary,
-}
-
 // options stores the configuration from the command line or environment variables
 type options struct {
-	config       string
-	socket       string
-	runtimeName  string
-	setAsDefault bool
-	runtimeDir   string
-	restartMode  string
+	container.Options
 }
 
 func main() {
@@ -76,7 +57,7 @@ func main() {
 	c := cli.NewApp()
 	c.Name = "docker"
 	c.Usage = "Update docker config with the nvidia runtime"
-	c.Version = "0.1.0"
+	c.Version = info.GetVersionString()
 
 	// Create the 'setup' subcommand
 	setup := cli.Command{}
@@ -86,6 +67,9 @@ func main() {
 	setup.Action = func(c *cli.Context) error {
 		return Setup(c, &options)
 	}
+	setup.Before = func(c *cli.Context) error {
+		return container.ParseArgs(c, &options.Options)
+	}
 
 	// Create the 'cleanup' subcommand
 	cleanup := cli.Command{}
@@ -94,6 +78,9 @@ func main() {
 	cleanup.ArgsUsage = "<runtime_dirname>"
 	cleanup.Action = func(c *cli.Context) error {
 		return Cleanup(c, &options)
+	}
+	cleanup.Before = func(c *cli.Context) error {
+		return container.ParseArgs(c, &options.Options)
 	}
 
 	// Register the subcommands with the top-level CLI
@@ -109,44 +96,57 @@ func main() {
 	commonFlags := []cli.Flag{
 		&cli.StringFlag{
 			Name:        "config",
-			Aliases:     []string{"c"},
 			Usage:       "Path to docker config file",
 			Value:       defaultConfig,
-			Destination: &options.config,
-			EnvVars:     []string{"DOCKER_CONFIG"},
+			Destination: &options.Config,
+			EnvVars:     []string{"DOCKER_CONFIG", "RUNTIME_CONFIG"},
 		},
 		&cli.StringFlag{
 			Name:        "socket",
-			Aliases:     []string{"s"},
 			Usage:       "Path to the docker socket file",
 			Value:       defaultSocket,
-			Destination: &options.socket,
-			EnvVars:     []string{"DOCKER_SOCKET"},
-		},
-		// The flags below are only used by the 'setup' command.
-		&cli.StringFlag{
-			Name:        "runtime-name",
-			Aliases:     []string{"r"},
-			Usage:       "Specify the name of the `nvidia` runtime. If set-as-default is selected, the runtime is used as the default runtime.",
-			Value:       defaultRuntimeName,
-			Destination: &options.runtimeName,
-			EnvVars:     []string{"DOCKER_RUNTIME_NAME"},
-		},
-		&cli.BoolFlag{
-			Name:        "set-as-default",
-			Aliases:     []string{"d"},
-			Usage:       "Set the `nvidia` runtime as the default runtime. If --runtime-name is specified as `nvidia-experimental` the experimental runtime is set as the default runtime instead",
-			Value:       defaultSetAsDefault,
-			Destination: &options.setAsDefault,
-			EnvVars:     []string{"DOCKER_SET_AS_DEFAULT"},
-			Hidden:      true,
+			Destination: &options.Socket,
+			EnvVars:     []string{"DOCKER_SOCKET", "RUNTIME_SOCKET"},
 		},
 		&cli.StringFlag{
 			Name:        "restart-mode",
-			Usage:       "Specify how docker should be restarted; If 'none' is selected it will not be restarted [signal | none]",
+			Usage:       "Specify how docker should be restarted; If 'none' is selected it will not be restarted [signal | systemd | none ]",
 			Value:       defaultRestartMode,
-			Destination: &options.restartMode,
-			EnvVars:     []string{"DOCKER_RESTART_MODE"},
+			Destination: &options.RestartMode,
+			EnvVars:     []string{"DOCKER_RESTART_MODE", "RUNTIME_RESTART_MODE"},
+		},
+		&cli.StringFlag{
+			Name:        "host-root",
+			Usage:       "Specify the path to the host root to be used when restarting docker using systemd",
+			Value:       defaultHostRootMount,
+			Destination: &options.HostRootMount,
+			EnvVars:     []string{"HOST_ROOT_MOUNT"},
+			// Restart using systemd is currently not supported.
+			// We hide this option for the time being.
+			Hidden: true,
+		},
+		&cli.StringFlag{
+			Name:        "runtime-name",
+			Aliases:     []string{"runtime-class", "nvidia-runtime-name"},
+			Usage:       "Specify the name of the `nvidia` runtime. If set-as-default is selected, the runtime is used as the default runtime.",
+			Value:       defaultRuntimeName,
+			Destination: &options.RuntimeName,
+			EnvVars:     []string{"DOCKER_RUNTIME_NAME", "NVIDIA_RUNTIME_NAME"},
+		},
+		&cli.StringFlag{
+			Name:        "nvidia-runtime-dir",
+			Aliases:     []string{"runtime-dir"},
+			Usage:       "The path where the nvidia-container-runtime binaries are located. If this is not specified, the first argument will be used instead",
+			Destination: &options.RuntimeDir,
+			EnvVars:     []string{"NVIDIA_RUNTIME_DIR"},
+		},
+		&cli.BoolFlag{
+			Name:        "set-as-default",
+			Usage:       "Set the `nvidia` runtime as the default runtime. If --runtime-name is specified as `nvidia-experimental` the experimental runtime is set as the default runtime instead",
+			Value:       defaultSetAsDefault,
+			Destination: &options.SetAsDefault,
+			EnvVars:     []string{"DOCKER_SET_AS_DEFAULT", "NVIDIA_RUNTIME_SET_AS_DEFAULT"},
+			Hidden:      true,
 		},
 	}
 
@@ -165,28 +165,16 @@ func main() {
 func Setup(c *cli.Context, o *options) error {
 	log.Infof("Starting 'setup' for %v", c.App.Name)
 
-	runtimeDir, err := ParseArgs(c)
-	if err != nil {
-		return fmt.Errorf("unable to parse args: %v", err)
-	}
-	o.runtimeDir = runtimeDir
-
 	cfg, err := docker.New(
-		docker.WithPath(o.config),
+		docker.WithPath(o.Config),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	err = UpdateConfig(cfg, o)
+	err = o.Configure(cfg)
 	if err != nil {
-		return fmt.Errorf("unable to update config: %v", err)
-	}
-
-	log.Infof("Flushing docker config to %v", o.config)
-	_, err = cfg.Save(o.config)
-	if err != nil {
-		return fmt.Errorf("unable to flush config: %v", err)
+		return fmt.Errorf("unable to configure docker: %v", err)
 	}
 
 	err = RestartDocker(o)
@@ -203,30 +191,16 @@ func Setup(c *cli.Context, o *options) error {
 func Cleanup(c *cli.Context, o *options) error {
 	log.Infof("Starting 'cleanup' for %v", c.App.Name)
 
-	_, err := ParseArgs(c)
-	if err != nil {
-		return fmt.Errorf("unable to parse args: %v", err)
-	}
-
 	cfg, err := docker.New(
-		docker.WithPath(o.config),
+		docker.WithPath(o.Config),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	err = RevertConfig(cfg, o)
+	err = o.Unconfigure(cfg)
 	if err != nil {
-		return fmt.Errorf("unable to update config: %v", err)
-	}
-
-	log.Infof("Flushing docker config to %v", o.config)
-	n, err := cfg.Save(o.config)
-	if err != nil {
-		return fmt.Errorf("unable to flush config: %v", err)
-	}
-	if n == 0 {
-		log.Infof("Config file is empty, removed")
+		return fmt.Errorf("unable to unconfigure docker: %v", err)
 	}
 
 	err = RestartDocker(o)
@@ -239,69 +213,9 @@ func Cleanup(c *cli.Context, o *options) error {
 	return nil
 }
 
-// ParseArgs parses the command line arguments to the CLI
-func ParseArgs(c *cli.Context) (string, error) {
-	args := c.Args()
-
-	log.Infof("Parsing arguments: %v", args.Slice())
-	if args.Len() != 1 {
-		return "", fmt.Errorf("incorrect number of arguments")
-	}
-	runtimeDir := args.Get(0)
-	log.Infof("Successfully parsed arguments")
-
-	return runtimeDir, nil
-}
-
-// UpdateConfig updates the docker config to include the nvidia runtimes
-func UpdateConfig(cfg engine.Interface, o *options) error {
-	runtimes := operator.GetRuntimes(
-		operator.WithNvidiaRuntimeName(o.runtimeName),
-		operator.WithSetAsDefault(o.setAsDefault),
-		operator.WithRoot(o.runtimeDir),
-	)
-	for name, runtime := range runtimes {
-		err := cfg.AddRuntime(name, runtime.Path, runtime.SetAsDefault)
-		if err != nil {
-			return fmt.Errorf("failed to update runtime %q: %v", name, err)
-		}
-	}
-
-	return nil
-}
-
-// RevertConfig reverts the docker config to remove the nvidia runtime
-func RevertConfig(cfg engine.Interface, o *options) error {
-	runtimes := operator.GetRuntimes(
-		operator.WithNvidiaRuntimeName(o.runtimeName),
-		operator.WithSetAsDefault(o.setAsDefault),
-		operator.WithRoot(o.runtimeDir),
-	)
-	for name := range runtimes {
-		err := cfg.RemoveRuntime(name)
-		if err != nil {
-			return fmt.Errorf("failed to remove runtime %q: %v", name, err)
-		}
-	}
-
-	return nil
-}
-
 // RestartDocker restarts docker depending on the value of restartModeFlag
 func RestartDocker(o *options) error {
-	switch o.restartMode {
-	case restartModeNone:
-		log.Warnf("Skipping sending signal to docker due to --restart-mode=%v", o.restartMode)
-	case restartModeSignal:
-		err := SignalDocker(o.socket)
-		if err != nil {
-			return fmt.Errorf("unable to signal docker: %v", err)
-		}
-	default:
-		return fmt.Errorf("invalid restart mode specified: %v", o.restartMode)
-	}
-
-	return nil
+	return o.Restart("docker", SignalDocker)
 }
 
 // SignalDocker sends a SIGHUP signal to docker daemon
