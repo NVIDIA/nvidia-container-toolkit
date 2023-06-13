@@ -78,15 +78,15 @@ func doPrestart() {
 	}
 	cli := hook.NvidiaContainerCLI
 
-	if !hook.NVIDIAContainerRuntimeHook.SkipModeDetection && info.ResolveAutoMode(&logInterceptor{}, hook.NVIDIAContainerRuntime.Mode) != "legacy" {
-		log.Panicln("invoking the NVIDIA Container Runtime Hook directly (e.g. specifying the docker --gpus flag) is not supported. Please use the NVIDIA Container Runtime (e.g. specify the --runtime=nvidia flag) instead.")
-	}
-
 	container := getContainerConfig(*hook)
 	nvidia := container.Nvidia
 	if nvidia == nil {
 		// Not a GPU container, nothing to do.
 		return
+	}
+
+	if !hook.NVIDIAContainerRuntimeHook.SkipModeDetection && info.ResolveAutoMode(&logInterceptor{}, hook.NVIDIAContainerRuntime.Mode, container.Image) != "legacy" {
+		log.Panicln("invoking the NVIDIA Container Runtime Hook directly (e.g. specifying the docker --gpus flag) is not supported. Please use the NVIDIA Container Runtime (e.g. specify the --runtime=nvidia flag) instead.")
 	}
 
 	rootfs := getRootfsPath(container)

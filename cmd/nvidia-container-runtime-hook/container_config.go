@@ -45,7 +45,7 @@ type nvidiaConfig struct {
 type containerConfig struct {
 	Pid    int
 	Rootfs string
-	Env    map[string]string
+	Image  image.CUDA
 	Nvidia *nvidiaConfig
 }
 
@@ -362,7 +362,7 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 	return containerConfig{
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,
-		Env:    image,
+		Image:  image,
 		Nvidia: getNvidiaConfig(&hook, image, s.Mounts, privileged),
 	}
 }

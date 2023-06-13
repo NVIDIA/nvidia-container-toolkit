@@ -17,30 +17,65 @@
 package info
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
 )
 
+// infoInterface provides an alias for mocking.
+//
+//go:generate moq -stub -out info-interface_mock.go . infoInterface
+type infoInterface info.Interface
+
+type resolver struct {
+	logger logger.Interface
+	info   info.Interface
+}
+
 // ResolveAutoMode determines the correct mode for the platform if set to "auto"
-func ResolveAutoMode(logger logger.Interface, mode string) (rmode string) {
+func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rmode string) {
+	nvinfo := info.New()
+	r := resolver{
+		logger: logger,
+		info:   nvinfo,
+	}
+	return r.resolveMode(mode, image)
+}
+
+// resolveMode determines the correct mode for the platform if set to "auto"
+func (r resolver) resolveMode(mode string, image image.CUDA) (rmode string) {
 	if mode != "auto" {
 		return mode
 	}
 	defer func() {
-		logger.Infof("Auto-detected mode as '%v'", rmode)
+		r.logger.Infof("Auto-detected mode as '%v'", rmode)
 	}()
 
-	nvinfo := info.New()
+	if onlyFullyQualifiedCDIDevices(image) {
+		return "cdi"
+	}
 
-	isTegra, reason := nvinfo.IsTegraSystem()
-	logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
+	isTegra, reason := r.info.IsTegraSystem()
+	r.logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
 
-	hasNVML, reason := nvinfo.HasNvml()
-	logger.Debugf("Has NVML? %v: %v", hasNVML, reason)
+	hasNVML, reason := r.info.HasNvml()
+	r.logger.Debugf("Has NVML? %v: %v", hasNVML, reason)
 
 	if isTegra && !hasNVML {
 		return "csv"
 	}
 
 	return "legacy"
+}
+
+func onlyFullyQualifiedCDIDevices(image image.CUDA) bool {
+	var hasCDIdevice bool
+	for _, device := range image.DevicesFromEnvvars("NVIDIA_VISIBLE_DEVICES").List() {
+		if !cdi.IsQualifiedName(device) {
+			return false
+		}
+		hasCDIdevice = true
+	}
+	return hasCDIdevice
 }
