@@ -65,6 +65,7 @@ type ResourceInterface interface {
 
 type nvpci struct {
 	pciDevicesRoot string
+	pcidbPath      string
 }
 
 var _ Interface = (*nvpci)(nil)
@@ -124,14 +125,33 @@ func (d *NvidiaPCIDevice) Reset() error {
 }
 
 // New interface that allows us to get a list of all NVIDIA PCI devices
-func New() Interface {
-	return NewFrom(PCIDevicesRoot)
+func New(opts ...Option) Interface {
+	n := &nvpci{}
+	for _, opt := range opts {
+		opt(n)
+	}
+	if n.pciDevicesRoot == "" {
+		n.pciDevicesRoot = PCIDevicesRoot
+	}
+	return n
 }
 
-// NewFrom interface allows us to get a list of all NVIDIA PCI devices at a specific root directory
-func NewFrom(root string) Interface {
-	return &nvpci{
-		pciDevicesRoot: root,
+// Option defines a function for passing options to the New() call
+type Option func(*nvpci)
+
+// WithPCIDevicesRoot provides an Option to set the root path
+// for PCI devices on the system.
+func WithPCIDevicesRoot(root string) Option {
+	return func(n *nvpci) {
+		n.pciDevicesRoot = root
+	}
+}
+
+// WithPCIDatabasePath provides an Option to set the path
+// to the pciids database file.
+func WithPCIDatabasePath(path string) Option {
+	return func(n *nvpci) {
+		n.pcidbPath = path
 	}
 }
 
@@ -282,6 +302,15 @@ func (p *nvpci) GetGPUByPciBusID(address string) (*NvidiaPCIDevice, error) {
 
 	pciDB := pciids.NewDB()
 
+	deviceName, err := pciDB.GetDeviceName(uint16(vendorID), uint16(deviceID))
+	if err != nil {
+		return nil, fmt.Errorf("unable to get device name: %v", err)
+	}
+	className, err := pciDB.GetClassName(uint32(classID))
+	if err != nil {
+		return nil, fmt.Errorf("unable to get class name for device: %v", err)
+	}
+
 	nvdevice := &NvidiaPCIDevice{
 		Path:       devicePath,
 		Address:    address,
@@ -294,8 +323,8 @@ func (p *nvpci) GetGPUByPciBusID(address string) (*NvidiaPCIDevice, error) {
 		Config:     config,
 		Resources:  resources,
 		IsVF:       isVF,
-		DeviceName: pciDB.GetDeviceName(uint16(vendorID), uint16(deviceID)),
-		ClassName:  pciDB.GetClassName(uint32(classID)),
+		DeviceName: deviceName,
+		ClassName:  className,
 	}
 
 	return nvdevice, nil

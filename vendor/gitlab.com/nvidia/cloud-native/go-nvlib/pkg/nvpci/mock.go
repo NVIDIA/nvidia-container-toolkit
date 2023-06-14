@@ -44,7 +44,7 @@ func NewMockNvpci() (mock *MockNvpci, rerr error) {
 	}()
 
 	mock = &MockNvpci{
-		NewFrom(rootDir).(*nvpci),
+		New(WithPCIDevicesRoot(rootDir)).(*nvpci),
 	}
 
 	return mock, nil

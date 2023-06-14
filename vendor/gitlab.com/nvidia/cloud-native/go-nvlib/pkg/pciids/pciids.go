@@ -172,22 +172,46 @@ type parser struct {
 	}
 }
 
+// Various locations of pci.ids for different distributions. These may be more
+// up to date then the embedded pci.ids db
+var defaultPCIdbPaths = []string{
+	"/usr/share/misc/pci.ids",   // Ubuntu
+	"/usr/local/share/pci.ids",  // RHEL like with manual update
+	"/usr/share/hwdata/pci.ids", // RHEL like
+	"/usr/share/pci.ids",        // SUSE
+}
+
 // This is a fallback if all of the locations fail
 //go:embed default_pci.ids
 var defaultPCIdb []byte
 
 // NewDB Parse the PCI DB in its default locations or use the default
 // builtin pci.ids db.
-func NewDB() Interface {
-	// Various locations of pci.ids for differente distributions these may be more
-	// up to date then the embedded pci.ids db
-	pcidbs := []string{
-		"/usr/share/misc/pci.ids",   // Ubuntu
-		"/usr/local/share/pci.ids",  // RHEL like with manual update
-		"/usr/share/hwdata/pci.ids", // RHEL like
-		"/usr/share/pci.ids",        // SUSE
+func NewDB(opts ...Option) Interface {
+	db := &pcidb{}
+	for _, opt := range opts {
+		opt(db)
 	}
+
+	pcidbs := defaultPCIdbPaths
+	if db.path != "" {
+		pcidbs = append([]string{db.path}, defaultPCIdbPaths...)
+	}
+
 	return newParser(pcidbs).parse()
+}
+
+// Option defines a function for passing options to the NewDB() call
+type Option func(*pcidb)
+
+// WithFilePath provides an Option to set the file path
+// for the pciids database used by pciids interface.
+// The file path provided takes precedence over all other
+// paths.
+func WithFilePath(path string) Option {
+	return func(db *pcidb) {
+		db.path = path
+	}
 }
 
 // newParser will attempt to read the db pci.ids from well known places or fall
@@ -229,24 +253,39 @@ var _ Interface = (*pcidb)(nil)
 
 // Interface returns textual description of specific attributes of PCI devices
 type Interface interface {
-	GetDeviceName(uint16, uint16) string
-	GetClassName(uint32) string
+	GetDeviceName(uint16, uint16) (string, error)
+	GetClassName(uint32) (string, error)
 }
 
 // GetDeviceName return the textual description of the PCI device
-func (d *pcidb) GetDeviceName(vendorID uint16, deviceID uint16) string {
-	return d.vendors[vendorID].devices[deviceID].name
+func (d *pcidb) GetDeviceName(vendorID uint16, deviceID uint16) (string, error) {
+	vendor, ok := d.vendors[vendorID]
+	if !ok {
+		return "", fmt.Errorf("failed to find vendor with id '%x'", vendorID)
+	}
+
+	device, ok := vendor.devices[deviceID]
+	if !ok {
+		return "", fmt.Errorf("failed to find device with id '%x'", deviceID)
+	}
+
+	return device.name, nil
 }
 
 // GetClassName resturn the textual description of the PCI device class
-func (d *pcidb) GetClassName(classID uint32) string {
-	return d.classes[classID].name
+func (d *pcidb) GetClassName(classID uint32) (string, error) {
+	class, ok := d.classes[classID]
+	if !ok {
+		return "", fmt.Errorf("failed to find class with id '%x'", classID)
+	}
+	return class.name, nil
 }
 
 // pcidb  The complete set of PCI vendors and  PCI classes
 type pcidb struct {
 	vendors map[uint16]vendor
 	classes map[uint32]class
+	path    string
 }
 
 // vendor PCI vendors/devices/subVendors/SubDevices
