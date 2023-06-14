@@ -71,8 +71,8 @@ func newAllPossible(logger logger.Interface, driverRoot string) (nodeLister, err
 
 // DeviceNodes returns a list of all possible device nodes for NVIDIA GPUs, control devices, and capability devices.
 func (m allPossible) DeviceNodes() ([]deviceNode, error) {
-	gpus, err := nvpci.NewFrom(
-		filepath.Join(m.driverRoot, nvpci.PCIDevicesRoot),
+	gpus, err := nvpci.New(
+		nvpci.WithPCIDevicesRoot(filepath.Join(m.driverRoot, nvpci.PCIDevicesRoot)),
 	).GetGPUs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get GPU information: %v", err)
