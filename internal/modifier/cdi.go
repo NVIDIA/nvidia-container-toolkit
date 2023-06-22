@@ -23,9 +23,9 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
-	"github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 )
 
 type cdiModifier struct {
@@ -48,13 +48,11 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spe
 	}
 	logger.Debugf("Creating CDI modifier for devices: %v", devices)
 
-	m := cdiModifier{
-		logger:   logger,
-		specDirs: cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs,
-		devices:  devices,
-	}
-
-	return m, nil
+	return cdi.New(
+		cdi.WithLogger(logger),
+		cdi.WithDevices(devices...),
+		cdi.WithSpecDirs(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs...),
+	)
 }
 
 func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.Config) ([]string, error) {
@@ -80,7 +78,7 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 	var devices []string
 	seen := make(map[string]bool)
 	for _, name := range envDevices.List() {
-		if !cdi.IsQualifiedName(name) {
+		if !parser.IsQualifiedName(name) {
 			name = fmt.Sprintf("%s=%s", cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind, name)
 		}
 		if seen[name] {
@@ -121,7 +119,7 @@ func getAnnotationDevices(prefixes []string, annotations map[string]string) ([]s
 	var annotationDevices []string
 	for key, devices := range devicesByKey {
 		for _, device := range devices {
-			if !cdi.IsQualifiedName(device) {
+			if !parser.IsQualifiedName(device) {
 				return nil, fmt.Errorf("invalid device name %q in annotation %q", device, key)
 			}
 			if seen[device] {
@@ -133,23 +131,4 @@ func getAnnotationDevices(prefixes []string, annotations map[string]string) ([]s
 	}
 
 	return annotationDevices, nil
-}
-
-// Modify loads the CDI registry and injects the specified CDI devices into the OCI runtime specification.
-func (m cdiModifier) Modify(spec *specs.Spec) error {
-	registry := cdi.GetRegistry(
-		cdi.WithSpecDirs(m.specDirs...),
-		cdi.WithAutoRefresh(false),
-	)
-	if err := registry.Refresh(); err != nil {
-		m.logger.Debugf("The following error was triggered when refreshing the CDI registry: %v", err)
-	}
-
-	m.logger.Debugf("Injecting devices using CDI: %v", m.devices)
-	_, err := registry.InjectDevices(spec, m.devices...)
-	if err != nil {
-		return fmt.Errorf("failed to inject CDI devices: %v", err)
-	}
-
-	return nil
 }
