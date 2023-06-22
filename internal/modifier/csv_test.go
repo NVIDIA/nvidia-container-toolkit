@@ -17,11 +17,10 @@
 package modifier
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
@@ -31,54 +30,32 @@ func TestNewCSVModifier(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
 	testCases := []struct {
-		description    string
-		cfg            *config.Config
-		spec           oci.Spec
-		visibleDevices string
-		expectedError  error
-		expectedNil    bool
+		description   string
+		cfg           *config.Config
+		image         image.CUDA
+		expectedError error
+		expectedNil   bool
 	}{
 		{
-			description: "spec load error returns error",
-			spec: &oci.SpecMock{
-				LoadFunc: func() (*specs.Spec, error) {
-					return nil, fmt.Errorf("load failed")
-				},
-			},
-			expectedError: fmt.Errorf("load failed"),
+			description: "visible devices not set returns nil",
+			image:       image.CUDA{},
+			expectedNil: true,
 		},
 		{
-			description:    "visible devices not set returns nil",
-			visibleDevices: "NOT_SET",
-			expectedNil:    true,
+			description: "visible devices empty returns nil",
+			image:       image.CUDA{"NVIDIA_VISIBLE_DEVICES": ""},
+			expectedNil: true,
 		},
 		{
-			description:    "visible devices empty returns nil",
-			visibleDevices: "",
-			expectedNil:    true,
-		},
-		{
-			description:    "visible devices 'void' returns nil",
-			visibleDevices: "void",
-			expectedNil:    true,
+			description: "visible devices 'void' returns nil",
+			image:       image.CUDA{"NVIDIA_VISIBLE_DEVICES": "void"},
+			expectedNil: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			spec := tc.spec
-			if spec == nil {
-				spec = &oci.SpecMock{
-					LookupEnvFunc: func(s string) (string, bool) {
-						if tc.visibleDevices != "NOT_SET" && s == visibleDevicesEnvvar {
-							return tc.visibleDevices, true
-						}
-						return "", false
-					},
-				}
-			}
-
-			m, err := NewCSVModifier(logger, tc.cfg, spec)
+			m, err := NewCSVModifier(logger, tc.cfg, tc.image)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 			} else {
