@@ -14,23 +14,24 @@
 # limitations under the License.
 **/
 
-package discover
+package tegra
 
 import (
 	"fmt"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
-// NewFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
+// newDiscovererFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
 // The constructed discoverer is comprised of a list, with each element in the list being associated with a
 // single CSV files.
-func NewFromCSVFiles(logger logger.Interface, files []string, driverRoot string) (Discover, error) {
+func newDiscovererFromCSVFiles(logger logger.Interface, files []string, driverRoot string) (discover.Discover, error) {
 	if len(files) == 0 {
 		logger.Warningf("No CSV files specified")
-		return None{}, nil
+		return discover.None{}, nil
 	}
 
 	symlinkLocator := lookup.NewSymlinkLocator(
@@ -74,12 +75,12 @@ func loadCSVFile(logger logger.Interface, filename string) ([]*csv.MountSpec, er
 
 // newFromMountSpecs creates a discoverer for the CSV file. A logger is also supplied.
 // A list of csvDiscoverers is returned, with each being associated with a single MountSpecType.
-func newFromMountSpecs(logger logger.Interface, locators map[csv.MountSpecType]lookup.Locator, driverRoot string, targets []*csv.MountSpec) (Discover, error) {
+func newFromMountSpecs(logger logger.Interface, locators map[csv.MountSpecType]lookup.Locator, driverRoot string, targets []*csv.MountSpec) (discover.Discover, error) {
 	if len(targets) == 0 {
-		return &None{}, nil
+		return &discover.None{}, nil
 	}
 
-	var discoverers []Discover
+	var discoverers []discover.Discover
 	var mountSpecTypes []csv.MountSpecType
 	candidatesByType := make(map[csv.MountSpecType][]string)
 	for _, t := range targets {
@@ -95,16 +96,16 @@ func newFromMountSpecs(logger logger.Interface, locators map[csv.MountSpecType]l
 			return nil, fmt.Errorf("no locator defined for '%v'", t)
 		}
 
-		var m Discover
+		var m discover.Discover
 		switch t {
 		case csv.MountSpecDev:
-			m = NewDeviceDiscoverer(logger, locator, driverRoot, candidatesByType[t])
+			m = discover.NewDeviceDiscoverer(logger, locator, driverRoot, candidatesByType[t])
 		default:
-			m = NewMounts(logger, locator, driverRoot, candidatesByType[t])
+			m = discover.NewMounts(logger, locator, driverRoot, candidatesByType[t])
 		}
 		discoverers = append(discoverers, m)
 
 	}
 
-	return &list{discoverers: discoverers}, nil
+	return discover.Merge(discoverers...), nil
 }

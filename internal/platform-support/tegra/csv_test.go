@@ -14,14 +14,15 @@
 # limitations under the License.
 **/
 
-package discover
+package tegra
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
@@ -30,20 +31,32 @@ func TestNewFromMountSpec(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
 	locators := map[csv.MountSpecType]lookup.Locator{
-		"dev": &lookup.LocatorMock{},
-		"lib": &lookup.LocatorMock{},
+		"dev": &lookup.LocatorMock{
+			LocateFunc: func(pattern string) ([]string, error) {
+				return []string{"/dev/" + pattern}, nil
+			},
+		},
+		"lib": &lookup.LocatorMock{
+			LocateFunc: func(pattern string) ([]string, error) {
+				return []string{"/lib/" + pattern}, nil
+			},
+		},
 	}
 
 	testCases := []struct {
-		description        string
-		root               string
-		targets            []*csv.MountSpec
-		expectedError      error
-		expectedDiscoverer Discover
+		description     string
+		root            string
+		targets         []*csv.MountSpec
+		expectedError   error
+		expectedDevices []discover.Device
+		expectedMounts  []discover.Mount
+		expectedHooks   []discover.Hook
 	}{
 		{
-			description:        "empty targets returns None discoverer list",
-			expectedDiscoverer: &None{},
+			description:     "empty targets returns None discoverer list",
+			expectedDevices: []discover.Device{},
+			expectedMounts:  []discover.Mount{},
+			expectedHooks:   []discover.Hook{},
 		},
 		{
 			description: "unexpected locator returns error",
@@ -71,59 +84,12 @@ func TestNewFromMountSpec(t *testing.T) {
 					Path: "dev1",
 				},
 			},
-			expectedDiscoverer: &list{
-				discoverers: []Discover{
-					(*charDevices)(
-						&mounts{
-							logger:   logger,
-							lookup:   locators["dev"],
-							root:     "/",
-							required: []string{"dev0", "dev1"},
-						},
-					),
-					&mounts{
-						logger:   logger,
-						lookup:   locators["lib"],
-						root:     "/",
-						required: []string{"lib0"},
-					},
-				},
+			expectedDevices: []discover.Device{
+				{Path: "/dev/dev0", HostPath: "/dev/dev0"},
+				{Path: "/dev/dev1", HostPath: "/dev/dev1"},
 			},
-		},
-		{
-			description: "sets root",
-			targets: []*csv.MountSpec{
-				{
-					Type: "dev",
-					Path: "dev0",
-				},
-				{
-					Type: "lib",
-					Path: "lib0",
-				},
-				{
-					Type: "dev",
-					Path: "dev1",
-				},
-			},
-			root: "/some/root",
-			expectedDiscoverer: &list{
-				discoverers: []Discover{
-					(*charDevices)(
-						&mounts{
-							logger:   logger,
-							lookup:   locators["dev"],
-							root:     "/some/root",
-							required: []string{"dev0", "dev1"},
-						},
-					),
-					&mounts{
-						logger:   logger,
-						lookup:   locators["lib"],
-						root:     "/some/root",
-						required: []string{"lib0"},
-					},
-				},
+			expectedMounts: []discover.Mount{
+				{Path: "/lib/lib0", HostPath: "/lib/lib0", Options: []string{"ro", "nosuid", "nodev", "bind"}},
 			},
 		},
 	}
@@ -136,7 +102,18 @@ func TestNewFromMountSpec(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			require.EqualValues(t, tc.expectedDiscoverer, discoverer)
+
+			devices, err := discoverer.Devices()
+			require.NoError(t, err)
+			require.EqualValues(t, tc.expectedDevices, devices)
+
+			mounts, err := discoverer.Mounts()
+			require.NoError(t, err)
+			require.EqualValues(t, tc.expectedMounts, mounts)
+
+			hooks, err := discoverer.Hooks()
+			require.NoError(t, err)
+			require.EqualValues(t, tc.expectedHooks, hooks)
 		})
 	}
 }

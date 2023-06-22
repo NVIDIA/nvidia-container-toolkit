@@ -14,30 +14,31 @@
 # limitations under the License.
 **/
 
-package discover
+package tegra
 
 import (
 	"fmt"
 	"path/filepath"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
 type symlinkHook struct {
-	None
+	discover.None
 	logger        logger.Interface
 	driverRoot    string
 	nvidiaCTKPath string
 	csvFiles      []string
-	mountsFrom    Discover
+	mountsFrom    discover.Discover
 }
 
-// NewCreateSymlinksHook creates a discoverer for a hook that creates required symlinks in the container
-func NewCreateSymlinksHook(logger logger.Interface, csvFiles []string, mounts Discover, nvidiaCTKPath string) (Discover, error) {
+// createCSVSymlinkHooks creates a discoverer for a hook that creates required symlinks in the container
+func createCSVSymlinkHooks(logger logger.Interface, csvFiles []string, mounts discover.Discover, nvidiaCTKPath string) (discover.Discover, error) {
 	d := symlinkHook{
 		logger:        logger,
 		nvidiaCTKPath: nvidiaCTKPath,
@@ -49,25 +50,18 @@ func NewCreateSymlinksHook(logger logger.Interface, csvFiles []string, mounts Di
 }
 
 // Hooks returns a hook to create the symlinks from the required CSV files
-func (d symlinkHook) Hooks() ([]Hook, error) {
+func (d symlinkHook) Hooks() ([]discover.Hook, error) {
 	specificLinks, err := d.getSpecificLinks()
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine specific links: %v", err)
 	}
 
 	csvSymlinks := d.getCSVFileSymlinks()
-	var args []string
-	for _, link := range append(csvSymlinks, specificLinks...) {
-		args = append(args, "--link", link)
-	}
 
-	hook := CreateNvidiaCTKHook(
+	return discover.CreateCreateSymlinkHook(
 		d.nvidiaCTKPath,
-		"create-symlinks",
-		args...,
-	)
-
-	return []Hook{hook}, nil
+		append(csvSymlinks, specificLinks...),
+	).Hooks()
 }
 
 // getSpecificLinks returns the required specic links that need to be created

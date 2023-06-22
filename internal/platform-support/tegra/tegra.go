@@ -41,12 +41,12 @@ func New(opts ...Option) (discover.Discover, error) {
 		opt(o)
 	}
 
-	csvDiscoverer, err := discover.NewFromCSVFiles(o.logger, o.csvFiles, o.driverRoot)
+	csvDiscoverer, err := newDiscovererFromCSVFiles(o.logger, o.csvFiles, o.driverRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
 	}
 
-	createSymlinksHook, err := discover.NewCreateSymlinksHook(o.logger, o.csvFiles, csvDiscoverer, o.nvidiaCTKPath)
+	createSymlinksHook, err := createCSVSymlinkHooks(o.logger, o.csvFiles, csvDiscoverer, o.nvidiaCTKPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create symlink hook discoverer: %v", err)
 	}
