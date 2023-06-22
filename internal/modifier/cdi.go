@@ -48,14 +48,9 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spe
 	}
 	logger.Debugf("Creating CDI modifier for devices: %v", devices)
 
-	specDirs := cdi.DefaultSpecDirs
-	if len(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs) > 0 {
-		specDirs = cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs
-	}
-
 	m := cdiModifier{
 		logger:   logger,
-		specDirs: specDirs,
+		specDirs: cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs,
 		devices:  devices,
 	}
 

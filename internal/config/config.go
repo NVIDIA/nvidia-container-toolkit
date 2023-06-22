@@ -151,6 +151,7 @@ func getDefault() (*Config, error) {
 				CDI: cdiModeConfig{
 					DefaultKind:        "nvidia.com/gpu",
 					AnnotationPrefixes: []string{cdi.AnnotationPrefix},
+					SpecDirs:           cdi.DefaultSpecDirs,
 				},
 			},
 		},

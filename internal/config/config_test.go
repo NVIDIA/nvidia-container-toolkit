@@ -77,6 +77,7 @@ func TestGetConfig(t *testing.T) {
 						CDI: cdiModeConfig{
 							DefaultKind:        "nvidia.com/gpu",
 							AnnotationPrefixes: []string{"cdi.k8s.io/"},
+							SpecDirs:           []string{"/etc/cdi", "/var/run/cdi"},
 						},
 					},
 				},
@@ -102,6 +103,7 @@ func TestGetConfig(t *testing.T) {
 				"nvidia-container-runtime.mode = \"not-auto\"",
 				"nvidia-container-runtime.modes.cdi.default-kind = \"example.vendor.com/device\"",
 				"nvidia-container-runtime.modes.cdi.annotation-prefixes = [\"cdi.k8s.io/\", \"example.vendor.com/\",]",
+				"nvidia-container-runtime.modes.cdi.spec-dirs = [\"/except/etc/cdi\", \"/not/var/run/cdi\",]",
 				"nvidia-container-runtime.modes.csv.mount-spec-path = \"/not/etc/nvidia-container-runtime/host-files-for-container.d\"",
 				"nvidia-container-runtime-hook.path = \"/foo/bar/nvidia-container-runtime-hook\"",
 				"nvidia-ctk.path = \"/foo/bar/nvidia-ctk\"",
@@ -127,6 +129,10 @@ func TestGetConfig(t *testing.T) {
 							AnnotationPrefixes: []string{
 								"cdi.k8s.io/",
 								"example.vendor.com/",
+							},
+							SpecDirs: []string{
+								"/except/etc/cdi",
+								"/not/var/run/cdi",
 							},
 						},
 					},
@@ -156,6 +162,7 @@ func TestGetConfig(t *testing.T) {
 				"[nvidia-container-runtime.modes.cdi]",
 				"default-kind = \"example.vendor.com/device\"",
 				"annotation-prefixes = [\"cdi.k8s.io/\", \"example.vendor.com/\",]",
+				"spec-dirs = [\"/except/etc/cdi\", \"/not/var/run/cdi\",]",
 				"[nvidia-container-runtime.modes.csv]",
 				"mount-spec-path = \"/not/etc/nvidia-container-runtime/host-files-for-container.d\"",
 				"[nvidia-container-runtime-hook]",
@@ -184,6 +191,10 @@ func TestGetConfig(t *testing.T) {
 							AnnotationPrefixes: []string{
 								"cdi.k8s.io/",
 								"example.vendor.com/",
+							},
+							SpecDirs: []string{
+								"/except/etc/cdi",
+								"/not/var/run/cdi",
 							},
 						},
 					},
