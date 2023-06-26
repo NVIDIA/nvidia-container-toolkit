@@ -53,12 +53,14 @@ mkdir -p %{buildroot}/usr/share/containers/oci/hooks.d
 install -m 644 -t %{buildroot}/usr/share/containers/oci/hooks.d oci-nvidia-hook.json
 
 %post
-mkdir -p %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
-cp -af %{_bindir}/nvidia-container-runtime-hook %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
+if [ $1 -gt 1 ]; then  # only on package upgrade
+  mkdir -p %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
+  cp -af %{_bindir}/nvidia-container-runtime-hook %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
+fi
 
 %posttrans
 if [ ! -e %{_bindir}/nvidia-container-runtime-hook ]; then
-  # reparing lost file nvidia-container-runtime-hook
+  # repairing lost file nvidia-container-runtime-hook
   cp -avf %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit/nvidia-container-runtime-hook %{_bindir}
 fi
 rm -rf %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
