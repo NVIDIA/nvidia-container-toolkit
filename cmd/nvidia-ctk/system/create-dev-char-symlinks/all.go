@@ -28,14 +28,14 @@ import (
 
 type allPossible struct {
 	logger       *logrus.Logger
-	driverRoot   string
+	devRoot      string
 	deviceMajors devices.Devices
 	migCaps      nvcaps.MigCaps
 }
 
 // newAllPossible returns a new allPossible device node lister.
 // This lister lists all possible device nodes for NVIDIA GPUs, control devices, and capability devices.
-func newAllPossible(logger *logrus.Logger, driverRoot string) (nodeLister, error) {
+func newAllPossible(logger *logrus.Logger, devRoot string) (nodeLister, error) {
 	deviceMajors, err := devices.GetNVIDIADevices()
 	if err != nil {
 		return nil, fmt.Errorf("failed reading device majors: %v", err)
@@ -61,7 +61,7 @@ func newAllPossible(logger *logrus.Logger, driverRoot string) (nodeLister, error
 
 	l := allPossible{
 		logger:       logger,
-		driverRoot:   driverRoot,
+		devRoot:      devRoot,
 		deviceMajors: deviceMajors,
 		migCaps:      migCaps,
 	}
@@ -72,7 +72,7 @@ func newAllPossible(logger *logrus.Logger, driverRoot string) (nodeLister, error
 // DeviceNodes returns a list of all possible device nodes for NVIDIA GPUs, control devices, and capability devices.
 func (m allPossible) DeviceNodes() ([]deviceNode, error) {
 	gpus, err := nvpci.NewFrom(
-		filepath.Join(m.driverRoot, nvpci.PCIDevicesRoot),
+		filepath.Join(m.devRoot, nvpci.PCIDevicesRoot),
 	).GetGPUs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get GPU information: %v", err)
@@ -80,7 +80,7 @@ func (m allPossible) DeviceNodes() ([]deviceNode, error) {
 
 	count := len(gpus)
 	if count == 0 {
-		m.logger.Infof("No NVIDIA devices found in %s", m.driverRoot)
+		m.logger.Infof("No NVIDIA devices found in %s", m.devRoot)
 		return nil, nil
 	}
 
@@ -179,7 +179,7 @@ func (m allPossible) newDeviceNode(deviceName devices.Name, path string, minor i
 	major, _ := m.deviceMajors.Get(deviceName)
 
 	return deviceNode{
-		path:  filepath.Join(m.driverRoot, path),
+		path:  filepath.Join(m.devRoot, path),
 		major: uint32(major),
 		minor: uint32(minor),
 	}

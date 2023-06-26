@@ -19,7 +19,8 @@ package createdevicenodes
 import (
 	"fmt"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/system"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvmodules"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -96,19 +97,29 @@ func (m command) validateFlags(r *cli.Context, opts *options) error {
 }
 
 func (m command) run(c *cli.Context, opts *options) error {
-	s, err := system.New(
-		system.WithLogger(m.logger),
-		system.WithDryRun(opts.dryRun),
-		system.WithLoadKernelModules(opts.loadKernelModules),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create library: %v", err)
+	if opts.loadKernelModules {
+		modules := nvmodules.New(
+			nvmodules.WithLogger(m.logger),
+			nvmodules.WithDryRun(opts.dryRun),
+			nvmodules.WithRoot(opts.driverRoot),
+		)
+		if err := modules.LoadAll(); err != nil {
+			return fmt.Errorf("failed to load NVIDIA kernel modules: %v", err)
+		}
 	}
 
 	if opts.control {
+		devices, err := nvdevices.New(
+			nvdevices.WithLogger(m.logger),
+			nvdevices.WithDryRun(opts.dryRun),
+			nvdevices.WithDevRoot(opts.driverRoot),
+		)
+		if err != nil {
+			return err
+		}
 		m.logger.Infof("Creating control device nodes at %s", opts.driverRoot)
-		if err := s.CreateNVIDIAControlDeviceNodesAt(opts.driverRoot); err != nil {
-			return fmt.Errorf("failed to create control device nodes: %v", err)
+		if err := devices.CreateNVIDIAControlDevices(); err != nil {
+			return fmt.Errorf("failed to create NVIDIA control device nodes: %v", err)
 		}
 	}
 	return nil

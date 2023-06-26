@@ -14,30 +14,30 @@
 # limitations under the License.
 **/
 
-package system
+package nvmodules
 
 import "github.com/sirupsen/logrus"
 
-// Option is a functional option for the system command
+// Option is a function that sets an option on the Interface struct.
 type Option func(*Interface)
 
-// WithLogger sets the logger for the system command
-func WithLogger(logger *logrus.Logger) Option {
-	return func(i *Interface) {
-		i.logger = logger
-	}
-}
-
-// WithDryRun sets the dry run flag
+// WithDryRun sets the dry run option for the Interface struct.
 func WithDryRun(dryRun bool) Option {
 	return func(i *Interface) {
 		i.dryRun = dryRun
 	}
 }
 
-// WithLoadKernelModules sets the load kernel modules flag
-func WithLoadKernelModules(loadKernelModules bool) Option {
+// WithLogger sets the logger for the Interface struct.
+func WithLogger(logger *logrus.Logger) Option {
 	return func(i *Interface) {
-		i.loadKernelModules = loadKernelModules
+		i.logger = logger
+	}
+}
+
+// WithRoot sets the root directory for the NVIDIA device nodes.
+func WithRoot(root string) Option {
+	return func(i *Interface) {
+		i.root = root
 	}
 }
