@@ -25,7 +25,8 @@ import (
 	"syscall"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/system"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvmodules"
 	"github.com/fsnotify/fsnotify"
 	"github.com/urfave/cli/v2"
 )
@@ -216,6 +217,7 @@ type linkCreator struct {
 	logger            logger.Interface
 	lister            nodeLister
 	driverRoot        string
+	devRoot           string
 	devCharPath       string
 	dryRun            bool
 	createAll         bool
@@ -243,6 +245,9 @@ func NewSymlinkCreator(opts ...Option) (Creator, error) {
 	if c.driverRoot == "" {
 		c.driverRoot = "/"
 	}
+	if c.devRoot == "" {
+		c.devRoot = "/"
+	}
 	if c.devCharPath == "" {
 		c.devCharPath = defaultDevCharPath
 	}
@@ -252,13 +257,13 @@ func NewSymlinkCreator(opts ...Option) (Creator, error) {
 	}
 
 	if c.createAll {
-		lister, err := newAllPossible(c.logger, c.driverRoot)
+		lister, err := newAllPossible(c.logger, c.devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create all possible device lister: %v", err)
 		}
 		c.lister = lister
 	} else {
-		c.lister = existing{c.logger, c.driverRoot}
+		c.lister = existing{c.logger, c.devRoot}
 	}
 	return c, nil
 }
@@ -268,33 +273,45 @@ func (m linkCreator) setup() error {
 		return nil
 	}
 
-	s, err := system.New(
-		system.WithLogger(m.logger),
-		system.WithDryRun(m.dryRun),
-	)
-	if err != nil {
-		return err
-	}
-
 	if m.loadKernelModules {
-		if err := s.LoadNVIDIAKernelModules(); err != nil {
+		modules := nvmodules.New(
+			nvmodules.WithLogger(m.logger),
+			nvmodules.WithDryRun(m.dryRun),
+			nvmodules.WithRoot(m.driverRoot),
+		)
+		if err := modules.LoadAll(); err != nil {
 			return fmt.Errorf("failed to load NVIDIA kernel modules: %v", err)
 		}
 	}
 
 	if m.createDeviceNodes {
-		if err := s.CreateNVIDIAControlDeviceNodesAt(m.driverRoot); err != nil {
+		devices, err := nvdevices.New(
+			nvdevices.WithLogger(m.logger),
+			nvdevices.WithDryRun(m.dryRun),
+			nvdevices.WithDevRoot(m.devRoot),
+		)
+		if err != nil {
+			return err
+		}
+		if err := devices.CreateNVIDIAControlDevices(); err != nil {
 			return fmt.Errorf("failed to create NVIDIA device nodes: %v", err)
 		}
 	}
-
 	return nil
 }
 
 // WithDriverRoot sets the driver root path.
+// This is the path in which kernel modules must be loaded.
 func WithDriverRoot(root string) Option {
 	return func(c *linkCreator) {
 		c.driverRoot = root
+	}
+}
+
+// WithDevRoot sets the root path for the /dev directory.
+func WithDevRoot(root string) Option {
+	return func(c *linkCreator) {
+		c.devRoot = root
 	}
 }
 

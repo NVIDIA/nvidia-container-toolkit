@@ -14,30 +14,40 @@
 # limitations under the License.
 **/
 
-package system
+package nvdevices
 
-import "github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+import (
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+)
 
-// Option is a functional option for the system command
+// Option is a function that sets an option on the Interface struct.
 type Option func(*Interface)
 
-// WithLogger sets the logger for the system command
-func WithLogger(logger logger.Interface) Option {
-	return func(i *Interface) {
-		i.logger = logger
-	}
-}
-
-// WithDryRun sets the dry run flag
+// WithDryRun sets the dry run option for the Interface struct.
 func WithDryRun(dryRun bool) Option {
 	return func(i *Interface) {
 		i.dryRun = dryRun
 	}
 }
 
-// WithLoadKernelModules sets the load kernel modules flag
-func WithLoadKernelModules(loadKernelModules bool) Option {
+// WithLogger sets the logger for the Interface struct.
+func WithLogger(logger logger.Interface) Option {
 	return func(i *Interface) {
-		i.loadKernelModules = loadKernelModules
+		i.logger = logger
+	}
+}
+
+// WithDevRoot sets the root directory for the NVIDIA device nodes.
+func WithDevRoot(devRoot string) Option {
+	return func(i *Interface) {
+		i.devRoot = devRoot
+	}
+}
+
+// WithDevices sets the devices for the Interface struct.
+func WithDevices(devices devices.Devices) Option {
+	return func(i *Interface) {
+		i.Devices = devices
 	}
 }

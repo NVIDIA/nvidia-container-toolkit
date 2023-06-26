@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/system"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
@@ -683,11 +683,13 @@ func generateCDISpec(opts *options, nvidiaCTKPath string) error {
 	}
 
 	log.Infof("Creating control device nodes at %v", opts.DriverRootCtrPath)
-	s, err := system.New()
+	devices, err := nvdevices.New(
+		nvdevices.WithDevRoot(opts.DriverRootCtrPath),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create library: %v", err)
 	}
-	if err := s.CreateNVIDIAControlDeviceNodesAt(opts.DriverRootCtrPath); err != nil {
+	if err := devices.CreateNVIDIAControlDevices(); err != nil {
 		return fmt.Errorf("failed to create control device nodes: %v", err)
 	}
 
