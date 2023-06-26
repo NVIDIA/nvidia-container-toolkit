@@ -2,6 +2,8 @@
 
 ## v1.13.3
 
+* [toolkit-container] Allow same envars for all runtime configs
+
 ## v1.13.2
 
 * Add `nvidia-container-runtime-hook.path` config option to specify NVIDIA Container Runtime Hook path explicitly.
