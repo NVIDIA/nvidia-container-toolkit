@@ -17,7 +17,10 @@
 
 function assert_usage() {
     echo "Incorrect arguments: $*"
-    echo "$(basename ${BASH_SOURCE[0]}) ARTIFACTORY_REPO GIT_REFERENCE"
+    echo "$(basename ${BASH_SOURCE[0]}) ARTIFACTORY_REPO [GIT_REFERENCE]"
+    echo "  ARTIFACTORY_REPO: URL to Artifactory repository"
+    echo "  GIT_REFERENCE: Git reference to use for the package version"
+    echo "               (if not specified, PACKAGE_IMAGE_TAG must be set)"
     exit 1
 }
 
@@ -26,7 +29,7 @@ set -e
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 PROJECT_ROOT="$( cd ${SCRIPTS_DIR}/.. && pwd )"
 
-if [[ $# -le 1 ]]; then
+if [[ $# -lt 1 ]]; then
     assert_usage "$@"
 fi
 
