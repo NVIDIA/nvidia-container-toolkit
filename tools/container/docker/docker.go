@@ -99,21 +99,21 @@ func main() {
 			Usage:       "Path to docker config file",
 			Value:       defaultConfig,
 			Destination: &options.Config,
-			EnvVars:     []string{"DOCKER_CONFIG", "RUNTIME_CONFIG"},
+			EnvVars:     []string{"RUNTIME_CONFIG", "DOCKER_CONFIG"},
 		},
 		&cli.StringFlag{
 			Name:        "socket",
 			Usage:       "Path to the docker socket file",
 			Value:       defaultSocket,
 			Destination: &options.Socket,
-			EnvVars:     []string{"DOCKER_SOCKET", "RUNTIME_SOCKET"},
+			EnvVars:     []string{"RUNTIME_SOCKET", "DOCKER_SOCKET"},
 		},
 		&cli.StringFlag{
 			Name:        "restart-mode",
 			Usage:       "Specify how docker should be restarted; If 'none' is selected it will not be restarted [signal | systemd | none ]",
 			Value:       defaultRestartMode,
 			Destination: &options.RestartMode,
-			EnvVars:     []string{"DOCKER_RESTART_MODE", "RUNTIME_RESTART_MODE"},
+			EnvVars:     []string{"RUNTIME_RESTART_MODE", "DOCKER_RESTART_MODE"},
 		},
 		&cli.StringFlag{
 			Name:        "host-root",
@@ -127,11 +127,11 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:        "runtime-name",
-			Aliases:     []string{"runtime-class", "nvidia-runtime-name"},
+			Aliases:     []string{"nvidia-runtime-name", "runtime-class"},
 			Usage:       "Specify the name of the `nvidia` runtime. If set-as-default is selected, the runtime is used as the default runtime.",
 			Value:       defaultRuntimeName,
 			Destination: &options.RuntimeName,
-			EnvVars:     []string{"DOCKER_RUNTIME_NAME", "NVIDIA_RUNTIME_NAME"},
+			EnvVars:     []string{"NVIDIA_RUNTIME_NAME", "DOCKER_RUNTIME_NAME"},
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-runtime-dir",
@@ -145,7 +145,7 @@ func main() {
 			Usage:       "Set the `nvidia` runtime as the default runtime. If --runtime-name is specified as `nvidia-experimental` the experimental runtime is set as the default runtime instead",
 			Value:       defaultSetAsDefault,
 			Destination: &options.SetAsDefault,
-			EnvVars:     []string{"DOCKER_SET_AS_DEFAULT", "NVIDIA_RUNTIME_SET_AS_DEFAULT"},
+			EnvVars:     []string{"NVIDIA_RUNTIME_SET_AS_DEFAULT", "DOCKER_SET_AS_DEFAULT"},
 			Hidden:      true,
 		},
 	}
