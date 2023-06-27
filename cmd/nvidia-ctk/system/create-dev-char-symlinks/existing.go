@@ -30,8 +30,8 @@ type nodeLister interface {
 }
 
 type existing struct {
-	logger     *logrus.Logger
-	driverRoot string
+	logger  *logrus.Logger
+	devRoot string
 }
 
 // DeviceNodes returns a list of NVIDIA device nodes in the specified root.
@@ -39,7 +39,7 @@ type existing struct {
 func (m existing) DeviceNodes() ([]deviceNode, error) {
 	locator := lookup.NewCharDeviceLocator(
 		lookup.WithLogger(m.logger),
-		lookup.WithRoot(m.driverRoot),
+		lookup.WithRoot(m.devRoot),
 		lookup.WithOptional(true),
 	)
 
@@ -54,7 +54,7 @@ func (m existing) DeviceNodes() ([]deviceNode, error) {
 	}
 
 	if len(devices) == 0 && len(capDevices) == 0 {
-		m.logger.Infof("No NVIDIA devices found in %s", m.driverRoot)
+		m.logger.Infof("No NVIDIA devices found in %s", m.devRoot)
 		return nil, nil
 	}
 

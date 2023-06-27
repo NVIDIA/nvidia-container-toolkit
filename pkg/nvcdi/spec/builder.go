@@ -18,6 +18,7 @@ package spec
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
@@ -33,6 +34,7 @@ type builder struct {
 	edits       specs.ContainerEdits
 	format      string
 	noSimplify  bool
+	permissions os.FileMode
 }
 
 // newBuilder creates a new spec builder with the supplied options
@@ -60,7 +62,9 @@ func newBuilder(opts ...Option) *builder {
 	if s.format == "" {
 		s.format = FormatYAML
 	}
-
+	if s.permissions == 0 {
+		s.permissions = 0600
+	}
 	return s
 }
 
@@ -92,8 +96,9 @@ func (o *builder) Build() (*spec, error) {
 	}
 
 	s := spec{
-		Spec:   raw,
-		format: o.format,
+		Spec:        raw,
+		format:      o.format,
+		permissions: o.permissions,
 	}
 
 	return &s, nil
@@ -155,5 +160,12 @@ func WithNoSimplify(noSimplify bool) Option {
 func WithRawSpec(raw *specs.Spec) Option {
 	return func(o *builder) {
 		o.raw = raw
+	}
+}
+
+// WithPermissions sets the permissions for the generated spec file
+func WithPermissions(permissions os.FileMode) Option {
+	return func(o *builder) {
+		o.permissions = permissions
 	}
 }
