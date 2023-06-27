@@ -1,5 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.13.3
+
 ## v1.13.2
 
 * Add `nvidia-container-runtime-hook.path` config option to specify NVIDIA Container Runtime Hook path explicitly.
