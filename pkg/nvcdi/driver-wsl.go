@@ -67,7 +67,6 @@ func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, nvi
 	if len(searchPaths) > 1 {
 		logger.Warningf("Found multiple driver store paths: %v", searchPaths)
 	}
-	driverStorePath := searchPaths[0]
 	searchPaths = append(searchPaths, "/usr/lib/wsl/lib")
 
 	libraries := discover.NewMounts(
@@ -83,12 +82,11 @@ func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, nvi
 		requiredDriverStoreFiles,
 	)
 
-	// On WSL2 the driver store location is used unchanged.
-	// For this reason we need to create a symlink from /usr/bin/nvidia-smi to the nvidia-smi binary in the driver store.
-	target := filepath.Join(driverStorePath, "nvidia-smi")
-	link := "/usr/bin/nvidia-smi"
-	links := []string{fmt.Sprintf("%s::%s", target, link)}
-	symlinkHook := discover.CreateCreateSymlinkHook(nvidiaCTKPath, links)
+	symlinkHook := nvidiaSMISimlinkHook{
+		logger:        logger,
+		mountsFrom:    libraries,
+		nvidiaCTKPath: nvidiaCTKPath,
+	}
 
 	ldcacheHook, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCTKPath)
 
@@ -99,4 +97,40 @@ func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, nvi
 	)
 
 	return d, nil
+}
+
+type nvidiaSMISimlinkHook struct {
+	discover.None
+	logger        logger.Interface
+	mountsFrom    discover.Discover
+	nvidiaCTKPath string
+}
+
+// Hooks returns a hook that creates a symlink to nvidia-smi in the driver store.
+// On WSL2 the driver store location is used unchanged, for this reason we need
+// to create a symlink from /usr/bin/nvidia-smi to the nvidia-smi binary in the
+// driver store.
+func (m nvidiaSMISimlinkHook) Hooks() ([]discover.Hook, error) {
+	mounts, err := m.mountsFrom.Mounts()
+	if err != nil {
+		return nil, fmt.Errorf("failed to discover mounts: %w", err)
+	}
+
+	var target string
+	for _, mount := range mounts {
+		if filepath.Base(mount.Path) == "nvidia-smi" {
+			target = mount.Path
+			break
+		}
+	}
+
+	if target == "" {
+		m.logger.Warningf("Failed to find nvidia-smi in mounts: %v", mounts)
+		return nil, nil
+	}
+	link := "/usr/bin/nvidia-smi"
+	links := []string{fmt.Sprintf("%s::%s", target, link)}
+	symlinkHook := discover.CreateCreateSymlinkHook(m.nvidiaCTKPath, links)
+
+	return symlinkHook.Hooks()
 }
