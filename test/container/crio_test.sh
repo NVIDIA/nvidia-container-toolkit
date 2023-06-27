@@ -27,7 +27,7 @@ testing::crio::hook_created() {
 }
 
 testing::crio::hook_cleanup() {
-	testing::docker_run::toolkit::shell 'crio cleanup'
+	testing::docker_run::toolkit::shell 'crio cleanup --nvidia-runtime-dir /run/nvidia/toolkit/'
 
 	test -z "$(ls -A "${shared_dir}${CRIO_HOOKS_DIR}")"
 }

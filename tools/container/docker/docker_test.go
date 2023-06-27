@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/docker"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 	"github.com/stretchr/testify/require"
 )
 
@@ -56,14 +57,16 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 
 	for i, tc := range testCases {
 		o := &options{
-			setAsDefault: tc.setAsDefault,
-			runtimeName:  tc.runtimeName,
-			runtimeDir:   runtimeDir,
+			Options: container.Options{
+				RuntimeName:  tc.runtimeName,
+				RuntimeDir:   runtimeDir,
+				SetAsDefault: tc.setAsDefault,
+			},
 		}
 
 		config := docker.Config(map[string]interface{}{})
 
-		err := UpdateConfig(&config, o)
+		err := o.UpdateConfig(&config)
 		require.NoError(t, err, "%d: %v", i, tc)
 
 		defaultRuntimeName := config["default-runtime"]
@@ -314,13 +317,15 @@ func TestUpdateConfig(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		options := &options{
-			setAsDefault: tc.setAsDefault,
-			runtimeName:  tc.runtimeName,
-			runtimeDir:   runtimeDir,
+		o := &options{
+			Options: container.Options{
+				RuntimeName:  tc.runtimeName,
+				RuntimeDir:   runtimeDir,
+				SetAsDefault: tc.setAsDefault,
+			},
 		}
 
-		err := UpdateConfig(&tc.config, options)
+		err := o.UpdateConfig(&tc.config)
 		require.NoError(t, err, "%d: %v", i, tc)
 
 		configContent, err := json.MarshalIndent(tc.config, "", "    ")
@@ -457,7 +462,8 @@ func TestRevertConfig(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		err := RevertConfig(&tc.config, &options{})
+		o := &options{}
+		err := o.RevertConfig(&tc.config)
 
 		require.NoError(t, err, "%d: %v", i, tc)
 

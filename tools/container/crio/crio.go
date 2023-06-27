@@ -20,21 +20,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/engine/crio"
-	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )
 
 const (
-	restartModeSystemd = "systemd"
-	restartModeNone    = "none"
-
 	defaultConfigMode = "hook"
 
 	// Hook-based settings
@@ -43,25 +39,22 @@ const (
 
 	// Config-based settings
 	defaultConfig        = "/etc/crio/crio.conf"
+	defaultSocket        = "/var/run/crio/crio.sock"
 	defaultRuntimeClass  = "nvidia"
 	defaultSetAsDefault  = true
-	defaultRestartMode   = restartModeSystemd
+	defaultRestartMode   = "systemd"
 	defaultHostRootMount = "/host"
 )
 
 // options stores the configuration from the command linek or environment variables
 type options struct {
+	container.Options
+
 	configMode string
 
+	// hook-specific options
 	hooksDir     string
 	hookFilename string
-	runtimeDir   string
-
-	config        string
-	runtimeClass  string
-	setAsDefault  bool
-	restartMode   string
-	hostRootMount string
 }
 
 func main() {
@@ -71,8 +64,7 @@ func main() {
 	c := cli.NewApp()
 	c.Name = "crio"
 	c.Usage = "Update cri-o hooks to include the NVIDIA runtime hook"
-	c.ArgsUsage = "<toolkit_dirname>"
-	c.Version = "0.1.0"
+	c.Version = info.GetVersionString()
 
 	// Create the 'setup' subcommand
 	setup := cli.Command{}
@@ -83,7 +75,7 @@ func main() {
 		return Setup(c, &options)
 	}
 	setup.Before = func(c *cli.Context) error {
-		return ParseArgs(c, &options)
+		return container.ParseArgs(c, &options.Options)
 	}
 
 	// Create the 'cleanup' subcommand
@@ -93,6 +85,10 @@ func main() {
 	cleanup.Action = func(c *cli.Context) error {
 		return Cleanup(c, &options)
 	}
+	cleanup.Before = func(c *cli.Context) error {
+		return container.ParseArgs(c, &options.Options)
+	}
+
 	// Register the subcommands with the top-level CLI
 	c.Commands = []*cli.Command{
 		&setup,
@@ -105,8 +101,60 @@ func main() {
 	// and 'cleanup' to simplify things.
 	commonFlags := []cli.Flag{
 		&cli.StringFlag{
+			Name:        "config",
+			Usage:       "Path to the cri-o config file",
+			Value:       defaultConfig,
+			Destination: &options.Config,
+			EnvVars:     []string{"RUNTIME_CONFIG", "CRIO_CONFIG"},
+		},
+		&cli.StringFlag{
+			Name:        "socket",
+			Usage:       "Path to the crio socket file",
+			Value:       "",
+			Destination: &options.Socket,
+			EnvVars:     []string{"RUNTIME_SOCKET", "CRIO_SOCKET"},
+			// Note: We hide this option since restarting cri-o via a socket is not supported.
+			Hidden: true,
+		},
+		&cli.StringFlag{
+			Name:        "restart-mode",
+			Usage:       "Specify how cri-o should be restarted;  If 'none' is selected, it will not be restarted [systemd | none]",
+			Value:       defaultRestartMode,
+			Destination: &options.RestartMode,
+			EnvVars:     []string{"RUNTIME_RESTART_MODE", "CRIO_RESTART_MODE"},
+		},
+		&cli.StringFlag{
+			Name:        "runtime-name",
+			Aliases:     []string{"nvidia-runtime-name", "runtime-class"},
+			Usage:       "The name of the runtime class to set for the nvidia-container-runtime",
+			Value:       defaultRuntimeClass,
+			Destination: &options.RuntimeName,
+			EnvVars:     []string{"NVIDIA_RUNTIME_NAME", "CRIO_RUNTIME_CLASS"},
+		},
+		&cli.StringFlag{
+			Name:        "nvidia-runtime-dir",
+			Aliases:     []string{"runtime-dir"},
+			Usage:       "The path where the nvidia-container-runtime binaries are located. If this is not specified, the first argument will be used instead",
+			Destination: &options.RuntimeDir,
+			EnvVars:     []string{"NVIDIA_RUNTIME_DIR"},
+		},
+		&cli.BoolFlag{
+			Name:        "set-as-default",
+			Usage:       "Set nvidia-container-runtime as the default runtime",
+			Value:       defaultSetAsDefault,
+			Destination: &options.SetAsDefault,
+			EnvVars:     []string{"NVIDIA_RUNTIME_SET_AS_DEFAULT", "CRIO_SET_AS_DEFAULT"},
+			Hidden:      true,
+		},
+		&cli.StringFlag{
+			Name:        "host-root",
+			Usage:       "Specify the path to the host root to be used when restarting crio using systemd",
+			Value:       defaultHostRootMount,
+			Destination: &options.HostRootMount,
+			EnvVars:     []string{"HOST_ROOT_MOUNT"},
+		},
+		&cli.StringFlag{
 			Name:        "hooks-dir",
-			Aliases:     []string{"d"},
 			Usage:       "path to the cri-o hooks directory",
 			Value:       defaultHooksDir,
 			Destination: &options.hooksDir,
@@ -115,7 +163,6 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:        "hook-filename",
-			Aliases:     []string{"f"},
 			Usage:       "filename of the cri-o hook that will be created / removed in the hooks directory",
 			Value:       defaultHookFilename,
 			Destination: &options.hookFilename,
@@ -128,43 +175,6 @@ func main() {
 			Value:       defaultConfigMode,
 			Destination: &options.configMode,
 			EnvVars:     []string{"CRIO_CONFIG_MODE"},
-		},
-		&cli.StringFlag{
-			Name:        "config",
-			Usage:       "Path to the cri-o config file",
-			Value:       defaultConfig,
-			Destination: &options.config,
-			EnvVars:     []string{"CRIO_CONFIG"},
-		},
-		&cli.StringFlag{
-			Name:        "runtime-class",
-			Usage:       "The name of the runtime class to set for the nvidia-container-runtime",
-			Value:       defaultRuntimeClass,
-			Destination: &options.runtimeClass,
-			EnvVars:     []string{"CRIO_RUNTIME_CLASS"},
-		},
-		// The flags below are only used by the 'setup' command.
-		&cli.BoolFlag{
-			Name:        "set-as-default",
-			Usage:       "Set nvidia-container-runtime as the default runtime",
-			Value:       defaultSetAsDefault,
-			Destination: &options.setAsDefault,
-			EnvVars:     []string{"CRIO_SET_AS_DEFAULT"},
-			Hidden:      true,
-		},
-		&cli.StringFlag{
-			Name:        "restart-mode",
-			Usage:       "Specify how cri-o should be restarted;  If 'none' is selected, it will not be restarted [systemd | none]",
-			Value:       defaultRestartMode,
-			Destination: &options.restartMode,
-			EnvVars:     []string{"CRIO_RESTART_MODE"},
-		},
-		&cli.StringFlag{
-			Name:        "host-root",
-			Usage:       "Specify the path to the host root to be used when restarting crio using systemd",
-			Value:       defaultHostRootMount,
-			Destination: &options.hostRootMount,
-			EnvVars:     []string{"HOST_ROOT_MOUNT"},
 		},
 	}
 
@@ -202,7 +212,7 @@ func setupHook(o *options) error {
 	}
 
 	hookPath := getHookPath(o.hooksDir, o.hookFilename)
-	err = createHook(o.runtimeDir, hookPath)
+	err = createHook(o.RuntimeDir, hookPath)
 	if err != nil {
 		return fmt.Errorf("error creating hook: %v", err)
 	}
@@ -215,24 +225,15 @@ func setupConfig(o *options) error {
 	log.Infof("Updating config file")
 
 	cfg, err := crio.New(
-		crio.WithPath(o.config),
+		crio.WithPath(o.Config),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	err = UpdateConfig(cfg, o)
+	err = o.Configure(cfg)
 	if err != nil {
-		return fmt.Errorf("unable to update config: %v", err)
-	}
-
-	log.Infof("Flushing cri-o config to %v", o.config)
-	n, err := cfg.Save(o.config)
-	if err != nil {
-		return fmt.Errorf("unable to flush config: %v", err)
-	}
-	if n == 0 {
-		log.Infof("Config file is empty, removed")
+		return fmt.Errorf("unable to configure cri-o: %v", err)
 	}
 
 	err = RestartCrio(o)
@@ -275,44 +276,21 @@ func cleanupConfig(o *options) error {
 	log.Infof("Reverting config file modifications")
 
 	cfg, err := crio.New(
-		crio.WithPath(o.config),
+		crio.WithPath(o.Config),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	err = RevertConfig(cfg, o)
+	err = o.Unconfigure(cfg)
 	if err != nil {
-		return fmt.Errorf("unable to update config: %v", err)
-	}
-
-	log.Infof("Flushing cri-o config to %v", o.config)
-	n, err := cfg.Save(o.config)
-	if err != nil {
-		return fmt.Errorf("unable to flush config: %v", err)
-	}
-	if n == 0 {
-		log.Infof("Config file is empty, removed")
+		return fmt.Errorf("unable to unconfigure cri-o: %v", err)
 	}
 
 	err = RestartCrio(o)
 	if err != nil {
 		return fmt.Errorf("unable to restart crio: %v", err)
 	}
-
-	return nil
-}
-
-// ParseArgs parses the command line arguments to the CLI
-func ParseArgs(c *cli.Context, o *options) error {
-	args := c.Args()
-
-	log.Infof("Parsing arguments: %v", args.Slice())
-	if c.NArg() != 1 {
-		return fmt.Errorf("incorrect number of arguments")
-	}
-	o.runtimeDir = args.Get(0)
-	log.Infof("Successfully parsed arguments")
 
 	return nil
 }
@@ -357,66 +335,7 @@ func generateOciHook(toolkitDir string) podmanHook {
 	return hook
 }
 
-// UpdateConfig updates the cri-o config to include the NVIDIA Container Runtime
-func UpdateConfig(cfg engine.Interface, o *options) error {
-	runtimes := operator.GetRuntimes(
-		operator.WithNvidiaRuntimeName(o.runtimeClass),
-		operator.WithSetAsDefault(o.setAsDefault),
-		operator.WithRoot(o.runtimeDir),
-	)
-	for class, runtime := range runtimes {
-		err := cfg.AddRuntime(class, runtime.Path, runtime.SetAsDefault)
-		if err != nil {
-			return fmt.Errorf("unable to update config for runtime class '%v': %v", class, err)
-		}
-	}
-
-	return nil
-}
-
-// RevertConfig reverts the cri-o config to remove the NVIDIA Container Runtime
-func RevertConfig(cfg engine.Interface, o *options) error {
-	runtimes := operator.GetRuntimes(
-		operator.WithNvidiaRuntimeName(o.runtimeClass),
-		operator.WithSetAsDefault(o.setAsDefault),
-		operator.WithRoot(o.runtimeDir),
-	)
-	for class := range runtimes {
-		err := cfg.RemoveRuntime(class)
-		if err != nil {
-			return fmt.Errorf("unable to revert config for runtime class '%v': %v", class, err)
-		}
-	}
-	return nil
-}
-
 // RestartCrio restarts crio depending on the value of restartModeFlag
 func RestartCrio(o *options) error {
-	switch o.restartMode {
-	case restartModeNone:
-		log.Warnf("Skipping restart of crio due to --restart-mode=%v", o.restartMode)
-		return nil
-	case restartModeSystemd:
-		return RestartCrioSystemd(o.hostRootMount)
-	default:
-		return fmt.Errorf("invalid restart mode specified: %v", o.restartMode)
-	}
-}
-
-// RestartCrioSystemd restarts cri-o using systemctl
-func RestartCrioSystemd(hostRootMount string) error {
-	log.Infof("Restarting cri-o using systemd and host root mounted at %v", hostRootMount)
-
-	command := "chroot"
-	args := []string{hostRootMount, "systemctl", "restart", "crio"}
-
-	cmd := exec.Command(command, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error restarting crio using systemd: %v", err)
-	}
-
-	return nil
+	return o.Restart("crio", func(string) error { return fmt.Errorf("supporting crio via signal is unsupported") })
 }
