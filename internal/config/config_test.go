@@ -192,7 +192,7 @@ func TestGetConfig(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			reader := strings.NewReader(strings.Join(tc.contents, "\n"))
 
-			cfg, err := loadConfigFrom(reader)
+			cfg, err := LoadFrom(reader)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 			} else {

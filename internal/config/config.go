@@ -74,13 +74,22 @@ func GetConfig() (*Config, error) {
 
 	configFilePath := path.Join(configDir, configFilePath)
 
+	return Load(configFilePath)
+}
+
+// Load loads the config from the specified file path.
+func Load(configFilePath string) (*Config, error) {
+	if configFilePath == "" {
+		return getDefault()
+	}
+
 	tomlFile, err := os.Open(configFilePath)
 	if err != nil {
-		return getDefaultConfig()
+		return getDefault()
 	}
 	defer tomlFile.Close()
 
-	cfg, err := loadConfigFrom(tomlFile)
+	cfg, err := LoadFrom(tomlFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config values: %v", err)
 	}
@@ -88,21 +97,28 @@ func GetConfig() (*Config, error) {
 	return cfg, nil
 }
 
-// loadRuntimeConfigFrom reads the config from the specified Reader
-func loadConfigFrom(reader io.Reader) (*Config, error) {
-	toml, err := toml.LoadReader(reader)
+// LoadFrom reads the config from the specified Reader
+func LoadFrom(reader io.Reader) (*Config, error) {
+	var tree *toml.Tree
+	if reader != nil {
+		toml, err := toml.LoadReader(reader)
+		if err != nil {
+			return nil, err
+		}
+		tree = toml
+	}
+
+	return getFromTree(tree)
+}
+
+// getFromTree reads the nvidia container runtime config from the specified toml Tree.
+func getFromTree(toml *toml.Tree) (*Config, error) {
+	cfg, err := getDefault()
 	if err != nil {
 		return nil, err
 	}
-
-	return getConfigFrom(toml)
-}
-
-// getConfigFrom reads the nvidia container runtime config from the specified toml Tree.
-func getConfigFrom(toml *toml.Tree) (*Config, error) {
-	cfg, err := getDefaultConfig()
-	if err != nil {
-		return nil, err
+	if toml == nil {
+		return cfg, nil
 	}
 
 	if err := toml.Unmarshal(cfg); err != nil {
@@ -112,9 +128,9 @@ func getConfigFrom(toml *toml.Tree) (*Config, error) {
 	return cfg, nil
 }
 
-// getDefaultConfig defines the default values for the config
-func getDefaultConfig() (*Config, error) {
-	tomlConfig, err := GetDefaultConfigToml()
+// getDefault defines the default values for the config
+func getDefault() (*Config, error) {
+	tomlConfig, err := GetDefaultToml()
 	if err != nil {
 		return nil, err
 	}
@@ -149,8 +165,8 @@ func getDefaultConfig() (*Config, error) {
 	return &d, nil
 }
 
-// GetDefaultConfigToml returns the default config as a toml Tree.
-func GetDefaultConfigToml() (*toml.Tree, error) {
+// GetDefaultToml returns the default config as a toml Tree.
+func GetDefaultToml() (*toml.Tree, error) {
 	tree, err := toml.TreeFromMap(nil)
 	if err != nil {
 		return nil, err

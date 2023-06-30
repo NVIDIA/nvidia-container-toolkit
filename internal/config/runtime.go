@@ -48,7 +48,7 @@ type csvModeConfig struct {
 
 // GetDefaultRuntimeConfig defines the default values for the config
 func GetDefaultRuntimeConfig() (*RuntimeConfig, error) {
-	cfg, err := getDefaultConfig()
+	cfg, err := getDefault()
 	if err != nil {
 		return nil, err
 	}

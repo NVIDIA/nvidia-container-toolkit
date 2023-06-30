@@ -17,12 +17,16 @@
 package defaultsubcommand
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"regexp"
 
-	nvctkConfig "github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/pelletier/go-toml"
 	"github.com/urfave/cli/v2"
 )
 
@@ -32,7 +36,9 @@ type command struct {
 
 // options stores the subcommand options
 type options struct {
-	output string
+	config  string
+	output  string
+	inPlace bool
 }
 
 // NewCommand constructs a default command with the specified logger
@@ -62,8 +68,19 @@ func (m command) build() *cli.Command {
 
 	c.Flags = []cli.Flag{
 		&cli.StringFlag{
+			Name:        "config",
+			Usage:       "Specify the config file to process; The contents of this file overrides the default config",
+			Destination: &opts.config,
+		},
+		&cli.BoolFlag{
+			Name:        "in-place",
+			Aliases:     []string{"i"},
+			Usage:       "Modify the config file in-place",
+			Destination: &opts.inPlace,
+		},
+		&cli.StringFlag{
 			Name:        "output",
-			Usage:       "Specify the file to output the generated configuration for to. If this is '' the configuration is ouput to STDOUT.",
+			Usage:       "Specify the output file to write to; If not specified, the output is written to stdout",
 			Destination: &opts.output,
 		},
 	}
@@ -72,31 +89,98 @@ func (m command) build() *cli.Command {
 }
 
 func (m command) validateFlags(c *cli.Context, opts *options) error {
+	if opts.inPlace {
+		if opts.output != "" {
+			return fmt.Errorf("cannot specify both --in-place and --output")
+		}
+		opts.output = opts.config
+	}
 	return nil
 }
 
 func (m command) run(c *cli.Context, opts *options) error {
-	defaultConfig, err := nvctkConfig.GetDefaultConfigToml()
-	if err != nil {
-		return fmt.Errorf("unable to get default config: %v", err)
+	if err := opts.ensureOutputFolder(); err != nil {
+		return fmt.Errorf("unable to create output directory: %v", err)
 	}
 
+	contents, err := opts.getFormattedConfig()
+	if err != nil {
+		return fmt.Errorf("unable to fix comments: %v", err)
+	}
+
+	if _, err := opts.Write(contents); err != nil {
+		return fmt.Errorf("unable to write to output: %v", err)
+	}
+
+	return nil
+}
+
+// getFormattedConfig returns the default config formatted as required from the specified config file.
+// The config is then formatted as required.
+// No indentation is used and comments are modified so that there is no space
+// after the '#' character.
+func (opts options) getFormattedConfig() ([]byte, error) {
+	cfg, err := config.Load(opts.config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load or create config: %v", err)
+	}
+
+	buffer := bytes.NewBuffer(nil)
+	enc := toml.NewEncoder(buffer).Indentation("")
+
+	if err := enc.Encode(cfg); err != nil {
+		return nil, fmt.Errorf("invalid config: %v", err)
+	}
+
+	return fixComments(buffer.Bytes())
+}
+
+func fixComments(contents []byte) ([]byte, error) {
+	r, err := regexp.Compile(`(\n*)\s*?#\s*(\S.*)`)
+	if err != nil {
+		return nil, fmt.Errorf("unable to compile regexp: %v", err)
+	}
+	replaced := r.ReplaceAll(contents, []byte("$1#$2"))
+
+	return replaced, nil
+}
+
+func (opts options) outputExists() (bool, error) {
+	if opts.output == "" {
+		return false, nil
+	}
+	_, err := os.Stat(opts.output)
+	if err == nil {
+		return true, nil
+	} else if !os.IsNotExist(err) {
+		return false, fmt.Errorf("unable to stat output file: %v", err)
+	}
+	return false, nil
+}
+
+func (opts options) ensureOutputFolder() error {
+	if opts.output == "" {
+		return nil
+	}
+	if dir := filepath.Dir(opts.output); dir != "" {
+		return os.MkdirAll(dir, 0755)
+	}
+	return nil
+}
+
+// Write writes the contents to the output file specified in the options.
+func (opts options) Write(contents []byte) (int, error) {
 	var output io.Writer
 	if opts.output == "" {
 		output = os.Stdout
 	} else {
 		outputFile, err := os.Create(opts.output)
 		if err != nil {
-			return fmt.Errorf("unable to create output file: %v", err)
+			return 0, fmt.Errorf("unable to create output file: %v", err)
 		}
 		defer outputFile.Close()
 		output = outputFile
 	}
 
-	_, err = defaultConfig.WriteTo(output)
-	if err != nil {
-		return fmt.Errorf("unable to write to output: %v", err)
-	}
-
-	return nil
+	return output.Write(contents)
 }
