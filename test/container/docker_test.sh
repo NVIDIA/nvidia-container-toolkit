@@ -25,7 +25,7 @@ testing::docker::dind::setup() {
 		-v "${shared_dir}/run/nvidia:/run/nvidia" \
 		-v "${shared_dir}/usr/local/nvidia:/usr/local/nvidia" \
 		--name "${docker_dind_ctr}" \
-		docker:stable-dind -H unix://${docker_dind_socket}
+		docker:dind -H unix://${docker_dind_socket}
 }
 
 testing::docker::dind::exec() {

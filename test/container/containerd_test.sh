@@ -27,7 +27,7 @@ testing::containerd::dind::setup() {
 		-v "${shared_dir}/usr/local/nvidia:/usr/local/nvidia" \
 		-v "${shared_dir}/run/docker/containerd:/run/docker/containerd" \
 		--name "${containerd_dind_ctr}" \
-		docker:stable-dind -H unix://${containerd_dind_socket}
+		docker:dind -H unix://${containerd_dind_socket}
 }
 
 testing::containerd::dind::exec() {
