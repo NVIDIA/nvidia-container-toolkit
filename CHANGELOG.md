@@ -14,7 +14,7 @@
 * Add option to load kernel modules when creating device nodes
 * Add option to create device nodes when creating `/dev/char` symlinks
 * Create ouput folders if required when running `nvidia-ctk runtime configure`
-
+* Generate default config as post-install step.
 
 * [libnvidia-container] Support OpenSSL 3 with the Encrypt/Decrypt library
 
