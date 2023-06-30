@@ -36,6 +36,8 @@ import (
 type options struct {
 	// Debug indicates whether the CLI is started in "debug" mode
 	Debug bool
+	// Quiet indicates whether the CLI is started in "quiet" mode
+	Quiet bool
 }
 
 func main() {
@@ -61,6 +63,12 @@ func main() {
 			Destination: &opts.Debug,
 			EnvVars:     []string{"NVIDIA_CTK_DEBUG"},
 		},
+		&cli.BoolFlag{
+			Name:        "quiet",
+			Usage:       "Suppress all output except for errors; overrides --debug",
+			Destination: &opts.Quiet,
+			EnvVars:     []string{"NVIDIA_CTK_QUIET"},
+		},
 	}
 
 	// Set log-level for all subcommands
@@ -68,6 +76,9 @@ func main() {
 		logLevel := logrus.InfoLevel
 		if opts.Debug {
 			logLevel = logrus.DebugLevel
+		}
+		if opts.Quiet {
+			logLevel = logrus.ErrorLevel
 		}
 		logger.SetLevel(logLevel)
 		return nil
