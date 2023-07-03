@@ -58,10 +58,8 @@ func (b *builder) build() (*Config, error) {
 }
 
 // loadConfig loads the docker config from disk
-func (b *builder) loadConfig(configFilePath string) (*Config, error) {
-	b.logger.Infof("Loading docker config from %v", configFilePath)
-
-	info, err := os.Stat(configFilePath)
+func (b *builder) loadConfig(config string) (*Config, error) {
+	info, err := os.Stat(config)
 	if os.IsExist(err) && info.IsDir() {
 		return nil, fmt.Errorf("config file is a directory")
 	}
@@ -69,11 +67,12 @@ func (b *builder) loadConfig(configFilePath string) (*Config, error) {
 	cfg := make(Config)
 
 	if os.IsNotExist(err) {
-		b.logger.Infof("Config file does not exist, creating new one")
+		b.logger.Infof("Config file does not exist; using empty config")
 		return &cfg, nil
 	}
 
-	readBytes, err := ioutil.ReadFile(configFilePath)
+	b.logger.Infof("Loading config from %v", config)
+	readBytes, err := ioutil.ReadFile(config)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read config: %v", err)
 	}
@@ -82,7 +81,5 @@ func (b *builder) loadConfig(configFilePath string) (*Config, error) {
 	if err := json.NewDecoder(reader).Decode(&cfg); err != nil {
 		return nil, err
 	}
-
-	b.logger.Infof("Successfully loaded config")
 	return &cfg, nil
 }

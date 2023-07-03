@@ -67,13 +67,14 @@ func (b *builder) loadConfig(config string) (*Config, error) {
 		return nil, fmt.Errorf("config file is a directory")
 	}
 
-	configFile := config
 	if os.IsNotExist(err) {
-		configFile = "/dev/null"
-		b.logger.Infof("Config file does not exist, creating new one")
+		b.logger.Infof("Config file does not exist; using empty config")
+		config = "/dev/null"
+	} else {
+		b.logger.Infof("Loading config from %v", config)
 	}
 
-	cfg, err := toml.LoadFile(configFile)
+	cfg, err := toml.LoadFile(config)
 	if err != nil {
 		return nil, err
 	}

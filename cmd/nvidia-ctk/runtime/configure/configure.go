@@ -190,12 +190,14 @@ func (m command) configureWrapper(c *cli.Context, config *config) error {
 		return fmt.Errorf("unable to flush config: %v", err)
 	}
 
-	if n == 0 {
-		m.logger.Infof("Removed empty config from %v", outputPath)
-	} else {
-		m.logger.Infof("Wrote updated config to %v", outputPath)
+	if outputPath != "" {
+		if n == 0 {
+			m.logger.Infof("Removed empty config from %v", outputPath)
+		} else {
+			m.logger.Infof("Wrote updated config to %v", outputPath)
+		}
+		m.logger.Infof("It is recommended that %v daemon be restarted.", config.runtime)
 	}
-	m.logger.Infof("It is recommended that %v daemon be restarted.", config.runtime)
 
 	return nil
 }
