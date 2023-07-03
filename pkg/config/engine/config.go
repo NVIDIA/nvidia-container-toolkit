@@ -19,6 +19,7 @@ package engine
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // Config represents a runtime config
@@ -41,6 +42,13 @@ func (c Config) Write(output []byte) (int, error) {
 			return 0, fmt.Errorf("unable to remove empty file: %v", err)
 		}
 		return 0, nil
+	}
+
+	if dir := filepath.Dir(path); dir != "" {
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			return 0, fmt.Errorf("unable to create directory %v: %v", dir, err)
+		}
 	}
 
 	f, err := os.Create(path)
