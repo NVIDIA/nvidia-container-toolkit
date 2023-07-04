@@ -26,7 +26,6 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/pelletier/go-toml"
 	"github.com/urfave/cli/v2"
 )
 
@@ -126,12 +125,10 @@ func (opts options) getFormattedConfig() ([]byte, error) {
 	}
 
 	buffer := bytes.NewBuffer(nil)
-	enc := toml.NewEncoder(buffer).Indentation("")
 
-	if err := enc.Encode(cfg); err != nil {
-		return nil, fmt.Errorf("invalid config: %v", err)
+	if _, err := cfg.Save(buffer); err != nil {
+		return nil, fmt.Errorf("unable to save config: %v", err)
 	}
-
 	return fixComments(buffer.Bytes())
 }
 

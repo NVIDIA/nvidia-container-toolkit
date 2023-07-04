@@ -49,17 +49,21 @@ func TestGetConfigWithCustomConfig(t *testing.T) {
 
 func TestGetConfig(t *testing.T) {
 	testCases := []struct {
-		description    string
-		contents       []string
-		expectedError  error
-		expectedConfig *Config
+		description     string
+		contents        []string
+		expectedError   error
+		inspectLdconfig bool
+		expectedConfig  *Config
 	}{
 		{
-			description: "empty config is default",
+			description:     "empty config is default",
+			inspectLdconfig: true,
 			expectedConfig: &Config{
 				AcceptEnvvarUnprivileged: true,
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
-					Root: "",
+					Root:      "",
+					LoadKmods: true,
+					Ldconfig:  "WAS_CHECKED",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/dev/null",
@@ -89,6 +93,8 @@ func TestGetConfig(t *testing.T) {
 			contents: []string{
 				"accept-nvidia-visible-devices-envvar-when-unprivileged = false",
 				"nvidia-container-cli.root = \"/bar/baz\"",
+				"nvidia-container-cli.load-kmods = false",
+				"nvidia-container-cli.ldconfig = \"/foo/bar/ldconfig\"",
 				"nvidia-container-runtime.debug = \"/foo/bar\"",
 				"nvidia-container-runtime.experimental = true",
 				"nvidia-container-runtime.discover-mode = \"not-legacy\"",
@@ -104,7 +110,9 @@ func TestGetConfig(t *testing.T) {
 			expectedConfig: &Config{
 				AcceptEnvvarUnprivileged: false,
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
-					Root: "/bar/baz",
+					Root:      "/bar/baz",
+					LoadKmods: false,
+					Ldconfig:  "/foo/bar/ldconfig",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/foo/bar",
@@ -138,6 +146,8 @@ func TestGetConfig(t *testing.T) {
 				"accept-nvidia-visible-devices-envvar-when-unprivileged = false",
 				"[nvidia-container-cli]",
 				"root = \"/bar/baz\"",
+				"load-kmods = false",
+				"ldconfig = \"/foo/bar/ldconfig\"",
 				"[nvidia-container-runtime]",
 				"debug = \"/foo/bar\"",
 				"experimental = true",
@@ -158,7 +168,9 @@ func TestGetConfig(t *testing.T) {
 			expectedConfig: &Config{
 				AcceptEnvvarUnprivileged: false,
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
-					Root: "/bar/baz",
+					Root:      "/bar/baz",
+					LoadKmods: false,
+					Ldconfig:  "/foo/bar/ldconfig",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/foo/bar",
@@ -197,6 +209,16 @@ func TestGetConfig(t *testing.T) {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
+			}
+
+			// We first handle the ldconfig path since this is currently system-dependent.
+			if tc.inspectLdconfig {
+				ldconfig := cfg.NVIDIAContainerCLIConfig.Ldconfig
+				require.True(t, strings.HasPrefix(ldconfig, "@/sbin/ldconfig"))
+				remaining := strings.TrimPrefix(ldconfig, "@/sbin/ldconfig")
+				require.True(t, remaining == ".real" || remaining == "")
+
+				cfg.NVIDIAContainerCLIConfig.Ldconfig = "WAS_CHECKED"
 			}
 
 			require.EqualValues(t, tc.expectedConfig, cfg)
