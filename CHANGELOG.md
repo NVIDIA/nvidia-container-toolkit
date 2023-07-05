@@ -18,7 +18,7 @@
 
 * [libnvidia-container] Support OpenSSL 3 with the Encrypt/Decrypt library
 
-* [toolkit-container] Bump CUDA base image version to 12.1.1.
+* [toolkit-container] Bump CUDA base image version to 12.2.0.
 
 ## v1.13.1
 
