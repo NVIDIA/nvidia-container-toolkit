@@ -28,35 +28,73 @@ import (
 // newDiscovererFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
 // The constructed discoverer is comprised of a list, with each element in the list being associated with a
 // single CSV files.
-func newDiscovererFromCSVFiles(logger logger.Interface, files []string, driverRoot string) (discover.Discover, error) {
+func newDiscovererFromCSVFiles(logger logger.Interface, files []string, driverRoot string, nvidiaCTKPath string) (discover.Discover, error) {
 	if len(files) == 0 {
 		logger.Warningf("No CSV files specified")
 		return discover.None{}, nil
 	}
 
-	symlinkLocator := lookup.NewSymlinkLocator(
-		lookup.WithLogger(logger),
-		lookup.WithRoot(driverRoot),
-	)
-	locators := map[csv.MountSpecType]lookup.Locator{
-		csv.MountSpecDev: lookup.NewCharDeviceLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot)),
-		csv.MountSpecDir: lookup.NewDirectoryLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot)),
-		// Libraries and symlinks are handled in the same way
-		csv.MountSpecLib: symlinkLocator,
-		csv.MountSpecSym: symlinkLocator,
-	}
+	targetsByType := getTargetsFromCSVFiles(logger, files)
 
-	var mountSpecs []*csv.MountSpec
+	devices := discover.NewDeviceDiscoverer(
+		logger,
+		lookup.NewCharDeviceLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot)),
+		driverRoot,
+		targetsByType[csv.MountSpecDev],
+	)
+
+	directories := discover.NewMounts(
+		logger,
+		lookup.NewDirectoryLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot)),
+		driverRoot,
+		targetsByType[csv.MountSpecDir],
+	)
+
+	// Libraries and symlinks use the same locator.
+	symlinkLocator := lookup.NewSymlinkLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot))
+	libraries := discover.NewMounts(
+		logger,
+		symlinkLocator,
+		driverRoot,
+		targetsByType[csv.MountSpecLib],
+	)
+
+	nonLibSymlinks := ignoreFilenamePatterns{"*.so", "*.so.[0-9]"}.Apply(targetsByType[csv.MountSpecSym]...)
+	logger.Debugf("Non-lib symlinks: %v", nonLibSymlinks)
+	symlinks := discover.NewMounts(
+		logger,
+		symlinkLocator,
+		driverRoot,
+		nonLibSymlinks,
+	)
+	createSymlinks := createCSVSymlinkHooks(logger, nonLibSymlinks, libraries, nvidiaCTKPath)
+
+	d := discover.Merge(
+		devices,
+		directories,
+		libraries,
+		symlinks,
+		createSymlinks,
+	)
+
+	return d, nil
+}
+
+// getTargetsFromCSVFiles returns the list of mount specs from the specified CSV files.
+// These are aggregated by mount spec type.
+func getTargetsFromCSVFiles(logger logger.Interface, files []string) map[csv.MountSpecType][]string {
+	targetsByType := make(map[csv.MountSpecType][]string)
 	for _, filename := range files {
 		targets, err := loadCSVFile(logger, filename)
 		if err != nil {
 			logger.Warningf("Skipping CSV file %v: %v", filename, err)
 			continue
 		}
-		mountSpecs = append(mountSpecs, targets...)
+		for _, t := range targets {
+			targetsByType[t.Type] = append(targetsByType[t.Type], t.Path)
+		}
 	}
-
-	return newFromMountSpecs(logger, locators, driverRoot, mountSpecs)
+	return targetsByType
 }
 
 // loadCSVFile loads the specified CSV file and returns the list of mount specs
@@ -71,41 +109,4 @@ func loadCSVFile(logger logger.Interface, filename string) ([]*csv.MountSpec, er
 	}
 
 	return targets, nil
-}
-
-// newFromMountSpecs creates a discoverer for the CSV file. A logger is also supplied.
-// A list of csvDiscoverers is returned, with each being associated with a single MountSpecType.
-func newFromMountSpecs(logger logger.Interface, locators map[csv.MountSpecType]lookup.Locator, driverRoot string, targets []*csv.MountSpec) (discover.Discover, error) {
-	if len(targets) == 0 {
-		return &discover.None{}, nil
-	}
-
-	var discoverers []discover.Discover
-	var mountSpecTypes []csv.MountSpecType
-	candidatesByType := make(map[csv.MountSpecType][]string)
-	for _, t := range targets {
-		if _, exists := candidatesByType[t.Type]; !exists {
-			mountSpecTypes = append(mountSpecTypes, t.Type)
-		}
-		candidatesByType[t.Type] = append(candidatesByType[t.Type], t.Path)
-	}
-
-	for _, t := range mountSpecTypes {
-		locator, exists := locators[t]
-		if !exists {
-			return nil, fmt.Errorf("no locator defined for '%v'", t)
-		}
-
-		var m discover.Discover
-		switch t {
-		case csv.MountSpecDev:
-			m = discover.NewDeviceDiscoverer(logger, locator, driverRoot, candidatesByType[t])
-		default:
-			m = discover.NewMounts(logger, locator, driverRoot, candidatesByType[t])
-		}
-		discoverers = append(discoverers, m)
-
-	}
-
-	return discover.Merge(discoverers...), nil
 }

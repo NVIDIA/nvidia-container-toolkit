@@ -1,5 +1,5 @@
 /**
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,3 +15,15 @@
 **/
 
 package tegra
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestIgnorePatterns(t *testing.T) {
+	filtered := ignoreFilenamePatterns{"*.so", "*.so.[0-9]"}.Apply("/foo/bar/libsomething.so", "libsometing.so", "libsometing.so.1", "libsometing.so.1.2.3")
+
+	require.ElementsMatch(t, []string{"libsometing.so.1.2.3"}, filtered)
+}

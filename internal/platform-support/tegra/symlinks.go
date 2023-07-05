@@ -25,7 +25,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
 type symlinkHook struct {
@@ -33,20 +32,18 @@ type symlinkHook struct {
 	logger        logger.Interface
 	driverRoot    string
 	nvidiaCTKPath string
-	csvFiles      []string
+	targets       []string
 	mountsFrom    discover.Discover
 }
 
 // createCSVSymlinkHooks creates a discoverer for a hook that creates required symlinks in the container
-func createCSVSymlinkHooks(logger logger.Interface, csvFiles []string, mounts discover.Discover, nvidiaCTKPath string) (discover.Discover, error) {
-	d := symlinkHook{
+func createCSVSymlinkHooks(logger logger.Interface, targets []string, mounts discover.Discover, nvidiaCTKPath string) discover.Discover {
+	return symlinkHook{
 		logger:        logger,
 		nvidiaCTKPath: nvidiaCTKPath,
-		csvFiles:      csvFiles,
+		targets:       targets,
 		mountsFrom:    mounts,
 	}
-
-	return &d, nil
 }
 
 // Hooks returns a hook to create the symlinks from the required CSV files
@@ -106,36 +103,30 @@ func (d symlinkHook) getSpecificLinks() ([]string, error) {
 	return links, nil
 }
 
-func (d symlinkHook) getCSVFileSymlinks() []string {
+// getSymlinkCandidates returns a list of symlinks that are candidates for being created.
+func (d symlinkHook) getSymlinkCandidates() []string {
 	chainLocator := lookup.NewSymlinkChainLocator(
 		lookup.WithLogger(d.logger),
 		lookup.WithRoot(d.driverRoot),
 	)
 
 	var candidates []string
-	for _, file := range d.csvFiles {
-		mountSpecs, err := csv.NewCSVFileParser(d.logger, file).Parse()
+	for _, target := range d.targets {
+		reslovedSymlinkChain, err := chainLocator.Locate(target)
 		if err != nil {
-			d.logger.Debugf("Skipping CSV file %v: %v", file, err)
+			d.logger.Warningf("Failed to locate symlink %v", target)
 			continue
 		}
-
-		for _, ms := range mountSpecs {
-			if ms.Type != csv.MountSpecSym {
-				continue
-			}
-			targets, err := chainLocator.Locate(ms.Path)
-			if err != nil {
-				d.logger.Warningf("Failed to locate symlink %v", ms.Path)
-			}
-			candidates = append(candidates, targets...)
-		}
+		candidates = append(candidates, reslovedSymlinkChain...)
 	}
+	return candidates
+}
 
+func (d symlinkHook) getCSVFileSymlinks() []string {
 	var links []string
 	created := make(map[string]bool)
 	// candidates is a list of absolute paths to symlinks in a chain, or the final target of the chain.
-	for _, candidate := range candidates {
+	for _, candidate := range d.getSymlinkCandidates() {
 		target, err := symlinks.Resolve(candidate)
 		if err != nil {
 			d.logger.Debugf("Skipping invalid link: %v", err)

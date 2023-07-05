@@ -41,14 +41,9 @@ func New(opts ...Option) (discover.Discover, error) {
 		opt(o)
 	}
 
-	csvDiscoverer, err := newDiscovererFromCSVFiles(o.logger, o.csvFiles, o.driverRoot)
+	csvDiscoverer, err := newDiscovererFromCSVFiles(o.logger, o.csvFiles, o.driverRoot, o.nvidiaCTKPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
-	}
-
-	createSymlinksHook, err := createCSVSymlinkHooks(o.logger, o.csvFiles, csvDiscoverer, o.nvidiaCTKPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create symlink hook discoverer: %v", err)
 	}
 
 	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(o.logger, csvDiscoverer, o.nvidiaCTKPath)
@@ -68,7 +63,6 @@ func New(opts ...Option) (discover.Discover, error) {
 
 	d := discover.Merge(
 		csvDiscoverer,
-		createSymlinksHook,
 		// The ldcacheUpdateHook is added last to ensure that the created symlinks are included
 		ldcacheUpdateHook,
 		tegraSystemMounts,
