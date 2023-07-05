@@ -18,5 +18,7 @@ package config
 
 // ContainerCLIConfig stores the options for the nvidia-container-cli
 type ContainerCLIConfig struct {
-	Root string `toml:"root"`
+	Root      string `toml:"root"`
+	LoadKmods bool   `toml:"load-kmods"`
+	Ldconfig  string `toml:"ldconfig"`
 }

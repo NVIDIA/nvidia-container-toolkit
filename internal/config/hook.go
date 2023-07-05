@@ -27,7 +27,7 @@ type RuntimeHookConfig struct {
 
 // GetDefaultRuntimeHookConfig defines the default values for the config
 func GetDefaultRuntimeHookConfig() (*RuntimeHookConfig, error) {
-	cfg, err := getDefaultConfig()
+	cfg, err := getDefault()
 	if err != nil {
 		return nil, err
 	}

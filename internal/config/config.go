@@ -74,13 +74,22 @@ func GetConfig() (*Config, error) {
 
 	configFilePath := path.Join(configDir, configFilePath)
 
+	return Load(configFilePath)
+}
+
+// Load loads the config from the specified file path.
+func Load(configFilePath string) (*Config, error) {
+	if configFilePath == "" {
+		return getDefault()
+	}
+
 	tomlFile, err := os.Open(configFilePath)
 	if err != nil {
-		return getDefaultConfig()
+		return getDefault()
 	}
 	defer tomlFile.Close()
 
-	cfg, err := loadConfigFrom(tomlFile)
+	cfg, err := LoadFrom(tomlFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config values: %v", err)
 	}
@@ -88,21 +97,28 @@ func GetConfig() (*Config, error) {
 	return cfg, nil
 }
 
-// loadRuntimeConfigFrom reads the config from the specified Reader
-func loadConfigFrom(reader io.Reader) (*Config, error) {
-	toml, err := toml.LoadReader(reader)
+// LoadFrom reads the config from the specified Reader
+func LoadFrom(reader io.Reader) (*Config, error) {
+	var tree *toml.Tree
+	if reader != nil {
+		toml, err := toml.LoadReader(reader)
+		if err != nil {
+			return nil, err
+		}
+		tree = toml
+	}
+
+	return getFromTree(tree)
+}
+
+// getFromTree reads the nvidia container runtime config from the specified toml Tree.
+func getFromTree(toml *toml.Tree) (*Config, error) {
+	cfg, err := getDefault()
 	if err != nil {
 		return nil, err
 	}
-
-	return getConfigFrom(toml)
-}
-
-// getConfigFrom reads the nvidia container runtime config from the specified toml Tree.
-func getConfigFrom(toml *toml.Tree) (*Config, error) {
-	cfg, err := getDefaultConfig()
-	if err != nil {
-		return nil, err
+	if toml == nil {
+		return cfg, nil
 	}
 
 	if err := toml.Unmarshal(cfg); err != nil {
@@ -112,90 +128,37 @@ func getConfigFrom(toml *toml.Tree) (*Config, error) {
 	return cfg, nil
 }
 
-// getDefaultConfig defines the default values for the config
-func getDefaultConfig() (*Config, error) {
-	tomlConfig, err := GetDefaultConfigToml()
-	if err != nil {
-		return nil, err
-	}
-
-	// tomlConfig above includes information about the default values and comments.
-	// we need to marshal it back to a string and then unmarshal it to strip the comments.
-	contents, err := tomlConfig.ToTomlString()
-	if err != nil {
-		return nil, err
-	}
-
-	reloaded, err := toml.Load(contents)
-	if err != nil {
-		return nil, err
-	}
-
-	d := Config{}
-	if err := reloaded.Unmarshal(&d); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
-	}
-
-	// The default value for the accept-nvidia-visible-devices-envvar-when-unprivileged is non-standard.
-	// As such we explicitly handle it being set here.
-	if reloaded.Get("accept-nvidia-visible-devices-envvar-when-unprivileged") == nil {
-		d.AcceptEnvvarUnprivileged = true
-	}
-	// The default value for the nvidia-container-runtime.debug is non-standard.
-	// As such we explicitly handle it being set here.
-	if reloaded.Get("nvidia-container-runtime.debug") == nil {
-		d.NVIDIAContainerRuntimeConfig.DebugFilePath = "/dev/null"
+// getDefault defines the default values for the config
+func getDefault() (*Config, error) {
+	d := Config{
+		AcceptEnvvarUnprivileged: true,
+		NVIDIAContainerCLIConfig: ContainerCLIConfig{
+			LoadKmods: true,
+			Ldconfig:  getLdConfigPath(),
+		},
+		NVIDIACTKConfig: CTKConfig{
+			Path: nvidiaCTKExecutable,
+		},
+		NVIDIAContainerRuntimeConfig: RuntimeConfig{
+			DebugFilePath: "/dev/null",
+			LogLevel:      "info",
+			Runtimes:      []string{"docker-runc", "runc"},
+			Mode:          "auto",
+			Modes: modesConfig{
+				CSV: csvModeConfig{
+					MountSpecPath: "/etc/nvidia-container-runtime/host-files-for-container.d",
+				},
+				CDI: cdiModeConfig{
+					DefaultKind:        "nvidia.com/gpu",
+					AnnotationPrefixes: []string{cdi.AnnotationPrefix},
+				},
+			},
+		},
+		NVIDIAContainerRuntimeHookConfig: RuntimeHookConfig{
+			Path: NVIDIAContainerRuntimeHookExecutable,
+		},
 	}
 	return &d, nil
-}
-
-// GetDefaultConfigToml returns the default config as a toml Tree.
-func GetDefaultConfigToml() (*toml.Tree, error) {
-	tree, err := toml.TreeFromMap(nil)
-	if err != nil {
-		return nil, err
-	}
-
-	tree.Set("disable-require", false)
-	tree.SetWithComment("swarm-resource", "", true, "DOCKER_RESOURCE_GPU")
-	tree.SetWithComment("accept-nvidia-visible-devices-envvar-when-unprivileged", "", true, true)
-	tree.SetWithComment("accept-nvidia-visible-devices-as-volume-mounts", "", true, false)
-
-	// nvidia-container-cli
-	tree.SetWithComment("nvidia-container-cli.root", "", true, "/run/nvidia/driver")
-	tree.SetWithComment("nvidia-container-cli.path", "", true, "/usr/bin/nvidia-container-cli")
-	tree.Set("nvidia-container-cli.environment", []string{})
-	tree.SetWithComment("nvidia-container-cli.debug", "", true, "/var/log/nvidia-container-toolkit.log")
-	tree.SetWithComment("nvidia-container-cli.ldcache", "", true, "/etc/ld.so.cache")
-	tree.Set("nvidia-container-cli.load-kmods", true)
-	tree.SetWithComment("nvidia-container-cli.no-cgroups", "", true, false)
-
-	tree.SetWithComment("nvidia-container-cli.user", "", getCommentedUserGroup(), getUserGroup())
-	tree.Set("nvidia-container-cli.ldconfig", getLdConfigPath())
-
-	// nvidia-container-runtime
-	tree.SetWithComment("nvidia-container-runtime.debug", "", true, "/var/log/nvidia-container-runtime.log")
-	tree.Set("nvidia-container-runtime.log-level", "info")
-
-	commentLines := []string{
-		"Specify the runtimes to consider. This list is processed in order and the PATH",
-		"searched for matching executables unless the entry is an absolute path.",
-	}
-	tree.SetWithComment("nvidia-container-runtime.runtimes", strings.Join(commentLines, "\n "), false, []string{"docker-runc", "runc"})
-
-	tree.Set("nvidia-container-runtime.mode", "auto")
-
-	tree.Set("nvidia-container-runtime.modes.csv.mount-spec-path", "/etc/nvidia-container-runtime/host-files-for-container.d")
-	tree.Set("nvidia-container-runtime.modes.cdi.default-kind", "nvidia.com/gpu")
-	tree.Set("nvidia-container-runtime.modes.cdi.annotation-prefixes", []string{cdi.AnnotationPrefix})
-
-	// nvidia-ctk
-	tree.Set("nvidia-ctk.path", nvidiaCTKExecutable)
-
-	// nvidia-container-runtime-hook
-	tree.Set("nvidia-container-runtime-hook.path", nvidiaContainerRuntimeHookExecutable)
-
-	return tree, nil
 }
 
 func getLdConfigPath() string {
@@ -203,11 +166,6 @@ func getLdConfigPath() string {
 		return "@/sbin/ldconfig.real"
 	}
 	return "@/sbin/ldconfig"
-}
-
-// getUserGroup returns the user and group to use for the nvidia-container-cli and whether the config option should be commented.
-func getUserGroup() string {
-	return "root:video"
 }
 
 // getCommentedUserGroup returns whether the nvidia-container-cli user and group config option should be commented.
@@ -294,4 +252,67 @@ func resolveWithDefault(logger logger.Interface, label string, path string, defa
 	logger.Debugf("Using %v path %v", label, path)
 
 	return resolvedPath
+}
+
+func (c Config) asCommentedToml() (*toml.Tree, error) {
+	contents, err := toml.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	asToml, err := toml.LoadBytes(contents)
+	if err != nil {
+		return nil, err
+	}
+
+	commentedDefaults := map[string]interface{}{
+		"swarm-resource": "DOCKER_RESOURCE_GPU",
+		"accept-nvidia-visible-devices-envvar-when-unprivileged": true,
+		"accept-nvidia-visible-devices-as-volume-mounts":         false,
+		"nvidia-container-cli.root":                              "/run/nvidia/driver",
+		"nvidia-container-cli.path":                              "/usr/bin/nvidia-container-cli",
+		"nvidia-container-cli.debug":                             "/var/log/nvidia-container-toolkit.log",
+		"nvidia-container-cli.ldcache":                           "/etc/ld.so.cache",
+		"nvidia-container-cli.no-cgroups":                        false,
+		"nvidia-container-cli.user":                              "root:video",
+		"nvidia-container-runtime.debug":                         "/var/log/nvidia-container-runtime.log",
+	}
+	for k, v := range commentedDefaults {
+		set := asToml.Get(k)
+		fmt.Printf("k=%v v=%+v set=%+v\n", k, v, set)
+		if !shouldComment(k, v, set) {
+			continue
+		}
+		fmt.Printf("set=%+v v=%+v\n", set, v)
+		asToml.SetWithComment(k, "", true, v)
+	}
+
+	return asToml, nil
+}
+
+func shouldComment(key string, value interface{}, set interface{}) bool {
+	if key == "nvidia-container-cli.user" && !getCommentedUserGroup() {
+		return false
+	}
+	if key == "nvidia-container-runtime.debug" && set == "/dev/null" {
+		return true
+	}
+	if set == nil || value == set {
+		return true
+	}
+
+	return false
+}
+
+// Save writes the config to the specified writer.
+func (c Config) Save(w io.Writer) (int64, error) {
+	asToml, err := c.asCommentedToml()
+	if err != nil {
+		return 0, err
+	}
+
+	enc := toml.NewEncoder(w).Indentation("")
+	if err := enc.Encode(asToml); err != nil {
+		return 0, fmt.Errorf("invalid config: %v", err)
+	}
+	return 0, nil
 }
