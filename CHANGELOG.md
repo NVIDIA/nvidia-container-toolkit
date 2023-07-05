@@ -1,5 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.13.4
+* [toolkit-container] Bump CUDA base image version to 12.2.0.
+
 ## v1.13.3
 
 * Generate CDI specification files with `644` permissions to allow rootless applications (e.g. podman).
