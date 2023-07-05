@@ -108,25 +108,22 @@ func (b *builder) build() (engine.Interface, error) {
 
 // loadConfig loads the containerd config from disk
 func (b *builder) loadConfig(config string) (*Config, error) {
-	b.logger.Infof("Loading config: %v", config)
-
 	info, err := os.Stat(config)
 	if os.IsExist(err) && info.IsDir() {
 		return nil, fmt.Errorf("config file is a directory")
 	}
 
-	configFile := config
 	if os.IsNotExist(err) {
-		configFile = "/dev/null"
-		b.logger.Infof("Config file does not exist, creating new one")
+		b.logger.Infof("Config file does not exist; using empty config")
+		config = "/dev/null"
+	} else {
+		b.logger.Infof("Loading config from %v", config)
 	}
 
-	tomlConfig, err := toml.LoadFile(configFile)
+	tomlConfig, err := toml.LoadFile(config)
 	if err != nil {
 		return nil, err
 	}
-
-	b.logger.Infof("Successfully loaded config")
 
 	cfg := Config{
 		Tree: tomlConfig,

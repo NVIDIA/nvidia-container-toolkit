@@ -18,8 +18,8 @@ package containerd
 
 import (
 	"fmt"
-	"os"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/pelletier/go-toml"
 )
 
@@ -133,34 +133,11 @@ func (c *Config) RemoveRuntime(name string) error {
 // Save writes the config to the specified path
 func (c Config) Save(path string) (int64, error) {
 	config := c.Tree
-	output, err := config.ToTomlString()
+	output, err := config.Marshal()
 	if err != nil {
 		return 0, fmt.Errorf("unable to convert to TOML: %v", err)
 	}
 
-	if path == "" {
-		os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
-		return int64(len(output)), nil
-	}
-
-	if len(output) == 0 {
-		err := os.Remove(path)
-		if err != nil {
-			return 0, fmt.Errorf("unable to remove empty file: %v", err)
-		}
-		return 0, nil
-	}
-
-	f, err := os.Create(path)
-	if err != nil {
-		return 0, fmt.Errorf("unable to open '%v' for writing: %v", path, err)
-	}
-	defer f.Close()
-
-	n, err := f.WriteString(output)
-	if err != nil {
-		return 0, fmt.Errorf("unable to write output: %v", err)
-	}
-
+	n, err := engine.Config(path).Write(output)
 	return int64(n), err
 }

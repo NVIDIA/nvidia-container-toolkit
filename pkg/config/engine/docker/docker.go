@@ -19,7 +19,6 @@ package docker
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
@@ -122,29 +121,6 @@ func (c Config) Save(path string) (int64, error) {
 		return 0, fmt.Errorf("unable to convert to JSON: %v", err)
 	}
 
-	if path == "" {
-		os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
-		return int64(len(output)), nil
-	}
-
-	if len(output) == 0 {
-		err := os.Remove(path)
-		if err != nil {
-			return 0, fmt.Errorf("unable to remove empty file: %v", err)
-		}
-		return 0, nil
-	}
-
-	f, err := os.Create(path)
-	if err != nil {
-		return 0, fmt.Errorf("unable to open %v for writing: %v", path, err)
-	}
-	defer f.Close()
-
-	n, err := f.WriteString(string(output))
-	if err != nil {
-		return 0, fmt.Errorf("unable to write output: %v", err)
-	}
-
-	return int64(n), nil
+	n, err := engine.Config(path).Write(output)
+	return int64(n), err
 }
