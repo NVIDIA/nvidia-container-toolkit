@@ -148,9 +148,10 @@ func (i CUDA) GetDriverCapabilities() DriverCapabilities {
 }
 
 func (i CUDA) legacyVersion() (string, error) {
-	majorMinor, err := parseMajorMinorVersion(i[envCUDAVersion])
+	cudaVersion := i[envCUDAVersion]
+	majorMinor, err := parseMajorMinorVersion(cudaVersion)
 	if err != nil {
-		return "", fmt.Errorf("invalid CUDA version: %v", err)
+		return "", fmt.Errorf("invalid CUDA version %v: %v", cudaVersion, err)
 	}
 
 	return majorMinor, nil
