@@ -110,23 +110,26 @@ func getUTSRelease() (string, error) {
 }
 
 func getFirmwareSearchPaths(logger logger.Interface) ([]string, error) {
+
+	var firmwarePaths []string
+	if p := getCustomFirmwareClassPath(logger); p != "" {
+		logger.Debugf("using custom firmware class path: %s", p)
+		firmwarePaths = append(firmwarePaths, p)
+	}
+
 	utsRelease, err := getUTSRelease()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get UTS_RELEASE: %v", err)
 	}
 
-	firmwarePaths := []string{
+	standardPaths := []string{
 		filepath.Join("/lib/firmware/updates/", utsRelease),
 		filepath.Join("/lib/firmware/updates/"),
 		filepath.Join("/lib/firmware/", utsRelease),
 		filepath.Join("/lib/firmware/"),
 	}
 
-	if p := getCustomFirmwareClassPath(logger); p != "" {
-		logger.Debugf("using custom firmware class path: %s", p)
-		firmwarePaths = append(firmwarePaths, p)
-	}
-	return firmwarePaths, nil
+	return append(firmwarePaths, standardPaths...), nil
 }
 
 // getCustomFirmwareClassPath returns the custom firmware class path if it exists.
