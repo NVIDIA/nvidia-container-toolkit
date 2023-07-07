@@ -106,6 +106,16 @@ func TestGetRequirements(t *testing.T) {
 			env:          []string{"CUDA_VERSION=11.6", "NVIDIA_REQUIRE_BRAND=brand=tesla"},
 			requirements: []string{"cuda>=11.6", "brand=tesla"},
 		},
+		{
+			description:  "NVIDIA_DISABLE_REQUIRE ignores requirements",
+			env:          []string{"NVIDIA_REQUIRE_CUDA=cuda>=11.6", "NVIDIA_REQUIRE_BRAND=brand=tesla", "NVIDIA_DISABLE_REQUIRE=true"},
+			requirements: []string{},
+		},
+		{
+			description:  "NVIDIA_DISABLE_REQUIRE ignores legacy image requirements",
+			env:          []string{"CUDA_VERSION=11.6", "NVIDIA_REQUIRE_BRAND=brand=tesla", "NVIDIA_DISABLE_REQUIRE=true"},
+			requirements: []string{},
+		},
 	}
 
 	for _, tc := range testCases {

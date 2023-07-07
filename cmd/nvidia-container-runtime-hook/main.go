@@ -137,10 +137,8 @@ func doPrestart() {
 		args = append(args, capabilityToCLI(cap))
 	}
 
-	if !hook.DisableRequire && !nvidia.DisableRequire {
-		for _, req := range nvidia.Requirements {
-			args = append(args, fmt.Sprintf("--require=%s", req))
-		}
+	for _, req := range nvidia.Requirements {
+		args = append(args, fmt.Sprintf("--require=%s", req))
 	}
 
 	args = append(args, fmt.Sprintf("--pid=%s", strconv.FormatUint(uint64(container.Pid), 10)))

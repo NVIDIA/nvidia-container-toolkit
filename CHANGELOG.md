@@ -16,6 +16,7 @@
 * Create ouput folders if required when running `nvidia-ctk runtime configure`
 * Generate default config as post-install step.
 * Added support for detecting GSP firmware at custom paths when generating CDI specifications.
+* Added logic to skip the extraction of image requirements if NVIDIA_DISABLE_REQUIRES is set to true.
 
 * [libnvidia-container] Support OpenSSL 3 with the Encrypt/Decrypt library
 

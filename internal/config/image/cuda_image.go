@@ -42,27 +42,18 @@ type CUDA map[string]string
 // NewCUDAImageFromSpec creates a CUDA image from the input OCI runtime spec.
 // The process environment is read (if present) to construc the CUDA Image.
 func NewCUDAImageFromSpec(spec *specs.Spec) (CUDA, error) {
-	if spec == nil || spec.Process == nil {
-		return NewCUDAImageFromEnv(nil)
+	var env []string
+	if spec != nil && spec.Process != nil {
+		env = spec.Process.Env
 	}
 
-	return NewCUDAImageFromEnv(spec.Process.Env)
+	return New(WithEnv(env))
 }
 
 // NewCUDAImageFromEnv creates a CUDA image from the input environment. The environment
 // is a list of strings of the form ENVAR=VALUE.
 func NewCUDAImageFromEnv(env []string) (CUDA, error) {
-	c := make(CUDA)
-
-	for _, e := range env {
-		parts := strings.SplitN(e, "=", 2)
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid environment variable: %v", e)
-		}
-		c[parts[0]] = parts[1]
-	}
-
-	return c, nil
+	return New(WithEnv(env))
 }
 
 // IsLegacy returns whether the associated CUDA image is a "legacy" image. An
@@ -77,11 +68,9 @@ func (i CUDA) IsLegacy() bool {
 // GetRequirements returns the requirements from all NVIDIA_REQUIRE_ environment
 // variables.
 func (i CUDA) GetRequirements() ([]string, error) {
-	// TODO: We need not process this if disable require is set, but this will be done
-	// in a single follow-up to ensure that the behavioural change is accurately captured.
-	// if i.HasDisableRequire() {
-	// 	return nil, nil
-	// }
+	if i.HasDisableRequire() {
+		return nil, nil
+	}
 
 	// All variables with the "NVIDIA_REQUIRE_" prefix are passed to nvidia-container-cli
 	var requirements []string
