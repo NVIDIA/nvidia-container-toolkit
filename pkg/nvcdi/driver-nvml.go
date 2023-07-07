@@ -101,7 +101,7 @@ func NewDriverLibraryDiscoverer(logger logger.Interface, driverRoot string, nvid
 	return d, nil
 }
 
-func getUTSRelease(logger logger.Interface) (string, error) {
+func getUTSRelease() (string, error) {
 	utsname := &unix.Utsname{}
 	if err := unix.Uname(utsname); err != nil {
 		return "", err
@@ -110,7 +110,7 @@ func getUTSRelease(logger logger.Interface) (string, error) {
 }
 
 func getFirmwareSearchPaths(logger logger.Interface) ([]string, error) {
-	utsRelease, err := getUTSRelease(logger)
+	utsRelease, err := getUTSRelease()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get UTS_RELEASE: %v", err)
 	}
@@ -122,21 +122,29 @@ func getFirmwareSearchPaths(logger logger.Interface) ([]string, error) {
 		filepath.Join("/lib/firmware/"),
 	}
 
-	customFirmwareClassPath, err := os.ReadFile("/sys/module/firmware_class/parameters/path")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get custom firmware class path for driver version: %v", err)
-	}
-	if !(len(customFirmwareClassPath) == 1 && customFirmwareClassPath[0] == byte(10)) {
-		firmwarePaths = append(firmwarePaths, string(customFirmwareClassPath))
+	if p := getCustomFirmwareClassPath(logger); p != "" {
+		logger.Debugf("using custom firmware class path: %s", p)
+		firmwarePaths = append(firmwarePaths, p)
 	}
 	return firmwarePaths, nil
+}
+
+// getCustomFirmwareClassPath returns the custom firmware class path if it exists.
+func getCustomFirmwareClassPath(logger logger.Interface) string {
+	customFirmwareClassPath, err := os.ReadFile("/sys/module/firmware_class/parameters/path")
+	if err != nil {
+		logger.Warningf("failed to get custom firmware class path: %v", err)
+		return ""
+	}
+
+	return strings.TrimSpace(string(customFirmwareClassPath))
 }
 
 // NewDriverFirmwareDiscoverer creates a discoverer for GSP firmware associated with the specified driver version.
 func NewDriverFirmwareDiscoverer(logger logger.Interface, driverRoot string, version string) (discover.Discover, error) {
 	gspFirmwareSearchPaths, err := getFirmwareSearchPaths(logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get libraries for driver version: %v", err)
+		return nil, fmt.Errorf("failed to get firmware search paths: %v", err)
 	}
 	gspFirmwarePaths := filepath.Join("nvidia", version, "gsp*.bin")
 	return discover.NewMounts(
