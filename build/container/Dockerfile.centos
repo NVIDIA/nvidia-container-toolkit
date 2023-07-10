@@ -26,11 +26,6 @@ FROM golang:${GOLANG_VERSION} as build
 # /artifacts/bin
 ARG GOPATH=/artifacts
 
-# Install the experiemental nvidia-container-runtime
-# NOTE: This will be integrated into the nvidia-container-toolkit package / repo
-ARG NVIDIA_CONTAINER_RUNTIME_EXPERIMENTAL_VERSION=experimental
-RUN GOPATH=/artifacts go install github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-container-runtime.experimental@${NVIDIA_CONTAINER_RUNTIME_EXPERIMENTAL_VERSION}
-
 WORKDIR /build
 COPY . .
 

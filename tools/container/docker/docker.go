@@ -142,7 +142,7 @@ func main() {
 		},
 		&cli.BoolFlag{
 			Name:        "set-as-default",
-			Usage:       "Set the `nvidia` runtime as the default runtime. If --runtime-name is specified as `nvidia-experimental` the experimental runtime is set as the default runtime instead",
+			Usage:       "Set the `nvidia` runtime as the default runtime.",
 			Value:       defaultSetAsDefault,
 			Destination: &options.SetAsDefault,
 			EnvVars:     []string{"NVIDIA_RUNTIME_SET_AS_DEFAULT", "DOCKER_SET_AS_DEFAULT"},

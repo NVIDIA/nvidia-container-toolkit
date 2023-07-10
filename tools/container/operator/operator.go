@@ -19,8 +19,7 @@ package operator
 import "path/filepath"
 
 const (
-	defaultRuntimeName      = "nvidia"
-	experimentalRuntimeName = "nvidia-experimental"
+	defaultRuntimeName = "nvidia"
 
 	defaultRoot = "/usr/bin"
 )
@@ -59,7 +58,7 @@ func GetRuntimes(opts ...Option) Runtimes {
 	runtimes := make(Runtimes)
 	runtimes.add(c.nvidiaRuntime())
 
-	modes := []string{"experimental", "cdi", "legacy"}
+	modes := []string{"cdi", "legacy"}
 	for _, mode := range modes {
 		runtimes.add(c.modeRuntime(mode))
 	}
@@ -85,9 +84,8 @@ func (r *Runtimes) add(runtime Runtime) {
 // If name is equal to one of the predefined runtimes, `nvidia` is used as the runtime name instead.
 func (c config) nvidiaRuntime() Runtime {
 	predefinedRuntimes := map[string]struct{}{
-		"nvidia-experimental": {},
-		"nvidia-cdi":          {},
-		"nvidia-legacy":       {},
+		"nvidia-cdi":    {},
+		"nvidia-legacy": {},
 	}
 	name := c.nvidiaRuntimeName
 	if _, isPredefinedRuntime := predefinedRuntimes[name]; isPredefinedRuntime {

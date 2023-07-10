@@ -19,16 +19,12 @@ package main
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
 	nvidiaContainerRuntimeSource = "/usr/bin/nvidia-container-runtime"
-
-	nvidiaExperimentalContainerRuntimeSource = "nvidia-container-runtime.experimental"
 )
 
 // installContainerRuntimes sets up the NVIDIA container runtimes, copying the executables
@@ -36,9 +32,6 @@ const (
 func installContainerRuntimes(toolkitDir string, driverRoot string) error {
 	runtimes := operator.GetRuntimes()
 	for _, runtime := range runtimes {
-		if filepath.Base(runtime.Path) == nvidiaExperimentalContainerRuntimeSource {
-			continue
-		}
 		r := newNvidiaContainerRuntimeInstaller(runtime.Path)
 
 		_, err := r.install(toolkitDir)
@@ -46,30 +39,6 @@ func installContainerRuntimes(toolkitDir string, driverRoot string) error {
 			return fmt.Errorf("error installing NVIDIA container runtime: %v", err)
 		}
 	}
-
-	// Install the experimental runtime and treat failures as non-fatal.
-	err := installExperimentalRuntime(toolkitDir, driverRoot)
-	if err != nil {
-		log.Warningf("Could not install experimental runtime: %v", err)
-	}
-
-	return nil
-}
-
-// installExperimentalRuntime ensures that the experimental NVIDIA Container runtime is installed
-func installExperimentalRuntime(toolkitDir string, driverRoot string) error {
-	libraryRoot, err := findLibraryRoot(driverRoot)
-	if err != nil {
-		log.Warningf("Error finding library path for root %v: %v", driverRoot, err)
-	}
-	log.Infof("Using library root %v", libraryRoot)
-
-	e := newNvidiaContainerRuntimeExperimentalInstaller(libraryRoot)
-	_, err = e.install(toolkitDir)
-	if err != nil {
-		return fmt.Errorf("error installing experimental NVIDIA Container Runtime: %v", err)
-	}
-
 	return nil
 }
 
@@ -85,22 +54,6 @@ func newNvidiaContainerRuntimeInstaller(source string) *executable {
 		wrapperName: wrapperName,
 	}
 	return newRuntimeInstaller(source, target, nil)
-}
-
-func newNvidiaContainerRuntimeExperimentalInstaller(libraryRoot string) *executable {
-	source := nvidiaExperimentalContainerRuntimeSource
-	wrapperName := filepath.Base(source)
-	dotfileName := wrapperName + ".real"
-	target := executableTarget{
-		dotfileName: dotfileName,
-		wrapperName: wrapperName,
-	}
-
-	env := make(map[string]string)
-	if libraryRoot != "" {
-		env["LD_LIBRARY_PATH"] = strings.Join([]string{libraryRoot, "$LD_LIBRARY_PATH"}, ":")
-	}
-	return newRuntimeInstaller(source, target, env)
 }
 
 func newRuntimeInstaller(source string, target executableTarget, env map[string]string) *executable {

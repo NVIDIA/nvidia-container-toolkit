@@ -15,28 +15,23 @@ docker setup \
         /run/nvidia/toolkit
 ```
 
-Configure the `nvidia-container-runtime` as a docker runtime named `NAME`. If the `--runtime-name` flag is not specified, this runtime would be called `nvidia`. A runtime named `nvidia-experimental` will also be configured using the `nvidia-container-runtime.experimental` OCI-compliant runtime shim.
+Configure the `nvidia-container-runtime` as a docker runtime named `NAME`. If the `--runtime-name` flag is not specified, this runtime would be called `nvidia`.
 
 Since `--set-as-default` is enabled by default, the specified runtime name will also be set as the default docker runtime. This can be disabled by explicityly specifying `--set-as-default=false`.
-
-**Note**: If `--runtime-name` is specified as `nvidia-experimental` explicitly, the `nvidia-experimental` runtime will be configured as the default runtime, with the `nvidia` runtime still configured and available for use.
 
 The following table describes the behaviour for different `--runtime-name` and `--set-as-default` flag combinations.
 
 | Flags                                                       | Installed Runtimes              | Default Runtime       |
 |-------------------------------------------------------------|:--------------------------------|:----------------------|
-| **NONE SPECIFIED**                                          | `nvidia`, `nvidia-experimental` | `nvidia`              |
-| `--runtime-name nvidia`                                     | `nvidia`, `nvidia-experimental` | `nvidia`              |
-| `--runtime-name NAME`                                       | `NAME`, `nvidia-experimental`   | `NAME`                |
-| `--runtime-name nvidia-experimental`                        | `nvidia`, `nvidia-experimental` | `nvidia-experimental` |
-| `--set-as-default`                                          | `nvidia`, `nvidia-experimental` | `nvidia`              |
-| `--set-as-default --runtime-name nvidia`                    | `nvidia`, `nvidia-experimental` | `nvidia`              |
-| `--set-as-default --runtime-name NAME`                      | `NAME`, `nvidia-experimental`   | `NAME`                |
-| `--set-as-default --runtime-name nvidia-experimental`       | `nvidia`, `nvidia-experimental` | `nvidia-experimental` |
-| `--set-as-default=false`                                    | `nvidia`, `nvidia-experimental` | **NOT SET**           |
-| `--set-as-default=false --runtime-name NAME`                | `NAME`, `nvidia-experimental`   | **NOT SET**           |
-| `--set-as-default=false --runtime-name nvidia`              | `nvidia`, `nvidia-experimental` | **NOT SET**           |
-| `--set-as-default=false --runtime-name nvidia-experimental` | `nvidia`, `nvidia-experimental` | **NOT SET**           |
+| **NONE SPECIFIED**                                          | `nvidia`                        | `nvidia`              |
+| `--runtime-name nvidia`                                     | `nvidia`                        | `nvidia`              |
+| `--runtime-name NAME`                                       | `NAME`                          | `NAME`                |
+| `--set-as-default`                                          | `nvidia`                        | `nvidia`              |
+| `--set-as-default --runtime-name nvidia`                    | `nvidia`                        | `nvidia`              |
+| `--set-as-default --runtime-name NAME`                      | `NAME`                          | `NAME`                |
+| `--set-as-default=false`                                    | `nvidia`                        | **NOT SET**           |
+| `--set-as-default=false --runtime-name NAME`                | `NAME`                          | **NOT SET**           |
+| `--set-as-default=false --runtime-name nvidia`              | `nvidia`                        | **NOT SET**           |
 
 These combinations also hold for the environment variables that map to the command line flags: `DOCKER_RUNTIME_NAME`, `DOCKER_SET_AS_DEFAULT`.
 
@@ -48,7 +43,7 @@ containerd setup \
         /run/nvidia/toolkit
 ```
 
-Configure the `nvidia-container-runtime` as a runtime class named `NAME`. If the `--runtime-class` flag is not specified, this runtime would be called `nvidia`. A runtime class named `nvidia-experimental` will also be configured using the `nvidia-container-runtime.experimental` OCI-compliant runtime shim.
+Configure the `nvidia-container-runtime` as a runtime class named `NAME`. If the `--runtime-class` flag is not specified, this runtime would be called `nvidia`.
 
 Adding the `--set-as-default` flag as follows:
 ```bash
@@ -59,19 +54,15 @@ containerd setup \
 ```
 will set the runtime class `NAME` (or `nvidia` if not specified) as the default runtime class.
 
-**Note**: If `--runtime-class` is specified as `nvidia-experimental` explicitly and `--set-as-default` is specified, the `nvidia-experimental` runtime will be configured as the default runtime class, with the `nvidia` runtime class still configured and available for use.
-
 The following table describes the behaviour for different `--runtime-class` and `--set-as-default` flag combinations.
 
 | Flags                                                  | Installed Runtime Classes       | Default Runtime Class |
 |--------------------------------------------------------|:--------------------------------|:----------------------|
-| **NONE SPECIFIED**                                     | `nvidia`, `nvidia-experimental` | **NOT SET**           |
-| `--runtime-class NAME`                                 | `NAME`, `nvidia-experimental`   | **NOT SET**           |
-| `--runtime-class nvidia`                               | `nvidia`, `nvidia-experimental` | **NOT SET**           |
-| `--runtime-class nvidia-experimental`                  | `nvidia`, `nvidia-experimental` | **NOT SET**           |
-| `--set-as-default`                                     | `nvidia`, `nvidia-experimental` | `nvidia`              |
-| `--set-as-default --runtime-class NAME`                | `NAME`, `nvidia-experimental`   | `NAME`                |
-| `--set-as-default --runtime-class nvidia`              | `nvidia`, `nvidia-experimental` | `nvidia`              |
-| `--set-as-default --runtime-class nvidia-experimental` | `nvidia`, `nvidia-experimental` | `nvidia-experimental` |
+| **NONE SPECIFIED**                                     | `nvidia`                        | **NOT SET**           |
+| `--runtime-class NAME`                                 | `NAME`                          | **NOT SET**           |
+| `--runtime-class nvidia`                               | `nvidia`                        | **NOT SET**           |
+| `--set-as-default`                                     | `nvidia`                        | `nvidia`              |
+| `--set-as-default --runtime-class NAME`                | `NAME`                          | `NAME`                |
+| `--set-as-default --runtime-class nvidia`              | `nvidia`                        | `nvidia`              |
 
 These combinations also hold for the environment variables that map to the command line flags.

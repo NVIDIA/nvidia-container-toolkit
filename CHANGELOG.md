@@ -19,6 +19,7 @@
 * [libnvidia-container] Support OpenSSL 3 with the Encrypt/Decrypt library
 
 * [toolkit-container] Bump CUDA base image version to 12.2.0.
+* [toolkit-container] Remove installation of nvidia-experimental runtime. This is superceded by the NVIDIA Container Runtime in CDI mode.
 
 ## v1.13.1
 

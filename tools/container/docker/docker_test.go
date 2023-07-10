@@ -45,11 +45,6 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 		},
 		{
 			setAsDefault:               true,
-			runtimeName:                "nvidia-experimental",
-			expectedDefaultRuntimeName: "nvidia-experimental",
-		},
-		{
-			setAsDefault:               true,
 			runtimeName:                "nvidia",
 			expectedDefaultRuntimeName: "nvidia",
 		},
@@ -92,10 +87,6 @@ func TestUpdateConfig(t *testing.T) {
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
-					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
-						"args": []string{},
-					},
 					"nvidia-cdi": map[string]interface{}{
 						"path": "/test/runtime/dir/nvidia-container-runtime.cdi",
 						"args": []string{},
@@ -115,35 +106,6 @@ func TestUpdateConfig(t *testing.T) {
 				"runtimes": map[string]interface{}{
 					"NAME": map[string]interface{}{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
-						"args": []string{},
-					},
-					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
-						"args": []string{},
-					},
-					"nvidia-cdi": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.cdi",
-						"args": []string{},
-					},
-					"nvidia-legacy": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.legacy",
-						"args": []string{},
-					},
-				},
-			},
-		},
-		{
-			config:       map[string]interface{}{},
-			setAsDefault: false,
-			runtimeName:  "nvidia-experimental",
-			expectedConfig: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime",
-						"args": []string{},
-					},
-					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 					"nvidia-cdi": map[string]interface{}{
@@ -173,10 +135,6 @@ func TestUpdateConfig(t *testing.T) {
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
-					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
-						"args": []string{},
-					},
 					"nvidia-cdi": map[string]interface{}{
 						"path": "/test/runtime/dir/nvidia-container-runtime.cdi",
 						"args": []string{},
@@ -205,10 +163,6 @@ func TestUpdateConfig(t *testing.T) {
 					},
 					"nvidia": map[string]interface{}{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
-						"args": []string{},
-					},
-					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 					"nvidia-cdi": map[string]interface{}{
@@ -235,38 +189,6 @@ func TestUpdateConfig(t *testing.T) {
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
-					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
-						"args": []string{},
-					},
-					"nvidia-cdi": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.cdi",
-						"args": []string{},
-					},
-					"nvidia-legacy": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.legacy",
-						"args": []string{},
-					},
-				},
-			},
-		},
-		{
-			config: map[string]interface{}{
-				"default-runtime": "runc",
-			},
-			setAsDefault: true,
-			runtimeName:  "nvidia-experimental",
-			expectedConfig: map[string]interface{}{
-				"default-runtime": "nvidia-experimental",
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime",
-						"args": []string{},
-					},
-					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
-						"args": []string{},
-					},
 					"nvidia-cdi": map[string]interface{}{
 						"path": "/test/runtime/dir/nvidia-container-runtime.cdi",
 						"args": []string{},
@@ -297,10 +219,6 @@ func TestUpdateConfig(t *testing.T) {
 				"runtimes": map[string]interface{}{
 					"nvidia": map[string]interface{}{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
-						"args": []string{},
-					},
-					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 					"nvidia-cdi": map[string]interface{}{
@@ -361,7 +279,7 @@ func TestRevertConfig(t *testing.T) {
 		{
 			config: map[string]interface{}{
 				"runtimes": map[string]interface{}{
-					"nvidia-experimental": map[string]interface{}{
+					"nvidia": map[string]interface{}{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
@@ -374,25 +292,6 @@ func TestRevertConfig(t *testing.T) {
 				"runtimes": map[string]interface{}{
 					"nvidia": map[string]interface{}{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
-						"args": []string{},
-					},
-					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
-						"args": []string{},
-					},
-				},
-			},
-			expectedConfig: map[string]interface{}{},
-		},
-		{
-			config: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime",
-						"args": []string{},
-					},
-					"nvidia-experimental": map[string]interface{}{
-						"path": "/test/runtime/dir/nvidia-container-runtime.experimental",
 						"args": []string{},
 					},
 					"nvidia-cdi": map[string]interface{}{
