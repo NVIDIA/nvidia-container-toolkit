@@ -40,7 +40,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "all",
 				DriverCapabilities: allDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -54,7 +53,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "all",
 				DriverCapabilities: allDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -86,7 +84,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "",
 				DriverCapabilities: allDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -100,7 +97,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "gpu0,gpu1",
 				DriverCapabilities: allDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -115,7 +111,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "gpu0,gpu1",
 				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -130,7 +125,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "gpu0,gpu1",
 				DriverCapabilities: allDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -145,7 +139,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "gpu0,gpu1",
 				DriverCapabilities: "video,display",
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -162,7 +155,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "gpu0,gpu1",
 				DriverCapabilities: "video,display",
 				Requirements:       []string{"cuda>=9.0", "req0=true", "req1=false"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -179,8 +171,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
 				DriverCapabilities: "video,display",
-				Requirements:       []string{"cuda>=9.0", "req0=true", "req1=false"},
-				DisableRequire:     true,
+				Requirements:       []string{},
 			},
 		},
 		{
@@ -211,7 +202,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "all",
 				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -243,7 +233,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "",
 				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -257,7 +246,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "gpu0,gpu1",
 				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -272,7 +260,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "gpu0,gpu1",
 				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -287,7 +274,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "gpu0,gpu1",
 				DriverCapabilities: allDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -302,7 +288,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "gpu0,gpu1",
 				DriverCapabilities: "video,display",
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -319,7 +304,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "gpu0,gpu1",
 				DriverCapabilities: "video,display",
 				Requirements:       []string{"cuda>=9.0", "req0=true", "req1=false"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -336,8 +320,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
 				DriverCapabilities: "video,display",
-				Requirements:       []string{"cuda>=9.0", "req0=true", "req1=false"},
-				DisableRequire:     true,
+				Requirements:       []string{},
 			},
 		},
 		{
@@ -351,7 +334,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				Devices:            "all",
 				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -367,7 +349,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				MigConfigDevices:   "mig0,mig1",
 				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -393,7 +374,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 				MigMonitorDevices:  "mig0,mig1",
 				DriverCapabilities: defaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
-				DisableRequire:     false,
 			},
 		},
 		{
@@ -525,7 +505,6 @@ func TestGetNvidiaConfig(t *testing.T) {
 			require.Equal(t, tc.expectedConfig.DriverCapabilities, config.DriverCapabilities)
 
 			require.ElementsMatch(t, tc.expectedConfig.Requirements, config.Requirements)
-			require.Equal(t, tc.expectedConfig.DisableRequire, config.DisableRequire)
 		})
 	}
 }

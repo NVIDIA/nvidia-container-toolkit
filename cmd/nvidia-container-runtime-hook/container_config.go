@@ -38,8 +38,10 @@ type nvidiaConfig struct {
 	MigConfigDevices   string
 	MigMonitorDevices  string
 	DriverCapabilities string
-	Requirements       []string
-	DisableRequire     bool
+	// Requirements defines the requirements DSL for the container to run.
+	// This is empty if no specific requirements are needed, or if requirements are
+	// explicitly disabled.
+	Requirements []string
 }
 
 type containerConfig struct {
@@ -327,15 +329,12 @@ func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, mounts []Mount, p
 		log.Panicln("failed to get requirements", err)
 	}
 
-	disableRequire := image.HasDisableRequire()
-
 	return &nvidiaConfig{
 		Devices:            devices,
 		MigConfigDevices:   migConfigDevices,
 		MigMonitorDevices:  migMonitorDevices,
 		DriverCapabilities: driverCapabilities,
 		Requirements:       requirements,
-		DisableRequire:     disableRequire,
 	}
 }
 
@@ -353,7 +352,10 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 
 	s := loadSpec(path.Join(b, "config.json"))
 
-	image, err := image.NewCUDAImageFromEnv(s.Process.Env)
+	image, err := image.New(
+		image.WithEnv(s.Process.Env),
+		image.WithDisableRequire(hook.DisableRequire),
+	)
 	if err != nil {
 		log.Panicln(err)
 	}
