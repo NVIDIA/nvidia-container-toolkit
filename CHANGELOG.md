@@ -2,6 +2,7 @@
 
 ## v1.13.5
 * Remove dependency on `coreutils` when installing the NVIDIA Container Toolkit on RPM-based systems.
+* Added support for detecting GSP firmware at custom paths when generating CDI specifications.
 
 ## v1.13.4
 * [toolkit-container] Bump CUDA base image version to 12.2.0.
