@@ -1,5 +1,9 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.14.0-rc.2
+
+* [libnvidia-container] Include Shared Compiler Library (libnvidia-gpucomp.so) in the list of compute libaries.
+
 ## v1.14.0-rc.1
 
 * Add support for updating containerd configs to the `nvidia-ctk runtime configure` command.
