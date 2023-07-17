@@ -17,14 +17,28 @@ ARG CUDA_VERSION
 ARG GOLANG_VERSION=x.x.x
 ARG VERSION="N/A"
 
-# NOTE: In cases where the libc version is a concern, we would have to use an
-# image based on the target OS to build the golang executables here -- especially
-# if cgo code is included.
-FROM golang:${GOLANG_VERSION} as build
+FROM nvidia/cuda:${CUDA_VERSION}-base-${BASE_DIST} as build
 
-# We override the GOPATH to ensure that the binaries are installed to
-# /artifacts/bin
-ARG GOPATH=/artifacts
+RUN apt-get update && \
+    apt-get install -y wget make git gcc \
+    && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG GOLANG_VERSION=x.x.x
+RUN set -eux; \
+    \
+    arch="$(uname -m)"; \
+    case "${arch##*-}" in \
+        x86_64 | amd64) ARCH='amd64' ;; \
+        ppc64el | ppc64le) ARCH='ppc64le' ;; \
+        aarch64) ARCH='arm64' ;; \
+        *) echo "unsupported architecture" ; exit 1 ;; \
+    esac; \
+    wget -nv -O - https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz \
+    | tar -C /usr/local -xz
+
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
 WORKDIR /build
 COPY . .
