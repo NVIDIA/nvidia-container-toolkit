@@ -6,10 +6,13 @@ github.com/BurntSushi/toml/internal
 ## explicit; go 1.15
 github.com/NVIDIA/go-nvml/pkg/dl
 github.com/NVIDIA/go-nvml/pkg/nvml
-# github.com/container-orchestrated-devices/container-device-interface v0.5.4-0.20230111111500-5b3b5d81179a
+# github.com/container-orchestrated-devices/container-device-interface v0.6.0
 ## explicit; go 1.17
 github.com/container-orchestrated-devices/container-device-interface/internal/multierror
+github.com/container-orchestrated-devices/container-device-interface/internal/validation
+github.com/container-orchestrated-devices/container-device-interface/internal/validation/k8s
 github.com/container-orchestrated-devices/container-device-interface/pkg/cdi
+github.com/container-orchestrated-devices/container-device-interface/pkg/parser
 github.com/container-orchestrated-devices/container-device-interface/specs-go
 # github.com/cpuguy83/go-md2man/v2 v2.0.2
 ## explicit; go 1.11
