@@ -2,7 +2,18 @@
 
 ## v1.14.0-rc.2
 
+* Fix bug causing incorrect nvidia-smi symlink to be created on WSL2 systems with multiple driver roots.
+* Remove dependency on coreutils when installing package on RPM-based systems.
+* Create ouput folders if required when running `nvidia-ctk runtime configure`
+* Generate default config as post-install step.
+* Added support for detecting GSP firmware at custom paths when generating CDI specifications.
+* Added logic to skip the extraction of image requirements if `NVIDIA_DISABLE_REQUIRES` is set to `true`.
+
 * [libnvidia-container] Include Shared Compiler Library (libnvidia-gpucomp.so) in the list of compute libaries.
+
+* [toolkit-container] Ensure that common envvars have higher priority when configuring the container engines.
+* [toolkit-container] Bump CUDA base image version to 12.2.0.
+* [toolkit-container] Remove installation of nvidia-experimental runtime. This is superceded by the NVIDIA Container Runtime in CDI mode.
 
 ## v1.14.0-rc.1
 
@@ -17,15 +28,10 @@
 * Fix bug in creation of `/dev/char` symlinks by failing operation if kernel modules are not loaded.
 * Add option to load kernel modules when creating device nodes
 * Add option to create device nodes when creating `/dev/char` symlinks
-* Create ouput folders if required when running `nvidia-ctk runtime configure`
-* Generate default config as post-install step.
-* Added support for detecting GSP firmware at custom paths when generating CDI specifications.
-* Added logic to skip the extraction of image requirements if NVIDIA_DISABLE_REQUIRES is set to true.
 
 * [libnvidia-container] Support OpenSSL 3 with the Encrypt/Decrypt library
 
-* [toolkit-container] Bump CUDA base image version to 12.2.0.
-* [toolkit-container] Remove installation of nvidia-experimental runtime. This is superceded by the NVIDIA Container Runtime in CDI mode.
+* [toolkit-container] Allow same envars for all runtime configs
 
 ## v1.13.1
 
