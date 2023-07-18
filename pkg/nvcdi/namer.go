@@ -17,16 +17,21 @@
 package nvcdi
 
 import (
+	"errors"
 	"fmt"
 
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
 
+// UUIDer is an interface for getting UUIDs.
+type UUIDer interface {
+	GetUUID() (string, error)
+}
+
 // DeviceNamer is an interface for getting device names
 type DeviceNamer interface {
-	GetDeviceName(int, device.Device) (string, error)
-	GetMigDeviceName(int, device.Device, int, device.MigDevice) (string, error)
+	GetDeviceName(int, UUIDer) (string, error)
+	GetMigDeviceName(int, UUIDer, int, UUIDer) (string, error)
 }
 
 // Supported device naming strategies
@@ -61,29 +66,57 @@ func NewDeviceNamer(strategy string) (DeviceNamer, error) {
 }
 
 // GetDeviceName returns the name for the specified device based on the naming strategy
-func (s deviceNameIndex) GetDeviceName(i int, d device.Device) (string, error) {
+func (s deviceNameIndex) GetDeviceName(i int, _ UUIDer) (string, error) {
 	return fmt.Sprintf("%s%d", s.gpuPrefix, i), nil
 }
 
 // GetMigDeviceName returns the name for the specified device based on the naming strategy
-func (s deviceNameIndex) GetMigDeviceName(i int, d device.Device, j int, mig device.MigDevice) (string, error) {
+func (s deviceNameIndex) GetMigDeviceName(i int, _ UUIDer, j int, _ UUIDer) (string, error) {
 	return fmt.Sprintf("%s%d:%d", s.migPrefix, i, j), nil
 }
 
 // GetDeviceName returns the name for the specified device based on the naming strategy
-func (s deviceNameUUID) GetDeviceName(i int, d device.Device) (string, error) {
-	uuid, ret := d.GetUUID()
-	if ret != nvml.SUCCESS {
-		return "", fmt.Errorf("failed to get device UUID: %v", ret)
+func (s deviceNameUUID) GetDeviceName(i int, d UUIDer) (string, error) {
+	uuid, err := d.GetUUID()
+	if err != nil {
+		return "", fmt.Errorf("failed to get device UUID: %v", err)
 	}
 	return uuid, nil
 }
 
 // GetMigDeviceName returns the name for the specified device based on the naming strategy
-func (s deviceNameUUID) GetMigDeviceName(i int, d device.Device, j int, mig device.MigDevice) (string, error) {
-	uuid, ret := mig.GetUUID()
-	if ret != nvml.SUCCESS {
-		return "", fmt.Errorf("failed to get device UUID: %v", ret)
+func (s deviceNameUUID) GetMigDeviceName(i int, _ UUIDer, j int, mig UUIDer) (string, error) {
+	uuid, err := mig.GetUUID()
+	if err != nil {
+		return "", fmt.Errorf("failed to get device UUID: %v", err)
 	}
 	return uuid, nil
+}
+
+//go:generate moq -stub -out namer_nvml_mock.go . nvmlUUIDer
+type nvmlUUIDer interface {
+	GetUUID() (string, nvml.Return)
+}
+
+type convert struct {
+	nvmlUUIDer
+}
+
+type uuidUnsupported struct{}
+
+func (m convert) GetUUID() (string, error) {
+	if m.nvmlUUIDer == nil {
+		return uuidUnsupported{}.GetUUID()
+	}
+	uuid, ret := m.nvmlUUIDer.GetUUID()
+	if ret != nvml.SUCCESS {
+		return "", ret
+	}
+	return uuid, nil
+}
+
+var errUUIDUnsupported = errors.New("GetUUID is not supported")
+
+func (m uuidUnsupported) GetUUID() (string, error) {
+	return "", errUUIDUnsupported
 }

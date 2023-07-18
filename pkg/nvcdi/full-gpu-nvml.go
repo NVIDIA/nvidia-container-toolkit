@@ -39,7 +39,7 @@ func (l *nvmllib) GetGPUDeviceSpecs(i int, d device.Device) (*specs.Device, erro
 		return nil, fmt.Errorf("failed to get edits for device: %v", err)
 	}
 
-	name, err := l.deviceNamer.GetDeviceName(i, d)
+	name, err := l.deviceNamer.GetDeviceName(i, convert{d})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device name: %v", err)
 	}
