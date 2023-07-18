@@ -4,6 +4,8 @@
 * Remove dependency on `coreutils` when installing the NVIDIA Container Toolkit on RPM-based systems.
 * Added support for detecting GSP firmware at custom paths when generating CDI specifications.
 
+* [libnvidia-container] Include Shared Compiler Library (libnvidia-gpucomp.so) in the list of compute libaries.
+
 ## v1.13.4
 * [toolkit-container] Bump CUDA base image version to 12.2.0.
 
