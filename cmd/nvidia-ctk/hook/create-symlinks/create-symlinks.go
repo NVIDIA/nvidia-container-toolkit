@@ -101,7 +101,10 @@ func (m command) run(c *cli.Context, cfg *config) error {
 
 	csvFiles := cfg.filenames.Value()
 
-	chainLocator := lookup.NewSymlinkChainLocator(m.logger, cfg.hostRoot)
+	chainLocator := lookup.NewSymlinkChainLocator(
+		lookup.WithLogger(m.logger),
+		lookup.WithRoot(cfg.hostRoot),
+	)
 
 	var candidates []string
 	for _, file := range csvFiles {

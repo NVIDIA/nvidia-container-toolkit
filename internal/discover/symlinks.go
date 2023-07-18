@@ -113,7 +113,10 @@ func (d symlinkHook) getSpecificLinks() ([]string, error) {
 }
 
 func (d symlinkHook) getCSVFileSymlinks() []string {
-	chainLocator := lookup.NewSymlinkChainLocator(d.logger, d.driverRoot)
+	chainLocator := lookup.NewSymlinkChainLocator(
+		lookup.WithLogger(d.logger),
+		lookup.WithRoot(d.driverRoot),
+	)
 
 	var candidates []string
 	for _, file := range d.csvFiles {
