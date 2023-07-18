@@ -36,7 +36,7 @@ func (l *nvmllib) GetMIGDeviceSpecs(i int, d device.Device, j int, mig device.Mi
 		return nil, fmt.Errorf("failed to get edits for device: %v", err)
 	}
 
-	name, err := l.deviceNamer.GetMigDeviceName(i, d, j, mig)
+	name, err := l.deviceNamer.GetMigDeviceName(i, convert{d}, j, convert{mig})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device name: %v", err)
 	}
