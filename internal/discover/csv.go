@@ -39,7 +39,7 @@ func NewFromCSVFiles(logger logger.Interface, files []string, driverRoot string)
 	)
 	locators := map[csv.MountSpecType]lookup.Locator{
 		csv.MountSpecDev: lookup.NewCharDeviceLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot)),
-		csv.MountSpecDir: lookup.NewDirectoryLocator(logger, driverRoot),
+		csv.MountSpecDir: lookup.NewDirectoryLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot)),
 		// Libraries and symlinks are handled in the same way
 		csv.MountSpecLib: symlinkLocator,
 		csv.MountSpecSym: symlinkLocator,

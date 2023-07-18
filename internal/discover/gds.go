@@ -38,7 +38,7 @@ func NewGDSDiscoverer(logger logger.Interface, root string) (Discover, error) {
 
 	udev := NewMounts(
 		logger,
-		lookup.NewDirectoryLocator(logger, root),
+		lookup.NewDirectoryLocator(lookup.WithLogger(logger), lookup.WithRoot(root)),
 		root,
 		[]string{"/run/udev"},
 	)
