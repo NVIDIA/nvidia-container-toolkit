@@ -130,7 +130,7 @@ func (m command) build() *cli.Command {
 		},
 		&cli.StringSliceFlag{
 			Name:        "csv.file",
-			Usage:       "The path to the list of CSV files to use when generating the CDI specification in CDI mode.",
+			Usage:       "The path to the list of CSV files to use when generating the CDI specification in CSV mode.",
 			Value:       cli.NewStringSlice(csv.DefaultFileList()...),
 			Destination: &opts.csv.files,
 		},

@@ -19,7 +19,7 @@ package info
 import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
+	cdi "github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
 )
 
