@@ -53,8 +53,13 @@ func (l *csvlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 		return nil, fmt.Errorf("failed to create container edits for CSV files: %v", err)
 	}
 
+	name, err := l.deviceNamer.GetDeviceName(0, uuidUnsupported{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get device name: %v", err)
+	}
+
 	deviceSpec := specs.Device{
-		Name:           "all",
+		Name:           name,
 		ContainerEdits: *e.ContainerEdits,
 	}
 	return []specs.Device{deviceSpec}, nil
