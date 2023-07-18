@@ -45,17 +45,7 @@ const (
 
 // NewCSVModifier creates a modifier that applies modications to an OCI spec if required by the runtime wrapper.
 // The modifications are defined by CSV MountSpecs.
-func NewCSVModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
-	rawSpec, err := ociSpec.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
-	}
-
-	image, err := image.NewCUDAImageFromSpec(rawSpec)
-	if err != nil {
-		return nil, err
-	}
-
+func NewCSVModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
 	if devices := image.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices.List()) == 0 {
 		logger.Infof("No modification required; no devices requested")
 		return nil, nil
