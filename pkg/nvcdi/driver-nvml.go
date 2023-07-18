@@ -18,6 +18,7 @@ package nvcdi
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
+	"golang.org/x/sys/unix"
 )
 
 // NewDriverDiscoverer creates a discoverer for the libraries and binaries associated with a driver installation.
@@ -55,7 +57,10 @@ func newDriverVersionDiscoverer(logger *logrus.Logger, driverRoot string, nvidia
 		return nil, fmt.Errorf("failed to create discoverer for IPC sockets: %v", err)
 	}
 
-	firmwares := NewDriverFirmwareDiscoverer(logger, driverRoot, version)
+	firmwares, err := NewDriverFirmwareDiscoverer(logger, driverRoot, version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create discoverer for GSP firmware: %v", err)
+	}
 
 	binaries := NewDriverBinariesDiscoverer(logger, driverRoot)
 
@@ -100,18 +105,65 @@ func NewDriverLibraryDiscoverer(logger *logrus.Logger, driverRoot string, nvidia
 	return d, nil
 }
 
+func getUTSRelease() (string, error) {
+	utsname := &unix.Utsname{}
+	if err := unix.Uname(utsname); err != nil {
+		return "", err
+	}
+	return unix.ByteSliceToString(utsname.Release[:]), nil
+}
+
+func getFirmwareSearchPaths(logger *logrus.Logger) ([]string, error) {
+
+	var firmwarePaths []string
+	if p := getCustomFirmwareClassPath(logger); p != "" {
+		logger.Debugf("using custom firmware class path: %s", p)
+		firmwarePaths = append(firmwarePaths, p)
+	}
+
+	utsRelease, err := getUTSRelease()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get UTS_RELEASE: %v", err)
+	}
+
+	standardPaths := []string{
+		filepath.Join("/lib/firmware/updates/", utsRelease),
+		filepath.Join("/lib/firmware/updates/"),
+		filepath.Join("/lib/firmware/", utsRelease),
+		filepath.Join("/lib/firmware/"),
+	}
+
+	return append(firmwarePaths, standardPaths...), nil
+}
+
+// getCustomFirmwareClassPath returns the custom firmware class path if it exists.
+func getCustomFirmwareClassPath(logger *logrus.Logger) string {
+	customFirmwareClassPath, err := os.ReadFile("/sys/module/firmware_class/parameters/path")
+	if err != nil {
+		logger.Warningf("failed to get custom firmware class path: %v", err)
+		return ""
+	}
+
+	return strings.TrimSpace(string(customFirmwareClassPath))
+}
+
 // NewDriverFirmwareDiscoverer creates a discoverer for GSP firmware associated with the specified driver version.
-func NewDriverFirmwareDiscoverer(logger *logrus.Logger, driverRoot string, version string) discover.Discover {
-	gspFirmwarePath := filepath.Join("/lib/firmware/nvidia", version, "gsp*.bin")
+func NewDriverFirmwareDiscoverer(logger *logrus.Logger, driverRoot string, version string) (discover.Discover, error) {
+	gspFirmwareSearchPaths, err := getFirmwareSearchPaths(logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get firmware search paths: %v", err)
+	}
+	gspFirmwarePaths := filepath.Join("nvidia", version, "gsp*.bin")
 	return discover.NewMounts(
 		logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
 			lookup.WithRoot(driverRoot),
+			lookup.WithSearchPaths(gspFirmwareSearchPaths...),
 		),
 		driverRoot,
-		[]string{gspFirmwarePath},
-	)
+		[]string{gspFirmwarePaths},
+	), nil
 }
 
 // NewDriverBinariesDiscoverer creates a discoverer for GSP firmware associated with the GPU driver.
