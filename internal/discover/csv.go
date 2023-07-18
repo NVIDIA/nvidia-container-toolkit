@@ -33,7 +33,10 @@ func NewFromCSVFiles(logger logger.Interface, files []string, driverRoot string)
 		return None{}, nil
 	}
 
-	symlinkLocator := lookup.NewSymlinkLocator(logger, driverRoot)
+	symlinkLocator := lookup.NewSymlinkLocator(
+		lookup.WithLogger(logger),
+		lookup.WithRoot(driverRoot),
+	)
 	locators := map[csv.MountSpecType]lookup.Locator{
 		csv.MountSpecDev: lookup.NewCharDeviceLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot)),
 		csv.MountSpecDir: lookup.NewDirectoryLocator(logger, driverRoot),

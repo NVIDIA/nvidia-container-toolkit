@@ -41,7 +41,7 @@ func NewLibraryLocator(logger logger.Interface, root string) (Locator, error) {
 
 	l := library{
 		logger:  logger,
-		symlink: NewSymlinkLocator(logger, root),
+		symlink: NewSymlinkLocator(WithLogger(logger), WithRoot(root)),
 		cache:   cache,
 	}
 
