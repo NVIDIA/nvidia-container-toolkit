@@ -38,13 +38,14 @@ type wrapper struct {
 }
 
 type nvcdilib struct {
-	logger        logger.Interface
-	nvmllib       nvml.Interface
-	mode          string
-	devicelib     device.Interface
-	deviceNamer   DeviceNamer
-	driverRoot    string
-	nvidiaCTKPath string
+	logger             logger.Interface
+	nvmllib            nvml.Interface
+	mode               string
+	devicelib          device.Interface
+	deviceNamer        DeviceNamer
+	driverRoot         string
+	nvidiaCTKPath      string
+	librarySearchPaths []string
 
 	csvFiles []string
 

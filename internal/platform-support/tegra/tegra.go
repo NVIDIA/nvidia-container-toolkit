@@ -25,10 +25,11 @@ import (
 )
 
 type tegraOptions struct {
-	logger        logger.Interface
-	csvFiles      []string
-	driverRoot    string
-	nvidiaCTKPath string
+	logger             logger.Interface
+	csvFiles           []string
+	driverRoot         string
+	nvidiaCTKPath      string
+	librarySearchPaths []string
 }
 
 // Option defines a functional option for configuring a Tegra discoverer.
@@ -41,7 +42,7 @@ func New(opts ...Option) (discover.Discover, error) {
 		opt(o)
 	}
 
-	csvDiscoverer, err := newDiscovererFromCSVFiles(o.logger, o.csvFiles, o.driverRoot, o.nvidiaCTKPath)
+	csvDiscoverer, err := newDiscovererFromCSVFiles(o.logger, o.csvFiles, o.driverRoot, o.nvidiaCTKPath, o.librarySearchPaths)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
 	}
@@ -96,5 +97,12 @@ func WithCSVFiles(csvFiles []string) Option {
 func WithNVIDIACTKPath(nvidiaCTKPath string) Option {
 	return func(o *tegraOptions) {
 		o.nvidiaCTKPath = nvidiaCTKPath
+	}
+}
+
+// WithLibrarySearchPaths sets the library search paths for the discoverer.
+func WithLibrarySearchPaths(librarySearchPaths ...string) Option {
+	return func(o *tegraOptions) {
+		o.librarySearchPaths = librarySearchPaths
 	}
 }

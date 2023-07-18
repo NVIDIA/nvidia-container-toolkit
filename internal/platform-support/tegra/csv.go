@@ -28,7 +28,7 @@ import (
 // newDiscovererFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
 // The constructed discoverer is comprised of a list, with each element in the list being associated with a
 // single CSV files.
-func newDiscovererFromCSVFiles(logger logger.Interface, files []string, driverRoot string, nvidiaCTKPath string) (discover.Discover, error) {
+func newDiscovererFromCSVFiles(logger logger.Interface, files []string, driverRoot string, nvidiaCTKPath string, librarySearchPaths []string) (discover.Discover, error) {
 	if len(files) == 0 {
 		logger.Warningf("No CSV files specified")
 		return discover.None{}, nil
@@ -51,7 +51,12 @@ func newDiscovererFromCSVFiles(logger logger.Interface, files []string, driverRo
 	)
 
 	// Libraries and symlinks use the same locator.
-	symlinkLocator := lookup.NewSymlinkLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot))
+	searchPaths := append(librarySearchPaths, "/")
+	symlinkLocator := lookup.NewSymlinkLocator(
+		lookup.WithLogger(logger),
+		lookup.WithRoot(driverRoot),
+		lookup.WithSearchPaths(searchPaths...),
+	)
 	libraries := discover.NewMounts(
 		logger,
 		symlinkLocator,
