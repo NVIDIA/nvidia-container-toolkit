@@ -17,6 +17,7 @@
 package config
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -233,4 +234,48 @@ func TestGetConfig(t *testing.T) {
 			require.EqualValues(t, tc.expectedConfig, cfg)
 		})
 	}
+}
+
+func TestConfigDefault(t *testing.T) {
+	config, err := getDefault()
+	require.NoError(t, err)
+
+	buffer := new(bytes.Buffer)
+	_, err = config.Save(buffer)
+	require.NoError(t, err)
+
+	var lines []string
+	for _, l := range strings.Split(buffer.String(), "\n") {
+		l = strings.TrimSpace(l)
+		if strings.HasPrefix(l, "# ") {
+			l = "#" + strings.TrimPrefix(l, "# ")
+		}
+		lines = append(lines, l)
+	}
+
+	// We take the lines from the config that was included in previous packages.
+	expectedLines := []string{
+		"disable-require = false",
+		"#swarm-resource = \"DOCKER_RESOURCE_GPU\"",
+		"#accept-nvidia-visible-devices-envvar-when-unprivileged = true",
+		"#accept-nvidia-visible-devices-as-volume-mounts = false",
+
+		"#root = \"/run/nvidia/driver\"",
+		"#path = \"/usr/bin/nvidia-container-cli\"",
+		"environment = []",
+		"#debug = \"/var/log/nvidia-container-toolkit.log\"",
+		"#ldcache = \"/etc/ld.so.cache\"",
+		"load-kmods = true",
+		"#no-cgroups = false",
+		"#user = \"root:video\"",
+
+		"[nvidia-container-runtime]",
+		"#debug = \"/var/log/nvidia-container-runtime.log\"",
+		"log-level = \"info\"",
+		"mode = \"auto\"",
+
+		"mount-spec-path = \"/etc/nvidia-container-runtime/host-files-for-container.d\"",
+	}
+
+	require.Subset(t, lines, expectedLines)
 }

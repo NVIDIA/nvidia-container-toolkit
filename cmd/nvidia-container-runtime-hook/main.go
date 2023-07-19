@@ -92,7 +92,7 @@ func doPrestart() {
 	rootfs := getRootfsPath(container)
 
 	args := []string{getCLIPath(cli)}
-	if cli.Root != nil {
+	if cli.Root != nil && *cli.Root != "" {
 		args = append(args, fmt.Sprintf("--root=%s", *cli.Root))
 	}
 	if cli.LoadKmods {

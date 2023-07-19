@@ -57,6 +57,7 @@ var (
 // Config represents the contents of the config.toml file for the NVIDIA Container Toolkit
 // Note: This is currently duplicated by the HookConfig in cmd/nvidia-container-toolkit/hook_config.go
 type Config struct {
+	DisableRequire           bool `toml:"disable-require"`
 	AcceptEnvvarUnprivileged bool `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
 
 	NVIDIAContainerCLIConfig         ContainerCLIConfig `toml:"nvidia-container-cli"`
@@ -279,25 +280,26 @@ func (c Config) asCommentedToml() (*toml.Tree, error) {
 	}
 	for k, v := range commentedDefaults {
 		set := asToml.Get(k)
-		fmt.Printf("k=%v v=%+v set=%+v\n", k, v, set)
 		if !shouldComment(k, v, set) {
 			continue
 		}
-		fmt.Printf("set=%+v v=%+v\n", set, v)
 		asToml.SetWithComment(k, "", true, v)
 	}
 
 	return asToml, nil
 }
 
-func shouldComment(key string, value interface{}, set interface{}) bool {
+func shouldComment(key string, defaultValue interface{}, setTo interface{}) bool {
+	if key == "nvidia-container-cli.root" && setTo == "" {
+		return true
+	}
 	if key == "nvidia-container-cli.user" && !getCommentedUserGroup() {
 		return false
 	}
-	if key == "nvidia-container-runtime.debug" && set == "/dev/null" {
+	if key == "nvidia-container-runtime.debug" && setTo == "/dev/null" {
 		return true
 	}
-	if set == nil || value == set {
+	if setTo == nil || defaultValue == setTo {
 		return true
 	}
 

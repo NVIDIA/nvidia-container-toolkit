@@ -102,8 +102,19 @@ function sync() {
     ubuntu*) pkg_type=deb
         ;;
     *) echo "ERROR: unexpected distribution ${src_dist}"
+       exit 1
         ;;
     esac
+
+    if [[ $# -ge 4 && $4 == "package_type" ]] ; then
+        if [[ "${src_dist}" != "ubuntu18.04" && "${src_dist}" != "centos7" ]]; then
+            echo "Package type repos require ubuntu18.04 or centos7 as the source"
+            echo "skipping"
+            return
+        fi
+        dst_dist=$pkg_type
+    fi
+
 
     local arch=${target##*-}
     local dst_arch=${arch}
@@ -174,11 +185,13 @@ git -C ${PACKAGE_REPO_ROOT} clean -fdx ${REPO}
 
 for target in ${targets[@]}; do
     sync ${target} ${PACKAGE_CACHE}/packages ${PACKAGE_REPO_ROOT}/${REPO}
+    # We also create a `package_type` repo; internally we skip this for non-ubuntu18.04 or centos7 distributions
+    sync ${target} ${PACKAGE_CACHE}/packages ${PACKAGE_REPO_ROOT}/${REPO} "package_type"
 done
 
 git -C ${PACKAGE_REPO_ROOT} add ${REPO}
 
-if [[ ${REPO} == "stable" ]]; then
+if [[ "${REPO}" == "stable" ]]; then
 # Stable release
 git -C ${PACKAGE_REPO_ROOT} commit -s -F- <<EOF
 Add packages for NVIDIA Container Toolkit ${VERSION} release
