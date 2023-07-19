@@ -48,7 +48,7 @@ SHA=$(git rev-parse --short=8 ${REFERENCE})
 IMAGE_NAME="registry.gitlab.com/nvidia/container-toolkit/container-toolkit/staging/container-toolkit"
 IMAGE_TAG=${SHA}-packaging
 
-VERSION="$(get_version_from_image ${IMAGE_NAME}:${IMAGE_TAG} ${SHA})"
+: ${VERSION:="$(get_version_from_image ${IMAGE_NAME}:${IMAGE_TAG} ${SHA})"}
 
 REPO="experimental"
 if [[ ${VERSION/rc./} == ${VERSION} ]]; then
@@ -83,11 +83,15 @@ function sync() {
     local target=$1
     local src_root=$2
     local dst_root=$3
+    local by_package_type=$4
 
     local src_dist=${target%-*}
     local dst_dist=${src_dist/amazonlinux/amzn}
 
-    local pkg_type
+    local pkg_type=unknown
+    local arch=${target##*-}
+    local dst_arch=${arch}
+
     case ${src_dist} in
     amazonlinux*) pkg_type=rpm
         ;;
@@ -100,27 +104,16 @@ function sync() {
     opensuse-leap*) pkg_type=rpm
         ;;
     ubuntu*) pkg_type=deb
+        dst_arch=${arch//ppc64le/ppc64el}
         ;;
     *) echo "ERROR: unexpected distribution ${src_dist}"
        exit 1
         ;;
     esac
 
-    if [[ $# -ge 4 && $4 == "package_type" ]] ; then
-        if [[ "${src_dist}" != "ubuntu18.04" && "${src_dist}" != "centos7" ]]; then
-            echo "Package type repos require ubuntu18.04 or centos7 as the source"
-            echo "skipping"
-            return
-        fi
-        dst_dist=$pkg_type
+    if [[ x"${by_package_type}" == x"true" ]]; then
+        dst_dist=${pkg_type}
     fi
-
-
-    local arch=${target##*-}
-    local dst_arch=${arch}
-    case ${src_dist} in
-    ubuntu*) dst_arch=${arch//ppc64le/ppc64el}
-    esac
 
     local src=${src_root}/${src_dist}/${arch}
     local dst=${dst_root}/${dst_dist}/${dst_arch}
@@ -173,20 +166,27 @@ if [[ x"${_current_branch}" != x"gh-pages" ]]; then
 fi
 
 : ${UPSTREAM_REMOTE:="origin"}
-_remote_name=$( git remote -v | grep "git@gitlab.com:nvidia/container-toolkit/libnvidia-container.git (push)" | cut -d$'\t' -f1 )
-if [[ x"${_remote_name}" != x"${UPSTREAM_REMOTE}" ]]; then
-    echo "Identified ${_remote_name} as git@gitlab.com:nvidia/container-toolkit/libnvidia-container.git remote."
-    echo "Set UPSTREAM_REMOTE=${_remote_name} instead of ${UPSTREAM_REMOTE}"
-fi
 
 : ${UPSTREAM_REFERENCE:="${UPSTREAM_REMOTE}/gh-pages"}
 git -C ${PACKAGE_REPO_ROOT} reset --hard ${UPSTREAM_REFERENCE}
 git -C ${PACKAGE_REPO_ROOT} clean -fdx ${REPO}
 
 for target in ${targets[@]}; do
-    sync ${target} ${PACKAGE_CACHE}/packages ${PACKAGE_REPO_ROOT}/${REPO}
-    # We also create a `package_type` repo; internally we skip this for non-ubuntu18.04 or centos7 distributions
-    sync ${target} ${PACKAGE_CACHE}/packages ${PACKAGE_REPO_ROOT}/${REPO} "package_type"
+    echo "checking target=${target}"
+    by_package_type=
+    case ${target} in
+    ubuntu18.04-* | centos7-*)
+        by_package_type="true"
+        ;;
+    centos8-ppc64le)
+        by_package_type="false"
+        ;;
+    *)
+        echo "Skipping target ${target}"
+        continue
+        ;;
+    esac
+    sync ${target} ${PACKAGE_CACHE}/packages ${PACKAGE_REPO_ROOT}/${REPO} ${by_package_type}
 done
 
 git -C ${PACKAGE_REPO_ROOT} add ${REPO}
@@ -237,7 +237,6 @@ function sign() {
         gpg --import /keys/sub.key;
         /helpers/packages-sign-all.sh;
         "
-
 }
 
 sign deb
