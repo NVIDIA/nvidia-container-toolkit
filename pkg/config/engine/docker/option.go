@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -72,7 +71,7 @@ func (b *builder) loadConfig(config string) (*Config, error) {
 	}
 
 	b.logger.Infof("Loading config from %v", config)
-	readBytes, err := ioutil.ReadFile(config)
+	readBytes, err := os.ReadFile(config)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read config: %v", err)
 	}

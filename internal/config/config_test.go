@@ -18,7 +18,6 @@ package config
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,7 +38,7 @@ func TestGetConfigWithCustomConfig(t *testing.T) {
 	os.Setenv(configOverride, testDir)
 
 	require.NoError(t, os.MkdirAll(filepath.Dir(filename), 0766))
-	require.NoError(t, ioutil.WriteFile(filename, contents, 0766))
+	require.NoError(t, os.WriteFile(filename, contents, 0766))
 
 	defer func() { require.NoError(t, os.RemoveAll(testDir)) }()
 
