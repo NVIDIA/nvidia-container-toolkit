@@ -1,5 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.14.0-rc.3
+
 ## v1.14.0-rc.2
 
 * Fix bug causing incorrect nvidia-smi symlink to be created on WSL2 systems with multiple driver roots.
