@@ -17,8 +17,6 @@
 package config
 
 import (
-	"bytes"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,24 +26,20 @@ import (
 )
 
 func TestGetConfigWithCustomConfig(t *testing.T) {
-	wd, err := os.Getwd()
-	require.NoError(t, err)
+	testDir := t.TempDir()
+	t.Setenv(configOverride, testDir)
+
+	filename := filepath.Join(testDir, configFilePath)
 
 	// By default debug is disabled
 	contents := []byte("[nvidia-container-runtime]\ndebug = \"/nvidia-container-toolkit.log\"")
-	testDir := filepath.Join(wd, "test")
-	filename := filepath.Join(testDir, configFilePath)
-
-	os.Setenv(configOverride, testDir)
 
 	require.NoError(t, os.MkdirAll(filepath.Dir(filename), 0766))
-	require.NoError(t, ioutil.WriteFile(filename, contents, 0766))
-
-	defer func() { require.NoError(t, os.RemoveAll(testDir)) }()
+	require.NoError(t, os.WriteFile(filename, contents, 0766))
 
 	cfg, err := GetConfig()
 	require.NoError(t, err)
-	require.Equal(t, cfg.NVIDIAContainerRuntimeConfig.DebugFilePath, "/nvidia-container-toolkit.log")
+	require.Equal(t, "/nvidia-container-toolkit.log", cfg.NVIDIAContainerRuntimeConfig.DebugFilePath)
 }
 
 func TestGetConfig(t *testing.T) {
@@ -219,12 +213,14 @@ func TestGetConfig(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			reader := strings.NewReader(strings.Join(tc.contents, "\n"))
 
-			cfg, err := LoadFrom(reader)
+			tomlCfg, err := loadConfigTomlFrom(reader)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}
+			cfg, err := tomlCfg.Config()
+			require.NoError(t, err)
 
 			// We first handle the ldconfig path since this is currently system-dependent.
 			if tc.inspectLdconfig {
@@ -238,107 +234,5 @@ func TestGetConfig(t *testing.T) {
 
 			require.EqualValues(t, tc.expectedConfig, cfg)
 		})
-	}
-}
-
-func TestConfigDefault(t *testing.T) {
-	config, err := GetDefault()
-	require.NoError(t, err)
-
-	buffer := new(bytes.Buffer)
-	_, err = config.Save(buffer)
-	require.NoError(t, err)
-
-	var lines []string
-	for _, l := range strings.Split(buffer.String(), "\n") {
-		l = strings.TrimSpace(l)
-		if strings.HasPrefix(l, "# ") {
-			l = "#" + strings.TrimPrefix(l, "# ")
-		}
-		lines = append(lines, l)
-	}
-
-	// We take the lines from the config that was included in previous packages.
-	expectedLines := []string{
-		"disable-require = false",
-		"#swarm-resource = \"DOCKER_RESOURCE_GPU\"",
-		"#accept-nvidia-visible-devices-envvar-when-unprivileged = true",
-		"#accept-nvidia-visible-devices-as-volume-mounts = false",
-
-		"#root = \"/run/nvidia/driver\"",
-		"#path = \"/usr/bin/nvidia-container-cli\"",
-		"environment = []",
-		"#debug = \"/var/log/nvidia-container-toolkit.log\"",
-		"#ldcache = \"/etc/ld.so.cache\"",
-		"load-kmods = true",
-		"#no-cgroups = false",
-		"#user = \"root:video\"",
-
-		"[nvidia-container-runtime]",
-		"#debug = \"/var/log/nvidia-container-runtime.log\"",
-		"log-level = \"info\"",
-		"mode = \"auto\"",
-
-		"mount-spec-path = \"/etc/nvidia-container-runtime/host-files-for-container.d\"",
-	}
-
-	require.Subset(t, lines, expectedLines)
-}
-
-func TestFormat(t *testing.T) {
-	testCases := []struct {
-		input    string
-		expected string
-	}{
-		{
-			input:    "# comment",
-			expected: "#comment",
-		},
-		{
-			input:    " #comment",
-			expected: "#comment",
-		},
-		{
-			input:    " # comment",
-			expected: "#comment",
-		},
-		{
-			input: strings.Join([]string{
-				"some",
-				"# comment",
-				" # comment",
-				" #comment",
-				"other"}, "\n"),
-			expected: strings.Join([]string{
-				"some",
-				"#comment",
-				"#comment",
-				"#comment",
-				"other"}, "\n"),
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.input, func(t *testing.T) {
-			actual, _ := Config{}.format([]byte(tc.input))
-			require.Equal(t, tc.expected, string(actual))
-		})
-	}
-}
-
-func TestGetFormattedConfig(t *testing.T) {
-	expectedLines := []string{
-		"#no-cgroups = false",
-		"#debug = \"/var/log/nvidia-container-toolkit.log\"",
-		"#debug = \"/var/log/nvidia-container-runtime.log\"",
-	}
-
-	config, _ := GetDefault()
-	contents, err := config.contents()
-	require.NoError(t, err)
-	lines := strings.Split(string(contents), "\n")
-
-	for _, line := range expectedLines {
-		require.Contains(t, lines, line)
 	}
 }

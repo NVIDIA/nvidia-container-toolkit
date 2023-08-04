@@ -17,12 +17,10 @@
 package defaultsubcommand
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -102,57 +100,23 @@ func (m command) run(c *cli.Context, opts *options) error {
 		return fmt.Errorf("unable to create output directory: %v", err)
 	}
 
-	contents, err := opts.getFormattedConfig()
+	cfgToml, err := opts.getConfig()
 	if err != nil {
-		return fmt.Errorf("unable to fix comments: %v", err)
+		return fmt.Errorf("failed to load config: %v", err)
 	}
 
-	if _, err := opts.Write(contents); err != nil {
+	if _, err := opts.Write(cfgToml); err != nil {
 		return fmt.Errorf("unable to write to output: %v", err)
 	}
 
 	return nil
 }
 
-// getFormattedConfig returns the default config formatted as required from the specified config file.
-// The config is then formatted as required.
-// No indentation is used and comments are modified so that there is no space
-// after the '#' character.
-func (opts options) getFormattedConfig() ([]byte, error) {
-	cfg, err := config.Load(opts.config)
-	if err != nil {
-		return nil, fmt.Errorf("unable to load or create config: %v", err)
-	}
-
-	buffer := bytes.NewBuffer(nil)
-
-	if _, err := cfg.Save(buffer); err != nil {
-		return nil, fmt.Errorf("unable to save config: %v", err)
-	}
-	return fixComments(buffer.Bytes())
-}
-
-func fixComments(contents []byte) ([]byte, error) {
-	r, err := regexp.Compile(`(\n*)\s*?#\s*(\S.*)`)
-	if err != nil {
-		return nil, fmt.Errorf("unable to compile regexp: %v", err)
-	}
-	replaced := r.ReplaceAll(contents, []byte("$1#$2"))
-
-	return replaced, nil
-}
-
-func (opts options) outputExists() (bool, error) {
-	if opts.output == "" {
-		return false, nil
-	}
-	_, err := os.Stat(opts.output)
-	if err == nil {
-		return true, nil
-	} else if !os.IsNotExist(err) {
-		return false, fmt.Errorf("unable to stat output file: %v", err)
-	}
-	return false, nil
+// getConfig returns the TOML config for the specified options.
+func (opts options) getConfig() (*config.Toml, error) {
+	return config.New(
+		config.WithConfigFile(opts.config),
+	)
 }
 
 func (opts options) ensureOutputFolder() error {
@@ -166,7 +130,7 @@ func (opts options) ensureOutputFolder() error {
 }
 
 // Write writes the contents to the output file specified in the options.
-func (opts options) Write(contents []byte) (int, error) {
+func (opts options) Write(cfg *config.Toml) (int, error) {
 	var output io.Writer
 	if opts.output == "" {
 		output = os.Stdout
@@ -179,5 +143,6 @@ func (opts options) Write(contents []byte) (int, error) {
 		output = outputFile
 	}
 
-	return output.Write(contents)
+	n, err := cfg.Save(output)
+	return int(n), err
 }

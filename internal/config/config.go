@@ -18,8 +18,6 @@ package config
 
 import (
 	"bufio"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,7 +26,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
-	"github.com/pelletier/go-toml"
 )
 
 const (
@@ -79,58 +76,14 @@ func GetConfigFilePath() string {
 // GetConfig sets up the config struct. Values are read from a toml file
 // or set via the environment.
 func GetConfig() (*Config, error) {
-	return Load(GetConfigFilePath())
-}
-
-// Load loads the config from the specified file path.
-func Load(configFilePath string) (*Config, error) {
-	if configFilePath == "" {
-		return GetDefault()
-	}
-
-	tomlFile, err := os.Open(configFilePath)
-	if err != nil {
-		return GetDefault()
-	}
-	defer tomlFile.Close()
-
-	cfg, err := LoadFrom(tomlFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config values: %v", err)
-	}
-
-	return cfg, nil
-}
-
-// LoadFrom reads the config from the specified Reader
-func LoadFrom(reader io.Reader) (*Config, error) {
-	var tree *toml.Tree
-	if reader != nil {
-		toml, err := toml.LoadReader(reader)
-		if err != nil {
-			return nil, err
-		}
-		tree = toml
-	}
-
-	return getFromTree(tree)
-}
-
-// getFromTree reads the nvidia container runtime config from the specified toml Tree.
-func getFromTree(toml *toml.Tree) (*Config, error) {
-	cfg, err := GetDefault()
+	cfg, err := New(
+		WithConfigFile(GetConfigFilePath()),
+	)
 	if err != nil {
 		return nil, err
 	}
-	if toml == nil {
-		return cfg, nil
-	}
 
-	if err := toml.Unmarshal(cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
-	}
-
-	return cfg, nil
+	return cfg.Config()
 }
 
 // GetDefault defines the default values for the config
@@ -259,65 +212,4 @@ func resolveWithDefault(logger logger.Interface, label string, path string, defa
 	logger.Debugf("Using %v path %v", label, path)
 
 	return resolvedPath
-}
-
-func (c Config) asCommentedToml() (*toml.Tree, error) {
-	contents, err := toml.Marshal(c)
-	if err != nil {
-		return nil, err
-	}
-	asToml, err := toml.LoadBytes(contents)
-	if err != nil {
-		return nil, err
-	}
-
-	commentedDefaults := map[string]interface{}{
-		"swarm-resource": "DOCKER_RESOURCE_GPU",
-		"accept-nvidia-visible-devices-envvar-when-unprivileged": true,
-		"accept-nvidia-visible-devices-as-volume-mounts":         false,
-		"nvidia-container-cli.root":                              "/run/nvidia/driver",
-		"nvidia-container-cli.path":                              "/usr/bin/nvidia-container-cli",
-		"nvidia-container-cli.debug":                             "/var/log/nvidia-container-toolkit.log",
-		"nvidia-container-cli.ldcache":                           "/etc/ld.so.cache",
-		"nvidia-container-cli.no-cgroups":                        false,
-		"nvidia-container-cli.user":                              "root:video",
-		"nvidia-container-runtime.debug":                         "/var/log/nvidia-container-runtime.log",
-	}
-	for k, v := range commentedDefaults {
-		set := asToml.Get(k)
-		if !shouldComment(k, v, set) {
-			continue
-		}
-		asToml.SetWithComment(k, "", true, v)
-	}
-
-	return asToml, nil
-}
-
-func shouldComment(key string, defaultValue interface{}, setTo interface{}) bool {
-	if key == "nvidia-container-cli.user" && !getCommentedUserGroup() {
-		return false
-	}
-	if key == "nvidia-container-runtime.debug" && setTo == "/dev/null" {
-		return true
-	}
-	if setTo == nil || defaultValue == setTo || setTo == "" {
-		return true
-	}
-
-	return false
-}
-
-// Save writes the config to the specified writer.
-func (c Config) Save(w io.Writer) (int64, error) {
-	asToml, err := c.asCommentedToml()
-	if err != nil {
-		return 0, err
-	}
-
-	enc := toml.NewEncoder(w).Indentation("")
-	if err := enc.Encode(asToml); err != nil {
-		return 0, fmt.Errorf("invalid config: %v", err)
-	}
-	return 0, nil
 }
