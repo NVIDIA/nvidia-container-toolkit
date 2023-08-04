@@ -23,11 +23,12 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/tegra"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 )
 
 // csvMode represents the modifications as performed by the csv runtime mode
@@ -65,24 +66,33 @@ func NewCSVModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		csvFiles = csv.BaseFilesOnly(csvFiles)
 	}
 
-	d, err := tegra.New(
-		tegra.WithLogger(logger),
-		tegra.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
-		tegra.WithNVIDIACTKPath(cfg.NVIDIACTKConfig.Path),
-		tegra.WithCSVFiles(csvFiles),
+	cdilib, err := nvcdi.New(
+		nvcdi.WithLogger(logger),
+		nvcdi.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
+		nvcdi.WithNVIDIACTKPath(cfg.NVIDIACTKConfig.Path),
+		nvcdi.WithMode(nvcdi.ModeCSV),
+		nvcdi.WithCSVFiles(csvFiles),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to construct discoverer: %v", err)
+		return nil, fmt.Errorf("failed to construct CDI library: %v", err)
 	}
 
-	discoverModifier, err := NewModifierFromDiscoverer(logger, d)
+	spec, err := cdilib.GetSpec()
 	if err != nil {
-		return nil, fmt.Errorf("failed to construct modifier: %v", err)
+		return nil, fmt.Errorf("failed to get CDI spec: %v", err)
+	}
+
+	cdiModifier, err := cdi.New(
+		cdi.WithLogger(logger),
+		cdi.WithSpec(spec.Raw()),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct CDI modifier: %v", err)
 	}
 
 	modifiers := Merge(
 		nvidiaContainerRuntimeHookRemover{logger},
-		discoverModifier,
+		cdiModifier,
 	)
 
 	return modifiers, nil

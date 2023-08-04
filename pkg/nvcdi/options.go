@@ -103,3 +103,11 @@ func WithCSVFiles(csvFiles []string) Option {
 		o.csvFiles = csvFiles
 	}
 }
+
+// WithLibrarySearchPaths sets the library search paths.
+// This is currently only used for CSV-mode.
+func WithLibrarySearchPaths(paths []string) Option {
+	return func(o *nvcdilib) {
+		o.librarySearchPaths = paths
+	}
+}

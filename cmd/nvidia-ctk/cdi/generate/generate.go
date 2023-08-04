@@ -23,8 +23,8 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
@@ -51,7 +51,8 @@ type options struct {
 	class              string
 
 	csv struct {
-		files cli.StringSlice
+		files              cli.StringSlice
+		librarySearchPaths cli.StringSlice
 	}
 }
 
@@ -133,6 +134,11 @@ func (m command) build() *cli.Command {
 			Usage:       "The path to the list of CSV files to use when generating the CDI specification in CSV mode.",
 			Value:       cli.NewStringSlice(csv.DefaultFileList()...),
 			Destination: &opts.csv.files,
+		},
+		&cli.StringSliceFlag{
+			Name:        "csv.library-search-path",
+			Usage:       "Specify the path to search for libraries when discovering the entities that should be included in the CDI specification. This currently only affects CDI mode",
+			Destination: &opts.csv.librarySearchPaths,
 		},
 	}
 
@@ -227,6 +233,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithDeviceNamer(deviceNamer),
 		nvcdi.WithMode(string(opts.mode)),
 		nvcdi.WithCSVFiles(opts.csv.files.Value()),
+		nvcdi.WithLibrarySearchPaths(opts.csv.librarySearchPaths.Value()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)

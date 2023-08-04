@@ -14,60 +14,51 @@
 # limitations under the License.
 **/
 
-package discover
+package tegra
 
 import (
 	"fmt"
 	"path/filepath"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover/csv"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 )
 
 type symlinkHook struct {
-	None
+	discover.None
 	logger        logger.Interface
 	driverRoot    string
 	nvidiaCTKPath string
-	csvFiles      []string
-	mountsFrom    Discover
+	targets       []string
+	mountsFrom    discover.Discover
 }
 
-// NewCreateSymlinksHook creates a discoverer for a hook that creates required symlinks in the container
-func NewCreateSymlinksHook(logger logger.Interface, csvFiles []string, mounts Discover, nvidiaCTKPath string) (Discover, error) {
-	d := symlinkHook{
+// createCSVSymlinkHooks creates a discoverer for a hook that creates required symlinks in the container
+func createCSVSymlinkHooks(logger logger.Interface, targets []string, mounts discover.Discover, nvidiaCTKPath string) discover.Discover {
+	return symlinkHook{
 		logger:        logger,
 		nvidiaCTKPath: nvidiaCTKPath,
-		csvFiles:      csvFiles,
+		targets:       targets,
 		mountsFrom:    mounts,
 	}
-
-	return &d, nil
 }
 
 // Hooks returns a hook to create the symlinks from the required CSV files
-func (d symlinkHook) Hooks() ([]Hook, error) {
+func (d symlinkHook) Hooks() ([]discover.Hook, error) {
 	specificLinks, err := d.getSpecificLinks()
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine specific links: %v", err)
 	}
 
 	csvSymlinks := d.getCSVFileSymlinks()
-	var args []string
-	for _, link := range append(csvSymlinks, specificLinks...) {
-		args = append(args, "--link", link)
-	}
 
-	hook := CreateNvidiaCTKHook(
+	return discover.CreateCreateSymlinkHook(
 		d.nvidiaCTKPath,
-		"create-symlinks",
-		args...,
-	)
-
-	return []Hook{hook}, nil
+		append(csvSymlinks, specificLinks...),
+	).Hooks()
 }
 
 // getSpecificLinks returns the required specic links that need to be created
@@ -112,36 +103,30 @@ func (d symlinkHook) getSpecificLinks() ([]string, error) {
 	return links, nil
 }
 
-func (d symlinkHook) getCSVFileSymlinks() []string {
+// getSymlinkCandidates returns a list of symlinks that are candidates for being created.
+func (d symlinkHook) getSymlinkCandidates() []string {
 	chainLocator := lookup.NewSymlinkChainLocator(
 		lookup.WithLogger(d.logger),
 		lookup.WithRoot(d.driverRoot),
 	)
 
 	var candidates []string
-	for _, file := range d.csvFiles {
-		mountSpecs, err := csv.NewCSVFileParser(d.logger, file).Parse()
+	for _, target := range d.targets {
+		reslovedSymlinkChain, err := chainLocator.Locate(target)
 		if err != nil {
-			d.logger.Debugf("Skipping CSV file %v: %v", file, err)
+			d.logger.Warningf("Failed to locate symlink %v", target)
 			continue
 		}
-
-		for _, ms := range mountSpecs {
-			if ms.Type != csv.MountSpecSym {
-				continue
-			}
-			targets, err := chainLocator.Locate(ms.Path)
-			if err != nil {
-				d.logger.Warningf("Failed to locate symlink %v", ms.Path)
-			}
-			candidates = append(candidates, targets...)
-		}
+		candidates = append(candidates, reslovedSymlinkChain...)
 	}
+	return candidates
+}
 
+func (d symlinkHook) getCSVFileSymlinks() []string {
 	var links []string
 	created := make(map[string]bool)
 	// candidates is a list of absolute paths to symlinks in a chain, or the final target of the chain.
-	for _, candidate := range candidates {
+	for _, candidate := range d.getSymlinkCandidates() {
 		target, err := symlinks.Resolve(candidate)
 		if err != nil {
 			d.logger.Debugf("Skipping invalid link: %v", err)
