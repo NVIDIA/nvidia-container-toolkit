@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -51,8 +50,6 @@ var (
 	NVIDIAContainerRuntimeHookExecutable = "nvidia-container-runtime-hook"
 	// NVIDIAContainerToolkitExecutable is the executable name for the NVIDIA Container Toolkit (an alias for the NVIDIA Container Runtime Hook)
 	NVIDIAContainerToolkitExecutable = "nvidia-container-toolkit"
-
-	configDir = "/etc/"
 )
 
 // Config represents the contents of the config.toml file for the NVIDIA Container Toolkit
@@ -70,16 +67,19 @@ type Config struct {
 	NVIDIAContainerRuntimeHookConfig RuntimeHookConfig  `toml:"nvidia-container-runtime-hook"`
 }
 
+// GetConfigFilePath returns the path to the config file for the configured system
+func GetConfigFilePath() string {
+	if XDGConfigDir := os.Getenv(configOverride); len(XDGConfigDir) != 0 {
+		return filepath.Join(XDGConfigDir, configFilePath)
+	}
+
+	return filepath.Join("/etc", configFilePath)
+}
+
 // GetConfig sets up the config struct. Values are read from a toml file
 // or set via the environment.
 func GetConfig() (*Config, error) {
-	if XDGConfigDir := os.Getenv(configOverride); len(XDGConfigDir) != 0 {
-		configDir = XDGConfigDir
-	}
-
-	configFilePath := path.Join(configDir, configFilePath)
-
-	return Load(configFilePath)
+	return Load(GetConfigFilePath())
 }
 
 // Load loads the config from the specified file path.

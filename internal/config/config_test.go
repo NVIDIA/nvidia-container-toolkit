@@ -284,3 +284,61 @@ func TestConfigDefault(t *testing.T) {
 
 	require.Subset(t, lines, expectedLines)
 }
+
+func TestFormat(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "# comment",
+			expected: "#comment",
+		},
+		{
+			input:    " #comment",
+			expected: "#comment",
+		},
+		{
+			input:    " # comment",
+			expected: "#comment",
+		},
+		{
+			input: strings.Join([]string{
+				"some",
+				"# comment",
+				" # comment",
+				" #comment",
+				"other"}, "\n"),
+			expected: strings.Join([]string{
+				"some",
+				"#comment",
+				"#comment",
+				"#comment",
+				"other"}, "\n"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			actual, _ := Config{}.format([]byte(tc.input))
+			require.Equal(t, tc.expected, string(actual))
+		})
+	}
+}
+
+func TestGetFormattedConfig(t *testing.T) {
+	expectedLines := []string{
+		"#no-cgroups = false",
+		"#debug = \"/var/log/nvidia-container-toolkit.log\"",
+		"#debug = \"/var/log/nvidia-container-runtime.log\"",
+	}
+
+	config, _ := GetDefault()
+	contents, err := config.contents()
+	require.NoError(t, err)
+	lines := strings.Split(string(contents), "\n")
+
+	for _, line := range expectedLines {
+		require.Contains(t, lines, line)
+	}
+}
