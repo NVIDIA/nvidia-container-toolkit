@@ -164,6 +164,18 @@ func TestMergedDevice(t *testing.T) {
 			expectedSpec: &specs.Spec{
 				Devices: []specs.Device{
 					{
+						Name: "all",
+						ContainerEdits: specs.ContainerEdits{
+							Hooks: []*specs.Hook{
+								{
+									HookName: "createContainer",
+									Path:     "/usr/bin/nvidia-ctk",
+									Args:     []string{"nvidia-ctk", "hook", "chmod", "--mode", "755", "--path", "/dev/dri"},
+								},
+							},
+						},
+					},
+					{
 						Name: "gpu0",
 						ContainerEdits: specs.ContainerEdits{
 							Hooks: []*specs.Hook{
@@ -177,18 +189,6 @@ func TestMergedDevice(t *testing.T) {
 					},
 					{
 						Name: "gpu1",
-						ContainerEdits: specs.ContainerEdits{
-							Hooks: []*specs.Hook{
-								{
-									HookName: "createContainer",
-									Path:     "/usr/bin/nvidia-ctk",
-									Args:     []string{"nvidia-ctk", "hook", "chmod", "--mode", "755", "--path", "/dev/dri"},
-								},
-							},
-						},
-					},
-					{
-						Name: "all",
 						ContainerEdits: specs.ContainerEdits{
 							Hooks: []*specs.Hook{
 								{
