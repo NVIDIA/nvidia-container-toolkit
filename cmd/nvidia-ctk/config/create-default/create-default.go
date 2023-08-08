@@ -18,10 +18,8 @@ package defaultsubcommand
 
 import (
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/flags"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/urfave/cli/v2"
@@ -29,11 +27,6 @@ import (
 
 type command struct {
 	logger logger.Interface
-}
-
-// options stores the subcommand options
-type options struct {
-	output string
 }
 
 // NewCommand constructs a default command with the specified logger
@@ -46,7 +39,7 @@ func NewCommand(logger logger.Interface) *cli.Command {
 
 // build creates the CLI command
 func (m command) build() *cli.Command {
-	opts := options{}
+	opts := flags.Options{}
 
 	// Create the 'default' command
 	c := cli.Command{
@@ -66,24 +59,24 @@ func (m command) build() *cli.Command {
 			Name:        "output",
 			Aliases:     []string{"o"},
 			Usage:       "Specify the output file to write to; If not specified, the output is written to stdout",
-			Destination: &opts.output,
+			Destination: &opts.Output,
 		},
 	}
 
 	return &c
 }
 
-func (m command) validateFlags(c *cli.Context, opts *options) error {
-	return nil
+func (m command) validateFlags(c *cli.Context, opts *flags.Options) error {
+	return opts.Validate()
 }
 
-func (m command) run(c *cli.Context, opts *options) error {
+func (m command) run(c *cli.Context, opts *flags.Options) error {
 	cfgToml, err := config.New()
 	if err != nil {
 		return fmt.Errorf("unable to load or create config: %v", err)
 	}
 
-	if err := opts.ensureOutputFolder(); err != nil {
+	if err := opts.EnsureOutputFolder(); err != nil {
 		return fmt.Errorf("failed to create output directory: %v", err)
 	}
 	output, err := opts.CreateOutput()
@@ -97,33 +90,5 @@ func (m command) run(c *cli.Context, opts *options) error {
 		return fmt.Errorf("failed to write output: %v", err)
 	}
 
-	return nil
-}
-
-// ensureOutputFolder creates the output folder if it does not exist.
-// If the output folder is not specified (i.e. output to STDOUT), it is ignored.
-func (o options) ensureOutputFolder() error {
-	if o.output == "" {
-		return nil
-	}
-	if dir := filepath.Dir(o.output); dir != "" {
-		return os.MkdirAll(dir, 0755)
-	}
-	return nil
-}
-
-func (o options) CreateOutput() (io.WriteCloser, error) {
-	if o.output != "" {
-		return os.Create(o.output)
-	}
-
-	return nullCloser{os.Stdout}, nil
-}
-
-type nullCloser struct {
-	io.Writer
-}
-
-func (d nullCloser) Close() error {
 	return nil
 }

@@ -148,6 +148,21 @@ func (t Toml) format(contents []byte) ([]byte, error) {
 	return replaced, nil
 }
 
+// Delete deletes the specified key from the TOML config.
+func (t *Toml) Delete(key string) error {
+	return (*toml.Tree)(t).Delete(key)
+}
+
+// Get returns the value for the specified key.
+func (t *Toml) Get(key string) interface{} {
+	return (*toml.Tree)(t).Get(key)
+}
+
+// Set sets the specified key to the specified value in the TOML config.
+func (t *Toml) Set(key string, value interface{}) {
+	(*toml.Tree)(t).Set(key, value)
+}
+
 // commentDefaults applies the required comments for default values to the Toml.
 func (t *Toml) commentDefaults() *Toml {
 	asToml := (*toml.Tree)(t)

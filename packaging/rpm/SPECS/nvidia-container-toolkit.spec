@@ -59,7 +59,7 @@ rm -rf %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
 ln -sf %{_bindir}/nvidia-container-runtime-hook %{_bindir}/nvidia-container-toolkit
 
 # Generate the default config; If this file already exists no changes are made.
-%{_bindir}/nvidia-ctk --quiet config default --in-place --config=%{_sysconfdir}/nvidia-container-runtime/config.toml
+%{_bindir}/nvidia-ctk --quiet config --config-file=%{_sysconfdir}/nvidia-container-runtime/config.toml --in-place
 
 %postun
 if [ "$1" = 0 ]; then  # package is uninstalled, not upgraded
