@@ -45,26 +45,8 @@ fi
 
 eval $(${SCRIPTS_DIR}/get-component-versions.sh)
 
-
-if [[ -n ${NVIDIA_CONTAINER_TOOLKIT_TAG} ]]; then
-echo "Allowing mismatched versions for release candidate "
-: "${ALLOW_VERSION_MISMATCH:=true}"
-fi
-
-if [[ "${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}" != "${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}" ]]; then
-    set +x
-    echo "The libnvidia-container and nvidia-container-toolkit versions do not match."
-    echo "lib: '${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}'"
-    echo "toolkit: '${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}'"
-    set -x
-    [[ ${ALLOW_VERSION_MISMATCH} == "true" ]] || exit 1
-    echo "Continuing with mismatched version"
-fi
-
 export NVIDIA_CONTAINER_TOOLKIT_VERSION
 export NVIDIA_CONTAINER_TOOLKIT_TAG
-export LIBNVIDIA_CONTAINER_VERSION
-export LIBNVIDIA_CONTAINER_TAG
 export NVIDIA_CONTAINER_RUNTIME_VERSION
 export NVIDIA_DOCKER_VERSION
 

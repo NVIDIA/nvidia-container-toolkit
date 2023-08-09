@@ -28,17 +28,9 @@ set -e
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
 PROJECT_ROOT="$( cd ${SCRIPTS_DIR}/.. && pwd )"
 
-LIBNVIDIA_CONTAINER_ROOT=${PROJECT_ROOT}/third_party/libnvidia-container
 NVIDIA_CONTAINER_TOOLKIT_ROOT=${PROJECT_ROOT}
 NVIDIA_CONTAINER_RUNTIME_ROOT=${PROJECT_ROOT}/third_party/nvidia-container-runtime
 NVIDIA_DOCKER_ROOT=${PROJECT_ROOT}/third_party/nvidia-docker
-
-# Get version for libnvidia-container
-libnvidia_container_version_tag=$(grep "#define NVC_VERSION" ${LIBNVIDIA_CONTAINER_ROOT}/src/nvc.h \
-    | sed -e 's/#define NVC_VERSION[[:space:]]"\(.*\)"/\1/')
-libnvidia_container_version=${libnvidia_container_version_tag%%-*}
-libnvidia_container_tag=${libnvidia_container_version_tag##${libnvidia_container_version}}
-libnvidia_container_tag=${libnvidia_container_tag##\-}
 
 versions_makefile=${NVIDIA_CONTAINER_TOOLKIT_ROOT}/versions.mk
 # Get version for nvidia-container-toolit
@@ -56,17 +48,9 @@ nvidia_docker_version=$(grep -m 1 "^NVIDIA_DOCKER_VERSION := " ${versions_makefi
 nvidia_docker_tag=${nvidia_container_toolkit_tag}
 nvidia_docker_version_tag="${nvidia_docker_version}${nvidia_docker_tag:+~${nvidia_docker_tag}}"
 
-echo "LIBNVIDIA_CONTAINER_VERSION=${libnvidia_container_version}"
-echo "LIBNVIDIA_CONTAINER_TAG=${libnvidia_container_tag}"
-echo "LIBNVIDIA_CONTAINER_PACKAGE_VERSION=${libnvidia_container_version_tag//\~/-}"
 echo "NVIDIA_CONTAINER_TOOLKIT_VERSION=${nvidia_container_toolkit_version}"
 echo "NVIDIA_CONTAINER_TOOLKIT_TAG=${nvidia_container_toolkit_tag}"
 echo "NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION=${nvidia_container_toolkit_version_tag//\~/-}"
-if [[ "${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}" != "${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}" ]]; then
-    >&2 echo "WARNING: The libnvidia-container and nvidia-container-toolkit versions do not match"
-    >&2 echo "WARNING: lib: ${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}"
-    >&2 echo "WARNING: toolkit: ${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}"
-fi
 echo "NVIDIA_CONTAINER_RUNTIME_VERSION=${nvidia_container_runtime_version}"
 echo "NVIDIA_CONTAINER_RUNTIME_TAG=${nvidia_container_runtime_tag}"
 echo "NVIDIA_CONTAINER_RUNTIME_PACKAGE_VERSION=${nvidia_container_runtime_version_tag//\~/-}"
