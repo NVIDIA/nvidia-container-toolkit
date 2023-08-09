@@ -35,14 +35,17 @@ type fromRegistry struct {
 
 var _ oci.SpecModifier = (*fromRegistry)(nil)
 
-// Modify applies the mofiications defined by the CDI registry to the incomming OCI spec.
+// Modify applies the modifications defined by the CDI registry to the incoming OCI spec.
 func (m fromRegistry) Modify(spec *specs.Spec) error {
 	if err := m.registry.Refresh(); err != nil {
 		m.logger.Debugf("The following error was triggered when refreshing the CDI registry: %v", err)
 	}
 
 	m.logger.Debugf("Injecting devices using CDI: %v", m.devices)
-	_, err := m.registry.InjectDevices(spec, m.devices...)
+	unresolvedDevices, err := m.registry.InjectDevices(spec, m.devices...)
+	if unresolvedDevices != nil {
+		m.logger.Warningf("could not resolve CDI devices: %v", unresolvedDevices)
+	}
 	if err != nil {
 		var refreshErrors []error
 		for _, rerrs := range m.registry.GetErrors() {
