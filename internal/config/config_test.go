@@ -237,7 +237,7 @@ func TestGetConfig(t *testing.T) {
 }
 
 func TestConfigDefault(t *testing.T) {
-	config, err := getDefault()
+	config, err := GetDefault()
 	require.NoError(t, err)
 
 	buffer := new(bytes.Buffer)

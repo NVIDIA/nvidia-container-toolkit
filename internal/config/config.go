@@ -81,12 +81,12 @@ func GetConfig() (*Config, error) {
 // Load loads the config from the specified file path.
 func Load(configFilePath string) (*Config, error) {
 	if configFilePath == "" {
-		return getDefault()
+		return GetDefault()
 	}
 
 	tomlFile, err := os.Open(configFilePath)
 	if err != nil {
-		return getDefault()
+		return GetDefault()
 	}
 	defer tomlFile.Close()
 
@@ -114,7 +114,7 @@ func LoadFrom(reader io.Reader) (*Config, error) {
 
 // getFromTree reads the nvidia container runtime config from the specified toml Tree.
 func getFromTree(toml *toml.Tree) (*Config, error) {
-	cfg, err := getDefault()
+	cfg, err := GetDefault()
 	if err != nil {
 		return nil, err
 	}
@@ -129,8 +129,8 @@ func getFromTree(toml *toml.Tree) (*Config, error) {
 	return cfg, nil
 }
 
-// getDefault defines the default values for the config
-func getDefault() (*Config, error) {
+// GetDefault defines the default values for the config
+func GetDefault() (*Config, error) {
 	d := Config{
 		AcceptEnvvarUnprivileged: true,
 		NVIDIAContainerCLIConfig: ContainerCLIConfig{
