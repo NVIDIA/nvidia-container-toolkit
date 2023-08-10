@@ -271,10 +271,12 @@ func getMigMonitorDevices(env map[string]string) *string {
 	return nil
 }
 
-func getDriverCapabilities(env map[string]string, supportedDriverCapabilities DriverCapabilities, legacyImage bool) DriverCapabilities {
+func (c *HookConfig) getDriverCapabilities(env map[string]string, legacyImage bool) image.DriverCapabilities {
 	// We use the default driver capabilities by default. This is filtered to only include the
 	// supported capabilities
-	capabilities := supportedDriverCapabilities.Intersection(defaultDriverCapabilities)
+	supportedDriverCapabilities := image.NewDriverCapabilities(c.SupportedDriverCapabilities)
+
+	capabilities := supportedDriverCapabilities.Intersection(image.DefaultDriverCapabilities)
 
 	capsEnv, capsEnvSpecified := env[envNVDriverCapabilities]
 
@@ -285,9 +287,9 @@ func getDriverCapabilities(env map[string]string, supportedDriverCapabilities Dr
 
 	if capsEnvSpecified && len(capsEnv) > 0 {
 		// If the envvironment variable is specified and is non-empty, use the capabilities value
-		envCapabilities := DriverCapabilities(capsEnv)
+		envCapabilities := image.NewDriverCapabilities(capsEnv)
 		capabilities = supportedDriverCapabilities.Intersection(envCapabilities)
-		if envCapabilities != all && capabilities != envCapabilities {
+		if !envCapabilities.IsAll() && len(capabilities) != len(envCapabilities) {
 			log.Panicln(fmt.Errorf("unsupported capabilities found in '%v' (allowed '%v')", envCapabilities, capabilities))
 		}
 	}
@@ -322,7 +324,7 @@ func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, mounts []Mount, p
 		log.Panicln("cannot set MIG_MONITOR_DEVICES in non privileged container")
 	}
 
-	driverCapabilities := getDriverCapabilities(image, hookConfig.SupportedDriverCapabilities, legacyImage).String()
+	driverCapabilities := hookConfig.getDriverCapabilities(image, legacyImage).String()
 
 	requirements, err := image.GetRequirements()
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
 
 const (
@@ -23,11 +24,7 @@ var defaultPaths = [...]string{
 }
 
 // HookConfig : options for the nvidia-container-runtime-hook.
-type HookConfig struct {
-	config.Config
-	// TODO: We should also migrate the driver capabilities
-	SupportedDriverCapabilities DriverCapabilities `toml:"supported-driver-capabilities"`
-}
+type HookConfig config.Config
 
 func getDefaultHookConfig() (HookConfig, error) {
 	defaultCfg, err := config.GetDefault()
@@ -35,12 +32,7 @@ func getDefaultHookConfig() (HookConfig, error) {
 		return HookConfig{}, err
 	}
 
-	c := HookConfig{
-		Config:                      *defaultCfg,
-		SupportedDriverCapabilities: allDriverCapabilities,
-	}
-
-	return c, nil
+	return *(*HookConfig)(defaultCfg), nil
 }
 
 func getHookConfig() (*HookConfig, error) {
@@ -71,13 +63,15 @@ func getHookConfig() (*HookConfig, error) {
 		}
 	}
 
-	if config.SupportedDriverCapabilities == all {
-		config.SupportedDriverCapabilities = allDriverCapabilities
+	allSupportedDriverCapabilities := image.SupportedDriverCapabilities
+	if config.SupportedDriverCapabilities == "all" {
+		config.SupportedDriverCapabilities = allSupportedDriverCapabilities.String()
 	}
-	// We ensure that the supported-driver-capabilites option is a subset of allDriverCapabilities
-	if intersection := allDriverCapabilities.Intersection(config.SupportedDriverCapabilities); intersection != config.SupportedDriverCapabilities {
+	configuredCapabilities := image.NewDriverCapabilities(config.SupportedDriverCapabilities)
+	// We ensure that the configured value is a subset of all supported capabilities
+	if !allSupportedDriverCapabilities.IsSuperset(configuredCapabilities) {
 		configName := config.getConfigOption("SupportedDriverCapabilities")
-		log.Panicf("Invalid value for config option '%v'; %v (supported: %v)\n", configName, config.SupportedDriverCapabilities, allDriverCapabilities)
+		log.Panicf("Invalid value for config option '%v'; %v (supported: %v)\n", configName, config.SupportedDriverCapabilities, allSupportedDriverCapabilities.String())
 	}
 
 	return &config, nil

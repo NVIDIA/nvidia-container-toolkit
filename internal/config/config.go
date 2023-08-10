@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
@@ -61,7 +62,7 @@ type Config struct {
 	SwarmResource                  string `toml:"swarm-resource"`
 	AcceptEnvvarUnprivileged       bool   `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
 	AcceptDeviceListAsVolumeMounts bool   `toml:"accept-nvidia-visible-devices-as-volume-mounts"`
-	// SupportedDriverCapabilities    DriverCapabilities `toml:"supported-driver-capabilities"`
+	SupportedDriverCapabilities    string `toml:"supported-driver-capabilities"`
 
 	NVIDIAContainerCLIConfig         ContainerCLIConfig `toml:"nvidia-container-cli"`
 	NVIDIACTKConfig                  CTKConfig          `toml:"nvidia-ctk"`
@@ -135,7 +136,8 @@ func getFromTree(toml *toml.Tree) (*Config, error) {
 // GetDefault defines the default values for the config
 func GetDefault() (*Config, error) {
 	d := Config{
-		AcceptEnvvarUnprivileged: true,
+		AcceptEnvvarUnprivileged:    true,
+		SupportedDriverCapabilities: image.SupportedDriverCapabilities.String(),
 		NVIDIAContainerCLIConfig: ContainerCLIConfig{
 			LoadKmods: true,
 			Ldconfig:  getLdConfigPath(),

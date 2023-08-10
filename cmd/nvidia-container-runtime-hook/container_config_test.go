@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/stretchr/testify/require"
 )
@@ -39,7 +38,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
-				DriverCapabilities: allDriverCapabilities.String(),
+				DriverCapabilities: image.SupportedDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -52,7 +51,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
-				DriverCapabilities: allDriverCapabilities.String(),
+				DriverCapabilities: image.SupportedDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -83,7 +82,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "",
-				DriverCapabilities: allDriverCapabilities.String(),
+				DriverCapabilities: image.SupportedDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -96,7 +95,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: allDriverCapabilities.String(),
+				DriverCapabilities: image.SupportedDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -110,7 +109,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: defaultDriverCapabilities.String(),
+				DriverCapabilities: image.DefaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -124,7 +123,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: allDriverCapabilities.String(),
+				DriverCapabilities: image.SupportedDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -138,7 +137,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: "video,display",
+				DriverCapabilities: "display,video",
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -154,7 +153,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: "video,display",
+				DriverCapabilities: "display,video",
 				Requirements:       []string{"cuda>=9.0", "req0=true", "req1=false"},
 			},
 		},
@@ -171,7 +170,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: "video,display",
+				DriverCapabilities: "display,video",
 				Requirements:       []string{},
 			},
 		},
@@ -201,7 +200,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
-				DriverCapabilities: defaultDriverCapabilities.String(),
+				DriverCapabilities: image.DefaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -232,7 +231,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "",
-				DriverCapabilities: defaultDriverCapabilities.String(),
+				DriverCapabilities: image.DefaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -245,7 +244,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: defaultDriverCapabilities.String(),
+				DriverCapabilities: image.DefaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -259,7 +258,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: defaultDriverCapabilities.String(),
+				DriverCapabilities: image.DefaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -273,7 +272,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: allDriverCapabilities.String(),
+				DriverCapabilities: image.SupportedDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -287,7 +286,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: "video,display",
+				DriverCapabilities: "display,video",
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -303,7 +302,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: "video,display",
+				DriverCapabilities: "display,video",
 				Requirements:       []string{"cuda>=9.0", "req0=true", "req1=false"},
 			},
 		},
@@ -320,7 +319,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			privileged: false,
 			expectedConfig: &nvidiaConfig{
 				Devices:            "gpu0,gpu1",
-				DriverCapabilities: "video,display",
+				DriverCapabilities: "display,video",
 				Requirements:       []string{},
 			},
 		},
@@ -333,7 +332,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
-				DriverCapabilities: defaultDriverCapabilities.String(),
+				DriverCapabilities: image.DefaultDriverCapabilities.String(),
 				Requirements:       []string{},
 			},
 		},
@@ -348,7 +347,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
 				MigConfigDevices:   "mig0,mig1",
-				DriverCapabilities: defaultDriverCapabilities.String(),
+				DriverCapabilities: image.DefaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -373,7 +372,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
 				MigMonitorDevices:  "mig0,mig1",
-				DriverCapabilities: defaultDriverCapabilities.String(),
+				DriverCapabilities: image.DefaultDriverCapabilities.String(),
 				Requirements:       []string{"cuda>=9.0"},
 			},
 		},
@@ -399,7 +398,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			},
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
-				DriverCapabilities: "video,display",
+				DriverCapabilities: "display,video",
 			},
 		},
 		{
@@ -414,7 +413,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			},
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
-				DriverCapabilities: "video,display",
+				DriverCapabilities: "display,video",
 			},
 		},
 		{
@@ -428,7 +427,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			},
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
-				DriverCapabilities: defaultDriverCapabilities.String(),
+				DriverCapabilities: image.DefaultDriverCapabilities.String(),
 			},
 		},
 		{
@@ -439,14 +438,12 @@ func TestGetNvidiaConfig(t *testing.T) {
 			},
 			privileged: true,
 			hookConfig: &HookConfig{
-				Config: config.Config{
-					SwarmResource: "DOCKER_SWARM_RESOURCE",
-				},
+				SwarmResource:               "DOCKER_SWARM_RESOURCE",
 				SupportedDriverCapabilities: "video,display,utility,compute",
 			},
 			expectedConfig: &nvidiaConfig{
 				Devices:            "GPU1,GPU2",
-				DriverCapabilities: defaultDriverCapabilities.String(),
+				DriverCapabilities: image.DefaultDriverCapabilities.String(),
 			},
 		},
 		{
@@ -457,14 +454,12 @@ func TestGetNvidiaConfig(t *testing.T) {
 			},
 			privileged: true,
 			hookConfig: &HookConfig{
-				Config: config.Config{
-					SwarmResource: "NOT_DOCKER_SWARM_RESOURCE,DOCKER_SWARM_RESOURCE",
-				},
+				SwarmResource:               "NOT_DOCKER_SWARM_RESOURCE,DOCKER_SWARM_RESOURCE",
 				SupportedDriverCapabilities: "video,display,utility,compute",
 			},
 			expectedConfig: &nvidiaConfig{
 				Devices:            "GPU1,GPU2",
-				DriverCapabilities: defaultDriverCapabilities.String(),
+				DriverCapabilities: image.DefaultDriverCapabilities.String(),
 			},
 		},
 	}
@@ -924,7 +919,7 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 
 func TestGetDriverCapabilities(t *testing.T) {
 
-	supportedCapabilities := "compute,utility,display,video"
+	supportedCapabilities := "compute,display,utility,video"
 
 	testCases := []struct {
 		description           string
@@ -959,7 +954,7 @@ func TestGetDriverCapabilities(t *testing.T) {
 			},
 			legacyImage:           true,
 			supportedCapabilities: supportedCapabilities,
-			expectedCapabilities:  defaultDriverCapabilities.String(),
+			expectedCapabilities:  image.DefaultDriverCapabilities.String(),
 		},
 		{
 			description:           "Env unset for legacy image is 'all'",
@@ -982,7 +977,7 @@ func TestGetDriverCapabilities(t *testing.T) {
 			env:                   map[string]string{},
 			legacyImage:           false,
 			supportedCapabilities: supportedCapabilities,
-			expectedCapabilities:  defaultDriverCapabilities.String(),
+			expectedCapabilities:  image.DefaultDriverCapabilities.String(),
 		},
 		{
 			description: "Env is all for modern image",
@@ -1000,7 +995,7 @@ func TestGetDriverCapabilities(t *testing.T) {
 			},
 			legacyImage:           false,
 			supportedCapabilities: supportedCapabilities,
-			expectedCapabilities:  defaultDriverCapabilities.String(),
+			expectedCapabilities:  image.DefaultDriverCapabilities.String(),
 		},
 		{
 			description: "Invalid capabilities panic",
@@ -1020,11 +1015,14 @@ func TestGetDriverCapabilities(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			var capabilites DriverCapabilities
+			var capabilites string
+
+			c := HookConfig{
+				SupportedDriverCapabilities: tc.supportedCapabilities,
+			}
 
 			getDriverCapabilities := func() {
-				supportedCapabilities := DriverCapabilities(tc.supportedCapabilities)
-				capabilites = getDriverCapabilities(tc.env, supportedCapabilities, tc.legacyImage)
+				capabilites = c.getDriverCapabilities(tc.env, tc.legacyImage).String()
 			}
 
 			if tc.expectedPanic {

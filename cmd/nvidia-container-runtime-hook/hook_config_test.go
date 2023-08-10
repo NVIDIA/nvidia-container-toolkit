@@ -21,7 +21,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,16 +29,16 @@ func TestGetHookConfig(t *testing.T) {
 	testCases := []struct {
 		lines                      []string
 		expectedPanic              bool
-		expectedDriverCapabilities DriverCapabilities
+		expectedDriverCapabilities string
 	}{
 		{
-			expectedDriverCapabilities: allDriverCapabilities,
+			expectedDriverCapabilities: image.SupportedDriverCapabilities.String(),
 		},
 		{
 			lines: []string{
 				"supported-driver-capabilities = \"all\"",
 			},
-			expectedDriverCapabilities: allDriverCapabilities,
+			expectedDriverCapabilities: image.SupportedDriverCapabilities.String(),
 		},
 		{
 			lines: []string{
@@ -48,19 +48,19 @@ func TestGetHookConfig(t *testing.T) {
 		},
 		{
 			lines:                      []string{},
-			expectedDriverCapabilities: allDriverCapabilities,
+			expectedDriverCapabilities: image.SupportedDriverCapabilities.String(),
 		},
 		{
 			lines: []string{
 				"supported-driver-capabilities = \"\"",
 			},
-			expectedDriverCapabilities: none,
+			expectedDriverCapabilities: "",
 		},
 		{
 			lines: []string{
-				"supported-driver-capabilities = \"utility,compute\"",
+				"supported-driver-capabilities = \"compute,utility\"",
 			},
-			expectedDriverCapabilities: DriverCapabilities("utility,compute"),
+			expectedDriverCapabilities: "compute,utility",
 		},
 	}
 
@@ -144,9 +144,7 @@ func TestGetSwarmResourceEnvvars(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			c := &HookConfig{
-				Config: config.Config{
-					SwarmResource: tc.value,
-				},
+				SwarmResource: tc.value,
 			}
 
 			envvars := c.getSwarmResourceEnvvars()
