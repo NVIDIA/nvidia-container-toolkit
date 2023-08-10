@@ -19,7 +19,15 @@ package config
 // ContainerCLIConfig stores the options for the nvidia-container-cli
 type ContainerCLIConfig struct {
 	Root        string   `toml:"root"`
-	LoadKmods   bool     `toml:"load-kmods"`
-	Ldconfig    string   `toml:"ldconfig"`
+	Path        string   `toml:"path"`
 	Environment []string `toml:"environment"`
+	Debug       string   `toml:"debug"`
+	Ldcache     string   `toml:"ldcache"`
+	LoadKmods   bool     `toml:"load-kmods"`
+	// NoPivot disables the pivot root operation in the NVIDIA Container CLI.
+	// This is not exposed in the config if not set.
+	NoPivot   bool   `toml:"no-pivot,omitempty"`
+	NoCgroups bool   `toml:"no-cgroups"`
+	User      string `toml:"user"`
+	Ldconfig  string `toml:"ldconfig"`
 }

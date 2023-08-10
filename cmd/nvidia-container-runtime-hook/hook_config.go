@@ -22,64 +22,22 @@ var defaultPaths = [...]string{
 	configPath,
 }
 
-// CLIConfig : options for nvidia-container-cli.
-type CLIConfig struct {
-	Root        *string  `toml:"root"`
-	Path        *string  `toml:"path"`
-	Environment []string `toml:"environment"`
-	Debug       *string  `toml:"debug"`
-	Ldcache     *string  `toml:"ldcache"`
-	LoadKmods   bool     `toml:"load-kmods"`
-	NoPivot     bool     `toml:"no-pivot"`
-	NoCgroups   bool     `toml:"no-cgroups"`
-	User        *string  `toml:"user"`
-	Ldconfig    *string  `toml:"ldconfig"`
-}
-
 // HookConfig : options for the nvidia-container-runtime-hook.
 type HookConfig struct {
-	DisableRequire                 bool               `toml:"disable-require"`
-	SwarmResource                  *string            `toml:"swarm-resource"`
-	AcceptEnvvarUnprivileged       bool               `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
-	AcceptDeviceListAsVolumeMounts bool               `toml:"accept-nvidia-visible-devices-as-volume-mounts"`
-	SupportedDriverCapabilities    DriverCapabilities `toml:"supported-driver-capabilities"`
-
-	NvidiaContainerCLI         CLIConfig                `toml:"nvidia-container-cli"`
-	NVIDIAContainerRuntime     config.RuntimeConfig     `toml:"nvidia-container-runtime"`
-	NVIDIAContainerRuntimeHook config.RuntimeHookConfig `toml:"nvidia-container-runtime-hook"`
+	config.Config
+	// TODO: We should also migrate the driver capabilities
+	SupportedDriverCapabilities DriverCapabilities `toml:"supported-driver-capabilities"`
 }
 
 func getDefaultHookConfig() (HookConfig, error) {
-	rtConfig, err := config.GetDefaultRuntimeConfig()
-	if err != nil {
-		return HookConfig{}, err
-	}
-
-	rtHookConfig, err := config.GetDefaultRuntimeHookConfig()
+	defaultCfg, err := config.GetDefault()
 	if err != nil {
 		return HookConfig{}, err
 	}
 
 	c := HookConfig{
-		DisableRequire:                 false,
-		SwarmResource:                  nil,
-		AcceptEnvvarUnprivileged:       true,
-		AcceptDeviceListAsVolumeMounts: false,
-		SupportedDriverCapabilities:    allDriverCapabilities,
-		NvidiaContainerCLI: CLIConfig{
-			Root:        nil,
-			Path:        nil,
-			Environment: []string{},
-			Debug:       nil,
-			Ldcache:     nil,
-			LoadKmods:   true,
-			NoPivot:     false,
-			NoCgroups:   false,
-			User:        nil,
-			Ldconfig:    nil,
-		},
-		NVIDIAContainerRuntime:     *rtConfig,
-		NVIDIAContainerRuntimeHook: *rtHookConfig,
+		Config:                      *defaultCfg,
+		SupportedDriverCapabilities: allDriverCapabilities,
 	}
 
 	return c, nil
@@ -142,11 +100,11 @@ func (c HookConfig) getConfigOption(fieldName string) string {
 
 // getSwarmResourceEnvvars returns the swarm resource envvars for the config.
 func (c *HookConfig) getSwarmResourceEnvvars() []string {
-	if c.SwarmResource == nil {
+	if c.SwarmResource == "" {
 		return nil
 	}
 
-	candidates := strings.Split(*c.SwarmResource, ",")
+	candidates := strings.Split(c.SwarmResource, ",")
 
 	var envvars []string
 	for _, c := range candidates {

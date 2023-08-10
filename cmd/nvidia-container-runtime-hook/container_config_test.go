@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/stretchr/testify/require"
 )
@@ -438,10 +439,9 @@ func TestGetNvidiaConfig(t *testing.T) {
 			},
 			privileged: true,
 			hookConfig: &HookConfig{
-				SwarmResource: func() *string {
-					s := "DOCKER_SWARM_RESOURCE"
-					return &s
-				}(),
+				Config: config.Config{
+					SwarmResource: "DOCKER_SWARM_RESOURCE",
+				},
 				SupportedDriverCapabilities: "video,display,utility,compute",
 			},
 			expectedConfig: &nvidiaConfig{
@@ -457,10 +457,9 @@ func TestGetNvidiaConfig(t *testing.T) {
 			},
 			privileged: true,
 			hookConfig: &HookConfig{
-				SwarmResource: func() *string {
-					s := "NOT_DOCKER_SWARM_RESOURCE,DOCKER_SWARM_RESOURCE"
-					return &s
-				}(),
+				Config: config.Config{
+					SwarmResource: "NOT_DOCKER_SWARM_RESOURCE,DOCKER_SWARM_RESOURCE",
+				},
 				SupportedDriverCapabilities: "video,display,utility,compute",
 			},
 			expectedConfig: &nvidiaConfig{

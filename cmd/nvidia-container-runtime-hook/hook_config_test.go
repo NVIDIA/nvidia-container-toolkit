@@ -21,6 +21,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -111,10 +112,6 @@ func TestGetSwarmResourceEnvvars(t *testing.T) {
 		expected []string
 	}{
 		{
-			value:    "nil",
-			expected: nil,
-		},
-		{
 			value:    "",
 			expected: nil,
 		},
@@ -147,12 +144,9 @@ func TestGetSwarmResourceEnvvars(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			c := &HookConfig{
-				SwarmResource: func() *string {
-					if tc.value == "nil" {
-						return nil
-					}
-					return &tc.value
-				}(),
+				Config: config.Config{
+					SwarmResource: tc.value,
+				},
 			}
 
 			envvars := c.getSwarmResourceEnvvars()

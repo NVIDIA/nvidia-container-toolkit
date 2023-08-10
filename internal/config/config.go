@@ -57,8 +57,11 @@ var (
 // Config represents the contents of the config.toml file for the NVIDIA Container Toolkit
 // Note: This is currently duplicated by the HookConfig in cmd/nvidia-container-toolkit/hook_config.go
 type Config struct {
-	DisableRequire           bool `toml:"disable-require"`
-	AcceptEnvvarUnprivileged bool `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
+	DisableRequire                 bool   `toml:"disable-require"`
+	SwarmResource                  string `toml:"swarm-resource"`
+	AcceptEnvvarUnprivileged       bool   `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
+	AcceptDeviceListAsVolumeMounts bool   `toml:"accept-nvidia-visible-devices-as-volume-mounts"`
+	// SupportedDriverCapabilities    DriverCapabilities `toml:"supported-driver-capabilities"`
 
 	NVIDIAContainerCLIConfig         ContainerCLIConfig `toml:"nvidia-container-cli"`
 	NVIDIACTKConfig                  CTKConfig          `toml:"nvidia-ctk"`
@@ -290,16 +293,13 @@ func (c Config) asCommentedToml() (*toml.Tree, error) {
 }
 
 func shouldComment(key string, defaultValue interface{}, setTo interface{}) bool {
-	if key == "nvidia-container-cli.root" && setTo == "" {
-		return true
-	}
 	if key == "nvidia-container-cli.user" && !getCommentedUserGroup() {
 		return false
 	}
 	if key == "nvidia-container-runtime.debug" && setTo == "/dev/null" {
 		return true
 	}
-	if setTo == nil || defaultValue == setTo {
+	if setTo == nil || defaultValue == setTo || setTo == "" {
 		return true
 	}
 
