@@ -33,9 +33,7 @@ type command struct {
 
 // options stores the subcommand options
 type options struct {
-	config  string
-	output  string
-	inPlace bool
+	output string
 }
 
 // NewCommand constructs a default command with the specified logger
@@ -52,8 +50,8 @@ func (m command) build() *cli.Command {
 
 	// Create the 'default' command
 	c := cli.Command{
-		Name:    "generate-default",
-		Aliases: []string{"default"},
+		Name:    "default",
+		Aliases: []string{"create-default", "generate-default"},
 		Usage:   "Generate the default NVIDIA Container Toolkit configuration file",
 		Before: func(c *cli.Context) error {
 			return m.validateFlags(c, &opts)
@@ -65,18 +63,8 @@ func (m command) build() *cli.Command {
 
 	c.Flags = []cli.Flag{
 		&cli.StringFlag{
-			Name:        "config",
-			Usage:       "Specify the config file to process; The contents of this file overrides the default config",
-			Destination: &opts.config,
-		},
-		&cli.BoolFlag{
-			Name:        "in-place",
-			Aliases:     []string{"i"},
-			Usage:       "Modify the config file in-place",
-			Destination: &opts.inPlace,
-		},
-		&cli.StringFlag{
 			Name:        "output",
+			Aliases:     []string{"o"},
 			Usage:       "Specify the output file to write to; If not specified, the output is written to stdout",
 			Destination: &opts.output,
 		},
@@ -86,63 +74,56 @@ func (m command) build() *cli.Command {
 }
 
 func (m command) validateFlags(c *cli.Context, opts *options) error {
-	if opts.inPlace {
-		if opts.output != "" {
-			return fmt.Errorf("cannot specify both --in-place and --output")
-		}
-		opts.output = opts.config
-	}
 	return nil
 }
 
 func (m command) run(c *cli.Context, opts *options) error {
-	if err := opts.ensureOutputFolder(); err != nil {
-		return fmt.Errorf("unable to create output directory: %v", err)
-	}
-
-	cfgToml, err := opts.getConfig()
+	cfgToml, err := config.New()
 	if err != nil {
-		return fmt.Errorf("failed to load config: %v", err)
+		return fmt.Errorf("unable to load or create config: %v", err)
 	}
 
-	if _, err := opts.Write(cfgToml); err != nil {
-		return fmt.Errorf("unable to write to output: %v", err)
+	if err := opts.ensureOutputFolder(); err != nil {
+		return fmt.Errorf("failed to create output directory: %v", err)
+	}
+	output, err := opts.CreateOutput()
+	if err != nil {
+		return fmt.Errorf("failed to open output file: %v", err)
+	}
+	defer output.Close()
+
+	_, err = cfgToml.Save(output)
+	if err != nil {
+		return fmt.Errorf("failed to write output: %v", err)
 	}
 
 	return nil
 }
 
-// getConfig returns the TOML config for the specified options.
-func (opts options) getConfig() (*config.Toml, error) {
-	return config.New(
-		config.WithConfigFile(opts.config),
-	)
-}
-
-func (opts options) ensureOutputFolder() error {
-	if opts.output == "" {
+// ensureOutputFolder creates the output folder if it does not exist.
+// If the output folder is not specified (i.e. output to STDOUT), it is ignored.
+func (o options) ensureOutputFolder() error {
+	if o.output == "" {
 		return nil
 	}
-	if dir := filepath.Dir(opts.output); dir != "" {
+	if dir := filepath.Dir(o.output); dir != "" {
 		return os.MkdirAll(dir, 0755)
 	}
 	return nil
 }
 
-// Write writes the contents to the output file specified in the options.
-func (opts options) Write(cfg *config.Toml) (int, error) {
-	var output io.Writer
-	if opts.output == "" {
-		output = os.Stdout
-	} else {
-		outputFile, err := os.Create(opts.output)
-		if err != nil {
-			return 0, fmt.Errorf("unable to create output file: %v", err)
-		}
-		defer outputFile.Close()
-		output = outputFile
+func (o options) CreateOutput() (io.WriteCloser, error) {
+	if o.output != "" {
+		return os.Create(o.output)
 	}
 
-	n, err := cfg.Save(output)
-	return int(n), err
+	return nullCloser{os.Stdout}, nil
+}
+
+type nullCloser struct {
+	io.Writer
+}
+
+func (d nullCloser) Close() error {
+	return nil
 }
