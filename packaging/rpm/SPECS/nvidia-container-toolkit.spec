@@ -12,12 +12,10 @@ License: Apache-2.0
 
 Source0: nvidia-container-runtime-hook
 Source1: nvidia-ctk
-Source2: oci-nvidia-hook
-Source3: oci-nvidia-hook.json
-Source4: LICENSE
-Source5: nvidia-container-runtime
-Source6: nvidia-container-runtime.cdi
-Source7: nvidia-container-runtime.legacy
+Source2: LICENSE
+Source3: nvidia-container-runtime
+Source4: nvidia-container-runtime.cdi
+Source5: nvidia-container-runtime.legacy
 
 Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook <= 1.4.0-2
 Provides: nvidia-container-runtime
@@ -36,7 +34,7 @@ Requires: libseccomp
 Provides tools and utilities to enable GPU support in containers.
 
 %prep
-cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} %{SOURCE7} .
+cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} .
 
 %install
 mkdir -p %{buildroot}%{_bindir}
@@ -45,12 +43,6 @@ install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime.cdi
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime.legacy
 install -m 755 -t %{buildroot}%{_bindir} nvidia-ctk
-
-mkdir -p %{buildroot}/usr/libexec/oci/hooks.d
-install -m 755 -t %{buildroot}/usr/libexec/oci/hooks.d oci-nvidia-hook
-
-mkdir -p %{buildroot}/usr/share/containers/oci/hooks.d
-install -m 644 -t %{buildroot}/usr/share/containers/oci/hooks.d oci-nvidia-hook.json
 
 %post
 if [ $1 -gt 1 ]; then  # only on package upgrade
@@ -77,8 +69,6 @@ fi
 %files
 %license LICENSE
 %{_bindir}/nvidia-container-runtime-hook
-/usr/libexec/oci/hooks.d/oci-nvidia-hook
-/usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %changelog
 # As of 1.10.0-1 we generate the release information automatically
