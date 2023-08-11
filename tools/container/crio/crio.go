@@ -17,7 +17,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,6 +24,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/ocihook"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
@@ -206,13 +206,8 @@ func Setup(c *cli.Context, o *options) error {
 func setupHook(o *options) error {
 	log.Infof("Installing prestart hook")
 
-	err := os.MkdirAll(o.hooksDir, 0755)
-	if err != nil {
-		return fmt.Errorf("error creating hooks directory %v: %v", o.hooksDir, err)
-	}
-
-	hookPath := getHookPath(o.hooksDir, o.hookFilename)
-	err = createHook(o.RuntimeDir, hookPath)
+	hookPath := filepath.Join(o.hooksDir, o.hookFilename)
+	err := ocihook.CreateHook(hookPath, filepath.Join(o.RuntimeDir, config.NVIDIAContainerRuntimeHookExecutable))
 	if err != nil {
 		return fmt.Errorf("error creating hook: %v", err)
 	}
@@ -262,7 +257,7 @@ func Cleanup(c *cli.Context, o *options) error {
 func cleanupHook(o *options) error {
 	log.Infof("Removing prestart hook")
 
-	hookPath := getHookPath(o.hooksDir, o.hookFilename)
+	hookPath := filepath.Join(o.hooksDir, o.hookFilename)
 	err := os.Remove(hookPath)
 	if err != nil {
 		return fmt.Errorf("error removing hook '%v': %v", hookPath, err)
@@ -293,46 +288,6 @@ func cleanupConfig(o *options) error {
 	}
 
 	return nil
-}
-
-func createHook(toolkitDir string, hookPath string) error {
-	hook, err := os.Create(hookPath)
-	if err != nil {
-		return fmt.Errorf("error creating hook file '%v': %v", hookPath, err)
-	}
-	defer hook.Close()
-
-	encoder := json.NewEncoder(hook)
-	err = encoder.Encode(generateOciHook(toolkitDir))
-	if err != nil {
-		return fmt.Errorf("error writing hook file '%v': %v", hookPath, err)
-	}
-	return nil
-}
-
-func getHookPath(hooksDir string, hookFilename string) string {
-	return filepath.Join(hooksDir, hookFilename)
-}
-
-func generateOciHook(toolkitDir string) podmanHook {
-	hookPath := filepath.Join(toolkitDir, config.NVIDIAContainerRuntimeHookExecutable)
-	envPath := "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:" + toolkitDir
-	always := true
-
-	hook := podmanHook{
-		Version: "1.0.0",
-		Stages:  []string{"prestart"},
-		Hook: specHook{
-			Path: hookPath,
-			Args: []string{filepath.Base(config.NVIDIAContainerRuntimeHookExecutable), "prestart"},
-			Env:  []string{envPath},
-		},
-		When: When{
-			Always:   &always,
-			Commands: []string{".*"},
-		},
-	}
-	return hook
 }
 
 // RestartCrio restarts crio depending on the value of restartModeFlag

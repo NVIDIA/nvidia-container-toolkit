@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package main
+package ocihook
 
 // podmanHook is the hook configuration structure.
 // This is taken from `Hook` at https://github.com/containers/podman/blob/3c53200e9d61fdf95fe1da825bb2a89372551350/pkg/hooks/1.0.0/hook.go#L18

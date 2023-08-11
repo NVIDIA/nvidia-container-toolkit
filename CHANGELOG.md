@@ -1,6 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
 ## v1.14.0-rc.3
+* Added support for generating OCI hook JSON file to `nvidia-ctk runtime configure` command.
 
 ## v1.14.0-rc.2
 
