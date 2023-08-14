@@ -5,6 +5,8 @@
 * Remove installation of OCI hook JSON from RPM package.
 * Refactored config for `nvidia-container-runtime-hook`.
 * Added a `nvidia-ctk config` command which supports setting config options using a `--set` flag.
+* Added `--library-search-path` option to `nvidia-ctk cdi generate` command in `csv` mode. This allows folders where
+  libraries are located to be specified explicitly.
 
 ## v1.14.0-rc.2
 * Fix bug causing incorrect nvidia-smi symlink to be created on WSL2 systems with multiple driver roots.

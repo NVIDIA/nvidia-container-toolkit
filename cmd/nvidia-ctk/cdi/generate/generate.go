@@ -50,9 +50,10 @@ type options struct {
 	vendor             string
 	class              string
 
+	librarySearchPaths cli.StringSlice
+
 	csv struct {
-		files              cli.StringSlice
-		librarySearchPaths cli.StringSlice
+		files cli.StringSlice
 	}
 }
 
@@ -110,6 +111,11 @@ func (m command) build() *cli.Command {
 			Usage:       "Specify the NVIDIA GPU driver root to use when discovering the entities that should be included in the CDI specification.",
 			Destination: &opts.driverRoot,
 		},
+		&cli.StringSliceFlag{
+			Name:        "library-search-path",
+			Usage:       "Specify the path to search for libraries when discovering the entities that should be included in the CDI specification.\n\tNote: This option only applies to CSV mode.",
+			Destination: &opts.librarySearchPaths,
+		},
 		&cli.StringFlag{
 			Name:        "nvidia-ctk-path",
 			Usage:       "Specify the path to use for the nvidia-ctk in the generated CDI specification. If this is left empty, the path will be searched.",
@@ -134,11 +140,6 @@ func (m command) build() *cli.Command {
 			Usage:       "The path to the list of CSV files to use when generating the CDI specification in CSV mode.",
 			Value:       cli.NewStringSlice(csv.DefaultFileList()...),
 			Destination: &opts.csv.files,
-		},
-		&cli.StringSliceFlag{
-			Name:        "csv.library-search-path",
-			Usage:       "Specify the path to search for libraries when discovering the entities that should be included in the CDI specification. This currently only affects CDI mode",
-			Destination: &opts.csv.librarySearchPaths,
 		},
 	}
 
@@ -233,7 +234,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithDeviceNamer(deviceNamer),
 		nvcdi.WithMode(string(opts.mode)),
 		nvcdi.WithCSVFiles(opts.csv.files.Value()),
-		nvcdi.WithLibrarySearchPaths(opts.csv.librarySearchPaths.Value()),
+		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths.Value()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)
