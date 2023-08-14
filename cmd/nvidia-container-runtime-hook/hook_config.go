@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/BurntSushi/toml"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
 
 const (
@@ -17,112 +17,63 @@ const (
 	driverPath = "/run/nvidia/driver"
 )
 
-var defaultPaths = [...]string{
-	path.Join(driverPath, configPath),
-	configPath,
-}
-
-// CLIConfig : options for nvidia-container-cli.
-type CLIConfig struct {
-	Root        *string  `toml:"root"`
-	Path        *string  `toml:"path"`
-	Environment []string `toml:"environment"`
-	Debug       *string  `toml:"debug"`
-	Ldcache     *string  `toml:"ldcache"`
-	LoadKmods   bool     `toml:"load-kmods"`
-	NoPivot     bool     `toml:"no-pivot"`
-	NoCgroups   bool     `toml:"no-cgroups"`
-	User        *string  `toml:"user"`
-	Ldconfig    *string  `toml:"ldconfig"`
-}
+var defaultPaths = [...]string{}
 
 // HookConfig : options for the nvidia-container-runtime-hook.
-type HookConfig struct {
-	DisableRequire                 bool               `toml:"disable-require"`
-	SwarmResource                  *string            `toml:"swarm-resource"`
-	AcceptEnvvarUnprivileged       bool               `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
-	AcceptDeviceListAsVolumeMounts bool               `toml:"accept-nvidia-visible-devices-as-volume-mounts"`
-	SupportedDriverCapabilities    DriverCapabilities `toml:"supported-driver-capabilities"`
-
-	NvidiaContainerCLI         CLIConfig                `toml:"nvidia-container-cli"`
-	NVIDIAContainerRuntime     config.RuntimeConfig     `toml:"nvidia-container-runtime"`
-	NVIDIAContainerRuntimeHook config.RuntimeHookConfig `toml:"nvidia-container-runtime-hook"`
-}
+type HookConfig config.Config
 
 func getDefaultHookConfig() (HookConfig, error) {
-	rtConfig, err := config.GetDefaultRuntimeConfig()
+	defaultCfg, err := config.GetDefault()
 	if err != nil {
 		return HookConfig{}, err
 	}
 
-	rtHookConfig, err := config.GetDefaultRuntimeHookConfig()
-	if err != nil {
-		return HookConfig{}, err
+	return *(*HookConfig)(defaultCfg), nil
+}
+
+// loadConfig loads the required paths for the hook config.
+func loadConfig() (*config.Config, error) {
+	var configPaths []string
+	var required bool
+	if len(*configflag) != 0 {
+		configPaths = append(configPaths, *configflag)
+		required = true
+	} else {
+		configPaths = append(configPaths, path.Join(driverPath, configPath), configPath)
 	}
 
-	c := HookConfig{
-		DisableRequire:                 false,
-		SwarmResource:                  nil,
-		AcceptEnvvarUnprivileged:       true,
-		AcceptDeviceListAsVolumeMounts: false,
-		SupportedDriverCapabilities:    allDriverCapabilities,
-		NvidiaContainerCLI: CLIConfig{
-			Root:        nil,
-			Path:        nil,
-			Environment: []string{},
-			Debug:       nil,
-			Ldcache:     nil,
-			LoadKmods:   true,
-			NoPivot:     false,
-			NoCgroups:   false,
-			User:        nil,
-			Ldconfig:    nil,
-		},
-		NVIDIAContainerRuntime:     *rtConfig,
-		NVIDIAContainerRuntimeHook: *rtHookConfig,
+	for _, p := range configPaths {
+		cfg, err := config.Load(p)
+		if err == nil {
+			return cfg, nil
+		} else if os.IsNotExist(err) && !required {
+			continue
+		}
+		return nil, fmt.Errorf("couldn't open configuration file: %v", err)
 	}
 
-	return c, nil
+	return config.GetDefault()
 }
 
 func getHookConfig() (*HookConfig, error) {
-	var err error
-	var config HookConfig
-
-	if len(*configflag) > 0 {
-		config, err = getDefaultHookConfig()
-		if err != nil {
-			return nil, fmt.Errorf("couldn't get default configuration: %v", err)
-		}
-		_, err = toml.DecodeFile(*configflag, &config)
-		if err != nil {
-			return nil, fmt.Errorf("couldn't open configuration file: %v", err)
-		}
-	} else {
-		for _, p := range defaultPaths {
-			config, err = getDefaultHookConfig()
-			if err != nil {
-				return nil, fmt.Errorf("couldn't get default configuration: %v", err)
-			}
-			_, err = toml.DecodeFile(p, &config)
-			if err == nil {
-				break
-			} else if !os.IsNotExist(err) {
-				return nil, fmt.Errorf("couldn't open default configuration file: %v", err)
-			}
-		}
+	cfg, err := loadConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %v", err)
 	}
+	config := (*HookConfig)(cfg)
 
-	if config.SupportedDriverCapabilities == all {
-		config.SupportedDriverCapabilities = allDriverCapabilities
+	allSupportedDriverCapabilities := image.SupportedDriverCapabilities
+	if config.SupportedDriverCapabilities == "all" {
+		config.SupportedDriverCapabilities = allSupportedDriverCapabilities.String()
 	}
-	// We ensure that the supported-driver-capabilites option is a subset of allDriverCapabilities
-	if intersection := allDriverCapabilities.Intersection(config.SupportedDriverCapabilities); intersection != config.SupportedDriverCapabilities {
+	configuredCapabilities := image.NewDriverCapabilities(config.SupportedDriverCapabilities)
+	// We ensure that the configured value is a subset of all supported capabilities
+	if !allSupportedDriverCapabilities.IsSuperset(configuredCapabilities) {
 		configName := config.getConfigOption("SupportedDriverCapabilities")
-		log.Panicf("Invalid value for config option '%v'; %v (supported: %v)\n", configName, config.SupportedDriverCapabilities, allDriverCapabilities)
+		log.Panicf("Invalid value for config option '%v'; %v (supported: %v)\n", configName, config.SupportedDriverCapabilities, allSupportedDriverCapabilities.String())
 	}
 
-	return &config, nil
+	return config, nil
 }
 
 // getConfigOption returns the toml config option associated with the
@@ -142,11 +93,11 @@ func (c HookConfig) getConfigOption(fieldName string) string {
 
 // getSwarmResourceEnvvars returns the swarm resource envvars for the config.
 func (c *HookConfig) getSwarmResourceEnvvars() []string {
-	if c.SwarmResource == nil {
+	if c.SwarmResource == "" {
 		return nil
 	}
 
-	candidates := strings.Split(*c.SwarmResource, ",")
+	candidates := strings.Split(c.SwarmResource, ",")
 
 	var envvars []string
 	for _, c := range candidates {

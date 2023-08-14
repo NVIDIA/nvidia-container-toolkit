@@ -60,7 +60,8 @@ func TestGetConfig(t *testing.T) {
 			description:     "empty config is default",
 			inspectLdconfig: true,
 			expectedConfig: &Config{
-				AcceptEnvvarUnprivileged: true,
+				AcceptEnvvarUnprivileged:    true,
+				SupportedDriverCapabilities: "compat32,compute,display,graphics,ngx,utility,video",
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root:      "",
 					LoadKmods: true,
@@ -94,6 +95,7 @@ func TestGetConfig(t *testing.T) {
 			description: "config options set inline",
 			contents: []string{
 				"accept-nvidia-visible-devices-envvar-when-unprivileged = false",
+				"supported-driver-capabilities = \"compute,utility\"",
 				"nvidia-container-cli.root = \"/bar/baz\"",
 				"nvidia-container-cli.load-kmods = false",
 				"nvidia-container-cli.ldconfig = \"/foo/bar/ldconfig\"",
@@ -110,7 +112,8 @@ func TestGetConfig(t *testing.T) {
 				"nvidia-ctk.path = \"/foo/bar/nvidia-ctk\"",
 			},
 			expectedConfig: &Config{
-				AcceptEnvvarUnprivileged: false,
+				AcceptEnvvarUnprivileged:    false,
+				SupportedDriverCapabilities: "compute,utility",
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root:      "/bar/baz",
 					LoadKmods: false,
@@ -150,6 +153,7 @@ func TestGetConfig(t *testing.T) {
 			description: "config options set in section",
 			contents: []string{
 				"accept-nvidia-visible-devices-envvar-when-unprivileged = false",
+				"supported-driver-capabilities = \"compute,utility\"",
 				"[nvidia-container-cli]",
 				"root = \"/bar/baz\"",
 				"load-kmods = false",
@@ -172,7 +176,8 @@ func TestGetConfig(t *testing.T) {
 				"path = \"/foo/bar/nvidia-ctk\"",
 			},
 			expectedConfig: &Config{
-				AcceptEnvvarUnprivileged: false,
+				AcceptEnvvarUnprivileged:    false,
+				SupportedDriverCapabilities: "compute,utility",
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root:      "/bar/baz",
 					LoadKmods: false,
@@ -237,7 +242,7 @@ func TestGetConfig(t *testing.T) {
 }
 
 func TestConfigDefault(t *testing.T) {
-	config, err := getDefault()
+	config, err := GetDefault()
 	require.NoError(t, err)
 
 	buffer := new(bytes.Buffer)

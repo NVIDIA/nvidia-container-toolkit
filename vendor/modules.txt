@@ -1,7 +1,3 @@
-# github.com/BurntSushi/toml v1.2.1
-## explicit; go 1.16
-github.com/BurntSushi/toml
-github.com/BurntSushi/toml/internal
 # github.com/NVIDIA/go-nvml v0.12.0-1
 ## explicit; go 1.15
 github.com/NVIDIA/go-nvml/pkg/dl

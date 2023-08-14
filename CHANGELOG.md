@@ -3,6 +3,7 @@
 ## v1.14.0-rc.3
 * Added support for generating OCI hook JSON file to `nvidia-ctk runtime configure` command.
 * Remove installation of OCI hook JSON from RPM package.
+* Refactored config for `nvidia-container-runtime-hook`.
 
 ## v1.14.0-rc.2
 

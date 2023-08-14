@@ -13,6 +13,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
@@ -37,16 +38,12 @@ func exit() {
 	os.Exit(0)
 }
 
-func getCLIPath(config CLIConfig) string {
-	if config.Path != nil {
-		return *config.Path
+func getCLIPath(config config.ContainerCLIConfig) string {
+	if config.Path != "" {
+		return config.Path
 	}
 
-	var root string
-	if config.Root != nil {
-		root = *config.Root
-	}
-	if err := os.Setenv("PATH", lookup.GetPath(root)); err != nil {
+	if err := os.Setenv("PATH", lookup.GetPath(config.Root)); err != nil {
 		log.Panicln("couldn't set PATH variable:", err)
 	}
 
@@ -76,7 +73,7 @@ func doPrestart() {
 	if err != nil || hook == nil {
 		log.Panicln("error getting hook config:", err)
 	}
-	cli := hook.NvidiaContainerCLI
+	cli := hook.NVIDIAContainerCLIConfig
 
 	container := getContainerConfig(*hook)
 	nvidia := container.Nvidia
@@ -85,15 +82,15 @@ func doPrestart() {
 		return
 	}
 
-	if !hook.NVIDIAContainerRuntimeHook.SkipModeDetection && info.ResolveAutoMode(&logInterceptor{}, hook.NVIDIAContainerRuntime.Mode, container.Image) != "legacy" {
+	if !hook.NVIDIAContainerRuntimeHookConfig.SkipModeDetection && info.ResolveAutoMode(&logInterceptor{}, hook.NVIDIAContainerRuntimeConfig.Mode, container.Image) != "legacy" {
 		log.Panicln("invoking the NVIDIA Container Runtime Hook directly (e.g. specifying the docker --gpus flag) is not supported. Please use the NVIDIA Container Runtime (e.g. specify the --runtime=nvidia flag) instead.")
 	}
 
 	rootfs := getRootfsPath(container)
 
 	args := []string{getCLIPath(cli)}
-	if cli.Root != nil && *cli.Root != "" {
-		args = append(args, fmt.Sprintf("--root=%s", *cli.Root))
+	if cli.Root != "" {
+		args = append(args, fmt.Sprintf("--root=%s", cli.Root))
 	}
 	if cli.LoadKmods {
 		args = append(args, "--load-kmods")
@@ -103,19 +100,19 @@ func doPrestart() {
 	}
 	if *debugflag {
 		args = append(args, "--debug=/dev/stderr")
-	} else if cli.Debug != nil {
-		args = append(args, fmt.Sprintf("--debug=%s", *cli.Debug))
+	} else if cli.Debug != "" {
+		args = append(args, fmt.Sprintf("--debug=%s", cli.Debug))
 	}
-	if cli.Ldcache != nil {
-		args = append(args, fmt.Sprintf("--ldcache=%s", *cli.Ldcache))
+	if cli.Ldcache != "" {
+		args = append(args, fmt.Sprintf("--ldcache=%s", cli.Ldcache))
 	}
-	if cli.User != nil {
-		args = append(args, fmt.Sprintf("--user=%s", *cli.User))
+	if cli.User != "" {
+		args = append(args, fmt.Sprintf("--user=%s", cli.User))
 	}
 	args = append(args, "configure")
 
-	if cli.Ldconfig != nil {
-		args = append(args, fmt.Sprintf("--ldconfig=%s", *cli.Ldconfig))
+	if cli.Ldconfig != "" {
+		args = append(args, fmt.Sprintf("--ldconfig=%s", cli.Ldconfig))
 	}
 	if cli.NoCgroups {
 		args = append(args, "--no-cgroups")

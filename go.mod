@@ -3,7 +3,6 @@ module github.com/NVIDIA/nvidia-container-toolkit
 go 1.20
 
 require (
-	github.com/BurntSushi/toml v1.2.1
 	github.com/NVIDIA/go-nvml v0.12.0-1
 	github.com/container-orchestrated-devices/container-device-interface v0.6.0
 	github.com/fsnotify/fsnotify v1.5.4

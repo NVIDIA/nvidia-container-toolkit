@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
@@ -57,8 +58,11 @@ var (
 // Config represents the contents of the config.toml file for the NVIDIA Container Toolkit
 // Note: This is currently duplicated by the HookConfig in cmd/nvidia-container-toolkit/hook_config.go
 type Config struct {
-	DisableRequire           bool `toml:"disable-require"`
-	AcceptEnvvarUnprivileged bool `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
+	DisableRequire                 bool   `toml:"disable-require"`
+	SwarmResource                  string `toml:"swarm-resource"`
+	AcceptEnvvarUnprivileged       bool   `toml:"accept-nvidia-visible-devices-envvar-when-unprivileged"`
+	AcceptDeviceListAsVolumeMounts bool   `toml:"accept-nvidia-visible-devices-as-volume-mounts"`
+	SupportedDriverCapabilities    string `toml:"supported-driver-capabilities"`
 
 	NVIDIAContainerCLIConfig         ContainerCLIConfig `toml:"nvidia-container-cli"`
 	NVIDIACTKConfig                  CTKConfig          `toml:"nvidia-ctk"`
@@ -81,12 +85,12 @@ func GetConfig() (*Config, error) {
 // Load loads the config from the specified file path.
 func Load(configFilePath string) (*Config, error) {
 	if configFilePath == "" {
-		return getDefault()
+		return GetDefault()
 	}
 
 	tomlFile, err := os.Open(configFilePath)
 	if err != nil {
-		return getDefault()
+		return GetDefault()
 	}
 	defer tomlFile.Close()
 
@@ -114,7 +118,7 @@ func LoadFrom(reader io.Reader) (*Config, error) {
 
 // getFromTree reads the nvidia container runtime config from the specified toml Tree.
 func getFromTree(toml *toml.Tree) (*Config, error) {
-	cfg, err := getDefault()
+	cfg, err := GetDefault()
 	if err != nil {
 		return nil, err
 	}
@@ -129,10 +133,11 @@ func getFromTree(toml *toml.Tree) (*Config, error) {
 	return cfg, nil
 }
 
-// getDefault defines the default values for the config
-func getDefault() (*Config, error) {
+// GetDefault defines the default values for the config
+func GetDefault() (*Config, error) {
 	d := Config{
-		AcceptEnvvarUnprivileged: true,
+		AcceptEnvvarUnprivileged:    true,
+		SupportedDriverCapabilities: image.SupportedDriverCapabilities.String(),
 		NVIDIAContainerCLIConfig: ContainerCLIConfig{
 			LoadKmods: true,
 			Ldconfig:  getLdConfigPath(),
@@ -290,16 +295,13 @@ func (c Config) asCommentedToml() (*toml.Tree, error) {
 }
 
 func shouldComment(key string, defaultValue interface{}, setTo interface{}) bool {
-	if key == "nvidia-container-cli.root" && setTo == "" {
-		return true
-	}
 	if key == "nvidia-container-cli.user" && !getCommentedUserGroup() {
 		return false
 	}
 	if key == "nvidia-container-runtime.debug" && setTo == "/dev/null" {
 		return true
 	}
-	if setTo == nil || defaultValue == setTo {
+	if setTo == nil || defaultValue == setTo || setTo == "" {
 		return true
 	}
 
