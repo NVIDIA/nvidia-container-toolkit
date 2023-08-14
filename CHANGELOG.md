@@ -4,9 +4,9 @@
 * Added support for generating OCI hook JSON file to `nvidia-ctk runtime configure` command.
 * Remove installation of OCI hook JSON from RPM package.
 * Refactored config for `nvidia-container-runtime-hook`.
+* Added a `nvidia-ctk config` command which supports setting config options using a `--set` flag.
 
 ## v1.14.0-rc.2
-
 * Fix bug causing incorrect nvidia-smi symlink to be created on WSL2 systems with multiple driver roots.
 * Remove dependency on coreutils when installing package on RPM-based systems.
 * Create ouput folders if required when running `nvidia-ctk runtime configure`

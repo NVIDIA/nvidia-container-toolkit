@@ -4,7 +4,7 @@ set -e
 
 case "$1" in
     configure)
-        /usr/bin/nvidia-ctk --quiet config default --in-place --config=/etc/nvidia-container-runtime/config.toml
+        /usr/bin/nvidia-ctk --quiet config --config-file=/etc/nvidia-container-runtime/config.toml --in-place
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

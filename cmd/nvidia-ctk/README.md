@@ -16,6 +16,31 @@ nvidia-ctk runtime configure --set-as-default
 will ensure that the NVIDIA Container Runtime is added as the default runtime to the default container
 engine.
 
+## Configure the NVIDIA Container Toolkit
+
+The `config` command of the `nvidia-ctk` CLI allows a user to display and manipulate the NVIDIA Container Toolkit
+configuration.
+
+For example, running the following command:
+```bash
+nvidia-ctk config default
+```
+will display the default config for the detected platform.
+
+Whereas
+```bash
+nvidia-ctk config
+```
+will display the effective NVIDIA Container Toolkit config using the configured config file, and running:
+
+Individual config options can be set by specifying these are key-value pairs to the `--set` argument:
+
+```bash
+nvidia-ctk config --set nvidia-container-cli.no-cgroups=true
+```
+
+By default, all commands output to `STDOUT`, but specifying the `--output` flag writes the config to the specified file.
+
 ### Generate CDI specifications
 
 The [Container Device Interface (CDI)](https://github.com/container-orchestrated-devices/container-device-interface) provides

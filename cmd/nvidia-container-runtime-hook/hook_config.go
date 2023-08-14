@@ -43,13 +43,15 @@ func loadConfig() (*config.Config, error) {
 	}
 
 	for _, p := range configPaths {
-		cfg, err := config.Load(p)
+		cfg, err := config.New(
+			config.WithConfigFile(p),
+		)
 		if err == nil {
-			return cfg, nil
+			return cfg.Config()
 		} else if os.IsNotExist(err) && !required {
 			continue
 		}
-		return nil, fmt.Errorf("couldn't open configuration file: %v", err)
+		return nil, fmt.Errorf("couldn't open required configuration file: %v", err)
 	}
 
 	return config.GetDefault()
