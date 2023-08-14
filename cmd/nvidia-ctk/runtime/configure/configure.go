@@ -25,6 +25,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/docker"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/ocihook"
 	"github.com/urfave/cli/v2"
 )
 
@@ -34,8 +35,9 @@ const (
 	// defaultNVIDIARuntimeName is the default name to use in configs for the NVIDIA Container Runtime
 	defaultNVIDIARuntimeName = "nvidia"
 	// defaultNVIDIARuntimeExecutable is the default NVIDIA Container Runtime executable file name
-	defaultNVIDIARuntimeExecutable      = "nvidia-container-runtime"
-	defailtNVIDIARuntimeExpecutablePath = "/usr/bin/nvidia-container-runtime"
+	defaultNVIDIARuntimeExecutable          = "nvidia-container-runtime"
+	defaultNVIDIARuntimeExpecutablePath     = "/usr/bin/nvidia-container-runtime"
+	defaultNVIDIARuntimeHookExpecutablePath = "/usr/bin/nvidia-container-runtime-hook"
 
 	defaultContainerdConfigFilePath = "/etc/containerd/config.toml"
 	defaultCrioConfigFilePath       = "/etc/crio/crio.conf"
@@ -60,10 +62,13 @@ type config struct {
 	dryRun         bool
 	runtime        string
 	configFilePath string
+	mode           string
+	hookFilePath   string
 
 	nvidiaRuntime struct {
 		name         string
 		path         string
+		hookPath     string
 		setAsDefault bool
 	}
 }
@@ -77,7 +82,7 @@ func (m command) build() *cli.Command {
 		Name:  "configure",
 		Usage: "Add a runtime to the specified container engine",
 		Before: func(c *cli.Context) error {
-			return validateFlags(c, &config)
+			return m.validateFlags(c, &config)
 		},
 		Action: func(c *cli.Context) error {
 			return m.configureWrapper(c, &config)
@@ -102,6 +107,16 @@ func (m command) build() *cli.Command {
 			Destination: &config.configFilePath,
 		},
 		&cli.StringFlag{
+			Name:        "config-mode",
+			Usage:       "the config mode for runtimes that support multiple configuration mechanisms",
+			Destination: &config.mode,
+		},
+		&cli.StringFlag{
+			Name:        "oci-hook-path",
+			Usage:       "the path to the OCI runtime hook to create if --config-mode=oci-hook is specified. If no path is specified, the generated hook is output to STDOUT.\n\tNote: The use of OCI hooks is deprecated.",
+			Destination: &config.hookFilePath,
+		},
+		&cli.StringFlag{
 			Name:        "nvidia-runtime-name",
 			Usage:       "specify the name of the NVIDIA runtime that will be added",
 			Value:       defaultNVIDIARuntimeName,
@@ -114,6 +129,12 @@ func (m command) build() *cli.Command {
 			Value:       defaultNVIDIARuntimeExecutable,
 			Destination: &config.nvidiaRuntime.path,
 		},
+		&cli.StringFlag{
+			Name:        "nvidia-runtime-hook-path",
+			Usage:       "specify the path to the NVIDIA Container Runtime hook executable",
+			Value:       defaultNVIDIARuntimeHookExpecutablePath,
+			Destination: &config.nvidiaRuntime.hookPath,
+		},
 		&cli.BoolFlag{
 			Name:        "nvidia-set-as-default",
 			Aliases:     []string{"set-as-default"},
@@ -125,7 +146,18 @@ func (m command) build() *cli.Command {
 	return &configure
 }
 
-func validateFlags(c *cli.Context, config *config) error {
+func (m command) validateFlags(c *cli.Context, config *config) error {
+	if config.mode == "oci-hook" {
+		if !filepath.IsAbs(config.nvidiaRuntime.hookPath) {
+			return fmt.Errorf("the NVIDIA runtime hook path %q is not an absolute path", config.nvidiaRuntime.hookPath)
+		}
+		return nil
+	}
+	if config.mode != "" && config.mode != "config-file" {
+		m.logger.Warningf("Ignoring unsupported config mode for %v: %q", config.runtime, config.mode)
+	}
+	config.mode = "config-file"
+
 	switch config.runtime {
 	case "containerd", "crio", "docker":
 		break
@@ -136,7 +168,7 @@ func validateFlags(c *cli.Context, config *config) error {
 	switch config.runtime {
 	case "containerd", "crio":
 		if config.nvidiaRuntime.path == defaultNVIDIARuntimeExecutable {
-			config.nvidiaRuntime.path = defailtNVIDIARuntimeExpecutablePath
+			config.nvidiaRuntime.path = defaultNVIDIARuntimeExpecutablePath
 		}
 		if !filepath.IsAbs(config.nvidiaRuntime.path) {
 			return fmt.Errorf("the NVIDIA runtime path %q is not an absolute path", config.nvidiaRuntime.path)
@@ -148,6 +180,17 @@ func validateFlags(c *cli.Context, config *config) error {
 
 // configureWrapper updates the specified container engine config to enable the NVIDIA runtime
 func (m command) configureWrapper(c *cli.Context, config *config) error {
+	switch config.mode {
+	case "oci-hook":
+		return m.configureOCIHook(c, config)
+	case "config-file":
+		return m.configureConfigFile(c, config)
+	}
+	return fmt.Errorf("unsupported config-mode: %v", config.mode)
+}
+
+// configureConfigFile updates the specified container engine config file to enable the NVIDIA runtime.
+func (m command) configureConfigFile(c *cli.Context, config *config) error {
 	configFilePath := config.resolveConfigFilePath()
 
 	var cfg engine.Interface
@@ -224,4 +267,13 @@ func (c *config) getOuputConfigPath() string {
 		return ""
 	}
 	return c.resolveConfigFilePath()
+}
+
+// configureOCIHook creates and configures the OCI hook for the NVIDIA runtime
+func (m *command) configureOCIHook(c *cli.Context, config *config) error {
+	err := ocihook.CreateHook(config.hookFilePath, config.nvidiaRuntime.hookPath)
+	if err != nil {
+		return fmt.Errorf("error creating OCI hook: %v", err)
+	}
+	return nil
 }

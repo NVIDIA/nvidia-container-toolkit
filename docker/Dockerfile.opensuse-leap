@@ -44,12 +44,6 @@ ARG GIT_COMMIT
 ENV GIT_COMMIT ${GIT_COMMIT}
 RUN make PREFIX=${DIST_DIR} cmds
 
-# Hook for Project Atomic's fork of Docker: https://github.com/projectatomic/docker/tree/docker-1.13.1-rhel#add-dockerhooks-exec-custom-hooks-for-prestartpoststop-containerspatch
-COPY oci-nvidia-hook $DIST_DIR/oci-nvidia-hook
-
-# Hook for libpod/CRI-O: https://github.com/containers/libpod/blob/v0.8.5/pkg/hooks/docs/oci-hooks.5.md
-COPY oci-nvidia-hook.json $DIST_DIR/oci-nvidia-hook.json
-
 WORKDIR $DIST_DIR/..
 COPY packaging/rpm .
 
