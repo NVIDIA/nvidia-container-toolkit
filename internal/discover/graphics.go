@@ -49,10 +49,10 @@ func NewDRMNodesDiscoverer(logger logger.Interface, devices image.VisibleDevices
 
 // NewGraphicsMountsDiscoverer creates a discoverer for the mounts required by graphics tools such as vulkan.
 func NewGraphicsMountsDiscoverer(logger logger.Interface, driverRoot string, nvidiaCTKPath string) (Discover, error) {
-	locator, err := lookup.NewLibraryLocator(logger, driverRoot)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct library locator: %v", err)
-	}
+	locator := lookup.NewLibraryLocator(
+		lookup.WithLogger(logger),
+		lookup.WithRoot(driverRoot),
+	)
 	libraries := NewMounts(
 		logger,
 		locator,

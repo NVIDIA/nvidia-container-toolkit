@@ -43,7 +43,10 @@ func TestLDCacheLocator(t *testing.T) {
 	require.NoError(t, os.Symlink(versionLib, sonameLink))
 	require.NoError(t, os.Symlink(sonameLink, soLink))
 
-	lut := newLdcacheLocator(logger, testDir)
+	lut := newLdcacheLocator(
+		WithLogger(logger),
+		WithRoot(testDir),
+	)
 
 	testCases := []struct {
 		description   string
@@ -94,7 +97,6 @@ func TestLDCacheLocator(t *testing.T) {
 			require.EqualValues(t, tc.expected, cleanedCandidates)
 		})
 	}
-
 }
 
 func TestLibraryLocator(t *testing.T) {
@@ -125,8 +127,10 @@ func TestLibraryLocator(t *testing.T) {
 	require.NoError(t, os.Symlink(libTarget1, source1))
 	require.NoError(t, os.Symlink(source1, source2))
 
-	lut, err := NewLibraryLocator(logger, testDir)
-	require.NoError(t, err)
+	lut := NewLibraryLocator(
+		WithLogger(logger),
+		WithRoot(testDir),
+	)
 
 	testCases := []struct {
 		description   string

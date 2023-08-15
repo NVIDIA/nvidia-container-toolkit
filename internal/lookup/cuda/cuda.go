@@ -58,13 +58,10 @@ func New(opts ...Options) lookup.Locator {
 		c.driverRoot = "/"
 	}
 
-	// TODO: Do we want to set the Count to 1 here?
-	l, _ := lookup.NewLibraryLocator(
-		c.logger,
-		c.driverRoot,
+	c.Locator = lookup.NewLibraryLocator(
+		lookup.WithLogger(c.logger),
+		lookup.WithRoot(c.driverRoot),
 	)
-
-	c.Locator = l
 	return c
 }
 
