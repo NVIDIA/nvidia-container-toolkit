@@ -8,6 +8,8 @@
 * Added `--library-search-path` option to `nvidia-ctk cdi generate` command in `csv` mode. This allows folders where
   libraries are located to be specified explicitly.
 
+* [toolkit-container] Set `NVIDIA_VISIBLE_DEVICES=void` to prevent injection of NVIDIA devices and drivers into the NVIDIA Container Toolkit container.
+
 ## v1.14.0-rc.2
 * Fix bug causing incorrect nvidia-smi symlink to be created on WSL2 systems with multiple driver roots.
 * Remove dependency on coreutils when installing package on RPM-based systems.

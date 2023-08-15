@@ -62,7 +62,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 ENV NVIDIA_DISABLE_REQUIRE="true"
-ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_VISIBLE_DEVICES=void
 ENV NVIDIA_DRIVER_CAPABILITIES=utility
 
 ARG ARTIFACTS_ROOT
