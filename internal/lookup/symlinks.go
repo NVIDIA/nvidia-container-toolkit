@@ -119,7 +119,7 @@ func (p symlink) Locate(pattern string) ([]string, error) {
 	}
 
 	if len(targets) != 1 {
-		return nil, fmt.Errorf("failed to locate patern %q: failed to uniquely resolve symlink: %v", pattern, targets)
+		return nil, fmt.Errorf("failed to locate patern %q: %w; failed to uniquely resolve symlink: %v", pattern, errNotFound, candidates)
 	}
 	return targets, err
 }
