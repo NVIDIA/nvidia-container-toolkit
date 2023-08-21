@@ -39,6 +39,10 @@ const (
 	PCI3dControllerClass uint32 = 0x030200
 	// PCINvSwitchClass represents the PCI class for NVSwitches
 	PCINvSwitchClass uint32 = 0x068000
+	// UnknownDeviceString is the device name to set for devices not found in the PCI database
+	UnknownDeviceString = "UNKNOWN_DEVICE"
+	// UnknownClassString is the class name to set for devices not found in the PCI database
+	UnknownClassString = "UNKNOWN_CLASS"
 )
 
 // Interface allows us to get a list of all NVIDIA PCI devices
@@ -64,6 +68,7 @@ type ResourceInterface interface {
 }
 
 type nvpci struct {
+	logger         logger
 	pciDevicesRoot string
 	pcidbPath      string
 }
@@ -130,6 +135,9 @@ func New(opts ...Option) Interface {
 	for _, opt := range opts {
 		opt(n)
 	}
+	if n.logger == nil {
+		n.logger = &simpleLogger{}
+	}
 	if n.pciDevicesRoot == "" {
 		n.pciDevicesRoot = PCIDevicesRoot
 	}
@@ -138,6 +146,13 @@ func New(opts ...Option) Interface {
 
 // Option defines a function for passing options to the New() call
 type Option func(*nvpci)
+
+// WithLogger provides an Option to set the logger for the library
+func WithLogger(logger logger) Option {
+	return func(n *nvpci) {
+		n.logger = logger
+	}
+}
 
 // WithPCIDevicesRoot provides an Option to set the root path
 // for PCI devices on the system.
@@ -304,11 +319,13 @@ func (p *nvpci) GetGPUByPciBusID(address string) (*NvidiaPCIDevice, error) {
 
 	deviceName, err := pciDB.GetDeviceName(uint16(vendorID), uint16(deviceID))
 	if err != nil {
-		return nil, fmt.Errorf("unable to get device name: %v", err)
+		p.logger.Warningf("unable to get device name: %v\n", err)
+		deviceName = UnknownDeviceString
 	}
 	className, err := pciDB.GetClassName(uint32(classID))
 	if err != nil {
-		return nil, fmt.Errorf("unable to get class name for device: %v", err)
+		p.logger.Warningf("unable to get class name for device: %v\n", err)
+		className = UnknownClassString
 	}
 
 	nvdevice := &NvidiaPCIDevice{

@@ -73,6 +73,7 @@ func newAllPossible(logger logger.Interface, devRoot string) (nodeLister, error)
 func (m allPossible) DeviceNodes() ([]deviceNode, error) {
 	gpus, err := nvpci.New(
 		nvpci.WithPCIDevicesRoot(filepath.Join(m.devRoot, nvpci.PCIDevicesRoot)),
+		nvpci.WithLogger(m.logger),
 	).GetGPUs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get GPU information: %v", err)

@@ -77,6 +77,8 @@ github.com/xeipuuv/gojsonschema v1.2.0 h1:LhYJRs+L4fBtjZUfuSZIKGeVu0QRy8e5Xi7D17
 github.com/xeipuuv/gojsonschema v1.2.0/go.mod h1:anYRn/JVcOK2ZgGU+IjEV4nwlhoK5sQluxsYJ78Id3Y=
 gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20230613182322-7663cf900f0a h1:lceJVurLqiWFdxK6KMDw+SIwrAsFW/af44XrNlbGw78=
 gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20230613182322-7663cf900f0a/go.mod h1:KYZksBgh18o+uzgnpDazzG4LVYtnfB96VXHMXypEtik=
+gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20230818092907-09424fdc8884 h1:V0LUbfm4kVA1CPG8FgG9AGZqa3ykE5U12Gd3PZgoItA=
+gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20230818092907-09424fdc8884/go.mod h1:/x5Ky1ZJNyCjDkgSL1atII0EFKQF5WaIHKeP5nkaQfk=
 golang.org/x/mod v0.5.0 h1:UG21uOlmZabA4fW5i7ZX6bjw1xELEGg/ZLgZq9auk/Q=
 golang.org/x/mod v0.5.0/go.mod h1:5OXOZSfqPIIbmVBIIKWRFfZjPR0E5r58TLhUjH0a2Ro=
 golang.org/x/sys v0.0.0-20191026070338-33540a1f6037/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
