@@ -19,7 +19,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -111,7 +110,19 @@ func run(c *cli.Context, opts *options) error {
 		cfgToml.Set(key, value)
 	}
 
-	cfgToml.Save(os.Stdout)
+	if err := opts.EnsureOutputFolder(); err != nil {
+		return fmt.Errorf("failed to create output directory: %v", err)
+	}
+	output, err := opts.CreateOutput()
+	if err != nil {
+		return fmt.Errorf("failed to open output file: %v", err)
+	}
+	defer output.Close()
+
+	if err != nil {
+		return err
+	}
+	cfgToml.Save(output)
 	return nil
 }
 
