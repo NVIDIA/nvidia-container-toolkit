@@ -51,11 +51,10 @@ func New(opts ...Option) (discover.Discover, error) {
 	}
 
 	if o.symlinkLocator == nil {
-		searchPaths := append(o.librarySearchPaths, "/")
 		o.symlinkLocator = lookup.NewSymlinkLocator(
 			lookup.WithLogger(o.logger),
 			lookup.WithRoot(o.driverRoot),
-			lookup.WithSearchPaths(searchPaths...),
+			lookup.WithSearchPaths(append(o.librarySearchPaths, "/")...),
 		)
 	}
 
