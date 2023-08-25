@@ -18,6 +18,7 @@ package runtime
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -53,7 +54,9 @@ func (r rt) Run(argv []string) (rerr error) {
 		if rerr != nil {
 			r.logger.Errorf("%v", rerr)
 		}
-		r.logger.Reset()
+		if err := r.logger.Reset(); err != nil {
+			rerr = errors.Join(rerr, fmt.Errorf("failed to reset logger: %v", err))
+		}
 	}()
 
 	// We apply some config updates here to ensure that the config is valid in

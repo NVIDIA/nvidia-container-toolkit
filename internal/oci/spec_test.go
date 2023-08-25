@@ -22,7 +22,8 @@ func TestMaintainSpec(t *testing.T) {
 
 		spec := NewFileSpec(inputSpecPath).(*fileSpec)
 
-		spec.Load()
+		_, err := spec.Load()
+		require.NoError(t, err)
 
 		outputSpecPath := filepath.Join(moduleRoot, "test/output", f)
 		spec.path = outputSpecPath

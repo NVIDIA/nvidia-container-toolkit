@@ -119,10 +119,10 @@ func run(c *cli.Context, opts *options) error {
 	}
 	defer output.Close()
 
-	if err != nil {
-		return err
+	if _, err := cfgToml.Save(output); err != nil {
+		return fmt.Errorf("failed to save config: %v", err)
 	}
-	cfgToml.Save(output)
+
 	return nil
 }
 

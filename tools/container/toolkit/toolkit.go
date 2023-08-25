@@ -455,13 +455,14 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 		config.Set(key, value)
 	}
 
-	_, err = config.WriteTo(targetConfig)
-	if err != nil {
+	if _, err := config.WriteTo(targetConfig); err != nil {
 		return fmt.Errorf("error writing config: %v", err)
 	}
 
 	os.Stdout.WriteString("Using config:\n")
-	config.WriteTo(os.Stdout)
+	if _, err = config.WriteTo(os.Stdout); err != nil {
+		log.Warningf("Failed to output config to STDOUT: %v", err)
+	}
 
 	return nil
 }

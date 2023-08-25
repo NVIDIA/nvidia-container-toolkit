@@ -36,7 +36,11 @@ func NewDriverDiscoverer(logger logger.Interface, driverRoot string, nvidiaCTKPa
 	if r := nvmllib.Init(); r != nvml.SUCCESS {
 		return nil, fmt.Errorf("failed to initialize NVML: %v", r)
 	}
-	defer nvmllib.Shutdown()
+	defer func() {
+		if r := nvmllib.Shutdown(); r != nvml.SUCCESS {
+			logger.Warningf("failed to shutdown NVML: %v", r)
+		}
+	}()
 
 	version, r := nvmllib.SystemGetDriverVersion()
 	if r != nvml.SUCCESS {
