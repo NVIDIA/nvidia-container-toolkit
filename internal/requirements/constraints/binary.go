@@ -57,7 +57,7 @@ func (c binary) eval() (bool, error) {
 		return false, err
 	}
 
-	switch string(c.operator) {
+	switch c.operator {
 	case equal:
 		return compare == 0, nil
 	case notEqual:

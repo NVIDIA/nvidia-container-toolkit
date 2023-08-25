@@ -287,7 +287,7 @@ func (c *ldcache) resolveSelected(selected func(string) bool) ([]string, []strin
 func (c *ldcache) resolve(target string) (string, error) {
 	name := filepath.Join(c.root, target)
 
-	c.logger.Debugf("checking %v", string(name))
+	c.logger.Debugf("checking %v", name)
 
 	link, err := symlinks.Resolve(name)
 	if err != nil {
