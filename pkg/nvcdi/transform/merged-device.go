@@ -20,7 +20,9 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
+
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 )
 
@@ -64,7 +66,7 @@ func NewMergedDevice(opts ...MergedDeviceOption) (Transformer, error) {
 	}
 	m.simplifier = NewSimplifier()
 
-	if err := cdi.ValidateDeviceName(m.name); err != nil {
+	if err := parser.ValidateDeviceName(m.name); err != nil {
 		return nil, fmt.Errorf("invalid device name %q: %v", m.name, err)
 	}
 

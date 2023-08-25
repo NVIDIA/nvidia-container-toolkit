@@ -22,6 +22,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 )
 
@@ -47,7 +48,7 @@ func newBuilder(opts ...Option) *builder {
 	}
 	if s.raw != nil {
 		s.noSimplify = true
-		vendor, class := cdi.ParseQualifier(s.raw.Kind)
+		vendor, class := parser.ParseQualifier(s.raw.Kind)
 		s.vendor = vendor
 		s.class = class
 	}
