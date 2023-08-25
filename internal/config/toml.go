@@ -154,10 +154,7 @@ func (t Toml) contents() ([]byte, error) {
 // format fixes the comments for the config to ensure that they start in column
 // 1 and are not followed by a space.
 func (t Toml) format(contents []byte) ([]byte, error) {
-	r, err := regexp.Compile(`(\n*)\s*?#\s*(\S.*)`)
-	if err != nil {
-		return nil, fmt.Errorf("unable to compile regexp: %v", err)
-	}
+	r := regexp.MustCompile(`(\n*)\s*?#\s*(\S.*)`)
 	replaced := r.ReplaceAll(contents, []byte("$1#$2"))
 
 	return replaced, nil
