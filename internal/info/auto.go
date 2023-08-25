@@ -20,25 +20,42 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	cdi "github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
+	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
+	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
 
 // infoInterface provides an alias for mocking.
 //
 //go:generate moq -stub -out info-interface_mock.go . infoInterface
-type infoInterface info.Interface
+type infoInterface interface {
+	info.Interface
+	// UsesNVGPUModule indicates whether the system is using the nvgpu kernel module
+	UsesNVGPUModule() (bool, string)
+}
 
 type resolver struct {
 	logger logger.Interface
-	info   info.Interface
+	info   infoInterface
 }
 
 // ResolveAutoMode determines the correct mode for the platform if set to "auto"
 func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rmode string) {
 	nvinfo := info.New()
+	nvmllib := nvml.New()
+	devicelib := device.New(
+		device.WithNvml(nvmllib),
+	)
+
+	info := additionalInfo{
+		Interface: nvinfo,
+		nvmllib:   nvmllib,
+		devicelib: devicelib,
+	}
+
 	r := resolver{
 		logger: logger,
-		info:   nvinfo,
+		info:   info,
 	}
 	return r.resolveMode(mode, image)
 }
@@ -62,7 +79,10 @@ func (r resolver) resolveMode(mode string, image image.CUDA) (rmode string) {
 	hasNVML, reason := r.info.HasNvml()
 	r.logger.Debugf("Has NVML? %v: %v", hasNVML, reason)
 
-	if isTegra && !hasNVML {
+	usesNVGPUModule, reason := r.info.UsesNVGPUModule()
+	r.logger.Debugf("Uses nvgpu kernel module? %v: %v", usesNVGPUModule, reason)
+
+	if (isTegra && !hasNVML) || usesNVGPUModule {
 		return "csv"
 	}
 
