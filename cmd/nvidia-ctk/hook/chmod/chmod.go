@@ -66,7 +66,7 @@ func (m command) build() *cli.Command {
 	c.Flags = []cli.Flag{
 		&cli.StringSliceFlag{
 			Name:        "path",
-			Usage:       "Specifiy a path to apply the specified mode to",
+			Usage:       "Specify a path to apply the specified mode to",
 			Destination: &cfg.paths,
 		},
 		&cli.StringFlag{

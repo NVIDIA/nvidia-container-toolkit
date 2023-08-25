@@ -56,7 +56,7 @@ func (m command) build() *cli.Command {
 	// Create the '' command
 	c := cli.Command{
 		Name:  "create-symlinks",
-		Usage: "A hook to create symlinks in the container. This can be used to proces CSV mount specs",
+		Usage: "A hook to create symlinks in the container. This can be used to process CSV mount specs",
 		Action: func(c *cli.Context) error {
 			return m.run(c, &cfg)
 		},

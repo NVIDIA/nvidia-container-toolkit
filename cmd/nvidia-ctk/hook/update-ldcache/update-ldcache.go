@@ -60,7 +60,7 @@ func (m command) build() *cli.Command {
 	c.Flags = []cli.Flag{
 		&cli.StringSliceFlag{
 			Name:        "folder",
-			Usage:       "Specifiy a folder to add to /etc/ld.so.conf before updating the ld cache",
+			Usage:       "Specify a folder to add to /etc/ld.so.conf before updating the ld cache",
 			Destination: &cfg.folders,
 		},
 		&cli.StringFlag{

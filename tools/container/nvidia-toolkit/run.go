@@ -65,7 +65,7 @@ func main() {
 		&cli.BoolFlag{
 			Name:        "no-daemon",
 			Aliases:     []string{"n"},
-			Usage:       "terminate immediatly after setting up the runtime. Note that no cleanup will be performed",
+			Usage:       "terminate immediately after setting up the runtime. Note that no cleanup will be performed",
 			Destination: &options.noDaemon,
 			EnvVars:     []string{"NO_DAEMON"},
 		},

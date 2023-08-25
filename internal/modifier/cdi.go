@@ -29,7 +29,7 @@ import (
 )
 
 // NewCDIModifier creates an OCI spec modifier that determines the modifications to make based on the
-// CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES enviroment variable is
+// CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES environment variable is
 // used to select the devices to include.
 func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
 	devices, err := getDevicesFromSpec(logger, ociSpec, cfg)

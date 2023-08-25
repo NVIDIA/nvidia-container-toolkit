@@ -85,7 +85,7 @@ func (o *builder) Build() (*spec, error) {
 	if raw.Version == DetectMinimumVersion {
 		minVersion, err := cdi.MinimumRequiredVersion(raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get minumum required CDI spec version: %v", err)
+			return nil, fmt.Errorf("failed to get minimum required CDI spec version: %v", err)
 		}
 		raw.Version = minVersion
 	}

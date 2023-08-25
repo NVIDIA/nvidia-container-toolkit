@@ -56,7 +56,7 @@ func ParseGPUInformationFile(path string) (GPUInfo, error) {
 }
 
 // gpuInfoFrom parses a GPUInfo struct from the specified reader
-// An information file has the following strucutre:
+// An information file has the following structure:
 // $ cat /proc/driver/nvidia/gpus/0000\:06\:00.0/information
 // Model:           Tesla V100-SXM2-16GB
 // IRQ:             408

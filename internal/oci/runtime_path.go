@@ -23,7 +23,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
-// pathRuntime wraps the path that a binary and defines the semanitcs for how to exec into it.
+// pathRuntime wraps the path that a binary and defines the semantics for how to exec into it.
 // This can be used to wrap an OCI-compliant low-level runtime binary, allowing it to be used through the
 // Runtime internface.
 type pathRuntime struct {
