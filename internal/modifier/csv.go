@@ -55,7 +55,7 @@ func NewCSVModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		return nil, fmt.Errorf("failed to get list of CSV files: %v", err)
 	}
 
-	if nvidiaRequireJetpack, _ := image[nvidiaRequireJetpackEnvvar]; nvidiaRequireJetpack != "csv-mounts=all" {
+	if nvidiaRequireJetpack := image[nvidiaRequireJetpackEnvvar]; nvidiaRequireJetpack != "csv-mounts=all" {
 		csvFiles = csv.BaseFilesOnly(csvFiles)
 	}
 
