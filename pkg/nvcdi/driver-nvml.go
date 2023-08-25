@@ -128,9 +128,9 @@ func getFirmwareSearchPaths(logger logger.Interface) ([]string, error) {
 
 	standardPaths := []string{
 		filepath.Join("/lib/firmware/updates/", utsRelease),
-		filepath.Join("/lib/firmware/updates/"),
+		"/lib/firmware/updates/",
 		filepath.Join("/lib/firmware/", utsRelease),
-		filepath.Join("/lib/firmware/"),
+		"/lib/firmware/",
 	}
 
 	return append(firmwarePaths, standardPaths...), nil
