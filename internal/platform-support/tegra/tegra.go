@@ -58,7 +58,6 @@ func New(opts ...Option) (discover.Discover, error) {
 		"",
 		[]string{
 			"/etc/nv_tegra_release",
-			"/sys/devices/soc0/family",
 		},
 	)
 
