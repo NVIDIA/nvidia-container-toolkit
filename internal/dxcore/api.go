@@ -16,15 +16,6 @@
 
 package dxcore
 
-import (
-	"github.com/NVIDIA/go-nvml/pkg/dl"
-)
-
-const (
-	libraryName      = "libdxcore.so"
-	libraryLoadFlags = dl.RTLD_LAZY | dl.RTLD_GLOBAL
-)
-
 // dxcore stores a reference the dxcore dynamic library
 var dxcore *context
 

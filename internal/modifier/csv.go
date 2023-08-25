@@ -22,7 +22,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/cuda"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
@@ -30,12 +29,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 )
-
-// csvMode represents the modifications as performed by the csv runtime mode
-type csvMode struct {
-	logger     logger.Interface
-	discoverer discover.Discover
-}
 
 const (
 	visibleDevicesEnvvar = "NVIDIA_VISIBLE_DEVICES"

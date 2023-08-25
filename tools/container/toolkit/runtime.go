@@ -82,16 +82,3 @@ func newRuntimeInstaller(source string, target executableTarget, env map[string]
 
 	return &r
 }
-
-func findLibraryRoot(root string) (string, error) {
-	libnvidiamlPath, err := findManagementLibrary(root)
-	if err != nil {
-		return "", fmt.Errorf("error locating NVIDIA management library: %v", err)
-	}
-
-	return filepath.Dir(libnvidiamlPath), nil
-}
-
-func findManagementLibrary(root string) (string, error) {
-	return findLibrary(root, "libnvidia-ml.so")
-}

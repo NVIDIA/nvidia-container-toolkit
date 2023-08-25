@@ -17,8 +17,6 @@ const (
 	driverPath = "/run/nvidia/driver"
 )
 
-var defaultPaths = [...]string{}
-
 // HookConfig : options for the nvidia-container-runtime-hook.
 type HookConfig config.Config
 
