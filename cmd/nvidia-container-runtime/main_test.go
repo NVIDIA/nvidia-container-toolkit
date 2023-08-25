@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -188,7 +188,7 @@ func (c testConfig) getRuntimeSpec() (specs.Spec, error) {
 	}
 	defer jsonFile.Close()
 
-	jsonContent, err := ioutil.ReadAll(jsonFile)
+	jsonContent, err := io.ReadAll(jsonFile)
 	if err != nil {
 		return spec, err
 	} else if json.Valid(jsonContent) {
