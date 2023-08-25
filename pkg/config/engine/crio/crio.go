@@ -44,8 +44,7 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 
 	config := (toml.Tree)(*c)
 
-	switch runc := config.Get("crio.runtime.runtimes.runc").(type) {
-	case *toml.Tree:
+	if runc, ok := config.Get("crio.runtime.runtimes.runc").(*toml.Tree); ok {
 		runc, _ = toml.Load(runc.String())
 		config.SetPath([]string{"crio", "runtime", "runtimes", name}, runc)
 	}

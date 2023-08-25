@@ -146,8 +146,7 @@ func (c *configToml) setFlagToKeyValue(setFlag string) (string, interface{}, err
 	if v == nil {
 		return key, nil, errInvalidConfigOption
 	}
-	switch v.(type) {
-	case bool:
+	if _, ok := v.(bool); ok {
 		if len(setParts) == 1 {
 			return key, true, nil
 		}
