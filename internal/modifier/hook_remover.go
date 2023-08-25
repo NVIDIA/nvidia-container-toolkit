@@ -49,6 +49,7 @@ func (m nvidiaContainerRuntimeHookRemover) Modify(spec *specs.Spec) error {
 	var newPrestart []specs.Hook
 
 	for _, hook := range spec.Hooks.Prestart {
+		hook := hook
 		if isNVIDIAContainerRuntimeHook(&hook) {
 			m.logger.Debugf("Removing hook %v", hook)
 			continue

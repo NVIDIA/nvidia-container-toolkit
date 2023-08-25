@@ -48,6 +48,7 @@ func (m stableRuntimeModifier) Modify(spec *specs.Spec) error {
 	// If an NVIDIA Container Runtime Hook already exists, we don't make any modifications to the spec.
 	if spec.Hooks != nil {
 		for _, hook := range spec.Hooks.Prestart {
+			hook := hook
 			if isNVIDIAContainerRuntimeHook(&hook) {
 				m.logger.Infof("Existing nvidia prestart hook (%v) found in OCI spec", hook.Path)
 				return nil
