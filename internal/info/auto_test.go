@@ -22,7 +22,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
 )
 
 func TestResolveAutoMode(t *testing.T) {
@@ -32,7 +31,7 @@ func TestResolveAutoMode(t *testing.T) {
 		description  string
 		mode         string
 		expectedMode string
-		info         info.Interface
+		info         map[string]bool
 		image        image.CUDA
 	}{
 		{
@@ -41,54 +40,78 @@ func TestResolveAutoMode(t *testing.T) {
 			expectedMode: "not-auto",
 		},
 		{
-			description: "nvml non-tegra resolves to legacy",
+			description:  "no info defaults to legacy",
+			mode:         "auto",
+			info:         map[string]bool{},
+			expectedMode: "legacy",
+		},
+		{
+			description: "non-nvml, non-tegra, nvgpu resolves to csv",
 			mode:        "auto",
-			info: &infoInterfaceMock{
-				HasNvmlFunc: func() (bool, string) {
-					return true, "nvml"
-				},
-				IsTegraSystemFunc: func() (bool, string) {
-					return false, "tegra"
-				},
+			info: map[string]bool{
+				"nvml":  false,
+				"tegra": false,
+				"nvgpu": true,
+			},
+			expectedMode: "csv",
+		},
+		{
+			description: "non-nvml, tegra, non-nvgpu resolves to csv",
+			mode:        "auto",
+			info: map[string]bool{
+				"nvml":  false,
+				"tegra": true,
+				"nvgpu": false,
+			},
+			expectedMode: "csv",
+		},
+		{
+			description: "non-nvml, tegra, nvgpu resolves to csv",
+			mode:        "auto",
+			info: map[string]bool{
+				"nvml":  false,
+				"tegra": true,
+				"nvgpu": true,
+			},
+			expectedMode: "csv",
+		},
+		{
+			description: "nvml, non-tegra, non-nvgpu resolves to legacy",
+			mode:        "auto",
+			info: map[string]bool{
+				"nvml":  true,
+				"tegra": false,
+				"nvgpu": false,
 			},
 			expectedMode: "legacy",
 		},
 		{
-			description: "non-nvml non-tegra resolves to legacy",
+			description: "nvml, non-tegra, nvgpu resolves to csv",
 			mode:        "auto",
-			info: &infoInterfaceMock{
-				HasNvmlFunc: func() (bool, string) {
-					return false, "nvml"
-				},
-				IsTegraSystemFunc: func() (bool, string) {
-					return false, "tegra"
-				},
+			info: map[string]bool{
+				"nvml":  true,
+				"tegra": false,
+				"nvgpu": true,
+			},
+			expectedMode: "csv",
+		},
+		{
+			description: "nvml, tegra, non-nvgpu resolves to legacy",
+			mode:        "auto",
+			info: map[string]bool{
+				"nvml":  true,
+				"tegra": true,
+				"nvgpu": false,
 			},
 			expectedMode: "legacy",
 		},
 		{
-			description: "nvml tegra resolves to legacy",
+			description: "nvml, tegra, nvgpu resolves to csv",
 			mode:        "auto",
-			info: &infoInterfaceMock{
-				HasNvmlFunc: func() (bool, string) {
-					return true, "nvml"
-				},
-				IsTegraSystemFunc: func() (bool, string) {
-					return true, "tegra"
-				},
-			},
-			expectedMode: "legacy",
-		},
-		{
-			description: "non-nvml tegra resolves to csv",
-			mode:        "auto",
-			info: &infoInterfaceMock{
-				HasNvmlFunc: func() (bool, string) {
-					return false, "nvml"
-				},
-				IsTegraSystemFunc: func() (bool, string) {
-					return true, "tegra"
-				},
+			info: map[string]bool{
+				"nvml":  true,
+				"tegra": true,
+				"nvgpu": true,
 			},
 			expectedMode: "csv",
 		},
@@ -114,13 +137,10 @@ func TestResolveAutoMode(t *testing.T) {
 			image: image.CUDA{
 				"NVIDIA_VISIBLE_DEVICES": "nvidia.com/gpu=0,0",
 			},
-			info: &infoInterfaceMock{
-				HasNvmlFunc: func() (bool, string) {
-					return true, "nvml"
-				},
-				IsTegraSystemFunc: func() (bool, string) {
-					return true, "tegra"
-				},
+			info: map[string]bool{
+				"nvml":  true,
+				"tegra": false,
+				"nvgpu": false,
 			},
 			expectedMode: "legacy",
 		},
@@ -130,13 +150,10 @@ func TestResolveAutoMode(t *testing.T) {
 			image: image.CUDA{
 				"NVIDIA_VISIBLE_DEVICES": "nvidia.com/gpu=0,0",
 			},
-			info: &infoInterfaceMock{
-				HasNvmlFunc: func() (bool, string) {
-					return false, "nvml"
-				},
-				IsTegraSystemFunc: func() (bool, string) {
-					return true, "tegra"
-				},
+			info: map[string]bool{
+				"nvml":  false,
+				"tegra": true,
+				"nvgpu": false,
 			},
 			expectedMode: "csv",
 		},
@@ -144,9 +161,21 @@ func TestResolveAutoMode(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
+			info := &infoInterfaceMock{
+				HasNvmlFunc: func() (bool, string) {
+					return tc.info["nvml"], "nvml"
+				},
+				IsTegraSystemFunc: func() (bool, string) {
+					return tc.info["tegra"], "tegra"
+				},
+				UsesNVGPUModuleFunc: func() (bool, string) {
+					return tc.info["nvgpu"], "nvgpu"
+				},
+			}
+
 			r := resolver{
 				logger: logger,
-				info:   tc.info,
+				info:   info,
 			}
 			mode := r.resolveMode(tc.mode, tc.image)
 			require.EqualValues(t, tc.expectedMode, mode)

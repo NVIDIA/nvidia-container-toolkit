@@ -8,6 +8,7 @@
 * Added `--library-search-path` option to `nvidia-ctk cdi generate` command in `csv` mode. This allows folders where
   libraries are located to be specified explicitly.
 * Updated go-nvlib to support devices which are not present in the PCI device database. This allows the creation of dev/char symlinks on systems with such devices installed.
+* Added `UsesNVGPUModule` info function for more robust platform detection. This is required on Tegra-based systems where libnvidia-ml.so is also supported.
 
 * [toolkit-container] Set `NVIDIA_VISIBLE_DEVICES=void` to prevent injection of NVIDIA devices and drivers into the NVIDIA Container Toolkit container.
 

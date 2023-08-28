@@ -26,6 +26,9 @@ var _ infoInterface = &infoInterfaceMock{}
 //			IsTegraSystemFunc: func() (bool, string) {
 //				panic("mock out the IsTegraSystem method")
 //			},
+//			UsesNVGPUModuleFunc: func() (bool, string) {
+//				panic("mock out the UsesNVGPUModule method")
+//			},
 //		}
 //
 //		// use mockedinfoInterface in code that requires infoInterface
@@ -42,6 +45,9 @@ type infoInterfaceMock struct {
 	// IsTegraSystemFunc mocks the IsTegraSystem method.
 	IsTegraSystemFunc func() (bool, string)
 
+	// UsesNVGPUModuleFunc mocks the UsesNVGPUModule method.
+	UsesNVGPUModuleFunc func() (bool, string)
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// HasDXCore holds details about calls to the HasDXCore method.
@@ -53,10 +59,14 @@ type infoInterfaceMock struct {
 		// IsTegraSystem holds details about calls to the IsTegraSystem method.
 		IsTegraSystem []struct {
 		}
+		// UsesNVGPUModule holds details about calls to the UsesNVGPUModule method.
+		UsesNVGPUModule []struct {
+		}
 	}
-	lockHasDXCore     sync.RWMutex
-	lockHasNvml       sync.RWMutex
-	lockIsTegraSystem sync.RWMutex
+	lockHasDXCore       sync.RWMutex
+	lockHasNvml         sync.RWMutex
+	lockIsTegraSystem   sync.RWMutex
+	lockUsesNVGPUModule sync.RWMutex
 }
 
 // HasDXCore calls HasDXCoreFunc.
@@ -149,5 +159,36 @@ func (mock *infoInterfaceMock) IsTegraSystemCalls() []struct {
 	mock.lockIsTegraSystem.RLock()
 	calls = mock.calls.IsTegraSystem
 	mock.lockIsTegraSystem.RUnlock()
+	return calls
+}
+
+// UsesNVGPUModule calls UsesNVGPUModuleFunc.
+func (mock *infoInterfaceMock) UsesNVGPUModule() (bool, string) {
+	callInfo := struct {
+	}{}
+	mock.lockUsesNVGPUModule.Lock()
+	mock.calls.UsesNVGPUModule = append(mock.calls.UsesNVGPUModule, callInfo)
+	mock.lockUsesNVGPUModule.Unlock()
+	if mock.UsesNVGPUModuleFunc == nil {
+		var (
+			bOut bool
+			sOut string
+		)
+		return bOut, sOut
+	}
+	return mock.UsesNVGPUModuleFunc()
+}
+
+// UsesNVGPUModuleCalls gets all the calls that were made to UsesNVGPUModule.
+// Check the length with:
+//
+//	len(mockedinfoInterface.UsesNVGPUModuleCalls())
+func (mock *infoInterfaceMock) UsesNVGPUModuleCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockUsesNVGPUModule.RLock()
+	calls = mock.calls.UsesNVGPUModule
+	mock.lockUsesNVGPUModule.RUnlock()
 	return calls
 }
