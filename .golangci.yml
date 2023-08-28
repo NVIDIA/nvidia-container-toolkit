@@ -14,3 +14,11 @@ linters:
     - misspell
     - staticcheck
     - unconvert
+
+issues:
+  exclude-rules:
+  # Exclude the gocritic dupSubExpr issue for cgo files.
+  - path: internal/dxcore/dxcore.go
+    linters:
+    - gocritic
+    text: dupSubExpr
