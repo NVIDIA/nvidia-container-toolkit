@@ -100,6 +100,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		args = append(args, "-r", containerRoot)
 	}
 
+	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	return syscall.Exec(args[0], args, nil)
 }
 

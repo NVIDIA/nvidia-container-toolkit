@@ -127,6 +127,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 
 	args := append([]string{filepath.Base(chmodPath), cfg.mode}, paths...)
 
+	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	return syscall.Exec(chmodPath, args, nil)
 }
 

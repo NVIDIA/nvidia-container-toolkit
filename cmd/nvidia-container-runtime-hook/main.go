@@ -142,6 +142,7 @@ func doPrestart() {
 	args = append(args, rootfs)
 
 	env := append(os.Environ(), cli.Environment...)
+	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection?
 	err = syscall.Exec(args[0], args, env)
 	log.Panicln("exec failed:", err)
 }
