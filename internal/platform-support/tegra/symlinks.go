@@ -80,19 +80,20 @@ func (d symlinkHook) getSpecificLinks() ([]string, error) {
 
 		lib := filepath.Base(m.Path)
 
-		if strings.HasPrefix(lib, "libcuda.so") {
+		switch {
+		case strings.HasPrefix(lib, "libcuda.so"):
 			// XXX Many applications wrongly assume that libcuda.so exists (e.g. with dlopen).
 			target = "libcuda.so.1"
 			link = "libcuda.so"
-		} else if strings.HasPrefix(lib, "libGLX_nvidia.so") {
+		case strings.HasPrefix(lib, "libGLX_nvidia.so"):
 			// XXX GLVND requires this symlink for indirect GLX support.
 			target = lib
 			link = "libGLX_indirect.so.0"
-		} else if strings.HasPrefix(lib, "libnvidia-opticalflow.so") {
+		case strings.HasPrefix(lib, "libnvidia-opticalflow.so"):
 			// XXX Fix missing symlink for libnvidia-opticalflow.so.
 			target = "libnvidia-opticalflow.so.1"
 			link = "libnvidia-opticalflow.so"
-		} else {
+		default:
 			continue
 		}
 		if linkProcessed[link] {

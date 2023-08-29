@@ -104,11 +104,12 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) {
 		newLogger.SetFormatter(new(logrus.JSONFormatter))
 	}
 
-	if len(logFiles) == 0 {
+	switch len(logFiles) {
+	case 0:
 		newLogger.SetOutput(io.Discard)
-	} else if len(logFiles) == 1 {
+	case 1:
 		newLogger.SetOutput(logFiles[0])
-	} else if len(logFiles) > 1 {
+	default:
 		var writers []io.Writer
 		for _, f := range logFiles {
 			writers = append(writers, f)
@@ -234,12 +235,13 @@ func parseArgs(args []string) loggerConfig {
 		}
 
 		var value string
-		if len(parts) == 2 {
+		switch {
+		case len(parts) == 2:
 			value = parts[2]
-		} else if i+1 < len(args) {
+		case i+1 < len(args):
 			value = args[i+1]
 			i++
-		} else {
+		default:
 			continue
 		}
 

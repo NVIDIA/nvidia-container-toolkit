@@ -193,14 +193,15 @@ func (c testConfig) getRuntimeSpec() (specs.Spec, error) {
 	defer jsonFile.Close()
 
 	jsonContent, err := io.ReadAll(jsonFile)
-	if err != nil {
+	switch {
+	case err != nil:
 		return spec, err
-	} else if json.Valid(jsonContent) {
+	case json.Valid(jsonContent):
 		err = json.Unmarshal(jsonContent, &spec)
 		if err != nil {
 			return spec, err
 		}
-	} else {
+	default:
 		err = json.NewDecoder(bytes.NewReader(jsonContent)).Decode(&spec)
 		if err != nil {
 			return spec, err
