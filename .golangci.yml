@@ -22,3 +22,8 @@ issues:
     linters:
     - gocritic
     text: dupSubExpr
+  # Exclude the checks for usage of returns to config.Delete(Path) in the crio and containerd config packages.
+  - path: pkg/config/engine/
+    linters:
+    - errcheck
+    text: config.Delete
