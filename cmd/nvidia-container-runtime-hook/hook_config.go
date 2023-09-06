@@ -45,6 +45,7 @@ func loadConfig() (*config.Config, error) {
 	for _, p := range configPaths {
 		cfg, err := config.New(
 			config.WithConfigFile(p),
+			config.WithRequired(true),
 		)
 		if err == nil {
 			return cfg.Config()
