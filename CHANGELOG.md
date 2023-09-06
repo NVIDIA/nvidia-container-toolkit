@@ -1,5 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.14.1
+
 ## v1.14.0
 * Promote v1.14.0-rc.3 to v1.14.0
 
