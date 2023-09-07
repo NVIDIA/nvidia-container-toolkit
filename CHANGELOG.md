@@ -1,6 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
 ## v1.14.1
+* Use libelf.so on RPM-based systems due to removed mageia repositories hosting pmake and bmake.
 
 ## v1.14.0
 * Promote v1.14.0-rc.3 to v1.14.0
