@@ -4,7 +4,6 @@
 * Fixed bug where contents of `/etc/nvidia-container-runtime/config.toml` is ignored by the NVIDIA Container Runtime Hook.
 
 * [libnvidia-container] Use libelf.so on RPM-based systems due to removed mageia repositories hosting pmake and bmake.
-* [libnvidia-container] Use libelf.so on DEB-based systems due to issues with sourceforge.net hosting libelftools.
 
 ## v1.14.0
 * Promote v1.14.0-rc.3 to v1.14.0
