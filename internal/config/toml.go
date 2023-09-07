@@ -31,6 +31,7 @@ type Toml toml.Tree
 
 type options struct {
 	configFile string
+	required   bool
 }
 
 // Option is a functional option for loading TOML config files.
@@ -43,6 +44,14 @@ func WithConfigFile(configFile string) Option {
 	}
 }
 
+// WithRequired sets the required option.
+// If this is set to true, a failure to open the specified file is treated as an error
+func WithRequired(required bool) Option {
+	return func(o *options) {
+		o.required = required
+	}
+}
+
 // New creates a new toml tree based on the provided options
 func New(opts ...Option) (*Toml, error) {
 	o := &options{}
@@ -50,19 +59,25 @@ func New(opts ...Option) (*Toml, error) {
 		opt(o)
 	}
 
-	return loadConfigToml(o.configFile)
+	return o.loadConfigToml()
 }
 
-func loadConfigToml(filename string) (*Toml, error) {
+func (o options) loadConfigToml() (*Toml, error) {
+	filename := o.configFile
 	if filename == "" {
 		return defaultToml()
+	}
+
+	_, err := os.Stat(filename)
+	if os.IsNotExist(err) && o.required {
+		return nil, os.ErrNotExist
 	}
 
 	tomlFile, err := os.Open(filename)
 	if os.IsNotExist(err) {
 		return defaultToml()
 	} else if err != nil {
-		return nil, fmt.Errorf("failed to load specified config file: %v", err)
+		return nil, fmt.Errorf("failed to load specified config file: %w", err)
 	}
 	defer tomlFile.Close()
 
