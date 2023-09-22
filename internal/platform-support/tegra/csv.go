@@ -58,15 +58,14 @@ func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
 		targetsByType[csv.MountSpecLib],
 	)
 
-	nonLibSymlinks := ignoreFilenamePatterns{"*.so", "*.so.[0-9]"}.Apply(targetsByType[csv.MountSpecSym]...)
-	o.logger.Debugf("Non-lib symlinks: %v", nonLibSymlinks)
+	symlinkTargets := targetsByType[csv.MountSpecSym]
 	symlinks := discover.NewMounts(
 		o.logger,
 		o.symlinkLocator,
 		o.driverRoot,
-		nonLibSymlinks,
+		symlinkTargets,
 	)
-	createSymlinks := o.createCSVSymlinkHooks(nonLibSymlinks, libraries)
+	createSymlinks := o.createCSVSymlinkHooks(symlinkTargets, libraries)
 
 	d := discover.Merge(
 		devices,
