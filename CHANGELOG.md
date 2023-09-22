@@ -1,5 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.14.2
+
 ## v1.14.1
 * Fixed bug where contents of `/etc/nvidia-container-runtime/config.toml` is ignored by the NVIDIA Container Runtime Hook.
 
