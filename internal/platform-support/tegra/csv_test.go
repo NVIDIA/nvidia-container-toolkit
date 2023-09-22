@@ -34,6 +34,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 	testCases := []struct {
 		description         string
 		moutSpecs           map[csv.MountSpecType][]string
+		ignorePatterns      []string
 		symlinkLocator      lookup.Locator
 		symlinkChainLocator lookup.Locator
 		symlinkResolver     func(string) (string, error)
@@ -99,6 +100,86 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 				},
 			},
 		},
+		{
+			// TODO: This current resolves to two mounts that are the same.
+			// These are deduplicated at a later stage. We could consider deduplicating earlier in the pipeline.
+			description: "single glob filter does not remove symlink mounts",
+			moutSpecs: map[csv.MountSpecType][]string{
+				"lib": {"/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so"},
+				"sym": {"/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so"},
+			},
+			ignorePatterns: []string{"*.so"},
+			symlinkLocator: &lookup.LocatorMock{
+				LocateFunc: func(path string) ([]string, error) {
+					if path == "/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so" {
+						return []string{"/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so"}, nil
+					}
+					return []string{path}, nil
+				},
+			},
+			symlinkChainLocator: &lookup.LocatorMock{
+				LocateFunc: func(path string) ([]string, error) {
+					if path == "/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so" {
+						return []string{"/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so", "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so"}, nil
+					}
+					return nil, fmt.Errorf("Unexpected path: %v", path)
+				},
+			},
+			symlinkResolver: func(path string) (string, error) {
+				if path == "/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so" {
+					return "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so", nil
+				}
+				return path, nil
+			},
+			expectedMounts: []discover.Mount{
+				{
+					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
+					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
+					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+				},
+				{
+					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
+					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
+					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+				},
+			},
+			expectedHooks: []discover.Hook{
+				{
+					Lifecycle: "createContainer",
+					Path:      "/usr/bin/nvidia-ctk",
+					Args: []string{
+						"nvidia-ctk",
+						"hook",
+						"create-symlinks",
+						"--link",
+						"/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so::/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so",
+					},
+				},
+			},
+		},
+		{
+			description: "** filter removes symlink mounts",
+			moutSpecs: map[csv.MountSpecType][]string{
+				"lib": {"/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so"},
+				"sym": {"/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so"},
+			},
+			symlinkLocator: &lookup.LocatorMock{
+				LocateFunc: func(path string) ([]string, error) {
+					if path == "/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so" {
+						return []string{"/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so"}, nil
+					}
+					return []string{path}, nil
+				},
+			},
+			ignorePatterns: []string{"**/*.so"},
+			expectedMounts: []discover.Mount{
+				{
+					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
+					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
+					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -109,6 +190,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 				logger:              logger,
 				nvidiaCTKPath:       "/usr/bin/nvidia-ctk",
 				csvFiles:            []string{"dummy"},
+				ignorePatterns:      tc.ignorePatterns,
 				symlinkLocator:      tc.symlinkLocator,
 				symlinkChainLocator: tc.symlinkChainLocator,
 				resolveSymlink:      tc.symlinkResolver,

@@ -16,20 +16,28 @@
 
 package tegra
 
-import "path/filepath"
+import (
+	"path/filepath"
+	"strings"
+)
 
-type ignoreFilenamePatterns []string
+type ignoreMountSpecPatterns []string
 
-func (d ignoreFilenamePatterns) Match(name string) bool {
+func (d ignoreMountSpecPatterns) Match(name string) bool {
 	for _, pattern := range d {
-		if match, _ := filepath.Match(pattern, filepath.Base(name)); match {
+		target := name
+		if strings.HasPrefix(pattern, "**/") {
+			target = filepath.Base(name)
+			pattern = strings.TrimPrefix(pattern, "**/")
+		}
+		if match, _ := filepath.Match(pattern, target); match {
 			return true
 		}
 	}
 	return false
 }
 
-func (d ignoreFilenamePatterns) Apply(input ...string) []string {
+func (d ignoreMountSpecPatterns) Apply(input ...string) []string {
 	var filtered []string
 	for _, name := range input {
 		if d.Match(name) {

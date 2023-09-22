@@ -2,6 +2,7 @@
 
 ## v1.14.2
 * Fix bug on Tegra-based systems where symlinks were not created in containers.
+* Add --csv.ignore-pattern command line option to nvidia-ctk cdi generate command.
 
 ## v1.14.1
 * Fixed bug where contents of `/etc/nvidia-container-runtime/config.toml` is ignored by the NVIDIA Container Runtime Hook.

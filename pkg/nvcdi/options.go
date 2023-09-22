@@ -104,6 +104,13 @@ func WithCSVFiles(csvFiles []string) Option {
 	}
 }
 
+// WithCSVIgnorePatterns sets the ignore patterns for entries in the CSV files.
+func WithCSVIgnorePatterns(csvIgnorePatterns []string) Option {
+	return func(o *nvcdilib) {
+		o.csvIgnorePatterns = csvIgnorePatterns
+	}
+}
+
 // WithLibrarySearchPaths sets the library search paths.
 // This is currently only used for CSV-mode.
 func WithLibrarySearchPaths(paths []string) Option {

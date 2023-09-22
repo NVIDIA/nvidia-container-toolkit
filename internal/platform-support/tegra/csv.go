@@ -58,7 +58,8 @@ func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
 		targetsByType[csv.MountSpecLib],
 	)
 
-	symlinkTargets := targetsByType[csv.MountSpecSym]
+	symlinkTargets := o.ignorePatterns.Apply(targetsByType[csv.MountSpecSym]...)
+	o.logger.Debugf("Filtered symlink targets: %v", symlinkTargets)
 	symlinks := discover.NewMounts(
 		o.logger,
 		o.symlinkLocator,

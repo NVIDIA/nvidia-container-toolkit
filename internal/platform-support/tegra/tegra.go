@@ -31,6 +31,7 @@ type tegraOptions struct {
 	driverRoot         string
 	nvidiaCTKPath      string
 	librarySearchPaths []string
+	ignorePatterns     ignoreMountSpecPatterns
 
 	// The following can be overridden for testing
 	symlinkLocator      lookup.Locator
@@ -130,5 +131,12 @@ func WithNVIDIACTKPath(nvidiaCTKPath string) Option {
 func WithLibrarySearchPaths(librarySearchPaths ...string) Option {
 	return func(o *tegraOptions) {
 		o.librarySearchPaths = librarySearchPaths
+	}
+}
+
+// WithIngorePatterns sets patterns to ignore in the CSV files
+func WithIngorePatterns(ignorePatterns ...string) Option {
+	return func(o *tegraOptions) {
+		o.ignorePatterns = ignoreMountSpecPatterns(ignorePatterns)
 	}
 }
