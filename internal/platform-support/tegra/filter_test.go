@@ -23,7 +23,35 @@ import (
 )
 
 func TestIgnorePatterns(t *testing.T) {
-	filtered := ignoreFilenamePatterns{"*.so", "*.so.[0-9]"}.Apply("/foo/bar/libsomething.so", "libsometing.so", "libsometing.so.1", "libsometing.so.1.2.3")
+	testCases := []struct {
+		description   string
+		blockedFilter []string
+		input         []string
+		expected      []string
+	}{
+		{
+			description: "nil slice",
+			input:       []string{"something", "somethingelse"},
+			expected:    []string{"something", "somethingelse"},
+		},
+		{
+			description:   "match libraries full path and so symlinks using globs",
+			blockedFilter: []string{"*.so", "*.so.[0-9]"},
+			input:         []string{"/foo/bar/libsomething.so", "libsometing.so", "libsometing.so.1", "libsometing.so.1.2.3"},
+			expected:      []string{"/foo/bar/libsomething.so", "libsometing.so.1.2.3"},
+		},
+		{
+			description:   "match libraries full path and so symlinks using globs with any path prefix",
+			blockedFilter: []string{"**/*.so", "**/*.so.[0-9]"},
+			input:         []string{"/foo/bar/libsomething.so", "libsometing.so", "libsometing.so.1", "libsometing.so.1.2.3"},
+			expected:      []string{"libsometing.so.1.2.3"},
+		},
+	}
 
-	require.ElementsMatch(t, []string{"libsometing.so.1.2.3"}, filtered)
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			filtered := ignoreMountSpecPatterns(tc.blockedFilter).Apply(tc.input...)
+			require.ElementsMatch(t, tc.expected, filtered)
+		})
+	}
 }

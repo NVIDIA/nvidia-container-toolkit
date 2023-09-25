@@ -22,6 +22,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 )
 
 type tegraOptions struct {
@@ -30,6 +31,13 @@ type tegraOptions struct {
 	driverRoot         string
 	nvidiaCTKPath      string
 	librarySearchPaths []string
+	ignorePatterns     ignoreMountSpecPatterns
+
+	// The following can be overridden for testing
+	symlinkLocator      lookup.Locator
+	symlinkChainLocator lookup.Locator
+	// TODO: This should be replaced by a regular mock
+	resolveSymlink func(string) (string, error)
 }
 
 // Option defines a functional option for configuring a Tegra discoverer.
@@ -42,7 +50,27 @@ func New(opts ...Option) (discover.Discover, error) {
 		opt(o)
 	}
 
-	csvDiscoverer, err := newDiscovererFromCSVFiles(o.logger, o.csvFiles, o.driverRoot, o.nvidiaCTKPath, o.librarySearchPaths)
+	if o.symlinkLocator == nil {
+		searchPaths := append(o.librarySearchPaths, "/")
+		o.symlinkLocator = lookup.NewSymlinkLocator(
+			lookup.WithLogger(o.logger),
+			lookup.WithRoot(o.driverRoot),
+			lookup.WithSearchPaths(searchPaths...),
+		)
+	}
+
+	if o.symlinkChainLocator == nil {
+		o.symlinkChainLocator = lookup.NewSymlinkChainLocator(
+			lookup.WithLogger(o.logger),
+			lookup.WithRoot(o.driverRoot),
+		)
+	}
+
+	if o.resolveSymlink == nil {
+		o.resolveSymlink = symlinks.Resolve
+	}
+
+	csvDiscoverer, err := o.newDiscovererFromCSVFiles()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
 	}
@@ -103,5 +131,12 @@ func WithNVIDIACTKPath(nvidiaCTKPath string) Option {
 func WithLibrarySearchPaths(librarySearchPaths ...string) Option {
 	return func(o *tegraOptions) {
 		o.librarySearchPaths = librarySearchPaths
+	}
+}
+
+// WithIngorePatterns sets patterns to ignore in the CSV files
+func WithIngorePatterns(ignorePatterns ...string) Option {
+	return func(o *tegraOptions) {
+		o.ignorePatterns = ignoreMountSpecPatterns(ignorePatterns)
 	}
 }

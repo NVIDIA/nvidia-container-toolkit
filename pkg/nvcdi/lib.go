@@ -47,7 +47,8 @@ type nvcdilib struct {
 	nvidiaCTKPath      string
 	librarySearchPaths []string
 
-	csvFiles []string
+	csvFiles          []string
+	csvIgnorePatterns []string
 
 	vendor string
 	class  string

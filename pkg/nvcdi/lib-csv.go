@@ -45,6 +45,7 @@ func (l *csvlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 		tegra.WithNVIDIACTKPath(l.nvidiaCTKPath),
 		tegra.WithCSVFiles(l.csvFiles),
 		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
+		tegra.WithIngorePatterns(l.csvIgnorePatterns...),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for CSV files: %v", err)

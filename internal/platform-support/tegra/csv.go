@@ -28,51 +28,45 @@ import (
 // newDiscovererFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
 // The constructed discoverer is comprised of a list, with each element in the list being associated with a
 // single CSV files.
-func newDiscovererFromCSVFiles(logger logger.Interface, files []string, driverRoot string, nvidiaCTKPath string, librarySearchPaths []string) (discover.Discover, error) {
-	if len(files) == 0 {
-		logger.Warningf("No CSV files specified")
+func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
+	if len(o.csvFiles) == 0 {
+		o.logger.Warningf("No CSV files specified")
 		return discover.None{}, nil
 	}
 
-	targetsByType := getTargetsFromCSVFiles(logger, files)
+	targetsByType := getTargetsFromCSVFiles(o.logger, o.csvFiles)
 
 	devices := discover.NewDeviceDiscoverer(
-		logger,
-		lookup.NewCharDeviceLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot)),
-		driverRoot,
+		o.logger,
+		lookup.NewCharDeviceLocator(lookup.WithLogger(o.logger), lookup.WithRoot(o.driverRoot)),
+		o.driverRoot,
 		targetsByType[csv.MountSpecDev],
 	)
 
 	directories := discover.NewMounts(
-		logger,
-		lookup.NewDirectoryLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot)),
-		driverRoot,
+		o.logger,
+		lookup.NewDirectoryLocator(lookup.WithLogger(o.logger), lookup.WithRoot(o.driverRoot)),
+		o.driverRoot,
 		targetsByType[csv.MountSpecDir],
 	)
 
 	// Libraries and symlinks use the same locator.
-	searchPaths := append(librarySearchPaths, "/")
-	symlinkLocator := lookup.NewSymlinkLocator(
-		lookup.WithLogger(logger),
-		lookup.WithRoot(driverRoot),
-		lookup.WithSearchPaths(searchPaths...),
-	)
 	libraries := discover.NewMounts(
-		logger,
-		symlinkLocator,
-		driverRoot,
+		o.logger,
+		o.symlinkLocator,
+		o.driverRoot,
 		targetsByType[csv.MountSpecLib],
 	)
 
-	nonLibSymlinks := ignoreFilenamePatterns{"*.so", "*.so.[0-9]"}.Apply(targetsByType[csv.MountSpecSym]...)
-	logger.Debugf("Non-lib symlinks: %v", nonLibSymlinks)
+	symlinkTargets := o.ignorePatterns.Apply(targetsByType[csv.MountSpecSym]...)
+	o.logger.Debugf("Filtered symlink targets: %v", symlinkTargets)
 	symlinks := discover.NewMounts(
-		logger,
-		symlinkLocator,
-		driverRoot,
-		nonLibSymlinks,
+		o.logger,
+		o.symlinkLocator,
+		o.driverRoot,
+		symlinkTargets,
 	)
-	createSymlinks := createCSVSymlinkHooks(logger, nonLibSymlinks, libraries, nvidiaCTKPath)
+	createSymlinks := o.createCSVSymlinkHooks(symlinkTargets, libraries)
 
 	d := discover.Merge(
 		devices,
@@ -87,7 +81,9 @@ func newDiscovererFromCSVFiles(logger logger.Interface, files []string, driverRo
 
 // getTargetsFromCSVFiles returns the list of mount specs from the specified CSV files.
 // These are aggregated by mount spec type.
-func getTargetsFromCSVFiles(logger logger.Interface, files []string) map[csv.MountSpecType][]string {
+// TODO: We use a function variable here to allow this to be overridden for testing.
+// This should be properly mocked.
+var getTargetsFromCSVFiles = func(logger logger.Interface, files []string) map[csv.MountSpecType][]string {
 	targetsByType := make(map[csv.MountSpecType][]string)
 	for _, filename := range files {
 		targets, err := loadCSVFile(logger, filename)

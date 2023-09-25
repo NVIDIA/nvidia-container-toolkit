@@ -53,7 +53,8 @@ type options struct {
 	librarySearchPaths cli.StringSlice
 
 	csv struct {
-		files cli.StringSlice
+		files          cli.StringSlice
+		ignorePatterns cli.StringSlice
 	}
 }
 
@@ -140,6 +141,11 @@ func (m command) build() *cli.Command {
 			Usage:       "The path to the list of CSV files to use when generating the CDI specification in CSV mode.",
 			Value:       cli.NewStringSlice(csv.DefaultFileList()...),
 			Destination: &opts.csv.files,
+		},
+		&cli.StringSliceFlag{
+			Name:        "csv.ignore-pattern",
+			Usage:       "Specify a pattern the CSV mount specifications.",
+			Destination: &opts.csv.ignorePatterns,
 		},
 	}
 
@@ -233,8 +239,9 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithNVIDIACTKPath(opts.nvidiaCTKPath),
 		nvcdi.WithDeviceNamer(deviceNamer),
 		nvcdi.WithMode(string(opts.mode)),
-		nvcdi.WithCSVFiles(opts.csv.files.Value()),
 		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths.Value()),
+		nvcdi.WithCSVFiles(opts.csv.files.Value()),
+		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns.Value()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)
