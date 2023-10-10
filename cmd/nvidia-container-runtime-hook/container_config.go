@@ -174,7 +174,7 @@ func getDevicesFromEnvvar(image image.CUDA, swarmResourceEnvvars []string) *stri
 	// if specified.
 	var hasSwarmEnvvar bool
 	for _, envvar := range swarmResourceEnvvars {
-		if _, exists := image[envvar]; exists {
+		if image.HasEnvvar(envvar) {
 			hasSwarmEnvvar = true
 			break
 		}
@@ -257,28 +257,31 @@ func getDevices(hookConfig *HookConfig, image image.CUDA, mounts []Mount, privil
 	return nil
 }
 
-func getMigConfigDevices(env map[string]string) *string {
-	if devices, ok := env[envNVMigConfigDevices]; ok {
-		return &devices
-	}
-	return nil
+func getMigConfigDevices(image image.CUDA) *string {
+	return getMigDevices(image, envNVMigConfigDevices)
 }
 
-func getMigMonitorDevices(env map[string]string) *string {
-	if devices, ok := env[envNVMigMonitorDevices]; ok {
-		return &devices
-	}
-	return nil
+func getMigMonitorDevices(image image.CUDA) *string {
+	return getMigDevices(image, envNVMigMonitorDevices)
 }
 
-func (c *HookConfig) getDriverCapabilities(env map[string]string, legacyImage bool) image.DriverCapabilities {
+func getMigDevices(image image.CUDA, envvar string) *string {
+	if !image.HasEnvvar(envvar) {
+		return nil
+	}
+	devices := image.Getenv(envvar)
+	return &devices
+}
+
+func (c *HookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage bool) image.DriverCapabilities {
 	// We use the default driver capabilities by default. This is filtered to only include the
 	// supported capabilities
 	supportedDriverCapabilities := image.NewDriverCapabilities(c.SupportedDriverCapabilities)
 
 	capabilities := supportedDriverCapabilities.Intersection(image.DefaultDriverCapabilities)
 
-	capsEnv, capsEnvSpecified := env[envNVDriverCapabilities]
+	capsEnvSpecified := cudaImage.HasEnvvar(envNVDriverCapabilities)
+	capsEnv := cudaImage.Getenv(envNVDriverCapabilities)
 
 	if !capsEnvSpecified && legacyImage {
 		// Environment variable unset with legacy image: set all capabilities.

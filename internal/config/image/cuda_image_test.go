@@ -126,7 +126,6 @@ func TestGetRequirements(t *testing.T) {
 			requirements, err := image.GetRequirements()
 			require.NoError(t, err)
 			require.ElementsMatch(t, tc.requirements, requirements)
-
 		})
 
 	}
