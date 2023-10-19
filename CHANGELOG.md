@@ -1,5 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.14.3
+* [toolkit-container] Bump CUDA base image version to 12.2.2.
+
 ## v1.14.2
 * Fix bug on Tegra-based systems where symlinks were not created in containers.
 * Add --csv.ignore-pattern command line option to nvidia-ctk cdi generate command.
