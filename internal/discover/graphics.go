@@ -239,7 +239,7 @@ func newDRMDeviceFilter(logger logger.Interface, devices image.VisibleDevices, d
 			return nil, fmt.Errorf("failed to determine DRM devices for %v: %v", busID, err)
 		}
 		for _, drmDeviceNode := range drmDeviceNodes {
-			filter[filepath.Join(drmDeviceNode)] = true
+			filter[drmDeviceNode] = true
 		}
 	}
 

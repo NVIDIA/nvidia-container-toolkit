@@ -35,7 +35,7 @@ func TestGetConfigWithCustomConfig(t *testing.T) {
 	contents := []byte("[nvidia-container-runtime]\ndebug = \"/nvidia-container-toolkit.log\"")
 
 	require.NoError(t, os.MkdirAll(filepath.Dir(filename), 0766))
-	require.NoError(t, os.WriteFile(filename, contents, 0766))
+	require.NoError(t, os.WriteFile(filename, contents, 0600))
 
 	cfg, err := GetConfig()
 	require.NoError(t, err)

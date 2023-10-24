@@ -150,6 +150,8 @@ func TestAddHookModifier(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		logHook.Reset()
 
 		t.Run(tc.description, func(t *testing.T) {

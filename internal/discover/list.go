@@ -27,7 +27,7 @@ type list struct {
 
 var _ Discover = (*list)(nil)
 
-// Merge creates a discoverer that is the composite of a list of discoveres.
+// Merge creates a discoverer that is the composite of a list of discoverers.
 func Merge(d ...Discover) Discover {
 	l := list{
 		discoverers: d,

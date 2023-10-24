@@ -38,7 +38,7 @@ func NewMOFEDModifier(logger logger.Interface, cfg *config.Config, image image.C
 		return nil, nil
 	}
 
-	if mofed, _ := image[nvidiaMOFEDEnvvar]; mofed != "enabled" {
+	if mofed := image[nvidiaMOFEDEnvvar]; mofed != "enabled" {
 		return nil, nil
 	}
 

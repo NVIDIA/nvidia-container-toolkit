@@ -23,7 +23,7 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
-// SpecModifier defines an interace for modifying a (raw) OCI spec
+// SpecModifier defines an interface for modifying a (raw) OCI spec
 type SpecModifier interface {
 	// Modify is a method that accepts a pointer to an OCI Srec and returns an
 	// error. The intention is that the function would modify the spec in-place.

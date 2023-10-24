@@ -191,7 +191,11 @@ func (l *nvcdilib) getCudaVersion() (string, error) {
 	if r != nvml.SUCCESS {
 		return "", fmt.Errorf("failed to initialize nvml: %v", r)
 	}
-	defer l.nvmllib.Shutdown()
+	defer func() {
+		if r := l.nvmllib.Shutdown(); r != nvml.SUCCESS {
+			l.logger.Warningf("failed to shutdown NVML: %v", r)
+		}
+	}()
 
 	version, r := l.nvmllib.SystemGetDriverVersion()
 	if r != nvml.SUCCESS {

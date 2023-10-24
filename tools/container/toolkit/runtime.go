@@ -43,7 +43,7 @@ func installContainerRuntimes(toolkitDir string, driverRoot string) error {
 }
 
 // newNVidiaContainerRuntimeInstaller returns a new executable installer for the NVIDIA container runtime.
-// This installer will copy the specified source exectuable to the toolkit directory.
+// This installer will copy the specified source executable to the toolkit directory.
 // The executable is copied to a file with the same name as the source, but with a ".real" suffix and a wrapper is
 // created to allow for the configuration of the runtime environment.
 func newNvidiaContainerRuntimeInstaller(source string) *executable {
@@ -81,17 +81,4 @@ func newRuntimeInstaller(source string, target executableTarget, env map[string]
 	}
 
 	return &r
-}
-
-func findLibraryRoot(root string) (string, error) {
-	libnvidiamlPath, err := findManagementLibrary(root)
-	if err != nil {
-		return "", fmt.Errorf("error locating NVIDIA management library: %v", err)
-	}
-
-	return filepath.Dir(libnvidiamlPath), nil
-}
-
-func findManagementLibrary(root string) (string, error) {
-	return findLibrary(root, "libnvidia-ml.so")
 }

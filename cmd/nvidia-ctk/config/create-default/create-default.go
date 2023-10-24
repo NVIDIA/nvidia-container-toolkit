@@ -85,8 +85,7 @@ func (m command) run(c *cli.Context, opts *flags.Options) error {
 	}
 	defer output.Close()
 
-	_, err = cfgToml.Save(output)
-	if err != nil {
+	if _, err = cfgToml.Save(output); err != nil {
 		return fmt.Errorf("failed to write output: %v", err)
 	}
 

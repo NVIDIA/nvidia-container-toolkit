@@ -34,6 +34,7 @@ var _ oci.SpecModifier = (*fromCDISpec)(nil)
 // Modify applies the mofiications defined by the raw CDI spec to the incomming OCI spec.
 func (m fromCDISpec) Modify(spec *specs.Spec) error {
 	for _, device := range m.cdiSpec.Devices {
+		device := device
 		cdiDevice := cdi.Device{
 			Device: &device,
 		}

@@ -90,7 +90,6 @@ func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
 
 func TestUpdateV2Config(t *testing.T) {
 	const runtimeDir = "/test/runtime/dir"
-	const expectedVersion = int64(2)
 
 	testCases := []struct {
 		runtimeName    string

@@ -28,7 +28,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
+	cdi "github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 	"github.com/urfave/cli/v2"
 )
 
@@ -238,7 +238,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithDriverRoot(opts.driverRoot),
 		nvcdi.WithNVIDIACTKPath(opts.nvidiaCTKPath),
 		nvcdi.WithDeviceNamer(deviceNamer),
-		nvcdi.WithMode(string(opts.mode)),
+		nvcdi.WithMode(opts.mode),
 		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths.Value()),
 		nvcdi.WithCSVFiles(opts.csv.files.Value()),
 		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns.Value()),

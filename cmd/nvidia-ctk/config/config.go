@@ -119,10 +119,10 @@ func run(c *cli.Context, opts *options) error {
 	}
 	defer output.Close()
 
-	if err != nil {
-		return err
+	if _, err := cfgToml.Save(output); err != nil {
+		return fmt.Errorf("failed to save config: %v", err)
 	}
-	cfgToml.Save(output)
+
 	return nil
 }
 
@@ -146,8 +146,7 @@ func (c *configToml) setFlagToKeyValue(setFlag string) (string, interface{}, err
 	if v == nil {
 		return key, nil, errInvalidConfigOption
 	}
-	switch v.(type) {
-	case bool:
+	if _, ok := v.(bool); ok {
 		if len(setParts) == 1 {
 			return key, true, nil
 		}

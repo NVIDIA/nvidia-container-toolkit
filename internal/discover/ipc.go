@@ -70,7 +70,7 @@ func (d *ipcMounts) Mounts() ([]Mount, error) {
 	var modifiedMounts []Mount
 	for _, m := range mounts {
 		mount := m
-		mount.Options = append(m.Options, "noexec")
+		mount.Options = append(mount.Options, "noexec")
 		modifiedMounts = append(modifiedMounts, mount)
 	}
 

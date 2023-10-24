@@ -1,5 +1,5 @@
 /**
-# Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,24 +14,15 @@
 # limitations under the License.
 **/
 
-package constraints
+package devchar
 
-const (
-	equal        = "="
-	notEqual     = "!="
-	less         = "<"
-	lessEqual    = "<="
-	greater      = ">"
-	greaterEqual = ">="
-)
+import "golang.org/x/sys/unix"
 
-// always is a constraint that is always met
-type always struct{}
-
-func (c always) Assert() error {
-	return nil
-}
-
-func (c always) String() string {
-	return "true"
+func newDeviceNode(d string, stat unix.Stat_t) deviceNode {
+	deviceNode := deviceNode{
+		path:  d,
+		major: unix.Major(stat.Rdev),
+		minor: unix.Minor(stat.Rdev),
+	}
+	return deviceNode
 }

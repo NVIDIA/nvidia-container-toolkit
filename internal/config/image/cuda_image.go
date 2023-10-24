@@ -139,12 +139,12 @@ func (i CUDA) DevicesFromEnvvars(envVars ...string) VisibleDevices {
 func (i CUDA) GetDriverCapabilities() DriverCapabilities {
 	env := i[envNVDriverCapabilities]
 
-	capabilites := make(DriverCapabilities)
+	capabilities := make(DriverCapabilities)
 	for _, c := range strings.Split(env, ",") {
-		capabilites[DriverCapability(c)] = true
+		capabilities[DriverCapability(c)] = true
 	}
 
-	return capabilites
+	return capabilities
 }
 
 func (i CUDA) legacyVersion() (string, error) {

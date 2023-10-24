@@ -79,7 +79,7 @@ func (s *fileSpec) Modify(m SpecModifier) error {
 	return s.memorySpec.Modify(m)
 }
 
-// Flush writes the stored OCI specification to the filepath specifed by the path member.
+// Flush writes the stored OCI specification to the filepath specified by the path member.
 // The file is truncated upon opening, overwriting any existing contents.
 func (s fileSpec) Flush() error {
 	if s.Spec == nil {

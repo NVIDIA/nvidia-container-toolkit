@@ -73,7 +73,7 @@ func (c DriverCapabilities) Has(capability DriverCapability) bool {
 	return c[capability]
 }
 
-// Any checks whether any of the specified capabilites are set
+// Any checks whether any of the specified capabilities are set
 func (c DriverCapabilities) Any(capabilities ...DriverCapability) bool {
 	if c.IsAll() {
 		return true

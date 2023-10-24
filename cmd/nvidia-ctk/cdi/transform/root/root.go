@@ -28,11 +28,6 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-type loadSaver interface {
-	Load() (spec.Interface, error)
-	Save(spec.Interface) error
-}
-
 type command struct {
 	logger logger.Interface
 }

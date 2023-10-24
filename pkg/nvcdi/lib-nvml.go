@@ -41,9 +41,13 @@ func (l *nvmllib) GetAllDeviceSpecs() ([]specs.Device, error) {
 	var deviceSpecs []specs.Device
 
 	if r := l.nvmllib.Init(); r != nvml.SUCCESS {
-		return nil, fmt.Errorf("failed to initalize NVML: %v", r)
+		return nil, fmt.Errorf("failed to initialize NVML: %v", r)
 	}
-	defer l.nvmllib.Shutdown()
+	defer func() {
+		if r := l.nvmllib.Shutdown(); r != nvml.SUCCESS {
+			l.logger.Warningf("failed to shutdown NVML: %v", r)
+		}
+	}()
 
 	gpuDeviceSpecs, err := l.getGPUDeviceSpecs()
 	if err != nil {

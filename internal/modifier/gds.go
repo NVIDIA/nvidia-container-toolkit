@@ -38,7 +38,7 @@ func NewGDSModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		return nil, nil
 	}
 
-	if gds, _ := image[nvidiaGDSEnvvar]; gds != "enabled" {
+	if gds := image[nvidiaGDSEnvvar]; gds != "enabled" {
 		return nil, nil
 	}
 

@@ -52,7 +52,9 @@ func (i additionalInfo) UsesNVGPUModule() (uses bool, reason string) {
 	if ret != nvml.SUCCESS {
 		return false, fmt.Sprintf("failed to initialize nvml: %v", ret)
 	}
-	defer i.nvmllib.Shutdown()
+	defer func() {
+		_ = i.nvmllib.Shutdown()
+	}()
 
 	var names []string
 

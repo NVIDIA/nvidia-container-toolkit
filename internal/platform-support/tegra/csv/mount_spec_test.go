@@ -70,6 +70,7 @@ func TestNewMountSpecFromLine(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("test case %d", i), func(t *testing.T) {
+			tc := tc
 			target, err := NewMountSpecFromLine(tc.line)
 			if tc.expectedError != nil {
 				require.Error(t, err)

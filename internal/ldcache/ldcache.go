@@ -234,7 +234,7 @@ func (c *ldcache) getEntries(selected func(string) bool) []entry {
 	return entries
 }
 
-// List creates a list of libraires in the ldcache.
+// List creates a list of libraries in the ldcache.
 // The 32-bit and 64-bit libraries are returned separately.
 func (c *ldcache) List() ([]string, []string) {
 	all := func(s string) bool { return true }
@@ -287,7 +287,7 @@ func (c *ldcache) resolveSelected(selected func(string) bool) ([]string, []strin
 func (c *ldcache) resolve(target string) (string, error) {
 	name := filepath.Join(c.root, target)
 
-	c.logger.Debugf("checking %v", string(name))
+	c.logger.Debugf("checking %v", name)
 
 	link, err := symlinks.Resolve(name)
 	if err != nil {

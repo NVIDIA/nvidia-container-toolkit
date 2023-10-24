@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -86,6 +86,7 @@ func TestBadInput(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	cmdCreate := exec.Command(nvidiaRuntime, "create", "--bundle")
 	t.Logf("executing: %s\n", strings.Join(cmdCreate.Args, " "))
 	err = cmdCreate.Run()
@@ -103,6 +104,7 @@ func TestGoodInput(t *testing.T) {
 		t.Fatalf("error generating runtime spec: %v", err)
 	}
 
+	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	cmdRun := exec.Command(nvidiaRuntime, "run", "--bundle", cfg.bundlePath(), "testcontainer")
 	t.Logf("executing: %s\n", strings.Join(cmdRun.Args, " "))
 	output, err := cmdRun.CombinedOutput()
@@ -113,6 +115,7 @@ func TestGoodInput(t *testing.T) {
 	require.NoError(t, err, "should be no errors when reading and parsing spec from config.json")
 	require.Empty(t, spec.Hooks, "there should be no hooks in config.json")
 
+	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	cmdCreate := exec.Command(nvidiaRuntime, "create", "--bundle", cfg.bundlePath(), "testcontainer")
 	t.Logf("executing: %s\n", strings.Join(cmdCreate.Args, " "))
 	err = cmdCreate.Run()
@@ -158,6 +161,7 @@ func TestDuplicateHook(t *testing.T) {
 	}
 
 	// Test how runtime handles already existing prestart hook in config.json
+	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	cmdCreate := exec.Command(nvidiaRuntime, "create", "--bundle", cfg.bundlePath(), "testcontainer")
 	t.Logf("executing: %s\n", strings.Join(cmdCreate.Args, " "))
 	output, err := cmdCreate.CombinedOutput()
@@ -188,15 +192,16 @@ func (c testConfig) getRuntimeSpec() (specs.Spec, error) {
 	}
 	defer jsonFile.Close()
 
-	jsonContent, err := ioutil.ReadAll(jsonFile)
-	if err != nil {
+	jsonContent, err := io.ReadAll(jsonFile)
+	switch {
+	case err != nil:
 		return spec, err
-	} else if json.Valid(jsonContent) {
+	case json.Valid(jsonContent):
 		err = json.Unmarshal(jsonContent, &spec)
 		if err != nil {
 			return spec, err
 		}
-	} else {
+	default:
 		err = json.NewDecoder(bytes.NewReader(jsonContent)).Decode(&spec)
 		if err != nil {
 			return spec, err
@@ -226,6 +231,7 @@ func (c testConfig) generateNewRuntimeSpec() error {
 		return err
 	}
 
+	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	cmd := exec.Command("cp", c.unmodifiedSpecFile(), c.specFilePath())
 	err = cmd.Run()
 	if err != nil {

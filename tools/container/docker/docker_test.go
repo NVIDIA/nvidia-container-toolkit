@@ -235,6 +235,8 @@ func TestUpdateConfig(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
+		tc := tc
+
 		o := &options{
 			Options: container.Options{
 				RuntimeName:  tc.runtimeName,
@@ -361,6 +363,7 @@ func TestRevertConfig(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
+		tc := tc
 		o := &options{}
 		err := o.RevertConfig(&tc.config)
 

@@ -65,7 +65,7 @@ func main() {
 		&cli.BoolFlag{
 			Name:        "no-daemon",
 			Aliases:     []string{"n"},
-			Usage:       "terminate immediatly after setting up the runtime. Note that no cleanup will be performed",
+			Usage:       "terminate immediately after setting up the runtime. Note that no cleanup will be performed",
 			Destination: &options.noDaemon,
 			EnvVars:     []string{"NO_DAEMON"},
 		},
@@ -229,6 +229,7 @@ func installToolkit(o *options) error {
 		filepath.Join(o.root, toolkitSubDir),
 	}
 
+	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	cmd := exec.Command("sh", "-c", strings.Join(cmdline, " "))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -247,6 +248,7 @@ func setupRuntime(o *options) error {
 
 	cmdline := fmt.Sprintf("%v setup %v %v\n", o.runtime, o.runtimeArgs, toolkitDir)
 
+	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	cmd := exec.Command("sh", "-c", cmdline)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -272,6 +274,7 @@ func cleanupRuntime(o *options) error {
 
 	cmdline := fmt.Sprintf("%v cleanup %v %v\n", o.runtime, o.runtimeArgs, toolkitDir)
 
+	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	cmd := exec.Command("sh", "-c", cmdline)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

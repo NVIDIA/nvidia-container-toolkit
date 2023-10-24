@@ -44,6 +44,7 @@ func (d sorter) Transform(spec *specs.Spec) error {
 	}
 	var updatedDevices []specs.Device
 	for _, device := range spec.Devices {
+		device := device
 		if err := d.transformEdits(&device.ContainerEdits); err != nil {
 			return err
 		}

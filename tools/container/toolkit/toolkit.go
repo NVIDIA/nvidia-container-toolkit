@@ -27,6 +27,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 	toml "github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -238,11 +239,11 @@ func validateOptions(c *cli.Context, opts *options) error {
 		return fmt.Errorf("invalid --toolkit-root option: %v", opts.toolkitRoot)
 	}
 
-	vendor, class := cdi.ParseQualifier(opts.cdiKind)
-	if err := cdi.ValidateVendorName(vendor); err != nil {
+	vendor, class := parser.ParseQualifier(opts.cdiKind)
+	if err := parser.ValidateVendorName(vendor); err != nil {
 		return fmt.Errorf("invalid CDI vendor name: %v", err)
 	}
-	if err := cdi.ValidateClassName(class); err != nil {
+	if err := parser.ValidateClassName(class); err != nil {
 		return fmt.Errorf("invalid CDI class name: %v", err)
 	}
 	opts.cdiVendor = vendor
@@ -454,13 +455,14 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 		config.Set(key, value)
 	}
 
-	_, err = config.WriteTo(targetConfig)
-	if err != nil {
+	if _, err := config.WriteTo(targetConfig); err != nil {
 		return fmt.Errorf("error writing config: %v", err)
 	}
 
 	os.Stdout.WriteString("Using config:\n")
-	config.WriteTo(os.Stdout)
+	if _, err = config.WriteTo(os.Stdout); err != nil {
+		log.Warningf("Failed to output config to STDOUT: %v", err)
+	}
 
 	return nil
 }

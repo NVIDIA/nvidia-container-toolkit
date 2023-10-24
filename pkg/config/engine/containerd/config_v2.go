@@ -32,8 +32,7 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 
 	config.Set("version", int64(2))
 
-	switch runc := config.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", "runc"}).(type) {
-	case *toml.Tree:
+	if runc, ok := config.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", "runc"}).(*toml.Tree); ok {
 		runc, _ = toml.Load(runc.String())
 		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name}, runc)
 	}

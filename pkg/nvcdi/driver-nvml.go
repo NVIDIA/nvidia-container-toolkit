@@ -34,9 +34,13 @@ import (
 // The supplied NVML Library is used to query the expected driver version.
 func NewDriverDiscoverer(logger logger.Interface, driverRoot string, nvidiaCTKPath string, nvmllib nvml.Interface) (discover.Discover, error) {
 	if r := nvmllib.Init(); r != nvml.SUCCESS {
-		return nil, fmt.Errorf("failed to initalize NVML: %v", r)
+		return nil, fmt.Errorf("failed to initialize NVML: %v", r)
 	}
-	defer nvmllib.Shutdown()
+	defer func() {
+		if r := nvmllib.Shutdown(); r != nvml.SUCCESS {
+			logger.Warningf("failed to shutdown NVML: %v", r)
+		}
+	}()
 
 	version, r := nvmllib.SystemGetDriverVersion()
 	if r != nvml.SUCCESS {
@@ -124,9 +128,9 @@ func getFirmwareSearchPaths(logger logger.Interface) ([]string, error) {
 
 	standardPaths := []string{
 		filepath.Join("/lib/firmware/updates/", utsRelease),
-		filepath.Join("/lib/firmware/updates/"),
+		"/lib/firmware/updates/",
 		filepath.Join("/lib/firmware/", utsRelease),
-		filepath.Join("/lib/firmware/"),
+		"/lib/firmware/",
 	}
 
 	return append(firmwarePaths, standardPaths...), nil

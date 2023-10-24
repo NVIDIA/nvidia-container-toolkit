@@ -43,7 +43,11 @@ func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, nvidiaCT
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize dxcore: %v", err)
 	}
-	defer dxcore.Shutdown()
+	defer func() {
+		if err := dxcore.Shutdown(); err != nil {
+			logger.Warningf("failed to shutdown dxcore: %v", err)
+		}
+	}()
 
 	driverStorePaths := dxcore.GetDriverStorePaths()
 	if len(driverStorePaths) == 0 {

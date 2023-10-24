@@ -104,13 +104,13 @@ type infoMock struct {
 }
 
 func (i infoMock) HasDXCore() (bool, string) {
-	return bool(i.hasDXCore), ""
+	return i.hasDXCore, ""
 }
 
 func (i infoMock) HasNvml() (bool, string) {
-	return bool(i.hasNVML), ""
+	return i.hasNVML, ""
 }
 
 func (i infoMock) IsTegraSystem() (bool, string) {
-	return bool(i.isTegra), ""
+	return i.isTegra, ""
 }

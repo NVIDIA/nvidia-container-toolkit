@@ -152,12 +152,13 @@ func TestModify(t *testing.T) {
 
 		err := spec.Modify(modifier{tc.modifierError})
 
-		if tc.spec == nil {
+		switch {
+		case tc.spec == nil:
 			require.Error(t, err, "%d: %v", i, tc)
-		} else if tc.modifierError != nil {
+		case tc.modifierError != nil:
 			require.EqualError(t, err, tc.modifierError.Error(), "%d: %v", i, tc)
 			require.EqualValues(t, &specs.Spec{}, spec.Spec, "%d: %v", i, tc)
-		} else {
+		default:
 			require.NoError(t, err, "%d: %v", i, tc)
 			require.Equal(t, "updated", spec.Spec.Version, "%d: %v", i, tc)
 		}

@@ -38,7 +38,7 @@ EXAMPLE_TARGETS := $(patsubst %,example-%, $(EXAMPLES))
 CMDS := $(patsubst ./cmd/%/,%,$(sort $(dir $(wildcard ./cmd/*/))))
 CMD_TARGETS := $(patsubst %,cmd-%, $(CMDS))
 
-CHECK_TARGETS := assert-fmt vet lint ineffassign misspell
+CHECK_TARGETS := golangci-lint
 MAKE_TARGETS := binaries build check fmt lint-internal test examples cmds coverage generate licenses $(CHECK_TARGETS)
 
 TARGETS := $(MAKE_TARGETS) $(EXAMPLE_TARGETS) $(CMD_TARGETS)
@@ -78,30 +78,8 @@ fmt:
 	go list -f '{{.Dir}}' $(MODULE)/... \
 		| xargs gofmt -s -l -w
 
-assert-fmt:
-	go list -f '{{.Dir}}' $(MODULE)/... \
-		| xargs gofmt -s -l > fmt.out
-	@if [ -s fmt.out ]; then \
-		echo "\nERROR: The following files are not formatted:\n"; \
-		cat fmt.out; \
-		rm fmt.out; \
-		exit 1; \
-	else \
-		rm fmt.out; \
-	fi
-
-ineffassign:
-	ineffassign $(MODULE)/...
-
-lint:
-# We use `go list -f '{{.Dir}}' $(MODULE)/...` to skip the `vendor` folder.
-	go list -f '{{.Dir}}' $(MODULE)/... | xargs golint -set_exit_status
-
-misspell:
-	misspell $(MODULE)/...
-
-vet:
-	go vet $(MODULE)/...
+golangci-lint:
+	golangci-lint run ./...
 
 licenses:
 	go-licenses csv $(MODULE)/...
@@ -141,6 +119,7 @@ $(DOCKER_TARGETS): docker-%: .build-image
 	$(DOCKER) run \
 		--rm \
 		-e GOCACHE=/tmp/.cache \
+		-e GOLANGCI_LINT_CACHE=/tmp/.cache \
 		-v $(PWD):$(PWD) \
 		-w $(PWD) \
 		--user $$(id -u):$$(id -g) \
@@ -154,6 +133,7 @@ PHONY: .shell
 		--rm \
 		-ti \
 		-e GOCACHE=/tmp/.cache \
+		-e GOLANGCI_LINT_CACHE=/tmp/.cache \
 		-v $(PWD):$(PWD) \
 		-w $(PWD) \
 		--user $$(id -u):$$(id -g) \

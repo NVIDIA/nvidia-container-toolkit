@@ -1015,14 +1015,14 @@ func TestGetDriverCapabilities(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			var capabilites string
+			var capabilities string
 
 			c := HookConfig{
 				SupportedDriverCapabilities: tc.supportedCapabilities,
 			}
 
 			getDriverCapabilities := func() {
-				capabilites = c.getDriverCapabilities(tc.env, tc.legacyImage).String()
+				capabilities = c.getDriverCapabilities(tc.env, tc.legacyImage).String()
 			}
 
 			if tc.expectedPanic {
@@ -1031,7 +1031,7 @@ func TestGetDriverCapabilities(t *testing.T) {
 			}
 
 			getDriverCapabilities()
-			require.EqualValues(t, tc.expectedCapabilities, capabilites)
+			require.EqualValues(t, tc.expectedCapabilities, capabilities)
 		})
 	}
 }
