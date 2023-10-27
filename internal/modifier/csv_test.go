@@ -32,30 +32,33 @@ func TestNewCSVModifier(t *testing.T) {
 	testCases := []struct {
 		description   string
 		cfg           *config.Config
-		image         image.CUDA
+		envmap        map[string]string
 		expectedError error
 		expectedNil   bool
 	}{
 		{
 			description: "visible devices not set returns nil",
-			image:       image.CUDA{},
+			envmap:      map[string]string{},
 			expectedNil: true,
 		},
 		{
 			description: "visible devices empty returns nil",
-			image:       image.CUDA{"NVIDIA_VISIBLE_DEVICES": ""},
+			envmap:      map[string]string{"NVIDIA_VISIBLE_DEVICES": ""},
 			expectedNil: true,
 		},
 		{
 			description: "visible devices 'void' returns nil",
-			image:       image.CUDA{"NVIDIA_VISIBLE_DEVICES": "void"},
+			envmap:      map[string]string{"NVIDIA_VISIBLE_DEVICES": "void"},
 			expectedNil: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			m, err := NewCSVModifier(logger, tc.cfg, tc.image)
+			image, _ := image.New(
+				image.WithEnvMap(tc.envmap),
+			)
+			m, err := NewCSVModifier(logger, tc.cfg, image)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 			} else {

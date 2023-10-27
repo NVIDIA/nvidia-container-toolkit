@@ -67,6 +67,13 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 	if err != nil {
 		return nil, err
 	}
+	if cfg.AcceptDeviceListAsVolumeMounts {
+		mountDevices := container.CDIDevicesFromMounts()
+		if len(mountDevices) > 0 {
+			return mountDevices, nil
+		}
+	}
+
 	envDevices := container.DevicesFromEnvvars(visibleDevicesEnvvar)
 
 	var devices []string

@@ -19,7 +19,6 @@ package info
 import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	cdi "github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
@@ -69,7 +68,7 @@ func (r resolver) resolveMode(mode string, image image.CUDA) (rmode string) {
 		r.logger.Infof("Auto-detected mode as '%v'", rmode)
 	}()
 
-	if onlyFullyQualifiedCDIDevices(image) {
+	if image.OnlyFullyQualifiedCDIDevices() {
 		return "cdi"
 	}
 
@@ -87,15 +86,4 @@ func (r resolver) resolveMode(mode string, image image.CUDA) (rmode string) {
 	}
 
 	return "legacy"
-}
-
-func onlyFullyQualifiedCDIDevices(image image.CUDA) bool {
-	var hasCDIdevice bool
-	for _, device := range image.DevicesFromEnvvars("NVIDIA_VISIBLE_DEVICES").List() {
-		if !cdi.IsQualifiedName(device) {
-			return false
-		}
-		hasCDIdevice = true
-	}
-	return hasCDIdevice
 }

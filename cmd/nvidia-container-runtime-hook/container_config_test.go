@@ -465,6 +465,9 @@ func TestGetNvidiaConfig(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
+			image, _ := image.New(
+				image.WithEnvMap(tc.env),
+			)
 			// Wrap the call to getNvidiaConfig() in a closure.
 			var config *nvidiaConfig
 			getConfig := func() {
@@ -473,7 +476,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 					defaultConfig, _ := getDefaultHookConfig()
 					hookConfig = &defaultConfig
 				}
-				config = getNvidiaConfig(hookConfig, tc.env, nil, tc.privileged)
+				config = getNvidiaConfig(hookConfig, image, nil, tc.privileged)
 			}
 
 			// For any tests that are expected to panic, make sure they do.
@@ -678,13 +681,17 @@ func TestDeviceListSourcePriority(t *testing.T) {
 			// Wrap the call to getDevices() in a closure.
 			var devices *string
 			getDevices := func() {
-				env := map[string]string{
-					envNVVisibleDevices: tc.envvarDevices,
-				}
+				image, _ := image.New(
+					image.WithEnvMap(
+						map[string]string{
+							envNVVisibleDevices: tc.envvarDevices,
+						},
+					),
+				)
 				hookConfig, _ := getDefaultHookConfig()
 				hookConfig.AcceptEnvvarUnprivileged = tc.acceptUnprivileged
 				hookConfig.AcceptDeviceListAsVolumeMounts = tc.acceptMounts
-				devices = getDevices(&hookConfig, env, tc.mountDevices, tc.privileged)
+				devices = getDevices(&hookConfig, image, tc.mountDevices, tc.privileged)
 			}
 
 			// For all other tests, just grab the devices and check the results
@@ -905,7 +912,10 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 
 	for i, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			devices := getDevicesFromEnvvar(image.CUDA(tc.env), tc.swarmResourceEnvvars)
+			image, _ := image.New(
+				image.WithEnvMap(tc.env),
+			)
+			devices := getDevicesFromEnvvar(image, tc.swarmResourceEnvvars)
 			if tc.expectedDevices == nil {
 				require.Nil(t, devices, "%d: %v", i, tc)
 				return
@@ -1021,8 +1031,11 @@ func TestGetDriverCapabilities(t *testing.T) {
 				SupportedDriverCapabilities: tc.supportedCapabilities,
 			}
 
+			image, _ := image.New(
+				image.WithEnvMap(tc.env),
+			)
 			getDriverCapabilities := func() {
-				capabilities = c.getDriverCapabilities(tc.env, tc.legacyImage).String()
+				capabilities = c.getDriverCapabilities(image, tc.legacyImage).String()
 			}
 
 			if tc.expectedPanic {
