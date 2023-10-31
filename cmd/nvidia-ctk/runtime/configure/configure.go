@@ -71,6 +71,11 @@ type config struct {
 		hookPath     string
 		setAsDefault bool
 	}
+
+	// cdi-specific options
+	cdi struct {
+		enabled bool
+	}
 }
 
 func (m command) build() *cli.Command {
@@ -141,6 +146,11 @@ func (m command) build() *cli.Command {
 			Usage:       "set the NVIDIA runtime as the default runtime",
 			Destination: &config.nvidiaRuntime.setAsDefault,
 		},
+		&cli.BoolFlag{
+			Name:        "cdi.enabled",
+			Usage:       "Enable CDI in the configured runtime",
+			Destination: &config.cdi.enabled,
+		},
 	}
 
 	return &configure
@@ -173,6 +183,13 @@ func (m command) validateFlags(c *cli.Context, config *config) error {
 		if !filepath.IsAbs(config.nvidiaRuntime.path) {
 			return fmt.Errorf("the NVIDIA runtime path %q is not an absolute path", config.nvidiaRuntime.path)
 		}
+	}
+
+	if config.runtime != "containerd" {
+		if config.cdi.enabled {
+			m.logger.Warningf("Ignoring cdi.enabled flag for %v", config.runtime)
+		}
+		config.cdi.enabled = false
 	}
 
 	return nil
@@ -225,6 +242,12 @@ func (m command) configureConfigFile(c *cli.Context, config *config) error {
 	)
 	if err != nil {
 		return fmt.Errorf("unable to update config: %v", err)
+	}
+
+	if config.cdi.enabled {
+		if err := cfg.Set("enable_cdi", true); err != nil {
+			return fmt.Errorf("failed enable CDI in containerd: %w", err)
+		}
 	}
 
 	outputPath := config.getOuputConfigPath()

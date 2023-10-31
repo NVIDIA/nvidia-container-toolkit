@@ -9,6 +9,7 @@
 * Added detection of libnvdxgdmal.so.1 on WSL2.
 * Fix bug in determining default nvidia-container-runtime.user config value on SUSE-based systems.
 * Add `crun` to the list of configured low-level runtimes.
+* Add `--cdi.enabled` option to `nvidia-ctk runtime configure` command to enable CDI in containerd.
 
 * [toolkit-container] Bump CUDA base image version to 12.3.1.
 * [libnvidia-container] Added detection of libnvdxgdmal.so.1 on WSL2.

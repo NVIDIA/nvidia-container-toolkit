@@ -90,6 +90,14 @@ func (c *Config) getRuntimeAnnotations(path []string) ([]string, error) {
 	return annotations, nil
 }
 
+// Set sets the specified containerd option.
+func (c *Config) Set(key string, value interface{}) error {
+	config := *c.Tree
+	config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", key}, value)
+	*c.Tree = config
+	return nil
+}
+
 // DefaultRuntime returns the default runtime for the cri-o config
 func (c Config) DefaultRuntime() string {
 	if runtime, ok := c.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"}).(string); ok {
