@@ -114,6 +114,11 @@ func (c *Config) RemoveRuntime(name string) error {
 	return nil
 }
 
+// Set is not supported for docker configs.
+func (c *Config) Set(key string, value interface{}) error {
+	return fmt.Errorf("Set is not supported for crio configs")
+}
+
 // Save writes the config to the specified path
 func (c Config) Save(path string) (int64, error) {
 	output, err := json.MarshalIndent(c, "", "    ")
