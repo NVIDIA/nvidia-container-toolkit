@@ -18,8 +18,8 @@ package edits
 
 import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
-	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
+	"tags.cncf.io/container-device-interface/pkg/cdi"
+	"tags.cncf.io/container-device-interface/specs-go"
 )
 
 type hook discover.Hook

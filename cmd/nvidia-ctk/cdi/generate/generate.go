@@ -28,8 +28,8 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
-	cdi "github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 	"github.com/urfave/cli/v2"
+	cdi "tags.cncf.io/container-device-interface/pkg/parser"
 )
 
 const (

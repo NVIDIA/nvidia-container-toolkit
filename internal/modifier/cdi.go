@@ -25,7 +25,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
+	"tags.cncf.io/container-device-interface/pkg/parser"
 )
 
 // NewCDIModifier creates an OCI spec modifier that determines the modifications to make based on the

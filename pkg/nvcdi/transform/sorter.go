@@ -22,7 +22,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
+	"tags.cncf.io/container-device-interface/specs-go"
 )
 
 type sorter struct{}

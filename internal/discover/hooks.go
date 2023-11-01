@@ -19,7 +19,7 @@ package discover
 import (
 	"path/filepath"
 
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
+	"tags.cncf.io/container-device-interface/pkg/cdi"
 )
 
 var _ Discover = (*Hook)(nil)

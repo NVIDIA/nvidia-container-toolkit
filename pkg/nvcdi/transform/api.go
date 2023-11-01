@@ -16,7 +16,7 @@
 
 package transform
 
-import "github.com/container-orchestrated-devices/container-device-interface/specs-go"
+import "tags.cncf.io/container-device-interface/specs-go"
 
 // Transformer defines the API for applying arbitrary transforms to a spec in-place
 type Transformer interface {
