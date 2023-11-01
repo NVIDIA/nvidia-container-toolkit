@@ -21,3 +21,7 @@ RUN go install github.com/gordonklaus/ineffassign@d2c82e48359b033cde9cf1307f6d55
 RUN go install github.com/client9/misspell/cmd/misspell@latest
 RUN go install github.com/google/go-licenses@latest
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin ${GOLANGCI_LINT_VERSION}
+
+# We need to set the /work directory as a safe directory.
+# This allows git commands to run in the container.
+RUN git config --file=/.gitconfig --add safe.directory /work

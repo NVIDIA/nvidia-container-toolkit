@@ -20,6 +20,7 @@ package engine
 type Interface interface {
 	DefaultRuntime() string
 	AddRuntime(string, string, bool) error
+	Set(string, interface{}) error
 	RemoveRuntime(string) error
 	Save(string) (int64, error)
 }

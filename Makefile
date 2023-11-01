@@ -120,8 +120,8 @@ $(DOCKER_TARGETS): docker-%: .build-image
 		--rm \
 		-e GOCACHE=/tmp/.cache \
 		-e GOLANGCI_LINT_CACHE=/tmp/.cache \
-		-v $(PWD):$(PWD) \
-		-w $(PWD) \
+		-v $(PWD):/work \
+		-w /work \
 		--user $$(id -u):$$(id -g) \
 		$(BUILDIMAGE) \
 			make $(*)
@@ -134,7 +134,7 @@ PHONY: .shell
 		-ti \
 		-e GOCACHE=/tmp/.cache \
 		-e GOLANGCI_LINT_CACHE=/tmp/.cache \
-		-v $(PWD):$(PWD) \
-		-w $(PWD) \
+		-v $(PWD):/work \
+		-w /work \
 		--user $$(id -u):$$(id -g) \
 		$(BUILDIMAGE)
