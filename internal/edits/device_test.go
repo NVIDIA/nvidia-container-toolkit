@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/stretchr/testify/require"
+	"tags.cncf.io/container-device-interface/specs-go"
 )
 
 func TestDeviceToSpec(t *testing.T) {

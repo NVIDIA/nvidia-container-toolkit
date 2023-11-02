@@ -20,8 +20,8 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"tags.cncf.io/container-device-interface/pkg/cdi"
 )
 
 // fromCDISpec represents the modifications performed from a raw CDI spec.

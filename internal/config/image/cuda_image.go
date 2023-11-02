@@ -22,9 +22,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"golang.org/x/mod/semver"
+	"tags.cncf.io/container-device-interface/pkg/parser"
 )
 
 const (

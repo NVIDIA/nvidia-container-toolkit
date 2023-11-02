@@ -26,11 +26,11 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 	toml "github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"tags.cncf.io/container-device-interface/pkg/cdi"
+	"tags.cncf.io/container-device-interface/pkg/parser"
 )
 
 const (

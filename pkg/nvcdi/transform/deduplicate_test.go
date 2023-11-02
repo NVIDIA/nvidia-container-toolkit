@@ -19,8 +19,8 @@ package transform
 import (
 	"testing"
 
-	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
 	"github.com/stretchr/testify/require"
+	"tags.cncf.io/container-device-interface/specs-go"
 )
 
 func TestDeduplicate(t *testing.T) {

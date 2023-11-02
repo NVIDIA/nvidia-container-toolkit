@@ -20,8 +20,8 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	"github.com/urfave/cli/v2"
+	"tags.cncf.io/container-device-interface/pkg/cdi"
 )
 
 type command struct {

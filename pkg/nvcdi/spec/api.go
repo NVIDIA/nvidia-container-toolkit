@@ -19,7 +19,7 @@ package spec
 import (
 	"io"
 
-	"github.com/container-orchestrated-devices/container-device-interface/specs-go"
+	"tags.cncf.io/container-device-interface/specs-go"
 )
 
 const (
