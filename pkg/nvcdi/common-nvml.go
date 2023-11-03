@@ -46,7 +46,7 @@ func newCommonNVMLDiscoverer(logger logger.Interface, driverRoot string, nvidiaC
 
 	graphicsMounts, err := discover.NewGraphicsMountsDiscoverer(logger, driverRoot, nvidiaCTKPath)
 	if err != nil {
-		return nil, fmt.Errorf("error constructing discoverer for graphics mounts: %v", err)
+		logger.Warningf("failed to create discoverer for graphics mounts: %v", err)
 	}
 
 	driverFiles, err := NewDriverDiscoverer(logger, driverRoot, nvidiaCTKPath, nvmllib)
