@@ -17,12 +17,16 @@
 package lookup
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
+
+// ErrNotFound indicates that a specified pattern or file could not be found.
+var ErrNotFound = errors.New("not found")
 
 // file can be used to locate file (or file-like elements) at a specified set of
 // prefixes. The validity of a file is determined by a filter function.
@@ -168,7 +172,7 @@ visit:
 	}
 
 	if !p.isOptional && len(filenames) == 0 {
-		return nil, fmt.Errorf("pattern %v not found", pattern)
+		return nil, fmt.Errorf("pattern %v %w", pattern, ErrNotFound)
 	}
 	return filenames, nil
 }
