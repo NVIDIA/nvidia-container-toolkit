@@ -122,10 +122,7 @@ func GetDefault() (*Config, error) {
 }
 
 func getLdConfigPath() string {
-	if _, err := os.Stat("/sbin/ldconfig.real"); err == nil {
-		return "@/sbin/ldconfig.real"
-	}
-	return "@/sbin/ldconfig"
+	return NormalizeLDConfigPath("@/sbin/ldconfig")
 }
 
 // getCommentedUserGroup returns whether the nvidia-container-cli user and group config option should be commented.

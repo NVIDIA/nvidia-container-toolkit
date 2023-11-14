@@ -1,6 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
 * Skip update of ldcache in containers without ldconfig. The .so.SONAME symlinks are still created.
+* Normalize ldconfig path on use. This automatically adjust the ldconfig setting applied to ldconfig.real on systems where this exists.
+
 * [libnvidia-container] Fix device permission check when using cgroupv2 (fixes #227)
 
 ## v1.14.3
