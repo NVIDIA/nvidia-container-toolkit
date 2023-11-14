@@ -36,9 +36,8 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, image imag
 
 	d, err := discover.NewGraphicsDiscoverer(
 		logger,
+		cfg,
 		image.DevicesFromEnvvars(visibleDevicesEnvvar),
-		cfg.NVIDIAContainerCLIConfig.Root,
-		cfg.NVIDIACTKConfig.Path,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct discoverer: %v", err)

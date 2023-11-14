@@ -42,7 +42,9 @@ func NewGDSModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		return nil, nil
 	}
 
-	d, err := discover.NewGDSDiscoverer(logger, cfg.NVIDIAContainerCLIConfig.Root)
+	driverRoot := cfg.NVIDIAContainerCLIConfig.Root
+	devRoot := cfg.NVIDIAContainerCLIConfig.Root
+	d, err := discover.NewGDSDiscoverer(logger, driverRoot, devRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct discoverer for GDS devices: %v", err)
 	}

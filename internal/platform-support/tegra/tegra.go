@@ -29,6 +29,7 @@ type tegraOptions struct {
 	logger             logger.Interface
 	csvFiles           []string
 	driverRoot         string
+	devRoot            string
 	nvidiaCTKPath      string
 	librarySearchPaths []string
 	ignorePatterns     ignoreMountSpecPatterns
@@ -48,6 +49,10 @@ func New(opts ...Option) (discover.Discover, error) {
 	o := &tegraOptions{}
 	for _, opt := range opts {
 		opt(o)
+	}
+
+	if o.devRoot == "" {
+		o.devRoot = o.driverRoot
 	}
 
 	if o.symlinkLocator == nil {
@@ -107,6 +112,14 @@ func WithLogger(logger logger.Interface) Option {
 
 // WithDriverRoot sets the driver root for the discoverer.
 func WithDriverRoot(driverRoot string) Option {
+	return func(o *tegraOptions) {
+		o.driverRoot = driverRoot
+	}
+}
+
+// WithDevRoot sets the /dev root.
+// If this is unset, the driver root is assumed.
+func WithDevRoot(driverRoot string) Option {
 	return func(o *tegraOptions) {
 		o.driverRoot = driverRoot
 	}

@@ -117,12 +117,12 @@ func (m *managementlib) newManagementDeviceDiscoverer() (discover.Discover, erro
 			"/dev/nvidia-uvm",
 			"/dev/nvidiactl",
 		},
-		m.driverRoot,
+		m.devRoot,
 	)
 
 	deviceFolderPermissionHooks := newDeviceFolderPermissionHookDiscoverer(
 		m.logger,
-		m.driverRoot,
+		m.devRoot,
 		m.nvidiaCTKPath,
 		deviceNodes,
 	)
