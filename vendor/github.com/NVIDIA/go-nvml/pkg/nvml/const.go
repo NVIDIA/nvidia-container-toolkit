@@ -18,7 +18,8 @@
 package nvml
 
 /*
-#cgo LDFLAGS: -Wl,--unresolved-symbols=ignore-in-object-files
+#cgo linux LDFLAGS: -Wl,--export-dynamic -Wl,--unresolved-symbols=ignore-in-object-files
+#cgo darwin LDFLAGS: -Wl,-undefined,dynamic_lookup
 #cgo CFLAGS: -DNVML_NO_UNVERSIONED_FUNC_DEFS=1
 #include "nvml.h"
 #include <stdlib.h>

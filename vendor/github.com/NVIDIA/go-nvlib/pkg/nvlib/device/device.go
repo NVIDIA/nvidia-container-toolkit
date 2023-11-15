@@ -19,8 +19,7 @@ package device
 import (
 	"fmt"
 
-	"github.com/NVIDIA/go-nvml/pkg/dl"
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
+	"github.com/NVIDIA/go-nvlib/pkg/nvml"
 )
 
 // Device defines the set of extended functions associated with a device.Device
@@ -152,8 +151,7 @@ func (d *device) GetCudaComputeCapabilityAsString() (string, error) {
 
 // IsMigCapable checks if a device is capable of having MIG paprtitions created on it
 func (d *device) IsMigCapable() (bool, error) {
-	err := d.lib.nvmlLookupSymbol("nvmlDeviceGetMigMode")
-	if err != nil {
+	if !d.lib.hasSymbol("nvmlDeviceGetMigMode") {
 		return false, nil
 	}
 
@@ -170,8 +168,7 @@ func (d *device) IsMigCapable() (bool, error) {
 
 // IsMigEnabled checks if a device has MIG mode currently enabled on it
 func (d *device) IsMigEnabled() (bool, error) {
-	err := d.lib.nvmlLookupSymbol("nvmlDeviceGetMigMode")
-	if err != nil {
+	if !d.lib.hasSymbol("nvmlDeviceGetMigMode") {
 		return false, nil
 	}
 
@@ -465,22 +462,12 @@ func (d *devicelib) GetMigProfiles() ([]MigProfile, error) {
 	return profiles, nil
 }
 
-// nvmlLookupSymbol checks to see if the given symbol is present in the NVML library
-func (d *devicelib) nvmlLookupSymbol(symbol string) error {
-	// If devicelib is configured to not verify symbols, then we short-circuit here
+// hasSymbol checks to see if the given symbol is present in the NVML library.
+// If devicelib is configured to not verify symbols, then all symbols are assumed to exist.
+func (d *devicelib) hasSymbol(symbol string) bool {
 	if !*d.verifySymbols {
-		return nil
+		return true
 	}
 
-	// Otherwise we lookup the provided symbol and verify it is available
-	lib := dl.New("libnvidia-ml.so.1", dl.RTLD_LAZY|dl.RTLD_GLOBAL)
-	if lib == nil {
-		return fmt.Errorf("error instantiating DynamicLibrary for NVML")
-	}
-	err := lib.Open()
-	if err != nil {
-		return fmt.Errorf("error opening DynamicLibrary for NVML: %v", err)
-	}
-	defer lib.Close()
-	return lib.Lookup(symbol)
+	return d.nvml.Lookup(symbol) == nil
 }

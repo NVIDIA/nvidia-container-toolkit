@@ -30,8 +30,25 @@ type nvmlLib struct {
 var _ Interface = (*nvmlLib)(nil)
 
 // New creates a new instance of the NVML Interface
-func New() Interface {
+func New(opts ...Option) Interface {
+	o := &options{}
+	for _, opt := range opts {
+		opt(o)
+	}
+
+	var nvmlOptions []nvml.LibraryOption
+	if o.libraryPath != "" {
+		nvmlOptions = append(nvmlOptions, nvml.WithLibraryPath(o.libraryPath))
+	}
+	nvml.SetLibraryOptions(nvmlOptions...)
+
 	return &nvmlLib{}
+}
+
+// Lookup checks whether the specified symbol exists in the configured NVML library.
+func (n *nvmlLib) Lookup(name string) error {
+	// TODO: For now we rely on the default NVML library and perform the lookups against this.
+	return nvml.GetLibrary().Lookup(name)
 }
 
 // Init initializes an NVML Interface

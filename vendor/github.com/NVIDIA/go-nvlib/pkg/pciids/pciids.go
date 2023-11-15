@@ -182,6 +182,7 @@ var defaultPCIdbPaths = []string{
 }
 
 // This is a fallback if all of the locations fail
+//
 //go:embed default_pci.ids
 var defaultPCIdb []byte
 

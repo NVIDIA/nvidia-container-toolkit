@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci/bytes"
+	"github.com/NVIDIA/go-nvlib/pkg/nvpci/bytes"
 )
 
 const (
