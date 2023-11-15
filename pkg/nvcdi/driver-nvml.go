@@ -22,11 +22,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvml"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 	"golang.org/x/sys/unix"
 )
 

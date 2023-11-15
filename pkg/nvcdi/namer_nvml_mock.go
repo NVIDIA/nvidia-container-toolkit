@@ -4,7 +4,7 @@
 package nvcdi
 
 import (
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
+	"github.com/NVIDIA/go-nvlib/pkg/nvml"
 	"sync"
 )
 

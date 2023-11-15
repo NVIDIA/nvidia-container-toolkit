@@ -19,9 +19,9 @@ package info
 import (
 	"testing"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
+	"github.com/NVIDIA/go-nvlib/pkg/nvml"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
 
 func TestUsesNVGPUModule(t *testing.T) {

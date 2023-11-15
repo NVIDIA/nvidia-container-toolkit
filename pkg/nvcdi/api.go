@@ -17,8 +17,8 @@
 package nvcdi
 
 import (
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 )
