@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/pciids"
+	"github.com/NVIDIA/go-nvlib/pkg/pciids"
 )
 
 const (

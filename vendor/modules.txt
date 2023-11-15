@@ -1,4 +1,13 @@
-# github.com/NVIDIA/go-nvml v0.12.0-1
+# github.com/NVIDIA/go-nvlib v0.0.0-20231115170030-b21432a353e1
+## explicit; go 1.20
+github.com/NVIDIA/go-nvlib/pkg/nvlib/device
+github.com/NVIDIA/go-nvlib/pkg/nvlib/info
+github.com/NVIDIA/go-nvlib/pkg/nvml
+github.com/NVIDIA/go-nvlib/pkg/nvpci
+github.com/NVIDIA/go-nvlib/pkg/nvpci/bytes
+github.com/NVIDIA/go-nvlib/pkg/nvpci/mmio
+github.com/NVIDIA/go-nvlib/pkg/pciids
+# github.com/NVIDIA/go-nvml v0.12.0-1.0.20231020145430-e06766c5e74f
 ## explicit; go 1.15
 github.com/NVIDIA/go-nvml/pkg/dl
 github.com/NVIDIA/go-nvml/pkg/nvml
@@ -38,8 +47,8 @@ github.com/russross/blackfriday/v2
 ## explicit; go 1.13
 github.com/sirupsen/logrus
 github.com/sirupsen/logrus/hooks/test
-# github.com/stretchr/testify v1.8.1
-## explicit; go 1.13
+# github.com/stretchr/testify v1.8.4
+## explicit; go 1.20
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
@@ -50,15 +59,6 @@ github.com/syndtr/gocapability/capability
 github.com/urfave/cli/v2
 # github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
 ## explicit
-# gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20230818092907-09424fdc8884
-## explicit; go 1.20
-gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device
-gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info
-gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml
-gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci
-gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci/bytes
-gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci/mmio
-gitlab.com/nvidia/cloud-native/go-nvlib/pkg/pciids
 # golang.org/x/mod v0.5.0
 ## explicit; go 1.17
 golang.org/x/mod/semver

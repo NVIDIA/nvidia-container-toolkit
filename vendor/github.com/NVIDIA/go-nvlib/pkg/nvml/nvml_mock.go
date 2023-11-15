@@ -35,6 +35,9 @@ var _ Interface = &InterfaceMock{}
 //			InitFunc: func() Return {
 //				panic("mock out the Init method")
 //			},
+//			LookupFunc: func(s string) error {
+//				panic("mock out the Lookup method")
+//			},
 //			ShutdownFunc: func() Return {
 //				panic("mock out the Shutdown method")
 //			},
@@ -68,6 +71,9 @@ type InterfaceMock struct {
 
 	// InitFunc mocks the Init method.
 	InitFunc func() Return
+
+	// LookupFunc mocks the Lookup method.
+	LookupFunc func(s string) error
 
 	// ShutdownFunc mocks the Shutdown method.
 	ShutdownFunc func() Return
@@ -104,6 +110,11 @@ type InterfaceMock struct {
 		// Init holds details about calls to the Init method.
 		Init []struct {
 		}
+		// Lookup holds details about calls to the Lookup method.
+		Lookup []struct {
+			// S is the s argument value.
+			S string
+		}
 		// Shutdown holds details about calls to the Shutdown method.
 		Shutdown []struct {
 		}
@@ -120,6 +131,7 @@ type InterfaceMock struct {
 	lockErrorString                sync.RWMutex
 	lockEventSetCreate             sync.RWMutex
 	lockInit                       sync.RWMutex
+	lockLookup                     sync.RWMutex
 	lockShutdown                   sync.RWMutex
 	lockSystemGetCudaDriverVersion sync.RWMutex
 	lockSystemGetDriverVersion     sync.RWMutex
@@ -299,6 +311,38 @@ func (mock *InterfaceMock) InitCalls() []struct {
 	mock.lockInit.RLock()
 	calls = mock.calls.Init
 	mock.lockInit.RUnlock()
+	return calls
+}
+
+// Lookup calls LookupFunc.
+func (mock *InterfaceMock) Lookup(s string) error {
+	if mock.LookupFunc == nil {
+		panic("InterfaceMock.LookupFunc: method is nil but Interface.Lookup was just called")
+	}
+	callInfo := struct {
+		S string
+	}{
+		S: s,
+	}
+	mock.lockLookup.Lock()
+	mock.calls.Lookup = append(mock.calls.Lookup, callInfo)
+	mock.lockLookup.Unlock()
+	return mock.LookupFunc(s)
+}
+
+// LookupCalls gets all the calls that were made to Lookup.
+// Check the length with:
+//
+//	len(mockedInterface.LookupCalls())
+func (mock *InterfaceMock) LookupCalls() []struct {
+	S string
+} {
+	var calls []struct {
+		S string
+	}
+	mock.lockLookup.RLock()
+	calls = mock.calls.Lookup
+	mock.lockLookup.RUnlock()
 	return calls
 }
 

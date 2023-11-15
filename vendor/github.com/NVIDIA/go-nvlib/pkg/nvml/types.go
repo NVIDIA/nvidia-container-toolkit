@@ -30,6 +30,7 @@ type Interface interface {
 	ErrorString(r Return) string
 	EventSetCreate() (EventSet, Return)
 	Init() Return
+	Lookup(string) error
 	Shutdown() Return
 	SystemGetCudaDriverVersion() (int, Return)
 	SystemGetDriverVersion() (string, Return)
