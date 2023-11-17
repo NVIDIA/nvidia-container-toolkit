@@ -103,14 +103,19 @@ func (p symlink) Locate(pattern string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(candidates) != 1 {
-		return nil, fmt.Errorf("failed to uniquely resolve symlink %v: %v", pattern, candidates)
-	}
 
-	target, err := filepath.EvalSymlinks(candidates[0])
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve link: %v", err)
+	var targets []string
+	seen := make(map[string]bool)
+	for _, candidate := range candidates {
+		target, err := filepath.EvalSymlinks(candidate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve link: %w", err)
+		}
+		if seen[target] {
+			continue
+		}
+		seen[target] = true
+		targets = append(targets, target)
 	}
-
-	return []string{target}, err
+	return targets, err
 }

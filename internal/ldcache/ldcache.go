@@ -81,6 +81,8 @@ type entry2 struct {
 }
 
 // LDCache represents the interface for performing lookups into the LDCache
+//
+//go:generate moq -out ldcache_mock.go . LDCache
 type LDCache interface {
 	List() ([]string, []string)
 	Lookup(...string) ([]string, []string)
@@ -103,7 +105,14 @@ func New(logger logger.Interface, root string) (LDCache, error) {
 
 	logger.Debugf("Opening ld.conf at %v", path)
 	f, err := os.Open(path)
-	if err != nil {
+	if os.IsNotExist(err) {
+		logger.Warningf("Could not find ld.so.cache at %v; creating empty cache", path)
+		e := &empty{
+			logger: logger,
+			path:   path,
+		}
+		return e, nil
+	} else if err != nil {
 		return nil, err
 	}
 	defer f.Close()
