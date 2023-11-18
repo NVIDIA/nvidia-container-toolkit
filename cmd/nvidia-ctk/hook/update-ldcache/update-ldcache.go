@@ -84,24 +84,38 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
-	_, err = os.Stat(filepath.Join(containerRoot, "/etc/ld.so.cache"))
-	if err != nil && os.IsNotExist(err) {
-		m.logger.Debugf("No ld.so.cache found, skipping update")
-		return nil
-	}
-
-	err = m.createConfig(containerRoot, cfg.folders.Value())
-	if err != nil {
-		return fmt.Errorf("failed to update ld.so.conf: %v", err)
-	}
-
 	args := []string{"/sbin/ldconfig"}
 	if containerRoot != "" {
 		args = append(args, "-r", containerRoot)
 	}
 
+	if !root(containerRoot).hasPath("/etc/ld.so.cache") {
+		m.logger.Debugf("No ld.so.cache found, skipping update")
+		args = append(args, "-N")
+	}
+
+	folders := cfg.folders.Value()
+	if root(containerRoot).hasPath("/etc/ld.so.conf.d") {
+		err = m.createConfig(containerRoot, folders)
+		if err != nil {
+			return fmt.Errorf("failed to update ld.so.conf: %v", err)
+		}
+	} else {
+		args = append(args, folders...)
+	}
+
 	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	return syscall.Exec(args[0], args, nil)
+}
+
+type root string
+
+func (r root) hasPath(path string) bool {
+	_, err := os.Stat(filepath.Join(string(r), path))
+	if err != nil && os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 // createConfig creates (or updates) /etc/ld.so.conf.d/nvcr-<RANDOM_STRING>.conf in the container

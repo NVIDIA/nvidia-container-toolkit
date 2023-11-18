@@ -1,5 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
+* Skip update of ldcache in containers without ldconfig. The .so.SONAME symlinks are still created.
+
 ## v1.14.3
 * [toolkit-container] Bump CUDA base image version to 12.2.2.
 
