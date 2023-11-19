@@ -17,16 +17,15 @@
 package chmod
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/urfave/cli/v2"
 )
@@ -126,17 +125,16 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return nil
 	}
 
-	locator := lookup.NewExecutableLocator(m.logger, "")
-	targets, err := locator.Locate("chmod")
-	if err != nil {
-		return fmt.Errorf("failed to locate chmod: %v", err)
+	for _, path := range paths {
+		err = os.Chmod(path, desiredMode)
+		// in some cases this is not an issue (e.g. whole /dev mounted), see #143
+		if errors.Is(err, fs.ErrPermission) {
+			m.logger.Debugf("Ignoring permission error with chmod: %v", err)
+			err = nil
+		}
 	}
-	chmodPath := targets[0]
 
-	args := append([]string{filepath.Base(chmodPath), cfg.mode}, paths...)
-
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	return syscall.Exec(chmodPath, args, nil)
+	return err
 }
 
 // getPaths updates the specified paths relative to the root.
