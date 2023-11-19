@@ -18,8 +18,10 @@ package chmod
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -112,7 +114,13 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("empty container root detected")
 	}
 
-	paths := m.getPaths(containerRoot, cfg.paths.Value())
+	desiredModeInt, err := strconv.ParseUint(cfg.mode, 8, 32)
+	if err != nil {
+		return fmt.Errorf("failed to parse mode as octal: %v", err)
+	}
+	desiredMode := fs.FileMode(desiredModeInt)
+
+	paths := m.getPaths(containerRoot, cfg.paths.Value(), desiredMode)
 	if len(paths) == 0 {
 		m.logger.Debugf("No paths specified; exiting")
 		return nil
@@ -132,12 +140,17 @@ func (m command) run(c *cli.Context, cfg *config) error {
 }
 
 // getPaths updates the specified paths relative to the root.
-func (m command) getPaths(root string, paths []string) []string {
+func (m command) getPaths(root string, paths []string, desiredMode fs.FileMode) []string {
 	var pathsInRoot []string
 	for _, f := range paths {
 		path := filepath.Join(root, f)
-		if _, err := os.Stat(path); err != nil {
+		stat, err := os.Stat(path)
+		if err != nil {
 			m.logger.Debugf("Skipping path %q: %v", path, err)
+			continue
+		}
+		if (stat.Mode()&(fs.ModePerm|fs.ModeSetuid|fs.ModeSetgid|fs.ModeSticky))^desiredMode == 0 {
+			m.logger.Debugf("Skipping path %q: already desired mode", path)
 			continue
 		}
 		pathsInRoot = append(pathsInRoot, path)
