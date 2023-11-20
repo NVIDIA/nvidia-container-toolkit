@@ -45,6 +45,7 @@ type options struct {
 	format             string
 	deviceNameStrategy string
 	driverRoot         string
+	devRoot            string
 	nvidiaCTKPath      string
 	mode               string
 	vendor             string
@@ -100,6 +101,11 @@ func (m command) build() *cli.Command {
 			Usage:       "The mode to use when discovering the available entities. One of [auto | nvml | wsl]. If mode is set to 'auto' the mode will be determined based on the system configuration.",
 			Value:       nvcdi.ModeAuto,
 			Destination: &opts.mode,
+		},
+		&cli.StringFlag{
+			Name:        "dev-root",
+			Usage:       "Specify the root where `/dev` is located. If this is not specified, the driver-root is assumed.",
+			Destination: &opts.devRoot,
 		},
 		&cli.StringFlag{
 			Name:        "device-name-strategy",
@@ -236,6 +242,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 	cdilib, err := nvcdi.New(
 		nvcdi.WithLogger(m.logger),
 		nvcdi.WithDriverRoot(opts.driverRoot),
+		nvcdi.WithDevRoot(opts.devRoot),
 		nvcdi.WithNVIDIACTKPath(opts.nvidiaCTKPath),
 		nvcdi.WithDeviceNamer(deviceNamer),
 		nvcdi.WithMode(opts.mode),
