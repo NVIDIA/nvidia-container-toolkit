@@ -1,6 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
 * Skip update of ldcache in containers without ldconfig. The .so.SONAME symlinks are still created.
+* [libnvidia-container] Fix device permission check when using cgroupv2 (fixes #227)
 
 ## v1.14.3
 * [toolkit-container] Bump CUDA base image version to 12.2.2.
