@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/drm"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc"
@@ -31,18 +30,12 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
 )
 
-// NewGraphicsDiscoverer returns the discoverer for graphics tools such as Vulkan.
-func NewGraphicsDiscoverer(logger logger.Interface, cfg *config.Config, devices image.VisibleDevices) (Discover, error) {
-	driverRoot := cfg.NVIDIAContainerCLIConfig.Root
-	// In standard usage, the devRoot is the same as the driverRoot.
-	devRoot := driverRoot
-	nvidiaCTKPath := cfg.NVIDIACTKConfig.Path
-
-	mounts, err := NewGraphicsMountsDiscoverer(logger, driverRoot, nvidiaCTKPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create mounts discoverer: %v", err)
-	}
-
+// NewDRMNodesDiscoverer returns a discoverrer for the DRM device nodes associated with the specified visible devices.
+//
+// TODO: The logic for creating DRM devices should be consolidated between this
+// and the logic for generating CDI specs for a single device. This is only used
+// when applying OCI spec modifications to an incoming spec in "legacy" mode.
+func NewDRMNodesDiscoverer(logger logger.Interface, devices image.VisibleDevices, devRoot string, nvidiaCTKPath string) (Discover, error) {
 	drmDeviceNodes, err := newDRMDeviceDiscoverer(logger, devices, devRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create DRM device discoverer: %v", err)
@@ -50,11 +43,7 @@ func NewGraphicsDiscoverer(logger logger.Interface, cfg *config.Config, devices 
 
 	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, devRoot, nvidiaCTKPath)
 
-	discover := Merge(
-		Merge(drmDeviceNodes, drmByPathSymlinks),
-		mounts,
-	)
-
+	discover := Merge(drmDeviceNodes, drmByPathSymlinks)
 	return discover, nil
 }
 
