@@ -36,7 +36,8 @@ type command struct {
 
 type config struct {
 	paths         cli.StringSlice
-	mode          string
+	modeStr       string
+	mode          fs.FileMode
 	containerSpec string
 }
 
@@ -73,7 +74,7 @@ func (m command) build() *cli.Command {
 		&cli.StringFlag{
 			Name:        "mode",
 			Usage:       "Specify the file mode",
-			Destination: &cfg.mode,
+			Destination: &cfg.modeStr,
 		},
 		&cli.StringFlag{
 			Name:        "container-spec",
@@ -86,9 +87,15 @@ func (m command) build() *cli.Command {
 }
 
 func validateFlags(c *cli.Context, cfg *config) error {
-	if strings.TrimSpace(cfg.mode) == "" {
+	if strings.TrimSpace(cfg.modeStr) == "" {
 		return fmt.Errorf("a non-empty mode must be specified")
 	}
+
+	modeInt, err := strconv.ParseUint(cfg.modeStr, 8, 32)
+	if err != nil {
+		return fmt.Errorf("failed to parse mode as octal: %v", err)
+	}
+	cfg.mode = fs.FileMode(modeInt)
 
 	for _, p := range cfg.paths.Value() {
 		if strings.TrimSpace(p) == "" {
@@ -113,20 +120,14 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("empty container root detected")
 	}
 
-	desiredModeInt, err := strconv.ParseUint(cfg.mode, 8, 32)
-	if err != nil {
-		return fmt.Errorf("failed to parse mode as octal: %v", err)
-	}
-	desiredMode := fs.FileMode(desiredModeInt)
-
-	paths := m.getPaths(containerRoot, cfg.paths.Value(), desiredMode)
+	paths := m.getPaths(containerRoot, cfg.paths.Value(), cfg.mode)
 	if len(paths) == 0 {
 		m.logger.Debugf("No paths specified; exiting")
 		return nil
 	}
 
 	for _, path := range paths {
-		err = os.Chmod(path, desiredMode)
+		err = os.Chmod(path, cfg.mode)
 		// in some cases this is not an issue (e.g. whole /dev mounted), see #143
 		if errors.Is(err, fs.ErrPermission) {
 			m.logger.Debugf("Ignoring permission error with chmod: %v", err)
