@@ -103,8 +103,8 @@ func newFullGPUDiscoverer(logger logger.Interface, devRoot string, nvidiaCTKPath
 
 	deviceNodes := discover.NewCharDeviceDiscoverer(
 		logger,
-		deviceNodePaths,
 		devRoot,
+		deviceNodePaths,
 	)
 
 	byPathHooks := &byPathHookDiscoverer{

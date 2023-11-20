@@ -20,18 +20,13 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
 // newCommonNVMLDiscoverer returns a discoverer for entities that are not associated with a specific CDI device.
 // This includes driver libraries and meta devices, for example.
 func (l *nvmllib) newCommonNVMLDiscoverer() (discover.Discover, error) {
-	metaDevices := discover.NewDeviceDiscoverer(
+	metaDevices := discover.NewCharDeviceDiscoverer(
 		l.logger,
-		lookup.NewCharDeviceLocator(
-			lookup.WithLogger(l.logger),
-			lookup.WithRoot(l.devRoot),
-		),
 		l.devRoot,
 		[]string{
 			"/dev/nvidia-modeset",

@@ -188,12 +188,8 @@ func (d drmDevicesByPath) getSpecificLinkArgs(devices []Device) ([]string, error
 
 // newDRMDeviceDiscoverer creates a discoverer for the DRM devices associated with the requested devices.
 func newDRMDeviceDiscoverer(logger logger.Interface, devices image.VisibleDevices, devRoot string) (Discover, error) {
-	allDevices := NewDeviceDiscoverer(
+	allDevices := NewCharDeviceDiscoverer(
 		logger,
-		lookup.NewCharDeviceLocator(
-			lookup.WithLogger(logger),
-			lookup.WithRoot(devRoot),
-		),
 		devRoot,
 		[]string{
 			"/dev/dri/card*",

@@ -29,8 +29,8 @@ const (
 func newDXGDeviceDiscoverer(logger logger.Interface, devRoot string) discover.Discover {
 	deviceNodes := discover.NewCharDeviceDiscoverer(
 		logger,
-		[]string{dxgDeviceNode},
 		devRoot,
+		[]string{dxgDeviceNode},
 	)
 
 	return deviceNodes

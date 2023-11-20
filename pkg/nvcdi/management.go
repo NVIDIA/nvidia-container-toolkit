@@ -109,6 +109,7 @@ type managementDiscoverer struct {
 func (m *managementlib) newManagementDeviceDiscoverer() (discover.Discover, error) {
 	deviceNodes := discover.NewCharDeviceDiscoverer(
 		m.logger,
+		m.devRoot,
 		[]string{
 			"/dev/nvidia*",
 			"/dev/nvidia-caps/nvidia-cap*",
@@ -117,7 +118,6 @@ func (m *managementlib) newManagementDeviceDiscoverer() (discover.Discover, erro
 			"/dev/nvidia-uvm",
 			"/dev/nvidiactl",
 		},
-		m.devRoot,
 	)
 
 	deviceFolderPermissionHooks := newDeviceFolderPermissionHookDiscoverer(

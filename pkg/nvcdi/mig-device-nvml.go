@@ -112,12 +112,12 @@ func newComputeInstanceDiscoverer(logger logger.Interface, driverRoot string, gp
 
 	deviceNodes := discover.NewCharDeviceDiscoverer(
 		logger,
+		driverRoot,
 		[]string{
 			parentPath,
 			giCapDevicePath,
 			ciCapDevicePath,
 		},
-		driverRoot,
 	)
 
 	return deviceNodes, nil
