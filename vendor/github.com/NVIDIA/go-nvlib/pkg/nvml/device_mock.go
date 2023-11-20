@@ -74,11 +74,20 @@ var _ Device = &DeviceMock{}
 //			GetNameFunc: func() (string, Return) {
 //				panic("mock out the GetName method")
 //			},
+//			GetNvLinkRemotePciInfoFunc: func(n int) (PciInfo, Return) {
+//				panic("mock out the GetNvLinkRemotePciInfo method")
+//			},
+//			GetNvLinkStateFunc: func(n int) (EnableState, Return) {
+//				panic("mock out the GetNvLinkState method")
+//			},
 //			GetPciInfoFunc: func() (PciInfo, Return) {
 //				panic("mock out the GetPciInfo method")
 //			},
 //			GetSupportedEventTypesFunc: func() (uint64, Return) {
 //				panic("mock out the GetSupportedEventTypes method")
+//			},
+//			GetTopologyCommonAncestorFunc: func(device Device) (GpuTopologyLevel, Return) {
+//				panic("mock out the GetTopologyCommonAncestor method")
 //			},
 //			GetUUIDFunc: func() (string, Return) {
 //				panic("mock out the GetUUID method")
@@ -156,11 +165,20 @@ type DeviceMock struct {
 	// GetNameFunc mocks the GetName method.
 	GetNameFunc func() (string, Return)
 
+	// GetNvLinkRemotePciInfoFunc mocks the GetNvLinkRemotePciInfo method.
+	GetNvLinkRemotePciInfoFunc func(n int) (PciInfo, Return)
+
+	// GetNvLinkStateFunc mocks the GetNvLinkState method.
+	GetNvLinkStateFunc func(n int) (EnableState, Return)
+
 	// GetPciInfoFunc mocks the GetPciInfo method.
 	GetPciInfoFunc func() (PciInfo, Return)
 
 	// GetSupportedEventTypesFunc mocks the GetSupportedEventTypes method.
 	GetSupportedEventTypesFunc func() (uint64, Return)
+
+	// GetTopologyCommonAncestorFunc mocks the GetTopologyCommonAncestor method.
+	GetTopologyCommonAncestorFunc func(device Device) (GpuTopologyLevel, Return)
 
 	// GetUUIDFunc mocks the GetUUID method.
 	GetUUIDFunc func() (string, Return)
@@ -247,11 +265,26 @@ type DeviceMock struct {
 		// GetName holds details about calls to the GetName method.
 		GetName []struct {
 		}
+		// GetNvLinkRemotePciInfo holds details about calls to the GetNvLinkRemotePciInfo method.
+		GetNvLinkRemotePciInfo []struct {
+			// N is the n argument value.
+			N int
+		}
+		// GetNvLinkState holds details about calls to the GetNvLinkState method.
+		GetNvLinkState []struct {
+			// N is the n argument value.
+			N int
+		}
 		// GetPciInfo holds details about calls to the GetPciInfo method.
 		GetPciInfo []struct {
 		}
 		// GetSupportedEventTypes holds details about calls to the GetSupportedEventTypes method.
 		GetSupportedEventTypes []struct {
+		}
+		// GetTopologyCommonAncestor holds details about calls to the GetTopologyCommonAncestor method.
+		GetTopologyCommonAncestor []struct {
+			// Device is the device argument value.
+			Device Device
 		}
 		// GetUUID holds details about calls to the GetUUID method.
 		GetUUID []struct {
@@ -291,8 +324,11 @@ type DeviceMock struct {
 	lockGetMigMode                         sync.RWMutex
 	lockGetMinorNumber                     sync.RWMutex
 	lockGetName                            sync.RWMutex
+	lockGetNvLinkRemotePciInfo             sync.RWMutex
+	lockGetNvLinkState                     sync.RWMutex
 	lockGetPciInfo                         sync.RWMutex
 	lockGetSupportedEventTypes             sync.RWMutex
+	lockGetTopologyCommonAncestor          sync.RWMutex
 	lockGetUUID                            sync.RWMutex
 	lockIsMigDeviceHandle                  sync.RWMutex
 	lockRegisterEvents                     sync.RWMutex
@@ -846,6 +882,70 @@ func (mock *DeviceMock) GetNameCalls() []struct {
 	return calls
 }
 
+// GetNvLinkRemotePciInfo calls GetNvLinkRemotePciInfoFunc.
+func (mock *DeviceMock) GetNvLinkRemotePciInfo(n int) (PciInfo, Return) {
+	if mock.GetNvLinkRemotePciInfoFunc == nil {
+		panic("DeviceMock.GetNvLinkRemotePciInfoFunc: method is nil but Device.GetNvLinkRemotePciInfo was just called")
+	}
+	callInfo := struct {
+		N int
+	}{
+		N: n,
+	}
+	mock.lockGetNvLinkRemotePciInfo.Lock()
+	mock.calls.GetNvLinkRemotePciInfo = append(mock.calls.GetNvLinkRemotePciInfo, callInfo)
+	mock.lockGetNvLinkRemotePciInfo.Unlock()
+	return mock.GetNvLinkRemotePciInfoFunc(n)
+}
+
+// GetNvLinkRemotePciInfoCalls gets all the calls that were made to GetNvLinkRemotePciInfo.
+// Check the length with:
+//
+//	len(mockedDevice.GetNvLinkRemotePciInfoCalls())
+func (mock *DeviceMock) GetNvLinkRemotePciInfoCalls() []struct {
+	N int
+} {
+	var calls []struct {
+		N int
+	}
+	mock.lockGetNvLinkRemotePciInfo.RLock()
+	calls = mock.calls.GetNvLinkRemotePciInfo
+	mock.lockGetNvLinkRemotePciInfo.RUnlock()
+	return calls
+}
+
+// GetNvLinkState calls GetNvLinkStateFunc.
+func (mock *DeviceMock) GetNvLinkState(n int) (EnableState, Return) {
+	if mock.GetNvLinkStateFunc == nil {
+		panic("DeviceMock.GetNvLinkStateFunc: method is nil but Device.GetNvLinkState was just called")
+	}
+	callInfo := struct {
+		N int
+	}{
+		N: n,
+	}
+	mock.lockGetNvLinkState.Lock()
+	mock.calls.GetNvLinkState = append(mock.calls.GetNvLinkState, callInfo)
+	mock.lockGetNvLinkState.Unlock()
+	return mock.GetNvLinkStateFunc(n)
+}
+
+// GetNvLinkStateCalls gets all the calls that were made to GetNvLinkState.
+// Check the length with:
+//
+//	len(mockedDevice.GetNvLinkStateCalls())
+func (mock *DeviceMock) GetNvLinkStateCalls() []struct {
+	N int
+} {
+	var calls []struct {
+		N int
+	}
+	mock.lockGetNvLinkState.RLock()
+	calls = mock.calls.GetNvLinkState
+	mock.lockGetNvLinkState.RUnlock()
+	return calls
+}
+
 // GetPciInfo calls GetPciInfoFunc.
 func (mock *DeviceMock) GetPciInfo() (PciInfo, Return) {
 	if mock.GetPciInfoFunc == nil {
@@ -897,6 +997,38 @@ func (mock *DeviceMock) GetSupportedEventTypesCalls() []struct {
 	mock.lockGetSupportedEventTypes.RLock()
 	calls = mock.calls.GetSupportedEventTypes
 	mock.lockGetSupportedEventTypes.RUnlock()
+	return calls
+}
+
+// GetTopologyCommonAncestor calls GetTopologyCommonAncestorFunc.
+func (mock *DeviceMock) GetTopologyCommonAncestor(device Device) (GpuTopologyLevel, Return) {
+	if mock.GetTopologyCommonAncestorFunc == nil {
+		panic("DeviceMock.GetTopologyCommonAncestorFunc: method is nil but Device.GetTopologyCommonAncestor was just called")
+	}
+	callInfo := struct {
+		Device Device
+	}{
+		Device: device,
+	}
+	mock.lockGetTopologyCommonAncestor.Lock()
+	mock.calls.GetTopologyCommonAncestor = append(mock.calls.GetTopologyCommonAncestor, callInfo)
+	mock.lockGetTopologyCommonAncestor.Unlock()
+	return mock.GetTopologyCommonAncestorFunc(device)
+}
+
+// GetTopologyCommonAncestorCalls gets all the calls that were made to GetTopologyCommonAncestor.
+// Check the length with:
+//
+//	len(mockedDevice.GetTopologyCommonAncestorCalls())
+func (mock *DeviceMock) GetTopologyCommonAncestorCalls() []struct {
+	Device Device
+} {
+	var calls []struct {
+		Device Device
+	}
+	mock.lockGetTopologyCommonAncestor.RLock()
+	calls = mock.calls.GetTopologyCommonAncestor
+	mock.lockGetTopologyCommonAncestor.RUnlock()
 	return calls
 }
 
