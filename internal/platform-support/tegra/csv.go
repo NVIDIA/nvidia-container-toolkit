@@ -36,9 +36,8 @@ func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
 
 	targetsByType := getTargetsFromCSVFiles(o.logger, o.csvFiles)
 
-	devices := discover.NewDeviceDiscoverer(
+	devices := discover.NewCharDeviceDiscoverer(
 		o.logger,
-		lookup.NewCharDeviceLocator(lookup.WithLogger(o.logger), lookup.WithRoot(o.driverRoot)),
 		o.driverRoot,
 		targetsByType[csv.MountSpecDev],
 	)

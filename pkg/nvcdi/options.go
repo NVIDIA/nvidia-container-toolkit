@@ -47,6 +47,13 @@ func WithDriverRoot(root string) Option {
 	}
 }
 
+// WithDevRoot sets the root where /dev is located.
+func WithDevRoot(root string) Option {
+	return func(l *nvcdilib) {
+		l.devRoot = root
+	}
+}
+
 // WithLogger sets the logger for the library
 func WithLogger(logger logger.Interface) Option {
 	return func(l *nvcdilib) {

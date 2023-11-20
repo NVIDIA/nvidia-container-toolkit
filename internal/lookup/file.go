@@ -148,6 +148,7 @@ var _ Locator = (*file)(nil)
 func (p file) Locate(pattern string) ([]string, error) {
 	var filenames []string
 
+	p.logger.Debugf("Locating %q in %v", pattern, p.prefixes)
 visit:
 	for _, prefix := range p.prefixes {
 		pathPattern := filepath.Join(prefix, pattern)

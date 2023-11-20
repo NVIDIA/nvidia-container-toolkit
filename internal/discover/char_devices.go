@@ -27,20 +27,13 @@ type charDevices mounts
 var _ Discover = (*charDevices)(nil)
 
 // NewCharDeviceDiscoverer creates a discoverer which locates the specified set of device nodes.
-func NewCharDeviceDiscoverer(logger logger.Interface, devices []string, root string) Discover {
+func NewCharDeviceDiscoverer(logger logger.Interface, devRoot string, devices []string) Discover {
 	locator := lookup.NewCharDeviceLocator(
 		lookup.WithLogger(logger),
-		lookup.WithRoot(root),
+		lookup.WithRoot(devRoot),
 	)
 
-	return NewDeviceDiscoverer(logger, locator, root, devices)
-}
-
-// NewDeviceDiscoverer creates a discoverer which locates the specified set of device nodes using the specified locator.
-func NewDeviceDiscoverer(logger logger.Interface, locator lookup.Locator, root string, devices []string) Discover {
-	m := NewMounts(logger, locator, root, devices).(*mounts)
-
-	return (*charDevices)(m)
+	return (*charDevices)(newMounts(logger, locator, devRoot, devices))
 }
 
 // Mounts returns the discovered mounts for the charDevices.

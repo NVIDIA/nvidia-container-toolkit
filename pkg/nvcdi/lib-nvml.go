@@ -66,7 +66,7 @@ func (l *nvmllib) GetAllDeviceSpecs() ([]specs.Device, error) {
 
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
 func (l *nvmllib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	common, err := newCommonNVMLDiscoverer(l.logger, l.driverRoot, l.nvidiaCTKPath, l.nvmllib)
+	common, err := l.newCommonNVMLDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for common entities: %v", err)
 	}

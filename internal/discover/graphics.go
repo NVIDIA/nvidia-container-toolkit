@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/drm"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc"
@@ -31,18 +32,23 @@ import (
 )
 
 // NewGraphicsDiscoverer returns the discoverer for graphics tools such as Vulkan.
-func NewGraphicsDiscoverer(logger logger.Interface, devices image.VisibleDevices, driverRoot string, nvidiaCTKPath string) (Discover, error) {
+func NewGraphicsDiscoverer(logger logger.Interface, cfg *config.Config, devices image.VisibleDevices) (Discover, error) {
+	driverRoot := cfg.NVIDIAContainerCLIConfig.Root
+	// In standard usage, the devRoot is the same as the driverRoot.
+	devRoot := driverRoot
+	nvidiaCTKPath := cfg.NVIDIACTKConfig.Path
+
 	mounts, err := NewGraphicsMountsDiscoverer(logger, driverRoot, nvidiaCTKPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mounts discoverer: %v", err)
 	}
 
-	drmDeviceNodes, err := newDRMDeviceDiscoverer(logger, devices, driverRoot)
+	drmDeviceNodes, err := newDRMDeviceDiscoverer(logger, devices, devRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create DRM device discoverer: %v", err)
 	}
 
-	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, driverRoot, nvidiaCTKPath)
+	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, devRoot, nvidiaCTKPath)
 
 	discover := Merge(
 		Merge(drmDeviceNodes, drmByPathSymlinks),
@@ -99,16 +105,16 @@ type drmDevicesByPath struct {
 	None
 	logger        logger.Interface
 	nvidiaCTKPath string
-	driverRoot    string
+	devRoot       string
 	devicesFrom   Discover
 }
 
 // newCreateDRMByPathSymlinks creates a discoverer for a hook to create the by-path symlinks for DRM devices discovered by the specified devices discoverer
-func newCreateDRMByPathSymlinks(logger logger.Interface, devices Discover, driverRoot string, nvidiaCTKPath string) Discover {
+func newCreateDRMByPathSymlinks(logger logger.Interface, devices Discover, devRoot string, nvidiaCTKPath string) Discover {
 	d := drmDevicesByPath{
 		logger:        logger,
 		nvidiaCTKPath: nvidiaCTKPath,
-		driverRoot:    driverRoot,
+		devRoot:       devRoot,
 		devicesFrom:   devices,
 	}
 
@@ -155,7 +161,7 @@ func (d drmDevicesByPath) getSpecificLinkArgs(devices []Device) ([]string, error
 
 	linkLocator := lookup.NewFileLocator(
 		lookup.WithLogger(d.logger),
-		lookup.WithRoot(d.driverRoot),
+		lookup.WithRoot(d.devRoot),
 	)
 	candidates, err := linkLocator.Locate("/dev/dri/by-path/pci-*-*")
 	if err != nil {
@@ -181,21 +187,17 @@ func (d drmDevicesByPath) getSpecificLinkArgs(devices []Device) ([]string, error
 }
 
 // newDRMDeviceDiscoverer creates a discoverer for the DRM devices associated with the requested devices.
-func newDRMDeviceDiscoverer(logger logger.Interface, devices image.VisibleDevices, driverRoot string) (Discover, error) {
-	allDevices := NewDeviceDiscoverer(
+func newDRMDeviceDiscoverer(logger logger.Interface, devices image.VisibleDevices, devRoot string) (Discover, error) {
+	allDevices := NewCharDeviceDiscoverer(
 		logger,
-		lookup.NewCharDeviceLocator(
-			lookup.WithLogger(logger),
-			lookup.WithRoot(driverRoot),
-		),
-		driverRoot,
+		devRoot,
 		[]string{
 			"/dev/dri/card*",
 			"/dev/dri/renderD*",
 		},
 	)
 
-	filter, err := newDRMDeviceFilter(logger, devices, driverRoot)
+	filter, err := newDRMDeviceFilter(logger, devices, devRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct DRM device filter: %v", err)
 	}
@@ -211,8 +213,8 @@ func newDRMDeviceDiscoverer(logger logger.Interface, devices image.VisibleDevice
 }
 
 // newDRMDeviceFilter creates a filter that matches DRM devices nodes for the visible devices.
-func newDRMDeviceFilter(logger logger.Interface, devices image.VisibleDevices, driverRoot string) (Filter, error) {
-	gpuInformationPaths, err := proc.GetInformationFilePaths(driverRoot)
+func newDRMDeviceFilter(logger logger.Interface, devices image.VisibleDevices, devRoot string) (Filter, error) {
+	gpuInformationPaths, err := proc.GetInformationFilePaths(devRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read GPU information: %v", err)
 	}

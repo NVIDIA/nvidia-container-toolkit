@@ -42,6 +42,7 @@ func (l *csvlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 	d, err := tegra.New(
 		tegra.WithLogger(l.logger),
 		tegra.WithDriverRoot(l.driverRoot),
+		tegra.WithDevRoot(l.devRoot),
 		tegra.WithNVIDIACTKPath(l.nvidiaCTKPath),
 		tegra.WithCSVFiles(l.csvFiles),
 		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),

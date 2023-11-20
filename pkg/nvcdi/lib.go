@@ -44,6 +44,7 @@ type nvcdilib struct {
 	devicelib          device.Interface
 	deviceNamer        DeviceNamer
 	driverRoot         string
+	devRoot            string
 	nvidiaCTKPath      string
 	librarySearchPaths []string
 
@@ -75,6 +76,9 @@ func New(opts ...Option) (Interface, error) {
 	}
 	if l.driverRoot == "" {
 		l.driverRoot = "/"
+	}
+	if l.devRoot == "" {
+		l.devRoot = l.driverRoot
 	}
 	if l.nvidiaCTKPath == "" {
 		l.nvidiaCTKPath = "/usr/bin/nvidia-ctk"
