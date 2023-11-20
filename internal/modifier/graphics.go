@@ -34,15 +34,34 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, image imag
 		return nil, nil
 	}
 
-	d, err := discover.NewGraphicsDiscoverer(
+	driverRoot := cfg.NVIDIAContainerCLIConfig.Root
+	nvidiaCTKPath := cfg.NVIDIACTKConfig.Path
+
+	mounts, err := discover.NewGraphicsMountsDiscoverer(
 		logger,
-		cfg,
+		driverRoot,
+		nvidiaCTKPath,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mounts discoverer: %v", err)
+	}
+
+	// In standard usage, the devRoot is the same as the driverRoot.
+	devRoot := driverRoot
+	drmNodes, err := discover.NewDRMNodesDiscoverer(
+		logger,
 		image.DevicesFromEnvvars(visibleDevicesEnvvar),
+		devRoot,
+		nvidiaCTKPath,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct discoverer: %v", err)
 	}
 
+	d := discover.Merge(
+		drmNodes,
+		mounts,
+	)
 	return NewModifierFromDiscoverer(logger, d)
 }
 
