@@ -3,7 +3,7 @@ module github.com/NVIDIA/nvidia-container-toolkit
 go 1.20
 
 require (
-	github.com/NVIDIA/go-nvlib v0.0.0-20231115170030-b21432a353e1
+	github.com/NVIDIA/go-nvlib v0.0.0-20231116150931-9fd385bace0d
 	github.com/NVIDIA/go-nvml v0.12.0-1.0.20231020145430-e06766c5e74f
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/opencontainers/runtime-spec v1.1.0

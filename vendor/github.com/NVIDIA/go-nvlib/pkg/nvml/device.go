@@ -178,3 +178,27 @@ func (d nvmlDevice) GetSupportedEventTypes() (uint64, Return) {
 	e, r := nvml.Device(d).GetSupportedEventTypes()
 	return e, Return(r)
 }
+
+// GetTopologyCommonAncestor retrieves the common ancestor for two devices.
+func (d nvmlDevice) GetTopologyCommonAncestor(o Device) (GpuTopologyLevel, Return) {
+	other, ok := o.(nvmlDevice)
+	if !ok {
+		return 0, ERROR_INVALID_ARGUMENT
+	}
+
+	l, r := nvml.Device(d).GetTopologyCommonAncestor(nvml.Device(other))
+	return GpuTopologyLevel(l), Return(r)
+}
+
+// GetNvLinkState retrieves the state of the device's NvLink for the link specified.
+func (d nvmlDevice) GetNvLinkState(link int) (EnableState, Return) {
+	s, r := nvml.Device(d).GetNvLinkState(link)
+	return EnableState(s), Return(r)
+}
+
+// GetNvLinkRemotePciInfo retrieves the PCI information for the remote node on a NvLink link.
+// Note: pciSubSystemId is not filled in this function and is indeterminate.
+func (d nvmlDevice) GetNvLinkRemotePciInfo(link int) (PciInfo, Return) {
+	p, r := nvml.Device(d).GetNvLinkRemotePciInfo(link)
+	return PciInfo(p), Return(r)
+}

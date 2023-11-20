@@ -1,4 +1,4 @@
-# github.com/NVIDIA/go-nvlib v0.0.0-20231115170030-b21432a353e1
+# github.com/NVIDIA/go-nvlib v0.0.0-20231116150931-9fd385bace0d
 ## explicit; go 1.20
 github.com/NVIDIA/go-nvlib/pkg/nvlib/device
 github.com/NVIDIA/go-nvlib/pkg/nvlib/info

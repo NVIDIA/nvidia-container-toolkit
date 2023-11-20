@@ -1,6 +1,6 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/NVIDIA/go-nvlib v0.0.0-20231115170030-b21432a353e1 h1:A+2GAIeZkdID7Jc/aSJ1dq42eippP5uHvRMgO8eN3aM=
-github.com/NVIDIA/go-nvlib v0.0.0-20231115170030-b21432a353e1/go.mod h1:HPFNPAYqQeoos58MKUboWsdZMu71EzSQrbmd+QBRD40=
+github.com/NVIDIA/go-nvlib v0.0.0-20231116150931-9fd385bace0d h1:XxRHS7eNkZVcPpZZmUcoT4oO8FEcoYKn06sooQh5niU=
+github.com/NVIDIA/go-nvlib v0.0.0-20231116150931-9fd385bace0d/go.mod h1:HPFNPAYqQeoos58MKUboWsdZMu71EzSQrbmd+QBRD40=
 github.com/NVIDIA/go-nvml v0.12.0-1.0.20231020145430-e06766c5e74f h1:FTblgO87K1vPB8tcwM5EOFpFf6UpsrlDpErPm25mFWE=
 github.com/NVIDIA/go-nvml v0.12.0-1.0.20231020145430-e06766c5e74f/go.mod h1:7ruy85eOM73muOc/I37euONSwEyFqZsv5ED9AogD4G0=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
