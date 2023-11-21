@@ -83,7 +83,7 @@ func (l ldcacheLocator) Locate(libname string) ([]string, error) {
 	}
 
 	if len(paths64) == 0 {
-		return nil, fmt.Errorf("64-bit library %v: %w", libname, errNotFound)
+		return nil, fmt.Errorf("64-bit library %v: %w", libname, ErrNotFound)
 	}
 
 	return paths64, nil
