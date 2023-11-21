@@ -32,6 +32,17 @@ var _ Locator = (*ldcacheLocator)(nil)
 
 // NewLibraryLocator creates a library locator using the specified options.
 func NewLibraryLocator(opts ...Option) Locator {
+	b := newBuilder(opts...)
+
+	// If search paths are already specified, we return a locator for the specified search paths.
+	if len(b.searchPaths) > 0 {
+		return NewSymlinkLocator(
+			WithLogger(b.logger),
+			WithSearchPaths(b.searchPaths...),
+			WithRoot("/"),
+		)
+	}
+
 	opts = append(opts,
 		WithSearchPaths([]string{
 			"/",

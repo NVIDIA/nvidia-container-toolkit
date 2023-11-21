@@ -25,4 +25,5 @@ type Locator interface {
 	Locate(string) ([]string, error)
 }
 
-var errNotFound = errors.New("not found")
+// ErrNotFound indicates that a specified pattern or file could not be found.
+var ErrNotFound = errors.New("not found")
