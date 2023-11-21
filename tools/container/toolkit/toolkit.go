@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
@@ -383,7 +384,7 @@ func installLibrary(libName string, toolkitRoot string) error {
 func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, nvidaContainerRuntimeHookPath string, opts *options) error {
 	log.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
 
-	config, err := loadConfig(nvidiaContainerToolkitConfigSource)
+	cfg, err := loadConfig(nvidiaContainerToolkitConfigSource)
 	if err != nil {
 		return fmt.Errorf("could not open source config file: %v", err)
 	}
@@ -396,9 +397,9 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 
 	// Read the ldconfig path from the config as this may differ per platform
 	// On ubuntu-based systems this ends in `.real`
-	ldconfigPath := fmt.Sprintf("%s", config.GetDefault("nvidia-container-cli.ldconfig", "/sbin/ldconfig"))
+	ldconfigPath := fmt.Sprintf("%s", cfg.GetDefault("nvidia-container-cli.ldconfig", "/sbin/ldconfig"))
 	// Use the driver run root as the root:
-	driverLdconfigPath := "@" + filepath.Join(opts.DriverRoot, strings.TrimPrefix(ldconfigPath, "@/"))
+	driverLdconfigPath := config.NormalizeLDConfigPath("@" + filepath.Join(opts.DriverRoot, strings.TrimPrefix(ldconfigPath, "@/")))
 
 	configValues := map[string]interface{}{
 		// Set the options in the root toml table
@@ -415,7 +416,7 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 		"nvidia-container-runtime-hook.skip-mode-detection": opts.ContainerRuntimeHookSkipModeDetection,
 	}
 	for key, value := range configValues {
-		config.Set(key, value)
+		cfg.Set(key, value)
 	}
 
 	// Set the optional config options
@@ -452,15 +453,15 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 			log.Warningf("Unexpected type for option %v=%v: %T", key, value, v)
 		}
 
-		config.Set(key, value)
+		cfg.Set(key, value)
 	}
 
-	if _, err := config.WriteTo(targetConfig); err != nil {
+	if _, err := cfg.WriteTo(targetConfig); err != nil {
 		return fmt.Errorf("error writing config: %v", err)
 	}
 
 	os.Stdout.WriteString("Using config:\n")
-	if _, err = config.WriteTo(os.Stdout); err != nil {
+	if _, err = cfg.WriteTo(os.Stdout); err != nil {
 		log.Warningf("Failed to output config to STDOUT: %v", err)
 	}
 

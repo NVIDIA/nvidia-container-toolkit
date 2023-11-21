@@ -111,8 +111,8 @@ func doPrestart() {
 	}
 	args = append(args, "configure")
 
-	if cli.Ldconfig != "" {
-		args = append(args, fmt.Sprintf("--ldconfig=%s", cli.Ldconfig))
+	if ldconfigPath := cli.NormalizeLDConfigPath(); ldconfigPath != "" {
+		args = append(args, fmt.Sprintf("--ldconfig=%s", ldconfigPath))
 	}
 	if cli.NoCgroups {
 		args = append(args, "--no-cgroups")

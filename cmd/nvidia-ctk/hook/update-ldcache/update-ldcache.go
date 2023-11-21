@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/urfave/cli/v2"
@@ -31,7 +32,7 @@ type command struct {
 	logger logger.Interface
 }
 
-type config struct {
+type options struct {
 	folders       cli.StringSlice
 	containerSpec string
 }
@@ -46,7 +47,7 @@ func NewCommand(logger logger.Interface) *cli.Command {
 
 // build the update-ldcache command
 func (m command) build() *cli.Command {
-	cfg := config{}
+	cfg := options{}
 
 	// Create the 'update-ldcache' command
 	c := cli.Command{
@@ -73,7 +74,7 @@ func (m command) build() *cli.Command {
 	return &c
 }
 
-func (m command) run(c *cli.Context, cfg *config) error {
+func (m command) run(c *cli.Context, cfg *options) error {
 	s, err := oci.LoadContainerState(cfg.containerSpec)
 	if err != nil {
 		return fmt.Errorf("failed to load container state: %v", err)
@@ -84,7 +85,8 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
-	args := []string{"/sbin/ldconfig"}
+	ldconfigPath := m.resolveLDConfigPath("/sbin/ldconfig")
+	args := []string{filepath.Base(ldconfigPath)}
 	if containerRoot != "" {
 		args = append(args, "-r", containerRoot)
 	}
@@ -116,6 +118,13 @@ func (r root) hasPath(path string) bool {
 		return false
 	}
 	return true
+}
+
+// resolveLDConfigPath determines the LDConfig path to use for the system.
+// On systems such as Ubuntu where `/sbin/ldconfig` is a wrapper around
+// /sbin/ldconfig.real, the latter is returned.
+func (m command) resolveLDConfigPath(path string) string {
+	return config.NormalizeLDConfigPath("@" + path)
 }
 
 // createConfig creates (or updates) /etc/ld.so.conf.d/nvcr-<RANDOM_STRING>.conf in the container
