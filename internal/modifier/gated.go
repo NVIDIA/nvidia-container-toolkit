@@ -27,25 +27,43 @@ import (
 )
 
 const (
+	nvidiaGDSEnvvar   = "NVIDIA_GDS"
 	nvidiaMOFEDEnvvar = "NVIDIA_MOFED"
 )
 
-// NewMOFEDModifier creates the modifiers for MOFED devices.
-// If the spec does not contain the NVIDIA_MOFED=enabled environment variable no changes are made.
-func NewMOFEDModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
+// NewFeatureGatedModifier creates the modifiers for optional features.
+// These include:
+//
+//	NVIDIA_GDS=enabled
+//	NVIDIA_MOFED=enabled
+//
+// If not devices are selected, no changes are made.
+func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
 	if devices := image.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices.List()) == 0 {
 		logger.Infof("No modification required; no devices requested")
 		return nil, nil
 	}
 
-	if image.Getenv(nvidiaMOFEDEnvvar) != "enabled" {
-		return nil, nil
+	var discoverers []discover.Discover
+
+	driverRoot := cfg.NVIDIAContainerCLIConfig.Root
+	devRoot := cfg.NVIDIAContainerCLIConfig.Root
+
+	if image.Getenv(nvidiaGDSEnvvar) == "enabled" {
+		d, err := discover.NewGDSDiscoverer(logger, driverRoot, devRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct discoverer for GDS devices: %w", err)
+		}
+		discoverers = append(discoverers, d)
 	}
 
-	d, err := discover.NewMOFEDDiscoverer(logger, cfg.NVIDIAContainerCLIConfig.Root)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct discoverer for MOFED devices: %v", err)
+	if image.Getenv(nvidiaMOFEDEnvvar) == "enabled" {
+		d, err := discover.NewMOFEDDiscoverer(logger, devRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct discoverer for MOFED devices: %w", err)
+		}
+		discoverers = append(discoverers, d)
 	}
 
-	return NewModifierFromDiscoverer(logger, d)
+	return NewModifierFromDiscoverer(logger, discover.Merge(discoverers...))
 }

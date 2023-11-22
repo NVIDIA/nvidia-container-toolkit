@@ -87,12 +87,7 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		return nil, err
 	}
 
-	gdsModifier, err := modifier.NewGDSModifier(logger, cfg, image)
-	if err != nil {
-		return nil, err
-	}
-
-	mofedModifier, err := modifier.NewMOFEDModifier(logger, cfg, image)
+	featureModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, image)
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +95,7 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 	modifiers := modifier.Merge(
 		modeModifier,
 		graphicsModifier,
-		gdsModifier,
-		mofedModifier,
+		featureModifier,
 	)
 	return modifiers, nil
 }
