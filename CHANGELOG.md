@@ -5,6 +5,7 @@
 * Include `nvidia/nvoptix.bin` in list of graphics mounts.
 * Include `vulkan/icd.d/nvidia_layers.json` in list of graphics mounts.
 * Add support for `--library-search-paths` to `nvidia-ctk cdi generate` command.
+* Add support for injecting /dev/nvidia-nvswitch* devices if the NVIDIA_NVSWITCH=enabled envvar is specified.
 
 * [libnvidia-container] Fix device permission check when using cgroupv2 (fixes #227)
 
