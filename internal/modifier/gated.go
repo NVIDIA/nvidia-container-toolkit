@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	nvidiaGDSEnvvar   = "NVIDIA_GDS"
-	nvidiaMOFEDEnvvar = "NVIDIA_MOFED"
+	nvidiaGDSEnvvar      = "NVIDIA_GDS"
+	nvidiaMOFEDEnvvar    = "NVIDIA_MOFED"
+	nvidiaNVSWITCHEnvvar = "NVIDIA_NVSWITCH"
 )
 
 // NewFeatureGatedModifier creates the modifiers for optional features.
@@ -36,6 +37,7 @@ const (
 //
 //	NVIDIA_GDS=enabled
 //	NVIDIA_MOFED=enabled
+//	NVIDIA_NVSWITCH=enabled
 //
 // If not devices are selected, no changes are made.
 func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
@@ -61,6 +63,14 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 		d, err := discover.NewMOFEDDiscoverer(logger, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for MOFED devices: %w", err)
+		}
+		discoverers = append(discoverers, d)
+	}
+
+	if image.Getenv(nvidiaNVSWITCHEnvvar) == "enabled" {
+		d, err := discover.NewNvSwitchDiscoverer(logger, devRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct discoverer for NVSWITCH devices: %w", err)
 		}
 		discoverers = append(discoverers, d)
 	}
