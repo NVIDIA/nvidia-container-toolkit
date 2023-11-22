@@ -53,6 +53,15 @@ func (r *Driver) Libraries() lookup.Locator {
 	)
 }
 
+// Configs returns a locator for driver configs.
+func (r *Driver) Configs() lookup.Locator {
+	return lookup.NewFileLocator(
+		lookup.WithLogger(r.logger),
+		lookup.WithRoot(r.Root),
+		lookup.WithSearchPaths("/etc", "/usr/share"),
+	)
+}
+
 // normalizeSearchPaths takes a list of paths and normalized these.
 // Each of the elements in the list is expanded if it is a path list and the
 // resultant list is returned.

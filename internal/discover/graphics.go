@@ -61,11 +61,7 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, n
 
 	jsonMounts := NewMounts(
 		logger,
-		lookup.NewFileLocator(
-			lookup.WithLogger(logger),
-			lookup.WithRoot(driver.Root),
-			lookup.WithSearchPaths("/etc", "/usr/share"),
-		),
+		driver.Configs(),
 		driver.Root,
 		[]string{
 			"glvnd/egl_vendor.d/10_nvidia.json",
@@ -292,11 +288,7 @@ func newXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPa
 
 	xorgConfig := NewMounts(
 		logger,
-		lookup.NewFileLocator(
-			lookup.WithLogger(logger),
-			lookup.WithRoot(driver.Root),
-			lookup.WithSearchPaths("/usr/share"),
-		),
+		driver.Configs(),
 		driver.Root,
 		[]string{"X11/xorg.conf.d/10-nvidia.conf"},
 	)
