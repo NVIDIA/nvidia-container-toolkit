@@ -55,7 +55,7 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, n
 		driver.Libraries(),
 		driver.Root,
 		[]string{
-			"libnvidia-egl-gbm.so",
+			"libnvidia-egl-gbm.so.*",
 		},
 	)
 
