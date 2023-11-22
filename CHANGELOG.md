@@ -1,5 +1,9 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.14.4
+* Include `nvidia/nvoptix.bin` in list of graphics mounts.
+* Include `vulkan/icd.d/nvidia_layers.json` in list of graphics mounts.
+
 ## v1.14.3
 * [toolkit-container] Bump CUDA base image version to 12.2.2.
 
