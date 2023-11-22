@@ -57,8 +57,10 @@ func TestLocate(t *testing.T) {
 			require.NoError(t, err)
 
 			l := New(
-				WithLogger(logger),
-				WithDriverRoot(driverRoot),
+				lookup.NewLibraryLocator(
+					lookup.WithLogger(logger),
+					lookup.WithRoot(driverRoot),
+				),
 			)
 
 			candidates, err := l.Locate(".*")

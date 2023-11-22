@@ -17,55 +17,19 @@
 package cuda
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
 type cudaLocator struct {
 	lookup.Locator
-	logger     logger.Interface
-	driverRoot string
-}
-
-// Options is a function that configures a cudaLocator.
-type Options func(*cudaLocator)
-
-// WithLogger is an option that configures the logger used by the locator.
-func WithLogger(logger logger.Interface) Options {
-	return func(c *cudaLocator) {
-		c.logger = logger
-	}
-}
-
-// WithDriverRoot is an option that configures the driver root used by the locator.
-func WithDriverRoot(driverRoot string) Options {
-	return func(c *cudaLocator) {
-		c.driverRoot = driverRoot
-	}
 }
 
 // New creates a new CUDA library locator.
-func New(opts ...Options) lookup.Locator {
-	c := &cudaLocator{}
-	for _, opt := range opts {
-		opt(c)
+func New(libraries lookup.Locator) lookup.Locator {
+	c := cudaLocator{
+		Locator: libraries,
 	}
-
-	if c.logger == nil {
-		c.logger = logger.New()
-	}
-	if c.driverRoot == "" {
-		c.driverRoot = "/"
-	}
-
-	// TODO: Do we want to set the Count to 1 here?
-	l, _ := lookup.NewLibraryLocator(
-		c.logger,
-		c.driverRoot,
-	)
-
-	c.Locator = l
-	return c
+	return &c
 }
 
 // Locate returns the path to the libcuda.so.RMVERSION file.

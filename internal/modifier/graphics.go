@@ -23,6 +23,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
@@ -34,20 +35,21 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, image imag
 		return nil, nil
 	}
 
-	driverRoot := cfg.NVIDIAContainerCLIConfig.Root
+	// TODO: We should not just pass `nil` as the search path here.
+	driver := root.New(logger, cfg.NVIDIAContainerCLIConfig.Root, nil)
 	nvidiaCTKPath := cfg.NVIDIACTKConfig.Path
 
 	mounts, err := discover.NewGraphicsMountsDiscoverer(
 		logger,
-		driverRoot,
+		driver,
 		nvidiaCTKPath,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mounts discoverer: %v", err)
 	}
 
-	// In standard usage, the devRoot is the same as the driverRoot.
-	devRoot := driverRoot
+	// In standard usage, the devRoot is the same as the driver.Root.
+	devRoot := driver.Root
 	drmNodes, err := discover.NewDRMNodesDiscoverer(
 		logger,
 		image.DevicesFromEnvvars(visibleDevicesEnvvar),

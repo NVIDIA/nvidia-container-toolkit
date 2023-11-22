@@ -30,12 +30,20 @@ type ldcacheLocator struct {
 
 var _ Locator = (*ldcacheLocator)(nil)
 
-// NewLibraryLocator creates a library locator using the specified logger.
-func NewLibraryLocator(logger logger.Interface, root string) (Locator, error) {
-	// We construct a symlink locator for expected library locations.
-	symlinkLocator := NewSymlinkLocator(
-		WithLogger(logger),
-		WithRoot(root),
+// NewLibraryLocator creates a library locator using the specified options.
+func NewLibraryLocator(opts ...Option) Locator {
+	b := newBuilder(opts...)
+
+	// If search paths are already specified, we return a locator for the specified search paths.
+	if len(b.searchPaths) > 0 {
+		return NewSymlinkLocator(
+			WithLogger(b.logger),
+			WithSearchPaths(b.searchPaths...),
+			WithRoot("/"),
+		)
+	}
+
+	opts = append(opts,
 		WithSearchPaths([]string{
 			"/",
 			"/usr/lib64",
@@ -50,24 +58,28 @@ func NewLibraryLocator(logger logger.Interface, root string) (Locator, error) {
 			"/lib/aarch64-linux-gnu/nvidia/current",
 		}...),
 	)
+	// We construct a symlink locator for expected library locations.
+	symlinkLocator := NewSymlinkLocator(opts...)
 
 	l := First(
 		symlinkLocator,
-		newLdcacheLocator(logger, root),
+		newLdcacheLocator(opts...),
 	)
-	return l, nil
+	return l
 }
 
-func newLdcacheLocator(logger logger.Interface, root string) Locator {
-	cache, err := ldcache.New(logger, root)
+func newLdcacheLocator(opts ...Option) Locator {
+	b := newBuilder(opts...)
+
+	cache, err := ldcache.New(b.logger, b.root)
 	if err != nil {
 		// If we failed to open the LDCache, we default to a symlink locator.
-		logger.Warningf("Failed to load ldcache: %v", err)
+		b.logger.Warningf("Failed to load ldcache: %v", err)
 		return nil
 	}
 
 	return &ldcacheLocator{
-		logger: logger,
+		logger: b.logger,
 		cache:  cache,
 	}
 }
@@ -82,7 +94,7 @@ func (l ldcacheLocator) Locate(libname string) ([]string, error) {
 	}
 
 	if len(paths64) == 0 {
-		return nil, fmt.Errorf("64-bit library %v: %w", libname, errNotFound)
+		return nil, fmt.Errorf("64-bit library %v: %w", libname, ErrNotFound)
 	}
 
 	return paths64, nil

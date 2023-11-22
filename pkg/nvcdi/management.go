@@ -65,7 +65,7 @@ func (m *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 		return nil, fmt.Errorf("failed to get CUDA version: %v", err)
 	}
 
-	driver, err := newDriverVersionDiscoverer(m.logger, m.driverRoot, m.nvidiaCTKPath, version)
+	driver, err := newDriverVersionDiscoverer(m.logger, m.driver, m.nvidiaCTKPath, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create driver library discoverer: %v", err)
 	}
@@ -86,8 +86,7 @@ func (m *managementlib) getCudaVersion() (string, error) {
 	}
 
 	libCudaPaths, err := cuda.New(
-		cuda.WithLogger(m.logger),
-		cuda.WithDriverRoot(m.driverRoot),
+		m.driver.Libraries(),
 	).Locate(".*.*")
 	if err != nil {
 		return "", fmt.Errorf("failed to locate libcuda.so: %v", err)
