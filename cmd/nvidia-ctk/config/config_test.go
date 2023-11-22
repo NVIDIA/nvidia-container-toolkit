@@ -19,152 +19,109 @@ package config
 import (
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/pelletier/go-toml"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSetFlagToKeyValue(t *testing.T) {
+	// TODO: We need to enable this test again since switching to reflect.
 	testCases := []struct {
 		description   string
-		config        map[string]interface{}
 		setFlag       string
 		expectedKey   string
 		expectedValue interface{}
 		expectedError error
 	}{
 		{
-			description:   "empty config returns an error",
-			setFlag:       "anykey=value",
-			expectedKey:   "anykey",
-			expectedError: errInvalidConfigOption,
-		},
-		{
-			description: "option not present returns an error",
-			config: map[string]interface{}{
-				"defined": "defined-value",
-			},
+			description:   "option not present returns an error",
 			setFlag:       "undefined=new-value",
 			expectedKey:   "undefined",
 			expectedError: errInvalidConfigOption,
 		},
 		{
-			description: "boolean option assumes true",
-			config: map[string]interface{}{
-				"boolean": false,
-			},
-			setFlag:       "boolean",
-			expectedKey:   "boolean",
+			description:   "undefined nexted option returns error",
+			setFlag:       "nvidia-container-cli.undefined",
+			expectedKey:   "nvidia-container-cli.undefined",
+			expectedError: errInvalidConfigOption,
+		},
+		{
+			description:   "boolean option assumes true",
+			setFlag:       "disable-require",
+			expectedKey:   "disable-require",
 			expectedValue: true,
 		},
 		{
-			description: "boolean option returns true",
-			config: map[string]interface{}{
-				"boolean": false,
-			},
-			setFlag:       "boolean=true",
-			expectedKey:   "boolean",
+			description:   "boolean option returns true",
+			setFlag:       "disable-require=true",
+			expectedKey:   "disable-require",
 			expectedValue: true,
 		},
 		{
-			description: "boolean option returns false",
-			config: map[string]interface{}{
-				"boolean": false,
-			},
-			setFlag:       "boolean=false",
-			expectedKey:   "boolean",
+			description:   "boolean option returns false",
+			setFlag:       "disable-require=false",
+			expectedKey:   "disable-require",
 			expectedValue: false,
 		},
 		{
-			description: "invalid boolean option returns error",
-			config: map[string]interface{}{
-				"boolean": false,
-			},
-			setFlag:       "boolean=something",
-			expectedKey:   "boolean",
+			description:   "invalid boolean option returns error",
+			setFlag:       "disable-require=something",
+			expectedKey:   "disable-require",
 			expectedValue: "something",
 			expectedError: errInvalidFormat,
 		},
 		{
-			description: "string option requires value",
-			config: map[string]interface{}{
-				"string": "value",
-			},
-			setFlag:       "string",
-			expectedKey:   "string",
+			description:   "string option requires value",
+			setFlag:       "swarm-resource",
+			expectedKey:   "swarm-resource",
 			expectedValue: nil,
 			expectedError: errInvalidFormat,
 		},
 		{
-			description: "string option returns value",
-			config: map[string]interface{}{
-				"string": "value",
-			},
-			setFlag:       "string=string-value",
-			expectedKey:   "string",
+			description:   "string option returns value",
+			setFlag:       "swarm-resource=string-value",
+			expectedKey:   "swarm-resource",
 			expectedValue: "string-value",
 		},
 		{
-			description: "string option returns value with equals",
-			config: map[string]interface{}{
-				"string": "value",
-			},
-			setFlag:       "string=string-value=more",
-			expectedKey:   "string",
+			description:   "string option returns value with equals",
+			setFlag:       "swarm-resource=string-value=more",
+			expectedKey:   "swarm-resource",
 			expectedValue: "string-value=more",
 		},
 		{
-			description: "string option treats bool value as string",
-			config: map[string]interface{}{
-				"string": "value",
-			},
-			setFlag:       "string=true",
-			expectedKey:   "string",
+			description:   "string option treats bool value as string",
+			setFlag:       "swarm-resource=true",
+			expectedKey:   "swarm-resource",
 			expectedValue: "true",
 		},
 		{
-			description: "string option treats int value as string",
-			config: map[string]interface{}{
-				"string": "value",
-			},
-			setFlag:       "string=5",
-			expectedKey:   "string",
+			description:   "string option treats int value as string",
+			setFlag:       "swarm-resource=5",
+			expectedKey:   "swarm-resource",
 			expectedValue: "5",
 		},
 		{
-			description: "[]string option returns single value",
-			config: map[string]interface{}{
-				"string": []string{"value"},
-			},
-			setFlag:       "string=string-value",
-			expectedKey:   "string",
+			description:   "[]string option returns single value",
+			setFlag:       "nvidia-container-cli.environment=string-value",
+			expectedKey:   "nvidia-container-cli.environment",
 			expectedValue: []string{"string-value"},
 		},
 		{
-			description: "[]string option returns multiple values",
-			config: map[string]interface{}{
-				"string": []string{"value"},
-			},
-			setFlag:       "string=first,second",
-			expectedKey:   "string",
+			description:   "[]string option returns multiple values",
+			setFlag:       "nvidia-container-cli.environment=first,second",
+			expectedKey:   "nvidia-container-cli.environment",
 			expectedValue: []string{"first", "second"},
 		},
 		{
-			description: "[]string option returns values with equals",
-			config: map[string]interface{}{
-				"string": []string{"value"},
-			},
-			setFlag:       "string=first=1,second=2",
-			expectedKey:   "string",
+			description:   "[]string option returns values with equals",
+			setFlag:       "nvidia-container-cli.environment=first=1,second=2",
+			expectedKey:   "nvidia-container-cli.environment",
 			expectedValue: []string{"first=1", "second=2"},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			tree, _ := toml.TreeFromMap(tc.config)
-			cfgToml := (*config.Toml)(tree)
-			k, v, err := (*configToml)(cfgToml).setFlagToKeyValue(tc.setFlag)
+			k, v, err := setFlagToKeyValue(tc.setFlag)
 			require.ErrorIs(t, err, tc.expectedError)
 			require.EqualValues(t, tc.expectedKey, k)
 			require.EqualValues(t, tc.expectedValue, v)
