@@ -19,14 +19,16 @@ package config
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/urfave/cli/v2"
 
 	createdefault "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/create-default"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/flags"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/urfave/cli/v2"
 )
 
 type command struct {
@@ -103,7 +105,7 @@ func run(c *cli.Context, opts *options) error {
 	}
 
 	for _, set := range opts.sets.Value() {
-		key, value, err := (*configToml)(cfgToml).setFlagToKeyValue(set)
+		key, value, err := setFlagToKeyValue(set)
 		if err != nil {
 			return fmt.Errorf("invalid --set option %v: %w", set, err)
 		}
@@ -126,50 +128,86 @@ func run(c *cli.Context, opts *options) error {
 	return nil
 }
 
-type configToml config.Toml
-
 var errInvalidConfigOption = errors.New("invalid config option")
+var errUndefinedField = errors.New("undefined field")
 var errInvalidFormat = errors.New("invalid format")
 
 // setFlagToKeyValue converts a --set flag to a key-value pair.
 // The set flag is of the form key[=value], with the value being optional if key refers to a
 // boolean config option.
-func (c *configToml) setFlagToKeyValue(setFlag string) (string, interface{}, error) {
-	if c == nil {
-		return "", nil, errInvalidConfigOption
-	}
-
+func setFlagToKeyValue(setFlag string) (string, interface{}, error) {
 	setParts := strings.SplitN(setFlag, "=", 2)
 	key := setParts[0]
 
-	v := (*config.Toml)(c).Get(key)
-	if v == nil {
-		return key, nil, errInvalidConfigOption
-	}
-	switch v.(type) {
-	case bool:
-		if len(setParts) == 1 {
-			return key, true, nil
-		}
+	field, err := getField(key)
+	if err != nil {
+		return key, nil, fmt.Errorf("%w: %w", errInvalidConfigOption, err)
 	}
 
+	kind := field.Kind()
 	if len(setParts) != 2 {
+		if kind == reflect.Bool {
+			return key, true, nil
+		}
 		return key, nil, fmt.Errorf("%w: expected key=value; got %v", errInvalidFormat, setFlag)
 	}
 
 	value := setParts[1]
-	switch vt := v.(type) {
-	case bool:
+	switch kind {
+	case reflect.Bool:
 		b, err := strconv.ParseBool(value)
 		if err != nil {
 			return key, value, fmt.Errorf("%w: %w", errInvalidFormat, err)
 		}
 		return key, b, err
-	case string:
+	case reflect.String:
 		return key, value, nil
-	case []string:
-		return key, strings.Split(value, ","), nil
-	default:
-		return key, nil, fmt.Errorf("unsupported type for %v (%v)", setParts, vt)
+	case reflect.Slice:
+		valueParts := strings.Split(value, ",")
+		switch field.Elem().Kind() {
+		case reflect.String:
+			return key, valueParts, nil
+		case reflect.Int:
+			var output []int64
+			for _, v := range valueParts {
+				vi, err := strconv.ParseInt(v, 10, 0)
+				if err != nil {
+					return key, nil, fmt.Errorf("%w: %w", errInvalidFormat, err)
+				}
+				output = append(output, vi)
+			}
+			return key, output, nil
+		}
 	}
+	return key, nil, fmt.Errorf("unsupported type for %v (%v)", setParts, kind)
+}
+
+func getField(key string) (reflect.Type, error) {
+	s, err := getStruct(reflect.TypeOf(config.Config{}), strings.Split(key, ".")...)
+	if err != nil {
+		return nil, err
+	}
+	return s.Type, err
+}
+
+func getStruct(current reflect.Type, paths ...string) (reflect.StructField, error) {
+	if len(paths) < 1 {
+		return reflect.StructField{}, fmt.Errorf("%w: no fields selected", errUndefinedField)
+	}
+	tomlField := paths[0]
+	for i := 0; i < current.NumField(); i++ {
+		f := current.Field(i)
+		v, ok := f.Tag.Lookup("toml")
+		if !ok {
+			continue
+		}
+		if v != tomlField {
+			continue
+		}
+		if len(paths) == 1 {
+			return f, nil
+		}
+		return getStruct(f.Type, paths[1:]...)
+	}
+	return reflect.StructField{}, fmt.Errorf("%w: %q", errUndefinedField, tomlField)
 }
