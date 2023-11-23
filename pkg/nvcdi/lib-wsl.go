@@ -39,15 +39,12 @@ func (l *wsllib) GetSpec() (spec.Interface, error) {
 // GetAllDeviceSpecs returns the device specs for all available devices.
 func (l *wsllib) GetAllDeviceSpecs() ([]specs.Device, error) {
 	device := newDXGDeviceDiscoverer(l.logger, l.devRoot)
-	deviceEdits, err := edits.FromDiscoverer(device)
+	e, err := edits.FromDiscoverer(device)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for DXG device: %v", err)
 	}
 
-	deviceSpec := specs.Device{
-		Name:           "all",
-		ContainerEdits: *deviceEdits.ContainerEdits,
-	}
+	deviceSpec := edits.NewResource("all", e)
 
 	return []specs.Device{deviceSpec}, nil
 }

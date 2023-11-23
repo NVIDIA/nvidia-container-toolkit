@@ -64,10 +64,7 @@ func (l *csvlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 	}
 	var deviceSpecs []specs.Device
 	for _, name := range names {
-		deviceSpec := specs.Device{
-			Name:           name,
-			ContainerEdits: *e.ContainerEdits,
-		}
+		deviceSpec := edits.NewResource(name, e)
 		deviceSpecs = append(deviceSpecs, deviceSpec)
 	}
 

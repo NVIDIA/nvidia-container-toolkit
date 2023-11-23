@@ -38,15 +38,12 @@ func (l *gdslib) GetAllDeviceSpecs() ([]specs.Device, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GPUDirect Storage discoverer: %v", err)
 	}
-	edits, err := edits.FromDiscoverer(discoverer)
+	e, err := edits.FromDiscoverer(discoverer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for GPUDirect Storage: %v", err)
 	}
 
-	deviceSpec := specs.Device{
-		Name:           "all",
-		ContainerEdits: *edits.ContainerEdits,
-	}
+	deviceSpec := edits.NewResource("all", e)
 
 	return []specs.Device{deviceSpec}, nil
 }
