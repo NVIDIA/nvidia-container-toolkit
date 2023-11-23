@@ -6,6 +6,7 @@
 * Include `vulkan/icd.d/nvidia_layers.json` in list of graphics mounts.
 * Add support for `--library-search-paths` to `nvidia-ctk cdi generate` command.
 * Add support for injecting /dev/nvidia-nvswitch* devices if the NVIDIA_NVSWITCH=enabled envvar is specified.
+* Added support for `nvidia-ctk runtime configure --enable-cdi` for the `docker` runtime. Note that this requires Docker >= 25.
 
 * [libnvidia-container] Fix device permission check when using cgroupv2 (fixes #227)
 

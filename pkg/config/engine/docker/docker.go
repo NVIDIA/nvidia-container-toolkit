@@ -114,9 +114,10 @@ func (c *Config) RemoveRuntime(name string) error {
 	return nil
 }
 
-// Set is not supported for docker configs.
+// Set sets the specified docker option
 func (c *Config) Set(key string, value interface{}) error {
-	return fmt.Errorf("Set is not supported for crio configs")
+	(*c)[key] = value
+	return nil
 }
 
 // Save writes the config to the specified path
