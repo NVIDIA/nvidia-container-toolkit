@@ -18,6 +18,7 @@ package edits
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/opencontainers/cgroups/devices/config"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/test/to"
 )
 
 func TestDeviceToSpec(t *testing.T) {
@@ -102,6 +104,85 @@ func TestDeviceToSpec(t *testing.T) {
 			spec, err := device(tc.device).toSpec()
 			require.NoError(t, err)
 			require.EqualValues(t, tc.expected, spec)
+		})
+	}
+}
+
+func TestGetAdditionalGIDs(t *testing.T) {
+	testCases := []struct {
+		description            string
+		device                 *device
+		deviceNode             *specs.DeviceNode
+		expectedAdditionalGIDs []uint32
+	}{
+		{
+			description: "device node has no GID",
+			device:      &device{},
+		},
+		{
+			description: "device node has zero GID",
+			device:      &device{},
+			deviceNode: &specs.DeviceNode{
+				GID: to.Ptr[uint32](0),
+			},
+		},
+		{
+			description: "filemode not specified",
+			device:      &device{},
+			deviceNode: &specs.DeviceNode{
+				GID: to.Ptr[uint32](1),
+			},
+		},
+		{
+			description: "device node is not a character device",
+			device:      &device{},
+			deviceNode: &specs.DeviceNode{
+				GID:      to.Ptr[uint32](1),
+				FileMode: to.Ptr(0666 | os.ModeSymlink),
+			},
+		},
+		{
+			description: "character device is world read-writeable",
+			device:      &device{},
+			deviceNode: &specs.DeviceNode{
+				GID:      to.Ptr[uint32](1),
+				FileMode: to.Ptr(0666 | os.ModeCharDevice),
+			},
+		},
+		{
+			description: "character device is only world readable",
+			device:      &device{},
+			deviceNode: &specs.DeviceNode{
+				GID:      to.Ptr[uint32](1),
+				FileMode: to.Ptr(0664 | os.ModeCharDevice),
+			},
+			expectedAdditionalGIDs: []uint32{1},
+		},
+		{
+			description: "character device is only world writeable",
+			device:      &device{},
+			deviceNode: &specs.DeviceNode{
+				GID:      to.Ptr[uint32](1),
+				FileMode: to.Ptr(0662 | os.ModeCharDevice),
+			},
+			expectedAdditionalGIDs: []uint32{1},
+		},
+		{
+			description: "character device is not world read-writeable",
+			device:      &device{},
+			deviceNode: &specs.DeviceNode{
+				GID:      to.Ptr[uint32](1),
+				FileMode: to.Ptr(0660 | os.ModeCharDevice),
+			},
+			expectedAdditionalGIDs: []uint32{1},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			additionalGIDs := tc.device.getAdditionalGIDs(tc.deviceNode)
+
+			require.EqualValues(t, tc.expectedAdditionalGIDs, additionalGIDs)
 		})
 	}
 }
