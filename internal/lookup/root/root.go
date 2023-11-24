@@ -30,6 +30,8 @@ type Driver struct {
 	Root string
 	// librarySearchPaths specifies explicit search paths for discovering libraries.
 	librarySearchPaths []string
+	// configSearchPaths specified explicit search paths for discovering driver config files.
+	configSearchPaths []string
 }
 
 // New creates a new Driver root using the specified options.
@@ -54,11 +56,20 @@ func (r *Driver) Libraries() lookup.Locator {
 }
 
 // Configs returns a locator for driver configs.
+// If configSearchPaths is specified, these paths are used as absolute paths,
+// otherwise, /etc and /usr/share are searched.
 func (r *Driver) Configs() lookup.Locator {
+	searchRoot := r.Root
+	searchPaths := []string{"/etc", "/usr/share"}
+	if len(r.configSearchPaths) > 0 {
+		searchRoot = "/"
+		searchPaths = normalizeSearchPaths(r.configSearchPaths...)
+	}
+
 	return lookup.NewFileLocator(
 		lookup.WithLogger(r.logger),
-		lookup.WithRoot(r.Root),
-		lookup.WithSearchPaths("/etc", "/usr/share"),
+		lookup.WithRoot(searchRoot),
+		lookup.WithSearchPaths(searchPaths...),
 	)
 }
 

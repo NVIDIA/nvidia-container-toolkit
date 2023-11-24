@@ -50,6 +50,7 @@ type nvcdilib struct {
 	devRoot            string
 	nvidiaCTKPath      string
 	ldconfigPath       string
+	configSearchPaths  []string
 	librarySearchPaths []string
 
 	csvFiles          []string
