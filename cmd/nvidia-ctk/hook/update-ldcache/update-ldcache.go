@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
@@ -107,7 +108,7 @@ func (m command) run(c *cli.Context, cfg *options) error {
 	}
 
 	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	return syscall.Exec(args[0], args, nil)
+	return syscall.Exec(ldconfigPath, args, nil)
 }
 
 type root string
@@ -124,7 +125,7 @@ func (r root) hasPath(path string) bool {
 // On systems such as Ubuntu where `/sbin/ldconfig` is a wrapper around
 // /sbin/ldconfig.real, the latter is returned.
 func (m command) resolveLDConfigPath(path string) string {
-	return config.NormalizeLDConfigPath("@" + path)
+	return strings.TrimPrefix(config.NormalizeLDConfigPath("@"+path), "@")
 }
 
 // createConfig creates (or updates) /etc/ld.so.conf.d/nvcr-<RANDOM_STRING>.conf in the container
