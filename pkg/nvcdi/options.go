@@ -126,6 +126,13 @@ func WithCSVIgnorePatterns(csvIgnorePatterns []string) Option {
 	}
 }
 
+// WithConfigSearchPaths sets the search paths for config files.
+func WithConfigSearchPaths(paths []string) Option {
+	return func(o *nvcdilib) {
+		o.configSearchPaths = paths
+	}
+}
+
 // WithLibrarySearchPaths sets the library search paths.
 // This is currently only used for CSV-mode.
 func WithLibrarySearchPaths(paths []string) Option {
