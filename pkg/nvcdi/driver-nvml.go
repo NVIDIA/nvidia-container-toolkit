@@ -100,6 +100,7 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover
 	var discoverers []discover.Discover
 
 	driverDotSoSymlinksDiscoverer := discover.WithDriverDotSoSymlinks(
+		l.logger,
 		libraries,
 		version,
 		l.hookCreator,

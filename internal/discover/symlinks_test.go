@@ -17,12 +17,15 @@
 package discover
 
 import (
+	"strings"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWithWithDriverDotSoSymlinks(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
 	testCases := []struct {
 		description          string
 		discover             Discover
@@ -315,6 +318,7 @@ func TestWithWithDriverDotSoSymlinks(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			d := WithDriverDotSoSymlinks(
+				logger,
 				tc.discover,
 				tc.version,
 				hookCreator,
@@ -332,5 +336,175 @@ func TestWithWithDriverDotSoSymlinks(t *testing.T) {
 			require.ErrorIs(t, err, tc.expectedMountsError)
 			require.EqualValues(t, tc.expectedMounts, mounts)
 		})
+	}
+}
+
+func TestGetDotSoSymlinks(t *testing.T) {
+	testCases := []struct {
+		description          string
+		hostLibraryPath      string
+		containerLibraryPath string
+		getSonameFunc        func(string) (string, error)
+		linkExistsFunc       func(string) (bool, error)
+		expectedError        error
+		expectedSymlinks     []string
+	}{
+		{
+			description:     "libcuda.soname links",
+			hostLibraryPath: "/usr/lib/libcuda.so.999.88.77",
+			getSonameFunc: func(s string) (string, error) {
+				return "libcuda.so.1", nil
+			},
+			expectedError: nil,
+			expectedSymlinks: []string{
+				"libcuda.so.999.88.77::/usr/lib/libcuda.so.1",
+				"libcuda.so.1::/usr/lib/libcuda.so",
+			},
+		},
+		{
+			description:          "libcuda.soname links uses container path",
+			hostLibraryPath:      "/usr/lib/libcuda.so.999.88.77",
+			containerLibraryPath: "/some/container/path/libcuda.so.999.88.77",
+			getSonameFunc: func(s string) (string, error) {
+				return "libcuda.so.1", nil
+			},
+			expectedError: nil,
+			expectedSymlinks: []string{
+				"libcuda.so.999.88.77::/some/container/path/libcuda.so.1",
+				"libcuda.so.1::/some/container/path/libcuda.so",
+			},
+		},
+		{
+			description:     "equal soname uses library path",
+			hostLibraryPath: "/usr/lib/libcuda.so.999.88.77",
+			getSonameFunc: func(s string) (string, error) {
+				return "libcuda.so.999.88.77", nil
+			},
+			expectedError: nil,
+			expectedSymlinks: []string{
+				"libcuda.so.999.88.77::/usr/lib/libcuda.so",
+			},
+		},
+		{
+			description:     "nonexistent symlink is ignored",
+			hostLibraryPath: "/usr/lib/libcuda.so.999.88.77",
+			getSonameFunc: func(s string) (string, error) {
+				return "libcuda.so.1", nil
+			},
+			expectedError: nil,
+			linkExistsFunc: func(s string) (bool, error) {
+				return strings.HasSuffix(s, "libcuda.so.1"), nil
+			},
+			expectedSymlinks: []string{
+				"libcuda.so.999.88.77::/usr/lib/libcuda.so.1",
+			},
+		},
+		{
+			description:     "soname is skipped",
+			hostLibraryPath: "/usr/lib/libcuda.so.999.88.77",
+			getSonameFunc: func(s string) (string, error) {
+				return "", nil
+			},
+			expectedError: nil,
+			linkExistsFunc: func(s string) (bool, error) {
+				return strings.HasSuffix(s, "libcuda.so"), nil
+			},
+			expectedSymlinks: []string{
+				"libcuda.so.999.88.77::/usr/lib/libcuda.so",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		if tc.containerLibraryPath == "" {
+			tc.containerLibraryPath = tc.hostLibraryPath
+		}
+		if tc.linkExistsFunc == nil {
+			tc.linkExistsFunc = func(string) (bool, error) {
+				return true, nil
+			}
+		}
+
+		t.Run(tc.description, func(t *testing.T) {
+			defer setGetSoname(tc.getSonameFunc)()
+			defer setLinkExists(tc.linkExistsFunc)()
+
+			sut := &additionalSymlinks{version: "*.*"}
+			symlinks, err := sut.getDotSoSymlinks(tc.hostLibraryPath, tc.containerLibraryPath)
+
+			if tc.expectedError == nil {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, tc.expectedError.Error())
+			}
+
+			require.EqualValues(t, tc.expectedSymlinks, symlinks)
+		})
+	}
+}
+
+func TestGetSoLink(t *testing.T) {
+	testCases := []struct {
+		description    string
+		input          string
+		expectedSoLink string
+	}{
+		{
+			description:    "empty string",
+			input:          "",
+			expectedSoLink: "",
+		},
+		{
+			description:    "cuda driver library",
+			input:          "libcuda.so.999.88.77",
+			expectedSoLink: "libcuda.so",
+		},
+		{
+			description:    "beta cuda driver library",
+			input:          "libcuda.so.999.88",
+			expectedSoLink: "libcuda.so",
+		},
+		{
+			description:    "no .so in libname",
+			input:          "foo.bar.baz",
+			expectedSoLink: "",
+		},
+		{
+			description:    "multiple .so in libname",
+			input:          "foo.so.so.566",
+			expectedSoLink: "foo.so.so",
+		},
+		{
+			description:    "no suffix after so",
+			input:          "foo.so",
+			expectedSoLink: "foo.so",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+
+			soLink := getSoLink(tc.input)
+
+			require.Equal(t, tc.expectedSoLink, soLink)
+		})
+	}
+}
+
+func setGetSoname(override func(string) (string, error)) func() {
+	original := getSoname
+	getSoname = override
+
+	return func() {
+		getSoname = original
+	}
+}
+
+func setLinkExists(override func(string) (bool, error)) func() {
+	original := linkExists
+	linkExists = override
+
+	return func() {
+		linkExists = original
 	}
 }

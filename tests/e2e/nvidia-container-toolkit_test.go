@@ -29,6 +29,8 @@ import (
 // Integration tests for Docker runtime
 var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 	var runner Runner
+	var hostDriverVersion string
+	var hostDriverMajor string
 
 	// Install the NVIDIA Container Toolkit
 	BeforeAll(func(ctx context.Context) {
@@ -50,6 +52,15 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			err = installer.Install()
 			Expect(err).ToNot(HaveOccurred())
 		}
+
+		driverOutput, _, err := runner.Run("nvidia-smi -q | grep \"Driver Version\"")
+		Expect(err).ToNot(HaveOccurred())
+		parts := strings.SplitN(driverOutput, ":", 2)
+		Expect(parts).To(HaveLen(2))
+
+		hostDriverVersion = strings.TrimSpace(parts[1])
+		Expect(hostDriverVersion).ToNot(BeEmpty())
+		hostDriverMajor = strings.SplitN(hostDriverVersion, ".", 2)[0]
 	})
 
 	// GPUs are accessible in a container: Running nvidia-smi -L inside the
@@ -184,16 +195,7 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			compatDriverVersion := strings.TrimPrefix(filepath.Base(compatOutput), "libcuda.so.")
 			compatMajor := strings.SplitN(compatDriverVersion, ".", 2)[0]
 
-			driverOutput, _, err := runner.Run("nvidia-smi -q | grep \"Driver Version\"")
-			Expect(err).ToNot(HaveOccurred())
-			parts := strings.SplitN(driverOutput, ":", 2)
-			Expect(parts).To(HaveLen(2))
-
-			hostDriverVersion := strings.TrimSpace(parts[1])
-			Expect(hostDriverVersion).ToNot(BeEmpty())
-			driverMajor := strings.SplitN(hostDriverVersion, ".", 2)[0]
-
-			if driverMajor >= compatMajor {
+			if hostDriverMajor >= compatMajor {
 				GinkgoLogr.Info("CUDA Forward Compatibility tests require an older driver version", "hostDriverVersion", hostDriverVersion, "compatDriverVersion", compatDriverVersion)
 				Skip("CUDA Forward Compatibility tests require an older driver version")
 			}
@@ -241,6 +243,8 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 		BeforeAll(func(ctx context.Context) {
 			_, _, err := runner.Run("docker pull ubuntu")
 			Expect(err).ToNot(HaveOccurred())
+			_, _, err = runner.Run("docker pull busybox")
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should include libcuda.so in the ldcache", func(ctx context.Context) {
@@ -256,6 +260,90 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			}
 
 			Expect(libs).To(ContainElements([]string{"libcuda.so", "libcuda.so.1"}))
+		})
+
+		It("should include .so and SONAME symlinks", func(ctx context.Context) {
+			symlinkOutput, _, err := runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all busybox ls -l /usr/lib/x86_64-linux-gnu/ | awk '{print $1, $9, $11}'")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(symlinkOutput).ToNot(BeEmpty())
+
+			// This produces output similar to:
+			// We check this to ensure that we have valid driver library symlink
+			// chains.
+			// lrwxrwxrwx libcuda.so libcuda.so.1
+			// lrwxrwxrwx libcuda.so.1 libcuda.so.570.133.20
+			// -rw-r--r-- libcuda.so.570.133.20
+			// lrwxrwxrwx libcudadebugger.so libcudadebugger.so.1
+			// lrwxrwxrwx libcudadebugger.so.1 libcudadebugger.so.570.133.20
+			// -rw-r--r-- libcudadebugger.so.570.133.20
+			// lrwxrwxrwx libnvidia-ml.so libnvidia-ml.so.1
+			// lrwxrwxrwx libnvidia-ml.so.1 libnvidia-ml.so.570.133.20
+			// -rw-r--r-- libnvidia-ml.so.570.133.20
+			// lrwxrwxrwx libnvidia-nvvm.so libnvidia-nvvm.so.4
+			// lrwxrwxrwx libnvidia-nvvm.so.4 libnvidia-nvvm.so.570.133.20
+			// -rw-r--r-- libnvidia-nvvm.so.570.133.20
+			// lrwxrwxrwx libnvidia-opencl.so libnvidia-opencl.so.1
+			// lrwxrwxrwx libnvidia-opencl.so.1 libnvidia-opencl.so.570.133.20
+			// -rw-r--r-- libnvidia-opencl.so.570.133.20
+			// -rw-r--r-- libnvidia-pkcs11-openssl3.so.570.133.20
+			// -rw-r--r-- libnvidia-pkcs11.so.570.133.20
+			// lrwxrwxrwx libnvidia-ptxjitcompiler.so libnvidia-ptxjitcompiler.so.1
+			// lrwxrwxrwx libnvidia-ptxjitcompiler.so.1 libnvidia-ptxjitcompiler.so.570.133.20
+			// -rw-r--r-- libnvidia-ptxjitcompiler.so.570.133.20
+
+			symlinkOutputLines := strings.Split(symlinkOutput, "\n")
+			symlinks := make(map[string][]string)
+			var soSymlink string
+			for _, line := range symlinkOutputLines {
+				trimmed := strings.TrimSpace(line)
+				if trimmed == "" {
+					soSymlink = ""
+					continue
+				}
+				// We only consider links and regular files.
+				if trimmed[0] != 'l' && trimmed[0] != '-' {
+					soSymlink = ""
+					continue
+				}
+				fmt.Printf("trimmed = %q\n", trimmed)
+				parts := strings.SplitN(trimmed, " ", 3)
+				permissionString := parts[0]
+
+				// If the line represents a symlink we may have to handle a new symlink chain.
+				if strings.HasPrefix(permissionString, "l") && soSymlink == "" {
+					if strings.HasSuffix(parts[1], ".so") {
+						soSymlink = parts[1]
+					}
+				}
+
+				// Keep track of the symlink chain.
+				symlinks[soSymlink] = append(symlinks[soSymlink], parts[1:]...)
+
+				// We assume a regular file is the end of a symlink chain.
+				if strings.HasPrefix(permissionString, "-") {
+					soSymlink = ""
+				}
+			}
+
+			// The symlink chains have the pattern:
+			// [A.so, A.so.1, A.so.1, A.so.driverVersion, A.so.driverVersion]
+			// A has the suffix .so.
+			Expect(symlinks).ToNot(BeEmpty())
+			for soSymlink, chain := range symlinks {
+				if soSymlink == "" {
+					continue
+				}
+				Expect(chain).To(HaveLen(5))
+				for _, c := range chain {
+					Expect(c).To(HavePrefix(soSymlink))
+				}
+				Expect(chain[0]).To(HaveSuffix(".so"))
+				Expect(chain[1]).To(Equal(chain[2]))
+				Expect(chain[3]).To(Equal(chain[4]))
+				Expect(chain[3]).To(HaveSuffix(hostDriverVersion))
+				Expect(chain[4]).To(HaveSuffix(hostDriverVersion))
+			}
+			Expect(symlinks).To(And(HaveKey("libcuda.so"), HaveKey("libnvidia-ml.so")))
 		})
 	})
 
