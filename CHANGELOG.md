@@ -1,5 +1,6 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.15.0-rc.1
 * Skip update of ldcache in containers without ldconfig. The .so.SONAME symlinks are still created.
 * Normalize ldconfig path on use. This automatically adjust the ldconfig setting applied to ldconfig.real on systems where this exists.
 * Include `nvidia/nvoptix.bin` in list of graphics mounts.
