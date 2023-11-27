@@ -104,7 +104,7 @@ func (m command) run(c *cli.Context, opts *options) error {
 		return fmt.Errorf("failed to load CDI specification: %w", err)
 	}
 
-	err = transform.NewRootTransformer(
+	err = transform.NewHostRootTransformer(
 		opts.from,
 		opts.to,
 	).Transform(spec.Raw())
