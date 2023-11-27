@@ -23,6 +23,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
@@ -82,12 +83,15 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		return modeModifier, nil
 	}
 
-	graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, image)
+	// TODO: We should not just pass `nil` as the search path here.
+	driver := root.New(logger, cfg.NVIDIAContainerCLIConfig.Root, nil, "")
+
+	graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, image, driver)
 	if err != nil {
 		return nil, err
 	}
 
-	featureModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, image)
+	featureModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, image, driver)
 	if err != nil {
 		return nil, err
 	}

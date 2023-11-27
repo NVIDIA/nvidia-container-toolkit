@@ -92,7 +92,7 @@ func New(opts ...Option) (Interface, error) {
 	}
 
 	// TODO: We need to improve the construction of this driver root.
-	l.driver = root.New(l.logger, l.driverRoot, l.librarySearchPaths)
+	l.driver = root.New(l.logger, l.driverRoot, l.librarySearchPaths, "")
 
 	var lib Interface
 	switch l.resolveMode() {

@@ -22,6 +22,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	createdotsosymlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/create-dot-so-symlinks"
 	symlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/create-symlinks"
 	ldcache "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/update-ldcache"
 )
@@ -50,6 +51,7 @@ func (m hookCommand) build() *cli.Command {
 		ldcache.NewCommand(m.logger),
 		symlinks.NewCommand(m.logger),
 		chmod.NewCommand(m.logger),
+		createdotsosymlinks.NewCommand(m.logger),
 	}
 
 	return &hook

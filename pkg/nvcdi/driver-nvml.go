@@ -99,9 +99,15 @@ func NewDriverLibraryDiscoverer(logger logger.Interface, driver *root.Driver, nv
 
 	hooks, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCTKPath, ldconfigPath)
 
+	createDotSoSymlinksHook := discover.CreateNvidiaCTKHook(
+		nvidiaCTKPath, "create-dot-so-symlinks",
+		"--driver-version", version,
+	)
+
 	d := discover.Merge(
 		libraries,
 		hooks,
+		createDotSoSymlinksHook,
 	)
 
 	return d, nil
