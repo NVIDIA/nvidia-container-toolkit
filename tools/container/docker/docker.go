@@ -18,10 +18,7 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"os"
-	"syscall"
-	"time"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/docker"
@@ -38,11 +35,6 @@ const (
 	defaultRuntimeName   = "nvidia"
 	defaultRestartMode   = "signal"
 	defaultHostRootMount = "/host"
-
-	reloadBackoff     = 5 * time.Second
-	maxReloadAttempts = 6
-
-	socketMessageToGetPID = "GET /info HTTP/1.0\r\n\r\n"
 )
 
 // options stores the configuration from the command line or environment variables
@@ -216,84 +208,4 @@ func Cleanup(c *cli.Context, o *options) error {
 // RestartDocker restarts docker depending on the value of restartModeFlag
 func RestartDocker(o *options) error {
 	return o.Restart("docker", SignalDocker)
-}
-
-// SignalDocker sends a SIGHUP signal to docker daemon
-func SignalDocker(socket string) error {
-	log.Infof("Sending SIGHUP signal to docker")
-
-	// Wrap the logic to perform the SIGHUP in a function so we can retry it on failure
-	retriable := func() error {
-		conn, err := net.Dial("unix", socket)
-		if err != nil {
-			return fmt.Errorf("unable to dial: %v", err)
-		}
-		defer conn.Close()
-
-		sconn, err := conn.(*net.UnixConn).SyscallConn()
-		if err != nil {
-			return fmt.Errorf("unable to get syscall connection: %v", err)
-		}
-
-		err1 := sconn.Control(func(fd uintptr) {
-			err = syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_PASSCRED, 1)
-		})
-		if err1 != nil {
-			return fmt.Errorf("unable to issue call on socket fd: %v", err1)
-		}
-		if err != nil {
-			return fmt.Errorf("unable to SetsockoptInt on socket fd: %v", err)
-		}
-
-		_, _, err = conn.(*net.UnixConn).WriteMsgUnix([]byte(socketMessageToGetPID), nil, nil)
-		if err != nil {
-			return fmt.Errorf("unable to WriteMsgUnix on socket fd: %v", err)
-		}
-
-		oob := make([]byte, 1024)
-		_, oobn, _, _, err := conn.(*net.UnixConn).ReadMsgUnix(nil, oob)
-		if err != nil {
-			return fmt.Errorf("unable to ReadMsgUnix on socket fd: %v", err)
-		}
-
-		oob = oob[:oobn]
-		scm, err := syscall.ParseSocketControlMessage(oob)
-		if err != nil {
-			return fmt.Errorf("unable to ParseSocketControlMessage from message received on socket fd: %v", err)
-		}
-
-		ucred, err := syscall.ParseUnixCredentials(&scm[0])
-		if err != nil {
-			return fmt.Errorf("unable to ParseUnixCredentials from message received on socket fd: %v", err)
-		}
-
-		err = syscall.Kill(int(ucred.Pid), syscall.SIGHUP)
-		if err != nil {
-			return fmt.Errorf("unable to send SIGHUP to 'docker' process: %v", err)
-		}
-
-		return nil
-	}
-
-	// Try to send a SIGHUP up to maxReloadAttempts times
-	var err error
-	for i := 0; i < maxReloadAttempts; i++ {
-		err = retriable()
-		if err == nil {
-			break
-		}
-		if i == maxReloadAttempts-1 {
-			break
-		}
-		log.Warningf("Error signaling docker, attempt %v/%v: %v", i+1, maxReloadAttempts, err)
-		time.Sleep(reloadBackoff)
-	}
-	if err != nil {
-		log.Warningf("Max retries reached %v/%v, aborting", maxReloadAttempts, maxReloadAttempts)
-		return err
-	}
-
-	log.Infof("Successfully signaled docker")
-
-	return nil
 }
