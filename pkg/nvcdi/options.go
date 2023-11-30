@@ -19,6 +19,7 @@ package nvcdi
 import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/go-nvlib/pkg/nvml"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
@@ -123,5 +124,13 @@ func WithCSVIgnorePatterns(csvIgnorePatterns []string) Option {
 func WithLibrarySearchPaths(paths []string) Option {
 	return func(o *nvcdilib) {
 		o.librarySearchPaths = paths
+	}
+}
+
+// WithFirmwareSearchPaths sets the firmware search paths.
+// This is currently only used for NVML- and Management-Mode.
+func WithFirmwareSearchPaths(paths []string) Option {
+	return func(o *nvcdilib) {
+		o.firmwareSearchPaths = paths
 	}
 }

@@ -22,12 +22,13 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
+	"tags.cncf.io/container-device-interface/pkg/cdi"
+	"tags.cncf.io/container-device-interface/specs-go"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
-	"tags.cncf.io/container-device-interface/pkg/cdi"
-	"tags.cncf.io/container-device-interface/specs-go"
 )
 
 type managementlib nvcdilib
@@ -65,7 +66,7 @@ func (m *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 		return nil, fmt.Errorf("failed to get CUDA version: %v", err)
 	}
 
-	driver, err := newDriverVersionDiscoverer(m.logger, m.driver, m.nvidiaCTKPath, version)
+	driver, err := newDriverVersionDiscoverer(m.logger, m.driver, m.nvidiaCTKPath, version, m.firmwareSearchPaths...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create driver library discoverer: %v", err)
 	}

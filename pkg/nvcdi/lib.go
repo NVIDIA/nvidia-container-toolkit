@@ -22,6 +22,7 @@ import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
 	"github.com/NVIDIA/go-nvlib/pkg/nvml"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
@@ -39,15 +40,16 @@ type wrapper struct {
 }
 
 type nvcdilib struct {
-	logger             logger.Interface
-	nvmllib            nvml.Interface
-	mode               string
-	devicelib          device.Interface
-	deviceNamer        DeviceNamer
-	driverRoot         string
-	devRoot            string
-	nvidiaCTKPath      string
-	librarySearchPaths []string
+	logger              logger.Interface
+	nvmllib             nvml.Interface
+	mode                string
+	devicelib           device.Interface
+	deviceNamer         DeviceNamer
+	driverRoot          string
+	devRoot             string
+	nvidiaCTKPath       string
+	librarySearchPaths  []string
+	firmwareSearchPaths []string
 
 	csvFiles          []string
 	csvIgnorePatterns []string

@@ -23,17 +23,18 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvml"
+	"golang.org/x/sys/unix"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
-	"golang.org/x/sys/unix"
 )
 
 // NewDriverDiscoverer creates a discoverer for the libraries and binaries associated with a driver installation.
 // The supplied NVML Library is used to query the expected driver version.
-func NewDriverDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath string, nvmllib nvml.Interface) (discover.Discover, error) {
+func NewDriverDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath string, nvmllib nvml.Interface, fwSearchPaths ...string) (discover.Discover, error) {
 	if r := nvmllib.Init(); r != nvml.SUCCESS {
 		return nil, fmt.Errorf("failed to initialize NVML: %v", r)
 	}
@@ -48,10 +49,10 @@ func NewDriverDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTK
 		return nil, fmt.Errorf("failed to determine driver version: %v", r)
 	}
 
-	return newDriverVersionDiscoverer(logger, driver, nvidiaCTKPath, version)
+	return newDriverVersionDiscoverer(logger, driver, nvidiaCTKPath, version, fwSearchPaths...)
 }
 
-func newDriverVersionDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath string, version string) (discover.Discover, error) {
+func newDriverVersionDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath string, version string, fwSearchPaths ...string) (discover.Discover, error) {
 	libraries, err := NewDriverLibraryDiscoverer(logger, driver, nvidiaCTKPath, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for driver libraries: %v", err)
@@ -62,7 +63,7 @@ func newDriverVersionDiscoverer(logger logger.Interface, driver *root.Driver, nv
 		return nil, fmt.Errorf("failed to create discoverer for IPC sockets: %v", err)
 	}
 
-	firmwares, err := NewDriverFirmwareDiscoverer(logger, driver.Root, version)
+	firmwares, err := NewDriverFirmwareDiscoverer(logger, driver.Root, version, fwSearchPaths...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for GSP firmware: %v", err)
 	}
@@ -114,7 +115,11 @@ func getUTSRelease() (string, error) {
 	return unix.ByteSliceToString(utsname.Release[:]), nil
 }
 
-func getFirmwareSearchPaths(logger logger.Interface) ([]string, error) {
+func getFirmwareSearchPaths(logger logger.Interface, fwSearchPaths ...string) ([]string, error) {
+	if len(fwSearchPaths) > 0 {
+		logger.Debugf("using custom firmware search paths configured with the library: %v", fwSearchPaths)
+		return fwSearchPaths, nil
+	}
 
 	var firmwarePaths []string
 	if p := getCustomFirmwareClassPath(logger); p != "" {
@@ -149,8 +154,8 @@ func getCustomFirmwareClassPath(logger logger.Interface) string {
 }
 
 // NewDriverFirmwareDiscoverer creates a discoverer for GSP firmware associated with the specified driver version.
-func NewDriverFirmwareDiscoverer(logger logger.Interface, driverRoot string, version string) (discover.Discover, error) {
-	gspFirmwareSearchPaths, err := getFirmwareSearchPaths(logger)
+func NewDriverFirmwareDiscoverer(logger logger.Interface, driverRoot string, version string, fwSearchPaths ...string) (discover.Discover, error) {
+	gspFirmwareSearchPaths, err := getFirmwareSearchPaths(logger, fwSearchPaths...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get firmware search paths: %v", err)
 	}
