@@ -23,15 +23,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	toml "github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/pkg/parser"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
 
 const (
@@ -63,11 +64,12 @@ type options struct {
 	ContainerCLIDebug string
 	toolkitRoot       string
 
-	cdiEnabled   bool
-	cdiOutputDir string
-	cdiKind      string
-	cdiVendor    string
-	cdiClass     string
+	cdiEnabled             bool
+	cdiOutputDir           string
+	cdiKind                string
+	cdiVendor              string
+	cdiClass               string
+	cdiFirmwareSearchPaths cli.StringSlice
 
 	acceptNVIDIAVisibleDevicesWhenUnprivileged bool
 	acceptNVIDIAVisibleDevicesAsVolumeMounts   bool
@@ -215,6 +217,12 @@ func main() {
 			Value:       "management.nvidia.com/gpu",
 			Destination: &opts.cdiKind,
 			EnvVars:     []string{"CDI_KIND"},
+		},
+		&cli.StringSliceFlag{
+			Name:        "cdi-firmware-search-paths",
+			Usage:       "specify custom firmware search paths to be used during generation of a CDI specification",
+			Destination: &opts.cdiFirmwareSearchPaths,
+			EnvVars:     []string{"CDI_FIRMWARE_SEARCH_PATHS"},
 		},
 		&cli.BoolFlag{
 			Name:        "ignore-errors",
@@ -701,6 +709,7 @@ func generateCDISpec(opts *options, nvidiaCTKPath string) error {
 		nvcdi.WithMode(nvcdi.ModeManagement),
 		nvcdi.WithDriverRoot(opts.DriverRootCtrPath),
 		nvcdi.WithNVIDIACTKPath(nvidiaCTKPath),
+		nvcdi.WithFirmwareSearchPaths(opts.cdiFirmwareSearchPaths.Value()),
 		nvcdi.WithVendor(opts.cdiVendor),
 		nvcdi.WithClass(opts.cdiClass),
 	)
