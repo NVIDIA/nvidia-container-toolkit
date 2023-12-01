@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"tags.cncf.io/container-device-interface/specs-go"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
 
 // hostRootTransformer transforms the roots of host paths in a CDI spec.

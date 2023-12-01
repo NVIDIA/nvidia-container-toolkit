@@ -15,6 +15,10 @@ linters:
     - staticcheck
     - unconvert
 
+linters-settings:
+  goimports:
+    local-prefixes: github.com/NVIDIA/nvidia-container-toolkit
+
 issues:
   exclude-rules:
   # Exclude the gocritic dupSubExpr issue for cgo files.

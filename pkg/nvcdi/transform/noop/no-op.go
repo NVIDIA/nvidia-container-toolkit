@@ -17,8 +17,9 @@
 package noop
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"tags.cncf.io/container-device-interface/specs-go"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
 
 type noop struct{}

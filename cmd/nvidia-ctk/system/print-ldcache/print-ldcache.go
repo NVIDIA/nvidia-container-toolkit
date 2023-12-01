@@ -19,9 +19,10 @@ package createdevicenodes
 import (
 	"fmt"
 
+	"github.com/urfave/cli/v2"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/urfave/cli/v2"
 )
 
 type command struct {

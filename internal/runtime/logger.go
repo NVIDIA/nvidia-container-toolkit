@@ -26,8 +26,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/sirupsen/logrus"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 // Logger adds a way to manage output to a log file to a logrus.Logger

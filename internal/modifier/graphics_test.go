@@ -19,8 +19,9 @@ package modifier
 import (
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
 
 func TestGraphicsModifier(t *testing.T) {

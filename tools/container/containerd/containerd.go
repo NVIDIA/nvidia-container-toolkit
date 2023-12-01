@@ -20,11 +20,12 @@ import (
 	"fmt"
 	"os"
 
+	log "github.com/sirupsen/logrus"
+	cli "github.com/urfave/cli/v2"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
-	log "github.com/sirupsen/logrus"
-	cli "github.com/urfave/cli/v2"
 )
 
 const (

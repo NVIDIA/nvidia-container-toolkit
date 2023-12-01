@@ -22,9 +22,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
 )
 
 func TestLDCacheLocator(t *testing.T) {

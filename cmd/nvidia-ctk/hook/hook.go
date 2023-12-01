@@ -20,9 +20,10 @@ import (
 	chmod "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/chmod"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
+	"github.com/urfave/cli/v2"
+
 	symlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/create-symlinks"
 	ldcache "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/update-ldcache"
-	"github.com/urfave/cli/v2"
 )
 
 type hookCommand struct {

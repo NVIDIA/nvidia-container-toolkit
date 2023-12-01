@@ -17,9 +17,10 @@
 package runtime
 
 import (
+	"github.com/urfave/cli/v2"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime/configure"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/urfave/cli/v2"
 )
 
 type runtimeCommand struct {

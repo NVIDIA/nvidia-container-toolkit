@@ -23,10 +23,11 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/urfave/cli/v2"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/urfave/cli/v2"
 )
 
 type command struct {

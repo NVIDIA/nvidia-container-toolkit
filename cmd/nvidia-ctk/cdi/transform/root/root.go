@@ -21,11 +21,12 @@ import (
 	"io"
 	"os"
 
+	"github.com/urfave/cli/v2"
+	"tags.cncf.io/container-device-interface/pkg/cdi"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	transformroot "github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform/root"
-	"github.com/urfave/cli/v2"
-	"tags.cncf.io/container-device-interface/pkg/cdi"
 )
 
 type command struct {

@@ -17,8 +17,9 @@
 package modifier
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
 type list struct {

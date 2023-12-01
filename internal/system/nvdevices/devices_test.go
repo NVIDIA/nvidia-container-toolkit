@@ -20,9 +20,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
 )
 
 func TestCreateControlDevices(t *testing.T) {

@@ -20,11 +20,12 @@ import (
 	"fmt"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/require"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	testlog "github.com/sirupsen/logrus/hooks/test"
-	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )

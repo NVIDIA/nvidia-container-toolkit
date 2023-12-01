@@ -19,8 +19,9 @@ package crio
 import (
 	"fmt"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/pelletier/go-toml"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 )
 
 // Config represents the cri-o config

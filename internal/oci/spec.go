@@ -19,8 +19,9 @@ package oci
 import (
 	"fmt"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/opencontainers/runtime-spec/specs-go"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 // SpecModifier defines an interface for modifying a (raw) OCI spec

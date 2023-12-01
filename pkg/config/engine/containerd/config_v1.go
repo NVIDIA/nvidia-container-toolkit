@@ -19,8 +19,9 @@ package containerd
 import (
 	"fmt"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/pelletier/go-toml"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 )
 
 // ConfigV1 represents a version 1 containerd config

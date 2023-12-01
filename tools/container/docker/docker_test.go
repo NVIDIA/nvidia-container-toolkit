@@ -20,9 +20,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/docker"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
-	"github.com/stretchr/testify/require"
 )
 
 func TestUpdateConfigDefaultRuntime(t *testing.T) {

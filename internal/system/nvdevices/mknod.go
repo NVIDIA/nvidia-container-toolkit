@@ -17,8 +17,9 @@
 package nvdevices
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"golang.org/x/sys/unix"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 //go:generate moq -stub -out mknod_mock.go . mknoder

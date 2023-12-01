@@ -17,9 +17,10 @@
 package containerd
 
 import (
+	"github.com/pelletier/go-toml"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
-	"github.com/pelletier/go-toml"
 )
 
 // Config represents the containerd config
