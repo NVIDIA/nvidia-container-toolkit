@@ -32,6 +32,8 @@ const (
 // TODO: This should not be public, but we need to access it from the tests in tools/container/docker
 type Config map[string]interface{}
 
+var _ engine.Interface = (*Config)(nil)
+
 // New creates a docker config with the specified options
 func New(opts ...Option) (engine.Interface, error) {
 	b := &builder{}
@@ -115,9 +117,8 @@ func (c *Config) RemoveRuntime(name string) error {
 }
 
 // Set sets the specified docker option
-func (c *Config) Set(key string, value interface{}) error {
+func (c *Config) Set(key string, value interface{}) {
 	(*c)[key] = value
-	return nil
 }
 
 // Save writes the config to the specified path

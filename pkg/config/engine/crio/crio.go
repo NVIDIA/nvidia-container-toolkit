@@ -27,6 +27,8 @@ import (
 // Config represents the cri-o config
 type Config toml.Tree
 
+var _ engine.Interface = (*Config)(nil)
+
 // New creates a cri-o config with the specified options
 func New(opts ...Option) (engine.Interface, error) {
 	b := &builder{}
@@ -100,9 +102,7 @@ func (c *Config) RemoveRuntime(name string) error {
 }
 
 // Set is not supported for cri-o configs.
-func (c *Config) Set(key string, value interface{}) error {
-	return fmt.Errorf("Set is not supported for crio configs")
-}
+func (c *Config) Set(key string, value interface{}) {}
 
 // Save writes the config to the specified path
 func (c Config) Save(path string) (int64, error) {
