@@ -19,10 +19,11 @@ package info
 import (
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
 
 func TestResolveAutoMode(t *testing.T) {

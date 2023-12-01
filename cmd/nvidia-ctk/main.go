@@ -19,6 +19,8 @@ package main
 import (
 	"os"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook"
@@ -26,7 +28,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
-	"github.com/sirupsen/logrus"
 
 	cli "github.com/urfave/cli/v2"
 )

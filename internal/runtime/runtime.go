@@ -22,9 +22,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/opencontainers/runtime-spec/specs-go"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
-	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
 // Run is an entry point that allows for idiomatic handling of errors

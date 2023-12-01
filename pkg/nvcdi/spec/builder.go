@@ -20,10 +20,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/pkg/parser"
 	"tags.cncf.io/container-device-interface/specs-go"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
 
 type builder struct {

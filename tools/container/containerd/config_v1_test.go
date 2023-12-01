@@ -20,10 +20,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
-	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 	"github.com/pelletier/go-toml"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
 
 func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {

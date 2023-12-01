@@ -24,11 +24,12 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/fsnotify/fsnotify"
+	"github.com/urfave/cli/v2"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvmodules"
-	"github.com/fsnotify/fsnotify"
-	"github.com/urfave/cli/v2"
 )
 
 const (

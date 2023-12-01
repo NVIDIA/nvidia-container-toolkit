@@ -17,8 +17,9 @@
 package info
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/urfave/cli/v2"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type command struct {

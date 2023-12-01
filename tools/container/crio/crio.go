@@ -21,13 +21,14 @@ import (
 	"os"
 	"path/filepath"
 
+	log "github.com/sirupsen/logrus"
+	cli "github.com/urfave/cli/v2"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/ocihook"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
-	log "github.com/sirupsen/logrus"
-	cli "github.com/urfave/cli/v2"
 )
 
 const (

@@ -20,8 +20,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )

@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/pelletier/go-toml"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type builder struct {

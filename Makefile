@@ -78,6 +78,11 @@ fmt:
 	go list -f '{{.Dir}}' $(MODULE)/... \
 		| xargs gofmt -s -l -w
 
+# Apply goimports -local github.com/NVIDIA/container-toolkit to the codebase
+goimports:
+	go list -f {{.Dir}} $(MODULE)/... \
+		| xargs goimports -local $(MODULE) -w
+
 golangci-lint:
 	golangci-lint run ./...
 

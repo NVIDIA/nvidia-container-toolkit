@@ -23,12 +23,13 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvml"
+	"golang.org/x/sys/unix"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
-	"golang.org/x/sys/unix"
 )
 
 // NewDriverDiscoverer creates a discoverer for the libraries and binaries associated with a driver installation.

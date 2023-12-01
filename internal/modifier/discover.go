@@ -19,11 +19,12 @@ package modifier
 import (
 	"fmt"
 
+	"github.com/opencontainers/runtime-spec/specs-go"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
 type discoverModifier struct {

@@ -21,10 +21,11 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
-	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
 )
 
 const (

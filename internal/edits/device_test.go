@@ -20,9 +20,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/stretchr/testify/require"
 	"tags.cncf.io/container-device-interface/specs-go"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
 
 func TestDeviceToSpec(t *testing.T) {

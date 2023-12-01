@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"tags.cncf.io/container-device-interface/specs-go"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
 
 // containerRootTransformer transforms the roots of container paths in a CDI spec.

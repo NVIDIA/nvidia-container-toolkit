@@ -23,11 +23,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/urfave/cli/v2"
+
 	createdefault "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/create-default"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/flags"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/urfave/cli/v2"
 )
 
 type command struct {

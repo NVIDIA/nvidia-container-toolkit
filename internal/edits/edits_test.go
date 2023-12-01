@@ -19,8 +19,9 @@ package edits
 import (
 	"testing"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
 
 func TestFromDiscovererAllowsMountsToIterate(t *testing.T) {

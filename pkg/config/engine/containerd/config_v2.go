@@ -19,8 +19,9 @@ package containerd
 import (
 	"fmt"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/pelletier/go-toml"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 )
 
 // AddRuntime adds a runtime to the containerd config

@@ -9,9 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"golang.org/x/mod/semver"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
 
 const (
