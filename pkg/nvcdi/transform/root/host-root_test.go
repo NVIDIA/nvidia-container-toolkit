@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package transform
+package root
 
 import (
 	"testing"
@@ -23,7 +23,7 @@ import (
 	"tags.cncf.io/container-device-interface/specs-go"
 )
 
-func TestRootTransformer(t *testing.T) {
+func TestHostRootTransformer(t *testing.T) {
 	testCases := []struct {
 		description  string
 		root         string
@@ -150,11 +150,113 @@ func TestRootTransformer(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "createContainer hook skips arguments",
+			root:        "/root",
+			targetRoot:  "/target-root",
+			spec: &specs.Spec{
+				ContainerEdits: specs.ContainerEdits{
+					Hooks: []*specs.Hook{
+						{
+							HookName: "createContainer",
+							Path:     "/root/usr/bin/nvidia-ctk",
+							Args: []string{
+								"--link",
+								"/root/path/to/target::/root/path/to/link",
+							},
+						},
+					},
+				},
+			},
+			expectedSpec: &specs.Spec{
+				ContainerEdits: specs.ContainerEdits{
+					Hooks: []*specs.Hook{
+						{
+							HookName: "createContainer",
+							Path:     "/target-root/usr/bin/nvidia-ctk",
+							Args: []string{
+								"--link",
+								"/root/path/to/target::/root/path/to/link",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "startContainer hook skips path and arguments",
+			root:        "/root",
+			targetRoot:  "/target-root",
+			spec: &specs.Spec{
+				ContainerEdits: specs.ContainerEdits{
+					Hooks: []*specs.Hook{
+						{
+							HookName: "startContainer",
+							Path:     "/root/usr/bin/nvidia-ctk",
+							Args: []string{
+								"--link",
+								"/root/path/to/target::/root/path/to/link",
+							},
+						},
+					},
+				},
+			},
+			expectedSpec: &specs.Spec{
+				ContainerEdits: specs.ContainerEdits{
+					Hooks: []*specs.Hook{
+						{
+							HookName: "startContainer",
+							Path:     "/root/usr/bin/nvidia-ctk",
+							Args: []string{
+								"--link",
+								"/root/path/to/target::/root/path/to/link",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "createRuntime hook updates path and arguments",
+			root:        "/root",
+			targetRoot:  "/target-root",
+			spec: &specs.Spec{
+				ContainerEdits: specs.ContainerEdits{
+					Hooks: []*specs.Hook{
+						{
+							HookName: "createRuntime",
+							Path:     "/root/usr/bin/nvidia-ctk",
+							Args: []string{
+								"--link",
+								"/root/path/to/target::/root/path/to/link",
+							},
+						},
+					},
+				},
+			},
+			expectedSpec: &specs.Spec{
+				ContainerEdits: specs.ContainerEdits{
+					Hooks: []*specs.Hook{
+						{
+							HookName: "createRuntime",
+							Path:     "/target-root/usr/bin/nvidia-ctk",
+							Args: []string{
+								"--link",
+								"/target-root/path/to/target::/target-root/path/to/link",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			err := NewRootTransformer(tc.root, tc.targetRoot).Transform(tc.spec)
+			err := New(
+				WithRoot(tc.root),
+				WithTargetRoot(tc.targetRoot),
+			).Transform(tc.spec)
 			require.NoError(t, err)
 			require.Equal(t, tc.spec, tc.expectedSpec)
 		})

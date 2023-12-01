@@ -9,6 +9,7 @@
 * Add support for injecting /dev/nvidia-nvswitch* devices if the NVIDIA_NVSWITCH=enabled envvar is specified.
 * Added support for `nvidia-ctk runtime configure --enable-cdi` for the `docker` runtime. Note that this requires Docker >= 25.
 * Fixed bug in `nvidia-ctk config` command when using `--set`. The types of applied config options are now applied correctly.
+* Add `--relative-to` option to `nvidia-ctk transform root` command. This controls whether the root transformation is applied to host or container paths.
 
 * [libnvidia-container] Fix device permission check when using cgroupv2 (fixes #227)
 

@@ -14,22 +14,23 @@
 # limitations under the License.
 **/
 
-package transform
+package noop
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 	"tags.cncf.io/container-device-interface/specs-go"
 )
 
 type noop struct{}
 
-var _ Transformer = (*noop)(nil)
+var _ transform.Transformer = (*noop)(nil)
 
-// NewNoopTransformer returns a no-op transformer
-func NewNoopTransformer() Transformer {
+// New returns a no-op transformer.
+func New() transform.Transformer {
 	return noop{}
 }
 
-// Transform is a no-op
+// Transform is a no-op for a noop transformer.
 func (n noop) Transform(spec *specs.Spec) error {
 	return nil
 }

@@ -26,7 +26,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
+	transformroot "github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform/root"
 	toml "github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -712,9 +712,9 @@ func generateCDISpec(opts *options, nvidiaCTKPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to genereate CDI spec for management containers: %v", err)
 	}
-	err = transform.NewRootTransformer(
-		opts.DriverRootCtrPath,
-		opts.DriverRoot,
+	err = transformroot.New(
+		transformroot.WithRoot(opts.DriverRootCtrPath),
+		transformroot.WithTargetRoot(opts.DriverRoot),
 	).Transform(spec.Raw())
 	if err != nil {
 		return fmt.Errorf("failed to transform driver root in CDI spec: %v", err)
