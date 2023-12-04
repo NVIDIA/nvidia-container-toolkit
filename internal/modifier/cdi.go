@@ -18,13 +18,9 @@ package modifier
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
-	nvdevice "github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
-	"github.com/NVIDIA/go-nvlib/pkg/nvml"
 	"tags.cncf.io/container-device-interface/pkg/parser"
-	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
@@ -193,56 +189,15 @@ func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devic
 		return nil, fmt.Errorf("failed to construct CDI library: %w", err)
 	}
 
-	names := []string{}
+	identifiers := []string{}
 	for _, device := range devices {
-		_, _, name := parser.ParseDevice(device)
-		if name == "all" {
-			return cdilib.GetSpec()
-		}
-		names = append(names, name)
+		_, _, id := parser.ParseDevice(device)
+		identifiers = append(identifiers, id)
 	}
 
-	// Note: The below code currently only supports generating CDI spec modifications
-	// for full-GPUs, specified either by index or UUID. MIG devices are not
-	// supported.
-	nvmlLib := nvml.New()
-	ret := nvmlLib.Init()
-	if ret != nvml.SUCCESS {
-		return nil, fmt.Errorf("failed to initialized NVML: %w", ret)
-	}
-	nvdevice := nvdevice.New(nvdevice.WithNvml(nvmlLib))
-
-	deviceSpecs := []specs.Device{}
-	for _, name := range names {
-		logger.Debugf("Getting CDI spec edits for device %q", name)
-		// Get a device handle by either index or UUID
-		var nvmlDevice nvml.Device
-		if idx, err := strconv.Atoi(name); err == nil {
-			nvmlDevice, err = nvmlLib.DeviceGetHandleByIndex(idx)
-			if err != nvml.SUCCESS {
-				return nil, fmt.Errorf("failed to get device handle for index '%v': %w", idx, err)
-			}
-		} else {
-			nvmlDevice, err = nvmlLib.DeviceGetHandleByUUID(name)
-			if err != nvml.SUCCESS {
-				return nil, fmt.Errorf("failed to get device handle for UUID '%v': %w", name, err)
-			}
-		}
-
-		nvlibDevice, err := nvdevice.NewDevice(nvmlDevice)
-		if err != nil {
-			return nil, fmt.Errorf("failed to construct device: %w", err)
-		}
-
-		gpuEdits, err := cdilib.GetGPUDeviceEdits(nvlibDevice)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get CDI spec edits for GPU %q: %w", name, err)
-		}
-		gpuDevice := specs.Device{
-			Name:           name,
-			ContainerEdits: *gpuEdits.ContainerEdits,
-		}
-		deviceSpecs = append(deviceSpecs, gpuDevice)
+	deviceSpecs, err := cdilib.GetDeviceSpecsByID(identifiers...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get CDI device specs: %w", err)
 	}
 
 	commonEdits, err := cdilib.GetCommonEdits()

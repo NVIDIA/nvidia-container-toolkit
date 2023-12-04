@@ -81,3 +81,10 @@ func (l *wsllib) GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi.Contai
 func (l *wsllib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) (*specs.Device, error) {
 	return nil, fmt.Errorf("GetMIGDeviceSpecs is not supported on WSL")
 }
+
+// GetDeviceSpecsByID returns the CDI device specs for the GPU(s) represented by
+// the provided identifiers, where an identifier is an index or UUID of a valid
+// GPU device.
+func (l *wsllib) GetDeviceSpecsByID(...string) ([]specs.Device, error) {
+	return nil, fmt.Errorf("GetDeviceSpecsByID is not supported on WSL")
+}

@@ -18,6 +18,7 @@ package nvcdi
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/go-nvlib/pkg/nvml"
@@ -73,6 +74,72 @@ func (l *nvmllib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	}
 
 	return edits.FromDiscoverer(common)
+}
+
+// GetDeviceSpecsByID returns the CDI device specs for the GPU(s) represented by
+// the provided identifiers, where an identifier is an index or UUID of a valid
+// GPU device.
+// TODO: support identifiers that correspond to MIG devices
+func (l *nvmllib) GetDeviceSpecsByID(identifiers ...string) ([]specs.Device, error) {
+	for _, id := range identifiers {
+		if id == "all" {
+			return l.GetAllDeviceSpecs()
+		}
+	}
+
+	var deviceSpecs []specs.Device
+
+	if r := l.nvmllib.Init(); r != nvml.SUCCESS {
+		return nil, fmt.Errorf("failed to initialize NVML: %w", r)
+	}
+	defer func() {
+		if r := l.nvmllib.Shutdown(); r != nvml.SUCCESS {
+			l.logger.Warningf("failed to shutdown NVML: %w", r)
+		}
+	}()
+
+	nvmlDevices, err := l.getNVMLDevicesByID(identifiers...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get NVML device handles: %w", err)
+	}
+
+	for i, nvmlDevice := range nvmlDevices {
+		nvlibDevice, err := l.devicelib.NewDevice(nvmlDevice)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct device: %w", err)
+		}
+		deviceEdits, err := l.GetGPUDeviceEdits(nvlibDevice)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get CDI device edits for identifier %q: %w", identifiers[i], err)
+		}
+		deviceSpec := specs.Device{
+			Name:           identifiers[i],
+			ContainerEdits: *deviceEdits.ContainerEdits,
+		}
+		deviceSpecs = append(deviceSpecs, deviceSpec)
+	}
+
+	return deviceSpecs, nil
+}
+
+// TODO: move this to go-nvlib?
+func (l *nvmllib) getNVMLDevicesByID(identifiers ...string) ([]nvml.Device, error) {
+	devices := []nvml.Device{}
+	for _, id := range identifiers {
+		if dev, err := l.nvmllib.DeviceGetHandleByUUID(id); err == nvml.SUCCESS {
+			devices = append(devices, dev)
+			continue
+		}
+		// TODO: check for a MIG device index
+		if idx, err := strconv.Atoi(id); err == nil {
+			if dev, err := l.nvmllib.DeviceGetHandleByIndex(idx); err == nvml.SUCCESS {
+				devices = append(devices, dev)
+				continue
+			}
+		}
+		return nil, fmt.Errorf("failed to get NVML device handle for identifier %q", id)
+	}
+	return devices, nil
 }
 
 func (l *nvmllib) getGPUDeviceSpecs() ([]specs.Device, error) {
