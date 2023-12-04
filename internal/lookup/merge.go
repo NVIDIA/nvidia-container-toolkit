@@ -16,7 +16,7 @@
 
 package lookup
 
-import "errors"
+import "github.com/NVIDIA/nvidia-container-toolkit/internal/errors"
 
 type first []Locator
 
@@ -34,14 +34,14 @@ func First(locators ...Locator) Locator {
 
 // Locate returns the results for the first locator that returns a non-empty non-error result.
 func (f first) Locate(pattern string) ([]string, error) {
-	var allErrors []error
+	var allErrors error
 	for _, l := range f {
 		if l == nil {
 			continue
 		}
 		candidates, err := l.Locate(pattern)
 		if err != nil {
-			allErrors = append(allErrors, err)
+			allErrors = errors.Join(allErrors, err)
 			continue
 		}
 		if len(candidates) > 0 {
@@ -49,5 +49,5 @@ func (f first) Locate(pattern string) ([]string, error) {
 		}
 	}
 
-	return nil, errors.Join(allErrors...)
+	return nil, allErrors
 }

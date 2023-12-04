@@ -17,7 +17,6 @@
 package runtime
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/errors"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
