@@ -31,6 +31,8 @@ type Config struct {
 	ContainerAnnotations  []string
 }
 
+var _ engine.Interface = (*Config)(nil)
+
 // New creates a containerd config with the specified options
 func New(opts ...Option) (engine.Interface, error) {
 	b := &builder{}

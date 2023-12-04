@@ -135,11 +135,10 @@ func (c *ConfigV1) RemoveRuntime(name string) error {
 }
 
 // SetOption sets the specified containerd option.
-func (c *ConfigV1) Set(key string, value interface{}) error {
+func (c *ConfigV1) Set(key string, value interface{}) {
 	config := *c.Tree
 	config.SetPath([]string{"plugins", "cri", "containerd", key}, value)
 	*c.Tree = config
-	return nil
 }
 
 // Save wrotes the config to a file
