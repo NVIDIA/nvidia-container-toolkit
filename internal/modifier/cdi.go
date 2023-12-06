@@ -50,7 +50,12 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spe
 		return nil, fmt.Errorf("requesting a CDI device with vendor 'runtime.nvidia.com' is not supported when requesting other CDI devices")
 	}
 	if len(automaticDevices) > 0 {
-		return newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
+		automaticModifier, err := newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
+		if err == nil {
+			return automaticModifier, nil
+		}
+		logger.Warningf("Failed to create the automatic CDI modifier: %w", err)
+		logger.Debugf("Falling back to the standard CDI modifier")
 	}
 
 	return cdi.New(
@@ -152,7 +157,8 @@ func getAnnotationDevices(prefixes []string, annotations map[string]string) ([]s
 func filterAutomaticDevices(devices []string) []string {
 	var automatic []string
 	for _, device := range devices {
-		if device == "runtime.nvidia.com/gpu=all" {
+		vendor, class, _ := parser.ParseDevice(device)
+		if vendor == "runtime.nvidia.com" && class == "gpu" {
 			automatic = append(automatic, device)
 		}
 	}
@@ -176,9 +182,6 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 	return cdiModifier, nil
 }
 
-// TODO: use the requested devices when generating the CDI spec once we add
-// automatic CDI generation for more than just the 'runtime.nvidia.com/gpu=all'
-// device
 func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devices []string) (spec.Interface, error) {
 	cdilib, err := nvcdi.New(
 		nvcdi.WithLogger(logger),
@@ -191,5 +194,26 @@ func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devic
 		return nil, fmt.Errorf("failed to construct CDI library: %w", err)
 	}
 
-	return cdilib.GetSpec()
+	identifiers := []string{}
+	for _, device := range devices {
+		_, _, id := parser.ParseDevice(device)
+		identifiers = append(identifiers, id)
+	}
+
+	deviceSpecs, err := cdilib.GetDeviceSpecsByID(identifiers...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get CDI device specs: %w", err)
+	}
+
+	commonEdits, err := cdilib.GetCommonEdits()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get common CDI spec edits: %w", err)
+	}
+
+	return spec.New(
+		spec.WithDeviceSpecs(deviceSpecs),
+		spec.WithEdits(*commonEdits.ContainerEdits),
+		spec.WithVendor("runtime.nvidia.com"),
+		spec.WithClass("gpu"),
+	)
 }

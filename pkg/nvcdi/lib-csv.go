@@ -94,3 +94,10 @@ func (l *csvlib) GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi.Contai
 func (l *csvlib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) (*specs.Device, error) {
 	return nil, fmt.Errorf("GetMIGDeviceSpecs is not supported for CSV files")
 }
+
+// GetDeviceSpecsByID returns the CDI device specs for the GPU(s) represented by
+// the provided identifiers, where an identifier is an index or UUID of a valid
+// GPU device.
+func (l *csvlib) GetDeviceSpecsByID(...string) ([]specs.Device, error) {
+	return nil, fmt.Errorf("GetDeviceSpecsByID is not supported for CSV files")
+}
