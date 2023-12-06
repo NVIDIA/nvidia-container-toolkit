@@ -124,22 +124,37 @@ func (l *nvmllib) GetDeviceSpecsByID(identifiers ...string) ([]specs.Device, err
 
 // TODO: move this to go-nvlib?
 func (l *nvmllib) getNVMLDevicesByID(identifiers ...string) ([]nvml.Device, error) {
-	devices := []nvml.Device{}
+	var devices []nvml.Device
 	for _, id := range identifiers {
-		if dev, err := l.nvmllib.DeviceGetHandleByUUID(id); err == nvml.SUCCESS {
-			devices = append(devices, dev)
-			continue
+		dev, err := l.getNVMLDeviceByID(id)
+		if err != nvml.SUCCESS {
+			return nil, fmt.Errorf("failed to get NVML device handle for identifier %q: %w", id, err)
 		}
-		// TODO: check for a MIG device index
-		if idx, err := strconv.Atoi(id); err == nil {
-			if dev, err := l.nvmllib.DeviceGetHandleByIndex(idx); err == nvml.SUCCESS {
-				devices = append(devices, dev)
-				continue
-			}
-		}
-		return nil, fmt.Errorf("failed to get NVML device handle for identifier %q", id)
+		devices = append(devices, dev)
 	}
 	return devices, nil
+}
+
+func (l *nvmllib) getNVMLDeviceByID(id string) (nvml.Device, error) {
+	var err error
+	devID := identifier(id)
+
+	if devID.isUUID() {
+		return l.nvmllib.DeviceGetHandleByUUID(id)
+	}
+
+	if devID.isGpuIndex() {
+		if idx, err := strconv.Atoi(id); err == nil {
+			return l.nvmllib.DeviceGetHandleByIndex(idx)
+		}
+		return nil, fmt.Errorf("failed to convert device index to an int: %w", err)
+	}
+
+	if devID.isMigIndex() {
+		return nil, fmt.Errorf("MIG index is not supported")
+	}
+
+	return nil, fmt.Errorf("identifier is not a valid UUID or index: %q", id)
 }
 
 func (l *nvmllib) getGPUDeviceSpecs() ([]specs.Device, error) {

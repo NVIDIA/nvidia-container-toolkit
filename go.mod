@@ -6,6 +6,7 @@ require (
 	github.com/NVIDIA/go-nvlib v0.0.0-20231116150931-9fd385bace0d
 	github.com/NVIDIA/go-nvml v0.12.0-1.0.20231020145430-e06766c5e74f
 	github.com/fsnotify/fsnotify v1.5.4
+	github.com/google/uuid v1.4.0
 	github.com/opencontainers/runtime-spec v1.1.0
 	github.com/pelletier/go-toml v1.9.4
 	github.com/sirupsen/logrus v1.9.0
