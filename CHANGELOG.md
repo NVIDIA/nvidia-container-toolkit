@@ -1,5 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.15.0-rc.2
+* Extend the `runtime.nvidia.com/gpu` CDI kind to support full-GPUs and MIG devices specified by index or UUID.
+
 ## v1.15.0-rc.1
 * Skip update of ldcache in containers without ldconfig. The .so.SONAME symlinks are still created.
 * Normalize ldconfig path on use. This automatically adjust the ldconfig setting applied to ldconfig.real on systems where this exists.
@@ -10,6 +13,7 @@
 * Added support for `nvidia-ctk runtime configure --enable-cdi` for the `docker` runtime. Note that this requires Docker >= 25.
 * Fixed bug in `nvidia-ctk config` command when using `--set`. The types of applied config options are now applied correctly.
 * Add `--relative-to` option to `nvidia-ctk transform root` command. This controls whether the root transformation is applied to host or container paths.
+* Added automatic CDI spec generation when the `runtime.nvidia.com/gpu=all` device is requested by a container.
 
 * [libnvidia-container] Fix device permission check when using cgroupv2 (fixes #227)
 
