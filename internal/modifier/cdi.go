@@ -50,7 +50,12 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spe
 		return nil, fmt.Errorf("requesting a CDI device with vendor 'runtime.nvidia.com' is not supported when requesting other CDI devices")
 	}
 	if len(automaticDevices) > 0 {
-		return newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
+		automaticModifier, err := newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
+		if err == nil {
+			return automaticModifier, nil
+		}
+		logger.Warningf("Failed to create the automatic CDI modifier: %w", err)
+		logger.Debugf("Falling back to the standard CDI modifier")
 	}
 
 	return cdi.New(
