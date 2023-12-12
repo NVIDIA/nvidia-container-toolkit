@@ -133,20 +133,20 @@ func (l *nvmllib) getNVMLDevicesByID(identifiers ...string) ([]nvml.Device, erro
 
 func (l *nvmllib) getNVMLDeviceByID(id string) (nvml.Device, error) {
 	var err error
-	devID := identifier(id)
+	devID := device.Identifier(id)
 
-	if devID.isUUID() {
+	if devID.IsUUID() {
 		return l.nvmllib.DeviceGetHandleByUUID(id)
 	}
 
-	if devID.isGpuIndex() {
+	if devID.IsGpuIndex() {
 		if idx, err := strconv.Atoi(id); err == nil {
 			return l.nvmllib.DeviceGetHandleByIndex(idx)
 		}
 		return nil, fmt.Errorf("failed to convert device index to an int: %w", err)
 	}
 
-	if devID.isMigIndex() {
+	if devID.IsMigIndex() {
 		var gpuIdx, migIdx int
 		var parent nvml.Device
 		split := strings.SplitN(id, ":", 2)
