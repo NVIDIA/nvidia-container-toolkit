@@ -122,7 +122,8 @@ func (l *nvmllib) GetDeviceSpecsByID(identifiers ...string) ([]specs.Device, err
 func (l *nvmllib) getNVMLDevicesByID(identifiers ...string) ([]nvml.Device, error) {
 	var devices []nvml.Device
 	for _, id := range identifiers {
-		dev, err := l.getNVMLDeviceByID(id)
+		devID := device.Identifier(id)
+		dev, err := l.getNVMLDeviceByID(devID)
 		if err != nvml.SUCCESS {
 			return nil, fmt.Errorf("failed to get NVML device handle for identifier %q: %w", id, err)
 		}
@@ -131,25 +132,24 @@ func (l *nvmllib) getNVMLDevicesByID(identifiers ...string) ([]nvml.Device, erro
 	return devices, nil
 }
 
-func (l *nvmllib) getNVMLDeviceByID(id string) (nvml.Device, error) {
+func (l *nvmllib) getNVMLDeviceByID(id device.Identifier) (nvml.Device, error) {
 	var err error
-	devID := device.Identifier(id)
 
-	if devID.IsUUID() {
-		return l.nvmllib.DeviceGetHandleByUUID(id)
+	if id.IsUUID() {
+		return l.nvmllib.DeviceGetHandleByUUID(string(id))
 	}
 
-	if devID.IsGpuIndex() {
-		if idx, err := strconv.Atoi(id); err == nil {
+	if id.IsGpuIndex() {
+		if idx, err := strconv.Atoi(string(id)); err == nil {
 			return l.nvmllib.DeviceGetHandleByIndex(idx)
 		}
 		return nil, fmt.Errorf("failed to convert device index to an int: %w", err)
 	}
 
-	if devID.IsMigIndex() {
+	if id.IsMigIndex() {
 		var gpuIdx, migIdx int
 		var parent nvml.Device
-		split := strings.SplitN(id, ":", 2)
+		split := strings.SplitN(string(id), ":", 2)
 		if gpuIdx, err = strconv.Atoi(split[0]); err != nil {
 			return nil, fmt.Errorf("failed to convert device index to an int: %w", err)
 		}
