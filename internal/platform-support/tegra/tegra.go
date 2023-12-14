@@ -119,9 +119,9 @@ func WithDriverRoot(driverRoot string) Option {
 
 // WithDevRoot sets the /dev root.
 // If this is unset, the driver root is assumed.
-func WithDevRoot(driverRoot string) Option {
+func WithDevRoot(devRoot string) Option {
 	return func(o *tegraOptions) {
-		o.driverRoot = driverRoot
+		o.devRoot = devRoot
 	}
 }
 
