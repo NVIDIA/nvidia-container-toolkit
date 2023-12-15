@@ -36,6 +36,7 @@ type command struct {
 
 type options struct {
 	folders       cli.StringSlice
+	ldconfigPath  string
 	containerSpec string
 }
 
@@ -67,6 +68,12 @@ func (m command) build() *cli.Command {
 			Destination: &cfg.folders,
 		},
 		&cli.StringFlag{
+			Name:        "ldconfig-path",
+			Usage:       "Specify the path to the ldconfig program",
+			Destination: &cfg.ldconfigPath,
+			DefaultText: "/sbin/ldconfig",
+		},
+		&cli.StringFlag{
 			Name:        "container-spec",
 			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
 			Destination: &cfg.containerSpec,
@@ -87,7 +94,7 @@ func (m command) run(c *cli.Context, cfg *options) error {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
-	ldconfigPath := m.resolveLDConfigPath("/sbin/ldconfig")
+	ldconfigPath := m.resolveLDConfigPath(cfg.ldconfigPath)
 	args := []string{filepath.Base(ldconfigPath)}
 	if containerRoot != "" {
 		args = append(args, "-r", containerRoot)

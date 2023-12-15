@@ -26,6 +26,7 @@ import (
 
 const (
 	testNvidiaCTKPath = "/foo/bar/nvidia-ctk"
+	testLdconfigPath  = "/bar/baz/ldconfig"
 )
 
 func TestLDCacheUpdateHook(t *testing.T) {
@@ -33,6 +34,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 
 	testCases := []struct {
 		description   string
+		ldconfigPath  string
 		mounts        []Mount
 		mountError    error
 		expectedError error
@@ -75,6 +77,11 @@ func TestLDCacheUpdateHook(t *testing.T) {
 			},
 			expectedArgs: []string{"nvidia-ctk", "hook", "update-ldcache", "--folder", "/usr/local/lib"},
 		},
+		{
+			description:  "explicit ldconfig path is passed",
+			ldconfigPath: testLdconfigPath,
+			expectedArgs: []string{"nvidia-ctk", "hook", "update-ldcache", "--ldconfig-path", testLdconfigPath},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -90,7 +97,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 				Lifecycle: "createContainer",
 			}
 
-			d, err := NewLDCacheUpdateHook(logger, mountMock, testNvidiaCTKPath)
+			d, err := NewLDCacheUpdateHook(logger, mountMock, testNvidiaCTKPath, tc.ldconfigPath)
 			require.NoError(t, err)
 
 			hooks, err := d.Hooks()
@@ -114,10 +121,8 @@ func TestLDCacheUpdateHook(t *testing.T) {
 			mounts, err := d.Mounts()
 			require.NoError(t, err)
 			require.Empty(t, mounts)
-
 		})
 	}
-
 }
 
 func TestIsLibName(t *testing.T) {

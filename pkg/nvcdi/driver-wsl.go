@@ -39,7 +39,7 @@ var requiredDriverStoreFiles = []string{
 }
 
 // newWSLDriverDiscoverer returns a Discoverer for WSL2 drivers.
-func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, nvidiaCTKPath string) (discover.Discover, error) {
+func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, nvidiaCTKPath, ldconfigPath string) (discover.Discover, error) {
 	err := dxcore.Init()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize dxcore: %v", err)
@@ -56,11 +56,11 @@ func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, nvidiaCT
 	}
 	logger.Infof("Using WSL driver store paths: %v", driverStorePaths)
 
-	return newWSLDriverStoreDiscoverer(logger, driverRoot, nvidiaCTKPath, driverStorePaths)
+	return newWSLDriverStoreDiscoverer(logger, driverRoot, nvidiaCTKPath, ldconfigPath, driverStorePaths)
 }
 
 // newWSLDriverStoreDiscoverer returns a Discoverer for WSL2 drivers in the driver store associated with a dxcore adapter.
-func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, nvidiaCTKPath string, driverStorePaths []string) (discover.Discover, error) {
+func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, nvidiaCTKPath string, ldconfigPath string, driverStorePaths []string) (discover.Discover, error) {
 	var searchPaths []string
 	seen := make(map[string]bool)
 	for _, path := range driverStorePaths {
@@ -93,7 +93,7 @@ func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, nvi
 		nvidiaCTKPath: nvidiaCTKPath,
 	}
 
-	ldcacheHook, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCTKPath)
+	ldcacheHook, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCTKPath, ldconfigPath)
 
 	d := discover.Merge(
 		libraries,

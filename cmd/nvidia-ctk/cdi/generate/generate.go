@@ -48,6 +48,7 @@ type options struct {
 	driverRoot         string
 	devRoot            string
 	nvidiaCTKPath      string
+	ldconfigPath       string
 	mode               string
 	vendor             string
 	class              string
@@ -128,6 +129,11 @@ func (m command) build() *cli.Command {
 			Name:        "nvidia-ctk-path",
 			Usage:       "Specify the path to use for the nvidia-ctk in the generated CDI specification. If this is left empty, the path will be searched.",
 			Destination: &opts.nvidiaCTKPath,
+		},
+		&cli.StringFlag{
+			Name:        "ldconfig-path",
+			Usage:       "Specify the path to use for ldconfig in the generated CDI specification",
+			Destination: &opts.ldconfigPath,
 		},
 		&cli.StringFlag{
 			Name:        "vendor",
@@ -245,6 +251,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithDriverRoot(opts.driverRoot),
 		nvcdi.WithDevRoot(opts.devRoot),
 		nvcdi.WithNVIDIACTKPath(opts.nvidiaCTKPath),
+		nvcdi.WithLdconfigPath(opts.ldconfigPath),
 		nvcdi.WithDeviceNamer(deviceNamer),
 		nvcdi.WithMode(opts.mode),
 		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths.Value()),
