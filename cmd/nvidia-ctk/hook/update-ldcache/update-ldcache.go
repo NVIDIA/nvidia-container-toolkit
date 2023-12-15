@@ -100,20 +100,26 @@ func (m command) run(c *cli.Context, cfg *options) error {
 		args = append(args, "-r", containerRoot)
 	}
 
-	if !root(containerRoot).hasPath("/etc/ld.so.cache") {
+	if root(containerRoot).hasPath("/etc/ld.so.cache") {
+		args = append(args, "-C", "/etc/ld.so.cache")
+	} else {
 		m.logger.Debugf("No ld.so.cache found, skipping update")
 		args = append(args, "-N")
 	}
 
 	folders := cfg.folders.Value()
 	if root(containerRoot).hasPath("/etc/ld.so.conf.d") {
-		err = m.createConfig(containerRoot, folders)
+		err := m.createConfig(containerRoot, folders)
 		if err != nil {
-			return fmt.Errorf("failed to update ld.so.conf: %v", err)
+			return fmt.Errorf("failed to update ld.so.conf.d: %v", err)
 		}
 	} else {
 		args = append(args, folders...)
 	}
+
+	// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
+	// be configured to use a different config file by default.
+	args = append(args, "-f", "/etc/ld.so.conf")
 
 	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	return syscall.Exec(ldconfigPath, args, nil)
