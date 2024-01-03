@@ -1,6 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
 * Add support for injecting /dev/nvidia-nvswitch* devices if the NVIDIA_NVSWITCH=enabled envvar is specified.
+* Add discovery of the GDRCopy device (`gdrdrv`) if the `NVIDIA_GDRCOPY` environment variable of the container is set to `enabled`
 
 ## v1.14.6
 * Add support for extracting device major number from `/proc/devices` if `nvidia` is used as a device name over `nvidia-frontend`.
