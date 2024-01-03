@@ -33,6 +33,7 @@ var requiredDriverStoreFiles = []string{
 	"libnvidia-ml.so.1",             /* Core library for nvml */
 	"libnvidia-ml_loader.so",        /* Core library for nvml on WSL */
 	"libdxcore.so",                  /* Core library for dxcore support */
+	"libnvdxgdmal.so.1",             /* dxgdmal library for cuda */
 	"nvcubins.bin",                  /* Binary containing GPU code for cuda */
 	"nvidia-smi",                    /* nvidia-smi binary*/
 }

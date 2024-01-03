@@ -5,6 +5,7 @@
 * Fix bug when specifying `--dev-root` for Tegra-based systems.
 * Log explicitly requested runtime mode.
 * Remove package dependency on libseccomp.
+* Added detection of libnvdxgdmal.so.1 on WSL2
 
 ## v1.15.0-rc.1
 * Skip update of ldcache in containers without ldconfig. The .so.SONAME symlinks are still created.
