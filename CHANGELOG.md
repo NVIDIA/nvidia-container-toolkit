@@ -11,6 +11,7 @@
 * Add `crun` to the list of configured low-level runtimes.
 * Added support for `--ldconfig-path` to `nvidia-ctk cdi generate` command.
 * Fix `nvidia-ctk runtime configure --cdi.enabled` for Docker.
+* Add discovery of the GDRCopy device (`gdrdrv`) if the `NVIDIA_GDRCOPY` environment variable of the container is set to `enabled`
 
 * [toolkit-container] Bump CUDA base image version to 12.3.1.
 
