@@ -4,6 +4,7 @@
 * Include `nvidia/nvoptix.bin` in list of graphics mounts.
 * Include `vulkan/icd.d/nvidia_layers.json` in list of graphics mounts.
 * Fixed bug in `nvidia-ctk config` command when using `--set`. The types of applied config options are now applied correctly.
+* Log explicitly requested runtime mode.
 
 ## v1.14.3
 * [toolkit-container] Bump CUDA base image version to 12.2.2.
