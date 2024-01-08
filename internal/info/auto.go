@@ -63,6 +63,7 @@ func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rm
 // resolveMode determines the correct mode for the platform if set to "auto"
 func (r resolver) resolveMode(mode string, image image.CUDA) (rmode string) {
 	if mode != "auto" {
+		r.logger.Infof("Using requested mode '%s'", mode)
 		return mode
 	}
 	defer func() {
