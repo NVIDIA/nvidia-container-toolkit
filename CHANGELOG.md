@@ -6,6 +6,7 @@
 * Fixed bug in `nvidia-ctk config` command when using `--set`. The types of applied config options are now applied correctly.
 * Log explicitly requested runtime mode.
 * Remove package dependency on libseccomp.
+* Added detection of libnvdxgdmal.so.1 on WSL2.
 
 ## v1.14.3
 * [toolkit-container] Bump CUDA base image version to 12.2.2.
