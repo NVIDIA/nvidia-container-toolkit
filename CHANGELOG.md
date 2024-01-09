@@ -6,6 +6,7 @@
 * Log explicitly requested runtime mode.
 * Remove package dependency on libseccomp.
 * Added detection of libnvdxgdmal.so.1 on WSL2
+* Use devRoot to resolve MIG device nodes.
 
 ## v1.15.0-rc.1
 * Skip update of ldcache in containers without ldconfig. The .so.SONAME symlinks are still created.
