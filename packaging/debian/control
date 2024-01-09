@@ -10,7 +10,7 @@ Build-Depends: debhelper (>= 9)
 
 Package: nvidia-container-toolkit
 Architecture: any
-Depends: ${misc:Depends}, nvidia-container-toolkit-base (= @VERSION@), libnvidia-container-tools (>= @LIBNVIDIA_CONTAINER_TOOLS_VERSION@), libnvidia-container-tools (<< 2.0.0), libseccomp2
+Depends: ${misc:Depends}, nvidia-container-toolkit-base (= @VERSION@), libnvidia-container-tools (>= @LIBNVIDIA_CONTAINER_TOOLS_VERSION@), libnvidia-container-tools (<< 2.0.0)
 Breaks: nvidia-container-runtime (<= 3.5.0-1), nvidia-container-runtime-hook
 Replaces: nvidia-container-runtime (<= 3.5.0-1), nvidia-container-runtime-hook
 Description: NVIDIA Container toolkit
