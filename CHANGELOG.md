@@ -4,6 +4,7 @@
 * Extend the `runtime.nvidia.com/gpu` CDI kind to support full-GPUs and MIG devices specified by index or UUID.
 * Fix bug when specifying `--dev-root` for Tegra-based systems.
 * Log explicitly requested runtime mode.
+* Remove package dependency on libseccomp.
 
 ## v1.15.0-rc.1
 * Skip update of ldcache in containers without ldconfig. The .so.SONAME symlinks are still created.
