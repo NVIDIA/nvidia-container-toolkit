@@ -9,6 +9,8 @@
 * Added detection of libnvdxgdmal.so.1 on WSL2.
 * Fix bug in determining default nvidia-container-runtime.user config value on SUSE-based systems.
 
+* [toolkit-container] Bump CUDA base image version to 12.3.1.
+
 ## v1.14.3
 * [toolkit-container] Bump CUDA base image version to 12.2.2.
 
