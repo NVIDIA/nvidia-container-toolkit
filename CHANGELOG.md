@@ -7,6 +7,7 @@
 * Log explicitly requested runtime mode.
 * Remove package dependency on libseccomp.
 * Added detection of libnvdxgdmal.so.1 on WSL2.
+* Fix bug in determining default nvidia-container-runtime.user config value on SUSE-based systems.
 
 ## v1.14.3
 * [toolkit-container] Bump CUDA base image version to 12.2.2.
