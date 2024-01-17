@@ -31,6 +31,8 @@ else
     targets=${all[@]}
 fi
 
+# Skip component updates on release branches
+SKIP_UPDATE_COMPONENTS=yes
 if [[ x"${SKIP_UPDATE_COMPONENTS}" != x"yes" ]]; then
     echo "Updating components"
     "${SCRIPTS_DIR}/update-components.sh"
