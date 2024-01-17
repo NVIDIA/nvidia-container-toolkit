@@ -23,6 +23,7 @@ const (
 	envNVVisibleDevices     = "NVIDIA_VISIBLE_DEVICES"
 	envNVMigConfigDevices   = "NVIDIA_MIG_CONFIG_DEVICES"
 	envNVMigMonitorDevices  = "NVIDIA_MIG_MONITOR_DEVICES"
+	envNVImexChannels       = "NVIDIA_IMEX_CHANNELS"
 	envNVDriverCapabilities = "NVIDIA_DRIVER_CAPABILITIES"
 )
 
@@ -38,6 +39,7 @@ type nvidiaConfig struct {
 	Devices            string
 	MigConfigDevices   string
 	MigMonitorDevices  string
+	ImexChannels       string
 	DriverCapabilities string
 	// Requirements defines the requirements DSL for the container to run.
 	// This is empty if no specific requirements are needed, or if requirements are
@@ -274,6 +276,14 @@ func getMigDevices(image image.CUDA, envvar string) *string {
 	return &devices
 }
 
+func getImexChannels(image image.CUDA) *string {
+	if !image.HasEnvvar(envNVImexChannels) {
+		return nil
+	}
+	chans := image.Getenv(envNVImexChannels)
+	return &chans
+}
+
 func (c *HookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage bool) image.DriverCapabilities {
 	// We use the default driver capabilities by default. This is filtered to only include the
 	// supported capabilities
@@ -328,6 +338,11 @@ func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, mounts []Mount, p
 		log.Panicln("cannot set MIG_MONITOR_DEVICES in non privileged container")
 	}
 
+	var imexChannels string
+	if c := getImexChannels(image); c != nil {
+		imexChannels = *c
+	}
+
 	driverCapabilities := hookConfig.getDriverCapabilities(image, legacyImage).String()
 
 	requirements, err := image.GetRequirements()
@@ -339,6 +354,7 @@ func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, mounts []Mount, p
 		Devices:            devices,
 		MigConfigDevices:   migConfigDevices,
 		MigMonitorDevices:  migMonitorDevices,
+		ImexChannels:       imexChannels,
 		DriverCapabilities: driverCapabilities,
 		Requirements:       requirements,
 	}
