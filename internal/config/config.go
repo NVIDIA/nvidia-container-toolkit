@@ -94,6 +94,7 @@ func GetDefault() (*Config, error) {
 		NVIDIAContainerCLIConfig: ContainerCLIConfig{
 			LoadKmods: true,
 			Ldconfig:  getLdConfigPath(),
+			User:      getUserGroup(),
 		},
 		NVIDIACTKConfig: CTKConfig{
 			Path: nvidiaCTKExecutable,
@@ -101,7 +102,7 @@ func GetDefault() (*Config, error) {
 		NVIDIAContainerRuntimeConfig: RuntimeConfig{
 			DebugFilePath: "/dev/null",
 			LogLevel:      "info",
-			Runtimes:      []string{"docker-runc", "runc"},
+			Runtimes:      []string{"docker-runc", "runc", "crun"},
 			Mode:          "auto",
 			Modes: modesConfig{
 				CSV: csvModeConfig{
@@ -128,24 +129,32 @@ func getLdConfigPath() string {
 	return "@/sbin/ldconfig"
 }
 
-// getCommentedUserGroup returns whether the nvidia-container-cli user and group config option should be commented.
-func getCommentedUserGroup() bool {
-	uncommentIf := map[string]bool{
+func getUserGroup() string {
+	if isSuse() {
+		return "root:video"
+	}
+	return ""
+}
+
+// isSuse returns whether a SUSE-based distribution was detected.
+func isSuse() bool {
+	suseDists := map[string]bool{
 		"suse":     true,
 		"opensuse": true,
 	}
 
 	idsLike := getDistIDLike()
 	for _, id := range idsLike {
-		if uncommentIf[id] {
-			return false
+		if suseDists[id] {
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 // getDistIDLike returns the ID_LIKE field from /etc/os-release.
-func getDistIDLike() []string {
+// We can override this for testing.
+var getDistIDLike = func() []string {
 	releaseFile, err := os.Open("/etc/os-release")
 	if err != nil {
 		return nil

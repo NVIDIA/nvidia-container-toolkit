@@ -23,13 +23,6 @@ Provides: nvidia-container-runtime-hook
 Requires: libnvidia-container-tools >= %{libnvidia_container_tools_version}, libnvidia-container-tools < 2.0.0
 Requires: nvidia-container-toolkit-base == %{version}-%{release}
 
-%if 0%{?suse_version}
-Requires: libseccomp2
-Requires: libapparmor1
-%else
-Requires: libseccomp
-%endif
-
 %description
 Provides tools and utilities to enable GPU support in containers.
 

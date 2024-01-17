@@ -48,6 +48,7 @@ func TestGetConfig(t *testing.T) {
 		contents        []string
 		expectedError   error
 		inspectLdconfig bool
+		distIdsLike     []string
 		expectedConfig  *Config
 	}{
 		{
@@ -64,7 +65,7 @@ func TestGetConfig(t *testing.T) {
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/dev/null",
 					LogLevel:      "info",
-					Runtimes:      []string{"docker-runc", "runc"},
+					Runtimes:      []string{"docker-runc", "runc", "crun"},
 					Mode:          "auto",
 					Modes: modesConfig{
 						CSV: csvModeConfig{
@@ -93,6 +94,7 @@ func TestGetConfig(t *testing.T) {
 				"nvidia-container-cli.root = \"/bar/baz\"",
 				"nvidia-container-cli.load-kmods = false",
 				"nvidia-container-cli.ldconfig = \"/foo/bar/ldconfig\"",
+				"nvidia-container-cli.user = \"foo:bar\"",
 				"nvidia-container-runtime.debug = \"/foo/bar\"",
 				"nvidia-container-runtime.discover-mode = \"not-legacy\"",
 				"nvidia-container-runtime.log-level = \"debug\"",
@@ -112,6 +114,7 @@ func TestGetConfig(t *testing.T) {
 					Root:      "/bar/baz",
 					LoadKmods: false,
 					Ldconfig:  "/foo/bar/ldconfig",
+					User:      "foo:bar",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/foo/bar",
@@ -152,6 +155,7 @@ func TestGetConfig(t *testing.T) {
 				"root = \"/bar/baz\"",
 				"load-kmods = false",
 				"ldconfig = \"/foo/bar/ldconfig\"",
+				"user = \"foo:bar\"",
 				"[nvidia-container-runtime]",
 				"debug = \"/foo/bar\"",
 				"discover-mode = \"not-legacy\"",
@@ -176,6 +180,7 @@ func TestGetConfig(t *testing.T) {
 					Root:      "/bar/baz",
 					LoadKmods: false,
 					Ldconfig:  "/foo/bar/ldconfig",
+					User:      "foo:bar",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/foo/bar",
@@ -207,10 +212,88 @@ func TestGetConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:     "suse config",
+			distIdsLike:     []string{"suse", "opensuse"},
+			inspectLdconfig: true,
+			expectedConfig: &Config{
+				AcceptEnvvarUnprivileged:    true,
+				SupportedDriverCapabilities: "compat32,compute,display,graphics,ngx,utility,video",
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
+					Root:      "",
+					LoadKmods: true,
+					Ldconfig:  "WAS_CHECKED",
+					User:      "root:video",
+				},
+				NVIDIAContainerRuntimeConfig: RuntimeConfig{
+					DebugFilePath: "/dev/null",
+					LogLevel:      "info",
+					Runtimes:      []string{"docker-runc", "runc", "crun"},
+					Mode:          "auto",
+					Modes: modesConfig{
+						CSV: csvModeConfig{
+							MountSpecPath: "/etc/nvidia-container-runtime/host-files-for-container.d",
+						},
+						CDI: cdiModeConfig{
+							DefaultKind:        "nvidia.com/gpu",
+							AnnotationPrefixes: []string{"cdi.k8s.io/"},
+							SpecDirs:           []string{"/etc/cdi", "/var/run/cdi"},
+						},
+					},
+				},
+				NVIDIAContainerRuntimeHookConfig: RuntimeHookConfig{
+					Path: "nvidia-container-runtime-hook",
+				},
+				NVIDIACTKConfig: CTKConfig{
+					Path: "nvidia-ctk",
+				},
+			},
+		},
+		{
+			description:     "suse config overrides user",
+			distIdsLike:     []string{"suse", "opensuse"},
+			inspectLdconfig: true,
+			contents: []string{
+				"nvidia-container-cli.user = \"foo:bar\"",
+			},
+			expectedConfig: &Config{
+				AcceptEnvvarUnprivileged:    true,
+				SupportedDriverCapabilities: "compat32,compute,display,graphics,ngx,utility,video",
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
+					Root:      "",
+					LoadKmods: true,
+					Ldconfig:  "WAS_CHECKED",
+					User:      "foo:bar",
+				},
+				NVIDIAContainerRuntimeConfig: RuntimeConfig{
+					DebugFilePath: "/dev/null",
+					LogLevel:      "info",
+					Runtimes:      []string{"docker-runc", "runc", "crun"},
+					Mode:          "auto",
+					Modes: modesConfig{
+						CSV: csvModeConfig{
+							MountSpecPath: "/etc/nvidia-container-runtime/host-files-for-container.d",
+						},
+						CDI: cdiModeConfig{
+							DefaultKind:        "nvidia.com/gpu",
+							AnnotationPrefixes: []string{"cdi.k8s.io/"},
+							SpecDirs:           []string{"/etc/cdi", "/var/run/cdi"},
+						},
+					},
+				},
+				NVIDIAContainerRuntimeHookConfig: RuntimeHookConfig{
+					Path: "nvidia-container-runtime-hook",
+				},
+				NVIDIACTKConfig: CTKConfig{
+					Path: "nvidia-ctk",
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
+			defer setGetDistIDLikeForTest(tc.distIdsLike)()
 			reader := strings.NewReader(strings.Join(tc.contents, "\n"))
 
 			tomlCfg, err := loadConfigTomlFrom(reader)
@@ -234,5 +317,21 @@ func TestGetConfig(t *testing.T) {
 
 			require.EqualValues(t, tc.expectedConfig, cfg)
 		})
+	}
+}
+
+// setGetDistIDsLikeForTest overrides the distribution IDs that would normally be read from the /etc/os-release file.
+func setGetDistIDLikeForTest(ids []string) func() {
+	if ids == nil {
+		return func() {}
+	}
+	original := getDistIDLike
+
+	getDistIDLike = func() []string {
+		return ids
+	}
+
+	return func() {
+		getDistIDLike = original
 	}
 }

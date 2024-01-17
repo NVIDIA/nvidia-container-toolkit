@@ -1,5 +1,18 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.14.4
+* Include `nvidia/nvoptix.bin` in list of graphics mounts.
+* Include `vulkan/icd.d/nvidia_layers.json` in list of graphics mounts.
+* Fixed bug in `nvidia-ctk config` command when using `--set`. The types of applied config options are now applied correctly.
+* Log explicitly requested runtime mode.
+* Remove package dependency on libseccomp.
+* Added detection of libnvdxgdmal.so.1 on WSL2.
+* Fix bug in determining default nvidia-container-runtime.user config value on SUSE-based systems.
+* Add `crun` to the list of configured low-level runtimes.
+
+* [toolkit-container] Bump CUDA base image version to 12.3.1.
+* [libnvidia-container] Added detection of libnvdxgdmal.so.1 on WSL2.
+
 ## v1.14.3
 * [toolkit-container] Bump CUDA base image version to 12.2.2.
 

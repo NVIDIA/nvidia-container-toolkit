@@ -204,7 +204,7 @@ func (t *Toml) commentDefaults() *Toml {
 }
 
 func shouldComment(key string, defaultValue interface{}, setTo interface{}) bool {
-	if key == "nvidia-container-cli.user" && !getCommentedUserGroup() {
+	if key == "nvidia-container-cli.user" && defaultValue == setTo && isSuse() {
 		return false
 	}
 	if key == "nvidia-container-runtime.debug" && setTo == "/dev/null" {

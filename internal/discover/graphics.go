@@ -78,9 +78,11 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driverRoot string, nvi
 		[]string{
 			"glvnd/egl_vendor.d/10_nvidia.json",
 			"vulkan/icd.d/nvidia_icd.json",
+			"vulkan/icd.d/nvidia_layers.json",
 			"vulkan/implicit_layer.d/nvidia_layers.json",
 			"egl/egl_external_platform.d/15_nvidia_gbm.json",
 			"egl/egl_external_platform.d/10_nvidia_wayland.json",
+			"nvidia/nvoptix.bin",
 		},
 	)
 
