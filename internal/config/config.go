@@ -102,7 +102,7 @@ func GetDefault() (*Config, error) {
 		NVIDIAContainerRuntimeConfig: RuntimeConfig{
 			DebugFilePath: "/dev/null",
 			LogLevel:      "info",
-			Runtimes:      []string{"docker-runc", "runc"},
+			Runtimes:      []string{"docker-runc", "runc", "crun"},
 			Mode:          "auto",
 			Modes: modesConfig{
 				CSV: csvModeConfig{
