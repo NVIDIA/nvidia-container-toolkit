@@ -20,13 +20,14 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/urfave/cli/v2"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/docker"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/ocihook"
-	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -70,6 +71,11 @@ type config struct {
 		path         string
 		hookPath     string
 		setAsDefault bool
+	}
+
+	// cdi-specific options
+	cdi struct {
+		enabled bool
 	}
 }
 
@@ -141,6 +147,11 @@ func (m command) build() *cli.Command {
 			Usage:       "set the NVIDIA runtime as the default runtime",
 			Destination: &config.nvidiaRuntime.setAsDefault,
 		},
+		&cli.BoolFlag{
+			Name:        "cdi.enabled",
+			Usage:       "Enable CDI in the configured runtime",
+			Destination: &config.cdi.enabled,
+		},
 	}
 
 	return &configure
@@ -173,6 +184,13 @@ func (m command) validateFlags(c *cli.Context, config *config) error {
 		if !filepath.IsAbs(config.nvidiaRuntime.path) {
 			return fmt.Errorf("the NVIDIA runtime path %q is not an absolute path", config.nvidiaRuntime.path)
 		}
+	}
+
+	if config.runtime != "containerd" && config.runtime != "docker" {
+		if config.cdi.enabled {
+			m.logger.Warningf("Ignoring cdi.enabled flag for %v", config.runtime)
+		}
+		config.cdi.enabled = false
 	}
 
 	return nil
@@ -227,6 +245,11 @@ func (m command) configureConfigFile(c *cli.Context, config *config) error {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
 
+	err = enableCDI(config, cfg)
+	if err != nil {
+		return fmt.Errorf("failed to enable CDI in %s: %w", config.runtime, err)
+	}
+
 	outputPath := config.getOuputConfigPath()
 	n, err := cfg.Save(outputPath)
 	if err != nil {
@@ -276,4 +299,18 @@ func (m *command) configureOCIHook(c *cli.Context, config *config) error {
 		return fmt.Errorf("error creating OCI hook: %v", err)
 	}
 	return nil
+}
+
+// enableCDI enables the use of CDI in the corresponding container engine
+func enableCDI(config *config, cfg engine.Interface) error {
+	if !config.cdi.enabled {
+		return nil
+	}
+	switch config.runtime {
+	case "containerd":
+		return cfg.Set("enable_cdi", true)
+	case "docker":
+		return cfg.Set("experimental", true)
+	}
+	return fmt.Errorf("enabling CDI in %s is not supported", config.runtime)
 }
