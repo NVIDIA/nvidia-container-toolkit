@@ -69,6 +69,13 @@ func WithNVIDIACTKPath(path string) Option {
 	}
 }
 
+// WithLdconfigPath sets the path to the ldconfig program
+func WithLdconfigPath(path string) Option {
+	return func(l *nvcdilib) {
+		l.ldconfigPath = path
+	}
+}
+
 // WithNvmlLib sets the nvml library for the library
 func WithNvmlLib(nvmllib nvml.Interface) Option {
 	return func(l *nvcdilib) {

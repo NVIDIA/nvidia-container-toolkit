@@ -48,6 +48,7 @@ type nvcdilib struct {
 	driverRoot         string
 	devRoot            string
 	nvidiaCTKPath      string
+	ldconfigPath       string
 	librarySearchPaths []string
 
 	csvFiles          []string
