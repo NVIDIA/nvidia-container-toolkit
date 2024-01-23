@@ -30,8 +30,8 @@ type filtered struct {
 	filter Filter
 }
 
-// newFilteredDisoverer creates a discoverer that applies the specified filter to the returned entities of the discoverer
-func newFilteredDisoverer(logger logger.Interface, applyTo Discover, filter Filter) Discover {
+// newFilteredDiscoverer creates a discoverer that applies the specified filter to the returned entities of the discoverer
+func newFilteredDiscoverer(logger logger.Interface, applyTo Discover, filter Filter) Discover {
 	return filtered{
 		Discover: applyTo,
 		logger:   logger,

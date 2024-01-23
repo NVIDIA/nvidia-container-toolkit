@@ -31,7 +31,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 )
 
-// NewDRMNodesDiscoverer returns a discoverrer for the DRM device nodes associated with the specified visible devices.
+// NewDRMNodesDiscoverer returns a discoverer for the DRM device nodes associated with the specified visible devices.
 //
 // TODO: The logic for creating DRM devices should be consolidated between this
 // and the logic for generating CDI specs for a single device. This is only used
@@ -140,7 +140,7 @@ func (d drmDevicesByPath) Hooks() ([]Hook, error) {
 	return []Hook{hook}, nil
 }
 
-// getSpecificLinkArgs returns the required specic links that need to be created
+// getSpecificLinkArgs returns the required specific links that need to be created
 func (d drmDevicesByPath) getSpecificLinkArgs(devices []Device) ([]string, error) {
 	selectedDevices := make(map[string]bool)
 	for _, d := range devices {
@@ -185,13 +185,13 @@ func newDRMDeviceDiscoverer(logger logger.Interface, devices image.VisibleDevice
 		},
 	)
 
-	filter, err := newDRMDeviceFilter(logger, devices, devRoot)
+	filter, err := newDRMDeviceFilter(devices, devRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct DRM device filter: %v", err)
 	}
 
 	// We return a discoverer that applies the DRM device filter created above to all discovered DRM device nodes.
-	d := newFilteredDisoverer(
+	d := newFilteredDiscoverer(
 		logger,
 		allDevices,
 		filter,
@@ -201,7 +201,7 @@ func newDRMDeviceDiscoverer(logger logger.Interface, devices image.VisibleDevice
 }
 
 // newDRMDeviceFilter creates a filter that matches DRM devices nodes for the visible devices.
-func newDRMDeviceFilter(logger logger.Interface, devices image.VisibleDevices, devRoot string) (Filter, error) {
+func newDRMDeviceFilter(devices image.VisibleDevices, devRoot string) (Filter, error) {
 	gpuInformationPaths, err := proc.GetInformationFilePaths(devRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read GPU information: %v", err)
@@ -290,7 +290,7 @@ func newXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPa
 		nvidiaCTKPath: nvidiaCTKPath,
 	}
 
-	xorgConfg := NewMounts(
+	xorgConfig := NewMounts(
 		logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
@@ -303,7 +303,7 @@ func newXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPa
 
 	d := Merge(
 		xorgLibs,
-		xorgConfg,
+		xorgConfig,
 		xorgHooks,
 	)
 
