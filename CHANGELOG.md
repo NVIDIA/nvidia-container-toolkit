@@ -10,6 +10,7 @@
 * Fix bug in determining default nvidia-container-runtime.user config value on SUSE-based systems.
 * Add `crun` to the list of configured low-level runtimes.
 * Added support for `--ldconfig-path` to `nvidia-ctk cdi generate` command.
+* Fix `nvidia-ctk runtime configure --cdi.enabled` for Docker.
 
 * [toolkit-container] Bump CUDA base image version to 12.3.1.
 

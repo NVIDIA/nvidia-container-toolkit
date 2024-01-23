@@ -310,7 +310,7 @@ func enableCDI(config *config, cfg engine.Interface) error {
 	case "containerd":
 		cfg.Set("enable_cdi", true)
 	case "docker":
-		cfg.Set("experimental", true)
+		cfg.Set("features", map[string]bool{"cdi": true})
 	default:
 		return fmt.Errorf("enabling CDI in %s is not supported", config.runtime)
 	}
