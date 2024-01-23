@@ -1,6 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
 ## v1.14.5
+* Fix `nvidia-ctk runtime configure --cdi.enabled` for Docker. This was incorrectly setting `experimental = true` instead
+  of setting `features.cdi = true`.
 
 ## v1.14.4
 * Include `nvidia/nvoptix.bin` in list of graphics mounts.
