@@ -149,6 +149,7 @@ func (m command) build() *cli.Command {
 		},
 		&cli.BoolFlag{
 			Name:        "cdi.enabled",
+			Aliases:     []string{"cdi.enable"},
 			Usage:       "Enable CDI in the configured runtime",
 			Destination: &config.cdi.enabled,
 		},
