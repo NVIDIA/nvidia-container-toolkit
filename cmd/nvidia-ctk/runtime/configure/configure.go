@@ -149,6 +149,7 @@ func (m command) build() *cli.Command {
 		},
 		&cli.BoolFlag{
 			Name:        "cdi.enabled",
+			Aliases:     []string{"cdi.enable"},
 			Usage:       "Enable CDI in the configured runtime",
 			Destination: &config.cdi.enabled,
 		},
@@ -310,7 +311,7 @@ func enableCDI(config *config, cfg engine.Interface) error {
 	case "containerd":
 		cfg.Set("enable_cdi", true)
 	case "docker":
-		cfg.Set("experimental", true)
+		cfg.Set("features", map[string]bool{"cdi": true})
 	default:
 		return fmt.Errorf("enabling CDI in %s is not supported", config.runtime)
 	}
