@@ -16,7 +16,7 @@ include:
   - .common-ci.yml
 
 # Define the package build helpers
-  .multi-arch-build:
+.multi-arch-build:
   before_script:
     - apk add --no-cache coreutils build-base sed git bash make
     - '[[ -n "${SKIP_QEMU_SETUP}" ]] || docker run --rm --privileged multiarch/qemu-user-static --reset -p yes -c yes'
