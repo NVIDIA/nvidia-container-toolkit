@@ -19,7 +19,6 @@ default:
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
-  BUILDIMAGE: "${CI_REGISTRY_IMAGE}/build:${CI_COMMIT_SHORT_SHA}"
   BUILD_MULTI_ARCH_IMAGES: "true"
 
 stages:
