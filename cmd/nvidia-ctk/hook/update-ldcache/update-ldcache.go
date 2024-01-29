@@ -17,6 +17,7 @@
 package ldcache
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -56,6 +57,9 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "update-ldcache",
 		Usage: "Update ldcache in a container by running ldconfig",
+		Before: func(c *cli.Context) error {
+			return m.validateFlags(c, &cfg)
+		},
 		Action: func(c *cli.Context) error {
 			return m.run(c, &cfg)
 		},
@@ -71,7 +75,7 @@ func (m command) build() *cli.Command {
 			Name:        "ldconfig-path",
 			Usage:       "Specify the path to the ldconfig program",
 			Destination: &cfg.ldconfigPath,
-			DefaultText: "/sbin/ldconfig",
+			Value:       "/sbin/ldconfig",
 		},
 		&cli.StringFlag{
 			Name:        "container-spec",
@@ -81,6 +85,13 @@ func (m command) build() *cli.Command {
 	}
 
 	return &c
+}
+
+func (m command) validateFlags(c *cli.Context, cfg *options) error {
+	if cfg.ldconfigPath == "" {
+		return errors.New("ldconfig-path must be specified")
+	}
+	return nil
 }
 
 func (m command) run(c *cli.Context, cfg *options) error {
