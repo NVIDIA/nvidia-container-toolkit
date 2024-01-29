@@ -1,0 +1,108 @@
+# Copyright 2024 NVIDIA CORPORATION
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Run this workflow on pull requests
+name: image
+
+on:
+  push:
+    branches:
+      - main
+      - release-*
+
+jobs:
+  packages:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package:
+          - ubuntu18.04-arm64
+          - ubuntu18.04-amd64
+          - ubuntu18.04-ppc64le
+          - centos7-aarch64
+          - centos7-x86_64
+          - centos8-ppc64le
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+        name: Check out code
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: build ${{ matrix.package }} packages
+        run: |
+          sudo apt-get install -y coreutils build-essential sed git bash make
+          echo "Building packages"
+          ./scripts/build-packages.sh ${{ matrix.package }}
+      - name: 'Upload Artifacts'
+        uses: actions/upload-artifact@v4
+        with:
+          compression-level: 0
+          name: toolkit-container-${{ matrix.package }}-${{ github.run_id }}
+          path: ${{ github.workspace }}/dist/*
+
+  image:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: 
+        image: [ubuntu20.04, centos7, ubi8, packaging]
+    needs: packages
+    steps:
+      - uses: actions/checkout@v4
+        name: Check out code
+      - name: Calculate build vars
+        id: vars
+        run: |
+          echo "COMMIT_SHORT_SHA=${GITHUB_SHA:0:8}" >> $GITHUB_ENV
+          echo "LOWERCASE_REPO_OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | awk '{print tolower($0)}')" >> $GITHUB_ENV
+          REPO_FULL_NAME="${{ github.event.pull_request.head.repo.full_name }}"
+          echo "${REPO_FULL_NAME}"
+          echo "LABEL_IMAGE_SOURCE=https://github.com/${REPO_FULL_NAME}" >> $GITHUB_ENV
+          
+          GENERATE_ARTIFACTS="false"
+          if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
+            GENERATE_ARTIFACTS="false"
+          elif [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" == "${{ github.repository }}" ]]; then
+            GENERATE_ARTIFACTS="true"
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            GENERATE_ARTIFACTS="true"
+          fi
+          echo "PUSH_ON_BUILD=${GENERATE_ARTIFACTS}" >> $GITHUB_ENV
+          echo "BUILD_MULTI_ARCH_IMAGES=${GENERATE_ARTIFACTS}" >> $GITHUB_ENV
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Get built packages
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ github.workspace }}/dist/
+          pattern: toolkit-container-*
+          merge-multiple: true
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build image
+        env:
+          IMAGE_NAME: ghcr.io/${LOWERCASE_REPO_OWNER}/container-toolkit
+          VERSION: ${COMMIT_SHORT_SHA}
+        run: |
+          echo "${VERSION}"
+          make -f build/container/Makefile build-${{ matrix.image }}

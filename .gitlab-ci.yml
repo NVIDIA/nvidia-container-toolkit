@@ -15,40 +15,6 @@
 include:
   - .common-ci.yml
 
-build-dev-image:
-  stage: image
-  script:
-    - apk --no-cache add make bash
-    - make .build-image
-    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
-    - make .push-build-image
-
-.requires-build-image:
-  image: "${BUILDIMAGE}"
-  needs:
-    - job: build-dev-image
-
-check:
-  extends:
-    - .requires-build-image
-  stage: go-checks
-  script:
-    - make check
-
-go-build:
-  extends:
-    - .requires-build-image
-  stage: go-build
-  script:
-    - make build
-
-unit-tests:
-  extends:
-    - .requires-build-image
-  stage: unit-tests
-  script:
-    - make coverage
-
 # Define the package build helpers
 .multi-arch-build:
   before_script:
@@ -288,4 +254,3 @@ test-docker-ubuntu20.04:
     - .dist-ubuntu20.04
   needs:
     - image-ubuntu20.04
-
