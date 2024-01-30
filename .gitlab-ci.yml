@@ -76,23 +76,11 @@ package-centos7-x86_64:
     - .dist-centos7
     - .arch-x86_64
 
-package-centos8-aarch64:
-  extends:
-    - .package-build
-    - .dist-centos8
-    - .arch-aarch64
-
 package-centos8-ppc64le:
   extends:
     - .package-build
     - .dist-centos8
     - .arch-ppc64le
-
-package-centos8-x86_64:
-  extends:
-    - .package-build
-    - .dist-centos8
-    - .arch-x86_64
 
 package-ubuntu18.04-amd64:
   extends:
@@ -176,8 +164,6 @@ image-packaging:
     - .package-artifacts
     - .dist-packaging
   needs:
-    - job: package-centos8-aarch64
-    - job: package-centos8-x86_64
     - job: package-ubuntu18.04-amd64
     - job: package-ubuntu18.04-arm64
     - job: package-amazonlinux2-aarch64

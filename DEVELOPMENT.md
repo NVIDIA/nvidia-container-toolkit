@@ -19,7 +19,7 @@ where `TARGET` is a make target that is valid for each of the sub-components.
 
 These include:
 * `ubuntu18.04-amd64`
-* `centos8-x86_64`
+* `centos7-x86_64`
 
 If no `TARGET` is specified, all valid release targets are built.
 
