@@ -25,7 +25,7 @@ RUN fpm -s empty \
     rm -f /tmp/docker.rpm
 
 
-RUN curl -s -L https://nvidia.github.io/libnvidia-container/centos8/libnvidia-container.repo \
+RUN curl -s -L https://nvidia.github.io/libnvidia-container/stable/rpm/libnvidia-container.repo \
     | tee /etc/yum.repos.d/nvidia-container-toolkit.repo
 
 COPY entrypoint.sh /
