@@ -32,7 +32,6 @@ type parsed struct {
 	short      string
 	prerelease string
 	build      string
-	err        string
 }
 
 // IsValid reports whether v is a valid semantic version string.
@@ -141,7 +140,7 @@ func Compare(v, w string) int {
 // Max canonicalizes its arguments and then returns the version string
 // that compares greater.
 //
-// Deprecated: use Compare instead. In most cases, returning a canonicalized
+// Deprecated: use [Compare] instead. In most cases, returning a canonicalized
 // version is not expected or desired.
 func Max(v, w string) string {
 	v = Canonical(v)
@@ -152,7 +151,7 @@ func Max(v, w string) string {
 	return w
 }
 
-// ByVersion implements sort.Interface for sorting semantic version strings.
+// ByVersion implements [sort.Interface] for sorting semantic version strings.
 type ByVersion []string
 
 func (vs ByVersion) Len() int      { return len(vs) }
@@ -165,19 +164,17 @@ func (vs ByVersion) Less(i, j int) bool {
 	return vs[i] < vs[j]
 }
 
-// Sort sorts a list of semantic version strings using ByVersion.
+// Sort sorts a list of semantic version strings using [ByVersion].
 func Sort(list []string) {
 	sort.Sort(ByVersion(list))
 }
 
 func parse(v string) (p parsed, ok bool) {
 	if v == "" || v[0] != 'v' {
-		p.err = "missing v prefix"
 		return
 	}
 	p.major, v, ok = parseInt(v[1:])
 	if !ok {
-		p.err = "bad major version"
 		return
 	}
 	if v == "" {
@@ -187,13 +184,11 @@ func parse(v string) (p parsed, ok bool) {
 		return
 	}
 	if v[0] != '.' {
-		p.err = "bad minor prefix"
 		ok = false
 		return
 	}
 	p.minor, v, ok = parseInt(v[1:])
 	if !ok {
-		p.err = "bad minor version"
 		return
 	}
 	if v == "" {
@@ -202,31 +197,26 @@ func parse(v string) (p parsed, ok bool) {
 		return
 	}
 	if v[0] != '.' {
-		p.err = "bad patch prefix"
 		ok = false
 		return
 	}
 	p.patch, v, ok = parseInt(v[1:])
 	if !ok {
-		p.err = "bad patch version"
 		return
 	}
 	if len(v) > 0 && v[0] == '-' {
 		p.prerelease, v, ok = parsePrerelease(v)
 		if !ok {
-			p.err = "bad prerelease"
 			return
 		}
 	}
 	if len(v) > 0 && v[0] == '+' {
 		p.build, v, ok = parseBuild(v)
 		if !ok {
-			p.err = "bad build"
 			return
 		}
 	}
 	if v != "" {
-		p.err = "junk on end"
 		ok = false
 		return
 	}
