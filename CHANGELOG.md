@@ -1,5 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.15.0-rc.3
+* Fix bug in `nvidia-ctk hook update-ldcache` where default `--ldconfig-path` value was not applied.
+
 ## v1.15.0-rc.2
 * Extend the `runtime.nvidia.com/gpu` CDI kind to support full-GPUs and MIG devices specified by index or UUID.
 * Fix bug when specifying `--dev-root` for Tegra-based systems.
