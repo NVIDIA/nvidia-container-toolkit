@@ -1,5 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.15.0-rc4
+* [toolkit-container] Bump CUDA base image version to 12.3.2.
+
 ## v1.15.0-rc.3
 * Fix bug in `nvidia-ctk hook update-ldcache` where default `--ldconfig-path` value was not applied.
 
