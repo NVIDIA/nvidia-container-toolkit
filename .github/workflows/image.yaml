@@ -16,6 +16,13 @@
 name: image
 
 on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    branches:
+      - main
+      - release-*
   push:
     branches:
       - main
@@ -26,13 +33,24 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package:
+        target:
           - ubuntu18.04-arm64
           - ubuntu18.04-amd64
           - ubuntu18.04-ppc64le
           - centos7-aarch64
           - centos7-x86_64
           - centos8-ppc64le
+        ispr:
+          - ${{github.event_name == 'pull_request'}}
+        exclude:
+          - ispr: true
+            target: ubuntu18.04-arm64
+          - ispr: true
+            target: ubuntu18.04-ppc64le
+          - ispr: true
+            target: centos7-aarch64
+          - ispr: true
+            target: centos8-ppc64le
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
@@ -41,23 +59,34 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: build ${{ matrix.package }} packages
+      - name: build ${{ matrix.target }} packages
         run: |
           sudo apt-get install -y coreutils build-essential sed git bash make
           echo "Building packages"
-          ./scripts/build-packages.sh ${{ matrix.package }}
+          ./scripts/build-packages.sh ${{ matrix.target }}
       - name: 'Upload Artifacts'
         uses: actions/upload-artifact@v4
         with:
           compression-level: 0
-          name: toolkit-container-${{ matrix.package }}-${{ github.run_id }}
+          name: toolkit-container-${{ matrix.target }}-${{ github.run_id }}
           path: ${{ github.workspace }}/dist/*
 
   image:
     runs-on: ubuntu-latest
     strategy:
-      matrix: 
-        image: [ubuntu20.04, centos7, ubi8, packaging]
+      matrix:
+        dist:
+          - ubuntu20.04
+          - centos7
+          - ubi8
+          - packaging
+        ispr:
+          - ${{github.event_name == 'pull_request'}}
+        exclude:
+          - ispr: true
+            dist: ubi8
+          - ispr: true
+            dist: centos7
     needs: packages
     steps:
       - uses: actions/checkout@v4
@@ -70,7 +99,7 @@ jobs:
           REPO_FULL_NAME="${{ github.event.pull_request.head.repo.full_name }}"
           echo "${REPO_FULL_NAME}"
           echo "LABEL_IMAGE_SOURCE=https://github.com/${REPO_FULL_NAME}" >> $GITHUB_ENV
-          
+
           GENERATE_ARTIFACTS="false"
           if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
             GENERATE_ARTIFACTS="false"
@@ -90,7 +119,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ${{ github.workspace }}/dist/
-          pattern: toolkit-container-*
+          pattern: toolkit-container-*-${{ github.run_id }}
           merge-multiple: true
 
       - name: Login to GitHub Container Registry
@@ -105,4 +134,4 @@ jobs:
           VERSION: ${COMMIT_SHORT_SHA}
         run: |
           echo "${VERSION}"
-          make -f build/container/Makefile build-${{ matrix.image }}
+          make -f build/container/Makefile build-${{ matrix.dist }}
