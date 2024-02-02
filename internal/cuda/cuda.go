@@ -23,7 +23,8 @@ import (
 )
 
 /*
-#cgo LDFLAGS: -Wl,--unresolved-symbols=ignore-in-object-files
+#cgo linux LDFLAGS: -Wl,--export-dynamic -Wl,--unresolved-symbols=ignore-in-object-files
+#cgo darwin LDFLAGS: -Wl,-undefined,dynamic_lookup
 
 #ifdef _WIN32
 #define CUDAAPI __stdcall
