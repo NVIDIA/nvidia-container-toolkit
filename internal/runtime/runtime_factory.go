@@ -43,8 +43,16 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 	if err != nil {
 		return nil, fmt.Errorf("error constructing OCI specification: %v", err)
 	}
+	rawSpec, err := ociSpec.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
+	}
+	image, err := image.NewCUDAImageFromSpec(rawSpec)
+	if err != nil {
+		return nil, err
+	}
 
-	specModifier, err := newSpecModifier(logger, cfg, ociSpec)
+	specModifier, err := newSpecModifier(logger, cfg, image)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct OCI spec modifier: %v", err)
 	}
@@ -61,19 +69,9 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 }
 
 // newSpecModifier is a factory method that creates constructs an OCI spec modifer based on the provided config.
-func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
-	rawSpec, err := ociSpec.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
-	}
-
-	image, err := image.NewCUDAImageFromSpec(rawSpec)
-	if err != nil {
-		return nil, err
-	}
-
+func newSpecModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
 	mode := info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode, image)
-	modeModifier, err := newModeModifier(logger, mode, cfg, ociSpec, image)
+	modeModifier, err := newModeModifier(logger, mode, cfg, image)
 	if err != nil {
 		return nil, err
 	}
@@ -100,14 +98,14 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 	return modifiers, nil
 }
 
-func newModeModifier(logger logger.Interface, mode string, cfg *config.Config, ociSpec oci.Spec, image image.CUDA) (oci.SpecModifier, error) {
+func newModeModifier(logger logger.Interface, mode string, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
 	switch mode {
 	case "legacy":
 		return modifier.NewStableRuntimeModifier(logger, cfg.NVIDIAContainerRuntimeHookConfig.Path), nil
 	case "csv":
 		return modifier.NewCSVModifier(logger, cfg, image)
 	case "cdi":
-		return modifier.NewCDIModifier(logger, cfg, ociSpec)
+		return modifier.NewCDIModifier(logger, cfg, image)
 	}
 
 	return nil, fmt.Errorf("invalid runtime mode: %v", cfg.NVIDIAContainerRuntimeConfig.Mode)

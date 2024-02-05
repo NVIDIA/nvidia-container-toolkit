@@ -34,8 +34,8 @@ import (
 // NewCDIModifier creates an OCI spec modifier that determines the modifications to make based on the
 // CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES environment variable is
 // used to select the devices to include.
-func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
-	devices, err := getDevicesFromSpec(logger, ociSpec, cfg)
+func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
+	devices, err := getDevicesFromContainer(logger, cfg, image)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get required devices from OCI specification: %v", err)
 	}
@@ -65,17 +65,8 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spe
 	)
 }
 
-func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.Config) ([]string, error) {
-	rawSpec, err := ociSpec.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
-	}
-
-	container, err := image.NewCUDAImageFromSpec(rawSpec)
-	if err != nil {
-		return nil, err
-	}
-	annotationDevices, err := container.CDIDevicesFromAnnotations(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes...)
+func getDevicesFromContainer(logger logger.Interface, cfg *config.Config, image image.CUDA) ([]string, error) {
+	annotationDevices, err := image.CDIDevicesFromAnnotations(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse container annotations: %v", err)
 	}
@@ -83,13 +74,13 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 		return annotationDevices, nil
 	}
 	if cfg.AcceptDeviceListAsVolumeMounts {
-		mountDevices := container.CDIDevicesFromMounts()
+		mountDevices := image.CDIDevicesFromMounts()
 		if len(mountDevices) > 0 {
 			return mountDevices, nil
 		}
 	}
 
-	envDevices := container.DevicesFromEnvvars(visibleDevicesEnvvar)
+	envDevices := image.DevicesFromEnvvars(visibleDevicesEnvvar)
 
 	var devices []string
 	seen := make(map[string]bool)
@@ -108,7 +99,7 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 		return nil, nil
 	}
 
-	if cfg.AcceptEnvvarUnprivileged || image.IsPrivileged(rawSpec) {
+	if cfg.AcceptEnvvarUnprivileged || image.IsPrivileged() {
 		return devices, nil
 	}
 

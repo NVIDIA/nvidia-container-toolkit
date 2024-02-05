@@ -24,9 +24,7 @@ import (
 )
 
 type builder struct {
-	annotations    map[string]string
-	env            map[string]string
-	mounts         []specs.Mount
+	CUDA
 	disableRequire bool
 }
 
@@ -98,6 +96,14 @@ func WithEnv(env []string) Option {
 func WithEnvMap(env map[string]string) Option {
 	return func(b *builder) error {
 		b.env = env
+		return nil
+	}
+}
+
+// WithIsPrivileged sets whether a container is privileged or not.
+func WithIsPrivileged(isPrivileged bool) Option {
+	return func(b *builder) error {
+		b.isPrivileged = isPrivileged
 		return nil
 	}
 }

@@ -40,9 +40,10 @@ const (
 // a map of environment variable to values that can be used to perform lookups
 // such as requirements.
 type CUDA struct {
-	annotations map[string]string
-	env         map[string]string
-	mounts      []specs.Mount
+	annotations  map[string]string
+	env          map[string]string
+	mounts       []specs.Mount
+	isPrivileged bool
 }
 
 // NewCUDAImageFromSpec creates a CUDA image from the input OCI runtime spec.
@@ -57,6 +58,7 @@ func NewCUDAImageFromSpec(spec *specs.Spec) (CUDA, error) {
 		WithEnv(env),
 		WithAnnotations(spec.Annotations),
 		WithMounts(spec.Mounts),
+		WithIsPrivileged(IsPrivileged(spec)),
 	)
 }
 
@@ -64,6 +66,11 @@ func NewCUDAImageFromSpec(spec *specs.Spec) (CUDA, error) {
 // is a list of strings of the form ENVAR=VALUE.
 func NewCUDAImageFromEnv(env []string) (CUDA, error) {
 	return New(WithEnv(env))
+}
+
+// IsPrivileged indicates whether the container was started with elevated privileged.
+func (i CUDA) IsPrivileged() bool {
+	return i.isPrivileged
 }
 
 // Getenv returns the value of the specified environment variable.
