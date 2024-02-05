@@ -71,17 +71,16 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
 	}
 
-	annotationDevices, err := getAnnotationDevices(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes, rawSpec.Annotations)
+	container, err := image.NewCUDAImageFromSpec(rawSpec)
+	if err != nil {
+		return nil, err
+	}
+	annotationDevices, err := container.CDIDevicesFromAnnotations(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse container annotations: %v", err)
 	}
 	if len(annotationDevices) > 0 {
 		return annotationDevices, nil
-	}
-
-	container, err := image.NewCUDAImageFromSpec(rawSpec)
-	if err != nil {
-		return nil, err
 	}
 	if cfg.AcceptDeviceListAsVolumeMounts {
 		mountDevices := container.CDIDevicesFromMounts()

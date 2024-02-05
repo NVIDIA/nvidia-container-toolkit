@@ -40,8 +40,9 @@ const (
 // a map of environment variable to values that can be used to perform lookups
 // such as requirements.
 type CUDA struct {
-	env    map[string]string
-	mounts []specs.Mount
+	annotations map[string]string
+	env         map[string]string
+	mounts      []specs.Mount
 }
 
 // NewCUDAImageFromSpec creates a CUDA image from the input OCI runtime spec.
@@ -54,6 +55,7 @@ func NewCUDAImageFromSpec(spec *specs.Spec) (CUDA, error) {
 
 	return New(
 		WithEnv(env),
+		WithAnnotations(spec.Annotations),
 		WithMounts(spec.Mounts),
 	)
 }
@@ -273,4 +275,39 @@ func (i CUDA) CDIDevicesFromMounts() []string {
 		devices = append(devices, fmt.Sprintf("%s/%s=%s", vendor, class, device))
 	}
 	return devices
+}
+
+// CDIDevicesFromAnnotations returns a list of devices specified in the container annotations.
+// Keys starting with the specified prefixes are considered and expected to contain a comma-separated list of
+// fully-qualified CDI devices names. If any device name is not fully-quality an error is returned.
+// The list of returned devices is deduplicated.
+func (i CUDA) CDIDevicesFromAnnotations(prefixes ...string) ([]string, error) {
+	if len(prefixes) == 0 {
+		return nil, nil
+	}
+	devicesByKey := make(map[string][]string)
+	for key, value := range i.annotations {
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(key, prefix) {
+				devicesByKey[key] = strings.Split(value, ",")
+			}
+		}
+	}
+
+	seen := make(map[string]bool)
+	var annotationDevices []string
+	for key, devices := range devicesByKey {
+		for _, device := range devices {
+			if !parser.IsQualifiedName(device) {
+				return nil, fmt.Errorf("invalid device name %q in annotation %q", device, key)
+			}
+			if seen[device] {
+				continue
+			}
+			annotationDevices = append(annotationDevices, device)
+			seen[device] = true
+		}
+	}
+
+	return annotationDevices, nil
 }

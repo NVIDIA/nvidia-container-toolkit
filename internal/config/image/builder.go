@@ -24,6 +24,7 @@ import (
 )
 
 type builder struct {
+	annotations    map[string]string
 	env            map[string]string
 	mounts         []specs.Mount
 	disableRequire bool
@@ -59,6 +60,14 @@ func (b builder) build() (CUDA, error) {
 
 // Option is a functional option for creating a CUDA image.
 type Option func(*builder) error
+
+// WithAnnotations sets the annotations for the image.
+func WithAnnotations(annotations map[string]string) Option {
+	return func(b *builder) error {
+		b.annotations = annotations
+		return nil
+	}
+}
 
 // WithDisableRequire sets the disable require option.
 func WithDisableRequire(disableRequire bool) Option {
