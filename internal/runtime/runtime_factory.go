@@ -52,7 +52,7 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 		return nil, err
 	}
 
-	specModifier, err := newSpecModifier(logger, cfg, image)
+	specModifier, err := NewSpecModifier(logger, cfg, image)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct OCI spec modifier: %v", err)
 	}
@@ -68,8 +68,8 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 	return r, nil
 }
 
-// newSpecModifier is a factory method that creates constructs an OCI spec modifer based on the provided config.
-func newSpecModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
+// NewSpecModifier is a factory method that creates constructs an OCI spec modifer based on the provided config.
+func NewSpecModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
 	mode := info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode, image)
 	modeModifier, err := newModeModifier(logger, mode, cfg, image)
 	if err != nil {
