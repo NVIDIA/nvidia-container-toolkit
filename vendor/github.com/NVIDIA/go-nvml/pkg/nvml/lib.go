@@ -160,12 +160,7 @@ func (pis ProcessInfo_v1Slice) ToProcessInfoSlice() []ProcessInfo {
 func (pis ProcessInfo_v2Slice) ToProcessInfoSlice() []ProcessInfo {
 	var newInfos []ProcessInfo
 	for _, pi := range pis {
-		info := ProcessInfo{
-			Pid:               pi.Pid,
-			UsedGpuMemory:     pi.UsedGpuMemory,
-			GpuInstanceId:     pi.GpuInstanceId,
-			ComputeInstanceId: pi.ComputeInstanceId,
-		}
+		info := ProcessInfo(pi)
 		newInfos = append(newInfos, info)
 	}
 	return newInfos

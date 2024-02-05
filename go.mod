@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/NVIDIA/go-nvlib v0.0.0-20231212194527-f3264c8a6a7a
-	github.com/NVIDIA/go-nvml v0.12.0-1.0.20231020145430-e06766c5e74f
+	github.com/NVIDIA/go-nvml v0.12.0-2
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/opencontainers/runtime-spec v1.1.0
 	github.com/pelletier/go-toml v1.9.4

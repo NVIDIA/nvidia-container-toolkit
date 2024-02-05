@@ -31,7 +31,7 @@ type dynamicLibrary interface {
 	Close() error
 }
 
-// Interface represents the interace for the NVML library.
+// Interface represents the interface for the NVML library.
 type Interface interface {
 	GetLibrary() Library
 }
