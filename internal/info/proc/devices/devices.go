@@ -53,11 +53,17 @@ type Major int
 type Devices interface {
 	Exists(Name) bool
 	Get(Name) (Major, bool)
+	Count() int
 }
 
 type devices map[Name]Major
 
 var _ Devices = devices(nil)
+
+// Count returns the number of devices defined.
+func (d devices) Count() int {
+	return len(d)
+}
 
 // Exists checks if a Device with a given name exists or not
 func (d devices) Exists(name Name) bool {
@@ -109,27 +115,23 @@ func nvidiaDevices(devicesPath string) (Devices, error) {
 
 var errNoNvidiaDevices = errors.New("no NVIDIA devices found")
 
-func nvidiaDeviceFrom(reader io.Reader) (devices, error) {
+func nvidiaDeviceFrom(reader io.Reader) (Devices, error) {
 	allDevices := devicesFrom(reader)
-	nvidiaDevices := make(devices)
 
-	var hasNvidiaDevices bool
-	for n, d := range allDevices {
-		if !strings.HasPrefix(string(n), nvidiaDevicePrefix) {
-			continue
-		}
-		nvidiaDevices[n] = d
-		hasNvidiaDevices = true
-	}
-
-	if !hasNvidiaDevices {
+	nvidiaDevices := New(
+		WithDeviceToMajor(allDevices),
+		WithFilter(func(n string) bool {
+			return !strings.HasPrefix(n, nvidiaDevicePrefix)
+		}),
+	)
+	if nvidiaDevices.Count() == 0 {
 		return nil, errNoNvidiaDevices
 	}
 	return nvidiaDevices, nil
 }
 
-func devicesFrom(reader io.Reader) devices {
-	allDevices := make(devices)
+func devicesFrom(reader io.Reader) map[string]int {
+	allDevices := make(map[string]int)
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		device, major, err := processProcDeviceLine(scanner.Text())
@@ -141,11 +143,11 @@ func devicesFrom(reader io.Reader) devices {
 	return allDevices
 }
 
-func processProcDeviceLine(line string) (Name, Major, error) {
+func processProcDeviceLine(line string) (string, int, error) {
 	trimmed := strings.TrimSpace(line)
 
-	var name Name
-	var major Major
+	var name string
+	var major int
 
 	n, _ := fmt.Sscanf(trimmed, "%d %s", &major, &name)
 	if n == 2 {
