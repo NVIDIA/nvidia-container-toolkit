@@ -31,11 +31,25 @@ func TestCreateControlDevices(t *testing.T) {
 
 	nvidiaDevices := &devices.DevicesMock{
 		GetFunc: func(name devices.Name) (devices.Major, bool) {
-			devices := map[devices.Name]devices.Major{
+			devs := map[devices.Name]devices.Major{
 				"nvidia-frontend": 195,
 				"nvidia-uvm":      243,
 			}
-			return devices[name], true
+
+			// devs550_40 represents the device map from the nvidia gpu drivers >= 550.40.x
+			devs550_40 := map[devices.Name]devices.Major{
+				"nvidia":     195,
+				"nvidia-uvm": 243,
+			}
+
+			d, ok := devs[name]
+			if ok {
+				return d, ok
+			}
+
+			// if device d is not found, fallback to the second mock device map
+			d, ok = devs550_40[name]
+			return d, ok
 		},
 	}
 
@@ -46,6 +60,7 @@ func TestCreateControlDevices(t *testing.T) {
 		root          string
 		devices       devices.Devices
 		mknodeError   error
+		hasError      bool
 		expectedError error
 		expectedCalls []struct {
 			S  string
@@ -58,6 +73,7 @@ func TestCreateControlDevices(t *testing.T) {
 			root:        "",
 			devices:     nvidiaDevices,
 			mknodeError: nil,
+			hasError:    false,
 			expectedCalls: []struct {
 				S  string
 				N1 int
@@ -73,6 +89,7 @@ func TestCreateControlDevices(t *testing.T) {
 			description: "some root specified",
 			root:        "/some/root",
 			devices:     nvidiaDevices,
+			hasError:    false,
 			mknodeError: nil,
 			expectedCalls: []struct {
 				S  string
@@ -88,6 +105,7 @@ func TestCreateControlDevices(t *testing.T) {
 		{
 			description:   "mknod error returns error",
 			devices:       nvidiaDevices,
+			hasError:      true,
 			mknodeError:   mknodeError,
 			expectedError: mknodeError,
 			// We expect the first call to this to fail, and the rest to be skipped
@@ -106,7 +124,23 @@ func TestCreateControlDevices(t *testing.T) {
 					return 0, false
 				},
 			},
+			hasError:      true,
 			expectedError: errInvalidDeviceNode,
+		},
+		{
+			description: "nvidia device renamed from nvidia-frontend to nvidia",
+			devices:     nvidiaDevices,
+			hasError:    false,
+			expectedCalls: []struct {
+				S  string
+				N1 int
+				N2 int
+			}{
+				{"/dev/nvidiactl", 195, 255},
+				{"/dev/nvidia-modeset", 195, 254},
+				{"/dev/nvidia-uvm", 243, 0},
+				{"/dev/nvidia-uvm-tools", 243, 1},
+			},
 		},
 	}
 
@@ -126,9 +160,12 @@ func TestCreateControlDevices(t *testing.T) {
 			d.mknoder = mknode
 
 			err := d.CreateNVIDIAControlDevices()
-			require.ErrorIs(t, err, tc.expectedError)
+			if tc.hasError {
+				require.ErrorContains(t, err, tc.expectedError.Error())
+			} else {
+				require.Nil(t, err)
+			}
 			require.EqualValues(t, tc.expectedCalls, mknode.MknodeCalls())
 		})
 	}
-
 }

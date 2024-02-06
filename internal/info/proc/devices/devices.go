@@ -33,7 +33,7 @@ const (
 	NVIDIAModesetMinor  = 254
 
 	NVIDIAFrontend = Name("nvidia-frontend")
-	NVIDIAGPU      = NVIDIAFrontend
+	NVIDIAGPU      = Name("nvidia")
 	NVIDIACaps     = Name("nvidia-caps")
 	NVIDIAUVM      = Name("nvidia-uvm")
 
@@ -65,10 +65,25 @@ func (d devices) Exists(name Name) bool {
 	return exists
 }
 
-// Get a Device from Devices
+// Get a Device from Devices. It also has fallback logic to ensure device name changes in /proc/devices are handled
+// For e.g:- For GPU drivers 550.40.x or greater, the gpu device has been renamed from  "nvidia-frontend" to "nvidia".
 func (d devices) Get(name Name) (Major, bool) {
-	device, exists := d[name]
-	return device, exists
+	for _, n := range name.getWithFallback() {
+		device, exists := d[n]
+		if exists {
+			return device, true
+		}
+	}
+	return 0, false
+}
+
+// getWithFallback returns a prioritised list of device names for a specific name.
+// This allows multiple names to be associated with a single name to support various driver versions.
+func (n Name) getWithFallback() []Name {
+	if n == NVIDIAGPU || n == NVIDIAFrontend {
+		return []Name{NVIDIAGPU, NVIDIAFrontend}
+	}
+	return []Name{n}
 }
 
 // GetNVIDIADevices returns the set of NVIDIA Devices on the machine

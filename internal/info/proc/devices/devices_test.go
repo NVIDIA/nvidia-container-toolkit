@@ -41,6 +41,11 @@ func TestNvidiaDevices(t *testing.T) {
 	}
 	_, exists := nvidiaDevices.Get("bogus")
 	require.False(t, exists, "Unexpected 'bogus' device found")
+
+	// assert that nvidia and nvidia-frontend can be used interchangeably and have the device major numbers
+	m, exists := nvidiaDevices.Get("nvidia")
+	require.True(t, exists)
+	require.Equal(t, devices["nvidia-frontend"], m)
 }
 
 func TestProcessDeviceFile(t *testing.T) {
