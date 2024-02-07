@@ -1,5 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.14.5
+
 ## v1.14.4
 * Include `nvidia/nvoptix.bin` in list of graphics mounts.
 * Include `vulkan/icd.d/nvidia_layers.json` in list of graphics mounts.
