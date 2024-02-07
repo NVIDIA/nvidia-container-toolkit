@@ -19,8 +19,9 @@ package containerd
 import (
 	"fmt"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/pelletier/go-toml"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 )
 
 // ConfigV1 represents a version 1 containerd config
@@ -134,7 +135,7 @@ func (c *ConfigV1) RemoveRuntime(name string) error {
 	return nil
 }
 
-// SetOption sets the specified containerd option.
+// Set sets the specified containerd option.
 func (c *ConfigV1) Set(key string, value interface{}) error {
 	config := *c.Tree
 	config.SetPath([]string{"plugins", "cri", "containerd", key}, value)

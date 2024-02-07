@@ -20,10 +20,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/opencontainers/runtime-spec/specs-go"
+	"tags.cncf.io/container-device-interface/pkg/cdi"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
-	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
 // fromRegistry represents the modifications performed using a CDI registry.

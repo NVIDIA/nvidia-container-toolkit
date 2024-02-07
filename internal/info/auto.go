@@ -17,12 +17,13 @@
 package info
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	cdi "github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
+	cdi "tags.cncf.io/container-device-interface/pkg/parser"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 // infoInterface provides an alias for mocking.

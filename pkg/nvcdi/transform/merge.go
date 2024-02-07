@@ -16,7 +16,7 @@
 
 package transform
 
-import "github.com/container-orchestrated-devices/container-device-interface/specs-go"
+import "tags.cncf.io/container-device-interface/specs-go"
 
 type merged []Transformer
 

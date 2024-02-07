@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"strings"
 
+	"tags.cncf.io/container-device-interface/pkg/parser"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 )
 
 type cdiModifier struct {
