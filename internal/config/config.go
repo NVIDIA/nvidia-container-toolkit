@@ -22,10 +22,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"tags.cncf.io/container-device-interface/pkg/cdi"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 )
 
 const (

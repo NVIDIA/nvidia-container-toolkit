@@ -4,9 +4,8 @@ go 1.20
 
 require (
 	github.com/NVIDIA/go-nvml v0.12.0-1
-	github.com/container-orchestrated-devices/container-device-interface v0.6.0
 	github.com/fsnotify/fsnotify v1.5.4
-	github.com/opencontainers/runtime-spec v1.1.0-rc.2
+	github.com/opencontainers/runtime-spec v1.1.0
 	github.com/pelletier/go-toml v1.9.4
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.1
@@ -14,6 +13,8 @@ require (
 	gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20230818092907-09424fdc8884
 	golang.org/x/mod v0.5.0
 	golang.org/x/sys v0.7.0
+	tags.cncf.io/container-device-interface v0.6.2
+	tags.cncf.io/container-device-interface/specs-go v0.6.0
 )
 
 require (
@@ -21,7 +22,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
-	github.com/opencontainers/runc v1.1.6 // indirect
 	github.com/opencontainers/runtime-tools v0.9.1-0.20221107090550-2e043c6bd626 // indirect
 	github.com/opencontainers/selinux v1.11.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
