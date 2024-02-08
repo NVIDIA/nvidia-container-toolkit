@@ -1,5 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
+* Add a `--spec-dir` option to the `nvidia-ctk cdi generate` command. This allows specs outside of `/etc/cdi` and `/var/run/cdi` to be processed.
+
 ## v1.15.0-rc.3
 * Fix bug in `nvidia-ctk hook update-ldcache` where default `--ldconfig-path` value was not applied.
 

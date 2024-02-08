@@ -86,12 +86,16 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("failed to create CDI cache: %v", err)
 	}
 
-	refreshErr := registry.Refresh()
+	_ = registry.Refresh()
+	if errors := registry.GetErrors(); len(errors) > 0 {
+		m.logger.Warningf("The following registry errors were reported:")
+		for k, err := range errors {
+			m.logger.Warningf("%v: %v", k, err)
+		}
+	}
+
 	devices := registry.ListDevices()
 	m.logger.Infof("Found %d CDI devices", len(devices))
-	if refreshErr != nil {
-		m.logger.Warningf("Refreshing the CDI registry returned the following error(s): %v", refreshErr)
-	}
 	for _, device := range devices {
 		fmt.Printf("%s\n", device)
 	}
