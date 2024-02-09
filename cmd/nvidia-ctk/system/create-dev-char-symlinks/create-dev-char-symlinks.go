@@ -87,7 +87,7 @@ func (m command) build() *cli.Command {
 			Usage:       "The path to the driver root. `DRIVER_ROOT`/dev is searched for NVIDIA device nodes.",
 			Value:       "/",
 			Destination: &cfg.driverRoot,
-			EnvVars:     []string{"DRIVER_ROOT"},
+			EnvVars:     []string{"NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"},
 		},
 		&cli.BoolFlag{
 			Name:        "watch",
