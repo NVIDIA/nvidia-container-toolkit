@@ -369,7 +369,14 @@ func Install(cli *cli.Context, opts *options) error {
 		log.Errorf("Ignoring error: %v", fmt.Errorf("error creating device nodes: %v", err))
 	}
 
-	return generateCDISpec(opts, nvidiaCTKPath)
+	err = generateCDISpec(opts, nvidiaCTKPath)
+	if err != nil && !opts.ignoreErrors {
+		return fmt.Errorf("error generating CDI specification: %v", err)
+	} else if err != nil {
+		log.Errorf("Ignoring error: %v", fmt.Errorf("error generating CDI specification: %v", err))
+	}
+
+	return nil
 }
 
 // installContainerLibraries locates and installs the libraries that are part of
