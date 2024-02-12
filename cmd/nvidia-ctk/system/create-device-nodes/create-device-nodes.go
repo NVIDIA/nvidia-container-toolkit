@@ -69,7 +69,7 @@ func (m command) build() *cli.Command {
 			Usage:       "the path to the driver root. Device nodes will be created at `DRIVER_ROOT`/dev",
 			Value:       "/",
 			Destination: &opts.driverRoot,
-			EnvVars:     []string{"DRIVER_ROOT"},
+			EnvVars:     []string{"NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"},
 		},
 		&cli.BoolFlag{
 			Name:        "control-devices",

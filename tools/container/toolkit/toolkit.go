@@ -118,10 +118,11 @@ func main() {
 
 	flags := []cli.Flag{
 		&cli.StringFlag{
-			Name:        "nvidia-driver-root",
+			Name:        "driver-root",
+			Aliases:     []string{"nvidia-driver-root"},
 			Value:       DefaultNvidiaDriverRoot,
 			Destination: &opts.DriverRoot,
-			EnvVars:     []string{"NVIDIA_DRIVER_ROOT"},
+			EnvVars:     []string{"NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"},
 		},
 		&cli.StringFlag{
 			Name:        "driver-root-ctr-path",
