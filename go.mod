@@ -12,7 +12,7 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20230818092907-09424fdc8884
 	golang.org/x/mod v0.5.0
-	golang.org/x/sys v0.7.0
+	golang.org/x/sys v0.17.0
 	tags.cncf.io/container-device-interface v0.6.2
 	tags.cncf.io/container-device-interface/specs-go v0.6.0
 )
