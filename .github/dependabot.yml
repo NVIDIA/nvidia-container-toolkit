@@ -14,6 +14,18 @@ updates:
     labels:
     - dependencies
 
+  - package-ecosystem: "gomod"
+    # This defines a specific dependabot rule for the latest release-* branch.
+    target-branch: release-1.14
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    ignore:
+    - dependency-name: k8s.io/*
+    labels:
+    - dependencies
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
