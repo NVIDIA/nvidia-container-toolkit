@@ -29,15 +29,18 @@ import (
 func TestCreateControlDevices(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
-	nvidiaDevices := &devices.DevicesMock{
-		GetFunc: func(name devices.Name) (devices.Major, bool) {
-			devices := map[devices.Name]devices.Major{
-				"nvidia-frontend": 195,
-				"nvidia-uvm":      243,
-			}
-			return devices[name], true
-		},
-	}
+	nvidiaDevices := devices.New(
+		devices.WithDeviceToMajor(map[string]int{
+			"nvidia-frontend": 195,
+			"nvidia-uvm":      243,
+		}),
+	)
+	nvidia550Devices := devices.New(
+		devices.WithDeviceToMajor(map[string]int{
+			"nvidia":     195,
+			"nvidia-uvm": 243,
+		}),
+	)
 
 	mknodeError := errors.New("mknode error")
 
@@ -54,9 +57,25 @@ func TestCreateControlDevices(t *testing.T) {
 		}
 	}{
 		{
-			description: "no root specified",
+			description: "no root specified; pre 550 driver",
 			root:        "",
 			devices:     nvidiaDevices,
+			mknodeError: nil,
+			expectedCalls: []struct {
+				S  string
+				N1 int
+				N2 int
+			}{
+				{"/dev/nvidiactl", 195, 255},
+				{"/dev/nvidia-modeset", 195, 254},
+				{"/dev/nvidia-uvm", 243, 0},
+				{"/dev/nvidia-uvm-tools", 243, 1},
+			},
+		},
+		{
+			description: "no root specified; 550 driver",
+			root:        "",
+			devices:     nvidia550Devices,
 			mknodeError: nil,
 			expectedCalls: []struct {
 				S  string
@@ -130,5 +149,4 @@ func TestCreateControlDevices(t *testing.T) {
 			require.EqualValues(t, tc.expectedCalls, mknode.MknodeCalls())
 		})
 	}
-
 }
