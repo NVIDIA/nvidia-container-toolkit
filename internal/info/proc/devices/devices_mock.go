@@ -17,6 +17,9 @@ var _ Devices = &DevicesMock{}
 //
 //		// make and configure a mocked Devices
 //		mockedDevices := &DevicesMock{
+//			CountFunc: func() int {
+//				panic("mock out the Count method")
+//			},
 //			ExistsFunc: func(name Name) bool {
 //				panic("mock out the Exists method")
 //			},
@@ -30,6 +33,9 @@ var _ Devices = &DevicesMock{}
 //
 //	}
 type DevicesMock struct {
+	// CountFunc mocks the Count method.
+	CountFunc func() int
+
 	// ExistsFunc mocks the Exists method.
 	ExistsFunc func(name Name) bool
 
@@ -38,6 +44,9 @@ type DevicesMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// Count holds details about calls to the Count method.
+		Count []struct {
+		}
 		// Exists holds details about calls to the Exists method.
 		Exists []struct {
 			// Name is the name argument value.
@@ -49,8 +58,39 @@ type DevicesMock struct {
 			Name Name
 		}
 	}
+	lockCount  sync.RWMutex
 	lockExists sync.RWMutex
 	lockGet    sync.RWMutex
+}
+
+// Count calls CountFunc.
+func (mock *DevicesMock) Count() int {
+	callInfo := struct {
+	}{}
+	mock.lockCount.Lock()
+	mock.calls.Count = append(mock.calls.Count, callInfo)
+	mock.lockCount.Unlock()
+	if mock.CountFunc == nil {
+		var (
+			nOut int
+		)
+		return nOut
+	}
+	return mock.CountFunc()
+}
+
+// CountCalls gets all the calls that were made to Count.
+// Check the length with:
+//
+//	len(mockedDevices.CountCalls())
+func (mock *DevicesMock) CountCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockCount.RLock()
+	calls = mock.calls.Count
+	mock.lockCount.RUnlock()
+	return calls
 }
 
 // Exists calls ExistsFunc.
