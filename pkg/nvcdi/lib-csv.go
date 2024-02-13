@@ -58,16 +58,20 @@ func (l *csvlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 		return nil, fmt.Errorf("failed to create container edits for CSV files: %v", err)
 	}
 
-	name, err := l.deviceNamer.GetDeviceName(0, uuidUnsupported{})
+	names, err := l.deviceNamers.GetDeviceNames(0, uuidIgnored{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device name: %v", err)
 	}
-
-	deviceSpec := specs.Device{
-		Name:           name,
-		ContainerEdits: *e.ContainerEdits,
+	var deviceSpecs []specs.Device
+	for _, name := range names {
+		deviceSpec := specs.Device{
+			Name:           name,
+			ContainerEdits: *e.ContainerEdits,
+		}
+		deviceSpecs = append(deviceSpecs, deviceSpec)
 	}
-	return []specs.Device{deviceSpec}, nil
+
+	return deviceSpecs, nil
 }
 
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
@@ -82,7 +86,7 @@ func (l *csvlib) GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, error) {
 }
 
 // GetGPUDeviceSpecs returns the CDI device specs for the full GPU represented by 'device'.
-func (l *csvlib) GetGPUDeviceSpecs(i int, d device.Device) (*specs.Device, error) {
+func (l *csvlib) GetGPUDeviceSpecs(i int, d device.Device) ([]specs.Device, error) {
 	return nil, fmt.Errorf("GetGPUDeviceSpecs is not supported for CSV files")
 }
 
@@ -92,7 +96,7 @@ func (l *csvlib) GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi.Contai
 }
 
 // GetMIGDeviceSpecs returns the CDI device specs for the full MIG represented by 'device'.
-func (l *csvlib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) (*specs.Device, error) {
+func (l *csvlib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) ([]specs.Device, error) {
 	return nil, fmt.Errorf("GetMIGDeviceSpecs is not supported for CSV files")
 }
 

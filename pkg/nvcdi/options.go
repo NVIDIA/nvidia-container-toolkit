@@ -34,10 +34,10 @@ func WithDeviceLib(devicelib device.Interface) Option {
 	}
 }
 
-// WithDeviceNamer sets the device namer for the library
-func WithDeviceNamer(namer DeviceNamer) Option {
+// WithDeviceNamers sets the device namer for the library
+func WithDeviceNamers(namers ...DeviceNamer) Option {
 	return func(l *nvcdilib) {
-		l.deviceNamer = namer
+		l.deviceNamers = namers
 	}
 }
 

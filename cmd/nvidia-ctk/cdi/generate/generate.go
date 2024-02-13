@@ -42,16 +42,16 @@ type command struct {
 }
 
 type options struct {
-	output             string
-	format             string
-	deviceNameStrategy string
-	driverRoot         string
-	devRoot            string
-	nvidiaCTKPath      string
-	ldconfigPath       string
-	mode               string
-	vendor             string
-	class              string
+	output               string
+	format               string
+	deviceNameStrategies cli.StringSlice
+	driverRoot           string
+	devRoot              string
+	nvidiaCTKPath        string
+	ldconfigPath         string
+	mode                 string
+	vendor               string
+	class                string
 
 	librarySearchPaths cli.StringSlice
 
@@ -109,11 +109,11 @@ func (m command) build() *cli.Command {
 			Usage:       "Specify the root where `/dev` is located. If this is not specified, the driver-root is assumed.",
 			Destination: &opts.devRoot,
 		},
-		&cli.StringFlag{
+		&cli.StringSliceFlag{
 			Name:        "device-name-strategy",
-			Usage:       "Specify the strategy for generating device names. One of [index | uuid | type-index]",
-			Value:       nvcdi.DeviceNameStrategyIndex,
-			Destination: &opts.deviceNameStrategy,
+			Usage:       "Specify the strategy for generating device names. If this is specified multiple times, the devices will be duplicated for each strategy. One of [index | uuid | type-index]",
+			Value:       cli.NewStringSlice(nvcdi.DeviceNameStrategyIndex, nvcdi.DeviceNameStrategyUUID),
+			Destination: &opts.deviceNameStrategies,
 		},
 		&cli.StringFlag{
 			Name:        "driver-root",
@@ -185,9 +185,11 @@ func (m command) validateFlags(c *cli.Context, opts *options) error {
 		return fmt.Errorf("invalid discovery mode: %v", opts.mode)
 	}
 
-	_, err := nvcdi.NewDeviceNamer(opts.deviceNameStrategy)
-	if err != nil {
-		return err
+	for _, strategy := range opts.deviceNameStrategies.Value() {
+		_, err := nvcdi.NewDeviceNamer(strategy)
+		if err != nil {
+			return err
+		}
 	}
 
 	opts.nvidiaCTKPath = config.ResolveNVIDIACTKPath(m.logger, opts.nvidiaCTKPath)
@@ -241,9 +243,13 @@ func formatFromFilename(filename string) string {
 }
 
 func (m command) generateSpec(opts *options) (spec.Interface, error) {
-	deviceNamer, err := nvcdi.NewDeviceNamer(opts.deviceNameStrategy)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create device namer: %v", err)
+	var deviceNamers []nvcdi.DeviceNamer
+	for _, strategy := range opts.deviceNameStrategies.Value() {
+		deviceNamer, err := nvcdi.NewDeviceNamer(strategy)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create device namer: %v", err)
+		}
+		deviceNamers = append(deviceNamers, deviceNamer)
 	}
 
 	cdilib, err := nvcdi.New(
@@ -252,7 +258,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithDevRoot(opts.devRoot),
 		nvcdi.WithNVIDIACTKPath(opts.nvidiaCTKPath),
 		nvcdi.WithLdconfigPath(opts.ldconfigPath),
-		nvcdi.WithDeviceNamer(deviceNamer),
+		nvcdi.WithDeviceNamers(deviceNamers...),
 		nvcdi.WithMode(opts.mode),
 		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths.Value()),
 		nvcdi.WithCSVFiles(opts.csv.files.Value()),

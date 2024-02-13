@@ -68,7 +68,7 @@ func (l *mofedlib) GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, error)
 }
 
 // GetGPUDeviceSpecs is unsupported for the mofedlib specs
-func (l *mofedlib) GetGPUDeviceSpecs(int, device.Device) (*specs.Device, error) {
+func (l *mofedlib) GetGPUDeviceSpecs(int, device.Device) ([]specs.Device, error) {
 	return nil, fmt.Errorf("GetGPUDeviceSpecs is not supported")
 }
 
@@ -78,7 +78,7 @@ func (l *mofedlib) GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi.Cont
 }
 
 // GetMIGDeviceSpecs is unsupported for the mofedlib specs
-func (l *mofedlib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) (*specs.Device, error) {
+func (l *mofedlib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) ([]specs.Device, error) {
 	return nil, fmt.Errorf("GetMIGDeviceSpecs is not supported")
 }
 
