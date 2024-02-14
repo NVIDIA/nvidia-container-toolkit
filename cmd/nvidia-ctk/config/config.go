@@ -109,7 +109,11 @@ func run(c *cli.Context, opts *options) error {
 		if err != nil {
 			return fmt.Errorf("invalid --set option %v: %w", set, err)
 		}
-		cfgToml.Set(key, value)
+		if value == nil {
+			_ = cfgToml.Delete(key)
+		} else {
+			cfgToml.Set(key, value)
+		}
 	}
 
 	if err := opts.EnsureOutputFolder(); err != nil {
@@ -146,20 +150,25 @@ func setFlagToKeyValue(setFlag string) (string, interface{}, error) {
 
 	kind := field.Kind()
 	if len(setParts) != 2 {
-		if kind == reflect.Bool {
+		if kind == reflect.Bool || (kind == reflect.Pointer && field.Elem().Kind() == reflect.Bool) {
 			return key, true, nil
 		}
 		return key, nil, fmt.Errorf("%w: expected key=value; got %v", errInvalidFormat, setFlag)
 	}
 
 	value := setParts[1]
+	if kind == reflect.Pointer && value != "nil" {
+		kind = field.Elem().Kind()
+	}
 	switch kind {
+	case reflect.Pointer:
+		return key, nil, nil
 	case reflect.Bool:
 		b, err := strconv.ParseBool(value)
 		if err != nil {
 			return key, value, fmt.Errorf("%w: %w", errInvalidFormat, err)
 		}
-		return key, b, err
+		return key, b, nil
 	case reflect.String:
 		return key, value, nil
 	case reflect.Slice:
@@ -201,7 +210,7 @@ func getStruct(current reflect.Type, paths ...string) (reflect.StructField, erro
 		if !ok {
 			continue
 		}
-		if v != tomlField {
+		if strings.SplitN(v, ",", 2)[0] != tomlField {
 			continue
 		}
 		if len(paths) == 1 {
