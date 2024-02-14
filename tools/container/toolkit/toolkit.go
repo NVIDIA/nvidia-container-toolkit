@@ -48,7 +48,9 @@ const (
 
 type options struct {
 	DriverRoot        string
+	DevRoot           string
 	DriverRootCtrPath string
+	DevRootCtrPath    string
 
 	ContainerRuntimeMode     string
 	ContainerRuntimeDebug    string
@@ -129,6 +131,18 @@ func main() {
 			Value:       DefaultNvidiaDriverRoot,
 			Destination: &opts.DriverRootCtrPath,
 			EnvVars:     []string{"DRIVER_ROOT_CTR_PATH"},
+		},
+		&cli.StringFlag{
+			Name:        "dev-root",
+			Usage:       "Specify the root where `/dev` is located. If this is not specified, the driver-root is assumed.",
+			Destination: &opts.DevRoot,
+			EnvVars:     []string{"NVIDIA_DEV_ROOT", "DEV_ROOT"},
+		},
+		&cli.StringFlag{
+			Name:        "dev-root-ctr-path",
+			Usage:       "Specify the root where `/dev` is located in the container. If this is not specified, the driver-root-ctr-path is assumed.",
+			Destination: &opts.DevRootCtrPath,
+			EnvVars:     []string{"DEV_ROOT_CTR_PATH"},
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-container-runtime.debug",
@@ -702,6 +716,7 @@ func generateCDISpec(opts *options, nvidiaCTKPath string) error {
 	cdilib, err := nvcdi.New(
 		nvcdi.WithMode(nvcdi.ModeManagement),
 		nvcdi.WithDriverRoot(opts.DriverRootCtrPath),
+		nvcdi.WithDevRoot(opts.DevRootCtrPath),
 		nvcdi.WithNVIDIACTKPath(nvidiaCTKPath),
 		nvcdi.WithVendor(opts.cdiVendor),
 		nvcdi.WithClass(opts.cdiClass),
@@ -714,6 +729,21 @@ func generateCDISpec(opts *options, nvidiaCTKPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to genereate CDI spec for management containers: %v", err)
 	}
+
+	if opts.DevRoot != "" && opts.DevRoot != opts.DriverRoot && opts.DevRootCtrPath != "" {
+		log.Infof("Transforming device root %v to %v", opts.DevRootCtrPath, opts.DevRoot)
+		ensureDev := func(p string) string {
+			return filepath.Join(strings.TrimSuffix(filepath.Clean(p), "/dev"), "/dev")
+		}
+		err = transformroot.New(
+			transformroot.WithRoot(ensureDev(opts.DevRootCtrPath)),
+			transformroot.WithTargetRoot(ensureDev(opts.DevRoot)),
+		).Transform(spec.Raw())
+		if err != nil {
+			return fmt.Errorf("failed to transform driver root in CDI spec: %v", err)
+		}
+	}
+
 	err = transformroot.New(
 		transformroot.WithRoot(opts.DriverRootCtrPath),
 		transformroot.WithTargetRoot(opts.DriverRoot),
