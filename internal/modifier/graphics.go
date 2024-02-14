@@ -35,8 +35,10 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, image imag
 		return nil, nil
 	}
 
-	// TODO: We should not just pass `nil` as the search path here.
-	driver := root.New(logger, cfg.NVIDIAContainerCLIConfig.Root, nil)
+	driver := root.New(
+		root.WithLogger(logger),
+		root.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
+	)
 	nvidiaCTKPath := cfg.NVIDIACTKConfig.Path
 
 	mounts, err := discover.NewGraphicsMountsDiscoverer(
