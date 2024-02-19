@@ -20,6 +20,9 @@ linters-settings:
     local-prefixes: github.com/NVIDIA/nvidia-container-toolkit
 
 issues:
+  exclude:
+  # The legacy hook relies on spec.Hooks.Prestart, which is deprecated as of the v1.2.0 OCI runtime spec.
+  - "SA1019:(.+).Prestart is deprecated(.+)"
   exclude-rules:
   # Exclude the gocritic dupSubExpr issue for cgo files.
   - path: internal/dxcore/dxcore.go
