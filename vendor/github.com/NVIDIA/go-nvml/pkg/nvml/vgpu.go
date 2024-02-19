@@ -438,7 +438,7 @@ func GetVgpuVersion() (VgpuVersion, VgpuVersion, Return) {
 
 // nvml.SetVgpuVersion()
 func SetVgpuVersion(VgpuVersion *VgpuVersion) Return {
-	return SetVgpuVersion(VgpuVersion)
+	return nvmlSetVgpuVersion(VgpuVersion)
 }
 
 // nvml.VgpuInstanceClearAccountingPids()
