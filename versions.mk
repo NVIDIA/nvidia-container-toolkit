@@ -27,9 +27,6 @@ PACKAGE_REVISION := 1
 NVIDIA_DOCKER_VERSION := 2.14.0
 NVIDIA_CONTAINER_RUNTIME_VERSION := 3.14.0
 
-# Specify the expected libnvidia-container0 version for arm64-based ubuntu builds.
-LIBNVIDIA_CONTAINER0_VERSION := 0.10.0+jetpack
-
 CUDA_VERSION := 12.3.1
 GOLANG_VERSION := 1.20.5
 
