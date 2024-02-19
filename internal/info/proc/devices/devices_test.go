@@ -25,22 +25,46 @@ import (
 )
 
 func TestNvidiaDevices(t *testing.T) {
-	devices := map[Name]Major{
-		"nvidia-frontend": 195,
-		"nvidia-nvlink":   234,
-		"nvidia-caps":     235,
-		"nvidia-uvm":      510,
-		"nvidia-nvswitch": 511,
+	perDriverDeviceMaps := map[string]map[string]int{
+		"pre550": {
+			"nvidia-frontend": 195,
+			"nvidia-nvlink":   234,
+			"nvidia-caps":     235,
+			"nvidia-uvm":      510,
+			"nvidia-nvswitch": 511,
+		},
+		"post550": {
+			"nvidia":          195,
+			"nvidia-nvlink":   234,
+			"nvidia-caps":     235,
+			"nvidia-uvm":      510,
+			"nvidia-nvswitch": 511,
+		},
 	}
 
-	nvidiaDevices := testDevices(devices)
-	for name, major := range devices {
-		device, exists := nvidiaDevices.Get(name)
-		require.True(t, exists, "Unexpected missing device")
-		require.Equal(t, device, major, "Unexpected device major")
+	for k, devices := range perDriverDeviceMaps {
+		nvidiaDevices := New(WithDeviceToMajor(devices))
+		t.Run(k, func(t *testing.T) {
+			// Each of the expected devices needs to exist.
+			for name, major := range devices {
+				device, exists := nvidiaDevices.Get(Name(name))
+				require.True(t, exists)
+				require.Equal(t, device, Major(major))
+			}
+			// An unexpected device cannot exist
+			_, exists := nvidiaDevices.Get("bogus")
+			require.False(t, exists)
+
+			// Regardles of the driver version, the nvidia and nvidia-frontend
+			// names are supported and have the same value.
+			nvidia, exists := nvidiaDevices.Get(NVIDIAGPU)
+			require.True(t, exists)
+			nvidiaFrontend, exists := nvidiaDevices.Get(NVIDIAFrontend)
+			require.True(t, exists)
+			require.Equal(t, nvidia, nvidiaFrontend)
+		})
+
 	}
-	_, exists := nvidiaDevices.Get("bogus")
-	require.False(t, exists, "Unexpected 'bogus' device found")
 }
 
 func TestProcessDeviceFile(t *testing.T) {
@@ -52,6 +76,7 @@ func TestProcessDeviceFile(t *testing.T) {
 		{lines: []string{}, expectedError: errNoNvidiaDevices},
 		{lines: []string{"Not a valid line:"}, expectedError: errNoNvidiaDevices},
 		{lines: []string{"195 nvidia-frontend"}, expected: devices{"nvidia-frontend": 195}},
+		{lines: []string{"195 nvidia"}, expected: devices{"nvidia": 195}},
 		{lines: []string{"195 nvidia-frontend", "235 nvidia-caps"}, expected: devices{"nvidia-frontend": 195, "nvidia-caps": 235}},
 		{lines: []string{"  195 nvidia-frontend"}, expected: devices{"nvidia-frontend": 195}},
 		{lines: []string{"Not a valid line:", "", "195 nvidia-frontend"}, expected: devices{"nvidia-frontend": 195}},
@@ -63,7 +88,10 @@ func TestProcessDeviceFile(t *testing.T) {
 			d, err := nvidiaDeviceFrom(contents)
 			require.ErrorIs(t, err, tc.expectedError)
 
-			require.EqualValues(t, tc.expected, d)
+			if tc.expectedError == nil {
+				require.EqualValues(t, tc.expected, d.(devices))
+			}
+
 		})
 	}
 }
@@ -71,8 +99,8 @@ func TestProcessDeviceFile(t *testing.T) {
 func TestProcessDeviceFileLine(t *testing.T) {
 	testCases := []struct {
 		line  string
-		name  Name
-		major Major
+		name  string
+		major int
 		err   bool
 	}{
 		{"", "", 0, true},
@@ -96,9 +124,4 @@ func TestProcessDeviceFileLine(t *testing.T) {
 
 		})
 	}
-}
-
-// testDevices creates a set of test NVIDIA devices
-func testDevices(d map[Name]Major) Devices {
-	return devices(d)
 }
