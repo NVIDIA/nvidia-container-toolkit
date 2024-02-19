@@ -75,14 +75,6 @@ ARG PACKAGE_VERSION
 ARG TARGETARCH
 ENV PACKAGE_ARCH ${TARGETARCH}
 
-ARG LIBNVIDIA_CONTAINER_REPO="https://nvidia.github.io/libnvidia-container/stable"
-ARG LIBNVIDIA_CONTAINER0_VERSION
-RUN if [ "${PACKAGE_ARCH}" = "arm64" ]; then \
-        curl -L ${LIBNVIDIA_CONTAINER_REPO}/${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container0_${LIBNVIDIA_CONTAINER0_VERSION}_${PACKAGE_ARCH}.deb \
-            --output ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container0_${LIBNVIDIA_CONTAINER0_VERSION}_${PACKAGE_ARCH}.deb && \
-        dpkg -i ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container0_${LIBNVIDIA_CONTAINER0_VERSION}_${PACKAGE_ARCH}.deb; \
-    fi
-
 RUN dpkg -i \
     ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container1_1.*.deb \
     ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container-tools_1.*.deb \

@@ -99,7 +99,6 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 		--build-arg BASE_DIST="$(BASE_DIST)" \
 		--build-arg CUDA_VERSION="$(CUDA_VERSION)" \
 		--build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
-		--build-arg LIBNVIDIA_CONTAINER0_VERSION="$(LIBNVIDIA_CONTAINER0_DEPENDENCY)" \
 		--build-arg PACKAGE_DIST="$(PACKAGE_DIST)" \
 		--build-arg PACKAGE_VERSION="$(PACKAGE_VERSION)" \
 		--build-arg VERSION="$(VERSION)" \
@@ -114,7 +113,6 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 build-ubuntu%: BASE_DIST = $(*)
 build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
 build-ubuntu%: PACKAGE_DIST = ubuntu18.04
-build-ubuntu%: LIBNVIDIA_CONTAINER0_DEPENDENCY=$(LIBNVIDIA_CONTAINER0_VERSION)
 
 build-ubi8: BASE_DIST := ubi8
 build-ubi8: DOCKERFILE_SUFFIX := centos
