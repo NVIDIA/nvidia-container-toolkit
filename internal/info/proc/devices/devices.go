@@ -67,7 +67,7 @@ func (d devices) Count() int {
 
 // Exists checks if a Device with a given name exists or not
 func (d devices) Exists(name Name) bool {
-	_, exists := d[name]
+	_, exists := d.Get(name)
 	return exists
 }
 
