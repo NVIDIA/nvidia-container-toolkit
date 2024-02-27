@@ -1,6 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
 * Add support for extracting device major number from `/proc/devices` if `nvidia` is used as a device name over `nvidia-frontend`.
+* Add support for selecting IMEX channels using the NVIDIA_IMEX_CHANNELS environement variable.
 
 ## v1.14.5
 * Fix `nvidia-ctk runtime configure --cdi.enabled` for Docker. This was incorrectly setting `experimental = true` instead
