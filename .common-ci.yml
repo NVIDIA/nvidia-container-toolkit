@@ -224,13 +224,6 @@ test-packaging:
         OUT_IMAGE_VERSION: "${DEVEL_RELEASE_IMAGE_VERSION}"
 
 # Define the release jobs
-release:staging-centos7:
-  extends:
-    - .release:staging
-    - .dist-centos7
-  needs:
-    - image-centos7
-
 release:staging-ubi8:
   extends:
     - .release:staging

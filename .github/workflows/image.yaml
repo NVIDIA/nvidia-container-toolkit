@@ -77,7 +77,6 @@ jobs:
       matrix:
         dist:
           - ubuntu20.04
-          - centos7
           - ubi8
           - packaging
         ispr:
@@ -85,8 +84,6 @@ jobs:
         exclude:
           - ispr: true
             dist: ubi8
-          - ispr: true
-            dist: centos7
     needs: packages
     steps:
       - uses: actions/checkout@v4
