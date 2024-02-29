@@ -97,16 +97,20 @@ jobs:
           echo "${REPO_FULL_NAME}"
           echo "LABEL_IMAGE_SOURCE=https://github.com/${REPO_FULL_NAME}" >> $GITHUB_ENV
 
-          GENERATE_ARTIFACTS="false"
-          if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
-            GENERATE_ARTIFACTS="false"
-          elif [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" == "${{ github.repository }}" ]]; then
-            GENERATE_ARTIFACTS="true"
+          PUSH_ON_BUILD="false"
+          BUILD_MULTI_ARCH_IMAGES="false"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            if [[ "${{ github.actor }}" != "dependabot[bot]" && "${{ github.event.pull_request.head.repo.full_name }}" == "${{ github.repository }}" ]]; then
+              # For non-fork PRs that are not created by dependabot we do push images
+              PUSH_ON_BUILD="true"
+            fi
           elif [[ "${{ github.event_name }}" == "push" ]]; then
-            GENERATE_ARTIFACTS="true"
+            # On push events we do generate images and enable muilti-arch builds
+            PUSH_ON_BUILD="true"
+            BUILD_MULTI_ARCH_IMAGES="true"
           fi
-          echo "PUSH_ON_BUILD=${GENERATE_ARTIFACTS}" >> $GITHUB_ENV
-          echo "BUILD_MULTI_ARCH_IMAGES=${GENERATE_ARTIFACTS}" >> $GITHUB_ENV
+          echo "PUSH_ON_BUILD=${PUSH_ON_BUILD}" >> $GITHUB_ENV
+          echo "BUILD_MULTI_ARCH_IMAGES=${BUILD_MULTI_ARCH_IMAGES}" >> $GITHUB_ENV
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
