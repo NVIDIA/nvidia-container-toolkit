@@ -69,11 +69,6 @@ variables:
     - regctl registry login "${OUT_REGISTRY}" -u "${OUT_REGISTRY_USER}" -p "${OUT_REGISTRY_TOKEN}"
     - make -f build/container/Makefile IMAGE=${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} OUT_IMAGE=${OUT_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-${DIST} push-${DIST}
 
-image-centos7:
-  extends:
-    - .dist-centos7
-    - .image-pull
-
 image-ubi8:
   extends:
     - .dist-ubi8
@@ -132,14 +127,6 @@ image-packaging:
       - policy_evaluation.json
 
 # Define the scan targets
-scan-centos7-amd64:
-  extends:
-    - .dist-centos7
-    - .platform-amd64
-    - .scan
-  needs:
-    - image-centos7
-
 scan-ubuntu20.04-amd64:
   extends:
     - .dist-ubuntu20.04
@@ -243,11 +230,6 @@ release:staging-ubuntu20.04:
 
 # Define the external release targets
 # Release to NGC
-release:ngc-centos7:
-  extends:
-    - .dist-centos7
-    - .release:ngc
-
 release:ngc-ubuntu20.04:
   extends:
     - .dist-ubuntu20.04

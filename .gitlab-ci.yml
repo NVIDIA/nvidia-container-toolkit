@@ -128,14 +128,6 @@ package-ubuntu18.04-ppc64le:
   script:
     - make -f build/container/Makefile build-${DIST}
 
-image-centos7:
-  extends:
-    - .image-build
-    - .package-artifacts
-    - .dist-centos7
-  needs:
-    - package-centos7-x86_64
-
 image-ubi8:
   extends:
     - .image-build

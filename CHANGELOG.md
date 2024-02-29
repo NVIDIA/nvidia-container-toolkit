@@ -7,6 +7,8 @@
 * Set the default `--device-name-strategy` for the `nvidia-ctk cdi generate` command to `[index, uuid]`.
 * Remove `libnvidia-container0` jetpack dependency included for legacy Tegra-based systems.
 
+* [toolkit-container] Remove centos7 image. The ubi8 image can be used on all RPM-based platforms.
+
 ## v1.15.0-rc.3
 * Fix bug in `nvidia-ctk hook update-ldcache` where default `--ldconfig-path` value was not applied.
 

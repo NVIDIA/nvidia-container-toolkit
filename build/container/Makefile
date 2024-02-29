@@ -45,7 +45,7 @@ OUT_IMAGE = $(OUT_IMAGE_NAME):$(OUT_IMAGE_TAG)
 
 ##### Public rules #####
 DEFAULT_PUSH_TARGET := ubuntu20.04
-DISTRIBUTIONS := ubuntu20.04 ubi8 centos7
+DISTRIBUTIONS := ubuntu20.04 ubi8
 
 META_TARGETS := packaging
 
@@ -117,10 +117,6 @@ build-ubuntu%: PACKAGE_DIST = ubuntu18.04
 build-ubi8: BASE_DIST := ubi8
 build-ubi8: DOCKERFILE_SUFFIX := centos
 build-ubi8: PACKAGE_DIST = centos7
-
-build-centos7: BASE_DIST = $(*)
-build-centos7: DOCKERFILE_SUFFIX := centos
-build-centos7: PACKAGE_DIST = $(BASE_DIST)
 
 build-packaging: BASE_DIST := ubuntu20.04
 build-packaging: DOCKERFILE_SUFFIX := packaging
