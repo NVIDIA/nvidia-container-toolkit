@@ -3,6 +3,7 @@ module github.com/NVIDIA/nvidia-container-toolkit
 go 1.20
 
 require (
+	github.com/NVIDIA/go-nvlib v0.0.0-20231115170030-b21432a353e1
 	github.com/NVIDIA/go-nvml v0.12.0-2
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/opencontainers/runtime-spec v1.2.0
@@ -10,7 +11,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.27.1
-	gitlab.com/nvidia/cloud-native/go-nvlib v0.0.0-20230818092907-09424fdc8884
 	golang.org/x/mod v0.15.0
 	golang.org/x/sys v0.17.0
 	tags.cncf.io/container-device-interface v0.6.2

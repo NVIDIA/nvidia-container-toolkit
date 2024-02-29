@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sort"
 
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci/mmio"
+	"github.com/NVIDIA/go-nvlib/pkg/nvpci/mmio"
 )
 
 const (
