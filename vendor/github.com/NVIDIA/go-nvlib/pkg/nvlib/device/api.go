@@ -17,7 +17,7 @@
 package device
 
 import (
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
+	"github.com/NVIDIA/go-nvlib/pkg/nvml"
 )
 
 // Interface provides the API to the 'device' package

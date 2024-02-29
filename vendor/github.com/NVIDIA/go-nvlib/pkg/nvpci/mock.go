@@ -21,7 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci/bytes"
+	"github.com/NVIDIA/go-nvlib/pkg/nvpci/bytes"
 )
 
 // MockNvpci mock pci device

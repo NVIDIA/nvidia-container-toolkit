@@ -22,7 +22,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci/bytes"
+	"github.com/NVIDIA/go-nvlib/pkg/nvpci/bytes"
 )
 
 // Mmio memory map a region

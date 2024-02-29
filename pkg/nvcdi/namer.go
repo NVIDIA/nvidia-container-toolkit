@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
+	"github.com/NVIDIA/go-nvlib/pkg/nvml"
 )
 
 // UUIDer is an interface for getting UUIDs.

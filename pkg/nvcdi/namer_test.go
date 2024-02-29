@@ -19,8 +19,8 @@ package nvcdi
 import (
 	"testing"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvml"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
 )
 
 func TestConvert(t *testing.T) {

@@ -20,10 +20,11 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvpci"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
-	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci"
 )
 
 type allPossible struct {
