@@ -17,7 +17,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -28,6 +27,7 @@ import (
 	createdefault "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/create-default"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/flags"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/errors"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
@@ -141,7 +141,7 @@ func setFlagToKeyValue(setFlag string) (string, interface{}, error) {
 
 	field, err := getField(key)
 	if err != nil {
-		return key, nil, fmt.Errorf("%w: %w", errInvalidConfigOption, err)
+		return key, nil, errors.Join(err, errInvalidConfigOption)
 	}
 
 	kind := field.Kind()
@@ -157,7 +157,7 @@ func setFlagToKeyValue(setFlag string) (string, interface{}, error) {
 	case reflect.Bool:
 		b, err := strconv.ParseBool(value)
 		if err != nil {
-			return key, value, fmt.Errorf("%w: %w", errInvalidFormat, err)
+			return key, value, errors.Join(err, errInvalidFormat)
 		}
 		return key, b, err
 	case reflect.String:
@@ -172,7 +172,7 @@ func setFlagToKeyValue(setFlag string) (string, interface{}, error) {
 			for _, v := range valueParts {
 				vi, err := strconv.ParseInt(v, 10, 0)
 				if err != nil {
-					return key, nil, fmt.Errorf("%w: %w", errInvalidFormat, err)
+					return key, nil, errors.Join(err, errInvalidFormat)
 				}
 				output = append(output, vi)
 			}

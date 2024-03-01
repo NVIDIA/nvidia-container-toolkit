@@ -18,13 +18,13 @@ package runtime
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/errors"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 )
 
