@@ -20,6 +20,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime/configure"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime/list"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
@@ -44,6 +45,7 @@ func (m runtimeCommand) build() *cli.Command {
 
 	runtime.Subcommands = []*cli.Command{
 		configure.NewCommand(m.logger),
+		list.NewCommand(m.logger),
 	}
 
 	return &runtime

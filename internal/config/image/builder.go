@@ -24,8 +24,7 @@ import (
 )
 
 type builder struct {
-	env            map[string]string
-	mounts         []specs.Mount
+	CUDA
 	disableRequire bool
 }
 
@@ -60,6 +59,14 @@ func (b builder) build() (CUDA, error) {
 // Option is a functional option for creating a CUDA image.
 type Option func(*builder) error
 
+// WithAnnotations sets the annotations for the image.
+func WithAnnotations(annotations map[string]string) Option {
+	return func(b *builder) error {
+		b.annotations = annotations
+		return nil
+	}
+}
+
 // WithDisableRequire sets the disable require option.
 func WithDisableRequire(disableRequire bool) Option {
 	return func(b *builder) error {
@@ -89,6 +96,14 @@ func WithEnv(env []string) Option {
 func WithEnvMap(env map[string]string) Option {
 	return func(b *builder) error {
 		b.env = env
+		return nil
+	}
+}
+
+// WithIsPrivileged sets whether a container is privileged or not.
+func WithIsPrivileged(isPrivileged bool) Option {
+	return func(b *builder) error {
+		b.isPrivileged = isPrivileged
 		return nil
 	}
 }
