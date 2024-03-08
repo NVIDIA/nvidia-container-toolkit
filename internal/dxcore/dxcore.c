@@ -41,14 +41,17 @@ static const char * const dxcore_nvidia_driver_store_components[] = {
  */
 
 struct dxcore_enumAdapters2;
+struct dxcore_enumAdapters3;
 struct dxcore_queryAdapterInfo;
 
 typedef int(*pfnDxcoreEnumAdapters2)(struct dxcore_enumAdapters2* pParams);
+typedef int(*pfnDxcoreEnumAdapters3)(struct dxcore_enumAdapters3* pParams);
 typedef int(*pfnDxcoreQueryAdapterInfo)(struct dxcore_queryAdapterInfo* pParams);
 
 struct dxcore_lib {
         void* hDxcoreLib;
         pfnDxcoreEnumAdapters2 pDxcoreEnumAdapters2;
+        pfnDxcoreEnumAdapters3 pDxcoreEnumAdapters3;
         pfnDxcoreQueryAdapterInfo pDxcoreQueryAdapterInfo;
 };
 
@@ -62,6 +65,15 @@ struct dxcore_adapterInfo
 
 struct dxcore_enumAdapters2
 {
+        unsigned int                   NumAdapters;
+        struct dxcore_adapterInfo     *pAdapters;
+};
+
+#define ENUMADAPTER3_FILTER_COMPUTE_ONLY (0x0000000000000001)
+
+struct dxcore_enumAdapters3
+{
+        unsigned long long             Filter;
         unsigned int                   NumAdapters;
         struct dxcore_adapterInfo     *pAdapters;
 };
@@ -239,7 +251,37 @@ static void dxcore_add_adapter(struct dxcore_context* pCtx, struct dxcore_lib* p
         log_infof("Adding new adapter via dxcore hAdapter:%x luid:%llx wddm version:%d", pAdapterInfo->hAdapter, *((unsigned long long*)&pAdapterInfo->AdapterLuid), wddmVersion);
 }
 
-static void dxcore_enum_adapters(struct dxcore_context* pCtx, struct dxcore_lib* pLib)
+static int dxcore_enum_adapters3(struct dxcore_context* pCtx, struct dxcore_lib* pLib)
+{
+        struct dxcore_enumAdapters3 params = {0};
+        unsigned int adapterIndex = 0;
+
+        // Include compute-only in addition to display+compute adapters
+        params.Filter = ENUMADAPTER3_FILTER_COMPUTE_ONLY;
+        params.NumAdapters = 0;
+        params.pAdapters = NULL;
+
+        if (pLib->pDxcoreEnumAdapters3(&params)) {
+                log_err("Failed to enumerate adapters via enumAdapers3");
+                return 1;
+        }
+
+        params.pAdapters = malloc(sizeof(struct dxcore_adapterInfo) * params.NumAdapters);
+        if (pLib->pDxcoreEnumAdapters3(&params)) {
+                free(params.pAdapters);
+                log_err("Failed to enumerate adapters via enumAdapers3");
+                return 1;
+        }
+
+        for (adapterIndex = 0; adapterIndex < params.NumAdapters; adapterIndex++) {
+                dxcore_add_adapter(pCtx, pLib, &params.pAdapters[adapterIndex]);
+        }
+
+        free(params.pAdapters);
+        return 0;
+}
+
+static int dxcore_enum_adapters2(struct dxcore_context* pCtx, struct dxcore_lib* pLib)
 {
         struct dxcore_enumAdapters2 params = {0};
         unsigned int adapterIndex = 0;
@@ -248,15 +290,15 @@ static void dxcore_enum_adapters(struct dxcore_context* pCtx, struct dxcore_lib*
         params.pAdapters = NULL;
 
         if (pLib->pDxcoreEnumAdapters2(&params)) {
-                log_err("Failed to enumerate adapters via dxcore");
-                return;
+                log_err("Failed to enumerate adapters via enumAdapters2");
+                return 1;
         }
 
         params.pAdapters = malloc(sizeof(struct dxcore_adapterInfo) * params.NumAdapters);
         if (pLib->pDxcoreEnumAdapters2(&params)) {
                 free(params.pAdapters);
-                log_err("Failed to enumerate adapters via dxcore");
-                return;
+                log_err("Failed to enumerate adapters via enumAdapters2");
+                return 1;
         }
 
         for (adapterIndex = 0; adapterIndex < params.NumAdapters; adapterIndex++) {
@@ -264,6 +306,27 @@ static void dxcore_enum_adapters(struct dxcore_context* pCtx, struct dxcore_lib*
         }
 
         free(params.pAdapters);
+        return 0;
+}
+
+static void dxcore_enum_adapters(struct dxcore_context* pCtx, struct dxcore_lib* pLib)
+{
+        int status;
+        if (pLib->pDxcoreEnumAdapters3) {
+                status = dxcore_enum_adapters3(pCtx, pLib);
+                if (status == 0) {
+                    return;
+                }
+        }
+
+        // Fall back to EnumAdapters2 if the OS doesn't support EnumAdapters3
+        if (pLib->pDxcoreEnumAdapters2) {
+                status = dxcore_enum_adapters2(pCtx, pLib);
+                if (status == 0) {
+                    return;
+                }
+        }
+        log_err("Failed to enumerate adapters via dxcore");
 }
 
 int dxcore_init_context(struct dxcore_context* pCtx)
@@ -280,8 +343,9 @@ int dxcore_init_context(struct dxcore_context* pCtx)
         }
 
         lib.pDxcoreEnumAdapters2 = (pfnDxcoreEnumAdapters2)dlsym(lib.hDxcoreLib, "D3DKMTEnumAdapters2");
-        if (!lib.pDxcoreEnumAdapters2) {
-                log_err("dxcore library is present but the symbol D3DKMTEnumAdapters2 is missing");
+        lib.pDxcoreEnumAdapters3 = (pfnDxcoreEnumAdapters3)dlsym(lib.hDxcoreLib, "D3DKMTEnumAdapters3");
+        if (!lib.pDxcoreEnumAdapters2 && !lib.pDxcoreEnumAdapters3) {
+                log_err("dxcore library is present but the symbols D3DKMTEnumAdapters2 and D3DKMTEnumAdapters3 are missing");
                 goto error;
         }
 
