@@ -37,3 +37,15 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+
+  # Allow dependabot to update the libnvidia-container submodule.
+  - package-ecosystem: "gitsubmodule"
+    target-branch: main
+    directory: "/"
+    allow:
+    - dependency-name: "third_party/libnvidia-container"
+    schedule:
+      interval: "daily"
+    labels:
+    - dependencies
+    - libnvidia-container
