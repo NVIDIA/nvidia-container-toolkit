@@ -79,7 +79,8 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 --%: TARGET_PLATFORM = $(*)
 --%: VERSION = $(patsubst $(OS)%-$(ARCH),%,$(TARGET_PLATFORM))
 --%: BASEIMAGE = $(OS):$(VERSION)
---%: BUILDIMAGE = nvidia/$(LIB_NAME)/$(OS)$(VERSION)-$(ARCH)
+--%: BUILDIMAGE = nvidia$(LIB_NAME)/$(OS)$(VERSION)-$(ARCH)
+--%: DOCKER = docker
 --%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.$(OS)
 --%: ARTIFACTS_DIR = $(DIST_DIR)/$(OS)$(VERSION)/$(ARCH)
 --%: docker-build-%
