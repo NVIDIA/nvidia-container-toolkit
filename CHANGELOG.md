@@ -6,6 +6,7 @@
   CDI spec to be generated that includes GPUs by index and UUID.
 * Set the default `--device-name-strategy` for the `nvidia-ctk cdi generate` command to `[index, uuid]`.
 * Remove `libnvidia-container0` jetpack dependency included for legacy Tegra-based systems.
+* Add `NVIDIA_VISIBLE_DEVICES=void` to generated CDI specifications.
 
 * [toolkit-container] Remove centos7 image. The ubi8 image can be used on all RPM-based platforms.
 
