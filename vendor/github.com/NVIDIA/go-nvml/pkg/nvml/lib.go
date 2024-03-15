@@ -38,9 +38,10 @@ var errLibraryAlreadyLoaded = errors.New("library already loaded")
 // This includes a reference to the underlying DynamicLibrary
 type library struct {
 	sync.Mutex
-	path  string
-	flags int
-	dl    dynamicLibrary
+	path     string
+	flags    int
+	refcount refcount
+	dl       dynamicLibrary
 }
 
 // libnvml is a global instance of the nvml library.
@@ -77,16 +78,17 @@ var newDynamicLibrary = func(path string, flags int) dynamicLibrary {
 
 // load initializes the library and updates the versioned symbols.
 // Multiple calls to an already loaded library will return without error.
-func (l *library) load() error {
+func (l *library) load() (rerr error) {
 	l.Lock()
 	defer l.Unlock()
-	if l.dl != nil {
+
+	defer func() { l.refcount.IncOnNoError(rerr) }()
+	if l.refcount > 0 {
 		return nil
 	}
 
 	dl := newDynamicLibrary(l.path, l.flags)
-	err := dl.Open()
-	if err != nil {
+	if err := dl.Open(); err != nil {
 		return fmt.Errorf("error opening %s: %w", l.path, err)
 	}
 
@@ -99,16 +101,16 @@ func (l *library) load() error {
 // close the underlying library and ensure that the global pointer to the
 // library is set to nil to ensure that subsequent calls to open will reinitialize it.
 // Multiple calls to an already closed nvml library will return without error.
-func (l *library) close() error {
+func (l *library) close() (rerr error) {
 	l.Lock()
 	defer l.Unlock()
 
-	if l.dl == nil {
+	defer func() { l.refcount.DecOnNoError(rerr) }()
+	if l.refcount != 1 {
 		return nil
 	}
 
-	err := l.dl.Close()
-	if err != nil {
+	if err := l.dl.Close(); err != nil {
 		return fmt.Errorf("error closing %s: %w", l.path, err)
 	}
 
@@ -160,12 +162,7 @@ func (pis ProcessInfo_v1Slice) ToProcessInfoSlice() []ProcessInfo {
 func (pis ProcessInfo_v2Slice) ToProcessInfoSlice() []ProcessInfo {
 	var newInfos []ProcessInfo
 	for _, pi := range pis {
-		info := ProcessInfo{
-			Pid:               pi.Pid,
-			UsedGpuMemory:     pi.UsedGpuMemory,
-			GpuInstanceId:     pi.GpuInstanceId,
-			ComputeInstanceId: pi.ComputeInstanceId,
-		}
+		info := ProcessInfo(pi)
 		newInfos = append(newInfos, info)
 	}
 	return newInfos
