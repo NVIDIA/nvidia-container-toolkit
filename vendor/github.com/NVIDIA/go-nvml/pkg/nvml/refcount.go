@@ -1,5 +1,5 @@
 /**
-# Copyright 2023 NVIDIA CORPORATION
+# Copyright 2024 NVIDIA CORPORATION
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,22 +16,16 @@
 
 package nvml
 
-// Library defines a set of functions defined on the underlying dynamic library.
-type Library interface {
-	Lookup(string) error
+type refcount int
+
+func (r *refcount) IncOnNoError(err error) {
+	if err == nil {
+		(*r)++
+	}
 }
 
-// dynamicLibrary is an interface for abstacting the underlying library.
-// This also allows for mocking and testing.
-
-//go:generate moq -stub -out dynamicLibrary_mock.go . dynamicLibrary
-type dynamicLibrary interface {
-	Lookup(string) error
-	Open() error
-	Close() error
-}
-
-// Interface represents the interface for the NVML library.
-type Interface interface {
-	GetLibrary() Library
+func (r *refcount) DecOnNoError(err error) {
+	if err == nil && (*r) > 0 {
+		(*r)--
+	}
 }

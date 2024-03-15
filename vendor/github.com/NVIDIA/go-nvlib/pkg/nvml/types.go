@@ -67,7 +67,10 @@ type Device interface {
 	GetUUID() (string, Return)
 	IsMigDeviceHandle() (bool, Return)
 	RegisterEvents(uint64, EventSet) Return
+	SetComputeMode(ComputeMode) Return
 	SetMigMode(Mode int) (Return, Return)
+	// nvmlDeviceHandle returns a pointer to the underlying NVML device.
+	nvmlDeviceHandle() *nvml.Device
 }
 
 // GpuInstance defines the functions implemented by a GpuInstance
@@ -154,3 +157,6 @@ type GpuTopologyLevel nvml.GpuTopologyLevel
 
 // EnableState represents a generic enable/disable enum
 type EnableState nvml.EnableState
+
+// ComputeMode represents the compute mode for a device
+type ComputeMode nvml.ComputeMode

@@ -4,6 +4,7 @@
 package nvml
 
 import (
+	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"sync"
 )
 
@@ -98,8 +99,14 @@ var _ Device = &DeviceMock{}
 //			RegisterEventsFunc: func(v uint64, eventSet EventSet) Return {
 //				panic("mock out the RegisterEvents method")
 //			},
+//			SetComputeModeFunc: func(computeMode ComputeMode) Return {
+//				panic("mock out the SetComputeMode method")
+//			},
 //			SetMigModeFunc: func(Mode int) (Return, Return) {
 //				panic("mock out the SetMigMode method")
+//			},
+//			nvmlDeviceHandleFunc: func() *nvml.Device {
+//				panic("mock out the nvmlDeviceHandle method")
 //			},
 //		}
 //
@@ -189,8 +196,14 @@ type DeviceMock struct {
 	// RegisterEventsFunc mocks the RegisterEvents method.
 	RegisterEventsFunc func(v uint64, eventSet EventSet) Return
 
+	// SetComputeModeFunc mocks the SetComputeMode method.
+	SetComputeModeFunc func(computeMode ComputeMode) Return
+
 	// SetMigModeFunc mocks the SetMigMode method.
 	SetMigModeFunc func(Mode int) (Return, Return)
+
+	// nvmlDeviceHandleFunc mocks the nvmlDeviceHandle method.
+	nvmlDeviceHandleFunc func() *nvml.Device
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -299,10 +312,18 @@ type DeviceMock struct {
 			// EventSet is the eventSet argument value.
 			EventSet EventSet
 		}
+		// SetComputeMode holds details about calls to the SetComputeMode method.
+		SetComputeMode []struct {
+			// ComputeMode is the computeMode argument value.
+			ComputeMode ComputeMode
+		}
 		// SetMigMode holds details about calls to the SetMigMode method.
 		SetMigMode []struct {
 			// Mode is the Mode argument value.
 			Mode int
+		}
+		// nvmlDeviceHandle holds details about calls to the nvmlDeviceHandle method.
+		nvmlDeviceHandle []struct {
 		}
 	}
 	lockCreateGpuInstanceWithPlacement     sync.RWMutex
@@ -332,7 +353,9 @@ type DeviceMock struct {
 	lockGetUUID                            sync.RWMutex
 	lockIsMigDeviceHandle                  sync.RWMutex
 	lockRegisterEvents                     sync.RWMutex
+	lockSetComputeMode                     sync.RWMutex
 	lockSetMigMode                         sync.RWMutex
+	locknvmlDeviceHandle                   sync.RWMutex
 }
 
 // CreateGpuInstanceWithPlacement calls CreateGpuInstanceWithPlacementFunc.
@@ -1122,6 +1145,38 @@ func (mock *DeviceMock) RegisterEventsCalls() []struct {
 	return calls
 }
 
+// SetComputeMode calls SetComputeModeFunc.
+func (mock *DeviceMock) SetComputeMode(computeMode ComputeMode) Return {
+	if mock.SetComputeModeFunc == nil {
+		panic("DeviceMock.SetComputeModeFunc: method is nil but Device.SetComputeMode was just called")
+	}
+	callInfo := struct {
+		ComputeMode ComputeMode
+	}{
+		ComputeMode: computeMode,
+	}
+	mock.lockSetComputeMode.Lock()
+	mock.calls.SetComputeMode = append(mock.calls.SetComputeMode, callInfo)
+	mock.lockSetComputeMode.Unlock()
+	return mock.SetComputeModeFunc(computeMode)
+}
+
+// SetComputeModeCalls gets all the calls that were made to SetComputeMode.
+// Check the length with:
+//
+//	len(mockedDevice.SetComputeModeCalls())
+func (mock *DeviceMock) SetComputeModeCalls() []struct {
+	ComputeMode ComputeMode
+} {
+	var calls []struct {
+		ComputeMode ComputeMode
+	}
+	mock.lockSetComputeMode.RLock()
+	calls = mock.calls.SetComputeMode
+	mock.lockSetComputeMode.RUnlock()
+	return calls
+}
+
 // SetMigMode calls SetMigModeFunc.
 func (mock *DeviceMock) SetMigMode(Mode int) (Return, Return) {
 	if mock.SetMigModeFunc == nil {
@@ -1151,5 +1206,32 @@ func (mock *DeviceMock) SetMigModeCalls() []struct {
 	mock.lockSetMigMode.RLock()
 	calls = mock.calls.SetMigMode
 	mock.lockSetMigMode.RUnlock()
+	return calls
+}
+
+// nvmlDeviceHandle calls nvmlDeviceHandleFunc.
+func (mock *DeviceMock) nvmlDeviceHandle() *nvml.Device {
+	if mock.nvmlDeviceHandleFunc == nil {
+		panic("DeviceMock.nvmlDeviceHandleFunc: method is nil but Device.nvmlDeviceHandle was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.locknvmlDeviceHandle.Lock()
+	mock.calls.nvmlDeviceHandle = append(mock.calls.nvmlDeviceHandle, callInfo)
+	mock.locknvmlDeviceHandle.Unlock()
+	return mock.nvmlDeviceHandleFunc()
+}
+
+// nvmlDeviceHandleCalls gets all the calls that were made to nvmlDeviceHandle.
+// Check the length with:
+//
+//	len(mockedDevice.nvmlDeviceHandleCalls())
+func (mock *DeviceMock) nvmlDeviceHandleCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.locknvmlDeviceHandle.RLock()
+	calls = mock.calls.nvmlDeviceHandle
+	mock.locknvmlDeviceHandle.RUnlock()
 	return calls
 }
