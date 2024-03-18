@@ -20,6 +20,11 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 )
 
+// General untyped constants
+const (
+	NVLINK_MAX_LINKS = nvml.NVLINK_MAX_LINKS
+)
+
 // Return constants
 const (
 	SUCCESS                       = Return(nvml.SUCCESS)
@@ -130,4 +135,29 @@ const (
 	EventTypeXidCriticalError  = nvml.EventTypeXidCriticalError
 	EventTypeSingleBitEccError = nvml.EventTypeSingleBitEccError
 	EventTypeDoubleBitEccError = nvml.EventTypeDoubleBitEccError
+)
+
+// GPU Topology enumeration
+const (
+	TOPOLOGY_INTERNAL   = GpuTopologyLevel(nvml.TOPOLOGY_INTERNAL)
+	TOPOLOGY_SINGLE     = GpuTopologyLevel(nvml.TOPOLOGY_SINGLE)
+	TOPOLOGY_MULTIPLE   = GpuTopologyLevel(nvml.TOPOLOGY_MULTIPLE)
+	TOPOLOGY_HOSTBRIDGE = GpuTopologyLevel(nvml.TOPOLOGY_HOSTBRIDGE)
+	TOPOLOGY_NODE       = GpuTopologyLevel(nvml.TOPOLOGY_NODE)
+	TOPOLOGY_SYSTEM     = GpuTopologyLevel(nvml.TOPOLOGY_SYSTEM)
+)
+
+// Generic enable/disable constants
+const (
+	FEATURE_DISABLED = EnableState(nvml.FEATURE_DISABLED)
+	FEATURE_ENABLED  = EnableState(nvml.FEATURE_ENABLED)
+)
+
+// Compute mode constants
+const (
+	COMPUTEMODE_DEFAULT           = ComputeMode(nvml.COMPUTEMODE_DEFAULT)
+	COMPUTEMODE_EXCLUSIVE_THREAD  = ComputeMode(nvml.COMPUTEMODE_EXCLUSIVE_THREAD)
+	COMPUTEMODE_PROHIBITED        = ComputeMode(nvml.COMPUTEMODE_PROHIBITED)
+	COMPUTEMODE_EXCLUSIVE_PROCESS = ComputeMode(nvml.COMPUTEMODE_EXCLUSIVE_PROCESS)
+	COMPUTEMODE_COUNT             = ComputeMode(nvml.COMPUTEMODE_COUNT)
 )

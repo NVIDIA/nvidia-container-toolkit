@@ -4,6 +4,7 @@
 package nvml
 
 import (
+	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"sync"
 )
 
@@ -74,11 +75,20 @@ var _ Device = &DeviceMock{}
 //			GetNameFunc: func() (string, Return) {
 //				panic("mock out the GetName method")
 //			},
+//			GetNvLinkRemotePciInfoFunc: func(n int) (PciInfo, Return) {
+//				panic("mock out the GetNvLinkRemotePciInfo method")
+//			},
+//			GetNvLinkStateFunc: func(n int) (EnableState, Return) {
+//				panic("mock out the GetNvLinkState method")
+//			},
 //			GetPciInfoFunc: func() (PciInfo, Return) {
 //				panic("mock out the GetPciInfo method")
 //			},
 //			GetSupportedEventTypesFunc: func() (uint64, Return) {
 //				panic("mock out the GetSupportedEventTypes method")
+//			},
+//			GetTopologyCommonAncestorFunc: func(device Device) (GpuTopologyLevel, Return) {
+//				panic("mock out the GetTopologyCommonAncestor method")
 //			},
 //			GetUUIDFunc: func() (string, Return) {
 //				panic("mock out the GetUUID method")
@@ -89,8 +99,14 @@ var _ Device = &DeviceMock{}
 //			RegisterEventsFunc: func(v uint64, eventSet EventSet) Return {
 //				panic("mock out the RegisterEvents method")
 //			},
+//			SetComputeModeFunc: func(computeMode ComputeMode) Return {
+//				panic("mock out the SetComputeMode method")
+//			},
 //			SetMigModeFunc: func(Mode int) (Return, Return) {
 //				panic("mock out the SetMigMode method")
+//			},
+//			nvmlDeviceHandleFunc: func() *nvml.Device {
+//				panic("mock out the nvmlDeviceHandle method")
 //			},
 //		}
 //
@@ -156,11 +172,20 @@ type DeviceMock struct {
 	// GetNameFunc mocks the GetName method.
 	GetNameFunc func() (string, Return)
 
+	// GetNvLinkRemotePciInfoFunc mocks the GetNvLinkRemotePciInfo method.
+	GetNvLinkRemotePciInfoFunc func(n int) (PciInfo, Return)
+
+	// GetNvLinkStateFunc mocks the GetNvLinkState method.
+	GetNvLinkStateFunc func(n int) (EnableState, Return)
+
 	// GetPciInfoFunc mocks the GetPciInfo method.
 	GetPciInfoFunc func() (PciInfo, Return)
 
 	// GetSupportedEventTypesFunc mocks the GetSupportedEventTypes method.
 	GetSupportedEventTypesFunc func() (uint64, Return)
+
+	// GetTopologyCommonAncestorFunc mocks the GetTopologyCommonAncestor method.
+	GetTopologyCommonAncestorFunc func(device Device) (GpuTopologyLevel, Return)
 
 	// GetUUIDFunc mocks the GetUUID method.
 	GetUUIDFunc func() (string, Return)
@@ -171,8 +196,14 @@ type DeviceMock struct {
 	// RegisterEventsFunc mocks the RegisterEvents method.
 	RegisterEventsFunc func(v uint64, eventSet EventSet) Return
 
+	// SetComputeModeFunc mocks the SetComputeMode method.
+	SetComputeModeFunc func(computeMode ComputeMode) Return
+
 	// SetMigModeFunc mocks the SetMigMode method.
 	SetMigModeFunc func(Mode int) (Return, Return)
+
+	// nvmlDeviceHandleFunc mocks the nvmlDeviceHandle method.
+	nvmlDeviceHandleFunc func() *nvml.Device
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -247,11 +278,26 @@ type DeviceMock struct {
 		// GetName holds details about calls to the GetName method.
 		GetName []struct {
 		}
+		// GetNvLinkRemotePciInfo holds details about calls to the GetNvLinkRemotePciInfo method.
+		GetNvLinkRemotePciInfo []struct {
+			// N is the n argument value.
+			N int
+		}
+		// GetNvLinkState holds details about calls to the GetNvLinkState method.
+		GetNvLinkState []struct {
+			// N is the n argument value.
+			N int
+		}
 		// GetPciInfo holds details about calls to the GetPciInfo method.
 		GetPciInfo []struct {
 		}
 		// GetSupportedEventTypes holds details about calls to the GetSupportedEventTypes method.
 		GetSupportedEventTypes []struct {
+		}
+		// GetTopologyCommonAncestor holds details about calls to the GetTopologyCommonAncestor method.
+		GetTopologyCommonAncestor []struct {
+			// Device is the device argument value.
+			Device Device
 		}
 		// GetUUID holds details about calls to the GetUUID method.
 		GetUUID []struct {
@@ -266,10 +312,18 @@ type DeviceMock struct {
 			// EventSet is the eventSet argument value.
 			EventSet EventSet
 		}
+		// SetComputeMode holds details about calls to the SetComputeMode method.
+		SetComputeMode []struct {
+			// ComputeMode is the computeMode argument value.
+			ComputeMode ComputeMode
+		}
 		// SetMigMode holds details about calls to the SetMigMode method.
 		SetMigMode []struct {
 			// Mode is the Mode argument value.
 			Mode int
+		}
+		// nvmlDeviceHandle holds details about calls to the nvmlDeviceHandle method.
+		nvmlDeviceHandle []struct {
 		}
 	}
 	lockCreateGpuInstanceWithPlacement     sync.RWMutex
@@ -291,12 +345,17 @@ type DeviceMock struct {
 	lockGetMigMode                         sync.RWMutex
 	lockGetMinorNumber                     sync.RWMutex
 	lockGetName                            sync.RWMutex
+	lockGetNvLinkRemotePciInfo             sync.RWMutex
+	lockGetNvLinkState                     sync.RWMutex
 	lockGetPciInfo                         sync.RWMutex
 	lockGetSupportedEventTypes             sync.RWMutex
+	lockGetTopologyCommonAncestor          sync.RWMutex
 	lockGetUUID                            sync.RWMutex
 	lockIsMigDeviceHandle                  sync.RWMutex
 	lockRegisterEvents                     sync.RWMutex
+	lockSetComputeMode                     sync.RWMutex
 	lockSetMigMode                         sync.RWMutex
+	locknvmlDeviceHandle                   sync.RWMutex
 }
 
 // CreateGpuInstanceWithPlacement calls CreateGpuInstanceWithPlacementFunc.
@@ -846,6 +905,70 @@ func (mock *DeviceMock) GetNameCalls() []struct {
 	return calls
 }
 
+// GetNvLinkRemotePciInfo calls GetNvLinkRemotePciInfoFunc.
+func (mock *DeviceMock) GetNvLinkRemotePciInfo(n int) (PciInfo, Return) {
+	if mock.GetNvLinkRemotePciInfoFunc == nil {
+		panic("DeviceMock.GetNvLinkRemotePciInfoFunc: method is nil but Device.GetNvLinkRemotePciInfo was just called")
+	}
+	callInfo := struct {
+		N int
+	}{
+		N: n,
+	}
+	mock.lockGetNvLinkRemotePciInfo.Lock()
+	mock.calls.GetNvLinkRemotePciInfo = append(mock.calls.GetNvLinkRemotePciInfo, callInfo)
+	mock.lockGetNvLinkRemotePciInfo.Unlock()
+	return mock.GetNvLinkRemotePciInfoFunc(n)
+}
+
+// GetNvLinkRemotePciInfoCalls gets all the calls that were made to GetNvLinkRemotePciInfo.
+// Check the length with:
+//
+//	len(mockedDevice.GetNvLinkRemotePciInfoCalls())
+func (mock *DeviceMock) GetNvLinkRemotePciInfoCalls() []struct {
+	N int
+} {
+	var calls []struct {
+		N int
+	}
+	mock.lockGetNvLinkRemotePciInfo.RLock()
+	calls = mock.calls.GetNvLinkRemotePciInfo
+	mock.lockGetNvLinkRemotePciInfo.RUnlock()
+	return calls
+}
+
+// GetNvLinkState calls GetNvLinkStateFunc.
+func (mock *DeviceMock) GetNvLinkState(n int) (EnableState, Return) {
+	if mock.GetNvLinkStateFunc == nil {
+		panic("DeviceMock.GetNvLinkStateFunc: method is nil but Device.GetNvLinkState was just called")
+	}
+	callInfo := struct {
+		N int
+	}{
+		N: n,
+	}
+	mock.lockGetNvLinkState.Lock()
+	mock.calls.GetNvLinkState = append(mock.calls.GetNvLinkState, callInfo)
+	mock.lockGetNvLinkState.Unlock()
+	return mock.GetNvLinkStateFunc(n)
+}
+
+// GetNvLinkStateCalls gets all the calls that were made to GetNvLinkState.
+// Check the length with:
+//
+//	len(mockedDevice.GetNvLinkStateCalls())
+func (mock *DeviceMock) GetNvLinkStateCalls() []struct {
+	N int
+} {
+	var calls []struct {
+		N int
+	}
+	mock.lockGetNvLinkState.RLock()
+	calls = mock.calls.GetNvLinkState
+	mock.lockGetNvLinkState.RUnlock()
+	return calls
+}
+
 // GetPciInfo calls GetPciInfoFunc.
 func (mock *DeviceMock) GetPciInfo() (PciInfo, Return) {
 	if mock.GetPciInfoFunc == nil {
@@ -897,6 +1020,38 @@ func (mock *DeviceMock) GetSupportedEventTypesCalls() []struct {
 	mock.lockGetSupportedEventTypes.RLock()
 	calls = mock.calls.GetSupportedEventTypes
 	mock.lockGetSupportedEventTypes.RUnlock()
+	return calls
+}
+
+// GetTopologyCommonAncestor calls GetTopologyCommonAncestorFunc.
+func (mock *DeviceMock) GetTopologyCommonAncestor(device Device) (GpuTopologyLevel, Return) {
+	if mock.GetTopologyCommonAncestorFunc == nil {
+		panic("DeviceMock.GetTopologyCommonAncestorFunc: method is nil but Device.GetTopologyCommonAncestor was just called")
+	}
+	callInfo := struct {
+		Device Device
+	}{
+		Device: device,
+	}
+	mock.lockGetTopologyCommonAncestor.Lock()
+	mock.calls.GetTopologyCommonAncestor = append(mock.calls.GetTopologyCommonAncestor, callInfo)
+	mock.lockGetTopologyCommonAncestor.Unlock()
+	return mock.GetTopologyCommonAncestorFunc(device)
+}
+
+// GetTopologyCommonAncestorCalls gets all the calls that were made to GetTopologyCommonAncestor.
+// Check the length with:
+//
+//	len(mockedDevice.GetTopologyCommonAncestorCalls())
+func (mock *DeviceMock) GetTopologyCommonAncestorCalls() []struct {
+	Device Device
+} {
+	var calls []struct {
+		Device Device
+	}
+	mock.lockGetTopologyCommonAncestor.RLock()
+	calls = mock.calls.GetTopologyCommonAncestor
+	mock.lockGetTopologyCommonAncestor.RUnlock()
 	return calls
 }
 
@@ -990,6 +1145,38 @@ func (mock *DeviceMock) RegisterEventsCalls() []struct {
 	return calls
 }
 
+// SetComputeMode calls SetComputeModeFunc.
+func (mock *DeviceMock) SetComputeMode(computeMode ComputeMode) Return {
+	if mock.SetComputeModeFunc == nil {
+		panic("DeviceMock.SetComputeModeFunc: method is nil but Device.SetComputeMode was just called")
+	}
+	callInfo := struct {
+		ComputeMode ComputeMode
+	}{
+		ComputeMode: computeMode,
+	}
+	mock.lockSetComputeMode.Lock()
+	mock.calls.SetComputeMode = append(mock.calls.SetComputeMode, callInfo)
+	mock.lockSetComputeMode.Unlock()
+	return mock.SetComputeModeFunc(computeMode)
+}
+
+// SetComputeModeCalls gets all the calls that were made to SetComputeMode.
+// Check the length with:
+//
+//	len(mockedDevice.SetComputeModeCalls())
+func (mock *DeviceMock) SetComputeModeCalls() []struct {
+	ComputeMode ComputeMode
+} {
+	var calls []struct {
+		ComputeMode ComputeMode
+	}
+	mock.lockSetComputeMode.RLock()
+	calls = mock.calls.SetComputeMode
+	mock.lockSetComputeMode.RUnlock()
+	return calls
+}
+
 // SetMigMode calls SetMigModeFunc.
 func (mock *DeviceMock) SetMigMode(Mode int) (Return, Return) {
 	if mock.SetMigModeFunc == nil {
@@ -1019,5 +1206,32 @@ func (mock *DeviceMock) SetMigModeCalls() []struct {
 	mock.lockSetMigMode.RLock()
 	calls = mock.calls.SetMigMode
 	mock.lockSetMigMode.RUnlock()
+	return calls
+}
+
+// nvmlDeviceHandle calls nvmlDeviceHandleFunc.
+func (mock *DeviceMock) nvmlDeviceHandle() *nvml.Device {
+	if mock.nvmlDeviceHandleFunc == nil {
+		panic("DeviceMock.nvmlDeviceHandleFunc: method is nil but Device.nvmlDeviceHandle was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.locknvmlDeviceHandle.Lock()
+	mock.calls.nvmlDeviceHandle = append(mock.calls.nvmlDeviceHandle, callInfo)
+	mock.locknvmlDeviceHandle.Unlock()
+	return mock.nvmlDeviceHandleFunc()
+}
+
+// nvmlDeviceHandleCalls gets all the calls that were made to nvmlDeviceHandle.
+// Check the length with:
+//
+//	len(mockedDevice.nvmlDeviceHandleCalls())
+func (mock *DeviceMock) nvmlDeviceHandleCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.locknvmlDeviceHandle.RLock()
+	calls = mock.calls.nvmlDeviceHandle
+	mock.locknvmlDeviceHandle.RUnlock()
 	return calls
 }

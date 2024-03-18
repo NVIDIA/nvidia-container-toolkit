@@ -3,8 +3,8 @@ module github.com/NVIDIA/nvidia-container-toolkit
 go 1.20
 
 require (
-	github.com/NVIDIA/go-nvlib v0.0.0-20231115170030-b21432a353e1
-	github.com/NVIDIA/go-nvml v0.12.0-2
+	github.com/NVIDIA/go-nvlib v0.2.0
+	github.com/NVIDIA/go-nvml v0.12.0-3
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/opencontainers/runtime-spec v1.2.0
 	github.com/pelletier/go-toml v1.9.5
@@ -20,6 +20,7 @@ require (
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/opencontainers/runtime-tools v0.9.1-0.20221107090550-2e043c6bd626 // indirect
