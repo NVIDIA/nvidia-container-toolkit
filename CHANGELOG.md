@@ -1,5 +1,6 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.15.0-rc.4
 * Add a `--spec-dir` option to the `nvidia-ctk cdi generate` command. This allows specs outside of `/etc/cdi` and `/var/run/cdi` to be processed.
 * Add support for extracting device major number from `/proc/devices` if `nvidia` is used as a device name over `nvidia-frontend`.
 * Allow multiple device naming strategies for `nvidia-ctk cdi generate` command. This allows a single
