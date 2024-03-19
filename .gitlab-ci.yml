@@ -126,7 +126,7 @@ package-ubuntu18.04-ppc64le:
     - 'echo "Logging in to CI registry ${CI_REGISTRY}"'
     - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
   script:
-    - make -f build/container/Makefile build-${DIST}
+    - make -f deployments/container/Makefile build-${DIST}
 
 image-ubi8:
   extends:
