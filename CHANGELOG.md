@@ -10,6 +10,7 @@
 * Add `NVIDIA_VISIBLE_DEVICES=void` to generated CDI specifications.
 
 * [toolkit-container] Remove centos7 image. The ubi8 image can be used on all RPM-based platforms.
+* [toolkit-container] Bump CUDA base image version to 12.3.2
 
 ## v1.15.0-rc.3
 * Fix bug in `nvidia-ctk hook update-ldcache` where default `--ldconfig-path` value was not applied.
