@@ -14,7 +14,7 @@
 
 LIB_NAME := nvidia-container-toolkit
 LIB_VERSION := 1.15.0
-LIB_TAG := rc.3
+LIB_TAG := rc.4
 
 # The package version is the combination of the library version and tag.
 # If the tag is specified the two components are joined with a tilde (~).
@@ -27,7 +27,7 @@ PACKAGE_REVISION := 1
 NVIDIA_DOCKER_VERSION := 2.14.0
 NVIDIA_CONTAINER_RUNTIME_VERSION := 3.14.0
 
-CUDA_VERSION := 12.3.1
+CUDA_VERSION := 12.3.2
 GOLANG_VERSION := 1.20.5
 
 BUILDIMAGE_TAG ?= devel-go$(GOLANG_VERSION)
