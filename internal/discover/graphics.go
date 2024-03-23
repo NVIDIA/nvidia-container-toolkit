@@ -59,12 +59,15 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, n
 		},
 	)
 
+	searchPaths := []string{"/etc"}
+	searchPaths = append(searchPaths, xdgDataDirs()...)
+
 	jsonMounts := NewMounts(
 		logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
 			lookup.WithRoot(driver.Root),
-			lookup.WithSearchPaths("/etc", "/usr/share"),
+			lookup.WithSearchPaths(searchPaths...),
 		),
 		driver.Root,
 		[]string{
@@ -295,7 +298,7 @@ func newXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPa
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
 			lookup.WithRoot(driver.Root),
-			lookup.WithSearchPaths("/usr/share"),
+			lookup.WithSearchPaths(xdgDataDirs()...),
 		),
 		driver.Root,
 		[]string{"X11/xorg.conf.d/10-nvidia.conf"},
@@ -370,4 +373,14 @@ func (s selectDeviceByPath) MountIsSelected(Mount) bool {
 // HookIsSelected is always true
 func (s selectDeviceByPath) HookIsSelected(Hook) bool {
 	return true
+}
+
+// xdgDataDirs finds the paths as specified in the environment variable XDG_DATA_DIRS.
+// See https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html.
+func xdgDataDirs() []string {
+	if dirs, exists := os.LookupEnv("XDG_DATA_DIRS"); exists && dirs != "" {
+		return root.NormalizeSearchPaths(dirs)
+	}
+
+	return []string{"/usr/local/share", "/usr/share"}
 }
