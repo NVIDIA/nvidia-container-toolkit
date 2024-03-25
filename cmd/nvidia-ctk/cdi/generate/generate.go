@@ -53,6 +53,7 @@ type options struct {
 	vendor               string
 	class                string
 
+	configSearchPaths  cli.StringSlice
 	librarySearchPaths cli.StringSlice
 
 	csv struct {
@@ -86,6 +87,11 @@ func (m command) build() *cli.Command {
 	}
 
 	c.Flags = []cli.Flag{
+		&cli.StringSliceFlag{
+			Name:        "config-search-path",
+			Usage:       "Specify the path to search for config files when discovering the entities that should be included in the CDI specification.",
+			Destination: &opts.configSearchPaths,
+		},
 		&cli.StringFlag{
 			Name:        "output",
 			Usage:       "Specify the file to output the generated CDI specification to. If this is '' the specification is output to STDOUT",
@@ -260,6 +266,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithLdconfigPath(opts.ldconfigPath),
 		nvcdi.WithDeviceNamers(deviceNamers...),
 		nvcdi.WithMode(opts.mode),
+		nvcdi.WithConfigSearchPaths(opts.configSearchPaths.Value()),
 		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths.Value()),
 		nvcdi.WithCSVFiles(opts.csv.files.Value()),
 		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns.Value()),

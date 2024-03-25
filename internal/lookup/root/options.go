@@ -37,3 +37,9 @@ func WithLibrarySearchPaths(paths ...string) Option {
 		d.librarySearchPaths = paths
 	}
 }
+
+func WithConfigSearchPaths(paths ...string) Option {
+	return func(d *Driver) {
+		d.configSearchPaths = paths
+	}
+}
