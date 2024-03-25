@@ -32,22 +32,24 @@ type Driver struct {
 	librarySearchPaths []string
 }
 
-// New creates a new Driver root at the specified path.
-// TODO: Use functional options here.
-func New(logger logger.Interface, path string, librarySearchPaths []string) *Driver {
-	return &Driver{
-		logger:             logger,
-		Root:               path,
-		librarySearchPaths: normalizeSearchPaths(librarySearchPaths...),
+// New creates a new Driver root using the specified options.
+func New(opts ...Option) *Driver {
+	d := &Driver{}
+	for _, opt := range opts {
+		opt(d)
 	}
+	if d.logger == nil {
+		d.logger = logger.New()
+	}
+	return d
 }
 
-// Drivers returns a Locator for driver libraries.
+// Libraries returns a Locator for driver libraries.
 func (r *Driver) Libraries() lookup.Locator {
 	return lookup.NewLibraryLocator(
 		lookup.WithLogger(r.logger),
 		lookup.WithRoot(r.Root),
-		lookup.WithSearchPaths(r.librarySearchPaths...),
+		lookup.WithSearchPaths(normalizeSearchPaths(r.librarySearchPaths...)...),
 	)
 }
 
