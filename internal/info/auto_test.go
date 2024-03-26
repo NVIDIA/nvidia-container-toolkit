@@ -203,9 +203,15 @@ func TestResolveAutoMode(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			info := &info.PropertyExtractorMock{
+			properties := &info.PropertyExtractorMock{
 				HasNvmlFunc: func() (bool, string) {
 					return tc.info["nvml"], "nvml"
+				},
+				HasDXCoreFunc: func() (bool, string) {
+					return tc.info["dxcore"], "dxcore"
+				},
+				IsTegraSystemFunc: func() (bool, string) {
+					return tc.info["tegra"], "tegra"
 				},
 				HasTegraFilesFunc: func() (bool, string) {
 					return tc.info["tegra"], "tegra"
@@ -213,11 +219,6 @@ func TestResolveAutoMode(t *testing.T) {
 				UsesOnlyNVGPUModuleFunc: func() (bool, string) {
 					return tc.info["nvgpu"], "nvgpu"
 				},
-			}
-
-			r := resolver{
-				logger: logger,
-				info:   info,
 			}
 
 			var mounts []specs.Mount
@@ -232,7 +233,7 @@ func TestResolveAutoMode(t *testing.T) {
 				image.WithEnvMap(tc.envmap),
 				image.WithMounts(mounts),
 			)
-			mode := r.resolveMode(tc.mode, image)
+			mode := resolveMode(logger, tc.mode, image, properties)
 			require.EqualValues(t, tc.expectedMode, mode)
 		})
 	}
