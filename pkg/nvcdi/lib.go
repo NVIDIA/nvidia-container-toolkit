@@ -179,31 +179,7 @@ func (m *wrapper) GetCommonEdits() (*cdi.ContainerEdits, error) {
 
 // resolveMode resolves the mode for CDI spec generation based on the current system.
 func (l *nvcdilib) resolveMode() (rmode string) {
-	if l.mode != ModeAuto {
-		return l.mode
-	}
-	defer func() {
-		l.logger.Infof("Auto-detected mode as %q", rmode)
-	}()
-
-	isWSL, reason := l.infolib.HasDXCore()
-	l.logger.Debugf("Is WSL-based system? %v: %v", isWSL, reason)
-
-	if isWSL {
-		return ModeWsl
-	}
-
-	isNvml, reason := l.infolib.HasNvml()
-	l.logger.Debugf("Is NVML-based system? %v: %v", isNvml, reason)
-
-	isTegra, reason := l.infolib.IsTegraSystem()
-	l.logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
-
-	if isTegra && !isNvml {
-		return ModeCSV
-	}
-
-	return ModeNvml
+	return l.infolib.Resolve(l.mode)
 }
 
 // getCudaVersion returns the CUDA version of the current system.

@@ -16,24 +16,53 @@
 
 package info
 
-// Option defines a function for passing options to the New() call
-type Option func(*infolib)
+import (
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
+	"github.com/NVIDIA/go-nvlib/pkg/nvml"
+)
 
-// New creates a new instance of the 'info' interface
-func New(opts ...Option) Interface {
-	i := &infolib{}
-	for _, opt := range opts {
-		opt(i)
+// Option defines a function for passing options to the New() call
+type Option func(*builder)
+
+// WithDeviceLib sets the device library for the library
+func WithDeviceLib(devicelib device.Interface) Option {
+	return func(l *builder) {
+		l.devicelib = devicelib
 	}
-	if i.root == "" {
-		i.root = "/"
+}
+
+// WithLogger sets the logger for the library.
+func WithLogger(logger basicLogger) Option {
+	return func(i *builder) {
+		i.logger = logger
 	}
-	return i
+}
+
+// WithNvmlLib sets the nvml library for the library
+func WithNvmlLib(nvmllib nvml.Interface) Option {
+	return func(l *builder) {
+		l.nvmllib = nvmllib
+	}
 }
 
 // WithRoot provides a Option to set the root of the 'info' interface
 func WithRoot(root string) Option {
-	return func(i *infolib) {
+	return func(i *builder) {
 		i.root = root
+	}
+}
+
+// WithPreHookResolver provides an Option to set resolvers to use before others.
+func WithPreHookResolver(preHook Resolver) Option {
+	return func(i *builder) {
+		i.preHook = preHook
+	}
+}
+
+// WithProperties provides an Option to set the Properties interface implementation.
+// This is predominantly used for testing.
+func WithProperties(properties Properties) Option {
+	return func(i *builder) {
+		i.properties = properties
 	}
 }

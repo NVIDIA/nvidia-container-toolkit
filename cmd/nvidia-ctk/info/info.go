@@ -19,6 +19,7 @@ package info
 import (
 	"github.com/urfave/cli/v2"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/info/resolve"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
@@ -42,7 +43,9 @@ func (m command) build() *cli.Command {
 		Usage: "Provide information about the system",
 	}
 
-	info.Subcommands = []*cli.Command{}
+	info.Subcommands = []*cli.Command{
+		resolve.NewCommand(m.logger),
+	}
 
 	return &info
 }

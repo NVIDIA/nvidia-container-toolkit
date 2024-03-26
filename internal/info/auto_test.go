@@ -23,6 +23,8 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
 
@@ -202,7 +204,7 @@ func TestResolveAutoMode(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			info := &infoInterfaceMock{
+			properties := &info.PropertiesMock{
 				HasNvmlFunc: func() (bool, string) {
 					return tc.info["nvml"], "nvml"
 				},
@@ -212,11 +214,6 @@ func TestResolveAutoMode(t *testing.T) {
 				UsesNVGPUModuleFunc: func() (bool, string) {
 					return tc.info["nvgpu"], "nvgpu"
 				},
-			}
-
-			r := resolver{
-				logger: logger,
-				info:   info,
 			}
 
 			var mounts []specs.Mount
@@ -231,7 +228,7 @@ func TestResolveAutoMode(t *testing.T) {
 				image.WithEnvMap(tc.envmap),
 				image.WithMounts(mounts),
 			)
-			mode := r.resolveMode(tc.mode, image)
+			mode := resolveMode(logger, tc.mode, image, properties)
 			require.EqualValues(t, tc.expectedMode, mode)
 		})
 	}

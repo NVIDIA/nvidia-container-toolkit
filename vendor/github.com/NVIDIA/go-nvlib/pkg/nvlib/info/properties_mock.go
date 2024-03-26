@@ -7,16 +7,16 @@ import (
 	"sync"
 )
 
-// Ensure, that infoInterfaceMock does implement infoInterface.
+// Ensure, that PropertiesMock does implement Properties.
 // If this is not the case, regenerate this file with moq.
-var _ infoInterface = &infoInterfaceMock{}
+var _ Properties = &PropertiesMock{}
 
-// infoInterfaceMock is a mock implementation of infoInterface.
+// PropertiesMock is a mock implementation of Properties.
 //
-//	func TestSomethingThatUsesinfoInterface(t *testing.T) {
+//	func TestSomethingThatUsesProperties(t *testing.T) {
 //
-//		// make and configure a mocked infoInterface
-//		mockedinfoInterface := &infoInterfaceMock{
+//		// make and configure a mocked Properties
+//		mockedProperties := &PropertiesMock{
 //			HasDXCoreFunc: func() (bool, string) {
 //				panic("mock out the HasDXCore method")
 //			},
@@ -31,11 +31,11 @@ var _ infoInterface = &infoInterfaceMock{}
 //			},
 //		}
 //
-//		// use mockedinfoInterface in code that requires infoInterface
+//		// use mockedProperties in code that requires Properties
 //		// and then make assertions.
 //
 //	}
-type infoInterfaceMock struct {
+type PropertiesMock struct {
 	// HasDXCoreFunc mocks the HasDXCore method.
 	HasDXCoreFunc func() (bool, string)
 
@@ -70,7 +70,7 @@ type infoInterfaceMock struct {
 }
 
 // HasDXCore calls HasDXCoreFunc.
-func (mock *infoInterfaceMock) HasDXCore() (bool, string) {
+func (mock *PropertiesMock) HasDXCore() (bool, string) {
 	callInfo := struct {
 	}{}
 	mock.lockHasDXCore.Lock()
@@ -89,8 +89,8 @@ func (mock *infoInterfaceMock) HasDXCore() (bool, string) {
 // HasDXCoreCalls gets all the calls that were made to HasDXCore.
 // Check the length with:
 //
-//	len(mockedinfoInterface.HasDXCoreCalls())
-func (mock *infoInterfaceMock) HasDXCoreCalls() []struct {
+//	len(mockedProperties.HasDXCoreCalls())
+func (mock *PropertiesMock) HasDXCoreCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -101,7 +101,7 @@ func (mock *infoInterfaceMock) HasDXCoreCalls() []struct {
 }
 
 // HasNvml calls HasNvmlFunc.
-func (mock *infoInterfaceMock) HasNvml() (bool, string) {
+func (mock *PropertiesMock) HasNvml() (bool, string) {
 	callInfo := struct {
 	}{}
 	mock.lockHasNvml.Lock()
@@ -120,8 +120,8 @@ func (mock *infoInterfaceMock) HasNvml() (bool, string) {
 // HasNvmlCalls gets all the calls that were made to HasNvml.
 // Check the length with:
 //
-//	len(mockedinfoInterface.HasNvmlCalls())
-func (mock *infoInterfaceMock) HasNvmlCalls() []struct {
+//	len(mockedProperties.HasNvmlCalls())
+func (mock *PropertiesMock) HasNvmlCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -132,7 +132,7 @@ func (mock *infoInterfaceMock) HasNvmlCalls() []struct {
 }
 
 // IsTegraSystem calls IsTegraSystemFunc.
-func (mock *infoInterfaceMock) IsTegraSystem() (bool, string) {
+func (mock *PropertiesMock) IsTegraSystem() (bool, string) {
 	callInfo := struct {
 	}{}
 	mock.lockIsTegraSystem.Lock()
@@ -151,8 +151,8 @@ func (mock *infoInterfaceMock) IsTegraSystem() (bool, string) {
 // IsTegraSystemCalls gets all the calls that were made to IsTegraSystem.
 // Check the length with:
 //
-//	len(mockedinfoInterface.IsTegraSystemCalls())
-func (mock *infoInterfaceMock) IsTegraSystemCalls() []struct {
+//	len(mockedProperties.IsTegraSystemCalls())
+func (mock *PropertiesMock) IsTegraSystemCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -163,7 +163,7 @@ func (mock *infoInterfaceMock) IsTegraSystemCalls() []struct {
 }
 
 // UsesNVGPUModule calls UsesNVGPUModuleFunc.
-func (mock *infoInterfaceMock) UsesNVGPUModule() (bool, string) {
+func (mock *PropertiesMock) UsesNVGPUModule() (bool, string) {
 	callInfo := struct {
 	}{}
 	mock.lockUsesNVGPUModule.Lock()
@@ -182,8 +182,8 @@ func (mock *infoInterfaceMock) UsesNVGPUModule() (bool, string) {
 // UsesNVGPUModuleCalls gets all the calls that were made to UsesNVGPUModule.
 // Check the length with:
 //
-//	len(mockedinfoInterface.UsesNVGPUModuleCalls())
-func (mock *infoInterfaceMock) UsesNVGPUModuleCalls() []struct {
+//	len(mockedProperties.UsesNVGPUModuleCalls())
+func (mock *PropertiesMock) UsesNVGPUModuleCalls() []struct {
 } {
 	var calls []struct {
 	}
