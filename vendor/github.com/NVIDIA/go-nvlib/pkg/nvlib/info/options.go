@@ -59,16 +59,10 @@ func WithPreHookResolver(preHook Resolver) Option {
 	}
 }
 
-// WithInfo provides an Option to set the Info interface implementation.
+// WithProperties provides an Option to set the Properties interface implementation.
 // This is predominantly used for testing.
-func WithInfo(info Info) Option {
+func WithProperties(properties Properties) Option {
 	return func(i *builder) {
-		i.info = info
+		i.properties = properties
 	}
-}
-
-type noop struct{}
-
-func (n noop) Resolve(mode string) string {
-	return ""
 }

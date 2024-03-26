@@ -27,8 +27,8 @@ type builder struct {
 	nvmllib   nvml.Interface
 	devicelib device.Interface
 
-	preHook Resolver
-	info    Info
+	preHook    Resolver
+	properties Properties
 }
 
 // New creates a new instance of the 'info' interface
@@ -52,8 +52,8 @@ func New(opts ...Option) Interface {
 	if b.preHook == nil {
 		b.preHook = noop{}
 	}
-	if b.info == nil {
-		b.info = &info{
+	if b.properties == nil {
+		b.properties = &info{
 			root:      b.root,
 			nvmllib:   b.nvmllib,
 			devicelib: b.devicelib,
@@ -64,8 +64,26 @@ func New(opts ...Option) Interface {
 
 func (b *builder) build() Interface {
 	return &infolib{
-		logger:  b.logger,
-		preHook: b.preHook,
-		Info:    b.info,
+		logger:     b.logger,
+		Resolver:   b.getResolvers(),
+		Properties: b.properties,
 	}
+}
+
+func (b *builder) getResolvers() Resolver {
+	auto := &notEqualsResolver{
+		logger: b.logger,
+		mode:   "auto",
+	}
+
+	systemMode := &systemMode{
+		logger:     b.logger,
+		Properties: b.properties,
+	}
+
+	return firstOf([]Resolver{
+		auto,
+		b.preHook,
+		systemMode,
+	})
 }

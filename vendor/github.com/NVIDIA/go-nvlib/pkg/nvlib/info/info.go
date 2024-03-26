@@ -27,29 +27,10 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/dl"
 )
 
-// Interface provides the API to the info package
-type Interface interface {
-	Resolver
-	Info
-}
-
-//go:generate moq -stub -out info_mock.go . Info
-type Info interface {
-	HasDXCore() (bool, string)
-	HasNvml() (bool, string)
-	IsTegraSystem() (bool, string)
-	UsesNVGPUModule() (bool, string)
-}
-
-type Resolver interface {
-	Resolve(string) string
-}
-
 type infolib struct {
-	Info
 	logger basicLogger
-
-	preHook Resolver
+	Properties
+	Resolver
 }
 
 type info struct {
@@ -58,44 +39,8 @@ type info struct {
 	devicelib device.Interface
 }
 
-var _ Info = &info{}
+var _ Properties = &info{}
 var _ Interface = &infolib{}
-
-// Resolve determines the correct mode for the platform if set to "auto"
-func (i *infolib) Resolve(mode string) (rmode string) {
-	if mode != "auto" {
-		i.logger.Infof("Using requested mode '%s'", mode)
-		return mode
-	}
-	defer func() {
-		i.logger.Infof("Auto-detected mode as '%v'", rmode)
-	}()
-
-	if mode := i.preHook.Resolve(mode); mode != "" {
-		return mode
-	}
-
-	isWSL, reason := i.HasDXCore()
-	i.logger.Debugf("Is WSL-based system? %v: %v", isWSL, reason)
-
-	isTegra, reason := i.IsTegraSystem()
-	i.logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
-
-	hasNVML, reason := i.HasNvml()
-	i.logger.Debugf("Is NVML-based system? %v: %v", hasNVML, reason)
-
-	usesNVGPUModule, reason := i.UsesNVGPUModule()
-	i.logger.Debugf("Uses nvgpu kernel module? %v: %v", usesNVGPUModule, reason)
-
-	if isWSL {
-		return "wsl"
-	}
-
-	if (isTegra && !hasNVML) || usesNVGPUModule {
-		return "csv"
-	}
-	return "nvml"
-}
 
 // HasDXCore returns true if DXCore is detected on the system.
 func (i *info) HasDXCore() (bool, string) {
@@ -147,8 +92,11 @@ func (i *info) IsTegraSystem() (bool, string) {
 }
 
 // UsesNVGPUModule checks whether the nvgpu module is used.
-// We use the device name to signal this, since devices that use the nvgpu module have their device
-// names as:
+// This kernel module is used on Tegra-based systems when using the iGPU.
+// Since some of these systems also support NVML, we use the device name
+// reported by NVML to determine whether the system is an iGPU system.
+//
+// Devices that use the nvgpu module have their device names as:
 //
 //	GPU 0: Orin (nvgpu) (UUID: 54d0709b-558d-5a59-9c65-0c5fc14a21a4)
 //
