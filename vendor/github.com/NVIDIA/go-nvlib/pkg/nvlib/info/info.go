@@ -22,24 +22,83 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
+	"github.com/NVIDIA/go-nvlib/pkg/nvml"
 	"github.com/NVIDIA/go-nvml/pkg/dl"
 )
 
 // Interface provides the API to the info package
 type Interface interface {
+	Resolver
+	Info
+}
+
+//go:generate moq -stub -out info_mock.go . Info
+type Info interface {
 	HasDXCore() (bool, string)
 	HasNvml() (bool, string)
 	IsTegraSystem() (bool, string)
+	UsesNVGPUModule() (bool, string)
+}
+
+type Resolver interface {
+	Resolve(string) string
 }
 
 type infolib struct {
-	root string
+	Info
+	logger basicLogger
+
+	preHook Resolver
 }
 
+type info struct {
+	root      string
+	nvmllib   nvml.Interface
+	devicelib device.Interface
+}
+
+var _ Info = &info{}
 var _ Interface = &infolib{}
 
+// Resolve determines the correct mode for the platform if set to "auto"
+func (i *infolib) Resolve(mode string) (rmode string) {
+	if mode != "auto" {
+		i.logger.Infof("Using requested mode '%s'", mode)
+		return mode
+	}
+	defer func() {
+		i.logger.Infof("Auto-detected mode as '%v'", rmode)
+	}()
+
+	if mode := i.preHook.Resolve(mode); mode != "" {
+		return mode
+	}
+
+	isWSL, reason := i.HasDXCore()
+	i.logger.Debugf("Is WSL-based system? %v: %v", isWSL, reason)
+
+	isTegra, reason := i.IsTegraSystem()
+	i.logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
+
+	hasNVML, reason := i.HasNvml()
+	i.logger.Debugf("Is NVML-based system? %v: %v", hasNVML, reason)
+
+	usesNVGPUModule, reason := i.UsesNVGPUModule()
+	i.logger.Debugf("Uses nvgpu kernel module? %v: %v", usesNVGPUModule, reason)
+
+	if isWSL {
+		return "wsl"
+	}
+
+	if (isTegra && !hasNVML) || usesNVGPUModule {
+		return "csv"
+	}
+	return "nvml"
+}
+
 // HasDXCore returns true if DXCore is detected on the system.
-func (i *infolib) HasDXCore() (bool, string) {
+func (i *info) HasDXCore() (bool, string) {
 	const (
 		libraryName = "libdxcore.so"
 	)
@@ -51,7 +110,7 @@ func (i *infolib) HasDXCore() (bool, string) {
 }
 
 // HasNvml returns true if NVML is detected on the system
-func (i *infolib) HasNvml() (bool, string) {
+func (i *info) HasNvml() (bool, string) {
 	const (
 		libraryName = "libnvidia-ml.so.1"
 	)
@@ -63,7 +122,7 @@ func (i *infolib) HasNvml() (bool, string) {
 }
 
 // IsTegraSystem returns true if the system is detected as a Tegra-based system
-func (i *infolib) IsTegraSystem() (bool, string) {
+func (i *info) IsTegraSystem() (bool, string) {
 	tegraReleaseFile := filepath.Join(i.root, "/etc/nv_tegra_release")
 	tegraFamilyFile := filepath.Join(i.root, "/sys/devices/soc0/family")
 
@@ -85,6 +144,56 @@ func (i *infolib) IsTegraSystem() (bool, string) {
 	}
 
 	return false, fmt.Sprintf("%v has no 'tegra' prefix", tegraFamilyFile)
+}
+
+// UsesNVGPUModule checks whether the nvgpu module is used.
+// We use the device name to signal this, since devices that use the nvgpu module have their device
+// names as:
+//
+//	GPU 0: Orin (nvgpu) (UUID: 54d0709b-558d-5a59-9c65-0c5fc14a21a4)
+//
+// This function returns true if ALL devices use the nvgpu module.
+func (i *info) UsesNVGPUModule() (uses bool, reason string) {
+	// We ensure that this function never panics
+	defer func() {
+		if err := recover(); err != nil {
+			uses = false
+			reason = fmt.Sprintf("panic: %v", err)
+		}
+	}()
+
+	ret := i.nvmllib.Init()
+	if ret != nvml.SUCCESS {
+		return false, fmt.Sprintf("failed to initialize nvml: %v", ret)
+	}
+	defer func() {
+		_ = i.nvmllib.Shutdown()
+	}()
+
+	var names []string
+
+	err := i.devicelib.VisitDevices(func(i int, d device.Device) error {
+		name, ret := d.GetName()
+		if ret != nvml.SUCCESS {
+			return fmt.Errorf("device %v: %v", i, ret)
+		}
+		names = append(names, name)
+		return nil
+	})
+	if err != nil {
+		return false, fmt.Sprintf("failed to get device names: %v", err)
+	}
+
+	if len(names) == 0 {
+		return false, "no devices found"
+	}
+
+	for _, name := range names {
+		if !strings.Contains(name, "(nvgpu)") {
+			return false, fmt.Sprintf("device %q does not use nvgpu module", name)
+		}
+	}
+	return true, "all devices use nvgpu module"
 }
 
 // assertHasLibrary returns an error if the specified library cannot be loaded
