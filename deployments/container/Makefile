@@ -56,9 +56,9 @@ TEST_TARGETS := $(patsubst %,test-%,$(DISTRIBUTIONS))
 .PHONY: $(DISTRIBUTIONS) $(PUSH_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
 
 ifneq ($(BUILD_MULTI_ARCH_IMAGES),true)
-include $(CURDIR)/build/container/native-only.mk
+include $(CURDIR)/deployments/container/native-only.mk
 else
-include $(CURDIR)/build/container/multi-arch.mk
+include $(CURDIR)/deployments/container/multi-arch.mk
 endif
 
 # For the default push target we also push a short tag equal to the version.
@@ -84,7 +84,7 @@ push-short:
 
 
 build-%: DIST = $(*)
-build-%: DOCKERFILE = $(CURDIR)/build/container/Dockerfile.$(DOCKERFILE_SUFFIX)
+build-%: DOCKERFILE = $(CURDIR)/deployments/container/Dockerfile.$(DOCKERFILE_SUFFIX)
 
 ARTIFACTS_ROOT ?= $(shell realpath --relative-to=$(CURDIR) $(DIST_DIR))
 
