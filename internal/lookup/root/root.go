@@ -49,16 +49,16 @@ func (r *Driver) Libraries() lookup.Locator {
 	return lookup.NewLibraryLocator(
 		lookup.WithLogger(r.logger),
 		lookup.WithRoot(r.Root),
-		lookup.WithSearchPaths(normalizeSearchPaths(r.librarySearchPaths...)...),
+		lookup.WithSearchPaths(NormalizeSearchPaths(r.librarySearchPaths...)...),
 	)
 }
 
-// normalizeSearchPaths takes a list of paths and normalized these.
+// NormalizeSearchPaths takes a list of paths and normalized these.
 // Each of the elements in the list is expanded if it is a path list and the
 // resultant list is returned.
 // This allows, for example, for the contents of `PATH` or `LD_LIBRARY_PATH` to
 // be passed as a search path directly.
-func normalizeSearchPaths(paths ...string) []string {
+func NormalizeSearchPaths(paths ...string) []string {
 	var normalized []string
 	for _, path := range paths {
 		normalized = append(normalized, filepath.SplitList(path)...)
