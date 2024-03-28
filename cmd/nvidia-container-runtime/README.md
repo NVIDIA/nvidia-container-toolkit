@@ -198,7 +198,7 @@ invoked from the command line as `runc` would. For example:
 ```sh
 # Setup a rootfs based on Ubuntu 16.04
 cd $(mktemp -d) && mkdir rootfs
-curl -sS http://cdimage.ubuntu.com/ubuntu-base/releases/16.04/release/ubuntu-base-16.04-core-amd64.tar.gz | tar --exclude 'dev/*' -C rootfs -xz
+curl -sS http://cdimage.ubuntu.com/ubuntu-base/releases/16.04/release/ubuntu-base-16.04.6-base-amd64.tar.gz | tar --exclude 'dev/*' -C rootfs -xz
 
 # Create an OCI runtime spec
 nvidia-container-runtime spec
