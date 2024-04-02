@@ -135,4 +135,4 @@ jobs:
           VERSION: ${COMMIT_SHORT_SHA}
         run: |
           echo "${VERSION}"
-          make -f build/container/Makefile build-${{ matrix.dist }}
+          make -f deployments/container/Makefile build-${{ matrix.dist }}
