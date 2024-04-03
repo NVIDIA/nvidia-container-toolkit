@@ -63,6 +63,9 @@ type Config struct {
 	NVIDIACTKConfig                  CTKConfig          `toml:"nvidia-ctk"`
 	NVIDIAContainerRuntimeConfig     RuntimeConfig      `toml:"nvidia-container-runtime"`
 	NVIDIAContainerRuntimeHookConfig RuntimeHookConfig  `toml:"nvidia-container-runtime-hook"`
+
+	// Features allows for finer control over optional features.
+	Features features `toml:"features,omitempty"`
 }
 
 // GetConfigFilePath returns the path to the config file for the configured system

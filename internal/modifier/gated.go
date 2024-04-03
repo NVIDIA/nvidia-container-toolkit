@@ -26,13 +26,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
-const (
-	nvidiaGDSEnvvar      = "NVIDIA_GDS"
-	nvidiaMOFEDEnvvar    = "NVIDIA_MOFED"
-	nvidiaNVSWITCHEnvvar = "NVIDIA_NVSWITCH"
-	nvidiaGDRCOPYEnvvar  = "NVIDIA_GDRCOPY"
-)
-
 // NewFeatureGatedModifier creates the modifiers for optional features.
 // These include:
 //
@@ -53,7 +46,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 	driverRoot := cfg.NVIDIAContainerCLIConfig.Root
 	devRoot := cfg.NVIDIAContainerCLIConfig.Root
 
-	if image.Getenv(nvidiaGDSEnvvar) == "enabled" {
+	if cfg.Features.IsEnabled(config.FeatureGDS, image) {
 		d, err := discover.NewGDSDiscoverer(logger, driverRoot, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDS devices: %w", err)
@@ -61,7 +54,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 		discoverers = append(discoverers, d)
 	}
 
-	if image.Getenv(nvidiaMOFEDEnvvar) == "enabled" {
+	if cfg.Features.IsEnabled(config.FeatureMOFED, image) {
 		d, err := discover.NewMOFEDDiscoverer(logger, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for MOFED devices: %w", err)
@@ -69,7 +62,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 		discoverers = append(discoverers, d)
 	}
 
-	if image.Getenv(nvidiaNVSWITCHEnvvar) == "enabled" {
+	if cfg.Features.IsEnabled(config.FeatureNVSWITCH, image) {
 		d, err := discover.NewNvSwitchDiscoverer(logger, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for NVSWITCH devices: %w", err)
@@ -77,7 +70,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 		discoverers = append(discoverers, d)
 	}
 
-	if image.Getenv(nvidiaGDRCOPYEnvvar) == "enabled" {
+	if cfg.Features.IsEnabled(config.FeatureGDRCopy, image) {
 		d, err := discover.NewGDRCopyDiscoverer(logger, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDRCopy devices: %w", err)
