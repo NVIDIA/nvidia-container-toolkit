@@ -26,6 +26,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 )
 
 // Run is an entry point that allows for idiomatic handling of errors
@@ -76,8 +77,13 @@ func (r rt) Run(argv []string) (rerr error) {
 		r.logger.Infof("Running with config:\n%+v", cfg)
 	}
 
+	driver := root.New(
+		root.WithLogger(r.logger),
+		root.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
+	)
+
 	r.logger.Debugf("Command line arguments: %v", argv)
-	runtime, err := newNVIDIAContainerRuntime(r.logger, cfg, argv)
+	runtime, err := newNVIDIAContainerRuntime(r.logger, cfg, argv, driver)
 	if err != nil {
 		return fmt.Errorf("failed to create NVIDIA Container Runtime: %v", err)
 	}
