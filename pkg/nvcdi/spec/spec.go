@@ -47,12 +47,11 @@ func (s *spec) Save(path string) error {
 	}
 
 	specDir := filepath.Dir(path)
-	registry := cdi.GetRegistry(
+	cache, _ := cdi.NewCache(
 		cdi.WithAutoRefresh(false),
 		cdi.WithSpecDirs(specDir),
 	)
-
-	if err := registry.SpecDB().WriteSpec(s.Raw(), filepath.Base(path)); err != nil {
+	if err := cache.WriteSpec(s.Raw(), filepath.Base(path)); err != nil {
 		return fmt.Errorf("failed to write spec: %w", err)
 	}
 
