@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BASE_DIST
-ARG CUDA_VERSION
 ARG GOLANG_VERSION=x.x.x
 
-FROM nvidia/cuda:${CUDA_VERSION}-base-${BASE_DIST}
+FROM nvidia/cuda:12.3.2-base-ubuntu20.04
 
 ARG ARTIFACTS_ROOT
 COPY ${ARTIFACTS_ROOT} /artifacts/packages/
@@ -24,7 +22,6 @@ COPY ${ARTIFACTS_ROOT} /artifacts/packages/
 WORKDIR /artifacts/packages
 
 # build-args are added to the manifest.txt file below.
-ARG BASE_DIST
 ARG PACKAGE_DIST
 ARG PACKAGE_VERSION
 ARG GIT_BRANCH
