@@ -14,6 +14,11 @@ updates:
     labels:
     - dependencies
 
+  - package-ecosystem: "docker"
+    directory: "/deployments/container"
+    schedule:
+      interval: "daily"
+
   - package-ecosystem: "gomod"
     # This defines a specific dependabot rule for the latest release-* branch.
     target-branch: release-1.14

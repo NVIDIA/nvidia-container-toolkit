@@ -96,8 +96,6 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 		$(DOCKER_BUILD_PLATFORM_OPTIONS) \
 		--tag $(IMAGE) \
 		--build-arg ARTIFACTS_ROOT="$(ARTIFACTS_ROOT)" \
-		--build-arg BASE_DIST="$(BASE_DIST)" \
-		--build-arg CUDA_VERSION="$(CUDA_VERSION)" \
 		--build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
 		--build-arg PACKAGE_DIST="$(PACKAGE_DIST)" \
 		--build-arg PACKAGE_VERSION="$(PACKAGE_VERSION)" \
@@ -110,15 +108,12 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 		$(CURDIR)
 
 
-build-ubuntu%: BASE_DIST = $(*)
 build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
 build-ubuntu%: PACKAGE_DIST = ubuntu18.04
 
-build-ubi8: BASE_DIST := ubi8
 build-ubi8: DOCKERFILE_SUFFIX := centos
 build-ubi8: PACKAGE_DIST = centos7
 
-build-packaging: BASE_DIST := ubuntu20.04
 build-packaging: DOCKERFILE_SUFFIX := packaging
 build-packaging: PACKAGE_ARCH := amd64
 build-packaging: PACKAGE_DIST = all
