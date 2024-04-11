@@ -17,6 +17,7 @@
 package root
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -59,18 +60,24 @@ func (r *Driver) Libraries() lookup.Locator {
 // If configSearchPaths is specified, these paths are used as absolute paths,
 // otherwise, /etc and /usr/share are searched.
 func (r *Driver) Configs() lookup.Locator {
-	searchRoot := r.Root
-	searchPaths := []string{"/etc", "/usr/share"}
-	if len(r.configSearchPaths) > 0 {
-		searchRoot = "/"
-		searchPaths = normalizeSearchPaths(r.configSearchPaths...)
-	}
+	return lookup.NewFileLocator(r.configSearchOptions()...)
+}
 
-	return lookup.NewFileLocator(
+func (r *Driver) configSearchOptions() []lookup.Option {
+	if len(r.configSearchPaths) > 0 {
+		return []lookup.Option{
+			lookup.WithLogger(r.logger),
+			lookup.WithRoot("/"),
+			lookup.WithSearchPaths(normalizeSearchPaths(r.configSearchPaths...)...),
+		}
+	}
+	searchPaths := []string{"/etc"}
+	searchPaths = append(searchPaths, xdgDataDirs()...)
+	return []lookup.Option{
 		lookup.WithLogger(r.logger),
-		lookup.WithRoot(searchRoot),
+		lookup.WithRoot(r.Root),
 		lookup.WithSearchPaths(searchPaths...),
-	)
+	}
 }
 
 // normalizeSearchPaths takes a list of paths and normalized these.
@@ -84,4 +91,14 @@ func normalizeSearchPaths(paths ...string) []string {
 		normalized = append(normalized, filepath.SplitList(path)...)
 	}
 	return normalized
+}
+
+// xdgDataDirs finds the paths as specified in the environment variable XDG_DATA_DIRS.
+// See https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html.
+func xdgDataDirs() []string {
+	if dirs, exists := os.LookupEnv("XDG_DATA_DIRS"); exists && dirs != "" {
+		return normalizeSearchPaths(dirs)
+	}
+
+	return []string{"/usr/local/share", "/usr/share"}
 }
