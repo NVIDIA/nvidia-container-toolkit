@@ -111,7 +111,7 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
 build-ubuntu%: PACKAGE_DIST = ubuntu18.04
 
-build-ubi8: DOCKERFILE_SUFFIX := centos
+build-ubi8: DOCKERFILE_SUFFIX := ubi8
 build-ubi8: PACKAGE_DIST = centos7
 
 build-packaging: DOCKERFILE_SUFFIX := packaging
