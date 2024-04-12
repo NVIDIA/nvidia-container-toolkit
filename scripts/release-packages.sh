@@ -142,19 +142,6 @@ function sync() {
         fi
 
     done
-    if [[ ${REPO} == "stable" ]]; then
-        for f in $(ls ${src}/nvidia-container-runtime*.${pkg_type} ${src}/nvidia-docker*.${pkg_type}); do
-            df=${dst}/$(basename ${f})
-            df_stable=${df//"/experimental/"/"/stable/"}
-            if [[ -f "${df}" ]]; then
-                echo "${df} already exists; skipping"
-            elif [[ ${REPO} == "experimental" && -f ${df_stable} ]]; then
-                echo "${df_stable} already exists; skipping"
-            else
-                cp ${f} ${df}
-            fi
-        done
-    fi
 }
 
 targets=${all[@]}
@@ -191,18 +178,6 @@ done
 
 git -C ${PACKAGE_REPO_ROOT} add ${REPO}
 
-if [[ "${REPO}" == "stable" ]]; then
-# Stable release
-git -C ${PACKAGE_REPO_ROOT} commit -s -F- <<EOF
-Add packages for NVIDIA Container Toolkit ${VERSION} release
-
-These include:
-* libnvidia-container* ${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}
-* nvidia-container-toolkit ${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}
-* nvidia-container-runtime ${NVIDIA_CONTAINER_RUNTIME_PACKAGE_VERSION}
-* nvidia-docker ${NVIDIA_DOCKER_PACKAGE_VERSION}
-EOF
-else
 # Experimental / release candidate release
 git -C ${PACKAGE_REPO_ROOT} commit -s -F- <<EOF
 Add packages for NVIDIA Container Toolkit ${VERSION} ${REPO} release
@@ -211,7 +186,6 @@ These include:
 * libnvidia-container* ${LIBNVIDIA_CONTAINER_PACKAGE_VERSION}
 * nvidia-container-toolkit ${NVIDIA_CONTAINER_TOOLKIT_PACKAGE_VERSION}
 EOF
-fi
 
 : ${MASTER_KEY_PATH:? Path to master key MASTER_KEY_PATH must be set}
 : ${SUB_KEY_PATH:? Path to sub key SUB_KEY_PATH must be set}
@@ -242,12 +216,12 @@ function sign() {
 sign deb
 
 git -C ${PACKAGE_REPO_ROOT} add ${REPO}
-git -C ${PACKAGE_REPO_ROOT} commit -s -m "TOFIX: Sign deb packages for ${VERSION} in ${REPO}"
+git -C ${PACKAGE_REPO_ROOT} commit -s -m "fixup! Add packages for NVIDIA Container Toolkit ${VERSION} ${REPO} release"
 
 sign rpm
 
 git -C ${PACKAGE_REPO_ROOT} add ${REPO}
-git -C ${PACKAGE_REPO_ROOT} commit -s -m "TOFIX: Sign rpm packages for ${VERSION} in ${REPO}"
+git -C ${PACKAGE_REPO_ROOT} commit -s -m "fixup! Add packages for NVIDIA Container Toolkit ${VERSION} ${REPO} release"
 
-echo "To publish changes, go to ${PACKAGE_REPO_ROOT} and run: "
+echo "To publish changes, go to ${PACKAGE_REPO_ROOT} and run:"
 echo "   git rebase -i ${UPSTREAM_REFERENCE}"

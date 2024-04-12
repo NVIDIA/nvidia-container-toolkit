@@ -37,8 +37,7 @@ PACKAGE_IMAGE=$1
 : "${ARTIFACTS_DIR="${PROJECT_ROOT}/artifacts"}"
 
 # For release-candidates we skip certain packages.
-# For example, we don't release release candidates of nvidia-container-runtime and nvidia-docker2
-# since these only bump the nvidia-container-toolkit dependency.
+# This function returns 0 if a package should be skipped and 1 otherwise.
 function skip-for-release-candidate() {
     # We always skip nvidia-container-toolkit-operator-extensions packages
     if [[ "${package_name/"nvidia-container-toolkit-operator-extensions"/}" != "${package_name}" ]]; then
@@ -52,14 +51,6 @@ function skip-for-release-candidate() {
     fi
     if [[ "${VERSION%.0}" == "${VERSION}" ]]; then
         is_non_patch_full_release=0
-    fi
-
-    local package_name=$1
-    if [[ "${package_name/"nvidia-docker2"/}" != "${package_name}" ]]; then
-        return ${is_non_patch_full_release}
-    fi
-    if [[ "${package_name/"nvidia-container-runtime"/}" != "${package_name}" ]]; then
-        return ${is_non_patch_full_release}
     fi
     return 1
 }
