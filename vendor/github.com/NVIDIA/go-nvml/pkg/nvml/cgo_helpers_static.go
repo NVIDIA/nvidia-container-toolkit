@@ -44,6 +44,17 @@ func uint32SliceToIntSlice(s []uint32) []int {
 	return ret
 }
 
+func convertSlice[T any, I any](input []T) []I {
+	output := make([]I, len(input))
+	for i, obj := range input {
+		switch v := any(obj).(type) {
+		case I:
+			output[i] = v
+		}
+	}
+	return output
+}
+
 // packPCharString creates a Go string backed by *C.char and avoids copying.
 func packPCharString(p *C.char) (raw string) {
 	if p != nil && *p != 0 {

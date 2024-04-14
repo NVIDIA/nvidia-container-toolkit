@@ -14,29 +14,60 @@
 
 package nvml
 
+// EventData includes an interface type for Device instead of nvmlDevice
+type EventData struct {
+	Device            Device
+	EventType         uint64
+	EventData         uint64
+	GpuInstanceId     uint32
+	ComputeInstanceId uint32
+}
+
+func (e EventData) convert() nvmlEventData {
+	out := nvmlEventData{
+		Device:            e.Device.(nvmlDevice),
+		EventType:         e.EventType,
+		EventData:         e.EventData,
+		GpuInstanceId:     e.GpuInstanceId,
+		ComputeInstanceId: e.ComputeInstanceId,
+	}
+	return out
+}
+
+func (e nvmlEventData) convert() EventData {
+	out := EventData{
+		Device:            e.Device,
+		EventType:         e.EventType,
+		EventData:         e.EventData,
+		GpuInstanceId:     e.GpuInstanceId,
+		ComputeInstanceId: e.ComputeInstanceId,
+	}
+	return out
+}
+
 // nvml.EventSetCreate()
-func EventSetCreate() (EventSet, Return) {
-	var Set EventSet
+func (l *library) EventSetCreate() (EventSet, Return) {
+	var Set nvmlEventSet
 	ret := nvmlEventSetCreate(&Set)
 	return Set, ret
 }
 
 // nvml.EventSetWait()
-func EventSetWait(Set EventSet, Timeoutms uint32) (EventData, Return) {
-	var Data EventData
-	ret := nvmlEventSetWait(Set, &Data, Timeoutms)
-	return Data, ret
+func (l *library) EventSetWait(set EventSet, timeoutms uint32) (EventData, Return) {
+	return set.Wait(timeoutms)
 }
 
-func (Set EventSet) Wait(Timeoutms uint32) (EventData, Return) {
-	return EventSetWait(Set, Timeoutms)
+func (set nvmlEventSet) Wait(timeoutms uint32) (EventData, Return) {
+	var data nvmlEventData
+	ret := nvmlEventSetWait(set, &data, timeoutms)
+	return data.convert(), ret
 }
 
 // nvml.EventSetFree()
-func EventSetFree(Set EventSet) Return {
-	return nvmlEventSetFree(Set)
+func (l *library) EventSetFree(set EventSet) Return {
+	return set.Free()
 }
 
-func (Set EventSet) Free() Return {
-	return EventSetFree(Set)
+func (set nvmlEventSet) Free() Return {
+	return nvmlEventSetFree(set)
 }

@@ -19,17 +19,27 @@ import (
 )
 
 // nvml.ErrorString()
-func ErrorString(r Return) string {
-	if err := GetLibrary().Lookup("nvmlErrorString"); err != nil {
-		return fallbackErrorStringFunc(r)
-	}
-	return nvmlErrorString(r)
+func (l *library) ErrorString(r Return) string {
+	return r.Error()
 }
 
-// fallbackErrorStringFunc provides a basic nvmlErrorString implementation.
+// String returns the string representation of a Return.
+func (r Return) String() string {
+	return r.Error()
+}
+
+// Error returns the string representation of a Return.
+func (r Return) Error() string {
+	return errorStringFunc(r)
+}
+
+// Assigned to nvml.ErrorString if the system nvml library is in use.
+var errorStringFunc = defaultErrorStringFunc
+
+// defaultErrorStringFunc provides a basic nvmlErrorString implementation.
 // This allows the nvml.ErrorString function to be used even if the NVML library
 // is not loaded.
-var fallbackErrorStringFunc = func(r Return) string {
+var defaultErrorStringFunc = func(r Return) string {
 	switch r {
 	case SUCCESS:
 		return "SUCCESS"
