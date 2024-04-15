@@ -21,12 +21,6 @@ LIB_TAG := rc.4
 PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
 PACKAGE_REVISION := 1
 
-# Specify the nvidia-docker2 and nvidia-container-runtime package versions.
-# Note: The build tooling uses `LIB_TAG` above as the version tag.
-# This is appended to the versions below if specified.
-NVIDIA_DOCKER_VERSION := 2.14.0
-NVIDIA_CONTAINER_RUNTIME_VERSION := 3.14.0
-
 GOLANG_VERSION := 1.22.1
 
 BUILDIMAGE_TAG ?= devel-go$(GOLANG_VERSION)
