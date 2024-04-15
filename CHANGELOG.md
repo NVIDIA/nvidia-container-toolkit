@@ -1,5 +1,19 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.15.0
+
+* Remove `nvidia-container-runtime` and `nvidia-docker2` packages.
+* Use `XDG_DATA_DIRS` environment variable when locating config files such as graphics config files.
+* Add support for v0.7.0 Container Device Interface (CDI) specification.
+* Add `--config-search-path` option to `nvidia-ctk cdi generate` command. These paths are used when locating driver files such as graphics config files.
+* Use D3DKMTEnumAdapters3 to enumerate adpaters on WSL2 if available.
+* Add support for v1.2.0 OCI Runtime specification.
+* Explicitly set `NVIDIA_VISIBLE_DEVICES=void` in generated CDI specifications. This prevents the NVIDIA Container Runtime from making additional modifications.
+
+* [libnvidia-container] Use D3DKMTEnumAdapters3 to enumerate adpaters on WSL2 if available.
+
+* [toolkit-container] Bump CUDA base image version to 12.4.1
+
 ## v1.15.0-rc.4
 * Add a `--spec-dir` option to the `nvidia-ctk cdi generate` command. This allows specs outside of `/etc/cdi` and `/var/run/cdi` to be processed.
 * Add support for extracting device major number from `/proc/devices` if `nvidia` is used as a device name over `nvidia-frontend`.
