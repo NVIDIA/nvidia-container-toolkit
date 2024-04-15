@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli/v2 v2.27.1
 	golang.org/x/mod v0.17.0
-	golang.org/x/sys v0.18.0
+	golang.org/x/sys v0.19.0
 	tags.cncf.io/container-device-interface v0.6.2
 	tags.cncf.io/container-device-interface/specs-go v0.6.0
 )
