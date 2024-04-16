@@ -15,13 +15,14 @@ updates:
     - dependencies
 
   - package-ecosystem: "docker"
+    target-branch: main
     directory: "/deployments/container"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "gomod"
     # This defines a specific dependabot rule for the latest release-* branch.
-    target-branch: release-1.14
+    target-branch: release-1.15
     directory: "/"
     schedule:
       interval: "weekly"
@@ -30,6 +31,16 @@ updates:
     - dependency-name: k8s.io/*
     labels:
     - dependencies
+    - maintenance
+
+  - package-ecosystem: "docker"
+    target-branch: release-1.15
+    directory: "/deployments/container"
+    schedule:
+      interval: "daily"
+    labels:
+    - dependencies
+    - maintenance
 
   - package-ecosystem: "github-actions"
     directory: "/"
