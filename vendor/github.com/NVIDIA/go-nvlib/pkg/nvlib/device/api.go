@@ -17,10 +17,10 @@
 package device
 
 import (
-	"github.com/NVIDIA/go-nvlib/pkg/nvml"
+	"github.com/NVIDIA/go-nvml/pkg/nvml"
 )
 
-// Interface provides the API to the 'device' package
+// Interface provides the API to the 'device' package.
 type Interface interface {
 	AssertValidMigProfileFormat(profile string) error
 	GetDevices() ([]Device, error)
@@ -46,7 +46,7 @@ type devicelib struct {
 
 var _ Interface = &devicelib{}
 
-// New creates a new instance of the 'device' interface
+// New creates a new instance of the 'device' interface.
 func New(opts ...Option) Interface {
 	d := &devicelib{}
 	for _, opt := range opts {
@@ -68,21 +68,21 @@ func New(opts ...Option) Interface {
 	return d
 }
 
-// WithNvml provides an Option to set the NVML library used by the 'device' interface
+// WithNvml provides an Option to set the NVML library used by the 'device' interface.
 func WithNvml(nvml nvml.Interface) Option {
 	return func(d *devicelib) {
 		d.nvml = nvml
 	}
 }
 
-// WithVerifySymbols provides an option to toggle whether to verify select symbols exist in dynamic libraries before calling them
+// WithVerifySymbols provides an option to toggle whether to verify select symbols exist in dynamic libraries before calling them.
 func WithVerifySymbols(verify bool) Option {
 	return func(d *devicelib) {
 		d.verifySymbols = &verify
 	}
 }
 
-// WithSkippedDevices provides an Option to set devices to be skipped by model name
+// WithSkippedDevices provides an Option to set devices to be skipped by model name.
 func WithSkippedDevices(names ...string) Option {
 	return func(d *devicelib) {
 		if d.skippedDevices == nil {
@@ -94,5 +94,5 @@ func WithSkippedDevices(names ...string) Option {
 	}
 }
 
-// Option defines a function for passing options to the New() call
+// Option defines a function for passing options to the New() call.
 type Option func(*devicelib)

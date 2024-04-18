@@ -27,7 +27,7 @@ import (
 // This includes a device index or UUID.
 type Identifier string
 
-// IsGpuIndex checks if an identifier is a full GPU index
+// IsGpuIndex checks if an identifier is a full GPU index.
 func (i Identifier) IsGpuIndex() bool {
 	if _, err := strconv.ParseUint(string(i), 10, 0); err != nil {
 		return false
@@ -35,7 +35,7 @@ func (i Identifier) IsGpuIndex() bool {
 	return true
 }
 
-// IsMigIndex checks if an identifier is a MIG index
+// IsMigIndex checks if an identifier is a MIG index.
 func (i Identifier) IsMigIndex() bool {
 	split := strings.Split(string(i), ":")
 	if len(split) != 2 {
@@ -49,13 +49,13 @@ func (i Identifier) IsMigIndex() bool {
 	return true
 }
 
-// IsUUID checks if an identifier is a UUID
+// IsUUID checks if an identifier is a UUID.
 func (i Identifier) IsUUID() bool {
 	return i.IsGpuUUID() || i.IsMigUUID()
 }
 
-// IsGpuUUID checks if an identifier is a GPU UUID
-// A GPU UUID must be of the form GPU-b1028956-cfa2-0990-bf4a-5da9abb51763
+// IsGpuUUID checks if an identifier is a GPU UUID.
+// A GPU UUID must be of the form GPU-b1028956-cfa2-0990-bf4a-5da9abb51763.
 func (i Identifier) IsGpuUUID() bool {
 	if !strings.HasPrefix(string(i), "GPU-") {
 		return false
@@ -64,7 +64,7 @@ func (i Identifier) IsGpuUUID() bool {
 	return err == nil
 }
 
-// IsMigUUID checks if an identifier is a MIG UUID
+// IsMigUUID checks if an identifier is a MIG UUID.
 // A MIG UUID can be of one of two forms:
 //   - MIG-b1028956-cfa2-0990-bf4a-5da9abb51763
 //   - MIG-GPU-b1028956-cfa2-0990-bf4a-5da9abb51763/3/0

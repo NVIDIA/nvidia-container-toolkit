@@ -24,14 +24,14 @@ import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvpci/bytes"
 )
 
-// MockNvpci mock pci device
+// MockNvpci mock pci device.
 type MockNvpci struct {
 	*nvpci
 }
 
 var _ Interface = (*MockNvpci)(nil)
 
-// NewMockNvpci create new mock PCI and remove old devices
+// NewMockNvpci create new mock PCI and remove old devices.
 func NewMockNvpci() (mock *MockNvpci, rerr error) {
 	rootDir, err := os.MkdirTemp(os.TempDir(), "")
 	if err != nil {
@@ -50,12 +50,12 @@ func NewMockNvpci() (mock *MockNvpci, rerr error) {
 	return mock, nil
 }
 
-// Cleanup remove the mocked PCI devices root folder
+// Cleanup remove the mocked PCI devices root folder.
 func (m *MockNvpci) Cleanup() {
 	os.RemoveAll(m.pciDevicesRoot)
 }
 
-// AddMockA100 Create an A100 like GPU mock device
+// AddMockA100 Create an A100 like GPU mock device.
 func (m *MockNvpci) AddMockA100(address string, numaNode int) error {
 	deviceDir := filepath.Join(m.pciDevicesRoot, address)
 	err := os.MkdirAll(deviceDir, 0755)
