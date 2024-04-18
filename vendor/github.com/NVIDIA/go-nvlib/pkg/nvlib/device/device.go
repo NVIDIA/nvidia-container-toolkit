@@ -19,10 +19,10 @@ package device
 import (
 	"fmt"
 
-	"github.com/NVIDIA/go-nvlib/pkg/nvml"
+	"github.com/NVIDIA/go-nvml/pkg/nvml"
 )
 
-// Device defines the set of extended functions associated with a device.Device
+// Device defines the set of extended functions associated with a device.Device.
 type Device interface {
 	nvml.Device
 	GetArchitectureAsString() (string, error)
@@ -44,12 +44,12 @@ type device struct {
 
 var _ Device = &device{}
 
-// NewDevice builds a new Device from an nvml.Device
+// NewDevice builds a new Device from an nvml.Device.
 func (d *devicelib) NewDevice(dev nvml.Device) (Device, error) {
 	return d.newDevice(dev)
 }
 
-// NewDeviceByUUID builds a new Device from a UUID
+// NewDeviceByUUID builds a new Device from a UUID.
 func (d *devicelib) NewDeviceByUUID(uuid string) (Device, error) {
 	dev, ret := d.nvml.DeviceGetHandleByUUID(uuid)
 	if ret != nvml.SUCCESS {
@@ -58,12 +58,12 @@ func (d *devicelib) NewDeviceByUUID(uuid string) (Device, error) {
 	return d.newDevice(dev)
 }
 
-// newDevice creates a device from an nvml.Device
+// newDevice creates a device from an nvml.Device.
 func (d *devicelib) newDevice(dev nvml.Device) (*device, error) {
 	return &device{dev, d, nil}, nil
 }
 
-// GetArchitectureAsString returns the Device architecture as a string
+// GetArchitectureAsString returns the Device architecture as a string.
 func (d *device) GetArchitectureAsString() (string, error) {
 	arch, ret := d.GetArchitecture()
 	if ret != nvml.SUCCESS {
@@ -92,7 +92,7 @@ func (d *device) GetArchitectureAsString() (string, error) {
 	return "", fmt.Errorf("error interpreting device architecture as string: %v", arch)
 }
 
-// GetBrandAsString returns the Device architecture as a string
+// GetBrandAsString returns the Device architecture as a string.
 func (d *device) GetBrandAsString() (string, error) {
 	brand, ret := d.GetBrand()
 	if ret != nvml.SUCCESS {
@@ -140,7 +140,7 @@ func (d *device) GetBrandAsString() (string, error) {
 	return "", fmt.Errorf("error interpreting device brand as string: %v", brand)
 }
 
-// GetCudaComputeCapabilityAsString returns the Device's CUDA compute capability as a version string
+// GetCudaComputeCapabilityAsString returns the Device's CUDA compute capability as a version string.
 func (d *device) GetCudaComputeCapabilityAsString() (string, error) {
 	major, minor, ret := d.GetCudaComputeCapability()
 	if ret != nvml.SUCCESS {
@@ -149,7 +149,7 @@ func (d *device) GetCudaComputeCapabilityAsString() (string, error) {
 	return fmt.Sprintf("%d.%d", major, minor), nil
 }
 
-// IsMigCapable checks if a device is capable of having MIG paprtitions created on it
+// IsMigCapable checks if a device is capable of having MIG paprtitions created on it.
 func (d *device) IsMigCapable() (bool, error) {
 	if !d.lib.hasSymbol("nvmlDeviceGetMigMode") {
 		return false, nil
@@ -166,7 +166,7 @@ func (d *device) IsMigCapable() (bool, error) {
 	return true, nil
 }
 
-// IsMigEnabled checks if a device has MIG mode currently enabled on it
+// IsMigEnabled checks if a device has MIG mode currently enabled on it.
 func (d *device) IsMigEnabled() (bool, error) {
 	if !d.lib.hasSymbol("nvmlDeviceGetMigMode") {
 		return false, nil
@@ -183,7 +183,7 @@ func (d *device) IsMigEnabled() (bool, error) {
 	return (mode == nvml.DEVICE_MIG_ENABLE), nil
 }
 
-// VisitMigDevices walks a top-level device and invokes a callback function for each MIG device configured on it
+// VisitMigDevices walks a top-level device and invokes a callback function for each MIG device configured on it.
 func (d *device) VisitMigDevices(visit func(int, MigDevice) error) error {
 	capable, err := d.IsMigCapable()
 	if err != nil {
@@ -221,7 +221,7 @@ func (d *device) VisitMigDevices(visit func(int, MigDevice) error) error {
 	return nil
 }
 
-// VisitMigProfiles walks a top-level device and invokes a callback function for each unique MIG Profile that can be configured on it
+// VisitMigProfiles walks a top-level device and invokes a callback function for each unique MIG Profile that can be configured on it.
 func (d *device) VisitMigProfiles(visit func(MigProfile) error) error {
 	capable, err := d.IsMigCapable()
 	if err != nil {
@@ -283,7 +283,7 @@ func (d *device) VisitMigProfiles(visit func(MigProfile) error) error {
 	return nil
 }
 
-// GetMigDevices gets the set of MIG devices associated with a top-level device
+// GetMigDevices gets the set of MIG devices associated with a top-level device.
 func (d *device) GetMigDevices() ([]MigDevice, error) {
 	var migs []MigDevice
 	err := d.VisitMigDevices(func(j int, m MigDevice) error {
@@ -296,7 +296,7 @@ func (d *device) GetMigDevices() ([]MigDevice, error) {
 	return migs, nil
 }
 
-// GetMigProfiles gets the set of unique MIG profiles associated with a top-level device
+// GetMigProfiles gets the set of unique MIG profiles associated with a top-level device.
 func (d *device) GetMigProfiles() ([]MigProfile, error) {
 	// Return the cached list if available
 	if d.migProfiles != nil {
@@ -313,7 +313,7 @@ func (d *device) GetMigProfiles() ([]MigProfile, error) {
 		return nil, err
 	}
 
-	// And cache it before returning
+	// And cache it before returning.
 	d.migProfiles = profiles
 	return profiles, nil
 }
@@ -332,7 +332,7 @@ func (d *device) isSkipped() (bool, error) {
 	return false, nil
 }
 
-// VisitDevices visits each top-level device and invokes a callback function for it
+// VisitDevices visits each top-level device and invokes a callback function for it.
 func (d *devicelib) VisitDevices(visit func(int, Device) error) error {
 	count, ret := d.nvml.DeviceGetCount()
 	if ret != nvml.SUCCESS {
@@ -365,7 +365,7 @@ func (d *devicelib) VisitDevices(visit func(int, Device) error) error {
 	return nil
 }
 
-// VisitMigDevices walks a top-level device and invokes a callback function for each MIG device configured on it
+// VisitMigDevices walks a top-level device and invokes a callback function for each MIG device configured on it.
 func (d *devicelib) VisitMigDevices(visit func(int, Device, int, MigDevice) error) error {
 	err := d.VisitDevices(func(i int, dev Device) error {
 		err := dev.VisitMigDevices(func(j int, mig MigDevice) error {
@@ -386,7 +386,7 @@ func (d *devicelib) VisitMigDevices(visit func(int, Device, int, MigDevice) erro
 	return nil
 }
 
-// VisitMigProfiles walks a top-level device and invokes a callback function for each unique MIG profile found on them
+// VisitMigProfiles walks a top-level device and invokes a callback function for each unique MIG profile found on them.
 func (d *devicelib) VisitMigProfiles(visit func(MigProfile) error) error {
 	visited := make(map[string]bool)
 	err := d.VisitDevices(func(i int, dev Device) error {
@@ -414,7 +414,7 @@ func (d *devicelib) VisitMigProfiles(visit func(MigProfile) error) error {
 	return nil
 }
 
-// GetDevices gets the set of all top-level devices
+// GetDevices gets the set of all top-level devices.
 func (d *devicelib) GetDevices() ([]Device, error) {
 	var devs []Device
 	err := d.VisitDevices(func(i int, dev Device) error {
@@ -427,7 +427,7 @@ func (d *devicelib) GetDevices() ([]Device, error) {
 	return devs, nil
 }
 
-// GetMigDevices gets the set of MIG devices across all top-level devices
+// GetMigDevices gets the set of MIG devices across all top-level devices.
 func (d *devicelib) GetMigDevices() ([]MigDevice, error) {
 	var migs []MigDevice
 	err := d.VisitMigDevices(func(i int, dev Device, j int, m MigDevice) error {
@@ -440,7 +440,7 @@ func (d *devicelib) GetMigDevices() ([]MigDevice, error) {
 	return migs, nil
 }
 
-// GetMigProfiles gets the set of unique MIG profiles across all top-level devices
+// GetMigProfiles gets the set of unique MIG profiles across all top-level devices.
 func (d *devicelib) GetMigProfiles() ([]MigProfile, error) {
 	// Return the cached list if available
 	if d.migProfiles != nil {
@@ -457,7 +457,7 @@ func (d *devicelib) GetMigProfiles() ([]MigProfile, error) {
 		return nil, err
 	}
 
-	// And cache it before returning
+	// And cache it before returning.
 	d.migProfiles = profiles
 	return profiles, nil
 }
@@ -469,5 +469,5 @@ func (d *devicelib) hasSymbol(symbol string) bool {
 		return true
 	}
 
-	return d.nvml.Lookup(symbol) == nil
+	return d.nvml.Extensions().LookupSymbol(symbol) == nil
 }

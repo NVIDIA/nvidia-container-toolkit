@@ -48,18 +48,21 @@ func mockOpen(source *[]byte, offset int, size int, rw bool) (Mmio, error) {
 	return m, nil
 }
 
-// MockOpenRO open read only
+// MockOpenRO open read only.
 func MockOpenRO(source *[]byte, offset int, size int) (Mmio, error) {
 	return mockOpen(source, offset, size, false)
 }
 
-// MockOpenRW open read write
+// MockOpenRW open read write.
 func MockOpenRW(source *[]byte, offset int, size int) (Mmio, error) {
 	return mockOpen(source, offset, size, true)
 }
 
 func (m *mockMmio) Close() error {
-	m = &mockMmio{}
+	m.Bytes = nil
+	m.source = nil
+	m.offset = 0
+	m.rw = false
 	return nil
 }
 

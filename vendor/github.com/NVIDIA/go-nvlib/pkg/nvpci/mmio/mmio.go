@@ -25,7 +25,7 @@ import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvpci/bytes"
 )
 
-// Mmio memory map a region
+// Mmio memory map a region.
 type Mmio interface {
 	bytes.Raw
 	bytes.Reader
@@ -84,12 +84,12 @@ func open(path string, offset int, size int, flags int) (Mmio, error) {
 	return &mmio{bytes.New(&mmap)}, nil
 }
 
-// OpenRO open region readonly
+// OpenRO open region readonly.
 func OpenRO(path string, offset int, size int) (Mmio, error) {
 	return open(path, offset, size, os.O_RDONLY)
 }
 
-// OpenRW open region read write
+// OpenRW open region read write.
 func OpenRW(path string, offset int, size int) (Mmio, error) {
 	return open(path, offset, size, os.O_RDWR)
 }

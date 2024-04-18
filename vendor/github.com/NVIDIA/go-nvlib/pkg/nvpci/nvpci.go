@@ -29,23 +29,23 @@ import (
 )
 
 const (
-	// PCIDevicesRoot represents base path for all pci devices under sysfs
+	// PCIDevicesRoot represents base path for all pci devices under sysfs.
 	PCIDevicesRoot = "/sys/bus/pci/devices"
-	// PCINvidiaVendorID represents PCI vendor id for NVIDIA
+	// PCINvidiaVendorID represents PCI vendor id for NVIDIA.
 	PCINvidiaVendorID uint16 = 0x10de
-	// PCIVgaControllerClass represents the PCI class for VGA Controllers
+	// PCIVgaControllerClass represents the PCI class for VGA Controllers.
 	PCIVgaControllerClass uint32 = 0x030000
-	// PCI3dControllerClass represents the PCI class for 3D Graphics accellerators
+	// PCI3dControllerClass represents the PCI class for 3D Graphics accellerators.
 	PCI3dControllerClass uint32 = 0x030200
-	// PCINvSwitchClass represents the PCI class for NVSwitches
+	// PCINvSwitchClass represents the PCI class for NVSwitches.
 	PCINvSwitchClass uint32 = 0x068000
-	// UnknownDeviceString is the device name to set for devices not found in the PCI database
+	// UnknownDeviceString is the device name to set for devices not found in the PCI database.
 	UnknownDeviceString = "UNKNOWN_DEVICE"
-	// UnknownClassString is the class name to set for devices not found in the PCI database
+	// UnknownClassString is the class name to set for devices not found in the PCI database.
 	UnknownClassString = "UNKNOWN_CLASS"
 )
 
-// Interface allows us to get a list of all NVIDIA PCI devices
+// Interface allows us to get a list of all NVIDIA PCI devices.
 type Interface interface {
 	GetAllDevices() ([]*NvidiaPCIDevice, error)
 	Get3DControllers() ([]*NvidiaPCIDevice, error)
@@ -59,10 +59,10 @@ type Interface interface {
 	GetDPUs() ([]*NvidiaPCIDevice, error)
 }
 
-// MemoryResources a more human readable handle
+// MemoryResources a more human readable handle.
 type MemoryResources map[int]*MemoryResource
 
-// ResourceInterface exposes some higher level functions of resources
+// ResourceInterface exposes some higher level functions of resources.
 type ResourceInterface interface {
 	GetTotalAddressableMemory(bool) (uint64, uint64)
 }
@@ -76,7 +76,7 @@ type nvpci struct {
 var _ Interface = (*nvpci)(nil)
 var _ ResourceInterface = (*MemoryResources)(nil)
 
-// NvidiaPCIDevice represents a PCI device for an NVIDIA product
+// NvidiaPCIDevice represents a PCI device for an NVIDIA product.
 type NvidiaPCIDevice struct {
 	Path       string
 	Address    string
@@ -93,34 +93,34 @@ type NvidiaPCIDevice struct {
 	IsVF       bool
 }
 
-// IsVGAController if class == 0x300
+// IsVGAController if class == 0x300.
 func (d *NvidiaPCIDevice) IsVGAController() bool {
 	return d.Class == PCIVgaControllerClass
 }
 
-// Is3DController if class == 0x302
+// Is3DController if class == 0x302.
 func (d *NvidiaPCIDevice) Is3DController() bool {
 	return d.Class == PCI3dControllerClass
 }
 
-// IsNVSwitch if class == 0x068
+// IsNVSwitch if class == 0x068.
 func (d *NvidiaPCIDevice) IsNVSwitch() bool {
 	return d.Class == PCINvSwitchClass
 }
 
-// IsGPU either VGA for older cards or 3D for newer
+// IsGPU either VGA for older cards or 3D for newer.
 func (d *NvidiaPCIDevice) IsGPU() bool {
 	return d.IsVGAController() || d.Is3DController()
 }
 
 // IsResetAvailable some devices can be reset without rebooting,
-// check if applicable
+// check if applicable.
 func (d *NvidiaPCIDevice) IsResetAvailable() bool {
 	_, err := os.Stat(path.Join(d.Path, "reset"))
 	return err == nil
 }
 
-// Reset perform a reset to apply a new configuration at HW level
+// Reset perform a reset to apply a new configuration at HW level.
 func (d *NvidiaPCIDevice) Reset() error {
 	err := os.WriteFile(path.Join(d.Path, "reset"), []byte("1"), 0)
 	if err != nil {
@@ -129,7 +129,7 @@ func (d *NvidiaPCIDevice) Reset() error {
 	return nil
 }
 
-// New interface that allows us to get a list of all NVIDIA PCI devices
+// New interface that allows us to get a list of all NVIDIA PCI devices.
 func New(opts ...Option) Interface {
 	n := &nvpci{}
 	for _, opt := range opts {
@@ -144,10 +144,10 @@ func New(opts ...Option) Interface {
 	return n
 }
 
-// Option defines a function for passing options to the New() call
+// Option defines a function for passing options to the New() call.
 type Option func(*nvpci)
 
-// WithLogger provides an Option to set the logger for the library
+// WithLogger provides an Option to set the logger for the library.
 func WithLogger(logger logger) Option {
 	return func(n *nvpci) {
 		n.logger = logger
@@ -170,7 +170,7 @@ func WithPCIDatabasePath(path string) Option {
 	}
 }
 
-// GetAllDevices returns all Nvidia PCI devices on the system
+// GetAllDevices returns all Nvidia PCI devices on the system.
 func (p *nvpci) GetAllDevices() ([]*NvidiaPCIDevice, error) {
 	deviceDirs, err := os.ReadDir(p.pciDevicesRoot)
 	if err != nil {
@@ -204,7 +204,7 @@ func (p *nvpci) GetAllDevices() ([]*NvidiaPCIDevice, error) {
 	return nvdevices, nil
 }
 
-// GetGPUByPciBusID constructs an NvidiaPCIDevice for the specified address (PCI Bus ID)
+// GetGPUByPciBusID constructs an NvidiaPCIDevice for the specified address (PCI Bus ID).
 func (p *nvpci) GetGPUByPciBusID(address string) (*NvidiaPCIDevice, error) {
 	devicePath := filepath.Join(p.pciDevicesRoot, address)
 
@@ -265,7 +265,7 @@ func (p *nvpci) GetGPUByPciBusID(address string) (*NvidiaPCIDevice, error) {
 		return nil, fmt.Errorf("unable to detect iommu_group for %s: %v", address, err)
 	}
 
-	// device is a virtual function (VF) if "physfn" symlink exists
+	// device is a virtual function (VF) if "physfn" symlink exists.
 	var isVF bool
 	_, err = filepath.EvalSymlinks(path.Join(devicePath, "physfn"))
 	if err == nil {
@@ -347,7 +347,7 @@ func (p *nvpci) GetGPUByPciBusID(address string) (*NvidiaPCIDevice, error) {
 	return nvdevice, nil
 }
 
-// Get3DControllers returns all NVIDIA 3D Controller PCI devices on the system
+// Get3DControllers returns all NVIDIA 3D Controller PCI devices on the system.
 func (p *nvpci) Get3DControllers() ([]*NvidiaPCIDevice, error) {
 	devices, err := p.GetAllDevices()
 	if err != nil {
@@ -364,7 +364,7 @@ func (p *nvpci) Get3DControllers() ([]*NvidiaPCIDevice, error) {
 	return filtered, nil
 }
 
-// GetVGAControllers returns all NVIDIA VGA Controller PCI devices on the system
+// GetVGAControllers returns all NVIDIA VGA Controller PCI devices on the system.
 func (p *nvpci) GetVGAControllers() ([]*NvidiaPCIDevice, error) {
 	devices, err := p.GetAllDevices()
 	if err != nil {
@@ -381,7 +381,7 @@ func (p *nvpci) GetVGAControllers() ([]*NvidiaPCIDevice, error) {
 	return filtered, nil
 }
 
-// GetNVSwitches returns all NVIDIA NVSwitch PCI devices on the system
+// GetNVSwitches returns all NVIDIA NVSwitch PCI devices on the system.
 func (p *nvpci) GetNVSwitches() ([]*NvidiaPCIDevice, error) {
 	devices, err := p.GetAllDevices()
 	if err != nil {
@@ -398,7 +398,7 @@ func (p *nvpci) GetNVSwitches() ([]*NvidiaPCIDevice, error) {
 	return filtered, nil
 }
 
-// GetGPUs returns all NVIDIA GPU devices on the system
+// GetGPUs returns all NVIDIA GPU devices on the system.
 func (p *nvpci) GetGPUs() ([]*NvidiaPCIDevice, error) {
 	devices, err := p.GetAllDevices()
 	if err != nil {
@@ -415,7 +415,7 @@ func (p *nvpci) GetGPUs() ([]*NvidiaPCIDevice, error) {
 	return filtered, nil
 }
 
-// GetGPUByIndex returns an NVIDIA GPU device at a particular index
+// GetGPUByIndex returns an NVIDIA GPU device at a particular index.
 func (p *nvpci) GetGPUByIndex(i int) (*NvidiaPCIDevice, error) {
 	gpus, err := p.GetGPUs()
 	if err != nil {

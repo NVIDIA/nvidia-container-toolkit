@@ -22,15 +22,15 @@ import (
 )
 
 const (
-	// PCIMellanoxVendorID represents PCI vendor id for Mellanox
+	// PCIMellanoxVendorID represents PCI vendor id for Mellanox.
 	PCIMellanoxVendorID uint16 = 0x15b3
-	// PCINetworkControllerClass represents the PCI class for network controllers
+	// PCINetworkControllerClass represents the PCI class for network controllers.
 	PCINetworkControllerClass uint32 = 0x020000
-	// PCIBridgeClass represents the PCI class for network controllers
+	// PCIBridgeClass represents the PCI class for network controllers.
 	PCIBridgeClass uint32 = 0x060400
 )
 
-// GetNetworkControllers returns all Mellanox Network Controller PCI devices on the system
+// GetNetworkControllers returns all Mellanox Network Controller PCI devices on the system.
 func (p *nvpci) GetNetworkControllers() ([]*NvidiaPCIDevice, error) {
 	devices, err := p.GetAllDevices()
 	if err != nil {
@@ -47,7 +47,7 @@ func (p *nvpci) GetNetworkControllers() ([]*NvidiaPCIDevice, error) {
 	return filtered, nil
 }
 
-// GetPciBridges retrieves all Mellanox PCI(e) Bridges
+// GetPciBridges retrieves all Mellanox PCI(e) Bridges.
 func (p *nvpci) GetPciBridges() ([]*NvidiaPCIDevice, error) {
 	devices, err := p.GetAllDevices()
 	if err != nil {
@@ -64,17 +64,17 @@ func (p *nvpci) GetPciBridges() ([]*NvidiaPCIDevice, error) {
 	return filtered, nil
 }
 
-// IsNetworkController if class == 0x300
+// IsNetworkController if class == 0x300.
 func (d *NvidiaPCIDevice) IsNetworkController() bool {
 	return d.Class == PCINetworkControllerClass
 }
 
-// IsPciBridge if class == 0x0604
+// IsPciBridge if class == 0x0604.
 func (d *NvidiaPCIDevice) IsPciBridge() bool {
 	return d.Class == PCIBridgeClass
 }
 
-// IsDPU returns if a device is a DPU
+// IsDPU returns if a device is a DPU.
 func (d *NvidiaPCIDevice) IsDPU() bool {
 	if !strings.Contains(d.DeviceName, "BlueField") {
 		return false
@@ -87,7 +87,7 @@ func (d *NvidiaPCIDevice) IsDPU() bool {
 	return false
 }
 
-// GetDPUs returns all Mellanox DPU devices on the system
+// GetDPUs returns all Mellanox DPU devices on the system.
 func (p *nvpci) GetDPUs() ([]*NvidiaPCIDevice, error) {
 	devices, err := p.GetNetworkControllers()
 	if err != nil {

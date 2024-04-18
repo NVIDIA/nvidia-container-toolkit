@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/NVIDIA/go-nvlib/pkg/nvml"
+	"github.com/NVIDIA/go-nvml/pkg/nvml"
 )
 
 const (
@@ -40,7 +40,7 @@ type MigProfile interface {
 	Matches(profile string) bool
 }
 
-// MigProfileInfo holds all info associated with a specific MIG profile
+// MigProfileInfo holds all info associated with a specific MIG profile.
 type MigProfileInfo struct {
 	C              int
 	G              int
@@ -119,13 +119,13 @@ func (d *devicelib) NewMigProfile(giProfileID, ciProfileID, ciEngProfileID int, 
 	return p, nil
 }
 
-// AssertValidMigProfileFormat checks if the string is in the proper format to represent a MIG profile
+// AssertValidMigProfileFormat checks if the string is in the proper format to represent a MIG profile.
 func (d *devicelib) AssertValidMigProfileFormat(profile string) error {
 	_, _, _, _, err := parseMigProfile(profile)
 	return err
 }
 
-// ParseMigProfile converts a string representation of a MigProfile into an object
+// ParseMigProfile converts a string representation of a MigProfile into an object.
 func (d *devicelib) ParseMigProfile(profile string) (MigProfile, error) {
 	profiles, err := d.GetMigProfiles()
 	if err != nil {
@@ -141,7 +141,7 @@ func (d *devicelib) ParseMigProfile(profile string) (MigProfile, error) {
 	return nil, fmt.Errorf("unable to parse profile string into a valid profile")
 }
 
-// String returns the string representation of a Profile
+// String returns the string representation of a Profile.
 func (p MigProfileInfo) String() string {
 	var suffix string
 	if len(p.Attributes) > 0 {
@@ -153,12 +153,12 @@ func (p MigProfileInfo) String() string {
 	return fmt.Sprintf("%dc.%dg.%dgb%s", p.C, p.G, p.GB, suffix)
 }
 
-// GetInfo returns detailed info about a Profile
+// GetInfo returns detailed info about a Profile.
 func (p MigProfileInfo) GetInfo() MigProfileInfo {
 	return p
 }
 
-// Equals checks if two Profiles are identical or not
+// Equals checks if two Profiles are identical or not.
 func (p MigProfileInfo) Equals(other MigProfile) bool {
 	o := other.GetInfo()
 	if p.C != o.C {
@@ -182,7 +182,7 @@ func (p MigProfileInfo) Equals(other MigProfile) bool {
 	return true
 }
 
-// Matches checks if a MigProfile matches the string passed in
+// Matches checks if a MigProfile matches the string passed in.
 func (p MigProfileInfo) Matches(profile string) bool {
 	c, g, gb, attrs, err := parseMigProfile(profile)
 	if err != nil {
@@ -211,26 +211,26 @@ func (p MigProfileInfo) Matches(profile string) bool {
 }
 
 func parseMigProfile(profile string) (int, int, int, []string, error) {
-	// If we are handed the empty string, we cannot parse it
+	// If we are handed the empty string, we cannot parse it.
 	if profile == "" {
 		return -1, -1, -1, nil, fmt.Errorf("profile is the empty string")
 	}
 
-	// Split by + to separate out attributes
+	// Split by + to separate out attributes.
 	split := strings.SplitN(profile, "+", 2)
 
-	// Check to make sure the c, g, and gb values match
+	// Check to make sure the c, g, and gb values match.
 	c, g, gb, err := parseMigProfileFields(split[0])
 	if err != nil {
 		return -1, -1, -1, nil, fmt.Errorf("cannot parse fields of '%v': %v", profile, err)
 	}
 
-	// If we have no attributes we are done
+	// If we have no attributes we are done.
 	if len(split) == 1 {
 		return c, g, gb, nil, nil
 	}
 
-	// Make sure we have the same set of attributes
+	// Make sure we have the same set of attributes.
 	attrs, err := parseMigProfileAttributes(split[1])
 	if err != nil {
 		return -1, -1, -1, nil, fmt.Errorf("cannot parse attributes of '%v': %v", profile, err)

@@ -29,7 +29,7 @@ const (
 	pmcBigEndian      = 0x01000001
 )
 
-// MemoryResource represents a mmio region
+// MemoryResource represents a mmio region.
 type MemoryResource struct {
 	Start uintptr
 	End   uintptr
@@ -37,7 +37,7 @@ type MemoryResource struct {
 	Path  string
 }
 
-// OpenRW read write mmio region
+// OpenRW read write mmio region.
 func (mr *MemoryResource) OpenRW() (mmio.Mmio, error) {
 	rw, err := mmio.OpenRW(mr.Path, 0, int(mr.End-mr.Start+1))
 	if err != nil {
@@ -52,7 +52,7 @@ func (mr *MemoryResource) OpenRW() (mmio.Mmio, error) {
 	return nil, fmt.Errorf("unknown endianness for mmio: %v", err)
 }
 
-// OpenRO read only mmio region
+// OpenRO read only mmio region.
 func (mr *MemoryResource) OpenRO() (mmio.Mmio, error) {
 	ro, err := mmio.OpenRO(mr.Path, 0, int(mr.End-mr.Start+1))
 	if err != nil {
@@ -67,7 +67,7 @@ func (mr *MemoryResource) OpenRO() (mmio.Mmio, error) {
 	return nil, fmt.Errorf("unknown endianness for mmio: %v", err)
 }
 
-// From Bit Twiddling Hacks, great resource for all low level bit manipulations
+// From Bit Twiddling Hacks, great resource for all low level bit manipulations.
 func calcNextPowerOf2(n uint64) uint64 {
 	n--
 	n |= n >> 1
@@ -83,7 +83,7 @@ func calcNextPowerOf2(n uint64) uint64 {
 
 // GetTotalAddressableMemory will accumulate the 32bit and 64bit memory windows
 // of each BAR and round the value if needed to the next power of 2; first
-// return value is the accumulated 32bit addresable memory size the second one
+// return value is the accumulated 32bit addressable memory size the second one
 // is the accumulated 64bit addressable memory size in bytes. These values are
 // needed to configure virtualized environments.
 func (mrs MemoryResources) GetTotalAddressableMemory(roundUp bool) (uint64, uint64) {
