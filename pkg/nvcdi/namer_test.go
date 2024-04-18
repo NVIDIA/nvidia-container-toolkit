@@ -19,7 +19,7 @@ package nvcdi
 import (
 	"testing"
 
-	"github.com/NVIDIA/go-nvlib/pkg/nvml"
+	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"github.com/stretchr/testify/require"
 )
 
