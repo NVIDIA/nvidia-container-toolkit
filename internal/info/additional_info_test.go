@@ -21,6 +21,7 @@ import (
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
+	"github.com/NVIDIA/go-nvml/pkg/nvml/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,7 +33,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 	}{
 		{
 			description: "init failure returns false",
-			nvmllib: &nvml.InterfaceMock{
+			nvmllib: &mock.Interface{
 				InitFunc: func() nvml.Return {
 					return nvml.ERROR_LIBRARY_NOT_FOUND
 				},
@@ -41,7 +42,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 		},
 		{
 			description: "no devices returns false",
-			nvmllib: &nvml.InterfaceMock{
+			nvmllib: &mock.Interface{
 				InitFunc: func() nvml.Return {
 					return nvml.SUCCESS
 				},
@@ -56,7 +57,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 		},
 		{
 			description: "DeviceGetCount error returns false",
-			nvmllib: &nvml.InterfaceMock{
+			nvmllib: &mock.Interface{
 				InitFunc: func() nvml.Return {
 					return nvml.SUCCESS
 				},
@@ -71,7 +72,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 		},
 		{
 			description: "Failure to get device name returns false",
-			nvmllib: &nvml.InterfaceMock{
+			nvmllib: &mock.Interface{
 				InitFunc: func() nvml.Return {
 					return nvml.SUCCESS
 				},
@@ -82,7 +83,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 					return 1, nvml.SUCCESS
 				},
 				DeviceGetHandleByIndexFunc: func(index int) (nvml.Device, nvml.Return) {
-					device := &nvml.DeviceMock{
+					device := &mock.Device{
 						GetNameFunc: func() (string, nvml.Return) {
 							return "", nvml.ERROR_UNKNOWN
 						},
@@ -94,7 +95,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 		},
 		{
 			description: "nested panic returns false",
-			nvmllib: &nvml.InterfaceMock{
+			nvmllib: &mock.Interface{
 				InitFunc: func() nvml.Return {
 					return nvml.SUCCESS
 				},
@@ -105,7 +106,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 					return 1, nvml.SUCCESS
 				},
 				DeviceGetHandleByIndexFunc: func(index int) (nvml.Device, nvml.Return) {
-					device := &nvml.DeviceMock{
+					device := &mock.Device{
 						GetNameFunc: func() (string, nvml.Return) {
 							panic("deep panic")
 						},
@@ -117,7 +118,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 		},
 		{
 			description: "Single device name with no nvgpu",
-			nvmllib: &nvml.InterfaceMock{
+			nvmllib: &mock.Interface{
 				InitFunc: func() nvml.Return {
 					return nvml.SUCCESS
 				},
@@ -128,7 +129,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 					return 1, nvml.SUCCESS
 				},
 				DeviceGetHandleByIndexFunc: func(index int) (nvml.Device, nvml.Return) {
-					device := &nvml.DeviceMock{
+					device := &mock.Device{
 						GetNameFunc: func() (string, nvml.Return) {
 							return "NVIDIA A100-SXM4-40GB", nvml.SUCCESS
 						},
@@ -140,7 +141,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 		},
 		{
 			description: "Single device name with nvgpu",
-			nvmllib: &nvml.InterfaceMock{
+			nvmllib: &mock.Interface{
 				InitFunc: func() nvml.Return {
 					return nvml.SUCCESS
 				},
@@ -151,7 +152,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 					return 1, nvml.SUCCESS
 				},
 				DeviceGetHandleByIndexFunc: func(index int) (nvml.Device, nvml.Return) {
-					device := &nvml.DeviceMock{
+					device := &mock.Device{
 						GetNameFunc: func() (string, nvml.Return) {
 							return "Orin (nvgpu)", nvml.SUCCESS
 						},
@@ -163,7 +164,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 		},
 		{
 			description: "Multiple device names with no nvgpu",
-			nvmllib: &nvml.InterfaceMock{
+			nvmllib: &mock.Interface{
 				InitFunc: func() nvml.Return {
 					return nvml.SUCCESS
 				},
@@ -174,7 +175,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 					return 2, nvml.SUCCESS
 				},
 				DeviceGetHandleByIndexFunc: func(index int) (nvml.Device, nvml.Return) {
-					device := &nvml.DeviceMock{
+					device := &mock.Device{
 						GetNameFunc: func() (string, nvml.Return) {
 							return "NVIDIA A100-SXM4-40GB", nvml.SUCCESS
 						},
@@ -186,7 +187,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 		},
 		{
 			description: "Multiple device names with nvgpu",
-			nvmllib: &nvml.InterfaceMock{
+			nvmllib: &mock.Interface{
 				InitFunc: func() nvml.Return {
 					return nvml.SUCCESS
 				},
@@ -197,7 +198,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 					return 2, nvml.SUCCESS
 				},
 				DeviceGetHandleByIndexFunc: func(index int) (nvml.Device, nvml.Return) {
-					device := &nvml.DeviceMock{
+					device := &mock.Device{
 						GetNameFunc: func() (string, nvml.Return) {
 							return "Orin (nvgpu)", nvml.SUCCESS
 						},
@@ -209,7 +210,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 		},
 		{
 			description: "Mixed device names",
-			nvmllib: &nvml.InterfaceMock{
+			nvmllib: &mock.Interface{
 				InitFunc: func() nvml.Return {
 					return nvml.SUCCESS
 				},
@@ -226,7 +227,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 					} else {
 						deviceName = "Orin (nvgpu)"
 					}
-					device := &nvml.DeviceMock{
+					device := &mock.Device{
 						GetNameFunc: func() (string, nvml.Return) {
 							return deviceName, nvml.SUCCESS
 						},
