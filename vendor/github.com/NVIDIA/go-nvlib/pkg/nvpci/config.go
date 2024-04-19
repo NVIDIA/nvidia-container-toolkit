@@ -24,24 +24,24 @@ import (
 )
 
 const (
-	// PCICfgSpaceStandardSize represents the size in bytes of the standard config space
+	// PCICfgSpaceStandardSize represents the size in bytes of the standard config space.
 	PCICfgSpaceStandardSize = 256
-	// PCICfgSpaceExtendedSize represents the size in bytes of the extended config space
+	// PCICfgSpaceExtendedSize represents the size in bytes of the extended config space.
 	PCICfgSpaceExtendedSize = 4096
-	// PCICapabilityListPointer represents offset for the capability list pointer
+	// PCICapabilityListPointer represents offset for the capability list pointer.
 	PCICapabilityListPointer = 0x34
-	// PCIStatusCapabilityList represents the status register bit which indicates capability list support
+	// PCIStatusCapabilityList represents the status register bit which indicates capability list support.
 	PCIStatusCapabilityList = 0x10
-	// PCIStatusBytePosition represents the position of the status register
+	// PCIStatusBytePosition represents the position of the status register.
 	PCIStatusBytePosition = 0x06
 )
 
-// ConfigSpace PCI configuration space (standard extended) file path
+// ConfigSpace PCI configuration space (standard extended) file path.
 type ConfigSpace struct {
 	Path string
 }
 
-// ConfigSpaceIO Interface for reading and writing raw and preconfigured values
+// ConfigSpaceIO Interface for reading and writing raw and preconfigured values.
 type ConfigSpaceIO interface {
 	bytes.Bytes
 	GetVendorID() uint16
@@ -53,18 +53,18 @@ type configSpaceIO struct {
 	bytes.Bytes
 }
 
-// PCIStandardCapability standard PCI config space
+// PCIStandardCapability standard PCI config space.
 type PCIStandardCapability struct {
 	bytes.Bytes
 }
 
-// PCIExtendedCapability extended PCI config space
+// PCIExtendedCapability extended PCI config space.
 type PCIExtendedCapability struct {
 	bytes.Bytes
 	Version uint8
 }
 
-// PCICapabilities combines the standard and extended config space
+// PCICapabilities combines the standard and extended config space.
 type PCICapabilities struct {
 	Standard map[uint8]*PCIStandardCapability
 	Extended map[uint16]*PCIExtendedCapability

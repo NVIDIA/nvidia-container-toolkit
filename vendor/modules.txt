@@ -1,16 +1,16 @@
-# github.com/NVIDIA/go-nvlib v0.2.0
+# github.com/NVIDIA/go-nvlib v0.3.0
 ## explicit; go 1.20
 github.com/NVIDIA/go-nvlib/pkg/nvlib/device
 github.com/NVIDIA/go-nvlib/pkg/nvlib/info
-github.com/NVIDIA/go-nvlib/pkg/nvml
 github.com/NVIDIA/go-nvlib/pkg/nvpci
 github.com/NVIDIA/go-nvlib/pkg/nvpci/bytes
 github.com/NVIDIA/go-nvlib/pkg/nvpci/mmio
 github.com/NVIDIA/go-nvlib/pkg/pciids
-# github.com/NVIDIA/go-nvml v0.12.0-3
+# github.com/NVIDIA/go-nvml v0.12.0-4
 ## explicit; go 1.20
 github.com/NVIDIA/go-nvml/pkg/dl
 github.com/NVIDIA/go-nvml/pkg/nvml
+github.com/NVIDIA/go-nvml/pkg/nvml/mock
 # github.com/cpuguy83/go-md2man/v2 v2.0.2
 ## explicit; go 1.11
 github.com/cpuguy83/go-md2man/v2/md2man

@@ -11,42 +11,42 @@ import (
 	"strings"
 )
 
-// token what the Lexer retruns
+// token what the Lexer retruns.
 type token int
 
 const (
-	// ILLEGAL a token which the Lexer does not understand
+	// ILLEGAL a token which the Lexer does not understand.
 	ILLEGAL token = iota
-	// EOF end of file
+	// EOF end of file.
 	EOF
-	// WS whitespace
+	// WS whitespace.
 	WS
-	// NEWLINE '\n'
+	// NEWLINE '\n'.
 	NEWLINE
-	// COMMENT '# something'
+	// COMMENT '# something'.
 	COMMENT
-	// VENDOR PCI vendor
+	// VENDOR PCI vendor.
 	VENDOR
-	// SUBVENDOR PCI subvendor
+	// SUBVENDOR PCI subvendor.
 	SUBVENDOR
-	// DEVICE PCI device
+	// DEVICE PCI device.
 	DEVICE
-	// CLASS PCI class
+	// CLASS PCI class.
 	CLASS
-	// SUBCLASS PCI subclass
+	// SUBCLASS PCI subclass.
 	SUBCLASS
-	// PROGIF PCI programming interface
+	// PROGIF PCI programming interface.
 	PROGIF
 )
 
-// literal values from the Lexer
+// literal values from the Lexer.
 type literal struct {
 	ID      string
 	name    string
 	SubName string
 }
 
-// scanner a lexical scanner
+// scanner a lexical scanner.
 type scanner struct {
 	r        *bufio.Reader
 	isVendor bool
@@ -58,7 +58,7 @@ func newScanner(r io.Reader) *scanner {
 }
 
 // Since the pci.ids is line base we're consuming a whole line rather then only
-// a single rune/char
+// a single rune/char.
 func (s *scanner) readline() []byte {
 	ln, err := s.r.ReadBytes('\n')
 	if err == io.EOF {
@@ -107,7 +107,7 @@ func isSubVendor(ln []byte) bool { return isLeadingTwoTabs(ln) }
 func isDevice(ln []byte) bool    { return isLeadingOneTab(ln) }
 func isNewline(ln []byte) bool   { return (ln[0] == '\n') }
 
-// List of known device classes, subclasses and programming interfaces
+// List of known device classes, subclasses and programming interfaces.
 func isClass(ln []byte) bool    { return (ln[0] == 'C') }
 func isProgIf(ln []byte) bool   { return isLeadingTwoTabs(ln) }
 func isSubClass(ln []byte) bool { return isLeadingOneTab(ln) }
@@ -162,7 +162,7 @@ func (s *scanner) scan() (tok token, lit literal) {
 	return ILLEGAL, literal{ID: string(line)}
 }
 
-// parser reads the tokens returned by the Lexer and constructs the AST
+// parser reads the tokens returned by the Lexer and constructs the AST.
 type parser struct {
 	s   *scanner
 	buf struct {
@@ -173,7 +173,7 @@ type parser struct {
 }
 
 // Various locations of pci.ids for different distributions. These may be more
-// up to date then the embedded pci.ids db
+// up to date then the embedded pci.ids db.
 var defaultPCIdbPaths = []string{
 	"/usr/share/misc/pci.ids",   // Ubuntu
 	"/usr/local/share/pci.ids",  // RHEL like with manual update
@@ -202,7 +202,7 @@ func NewDB(opts ...Option) Interface {
 	return newParser(pcidbs).parse()
 }
 
-// Option defines a function for passing options to the NewDB() call
+// Option defines a function for passing options to the NewDB() call.
 type Option func(*pcidb)
 
 // WithFilePath provides an Option to set the file path
@@ -216,7 +216,7 @@ func WithFilePath(path string) Option {
 }
 
 // newParser will attempt to read the db pci.ids from well known places or fall
-// back to an internal db
+// back to an internal db.
 func newParser(pcidbs []string) *parser {
 
 	for _, db := range pcidbs {
@@ -229,7 +229,7 @@ func newParser(pcidbs []string) *parser {
 	}
 	// We're using go embed above to have the byte array
 	// correctly initialized with the internal shipped db
-	// if we cannot find an up to date in the filesystem
+	// if we cannot find an up to date in the filesystem.
 	return newParserFromReader(bufio.NewReader(bytes.NewReader(defaultPCIdb)))
 }
 
@@ -252,13 +252,13 @@ func (p *parser) unscan() { p.buf.n = 1 }
 
 var _ Interface = (*pcidb)(nil)
 
-// Interface returns textual description of specific attributes of PCI devices
+// Interface returns textual description of specific attributes of PCI devices.
 type Interface interface {
 	GetDeviceName(uint16, uint16) (string, error)
 	GetClassName(uint32) (string, error)
 }
 
-// GetDeviceName return the textual description of the PCI device
+// GetDeviceName return the textual description of the PCI device.
 func (d *pcidb) GetDeviceName(vendorID uint16, deviceID uint16) (string, error) {
 	vendor, ok := d.vendors[vendorID]
 	if !ok {
@@ -273,7 +273,7 @@ func (d *pcidb) GetDeviceName(vendorID uint16, deviceID uint16) (string, error) 
 	return device.name, nil
 }
 
-// GetClassName resturn the textual description of the PCI device class
+// GetClassName resturn the textual description of the PCI device class.
 func (d *pcidb) GetClassName(classID uint32) (string, error) {
 	class, ok := d.classes[classID]
 	if !ok {
@@ -282,53 +282,53 @@ func (d *pcidb) GetClassName(classID uint32) (string, error) {
 	return class.name, nil
 }
 
-// pcidb  The complete set of PCI vendors and  PCI classes
+// pcidb  The complete set of PCI vendors and  PCI classes.
 type pcidb struct {
 	vendors map[uint16]vendor
 	classes map[uint32]class
 	path    string
 }
 
-// vendor PCI vendors/devices/subVendors/SubDevices
+// vendor PCI vendors/devices/subVendors/SubDevices.
 type vendor struct {
 	name    string
 	devices map[uint16]device
 }
 
-// subVendor PCI subVendor
+// subVendor PCI subVendor.
 type subVendor struct {
 	SubDevices map[uint16]SubDevice
 }
 
-// SubDevice PCI SubDevice
+// SubDevice PCI SubDevice.
 type SubDevice struct {
 	name string
 }
 
-// device PCI device
+// device PCI device.
 type device struct {
 	name       string
 	subVendors map[uint16]subVendor
 }
 
-// class PCI classes/subClasses/Programming Interfaces
+// class PCI classes/subClasses/Programming Interfaces.
 type class struct {
 	name       string
 	subClasses map[uint32]subClass
 }
 
-// subClass PCI subClass
+// subClass PCI subClass.
 type subClass struct {
 	name    string
 	progIfs map[uint8]progIf
 }
 
-// progIf PCI Programming Interface
+// progIf PCI Programming Interface.
 type progIf struct {
 	name string
 }
 
-// parse parses a PCI IDS entry
+// parse parses a PCI IDS entry.
 func (p *parser) parse() Interface {
 
 	db := &pcidb{
@@ -336,7 +336,7 @@ func (p *parser) parse() Interface {
 		classes: map[uint32]class{},
 	}
 
-	// Used for housekeeping, breadcrumb for aggregated types
+	// Used for housekeeping, breadcrumb for aggregated types.
 	var hkVendor vendor
 	var hkDevice device
 
@@ -349,8 +349,8 @@ func (p *parser) parse() Interface {
 	for {
 		tok, lit := p.scan()
 
-		// We're ignoring COMMENT, NEWLINE
-		// An EOF will break the loop
+		// We're ignoring COMMENT, NEWLINE.
+		// An EOF will break the loop.
 		if tok == EOF {
 			break
 		}
@@ -408,10 +408,10 @@ func (p *parser) parse() Interface {
 			}
 			hkSubClass = hkClass.subClasses[uint32(id)]
 
-			// Clear the last detected sub class
+			// Clear the last detected sub class.
 			hkFullID = hkFullID & 0xFFFF0000
 			hkFullID = hkFullID | uint32(id)<<8
-			// Clear the last detected prog iface
+			// Clear the last detected prog iface.
 			hkFullID = hkFullID & 0xFFFFFF00
 			hkFullName[1] = fmt.Sprintf("%s (%02x)", lit.name, id)
 

@@ -16,10 +16,10 @@
 
 package info
 
-// Option defines a function for passing options to the New() call
+// Option defines a function for passing options to the New() call.
 type Option func(*infolib)
 
-// New creates a new instance of the 'info' interface
+// New creates a new instance of the 'info' interface.
 func New(opts ...Option) Interface {
 	i := &infolib{}
 	for _, opt := range opts {
@@ -31,7 +31,7 @@ func New(opts ...Option) Interface {
 	return i
 }
 
-// WithRoot provides a Option to set the root of the 'info' interface
+// WithRoot provides a Option to set the root of the 'info' interface.
 func WithRoot(root string) Option {
 	return func(i *infolib) {
 		i.root = root

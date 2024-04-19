@@ -25,7 +25,7 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/dl"
 )
 
-// Interface provides the API to the info package
+// Interface provides the API to the info package.
 type Interface interface {
 	HasDXCore() (bool, string)
 	HasNvml() (bool, string)
@@ -50,7 +50,7 @@ func (i *infolib) HasDXCore() (bool, string) {
 	return true, "found DXCore library"
 }
 
-// HasNvml returns true if NVML is detected on the system
+// HasNvml returns true if NVML is detected on the system.
 func (i *infolib) HasNvml() (bool, string) {
 	const (
 		libraryName = "libnvidia-ml.so.1"
@@ -62,7 +62,7 @@ func (i *infolib) HasNvml() (bool, string) {
 	return true, "found NVML library"
 }
 
-// IsTegraSystem returns true if the system is detected as a Tegra-based system
+// IsTegraSystem returns true if the system is detected as a Tegra-based system.
 func (i *infolib) IsTegraSystem() (bool, string) {
 	tegraReleaseFile := filepath.Join(i.root, "/etc/nv_tegra_release")
 	tegraFamilyFile := filepath.Join(i.root, "/sys/devices/soc0/family")
@@ -87,7 +87,7 @@ func (i *infolib) IsTegraSystem() (bool, string) {
 	return false, fmt.Sprintf("%v has no 'tegra' prefix", tegraFamilyFile)
 }
 
-// assertHasLibrary returns an error if the specified library cannot be loaded
+// assertHasLibrary returns an error if the specified library cannot be loaded.
 func assertHasLibrary(libraryName string) error {
 	const (
 		libraryLoadFlags = dl.RTLD_LAZY
