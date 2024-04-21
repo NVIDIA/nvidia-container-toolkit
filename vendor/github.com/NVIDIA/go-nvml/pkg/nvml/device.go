@@ -21,2632 +21,2705 @@ import (
 // EccBitType
 type EccBitType = MemoryErrorType
 
+// GpuInstanceInfo includes an interface type for Device instead of nvmlDevice
+type GpuInstanceInfo struct {
+	Device    Device
+	Id        uint32
+	ProfileId uint32
+	Placement GpuInstancePlacement
+}
+
+func (g GpuInstanceInfo) convert() nvmlGpuInstanceInfo {
+	out := nvmlGpuInstanceInfo{
+		Device:    g.Device.(nvmlDevice),
+		Id:        g.Id,
+		ProfileId: g.ProfileId,
+		Placement: g.Placement,
+	}
+	return out
+}
+
+func (g nvmlGpuInstanceInfo) convert() GpuInstanceInfo {
+	out := GpuInstanceInfo{
+		Device:    g.Device,
+		Id:        g.Id,
+		ProfileId: g.ProfileId,
+		Placement: g.Placement,
+	}
+	return out
+}
+
+// ComputeInstanceInfo includes an interface type for Device instead of nvmlDevice
+type ComputeInstanceInfo struct {
+	Device      Device
+	GpuInstance GpuInstance
+	Id          uint32
+	ProfileId   uint32
+	Placement   ComputeInstancePlacement
+}
+
+func (c ComputeInstanceInfo) convert() nvmlComputeInstanceInfo {
+	out := nvmlComputeInstanceInfo{
+		Device:      c.Device.(nvmlDevice),
+		GpuInstance: c.GpuInstance.(nvmlGpuInstance),
+		Id:          c.Id,
+		ProfileId:   c.ProfileId,
+		Placement:   c.Placement,
+	}
+	return out
+}
+
+func (c nvmlComputeInstanceInfo) convert() ComputeInstanceInfo {
+	out := ComputeInstanceInfo{
+		Device:      c.Device,
+		GpuInstance: c.GpuInstance,
+		Id:          c.Id,
+		ProfileId:   c.ProfileId,
+		Placement:   c.Placement,
+	}
+	return out
+}
+
 // nvml.DeviceGetCount()
-func DeviceGetCount() (int, Return) {
-	var DeviceCount uint32
-	ret := nvmlDeviceGetCount(&DeviceCount)
-	return int(DeviceCount), ret
+func (l *library) DeviceGetCount() (int, Return) {
+	var deviceCount uint32
+	ret := nvmlDeviceGetCount(&deviceCount)
+	return int(deviceCount), ret
 }
 
 // nvml.DeviceGetHandleByIndex()
-func DeviceGetHandleByIndex(Index int) (Device, Return) {
-	var Device Device
-	ret := nvmlDeviceGetHandleByIndex(uint32(Index), &Device)
-	return Device, ret
+func (l *library) DeviceGetHandleByIndex(index int) (Device, Return) {
+	var device nvmlDevice
+	ret := nvmlDeviceGetHandleByIndex(uint32(index), &device)
+	return device, ret
 }
 
 // nvml.DeviceGetHandleBySerial()
-func DeviceGetHandleBySerial(Serial string) (Device, Return) {
-	var Device Device
-	ret := nvmlDeviceGetHandleBySerial(Serial+string(rune(0)), &Device)
-	return Device, ret
+func (l *library) DeviceGetHandleBySerial(serial string) (Device, Return) {
+	var device nvmlDevice
+	ret := nvmlDeviceGetHandleBySerial(serial+string(rune(0)), &device)
+	return device, ret
 }
 
 // nvml.DeviceGetHandleByUUID()
-func DeviceGetHandleByUUID(Uuid string) (Device, Return) {
-	var Device Device
-	ret := nvmlDeviceGetHandleByUUID(Uuid+string(rune(0)), &Device)
-	return Device, ret
+func (l *library) DeviceGetHandleByUUID(uuid string) (Device, Return) {
+	var device nvmlDevice
+	ret := nvmlDeviceGetHandleByUUID(uuid+string(rune(0)), &device)
+	return device, ret
 }
 
 // nvml.DeviceGetHandleByPciBusId()
-func DeviceGetHandleByPciBusId(PciBusId string) (Device, Return) {
-	var Device Device
-	ret := nvmlDeviceGetHandleByPciBusId(PciBusId+string(rune(0)), &Device)
-	return Device, ret
+func (l *library) DeviceGetHandleByPciBusId(pciBusId string) (Device, Return) {
+	var device nvmlDevice
+	ret := nvmlDeviceGetHandleByPciBusId(pciBusId+string(rune(0)), &device)
+	return device, ret
 }
 
 // nvml.DeviceGetName()
-func DeviceGetName(Device Device) (string, Return) {
-	Name := make([]byte, DEVICE_NAME_V2_BUFFER_SIZE)
-	ret := nvmlDeviceGetName(Device, &Name[0], DEVICE_NAME_V2_BUFFER_SIZE)
-	return string(Name[:clen(Name)]), ret
+func (l *library) DeviceGetName(device Device) (string, Return) {
+	return device.GetName()
 }
 
-func (Device Device) GetName() (string, Return) {
-	return DeviceGetName(Device)
+func (device nvmlDevice) GetName() (string, Return) {
+	name := make([]byte, DEVICE_NAME_V2_BUFFER_SIZE)
+	ret := nvmlDeviceGetName(device, &name[0], DEVICE_NAME_V2_BUFFER_SIZE)
+	return string(name[:clen(name)]), ret
 }
 
 // nvml.DeviceGetBrand()
-func DeviceGetBrand(Device Device) (BrandType, Return) {
-	var _type BrandType
-	ret := nvmlDeviceGetBrand(Device, &_type)
-	return _type, ret
+func (l *library) DeviceGetBrand(device Device) (BrandType, Return) {
+	return device.GetBrand()
 }
 
-func (Device Device) GetBrand() (BrandType, Return) {
-	return DeviceGetBrand(Device)
+func (device nvmlDevice) GetBrand() (BrandType, Return) {
+	var brandType BrandType
+	ret := nvmlDeviceGetBrand(device, &brandType)
+	return brandType, ret
 }
 
 // nvml.DeviceGetIndex()
-func DeviceGetIndex(Device Device) (int, Return) {
-	var Index uint32
-	ret := nvmlDeviceGetIndex(Device, &Index)
-	return int(Index), ret
+func (l *library) DeviceGetIndex(device Device) (int, Return) {
+	return device.GetIndex()
 }
 
-func (Device Device) GetIndex() (int, Return) {
-	return DeviceGetIndex(Device)
+func (device nvmlDevice) GetIndex() (int, Return) {
+	var index uint32
+	ret := nvmlDeviceGetIndex(device, &index)
+	return int(index), ret
 }
 
 // nvml.DeviceGetSerial()
-func DeviceGetSerial(Device Device) (string, Return) {
-	Serial := make([]byte, DEVICE_SERIAL_BUFFER_SIZE)
-	ret := nvmlDeviceGetSerial(Device, &Serial[0], DEVICE_SERIAL_BUFFER_SIZE)
-	return string(Serial[:clen(Serial)]), ret
+func (l *library) DeviceGetSerial(device Device) (string, Return) {
+	return device.GetSerial()
 }
 
-func (Device Device) GetSerial() (string, Return) {
-	return DeviceGetSerial(Device)
+func (device nvmlDevice) GetSerial() (string, Return) {
+	serial := make([]byte, DEVICE_SERIAL_BUFFER_SIZE)
+	ret := nvmlDeviceGetSerial(device, &serial[0], DEVICE_SERIAL_BUFFER_SIZE)
+	return string(serial[:clen(serial)]), ret
 }
 
 // nvml.DeviceGetCpuAffinity()
-func DeviceGetCpuAffinity(Device Device, NumCPUs int) ([]uint, Return) {
-	CpuSetSize := uint32((NumCPUs-1)/int(unsafe.Sizeof(uint(0))) + 1)
-	CpuSet := make([]uint, CpuSetSize)
-	ret := nvmlDeviceGetCpuAffinity(Device, CpuSetSize, &CpuSet[0])
-	return CpuSet, ret
+func (l *library) DeviceGetCpuAffinity(device Device, numCPUs int) ([]uint, Return) {
+	return device.GetCpuAffinity(numCPUs)
 }
 
-func (Device Device) GetCpuAffinity(NumCPUs int) ([]uint, Return) {
-	return DeviceGetCpuAffinity(Device, NumCPUs)
+func (device nvmlDevice) GetCpuAffinity(numCPUs int) ([]uint, Return) {
+	cpuSetSize := uint32((numCPUs-1)/int(unsafe.Sizeof(uint(0))) + 1)
+	cpuSet := make([]uint, cpuSetSize)
+	ret := nvmlDeviceGetCpuAffinity(device, cpuSetSize, &cpuSet[0])
+	return cpuSet, ret
 }
 
 // nvml.DeviceSetCpuAffinity()
-func DeviceSetCpuAffinity(Device Device) Return {
-	return nvmlDeviceSetCpuAffinity(Device)
+func (l *library) DeviceSetCpuAffinity(device Device) Return {
+	return device.SetCpuAffinity()
 }
 
-func (Device Device) SetCpuAffinity() Return {
-	return DeviceSetCpuAffinity(Device)
+func (device nvmlDevice) SetCpuAffinity() Return {
+	return nvmlDeviceSetCpuAffinity(device)
 }
 
 // nvml.DeviceClearCpuAffinity()
-func DeviceClearCpuAffinity(Device Device) Return {
-	return nvmlDeviceClearCpuAffinity(Device)
+func (l *library) DeviceClearCpuAffinity(device Device) Return {
+	return device.ClearCpuAffinity()
 }
 
-func (Device Device) ClearCpuAffinity() Return {
-	return DeviceClearCpuAffinity(Device)
+func (device nvmlDevice) ClearCpuAffinity() Return {
+	return nvmlDeviceClearCpuAffinity(device)
 }
 
 // nvml.DeviceGetMemoryAffinity()
-func DeviceGetMemoryAffinity(Device Device, NumNodes int, Scope AffinityScope) ([]uint, Return) {
-	NodeSetSize := uint32((NumNodes-1)/int(unsafe.Sizeof(uint(0))) + 1)
-	NodeSet := make([]uint, NodeSetSize)
-	ret := nvmlDeviceGetMemoryAffinity(Device, NodeSetSize, &NodeSet[0], Scope)
-	return NodeSet, ret
+func (l *library) DeviceGetMemoryAffinity(device Device, numNodes int, scope AffinityScope) ([]uint, Return) {
+	return device.GetMemoryAffinity(numNodes, scope)
 }
 
-func (Device Device) GetMemoryAffinity(NumNodes int, Scope AffinityScope) ([]uint, Return) {
-	return DeviceGetMemoryAffinity(Device, NumNodes, Scope)
+func (device nvmlDevice) GetMemoryAffinity(numNodes int, scope AffinityScope) ([]uint, Return) {
+	nodeSetSize := uint32((numNodes-1)/int(unsafe.Sizeof(uint(0))) + 1)
+	nodeSet := make([]uint, nodeSetSize)
+	ret := nvmlDeviceGetMemoryAffinity(device, nodeSetSize, &nodeSet[0], scope)
+	return nodeSet, ret
 }
 
 // nvml.DeviceGetCpuAffinityWithinScope()
-func DeviceGetCpuAffinityWithinScope(Device Device, NumCPUs int, Scope AffinityScope) ([]uint, Return) {
-	CpuSetSize := uint32((NumCPUs-1)/int(unsafe.Sizeof(uint(0))) + 1)
-	CpuSet := make([]uint, CpuSetSize)
-	ret := nvmlDeviceGetCpuAffinityWithinScope(Device, CpuSetSize, &CpuSet[0], Scope)
-	return CpuSet, ret
+func (l *library) DeviceGetCpuAffinityWithinScope(device Device, numCPUs int, scope AffinityScope) ([]uint, Return) {
+	return device.GetCpuAffinityWithinScope(numCPUs, scope)
 }
 
-func (Device Device) GetCpuAffinityWithinScope(NumCPUs int, Scope AffinityScope) ([]uint, Return) {
-	return DeviceGetCpuAffinityWithinScope(Device, NumCPUs, Scope)
+func (device nvmlDevice) GetCpuAffinityWithinScope(numCPUs int, scope AffinityScope) ([]uint, Return) {
+	cpuSetSize := uint32((numCPUs-1)/int(unsafe.Sizeof(uint(0))) + 1)
+	cpuSet := make([]uint, cpuSetSize)
+	ret := nvmlDeviceGetCpuAffinityWithinScope(device, cpuSetSize, &cpuSet[0], scope)
+	return cpuSet, ret
 }
 
 // nvml.DeviceGetTopologyCommonAncestor()
-func DeviceGetTopologyCommonAncestor(Device1 Device, Device2 Device) (GpuTopologyLevel, Return) {
-	var PathInfo GpuTopologyLevel
-	ret := nvmlDeviceGetTopologyCommonAncestor(Device1, Device2, &PathInfo)
-	return PathInfo, ret
+func (l *library) DeviceGetTopologyCommonAncestor(device1 Device, device2 Device) (GpuTopologyLevel, Return) {
+	return device1.GetTopologyCommonAncestor(device2)
 }
 
-func (Device1 Device) GetTopologyCommonAncestor(Device2 Device) (GpuTopologyLevel, Return) {
-	return DeviceGetTopologyCommonAncestor(Device1, Device2)
+func (device1 nvmlDevice) GetTopologyCommonAncestor(device2 Device) (GpuTopologyLevel, Return) {
+	var pathInfo GpuTopologyLevel
+	ret := nvmlDeviceGetTopologyCommonAncestor(device1, device2.(nvmlDevice), &pathInfo)
+	return pathInfo, ret
 }
 
 // nvml.DeviceGetTopologyNearestGpus()
-func DeviceGetTopologyNearestGpus(device Device, Level GpuTopologyLevel) ([]Device, Return) {
-	var Count uint32
-	ret := nvmlDeviceGetTopologyNearestGpus(device, Level, &Count, nil)
+func (l *library) DeviceGetTopologyNearestGpus(device Device, level GpuTopologyLevel) ([]Device, Return) {
+	return device.GetTopologyNearestGpus(level)
+}
+
+func (device nvmlDevice) GetTopologyNearestGpus(level GpuTopologyLevel) ([]Device, Return) {
+	var count uint32
+	ret := nvmlDeviceGetTopologyNearestGpus(device, level, &count, nil)
 	if ret != SUCCESS {
 		return nil, ret
 	}
-	if Count == 0 {
+	if count == 0 {
 		return []Device{}, ret
 	}
-	DeviceArray := make([]Device, Count)
-	ret = nvmlDeviceGetTopologyNearestGpus(device, Level, &Count, &DeviceArray[0])
-	return DeviceArray, ret
-}
-
-func (Device Device) GetTopologyNearestGpus(Level GpuTopologyLevel) ([]Device, Return) {
-	return DeviceGetTopologyNearestGpus(Device, Level)
+	deviceArray := make([]nvmlDevice, count)
+	ret = nvmlDeviceGetTopologyNearestGpus(device, level, &count, &deviceArray[0])
+	return convertSlice[nvmlDevice, Device](deviceArray), ret
 }
 
 // nvml.DeviceGetP2PStatus()
-func DeviceGetP2PStatus(Device1 Device, Device2 Device, P2pIndex GpuP2PCapsIndex) (GpuP2PStatus, Return) {
-	var P2pStatus GpuP2PStatus
-	ret := nvmlDeviceGetP2PStatus(Device1, Device2, P2pIndex, &P2pStatus)
-	return P2pStatus, ret
+func (l *library) DeviceGetP2PStatus(device1 Device, device2 Device, p2pIndex GpuP2PCapsIndex) (GpuP2PStatus, Return) {
+	return device1.GetP2PStatus(device2, p2pIndex)
 }
 
-func (Device1 Device) GetP2PStatus(Device2 Device, P2pIndex GpuP2PCapsIndex) (GpuP2PStatus, Return) {
-	return DeviceGetP2PStatus(Device1, Device2, P2pIndex)
+func (device1 nvmlDevice) GetP2PStatus(device2 Device, p2pIndex GpuP2PCapsIndex) (GpuP2PStatus, Return) {
+	var p2pStatus GpuP2PStatus
+	ret := nvmlDeviceGetP2PStatus(device1, device2.(nvmlDevice), p2pIndex, &p2pStatus)
+	return p2pStatus, ret
 }
 
 // nvml.DeviceGetUUID()
-func DeviceGetUUID(Device Device) (string, Return) {
-	Uuid := make([]byte, DEVICE_UUID_V2_BUFFER_SIZE)
-	ret := nvmlDeviceGetUUID(Device, &Uuid[0], DEVICE_UUID_V2_BUFFER_SIZE)
-	return string(Uuid[:clen(Uuid)]), ret
+func (l *library) DeviceGetUUID(device Device) (string, Return) {
+	return device.GetUUID()
 }
 
-func (Device Device) GetUUID() (string, Return) {
-	return DeviceGetUUID(Device)
+func (device nvmlDevice) GetUUID() (string, Return) {
+	uuid := make([]byte, DEVICE_UUID_V2_BUFFER_SIZE)
+	ret := nvmlDeviceGetUUID(device, &uuid[0], DEVICE_UUID_V2_BUFFER_SIZE)
+	return string(uuid[:clen(uuid)]), ret
 }
 
 // nvml.DeviceGetMinorNumber()
-func DeviceGetMinorNumber(Device Device) (int, Return) {
-	var MinorNumber uint32
-	ret := nvmlDeviceGetMinorNumber(Device, &MinorNumber)
-	return int(MinorNumber), ret
+func (l *library) DeviceGetMinorNumber(device Device) (int, Return) {
+	return device.GetMinorNumber()
 }
 
-func (Device Device) GetMinorNumber() (int, Return) {
-	return DeviceGetMinorNumber(Device)
+func (device nvmlDevice) GetMinorNumber() (int, Return) {
+	var minorNumber uint32
+	ret := nvmlDeviceGetMinorNumber(device, &minorNumber)
+	return int(minorNumber), ret
 }
 
 // nvml.DeviceGetBoardPartNumber()
-func DeviceGetBoardPartNumber(Device Device) (string, Return) {
-	PartNumber := make([]byte, DEVICE_PART_NUMBER_BUFFER_SIZE)
-	ret := nvmlDeviceGetBoardPartNumber(Device, &PartNumber[0], DEVICE_PART_NUMBER_BUFFER_SIZE)
-	return string(PartNumber[:clen(PartNumber)]), ret
+func (l *library) DeviceGetBoardPartNumber(device Device) (string, Return) {
+	return device.GetBoardPartNumber()
 }
 
-func (Device Device) GetBoardPartNumber() (string, Return) {
-	return DeviceGetBoardPartNumber(Device)
+func (device nvmlDevice) GetBoardPartNumber() (string, Return) {
+	partNumber := make([]byte, DEVICE_PART_NUMBER_BUFFER_SIZE)
+	ret := nvmlDeviceGetBoardPartNumber(device, &partNumber[0], DEVICE_PART_NUMBER_BUFFER_SIZE)
+	return string(partNumber[:clen(partNumber)]), ret
 }
 
 // nvml.DeviceGetInforomVersion()
-func DeviceGetInforomVersion(Device Device, Object InforomObject) (string, Return) {
-	Version := make([]byte, DEVICE_INFOROM_VERSION_BUFFER_SIZE)
-	ret := nvmlDeviceGetInforomVersion(Device, Object, &Version[0], DEVICE_INFOROM_VERSION_BUFFER_SIZE)
-	return string(Version[:clen(Version)]), ret
+func (l *library) DeviceGetInforomVersion(device Device, object InforomObject) (string, Return) {
+	return device.GetInforomVersion(object)
 }
 
-func (Device Device) GetInforomVersion(Object InforomObject) (string, Return) {
-	return DeviceGetInforomVersion(Device, Object)
+func (device nvmlDevice) GetInforomVersion(object InforomObject) (string, Return) {
+	version := make([]byte, DEVICE_INFOROM_VERSION_BUFFER_SIZE)
+	ret := nvmlDeviceGetInforomVersion(device, object, &version[0], DEVICE_INFOROM_VERSION_BUFFER_SIZE)
+	return string(version[:clen(version)]), ret
 }
 
 // nvml.DeviceGetInforomImageVersion()
-func DeviceGetInforomImageVersion(Device Device) (string, Return) {
-	Version := make([]byte, DEVICE_INFOROM_VERSION_BUFFER_SIZE)
-	ret := nvmlDeviceGetInforomImageVersion(Device, &Version[0], DEVICE_INFOROM_VERSION_BUFFER_SIZE)
-	return string(Version[:clen(Version)]), ret
+func (l *library) DeviceGetInforomImageVersion(device Device) (string, Return) {
+	return device.GetInforomImageVersion()
 }
 
-func (Device Device) GetInforomImageVersion() (string, Return) {
-	return DeviceGetInforomImageVersion(Device)
+func (device nvmlDevice) GetInforomImageVersion() (string, Return) {
+	version := make([]byte, DEVICE_INFOROM_VERSION_BUFFER_SIZE)
+	ret := nvmlDeviceGetInforomImageVersion(device, &version[0], DEVICE_INFOROM_VERSION_BUFFER_SIZE)
+	return string(version[:clen(version)]), ret
 }
 
 // nvml.DeviceGetInforomConfigurationChecksum()
-func DeviceGetInforomConfigurationChecksum(Device Device) (uint32, Return) {
-	var Checksum uint32
-	ret := nvmlDeviceGetInforomConfigurationChecksum(Device, &Checksum)
-	return Checksum, ret
+func (l *library) DeviceGetInforomConfigurationChecksum(device Device) (uint32, Return) {
+	return device.GetInforomConfigurationChecksum()
 }
 
-func (Device Device) GetInforomConfigurationChecksum() (uint32, Return) {
-	return DeviceGetInforomConfigurationChecksum(Device)
+func (device nvmlDevice) GetInforomConfigurationChecksum() (uint32, Return) {
+	var checksum uint32
+	ret := nvmlDeviceGetInforomConfigurationChecksum(device, &checksum)
+	return checksum, ret
 }
 
 // nvml.DeviceValidateInforom()
-func DeviceValidateInforom(Device Device) Return {
-	return nvmlDeviceValidateInforom(Device)
+func (l *library) DeviceValidateInforom(device Device) Return {
+	return device.ValidateInforom()
 }
 
-func (Device Device) ValidateInforom() Return {
-	return DeviceValidateInforom(Device)
+func (device nvmlDevice) ValidateInforom() Return {
+	return nvmlDeviceValidateInforom(device)
 }
 
 // nvml.DeviceGetDisplayMode()
-func DeviceGetDisplayMode(Device Device) (EnableState, Return) {
-	var Display EnableState
-	ret := nvmlDeviceGetDisplayMode(Device, &Display)
-	return Display, ret
+func (l *library) DeviceGetDisplayMode(device Device) (EnableState, Return) {
+	return device.GetDisplayMode()
 }
 
-func (Device Device) GetDisplayMode() (EnableState, Return) {
-	return DeviceGetDisplayMode(Device)
+func (device nvmlDevice) GetDisplayMode() (EnableState, Return) {
+	var display EnableState
+	ret := nvmlDeviceGetDisplayMode(device, &display)
+	return display, ret
 }
 
 // nvml.DeviceGetDisplayActive()
-func DeviceGetDisplayActive(Device Device) (EnableState, Return) {
-	var IsActive EnableState
-	ret := nvmlDeviceGetDisplayActive(Device, &IsActive)
-	return IsActive, ret
+func (l *library) DeviceGetDisplayActive(device Device) (EnableState, Return) {
+	return device.GetDisplayActive()
 }
 
-func (Device Device) GetDisplayActive() (EnableState, Return) {
-	return DeviceGetDisplayActive(Device)
+func (device nvmlDevice) GetDisplayActive() (EnableState, Return) {
+	var isActive EnableState
+	ret := nvmlDeviceGetDisplayActive(device, &isActive)
+	return isActive, ret
 }
 
 // nvml.DeviceGetPersistenceMode()
-func DeviceGetPersistenceMode(Device Device) (EnableState, Return) {
-	var Mode EnableState
-	ret := nvmlDeviceGetPersistenceMode(Device, &Mode)
-	return Mode, ret
+func (l *library) DeviceGetPersistenceMode(device Device) (EnableState, Return) {
+	return device.GetPersistenceMode()
 }
 
-func (Device Device) GetPersistenceMode() (EnableState, Return) {
-	return DeviceGetPersistenceMode(Device)
+func (device nvmlDevice) GetPersistenceMode() (EnableState, Return) {
+	var mode EnableState
+	ret := nvmlDeviceGetPersistenceMode(device, &mode)
+	return mode, ret
 }
 
 // nvml.DeviceGetPciInfo()
-func DeviceGetPciInfo(Device Device) (PciInfo, Return) {
-	var Pci PciInfo
-	ret := nvmlDeviceGetPciInfo(Device, &Pci)
-	return Pci, ret
+func (l *library) DeviceGetPciInfo(device Device) (PciInfo, Return) {
+	return device.GetPciInfo()
 }
 
-func (Device Device) GetPciInfo() (PciInfo, Return) {
-	return DeviceGetPciInfo(Device)
+func (device nvmlDevice) GetPciInfo() (PciInfo, Return) {
+	var pci PciInfo
+	ret := nvmlDeviceGetPciInfo(device, &pci)
+	return pci, ret
 }
 
 // nvml.DeviceGetMaxPcieLinkGeneration()
-func DeviceGetMaxPcieLinkGeneration(Device Device) (int, Return) {
-	var MaxLinkGen uint32
-	ret := nvmlDeviceGetMaxPcieLinkGeneration(Device, &MaxLinkGen)
-	return int(MaxLinkGen), ret
+func (l *library) DeviceGetMaxPcieLinkGeneration(device Device) (int, Return) {
+	return device.GetMaxPcieLinkGeneration()
 }
 
-func (Device Device) GetMaxPcieLinkGeneration() (int, Return) {
-	return DeviceGetMaxPcieLinkGeneration(Device)
+func (device nvmlDevice) GetMaxPcieLinkGeneration() (int, Return) {
+	var maxLinkGen uint32
+	ret := nvmlDeviceGetMaxPcieLinkGeneration(device, &maxLinkGen)
+	return int(maxLinkGen), ret
 }
 
 // nvml.DeviceGetMaxPcieLinkWidth()
-func DeviceGetMaxPcieLinkWidth(Device Device) (int, Return) {
-	var MaxLinkWidth uint32
-	ret := nvmlDeviceGetMaxPcieLinkWidth(Device, &MaxLinkWidth)
-	return int(MaxLinkWidth), ret
+func (l *library) DeviceGetMaxPcieLinkWidth(device Device) (int, Return) {
+	return device.GetMaxPcieLinkWidth()
 }
 
-func (Device Device) GetMaxPcieLinkWidth() (int, Return) {
-	return DeviceGetMaxPcieLinkWidth(Device)
+func (device nvmlDevice) GetMaxPcieLinkWidth() (int, Return) {
+	var maxLinkWidth uint32
+	ret := nvmlDeviceGetMaxPcieLinkWidth(device, &maxLinkWidth)
+	return int(maxLinkWidth), ret
 }
 
 // nvml.DeviceGetCurrPcieLinkGeneration()
-func DeviceGetCurrPcieLinkGeneration(Device Device) (int, Return) {
-	var CurrLinkGen uint32
-	ret := nvmlDeviceGetCurrPcieLinkGeneration(Device, &CurrLinkGen)
-	return int(CurrLinkGen), ret
+func (l *library) DeviceGetCurrPcieLinkGeneration(device Device) (int, Return) {
+	return device.GetCurrPcieLinkGeneration()
 }
 
-func (Device Device) GetCurrPcieLinkGeneration() (int, Return) {
-	return DeviceGetCurrPcieLinkGeneration(Device)
+func (device nvmlDevice) GetCurrPcieLinkGeneration() (int, Return) {
+	var currLinkGen uint32
+	ret := nvmlDeviceGetCurrPcieLinkGeneration(device, &currLinkGen)
+	return int(currLinkGen), ret
 }
 
 // nvml.DeviceGetCurrPcieLinkWidth()
-func DeviceGetCurrPcieLinkWidth(Device Device) (int, Return) {
-	var CurrLinkWidth uint32
-	ret := nvmlDeviceGetCurrPcieLinkWidth(Device, &CurrLinkWidth)
-	return int(CurrLinkWidth), ret
+func (l *library) DeviceGetCurrPcieLinkWidth(device Device) (int, Return) {
+	return device.GetCurrPcieLinkWidth()
 }
 
-func (Device Device) GetCurrPcieLinkWidth() (int, Return) {
-	return DeviceGetCurrPcieLinkWidth(Device)
+func (device nvmlDevice) GetCurrPcieLinkWidth() (int, Return) {
+	var currLinkWidth uint32
+	ret := nvmlDeviceGetCurrPcieLinkWidth(device, &currLinkWidth)
+	return int(currLinkWidth), ret
 }
 
 // nvml.DeviceGetPcieThroughput()
-func DeviceGetPcieThroughput(Device Device, Counter PcieUtilCounter) (uint32, Return) {
-	var Value uint32
-	ret := nvmlDeviceGetPcieThroughput(Device, Counter, &Value)
-	return Value, ret
+func (l *library) DeviceGetPcieThroughput(device Device, counter PcieUtilCounter) (uint32, Return) {
+	return device.GetPcieThroughput(counter)
 }
 
-func (Device Device) GetPcieThroughput(Counter PcieUtilCounter) (uint32, Return) {
-	return DeviceGetPcieThroughput(Device, Counter)
+func (device nvmlDevice) GetPcieThroughput(counter PcieUtilCounter) (uint32, Return) {
+	var value uint32
+	ret := nvmlDeviceGetPcieThroughput(device, counter, &value)
+	return value, ret
 }
 
 // nvml.DeviceGetPcieReplayCounter()
-func DeviceGetPcieReplayCounter(Device Device) (int, Return) {
-	var Value uint32
-	ret := nvmlDeviceGetPcieReplayCounter(Device, &Value)
-	return int(Value), ret
+func (l *library) DeviceGetPcieReplayCounter(device Device) (int, Return) {
+	return device.GetPcieReplayCounter()
 }
 
-func (Device Device) GetPcieReplayCounter() (int, Return) {
-	return DeviceGetPcieReplayCounter(Device)
+func (device nvmlDevice) GetPcieReplayCounter() (int, Return) {
+	var value uint32
+	ret := nvmlDeviceGetPcieReplayCounter(device, &value)
+	return int(value), ret
 }
 
 // nvml.nvmlDeviceGetClockInfo()
-func DeviceGetClockInfo(Device Device, _type ClockType) (uint32, Return) {
-	var Clock uint32
-	ret := nvmlDeviceGetClockInfo(Device, _type, &Clock)
-	return Clock, ret
+func (l *library) DeviceGetClockInfo(device Device, clockType ClockType) (uint32, Return) {
+	return device.GetClockInfo(clockType)
 }
 
-func (Device Device) GetClockInfo(_type ClockType) (uint32, Return) {
-	return DeviceGetClockInfo(Device, _type)
+func (device nvmlDevice) GetClockInfo(clockType ClockType) (uint32, Return) {
+	var clock uint32
+	ret := nvmlDeviceGetClockInfo(device, clockType, &clock)
+	return clock, ret
 }
 
 // nvml.DeviceGetMaxClockInfo()
-func DeviceGetMaxClockInfo(Device Device, _type ClockType) (uint32, Return) {
-	var Clock uint32
-	ret := nvmlDeviceGetMaxClockInfo(Device, _type, &Clock)
-	return Clock, ret
+func (l *library) DeviceGetMaxClockInfo(device Device, clockType ClockType) (uint32, Return) {
+	return device.GetMaxClockInfo(clockType)
 }
 
-func (Device Device) GetMaxClockInfo(_type ClockType) (uint32, Return) {
-	return DeviceGetMaxClockInfo(Device, _type)
+func (device nvmlDevice) GetMaxClockInfo(clockType ClockType) (uint32, Return) {
+	var clock uint32
+	ret := nvmlDeviceGetMaxClockInfo(device, clockType, &clock)
+	return clock, ret
 }
 
 // nvml.DeviceGetApplicationsClock()
-func DeviceGetApplicationsClock(Device Device, ClockType ClockType) (uint32, Return) {
-	var ClockMHz uint32
-	ret := nvmlDeviceGetApplicationsClock(Device, ClockType, &ClockMHz)
-	return ClockMHz, ret
+func (l *library) DeviceGetApplicationsClock(device Device, clockType ClockType) (uint32, Return) {
+	return device.GetApplicationsClock(clockType)
 }
 
-func (Device Device) GetApplicationsClock(ClockType ClockType) (uint32, Return) {
-	return DeviceGetApplicationsClock(Device, ClockType)
+func (device nvmlDevice) GetApplicationsClock(clockType ClockType) (uint32, Return) {
+	var clockMHz uint32
+	ret := nvmlDeviceGetApplicationsClock(device, clockType, &clockMHz)
+	return clockMHz, ret
 }
 
 // nvml.DeviceGetDefaultApplicationsClock()
-func DeviceGetDefaultApplicationsClock(Device Device, ClockType ClockType) (uint32, Return) {
-	var ClockMHz uint32
-	ret := nvmlDeviceGetDefaultApplicationsClock(Device, ClockType, &ClockMHz)
-	return ClockMHz, ret
+func (l *library) DeviceGetDefaultApplicationsClock(device Device, clockType ClockType) (uint32, Return) {
+	return device.GetDefaultApplicationsClock(clockType)
 }
 
-func (Device Device) GetDefaultApplicationsClock(ClockType ClockType) (uint32, Return) {
-	return DeviceGetDefaultApplicationsClock(Device, ClockType)
+func (device nvmlDevice) GetDefaultApplicationsClock(clockType ClockType) (uint32, Return) {
+	var clockMHz uint32
+	ret := nvmlDeviceGetDefaultApplicationsClock(device, clockType, &clockMHz)
+	return clockMHz, ret
 }
 
 // nvml.DeviceResetApplicationsClocks()
-func DeviceResetApplicationsClocks(Device Device) Return {
-	return nvmlDeviceResetApplicationsClocks(Device)
+func (l *library) DeviceResetApplicationsClocks(device Device) Return {
+	return device.ResetApplicationsClocks()
 }
 
-func (Device Device) ResetApplicationsClocks() Return {
-	return DeviceResetApplicationsClocks(Device)
+func (device nvmlDevice) ResetApplicationsClocks() Return {
+	return nvmlDeviceResetApplicationsClocks(device)
 }
 
 // nvml.DeviceGetClock()
-func DeviceGetClock(Device Device, ClockType ClockType, ClockId ClockId) (uint32, Return) {
-	var ClockMHz uint32
-	ret := nvmlDeviceGetClock(Device, ClockType, ClockId, &ClockMHz)
-	return ClockMHz, ret
+func (l *library) DeviceGetClock(device Device, clockType ClockType, clockId ClockId) (uint32, Return) {
+	return device.GetClock(clockType, clockId)
 }
 
-func (Device Device) GetClock(ClockType ClockType, ClockId ClockId) (uint32, Return) {
-	return DeviceGetClock(Device, ClockType, ClockId)
+func (device nvmlDevice) GetClock(clockType ClockType, clockId ClockId) (uint32, Return) {
+	var clockMHz uint32
+	ret := nvmlDeviceGetClock(device, clockType, clockId, &clockMHz)
+	return clockMHz, ret
 }
 
 // nvml.DeviceGetMaxCustomerBoostClock()
-func DeviceGetMaxCustomerBoostClock(Device Device, ClockType ClockType) (uint32, Return) {
-	var ClockMHz uint32
-	ret := nvmlDeviceGetMaxCustomerBoostClock(Device, ClockType, &ClockMHz)
-	return ClockMHz, ret
+func (l *library) DeviceGetMaxCustomerBoostClock(device Device, clockType ClockType) (uint32, Return) {
+	return device.GetMaxCustomerBoostClock(clockType)
 }
 
-func (Device Device) GetMaxCustomerBoostClock(ClockType ClockType) (uint32, Return) {
-	return DeviceGetMaxCustomerBoostClock(Device, ClockType)
+func (device nvmlDevice) GetMaxCustomerBoostClock(clockType ClockType) (uint32, Return) {
+	var clockMHz uint32
+	ret := nvmlDeviceGetMaxCustomerBoostClock(device, clockType, &clockMHz)
+	return clockMHz, ret
 }
 
 // nvml.DeviceGetSupportedMemoryClocks()
-func DeviceGetSupportedMemoryClocks(Device Device) (int, uint32, Return) {
-	var Count, ClocksMHz uint32
-	ret := nvmlDeviceGetSupportedMemoryClocks(Device, &Count, &ClocksMHz)
-	return int(Count), ClocksMHz, ret
+func (l *library) DeviceGetSupportedMemoryClocks(device Device) (int, uint32, Return) {
+	return device.GetSupportedMemoryClocks()
 }
 
-func (Device Device) GetSupportedMemoryClocks() (int, uint32, Return) {
-	return DeviceGetSupportedMemoryClocks(Device)
+func (device nvmlDevice) GetSupportedMemoryClocks() (int, uint32, Return) {
+	var count, clocksMHz uint32
+	ret := nvmlDeviceGetSupportedMemoryClocks(device, &count, &clocksMHz)
+	return int(count), clocksMHz, ret
 }
 
 // nvml.DeviceGetSupportedGraphicsClocks()
-func DeviceGetSupportedGraphicsClocks(Device Device, MemoryClockMHz int) (int, uint32, Return) {
-	var Count, ClocksMHz uint32
-	ret := nvmlDeviceGetSupportedGraphicsClocks(Device, uint32(MemoryClockMHz), &Count, &ClocksMHz)
-	return int(Count), ClocksMHz, ret
+func (l *library) DeviceGetSupportedGraphicsClocks(device Device, memoryClockMHz int) (int, uint32, Return) {
+	return device.GetSupportedGraphicsClocks(memoryClockMHz)
 }
 
-func (Device Device) GetSupportedGraphicsClocks(MemoryClockMHz int) (int, uint32, Return) {
-	return DeviceGetSupportedGraphicsClocks(Device, MemoryClockMHz)
+func (device nvmlDevice) GetSupportedGraphicsClocks(memoryClockMHz int) (int, uint32, Return) {
+	var count, clocksMHz uint32
+	ret := nvmlDeviceGetSupportedGraphicsClocks(device, uint32(memoryClockMHz), &count, &clocksMHz)
+	return int(count), clocksMHz, ret
 }
 
 // nvml.DeviceGetAutoBoostedClocksEnabled()
-func DeviceGetAutoBoostedClocksEnabled(Device Device) (EnableState, EnableState, Return) {
-	var IsEnabled, DefaultIsEnabled EnableState
-	ret := nvmlDeviceGetAutoBoostedClocksEnabled(Device, &IsEnabled, &DefaultIsEnabled)
-	return IsEnabled, DefaultIsEnabled, ret
+func (l *library) DeviceGetAutoBoostedClocksEnabled(device Device) (EnableState, EnableState, Return) {
+	return device.GetAutoBoostedClocksEnabled()
 }
 
-func (Device Device) GetAutoBoostedClocksEnabled() (EnableState, EnableState, Return) {
-	return DeviceGetAutoBoostedClocksEnabled(Device)
+func (device nvmlDevice) GetAutoBoostedClocksEnabled() (EnableState, EnableState, Return) {
+	var isEnabled, defaultIsEnabled EnableState
+	ret := nvmlDeviceGetAutoBoostedClocksEnabled(device, &isEnabled, &defaultIsEnabled)
+	return isEnabled, defaultIsEnabled, ret
 }
 
 // nvml.DeviceSetAutoBoostedClocksEnabled()
-func DeviceSetAutoBoostedClocksEnabled(Device Device, Enabled EnableState) Return {
-	return nvmlDeviceSetAutoBoostedClocksEnabled(Device, Enabled)
+func (l *library) DeviceSetAutoBoostedClocksEnabled(device Device, enabled EnableState) Return {
+	return device.SetAutoBoostedClocksEnabled(enabled)
 }
 
-func (Device Device) SetAutoBoostedClocksEnabled(Enabled EnableState) Return {
-	return DeviceSetAutoBoostedClocksEnabled(Device, Enabled)
+func (device nvmlDevice) SetAutoBoostedClocksEnabled(enabled EnableState) Return {
+	return nvmlDeviceSetAutoBoostedClocksEnabled(device, enabled)
 }
 
 // nvml.DeviceSetDefaultAutoBoostedClocksEnabled()
-func DeviceSetDefaultAutoBoostedClocksEnabled(Device Device, Enabled EnableState, Flags uint32) Return {
-	return nvmlDeviceSetDefaultAutoBoostedClocksEnabled(Device, Enabled, Flags)
+func (l *library) DeviceSetDefaultAutoBoostedClocksEnabled(device Device, enabled EnableState, flags uint32) Return {
+	return device.SetDefaultAutoBoostedClocksEnabled(enabled, flags)
 }
 
-func (Device Device) SetDefaultAutoBoostedClocksEnabled(Enabled EnableState, Flags uint32) Return {
-	return DeviceSetDefaultAutoBoostedClocksEnabled(Device, Enabled, Flags)
+func (device nvmlDevice) SetDefaultAutoBoostedClocksEnabled(enabled EnableState, flags uint32) Return {
+	return nvmlDeviceSetDefaultAutoBoostedClocksEnabled(device, enabled, flags)
 }
 
 // nvml.DeviceGetFanSpeed()
-func DeviceGetFanSpeed(Device Device) (uint32, Return) {
-	var Speed uint32
-	ret := nvmlDeviceGetFanSpeed(Device, &Speed)
-	return Speed, ret
+func (l *library) DeviceGetFanSpeed(device Device) (uint32, Return) {
+	return device.GetFanSpeed()
 }
 
-func (Device Device) GetFanSpeed() (uint32, Return) {
-	return DeviceGetFanSpeed(Device)
+func (device nvmlDevice) GetFanSpeed() (uint32, Return) {
+	var speed uint32
+	ret := nvmlDeviceGetFanSpeed(device, &speed)
+	return speed, ret
 }
 
 // nvml.DeviceGetFanSpeed_v2()
-func DeviceGetFanSpeed_v2(Device Device, Fan int) (uint32, Return) {
-	var Speed uint32
-	ret := nvmlDeviceGetFanSpeed_v2(Device, uint32(Fan), &Speed)
-	return Speed, ret
+func (l *library) DeviceGetFanSpeed_v2(device Device, fan int) (uint32, Return) {
+	return device.GetFanSpeed_v2(fan)
 }
 
-func (Device Device) GetFanSpeed_v2(Fan int) (uint32, Return) {
-	return DeviceGetFanSpeed_v2(Device, Fan)
+func (device nvmlDevice) GetFanSpeed_v2(fan int) (uint32, Return) {
+	var speed uint32
+	ret := nvmlDeviceGetFanSpeed_v2(device, uint32(fan), &speed)
+	return speed, ret
 }
 
 // nvml.DeviceGetNumFans()
-func DeviceGetNumFans(Device Device) (int, Return) {
-	var NumFans uint32
-	ret := nvmlDeviceGetNumFans(Device, &NumFans)
-	return int(NumFans), ret
+func (l *library) DeviceGetNumFans(device Device) (int, Return) {
+	return device.GetNumFans()
 }
 
-func (Device Device) GetNumFans() (int, Return) {
-	return DeviceGetNumFans(Device)
+func (device nvmlDevice) GetNumFans() (int, Return) {
+	var numFans uint32
+	ret := nvmlDeviceGetNumFans(device, &numFans)
+	return int(numFans), ret
 }
 
 // nvml.DeviceGetTemperature()
-func DeviceGetTemperature(Device Device, SensorType TemperatureSensors) (uint32, Return) {
-	var Temp uint32
-	ret := nvmlDeviceGetTemperature(Device, SensorType, &Temp)
-	return Temp, ret
+func (l *library) DeviceGetTemperature(device Device, sensorType TemperatureSensors) (uint32, Return) {
+	return device.GetTemperature(sensorType)
 }
 
-func (Device Device) GetTemperature(SensorType TemperatureSensors) (uint32, Return) {
-	return DeviceGetTemperature(Device, SensorType)
+func (device nvmlDevice) GetTemperature(sensorType TemperatureSensors) (uint32, Return) {
+	var temp uint32
+	ret := nvmlDeviceGetTemperature(device, sensorType, &temp)
+	return temp, ret
 }
 
 // nvml.DeviceGetTemperatureThreshold()
-func DeviceGetTemperatureThreshold(Device Device, ThresholdType TemperatureThresholds) (uint32, Return) {
-	var Temp uint32
-	ret := nvmlDeviceGetTemperatureThreshold(Device, ThresholdType, &Temp)
-	return Temp, ret
+func (l *library) DeviceGetTemperatureThreshold(device Device, thresholdType TemperatureThresholds) (uint32, Return) {
+	return device.GetTemperatureThreshold(thresholdType)
 }
 
-func (Device Device) GetTemperatureThreshold(ThresholdType TemperatureThresholds) (uint32, Return) {
-	return DeviceGetTemperatureThreshold(Device, ThresholdType)
+func (device nvmlDevice) GetTemperatureThreshold(thresholdType TemperatureThresholds) (uint32, Return) {
+	var temp uint32
+	ret := nvmlDeviceGetTemperatureThreshold(device, thresholdType, &temp)
+	return temp, ret
 }
 
 // nvml.DeviceSetTemperatureThreshold()
-func DeviceSetTemperatureThreshold(Device Device, ThresholdType TemperatureThresholds, Temp int) Return {
-	t := int32(Temp)
-	ret := nvmlDeviceSetTemperatureThreshold(Device, ThresholdType, &t)
+func (l *library) DeviceSetTemperatureThreshold(device Device, thresholdType TemperatureThresholds, temp int) Return {
+	return device.SetTemperatureThreshold(thresholdType, temp)
+}
+
+func (device nvmlDevice) SetTemperatureThreshold(thresholdType TemperatureThresholds, temp int) Return {
+	t := int32(temp)
+	ret := nvmlDeviceSetTemperatureThreshold(device, thresholdType, &t)
 	return ret
 }
 
-func (Device Device) SetTemperatureThreshold(ThresholdType TemperatureThresholds, Temp int) Return {
-	return DeviceSetTemperatureThreshold(Device, ThresholdType, Temp)
-}
-
 // nvml.DeviceGetPerformanceState()
-func DeviceGetPerformanceState(Device Device) (Pstates, Return) {
-	var PState Pstates
-	ret := nvmlDeviceGetPerformanceState(Device, &PState)
-	return PState, ret
+func (l *library) DeviceGetPerformanceState(device Device) (Pstates, Return) {
+	return device.GetPerformanceState()
 }
 
-func (Device Device) GetPerformanceState() (Pstates, Return) {
-	return DeviceGetPerformanceState(Device)
+func (device nvmlDevice) GetPerformanceState() (Pstates, Return) {
+	var pState Pstates
+	ret := nvmlDeviceGetPerformanceState(device, &pState)
+	return pState, ret
 }
 
 // nvml.DeviceGetCurrentClocksThrottleReasons()
-func DeviceGetCurrentClocksThrottleReasons(Device Device) (uint64, Return) {
-	var ClocksThrottleReasons uint64
-	ret := nvmlDeviceGetCurrentClocksThrottleReasons(Device, &ClocksThrottleReasons)
-	return ClocksThrottleReasons, ret
+func (l *library) DeviceGetCurrentClocksThrottleReasons(device Device) (uint64, Return) {
+	return device.GetCurrentClocksThrottleReasons()
 }
 
-func (Device Device) GetCurrentClocksThrottleReasons() (uint64, Return) {
-	return DeviceGetCurrentClocksThrottleReasons(Device)
+func (device nvmlDevice) GetCurrentClocksThrottleReasons() (uint64, Return) {
+	var clocksThrottleReasons uint64
+	ret := nvmlDeviceGetCurrentClocksThrottleReasons(device, &clocksThrottleReasons)
+	return clocksThrottleReasons, ret
 }
 
 // nvml.DeviceGetSupportedClocksThrottleReasons()
-func DeviceGetSupportedClocksThrottleReasons(Device Device) (uint64, Return) {
-	var SupportedClocksThrottleReasons uint64
-	ret := nvmlDeviceGetSupportedClocksThrottleReasons(Device, &SupportedClocksThrottleReasons)
-	return SupportedClocksThrottleReasons, ret
+func (l *library) DeviceGetSupportedClocksThrottleReasons(device Device) (uint64, Return) {
+	return device.GetSupportedClocksThrottleReasons()
 }
 
-func (Device Device) GetSupportedClocksThrottleReasons() (uint64, Return) {
-	return DeviceGetSupportedClocksThrottleReasons(Device)
+func (device nvmlDevice) GetSupportedClocksThrottleReasons() (uint64, Return) {
+	var supportedClocksThrottleReasons uint64
+	ret := nvmlDeviceGetSupportedClocksThrottleReasons(device, &supportedClocksThrottleReasons)
+	return supportedClocksThrottleReasons, ret
 }
 
 // nvml.DeviceGetPowerState()
-func DeviceGetPowerState(Device Device) (Pstates, Return) {
-	var PState Pstates
-	ret := nvmlDeviceGetPowerState(Device, &PState)
-	return PState, ret
+func (l *library) DeviceGetPowerState(device Device) (Pstates, Return) {
+	return device.GetPowerState()
 }
 
-func (Device Device) GetPowerState() (Pstates, Return) {
-	return DeviceGetPowerState(Device)
+func (device nvmlDevice) GetPowerState() (Pstates, Return) {
+	var pState Pstates
+	ret := nvmlDeviceGetPowerState(device, &pState)
+	return pState, ret
 }
 
 // nvml.DeviceGetPowerManagementMode()
-func DeviceGetPowerManagementMode(Device Device) (EnableState, Return) {
-	var Mode EnableState
-	ret := nvmlDeviceGetPowerManagementMode(Device, &Mode)
-	return Mode, ret
+func (l *library) DeviceGetPowerManagementMode(device Device) (EnableState, Return) {
+	return device.GetPowerManagementMode()
 }
 
-func (Device Device) GetPowerManagementMode() (EnableState, Return) {
-	return DeviceGetPowerManagementMode(Device)
+func (device nvmlDevice) GetPowerManagementMode() (EnableState, Return) {
+	var mode EnableState
+	ret := nvmlDeviceGetPowerManagementMode(device, &mode)
+	return mode, ret
 }
 
 // nvml.DeviceGetPowerManagementLimit()
-func DeviceGetPowerManagementLimit(Device Device) (uint32, Return) {
-	var Limit uint32
-	ret := nvmlDeviceGetPowerManagementLimit(Device, &Limit)
-	return Limit, ret
+func (l *library) DeviceGetPowerManagementLimit(device Device) (uint32, Return) {
+	return device.GetPowerManagementLimit()
 }
 
-func (Device Device) GetPowerManagementLimit() (uint32, Return) {
-	return DeviceGetPowerManagementLimit(Device)
+func (device nvmlDevice) GetPowerManagementLimit() (uint32, Return) {
+	var limit uint32
+	ret := nvmlDeviceGetPowerManagementLimit(device, &limit)
+	return limit, ret
 }
 
 // nvml.DeviceGetPowerManagementLimitConstraints()
-func DeviceGetPowerManagementLimitConstraints(Device Device) (uint32, uint32, Return) {
-	var MinLimit, MaxLimit uint32
-	ret := nvmlDeviceGetPowerManagementLimitConstraints(Device, &MinLimit, &MaxLimit)
-	return MinLimit, MaxLimit, ret
+func (l *library) DeviceGetPowerManagementLimitConstraints(device Device) (uint32, uint32, Return) {
+	return device.GetPowerManagementLimitConstraints()
 }
 
-func (Device Device) GetPowerManagementLimitConstraints() (uint32, uint32, Return) {
-	return DeviceGetPowerManagementLimitConstraints(Device)
+func (device nvmlDevice) GetPowerManagementLimitConstraints() (uint32, uint32, Return) {
+	var minLimit, maxLimit uint32
+	ret := nvmlDeviceGetPowerManagementLimitConstraints(device, &minLimit, &maxLimit)
+	return minLimit, maxLimit, ret
 }
 
 // nvml.DeviceGetPowerManagementDefaultLimit()
-func DeviceGetPowerManagementDefaultLimit(Device Device) (uint32, Return) {
-	var DefaultLimit uint32
-	ret := nvmlDeviceGetPowerManagementDefaultLimit(Device, &DefaultLimit)
-	return DefaultLimit, ret
+func (l *library) DeviceGetPowerManagementDefaultLimit(device Device) (uint32, Return) {
+	return device.GetPowerManagementDefaultLimit()
 }
 
-func (Device Device) GetPowerManagementDefaultLimit() (uint32, Return) {
-	return DeviceGetPowerManagementDefaultLimit(Device)
+func (device nvmlDevice) GetPowerManagementDefaultLimit() (uint32, Return) {
+	var defaultLimit uint32
+	ret := nvmlDeviceGetPowerManagementDefaultLimit(device, &defaultLimit)
+	return defaultLimit, ret
 }
 
 // nvml.DeviceGetPowerUsage()
-func DeviceGetPowerUsage(Device Device) (uint32, Return) {
-	var Power uint32
-	ret := nvmlDeviceGetPowerUsage(Device, &Power)
-	return Power, ret
+func (l *library) DeviceGetPowerUsage(device Device) (uint32, Return) {
+	return device.GetPowerUsage()
 }
 
-func (Device Device) GetPowerUsage() (uint32, Return) {
-	return DeviceGetPowerUsage(Device)
+func (device nvmlDevice) GetPowerUsage() (uint32, Return) {
+	var power uint32
+	ret := nvmlDeviceGetPowerUsage(device, &power)
+	return power, ret
 }
 
 // nvml.DeviceGetTotalEnergyConsumption()
-func DeviceGetTotalEnergyConsumption(Device Device) (uint64, Return) {
-	var Energy uint64
-	ret := nvmlDeviceGetTotalEnergyConsumption(Device, &Energy)
-	return Energy, ret
+func (l *library) DeviceGetTotalEnergyConsumption(device Device) (uint64, Return) {
+	return device.GetTotalEnergyConsumption()
 }
 
-func (Device Device) GetTotalEnergyConsumption() (uint64, Return) {
-	return DeviceGetTotalEnergyConsumption(Device)
+func (device nvmlDevice) GetTotalEnergyConsumption() (uint64, Return) {
+	var energy uint64
+	ret := nvmlDeviceGetTotalEnergyConsumption(device, &energy)
+	return energy, ret
 }
 
 // nvml.DeviceGetEnforcedPowerLimit()
-func DeviceGetEnforcedPowerLimit(Device Device) (uint32, Return) {
-	var Limit uint32
-	ret := nvmlDeviceGetEnforcedPowerLimit(Device, &Limit)
-	return Limit, ret
+func (l *library) DeviceGetEnforcedPowerLimit(device Device) (uint32, Return) {
+	return device.GetEnforcedPowerLimit()
 }
 
-func (Device Device) GetEnforcedPowerLimit() (uint32, Return) {
-	return DeviceGetEnforcedPowerLimit(Device)
+func (device nvmlDevice) GetEnforcedPowerLimit() (uint32, Return) {
+	var limit uint32
+	ret := nvmlDeviceGetEnforcedPowerLimit(device, &limit)
+	return limit, ret
 }
 
 // nvml.DeviceGetGpuOperationMode()
-func DeviceGetGpuOperationMode(Device Device) (GpuOperationMode, GpuOperationMode, Return) {
-	var Current, Pending GpuOperationMode
-	ret := nvmlDeviceGetGpuOperationMode(Device, &Current, &Pending)
-	return Current, Pending, ret
+func (l *library) DeviceGetGpuOperationMode(device Device) (GpuOperationMode, GpuOperationMode, Return) {
+	return device.GetGpuOperationMode()
 }
 
-func (Device Device) GetGpuOperationMode() (GpuOperationMode, GpuOperationMode, Return) {
-	return DeviceGetGpuOperationMode(Device)
+func (device nvmlDevice) GetGpuOperationMode() (GpuOperationMode, GpuOperationMode, Return) {
+	var current, pending GpuOperationMode
+	ret := nvmlDeviceGetGpuOperationMode(device, &current, &pending)
+	return current, pending, ret
 }
 
 // nvml.DeviceGetMemoryInfo()
-func DeviceGetMemoryInfo(Device Device) (Memory, Return) {
-	var Memory Memory
-	ret := nvmlDeviceGetMemoryInfo(Device, &Memory)
-	return Memory, ret
+func (l *library) DeviceGetMemoryInfo(device Device) (Memory, Return) {
+	return device.GetMemoryInfo()
 }
 
-func (Device Device) GetMemoryInfo() (Memory, Return) {
-	return DeviceGetMemoryInfo(Device)
+func (device nvmlDevice) GetMemoryInfo() (Memory, Return) {
+	var memory Memory
+	ret := nvmlDeviceGetMemoryInfo(device, &memory)
+	return memory, ret
 }
 
 // nvml.DeviceGetMemoryInfo_v2()
-func DeviceGetMemoryInfo_v2(Device Device) (Memory_v2, Return) {
-	var Memory Memory_v2
-	Memory.Version = STRUCT_VERSION(Memory, 2)
-	ret := nvmlDeviceGetMemoryInfo_v2(Device, &Memory)
-	return Memory, ret
+func (l *library) DeviceGetMemoryInfo_v2(device Device) (Memory_v2, Return) {
+	return device.GetMemoryInfo_v2()
 }
 
-func (Device Device) GetMemoryInfo_v2() (Memory_v2, Return) {
-	return DeviceGetMemoryInfo_v2(Device)
+func (device nvmlDevice) GetMemoryInfo_v2() (Memory_v2, Return) {
+	var memory Memory_v2
+	memory.Version = STRUCT_VERSION(memory, 2)
+	ret := nvmlDeviceGetMemoryInfo_v2(device, &memory)
+	return memory, ret
 }
 
 // nvml.DeviceGetComputeMode()
-func DeviceGetComputeMode(Device Device) (ComputeMode, Return) {
-	var Mode ComputeMode
-	ret := nvmlDeviceGetComputeMode(Device, &Mode)
-	return Mode, ret
+func (l *library) DeviceGetComputeMode(device Device) (ComputeMode, Return) {
+	return device.GetComputeMode()
 }
 
-func (Device Device) GetComputeMode() (ComputeMode, Return) {
-	return DeviceGetComputeMode(Device)
+func (device nvmlDevice) GetComputeMode() (ComputeMode, Return) {
+	var mode ComputeMode
+	ret := nvmlDeviceGetComputeMode(device, &mode)
+	return mode, ret
 }
 
 // nvml.DeviceGetCudaComputeCapability()
-func DeviceGetCudaComputeCapability(Device Device) (int, int, Return) {
-	var Major, Minor int32
-	ret := nvmlDeviceGetCudaComputeCapability(Device, &Major, &Minor)
-	return int(Major), int(Minor), ret
+func (l *library) DeviceGetCudaComputeCapability(device Device) (int, int, Return) {
+	return device.GetCudaComputeCapability()
 }
 
-func (Device Device) GetCudaComputeCapability() (int, int, Return) {
-	return DeviceGetCudaComputeCapability(Device)
+func (device nvmlDevice) GetCudaComputeCapability() (int, int, Return) {
+	var major, minor int32
+	ret := nvmlDeviceGetCudaComputeCapability(device, &major, &minor)
+	return int(major), int(minor), ret
 }
 
 // nvml.DeviceGetEccMode()
-func DeviceGetEccMode(Device Device) (EnableState, EnableState, Return) {
-	var Current, Pending EnableState
-	ret := nvmlDeviceGetEccMode(Device, &Current, &Pending)
-	return Current, Pending, ret
+func (l *library) DeviceGetEccMode(device Device) (EnableState, EnableState, Return) {
+	return device.GetEccMode()
 }
 
-func (Device Device) GetEccMode() (EnableState, EnableState, Return) {
-	return DeviceGetEccMode(Device)
+func (device nvmlDevice) GetEccMode() (EnableState, EnableState, Return) {
+	var current, pending EnableState
+	ret := nvmlDeviceGetEccMode(device, &current, &pending)
+	return current, pending, ret
 }
 
 // nvml.DeviceGetBoardId()
-func DeviceGetBoardId(Device Device) (uint32, Return) {
-	var BoardId uint32
-	ret := nvmlDeviceGetBoardId(Device, &BoardId)
-	return BoardId, ret
+func (l *library) DeviceGetBoardId(device Device) (uint32, Return) {
+	return device.GetBoardId()
 }
 
-func (Device Device) GetBoardId() (uint32, Return) {
-	return DeviceGetBoardId(Device)
+func (device nvmlDevice) GetBoardId() (uint32, Return) {
+	var boardId uint32
+	ret := nvmlDeviceGetBoardId(device, &boardId)
+	return boardId, ret
 }
 
 // nvml.DeviceGetMultiGpuBoard()
-func DeviceGetMultiGpuBoard(Device Device) (int, Return) {
-	var MultiGpuBool uint32
-	ret := nvmlDeviceGetMultiGpuBoard(Device, &MultiGpuBool)
-	return int(MultiGpuBool), ret
+func (l *library) DeviceGetMultiGpuBoard(device Device) (int, Return) {
+	return device.GetMultiGpuBoard()
 }
 
-func (Device Device) GetMultiGpuBoard() (int, Return) {
-	return DeviceGetMultiGpuBoard(Device)
+func (device nvmlDevice) GetMultiGpuBoard() (int, Return) {
+	var multiGpuBool uint32
+	ret := nvmlDeviceGetMultiGpuBoard(device, &multiGpuBool)
+	return int(multiGpuBool), ret
 }
 
 // nvml.DeviceGetTotalEccErrors()
-func DeviceGetTotalEccErrors(Device Device, ErrorType MemoryErrorType, CounterType EccCounterType) (uint64, Return) {
-	var EccCounts uint64
-	ret := nvmlDeviceGetTotalEccErrors(Device, ErrorType, CounterType, &EccCounts)
-	return EccCounts, ret
+func (l *library) DeviceGetTotalEccErrors(device Device, errorType MemoryErrorType, counterType EccCounterType) (uint64, Return) {
+	return device.GetTotalEccErrors(errorType, counterType)
 }
 
-func (Device Device) GetTotalEccErrors(ErrorType MemoryErrorType, CounterType EccCounterType) (uint64, Return) {
-	return DeviceGetTotalEccErrors(Device, ErrorType, CounterType)
+func (device nvmlDevice) GetTotalEccErrors(errorType MemoryErrorType, counterType EccCounterType) (uint64, Return) {
+	var eccCounts uint64
+	ret := nvmlDeviceGetTotalEccErrors(device, errorType, counterType, &eccCounts)
+	return eccCounts, ret
 }
 
 // nvml.DeviceGetDetailedEccErrors()
-func DeviceGetDetailedEccErrors(Device Device, ErrorType MemoryErrorType, CounterType EccCounterType) (EccErrorCounts, Return) {
-	var EccCounts EccErrorCounts
-	ret := nvmlDeviceGetDetailedEccErrors(Device, ErrorType, CounterType, &EccCounts)
-	return EccCounts, ret
+func (l *library) DeviceGetDetailedEccErrors(device Device, errorType MemoryErrorType, counterType EccCounterType) (EccErrorCounts, Return) {
+	return device.GetDetailedEccErrors(errorType, counterType)
 }
 
-func (Device Device) GetDetailedEccErrors(ErrorType MemoryErrorType, CounterType EccCounterType) (EccErrorCounts, Return) {
-	return DeviceGetDetailedEccErrors(Device, ErrorType, CounterType)
+func (device nvmlDevice) GetDetailedEccErrors(errorType MemoryErrorType, counterType EccCounterType) (EccErrorCounts, Return) {
+	var eccCounts EccErrorCounts
+	ret := nvmlDeviceGetDetailedEccErrors(device, errorType, counterType, &eccCounts)
+	return eccCounts, ret
 }
 
 // nvml.DeviceGetMemoryErrorCounter()
-func DeviceGetMemoryErrorCounter(Device Device, ErrorType MemoryErrorType, CounterType EccCounterType, LocationType MemoryLocation) (uint64, Return) {
-	var Count uint64
-	ret := nvmlDeviceGetMemoryErrorCounter(Device, ErrorType, CounterType, LocationType, &Count)
-	return Count, ret
+func (l *library) DeviceGetMemoryErrorCounter(device Device, errorType MemoryErrorType, counterType EccCounterType, locationType MemoryLocation) (uint64, Return) {
+	return device.GetMemoryErrorCounter(errorType, counterType, locationType)
 }
 
-func (Device Device) GetMemoryErrorCounter(ErrorType MemoryErrorType, CounterType EccCounterType, LocationType MemoryLocation) (uint64, Return) {
-	return DeviceGetMemoryErrorCounter(Device, ErrorType, CounterType, LocationType)
+func (device nvmlDevice) GetMemoryErrorCounter(errorType MemoryErrorType, counterType EccCounterType, locationType MemoryLocation) (uint64, Return) {
+	var count uint64
+	ret := nvmlDeviceGetMemoryErrorCounter(device, errorType, counterType, locationType, &count)
+	return count, ret
 }
 
 // nvml.DeviceGetUtilizationRates()
-func DeviceGetUtilizationRates(Device Device) (Utilization, Return) {
-	var Utilization Utilization
-	ret := nvmlDeviceGetUtilizationRates(Device, &Utilization)
-	return Utilization, ret
+func (l *library) DeviceGetUtilizationRates(device Device) (Utilization, Return) {
+	return device.GetUtilizationRates()
 }
 
-func (Device Device) GetUtilizationRates() (Utilization, Return) {
-	return DeviceGetUtilizationRates(Device)
+func (device nvmlDevice) GetUtilizationRates() (Utilization, Return) {
+	var utilization Utilization
+	ret := nvmlDeviceGetUtilizationRates(device, &utilization)
+	return utilization, ret
 }
 
 // nvml.DeviceGetEncoderUtilization()
-func DeviceGetEncoderUtilization(Device Device) (uint32, uint32, Return) {
-	var Utilization, SamplingPeriodUs uint32
-	ret := nvmlDeviceGetEncoderUtilization(Device, &Utilization, &SamplingPeriodUs)
-	return Utilization, SamplingPeriodUs, ret
+func (l *library) DeviceGetEncoderUtilization(device Device) (uint32, uint32, Return) {
+	return device.GetEncoderUtilization()
 }
 
-func (Device Device) GetEncoderUtilization() (uint32, uint32, Return) {
-	return DeviceGetEncoderUtilization(Device)
+func (device nvmlDevice) GetEncoderUtilization() (uint32, uint32, Return) {
+	var utilization, samplingPeriodUs uint32
+	ret := nvmlDeviceGetEncoderUtilization(device, &utilization, &samplingPeriodUs)
+	return utilization, samplingPeriodUs, ret
 }
 
 // nvml.DeviceGetEncoderCapacity()
-func DeviceGetEncoderCapacity(Device Device, EncoderQueryType EncoderType) (int, Return) {
-	var EncoderCapacity uint32
-	ret := nvmlDeviceGetEncoderCapacity(Device, EncoderQueryType, &EncoderCapacity)
-	return int(EncoderCapacity), ret
+func (l *library) DeviceGetEncoderCapacity(device Device, encoderQueryType EncoderType) (int, Return) {
+	return device.GetEncoderCapacity(encoderQueryType)
 }
 
-func (Device Device) GetEncoderCapacity(EncoderQueryType EncoderType) (int, Return) {
-	return DeviceGetEncoderCapacity(Device, EncoderQueryType)
+func (device nvmlDevice) GetEncoderCapacity(encoderQueryType EncoderType) (int, Return) {
+	var encoderCapacity uint32
+	ret := nvmlDeviceGetEncoderCapacity(device, encoderQueryType, &encoderCapacity)
+	return int(encoderCapacity), ret
 }
 
 // nvml.DeviceGetEncoderStats()
-func DeviceGetEncoderStats(Device Device) (int, uint32, uint32, Return) {
-	var SessionCount, AverageFps, AverageLatency uint32
-	ret := nvmlDeviceGetEncoderStats(Device, &SessionCount, &AverageFps, &AverageLatency)
-	return int(SessionCount), AverageFps, AverageLatency, ret
+func (l *library) DeviceGetEncoderStats(device Device) (int, uint32, uint32, Return) {
+	return device.GetEncoderStats()
 }
 
-func (Device Device) GetEncoderStats() (int, uint32, uint32, Return) {
-	return DeviceGetEncoderStats(Device)
+func (device nvmlDevice) GetEncoderStats() (int, uint32, uint32, Return) {
+	var sessionCount, averageFps, averageLatency uint32
+	ret := nvmlDeviceGetEncoderStats(device, &sessionCount, &averageFps, &averageLatency)
+	return int(sessionCount), averageFps, averageLatency, ret
 }
 
 // nvml.DeviceGetEncoderSessions()
-func DeviceGetEncoderSessions(Device Device) ([]EncoderSessionInfo, Return) {
-	var SessionCount uint32 = 1 // Will be reduced upon returning
+func (l *library) DeviceGetEncoderSessions(device Device) ([]EncoderSessionInfo, Return) {
+	return device.GetEncoderSessions()
+}
+
+func (device nvmlDevice) GetEncoderSessions() ([]EncoderSessionInfo, Return) {
+	var sessionCount uint32 = 1 // Will be reduced upon returning
 	for {
-		SessionInfos := make([]EncoderSessionInfo, SessionCount)
-		ret := nvmlDeviceGetEncoderSessions(Device, &SessionCount, &SessionInfos[0])
+		sessionInfos := make([]EncoderSessionInfo, sessionCount)
+		ret := nvmlDeviceGetEncoderSessions(device, &sessionCount, &sessionInfos[0])
 		if ret == SUCCESS {
-			return SessionInfos[:SessionCount], ret
+			return sessionInfos[:sessionCount], ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		SessionCount *= 2
+		sessionCount *= 2
 	}
-}
-
-func (Device Device) GetEncoderSessions() ([]EncoderSessionInfo, Return) {
-	return DeviceGetEncoderSessions(Device)
 }
 
 // nvml.DeviceGetDecoderUtilization()
-func DeviceGetDecoderUtilization(Device Device) (uint32, uint32, Return) {
-	var Utilization, SamplingPeriodUs uint32
-	ret := nvmlDeviceGetDecoderUtilization(Device, &Utilization, &SamplingPeriodUs)
-	return Utilization, SamplingPeriodUs, ret
+func (l *library) DeviceGetDecoderUtilization(device Device) (uint32, uint32, Return) {
+	return device.GetDecoderUtilization()
 }
 
-func (Device Device) GetDecoderUtilization() (uint32, uint32, Return) {
-	return DeviceGetDecoderUtilization(Device)
+func (device nvmlDevice) GetDecoderUtilization() (uint32, uint32, Return) {
+	var utilization, samplingPeriodUs uint32
+	ret := nvmlDeviceGetDecoderUtilization(device, &utilization, &samplingPeriodUs)
+	return utilization, samplingPeriodUs, ret
 }
 
 // nvml.DeviceGetFBCStats()
-func DeviceGetFBCStats(Device Device) (FBCStats, Return) {
-	var FbcStats FBCStats
-	ret := nvmlDeviceGetFBCStats(Device, &FbcStats)
-	return FbcStats, ret
+func (l *library) DeviceGetFBCStats(device Device) (FBCStats, Return) {
+	return device.GetFBCStats()
 }
 
-func (Device Device) GetFBCStats() (FBCStats, Return) {
-	return DeviceGetFBCStats(Device)
+func (device nvmlDevice) GetFBCStats() (FBCStats, Return) {
+	var fbcStats FBCStats
+	ret := nvmlDeviceGetFBCStats(device, &fbcStats)
+	return fbcStats, ret
 }
 
 // nvml.DeviceGetFBCSessions()
-func DeviceGetFBCSessions(Device Device) ([]FBCSessionInfo, Return) {
-	var SessionCount uint32 = 1 // Will be reduced upon returning
+func (l *library) DeviceGetFBCSessions(device Device) ([]FBCSessionInfo, Return) {
+	return device.GetFBCSessions()
+}
+
+func (device nvmlDevice) GetFBCSessions() ([]FBCSessionInfo, Return) {
+	var sessionCount uint32 = 1 // Will be reduced upon returning
 	for {
-		SessionInfo := make([]FBCSessionInfo, SessionCount)
-		ret := nvmlDeviceGetFBCSessions(Device, &SessionCount, &SessionInfo[0])
+		sessionInfo := make([]FBCSessionInfo, sessionCount)
+		ret := nvmlDeviceGetFBCSessions(device, &sessionCount, &sessionInfo[0])
 		if ret == SUCCESS {
-			return SessionInfo[:SessionCount], ret
+			return sessionInfo[:sessionCount], ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		SessionCount *= 2
+		sessionCount *= 2
 	}
-}
-
-func (Device Device) GetFBCSessions() ([]FBCSessionInfo, Return) {
-	return DeviceGetFBCSessions(Device)
 }
 
 // nvml.DeviceGetDriverModel()
-func DeviceGetDriverModel(Device Device) (DriverModel, DriverModel, Return) {
-	var Current, Pending DriverModel
-	ret := nvmlDeviceGetDriverModel(Device, &Current, &Pending)
-	return Current, Pending, ret
+func (l *library) DeviceGetDriverModel(device Device) (DriverModel, DriverModel, Return) {
+	return device.GetDriverModel()
 }
 
-func (Device Device) GetDriverModel() (DriverModel, DriverModel, Return) {
-	return DeviceGetDriverModel(Device)
+func (device nvmlDevice) GetDriverModel() (DriverModel, DriverModel, Return) {
+	var current, pending DriverModel
+	ret := nvmlDeviceGetDriverModel(device, &current, &pending)
+	return current, pending, ret
 }
 
 // nvml.DeviceGetVbiosVersion()
-func DeviceGetVbiosVersion(Device Device) (string, Return) {
-	Version := make([]byte, DEVICE_VBIOS_VERSION_BUFFER_SIZE)
-	ret := nvmlDeviceGetVbiosVersion(Device, &Version[0], DEVICE_VBIOS_VERSION_BUFFER_SIZE)
-	return string(Version[:clen(Version)]), ret
+func (l *library) DeviceGetVbiosVersion(device Device) (string, Return) {
+	return device.GetVbiosVersion()
 }
 
-func (Device Device) GetVbiosVersion() (string, Return) {
-	return DeviceGetVbiosVersion(Device)
+func (device nvmlDevice) GetVbiosVersion() (string, Return) {
+	version := make([]byte, DEVICE_VBIOS_VERSION_BUFFER_SIZE)
+	ret := nvmlDeviceGetVbiosVersion(device, &version[0], DEVICE_VBIOS_VERSION_BUFFER_SIZE)
+	return string(version[:clen(version)]), ret
 }
 
 // nvml.DeviceGetBridgeChipInfo()
-func DeviceGetBridgeChipInfo(Device Device) (BridgeChipHierarchy, Return) {
-	var BridgeHierarchy BridgeChipHierarchy
-	ret := nvmlDeviceGetBridgeChipInfo(Device, &BridgeHierarchy)
-	return BridgeHierarchy, ret
+func (l *library) DeviceGetBridgeChipInfo(device Device) (BridgeChipHierarchy, Return) {
+	return device.GetBridgeChipInfo()
 }
 
-func (Device Device) GetBridgeChipInfo() (BridgeChipHierarchy, Return) {
-	return DeviceGetBridgeChipInfo(Device)
+func (device nvmlDevice) GetBridgeChipInfo() (BridgeChipHierarchy, Return) {
+	var bridgeHierarchy BridgeChipHierarchy
+	ret := nvmlDeviceGetBridgeChipInfo(device, &bridgeHierarchy)
+	return bridgeHierarchy, ret
 }
 
 // nvml.DeviceGetComputeRunningProcesses()
-func deviceGetComputeRunningProcesses_v1(Device Device) ([]ProcessInfo, Return) {
-	var InfoCount uint32 = 1 // Will be reduced upon returning
+func deviceGetComputeRunningProcesses_v1(device nvmlDevice) ([]ProcessInfo, Return) {
+	var infoCount uint32 = 1 // Will be reduced upon returning
 	for {
-		Infos := make([]ProcessInfo_v1, InfoCount)
-		ret := nvmlDeviceGetComputeRunningProcesses_v1(Device, &InfoCount, &Infos[0])
+		infos := make([]ProcessInfo_v1, infoCount)
+		ret := nvmlDeviceGetComputeRunningProcesses_v1(device, &infoCount, &infos[0])
 		if ret == SUCCESS {
-			return ProcessInfo_v1Slice(Infos[:InfoCount]).ToProcessInfoSlice(), ret
+			return ProcessInfo_v1Slice(infos[:infoCount]).ToProcessInfoSlice(), ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		InfoCount *= 2
+		infoCount *= 2
 	}
 }
 
-func deviceGetComputeRunningProcesses_v2(Device Device) ([]ProcessInfo, Return) {
-	var InfoCount uint32 = 1 // Will be reduced upon returning
+func deviceGetComputeRunningProcesses_v2(device nvmlDevice) ([]ProcessInfo, Return) {
+	var infoCount uint32 = 1 // Will be reduced upon returning
 	for {
-		Infos := make([]ProcessInfo_v2, InfoCount)
-		ret := nvmlDeviceGetComputeRunningProcesses_v2(Device, &InfoCount, &Infos[0])
+		infos := make([]ProcessInfo_v2, infoCount)
+		ret := nvmlDeviceGetComputeRunningProcesses_v2(device, &infoCount, &infos[0])
 		if ret == SUCCESS {
-			return ProcessInfo_v2Slice(Infos[:InfoCount]).ToProcessInfoSlice(), ret
+			return ProcessInfo_v2Slice(infos[:infoCount]).ToProcessInfoSlice(), ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		InfoCount *= 2
+		infoCount *= 2
 	}
 }
 
-func deviceGetComputeRunningProcesses_v3(Device Device) ([]ProcessInfo, Return) {
-	var InfoCount uint32 = 1 // Will be reduced upon returning
+func deviceGetComputeRunningProcesses_v3(device nvmlDevice) ([]ProcessInfo, Return) {
+	var infoCount uint32 = 1 // Will be reduced upon returning
 	for {
-		Infos := make([]ProcessInfo, InfoCount)
-		ret := nvmlDeviceGetComputeRunningProcesses_v3(Device, &InfoCount, &Infos[0])
+		infos := make([]ProcessInfo, infoCount)
+		ret := nvmlDeviceGetComputeRunningProcesses_v3(device, &infoCount, &infos[0])
 		if ret == SUCCESS {
-			return Infos[:InfoCount], ret
+			return infos[:infoCount], ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		InfoCount *= 2
+		infoCount *= 2
 	}
 }
 
-func (Device Device) GetComputeRunningProcesses() ([]ProcessInfo, Return) {
-	return DeviceGetComputeRunningProcesses(Device)
+func (l *library) DeviceGetComputeRunningProcesses(device Device) ([]ProcessInfo, Return) {
+	return device.GetComputeRunningProcesses()
+}
+
+func (device nvmlDevice) GetComputeRunningProcesses() ([]ProcessInfo, Return) {
+	return deviceGetComputeRunningProcesses(device)
 }
 
 // nvml.DeviceGetGraphicsRunningProcesses()
-func deviceGetGraphicsRunningProcesses_v1(Device Device) ([]ProcessInfo, Return) {
-	var InfoCount uint32 = 1 // Will be reduced upon returning
+func deviceGetGraphicsRunningProcesses_v1(device nvmlDevice) ([]ProcessInfo, Return) {
+	var infoCount uint32 = 1 // Will be reduced upon returning
 	for {
-		Infos := make([]ProcessInfo_v1, InfoCount)
-		ret := nvmlDeviceGetGraphicsRunningProcesses_v1(Device, &InfoCount, &Infos[0])
+		infos := make([]ProcessInfo_v1, infoCount)
+		ret := nvmlDeviceGetGraphicsRunningProcesses_v1(device, &infoCount, &infos[0])
 		if ret == SUCCESS {
-			return ProcessInfo_v1Slice(Infos[:InfoCount]).ToProcessInfoSlice(), ret
+			return ProcessInfo_v1Slice(infos[:infoCount]).ToProcessInfoSlice(), ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		InfoCount *= 2
+		infoCount *= 2
 	}
 }
 
-func deviceGetGraphicsRunningProcesses_v2(Device Device) ([]ProcessInfo, Return) {
-	var InfoCount uint32 = 1 // Will be reduced upon returning
+func deviceGetGraphicsRunningProcesses_v2(device nvmlDevice) ([]ProcessInfo, Return) {
+	var infoCount uint32 = 1 // Will be reduced upon returning
 	for {
-		Infos := make([]ProcessInfo_v2, InfoCount)
-		ret := nvmlDeviceGetGraphicsRunningProcesses_v2(Device, &InfoCount, &Infos[0])
+		infos := make([]ProcessInfo_v2, infoCount)
+		ret := nvmlDeviceGetGraphicsRunningProcesses_v2(device, &infoCount, &infos[0])
 		if ret == SUCCESS {
-			return ProcessInfo_v2Slice(Infos[:InfoCount]).ToProcessInfoSlice(), ret
+			return ProcessInfo_v2Slice(infos[:infoCount]).ToProcessInfoSlice(), ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		InfoCount *= 2
+		infoCount *= 2
 	}
 }
 
-func deviceGetGraphicsRunningProcesses_v3(Device Device) ([]ProcessInfo, Return) {
-	var InfoCount uint32 = 1 // Will be reduced upon returning
+func deviceGetGraphicsRunningProcesses_v3(device nvmlDevice) ([]ProcessInfo, Return) {
+	var infoCount uint32 = 1 // Will be reduced upon returning
 	for {
-		Infos := make([]ProcessInfo, InfoCount)
-		ret := nvmlDeviceGetGraphicsRunningProcesses_v3(Device, &InfoCount, &Infos[0])
+		infos := make([]ProcessInfo, infoCount)
+		ret := nvmlDeviceGetGraphicsRunningProcesses_v3(device, &infoCount, &infos[0])
 		if ret == SUCCESS {
-			return Infos[:InfoCount], ret
+			return infos[:infoCount], ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		InfoCount *= 2
+		infoCount *= 2
 	}
 }
 
-func (Device Device) GetGraphicsRunningProcesses() ([]ProcessInfo, Return) {
-	return DeviceGetGraphicsRunningProcesses(Device)
+func (l *library) DeviceGetGraphicsRunningProcesses(device Device) ([]ProcessInfo, Return) {
+	return device.GetGraphicsRunningProcesses()
+}
+
+func (device nvmlDevice) GetGraphicsRunningProcesses() ([]ProcessInfo, Return) {
+	return deviceGetGraphicsRunningProcesses(device)
 }
 
 // nvml.DeviceGetMPSComputeRunningProcesses()
-func deviceGetMPSComputeRunningProcesses_v1(Device Device) ([]ProcessInfo, Return) {
-	var InfoCount uint32 = 1 // Will be reduced upon returning
+func deviceGetMPSComputeRunningProcesses_v1(device nvmlDevice) ([]ProcessInfo, Return) {
+	var infoCount uint32 = 1 // Will be reduced upon returning
 	for {
-		Infos := make([]ProcessInfo_v1, InfoCount)
-		ret := nvmlDeviceGetMPSComputeRunningProcesses_v1(Device, &InfoCount, &Infos[0])
+		infos := make([]ProcessInfo_v1, infoCount)
+		ret := nvmlDeviceGetMPSComputeRunningProcesses_v1(device, &infoCount, &infos[0])
 		if ret == SUCCESS {
-			return ProcessInfo_v1Slice(Infos[:InfoCount]).ToProcessInfoSlice(), ret
+			return ProcessInfo_v1Slice(infos[:infoCount]).ToProcessInfoSlice(), ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		InfoCount *= 2
+		infoCount *= 2
 	}
 }
 
-func deviceGetMPSComputeRunningProcesses_v2(Device Device) ([]ProcessInfo, Return) {
-	var InfoCount uint32 = 1 // Will be reduced upon returning
+func deviceGetMPSComputeRunningProcesses_v2(device nvmlDevice) ([]ProcessInfo, Return) {
+	var infoCount uint32 = 1 // Will be reduced upon returning
 	for {
-		Infos := make([]ProcessInfo_v2, InfoCount)
-		ret := nvmlDeviceGetMPSComputeRunningProcesses_v2(Device, &InfoCount, &Infos[0])
+		infos := make([]ProcessInfo_v2, infoCount)
+		ret := nvmlDeviceGetMPSComputeRunningProcesses_v2(device, &infoCount, &infos[0])
 		if ret == SUCCESS {
-			return ProcessInfo_v2Slice(Infos[:InfoCount]).ToProcessInfoSlice(), ret
+			return ProcessInfo_v2Slice(infos[:infoCount]).ToProcessInfoSlice(), ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		InfoCount *= 2
+		infoCount *= 2
 	}
 }
 
-func deviceGetMPSComputeRunningProcesses_v3(Device Device) ([]ProcessInfo, Return) {
-	var InfoCount uint32 = 1 // Will be reduced upon returning
+func deviceGetMPSComputeRunningProcesses_v3(device nvmlDevice) ([]ProcessInfo, Return) {
+	var infoCount uint32 = 1 // Will be reduced upon returning
 	for {
-		Infos := make([]ProcessInfo, InfoCount)
-		ret := nvmlDeviceGetMPSComputeRunningProcesses_v3(Device, &InfoCount, &Infos[0])
+		infos := make([]ProcessInfo, infoCount)
+		ret := nvmlDeviceGetMPSComputeRunningProcesses_v3(device, &infoCount, &infos[0])
 		if ret == SUCCESS {
-			return Infos[:InfoCount], ret
+			return infos[:infoCount], ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		InfoCount *= 2
+		infoCount *= 2
 	}
 }
 
-func (Device Device) GetMPSComputeRunningProcesses() ([]ProcessInfo, Return) {
-	return DeviceGetMPSComputeRunningProcesses(Device)
+func (l *library) DeviceGetMPSComputeRunningProcesses(device Device) ([]ProcessInfo, Return) {
+	return device.GetMPSComputeRunningProcesses()
+}
+
+func (device nvmlDevice) GetMPSComputeRunningProcesses() ([]ProcessInfo, Return) {
+	return deviceGetMPSComputeRunningProcesses(device)
 }
 
 // nvml.DeviceOnSameBoard()
-func DeviceOnSameBoard(Device1 Device, Device2 Device) (int, Return) {
-	var OnSameBoard int32
-	ret := nvmlDeviceOnSameBoard(Device1, Device2, &OnSameBoard)
-	return int(OnSameBoard), ret
+func (l *library) DeviceOnSameBoard(device1 Device, device2 Device) (int, Return) {
+	return device1.OnSameBoard(device2)
 }
 
-func (Device1 Device) OnSameBoard(Device2 Device) (int, Return) {
-	return DeviceOnSameBoard(Device1, Device2)
+func (device1 nvmlDevice) OnSameBoard(device2 Device) (int, Return) {
+	var onSameBoard int32
+	ret := nvmlDeviceOnSameBoard(device1, device2.(nvmlDevice), &onSameBoard)
+	return int(onSameBoard), ret
 }
 
 // nvml.DeviceGetAPIRestriction()
-func DeviceGetAPIRestriction(Device Device, ApiType RestrictedAPI) (EnableState, Return) {
-	var IsRestricted EnableState
-	ret := nvmlDeviceGetAPIRestriction(Device, ApiType, &IsRestricted)
-	return IsRestricted, ret
+func (l *library) DeviceGetAPIRestriction(device Device, apiType RestrictedAPI) (EnableState, Return) {
+	return device.GetAPIRestriction(apiType)
 }
 
-func (Device Device) GetAPIRestriction(ApiType RestrictedAPI) (EnableState, Return) {
-	return DeviceGetAPIRestriction(Device, ApiType)
+func (device nvmlDevice) GetAPIRestriction(apiType RestrictedAPI) (EnableState, Return) {
+	var isRestricted EnableState
+	ret := nvmlDeviceGetAPIRestriction(device, apiType, &isRestricted)
+	return isRestricted, ret
 }
 
 // nvml.DeviceGetSamples()
-func DeviceGetSamples(Device Device, _type SamplingType, LastSeenTimeStamp uint64) (ValueType, []Sample, Return) {
-	var SampleValType ValueType
-	var SampleCount uint32
-	ret := nvmlDeviceGetSamples(Device, _type, LastSeenTimeStamp, &SampleValType, &SampleCount, nil)
-	if ret != SUCCESS {
-		return SampleValType, nil, ret
-	}
-	if SampleCount == 0 {
-		return SampleValType, []Sample{}, ret
-	}
-	Samples := make([]Sample, SampleCount)
-	ret = nvmlDeviceGetSamples(Device, _type, LastSeenTimeStamp, &SampleValType, &SampleCount, &Samples[0])
-	return SampleValType, Samples, ret
+func (l *library) DeviceGetSamples(device Device, samplingType SamplingType, lastSeenTimestamp uint64) (ValueType, []Sample, Return) {
+	return device.GetSamples(samplingType, lastSeenTimestamp)
 }
 
-func (Device Device) GetSamples(_type SamplingType, LastSeenTimeStamp uint64) (ValueType, []Sample, Return) {
-	return DeviceGetSamples(Device, _type, LastSeenTimeStamp)
+func (device nvmlDevice) GetSamples(samplingType SamplingType, lastSeenTimestamp uint64) (ValueType, []Sample, Return) {
+	var sampleValType ValueType
+	var sampleCount uint32
+	ret := nvmlDeviceGetSamples(device, samplingType, lastSeenTimestamp, &sampleValType, &sampleCount, nil)
+	if ret != SUCCESS {
+		return sampleValType, nil, ret
+	}
+	if sampleCount == 0 {
+		return sampleValType, []Sample{}, ret
+	}
+	samples := make([]Sample, sampleCount)
+	ret = nvmlDeviceGetSamples(device, samplingType, lastSeenTimestamp, &sampleValType, &sampleCount, &samples[0])
+	return sampleValType, samples, ret
 }
 
 // nvml.DeviceGetBAR1MemoryInfo()
-func DeviceGetBAR1MemoryInfo(Device Device) (BAR1Memory, Return) {
-	var Bar1Memory BAR1Memory
-	ret := nvmlDeviceGetBAR1MemoryInfo(Device, &Bar1Memory)
-	return Bar1Memory, ret
+func (l *library) DeviceGetBAR1MemoryInfo(device Device) (BAR1Memory, Return) {
+	return device.GetBAR1MemoryInfo()
 }
 
-func (Device Device) GetBAR1MemoryInfo() (BAR1Memory, Return) {
-	return DeviceGetBAR1MemoryInfo(Device)
+func (device nvmlDevice) GetBAR1MemoryInfo() (BAR1Memory, Return) {
+	var bar1Memory BAR1Memory
+	ret := nvmlDeviceGetBAR1MemoryInfo(device, &bar1Memory)
+	return bar1Memory, ret
 }
 
 // nvml.DeviceGetViolationStatus()
-func DeviceGetViolationStatus(Device Device, PerfPolicyType PerfPolicyType) (ViolationTime, Return) {
-	var ViolTime ViolationTime
-	ret := nvmlDeviceGetViolationStatus(Device, PerfPolicyType, &ViolTime)
-	return ViolTime, ret
+func (l *library) DeviceGetViolationStatus(device Device, perfPolicyType PerfPolicyType) (ViolationTime, Return) {
+	return device.GetViolationStatus(perfPolicyType)
 }
 
-func (Device Device) GetViolationStatus(PerfPolicyType PerfPolicyType) (ViolationTime, Return) {
-	return DeviceGetViolationStatus(Device, PerfPolicyType)
+func (device nvmlDevice) GetViolationStatus(perfPolicyType PerfPolicyType) (ViolationTime, Return) {
+	var violTime ViolationTime
+	ret := nvmlDeviceGetViolationStatus(device, perfPolicyType, &violTime)
+	return violTime, ret
 }
 
 // nvml.DeviceGetIrqNum()
-func DeviceGetIrqNum(Device Device) (int, Return) {
-	var IrqNum uint32
-	ret := nvmlDeviceGetIrqNum(Device, &IrqNum)
-	return int(IrqNum), ret
+func (l *library) DeviceGetIrqNum(device Device) (int, Return) {
+	return device.GetIrqNum()
 }
 
-func (Device Device) GetIrqNum() (int, Return) {
-	return DeviceGetIrqNum(Device)
+func (device nvmlDevice) GetIrqNum() (int, Return) {
+	var irqNum uint32
+	ret := nvmlDeviceGetIrqNum(device, &irqNum)
+	return int(irqNum), ret
 }
 
 // nvml.DeviceGetNumGpuCores()
-func DeviceGetNumGpuCores(Device Device) (int, Return) {
-	var NumCores uint32
-	ret := nvmlDeviceGetNumGpuCores(Device, &NumCores)
-	return int(NumCores), ret
+func (l *library) DeviceGetNumGpuCores(device Device) (int, Return) {
+	return device.GetNumGpuCores()
 }
 
-func (Device Device) GetNumGpuCores() (int, Return) {
-	return DeviceGetNumGpuCores(Device)
+func (device nvmlDevice) GetNumGpuCores() (int, Return) {
+	var numCores uint32
+	ret := nvmlDeviceGetNumGpuCores(device, &numCores)
+	return int(numCores), ret
 }
 
 // nvml.DeviceGetPowerSource()
-func DeviceGetPowerSource(Device Device) (PowerSource, Return) {
-	var PowerSource PowerSource
-	ret := nvmlDeviceGetPowerSource(Device, &PowerSource)
-	return PowerSource, ret
+func (l *library) DeviceGetPowerSource(device Device) (PowerSource, Return) {
+	return device.GetPowerSource()
 }
 
-func (Device Device) GetPowerSource() (PowerSource, Return) {
-	return DeviceGetPowerSource(Device)
+func (device nvmlDevice) GetPowerSource() (PowerSource, Return) {
+	var powerSource PowerSource
+	ret := nvmlDeviceGetPowerSource(device, &powerSource)
+	return powerSource, ret
 }
 
 // nvml.DeviceGetMemoryBusWidth()
-func DeviceGetMemoryBusWidth(Device Device) (uint32, Return) {
-	var BusWidth uint32
-	ret := nvmlDeviceGetMemoryBusWidth(Device, &BusWidth)
-	return BusWidth, ret
+func (l *library) DeviceGetMemoryBusWidth(device Device) (uint32, Return) {
+	return device.GetMemoryBusWidth()
 }
 
-func (Device Device) GetMemoryBusWidth() (uint32, Return) {
-	return DeviceGetMemoryBusWidth(Device)
+func (device nvmlDevice) GetMemoryBusWidth() (uint32, Return) {
+	var busWidth uint32
+	ret := nvmlDeviceGetMemoryBusWidth(device, &busWidth)
+	return busWidth, ret
 }
 
 // nvml.DeviceGetPcieLinkMaxSpeed()
-func DeviceGetPcieLinkMaxSpeed(Device Device) (uint32, Return) {
-	var MaxSpeed uint32
-	ret := nvmlDeviceGetPcieLinkMaxSpeed(Device, &MaxSpeed)
-	return MaxSpeed, ret
+func (l *library) DeviceGetPcieLinkMaxSpeed(device Device) (uint32, Return) {
+	return device.GetPcieLinkMaxSpeed()
 }
 
-func (Device Device) GetPcieLinkMaxSpeed() (uint32, Return) {
-	return DeviceGetPcieLinkMaxSpeed(Device)
+func (device nvmlDevice) GetPcieLinkMaxSpeed() (uint32, Return) {
+	var maxSpeed uint32
+	ret := nvmlDeviceGetPcieLinkMaxSpeed(device, &maxSpeed)
+	return maxSpeed, ret
 }
 
 // nvml.DeviceGetAdaptiveClockInfoStatus()
-func DeviceGetAdaptiveClockInfoStatus(Device Device) (uint32, Return) {
-	var AdaptiveClockStatus uint32
-	ret := nvmlDeviceGetAdaptiveClockInfoStatus(Device, &AdaptiveClockStatus)
-	return AdaptiveClockStatus, ret
+func (l *library) DeviceGetAdaptiveClockInfoStatus(device Device) (uint32, Return) {
+	return device.GetAdaptiveClockInfoStatus()
 }
 
-func (Device Device) GetAdaptiveClockInfoStatus() (uint32, Return) {
-	return DeviceGetAdaptiveClockInfoStatus(Device)
+func (device nvmlDevice) GetAdaptiveClockInfoStatus() (uint32, Return) {
+	var adaptiveClockStatus uint32
+	ret := nvmlDeviceGetAdaptiveClockInfoStatus(device, &adaptiveClockStatus)
+	return adaptiveClockStatus, ret
 }
 
 // nvml.DeviceGetAccountingMode()
-func DeviceGetAccountingMode(Device Device) (EnableState, Return) {
-	var Mode EnableState
-	ret := nvmlDeviceGetAccountingMode(Device, &Mode)
-	return Mode, ret
+func (l *library) DeviceGetAccountingMode(device Device) (EnableState, Return) {
+	return device.GetAccountingMode()
 }
 
-func (Device Device) GetAccountingMode() (EnableState, Return) {
-	return DeviceGetAccountingMode(Device)
+func (device nvmlDevice) GetAccountingMode() (EnableState, Return) {
+	var mode EnableState
+	ret := nvmlDeviceGetAccountingMode(device, &mode)
+	return mode, ret
 }
 
 // nvml.DeviceGetAccountingStats()
-func DeviceGetAccountingStats(Device Device, Pid uint32) (AccountingStats, Return) {
-	var Stats AccountingStats
-	ret := nvmlDeviceGetAccountingStats(Device, Pid, &Stats)
-	return Stats, ret
+func (l *library) DeviceGetAccountingStats(device Device, pid uint32) (AccountingStats, Return) {
+	return device.GetAccountingStats(pid)
 }
 
-func (Device Device) GetAccountingStats(Pid uint32) (AccountingStats, Return) {
-	return DeviceGetAccountingStats(Device, Pid)
+func (device nvmlDevice) GetAccountingStats(pid uint32) (AccountingStats, Return) {
+	var stats AccountingStats
+	ret := nvmlDeviceGetAccountingStats(device, pid, &stats)
+	return stats, ret
 }
 
 // nvml.DeviceGetAccountingPids()
-func DeviceGetAccountingPids(Device Device) ([]int, Return) {
-	var Count uint32 = 1 // Will be reduced upon returning
+func (l *library) DeviceGetAccountingPids(device Device) ([]int, Return) {
+	return device.GetAccountingPids()
+}
+
+func (device nvmlDevice) GetAccountingPids() ([]int, Return) {
+	var count uint32 = 1 // Will be reduced upon returning
 	for {
-		Pids := make([]uint32, Count)
-		ret := nvmlDeviceGetAccountingPids(Device, &Count, &Pids[0])
+		pids := make([]uint32, count)
+		ret := nvmlDeviceGetAccountingPids(device, &count, &pids[0])
 		if ret == SUCCESS {
-			return uint32SliceToIntSlice(Pids[:Count]), ret
+			return uint32SliceToIntSlice(pids[:count]), ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		Count *= 2
+		count *= 2
 	}
-}
-
-func (Device Device) GetAccountingPids() ([]int, Return) {
-	return DeviceGetAccountingPids(Device)
 }
 
 // nvml.DeviceGetAccountingBufferSize()
-func DeviceGetAccountingBufferSize(Device Device) (int, Return) {
-	var BufferSize uint32
-	ret := nvmlDeviceGetAccountingBufferSize(Device, &BufferSize)
-	return int(BufferSize), ret
+func (l *library) DeviceGetAccountingBufferSize(device Device) (int, Return) {
+	return device.GetAccountingBufferSize()
 }
 
-func (Device Device) GetAccountingBufferSize() (int, Return) {
-	return DeviceGetAccountingBufferSize(Device)
+func (device nvmlDevice) GetAccountingBufferSize() (int, Return) {
+	var bufferSize uint32
+	ret := nvmlDeviceGetAccountingBufferSize(device, &bufferSize)
+	return int(bufferSize), ret
 }
 
 // nvml.DeviceGetRetiredPages()
-func DeviceGetRetiredPages(Device Device, Cause PageRetirementCause) ([]uint64, Return) {
-	var PageCount uint32 = 1 // Will be reduced upon returning
+func (l *library) DeviceGetRetiredPages(device Device, cause PageRetirementCause) ([]uint64, Return) {
+	return device.GetRetiredPages(cause)
+}
+
+func (device nvmlDevice) GetRetiredPages(cause PageRetirementCause) ([]uint64, Return) {
+	var pageCount uint32 = 1 // Will be reduced upon returning
 	for {
-		Addresses := make([]uint64, PageCount)
-		ret := nvmlDeviceGetRetiredPages(Device, Cause, &PageCount, &Addresses[0])
+		addresses := make([]uint64, pageCount)
+		ret := nvmlDeviceGetRetiredPages(device, cause, &pageCount, &addresses[0])
 		if ret == SUCCESS {
-			return Addresses[:PageCount], ret
+			return addresses[:pageCount], ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		PageCount *= 2
+		pageCount *= 2
 	}
 }
 
-func (Device Device) GetRetiredPages(Cause PageRetirementCause) ([]uint64, Return) {
-	return DeviceGetRetiredPages(Device, Cause)
+// nvml.DeviceGetRetiredPages_v2()
+func (l *library) DeviceGetRetiredPages_v2(device Device, cause PageRetirementCause) ([]uint64, []uint64, Return) {
+	return device.GetRetiredPages_v2(cause)
 }
 
-// nvml.DeviceGetRetiredPages_v2()
-func DeviceGetRetiredPages_v2(Device Device, Cause PageRetirementCause) ([]uint64, []uint64, Return) {
-	var PageCount uint32 = 1 // Will be reduced upon returning
+func (device nvmlDevice) GetRetiredPages_v2(cause PageRetirementCause) ([]uint64, []uint64, Return) {
+	var pageCount uint32 = 1 // Will be reduced upon returning
 	for {
-		Addresses := make([]uint64, PageCount)
-		Timestamps := make([]uint64, PageCount)
-		ret := nvmlDeviceGetRetiredPages_v2(Device, Cause, &PageCount, &Addresses[0], &Timestamps[0])
+		addresses := make([]uint64, pageCount)
+		timestamps := make([]uint64, pageCount)
+		ret := nvmlDeviceGetRetiredPages_v2(device, cause, &pageCount, &addresses[0], &timestamps[0])
 		if ret == SUCCESS {
-			return Addresses[:PageCount], Timestamps[:PageCount], ret
+			return addresses[:pageCount], timestamps[:pageCount], ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, nil, ret
 		}
-		PageCount *= 2
+		pageCount *= 2
 	}
-}
-
-func (Device Device) GetRetiredPages_v2(Cause PageRetirementCause) ([]uint64, []uint64, Return) {
-	return DeviceGetRetiredPages_v2(Device, Cause)
 }
 
 // nvml.DeviceGetRetiredPagesPendingStatus()
-func DeviceGetRetiredPagesPendingStatus(Device Device) (EnableState, Return) {
-	var IsPending EnableState
-	ret := nvmlDeviceGetRetiredPagesPendingStatus(Device, &IsPending)
-	return IsPending, ret
+func (l *library) DeviceGetRetiredPagesPendingStatus(device Device) (EnableState, Return) {
+	return device.GetRetiredPagesPendingStatus()
 }
 
-func (Device Device) GetRetiredPagesPendingStatus() (EnableState, Return) {
-	return DeviceGetRetiredPagesPendingStatus(Device)
+func (device nvmlDevice) GetRetiredPagesPendingStatus() (EnableState, Return) {
+	var isPending EnableState
+	ret := nvmlDeviceGetRetiredPagesPendingStatus(device, &isPending)
+	return isPending, ret
 }
 
 // nvml.DeviceSetPersistenceMode()
-func DeviceSetPersistenceMode(Device Device, Mode EnableState) Return {
-	return nvmlDeviceSetPersistenceMode(Device, Mode)
+func (l *library) DeviceSetPersistenceMode(device Device, mode EnableState) Return {
+	return device.SetPersistenceMode(mode)
 }
 
-func (Device Device) SetPersistenceMode(Mode EnableState) Return {
-	return DeviceSetPersistenceMode(Device, Mode)
+func (device nvmlDevice) SetPersistenceMode(mode EnableState) Return {
+	return nvmlDeviceSetPersistenceMode(device, mode)
 }
 
 // nvml.DeviceSetComputeMode()
-func DeviceSetComputeMode(Device Device, Mode ComputeMode) Return {
-	return nvmlDeviceSetComputeMode(Device, Mode)
+func (l *library) DeviceSetComputeMode(device Device, mode ComputeMode) Return {
+	return device.SetComputeMode(mode)
 }
 
-func (Device Device) SetComputeMode(Mode ComputeMode) Return {
-	return DeviceSetComputeMode(Device, Mode)
+func (device nvmlDevice) SetComputeMode(mode ComputeMode) Return {
+	return nvmlDeviceSetComputeMode(device, mode)
 }
 
 // nvml.DeviceSetEccMode()
-func DeviceSetEccMode(Device Device, Ecc EnableState) Return {
-	return nvmlDeviceSetEccMode(Device, Ecc)
+func (l *library) DeviceSetEccMode(device Device, ecc EnableState) Return {
+	return device.SetEccMode(ecc)
 }
 
-func (Device Device) SetEccMode(Ecc EnableState) Return {
-	return DeviceSetEccMode(Device, Ecc)
+func (device nvmlDevice) SetEccMode(ecc EnableState) Return {
+	return nvmlDeviceSetEccMode(device, ecc)
 }
 
 // nvml.DeviceClearEccErrorCounts()
-func DeviceClearEccErrorCounts(Device Device, CounterType EccCounterType) Return {
-	return nvmlDeviceClearEccErrorCounts(Device, CounterType)
+func (l *library) DeviceClearEccErrorCounts(device Device, counterType EccCounterType) Return {
+	return device.ClearEccErrorCounts(counterType)
 }
 
-func (Device Device) ClearEccErrorCounts(CounterType EccCounterType) Return {
-	return DeviceClearEccErrorCounts(Device, CounterType)
+func (device nvmlDevice) ClearEccErrorCounts(counterType EccCounterType) Return {
+	return nvmlDeviceClearEccErrorCounts(device, counterType)
 }
 
 // nvml.DeviceSetDriverModel()
-func DeviceSetDriverModel(Device Device, DriverModel DriverModel, Flags uint32) Return {
-	return nvmlDeviceSetDriverModel(Device, DriverModel, Flags)
+func (l *library) DeviceSetDriverModel(device Device, driverModel DriverModel, flags uint32) Return {
+	return device.SetDriverModel(driverModel, flags)
 }
 
-func (Device Device) SetDriverModel(DriverModel DriverModel, Flags uint32) Return {
-	return DeviceSetDriverModel(Device, DriverModel, Flags)
+func (device nvmlDevice) SetDriverModel(driverModel DriverModel, flags uint32) Return {
+	return nvmlDeviceSetDriverModel(device, driverModel, flags)
 }
 
 // nvml.DeviceSetGpuLockedClocks()
-func DeviceSetGpuLockedClocks(Device Device, MinGpuClockMHz uint32, MaxGpuClockMHz uint32) Return {
-	return nvmlDeviceSetGpuLockedClocks(Device, MinGpuClockMHz, MaxGpuClockMHz)
+func (l *library) DeviceSetGpuLockedClocks(device Device, minGpuClockMHz uint32, maxGpuClockMHz uint32) Return {
+	return device.SetGpuLockedClocks(minGpuClockMHz, maxGpuClockMHz)
 }
 
-func (Device Device) SetGpuLockedClocks(MinGpuClockMHz uint32, MaxGpuClockMHz uint32) Return {
-	return DeviceSetGpuLockedClocks(Device, MinGpuClockMHz, MaxGpuClockMHz)
+func (device nvmlDevice) SetGpuLockedClocks(minGpuClockMHz uint32, maxGpuClockMHz uint32) Return {
+	return nvmlDeviceSetGpuLockedClocks(device, minGpuClockMHz, maxGpuClockMHz)
 }
 
 // nvml.DeviceResetGpuLockedClocks()
-func DeviceResetGpuLockedClocks(Device Device) Return {
-	return nvmlDeviceResetGpuLockedClocks(Device)
+func (l *library) DeviceResetGpuLockedClocks(device Device) Return {
+	return device.ResetGpuLockedClocks()
 }
 
-func (Device Device) ResetGpuLockedClocks() Return {
-	return DeviceResetGpuLockedClocks(Device)
+func (device nvmlDevice) ResetGpuLockedClocks() Return {
+	return nvmlDeviceResetGpuLockedClocks(device)
 }
 
 // nvmlDeviceSetMemoryLockedClocks()
-func DeviceSetMemoryLockedClocks(Device Device, MinMemClockMHz uint32, MaxMemClockMHz uint32) Return {
-	return nvmlDeviceSetMemoryLockedClocks(Device, MinMemClockMHz, MaxMemClockMHz)
+func (l *library) DeviceSetMemoryLockedClocks(device Device, minMemClockMHz uint32, maxMemClockMHz uint32) Return {
+	return device.SetMemoryLockedClocks(minMemClockMHz, maxMemClockMHz)
 }
 
-func (Device Device) SetMemoryLockedClocks(NinMemClockMHz uint32, MaxMemClockMHz uint32) Return {
-	return DeviceSetMemoryLockedClocks(Device, NinMemClockMHz, MaxMemClockMHz)
+func (device nvmlDevice) SetMemoryLockedClocks(minMemClockMHz uint32, maxMemClockMHz uint32) Return {
+	return nvmlDeviceSetMemoryLockedClocks(device, minMemClockMHz, maxMemClockMHz)
 }
 
 // nvmlDeviceResetMemoryLockedClocks()
-func DeviceResetMemoryLockedClocks(Device Device) Return {
-	return nvmlDeviceResetMemoryLockedClocks(Device)
+func (l *library) DeviceResetMemoryLockedClocks(device Device) Return {
+	return device.ResetMemoryLockedClocks()
 }
 
-func (Device Device) ResetMemoryLockedClocks() Return {
-	return DeviceResetMemoryLockedClocks(Device)
+func (device nvmlDevice) ResetMemoryLockedClocks() Return {
+	return nvmlDeviceResetMemoryLockedClocks(device)
 }
 
 // nvml.DeviceGetClkMonStatus()
-func DeviceGetClkMonStatus(Device Device) (ClkMonStatus, Return) {
-	var Status ClkMonStatus
-	ret := nvmlDeviceGetClkMonStatus(Device, &Status)
-	return Status, ret
+func (l *library) DeviceGetClkMonStatus(device Device) (ClkMonStatus, Return) {
+	return device.GetClkMonStatus()
 }
 
-func (Device Device) GetClkMonStatus() (ClkMonStatus, Return) {
-	return DeviceGetClkMonStatus(Device)
+func (device nvmlDevice) GetClkMonStatus() (ClkMonStatus, Return) {
+	var status ClkMonStatus
+	ret := nvmlDeviceGetClkMonStatus(device, &status)
+	return status, ret
 }
 
 // nvml.DeviceSetApplicationsClocks()
-func DeviceSetApplicationsClocks(Device Device, MemClockMHz uint32, GraphicsClockMHz uint32) Return {
-	return nvmlDeviceSetApplicationsClocks(Device, MemClockMHz, GraphicsClockMHz)
+func (l *library) DeviceSetApplicationsClocks(device Device, memClockMHz uint32, graphicsClockMHz uint32) Return {
+	return device.SetApplicationsClocks(memClockMHz, graphicsClockMHz)
 }
 
-func (Device Device) SetApplicationsClocks(MemClockMHz uint32, GraphicsClockMHz uint32) Return {
-	return DeviceSetApplicationsClocks(Device, MemClockMHz, GraphicsClockMHz)
+func (device nvmlDevice) SetApplicationsClocks(memClockMHz uint32, graphicsClockMHz uint32) Return {
+	return nvmlDeviceSetApplicationsClocks(device, memClockMHz, graphicsClockMHz)
 }
 
 // nvml.DeviceSetPowerManagementLimit()
-func DeviceSetPowerManagementLimit(Device Device, Limit uint32) Return {
-	return nvmlDeviceSetPowerManagementLimit(Device, Limit)
+func (l *library) DeviceSetPowerManagementLimit(device Device, limit uint32) Return {
+	return device.SetPowerManagementLimit(limit)
 }
 
-func (Device Device) SetPowerManagementLimit(Limit uint32) Return {
-	return DeviceSetPowerManagementLimit(Device, Limit)
+func (device nvmlDevice) SetPowerManagementLimit(limit uint32) Return {
+	return nvmlDeviceSetPowerManagementLimit(device, limit)
 }
 
 // nvml.DeviceSetGpuOperationMode()
-func DeviceSetGpuOperationMode(Device Device, Mode GpuOperationMode) Return {
-	return nvmlDeviceSetGpuOperationMode(Device, Mode)
+func (l *library) DeviceSetGpuOperationMode(device Device, mode GpuOperationMode) Return {
+	return device.SetGpuOperationMode(mode)
 }
 
-func (Device Device) SetGpuOperationMode(Mode GpuOperationMode) Return {
-	return DeviceSetGpuOperationMode(Device, Mode)
+func (device nvmlDevice) SetGpuOperationMode(mode GpuOperationMode) Return {
+	return nvmlDeviceSetGpuOperationMode(device, mode)
 }
 
 // nvml.DeviceSetAPIRestriction()
-func DeviceSetAPIRestriction(Device Device, ApiType RestrictedAPI, IsRestricted EnableState) Return {
-	return nvmlDeviceSetAPIRestriction(Device, ApiType, IsRestricted)
+func (l *library) DeviceSetAPIRestriction(device Device, apiType RestrictedAPI, isRestricted EnableState) Return {
+	return device.SetAPIRestriction(apiType, isRestricted)
 }
 
-func (Device Device) SetAPIRestriction(ApiType RestrictedAPI, IsRestricted EnableState) Return {
-	return DeviceSetAPIRestriction(Device, ApiType, IsRestricted)
+func (device nvmlDevice) SetAPIRestriction(apiType RestrictedAPI, isRestricted EnableState) Return {
+	return nvmlDeviceSetAPIRestriction(device, apiType, isRestricted)
 }
 
 // nvml.DeviceSetAccountingMode()
-func DeviceSetAccountingMode(Device Device, Mode EnableState) Return {
-	return nvmlDeviceSetAccountingMode(Device, Mode)
+func (l *library) DeviceSetAccountingMode(device Device, mode EnableState) Return {
+	return device.SetAccountingMode(mode)
 }
 
-func (Device Device) SetAccountingMode(Mode EnableState) Return {
-	return DeviceSetAccountingMode(Device, Mode)
+func (device nvmlDevice) SetAccountingMode(mode EnableState) Return {
+	return nvmlDeviceSetAccountingMode(device, mode)
 }
 
 // nvml.DeviceClearAccountingPids()
-func DeviceClearAccountingPids(Device Device) Return {
-	return nvmlDeviceClearAccountingPids(Device)
+func (l *library) DeviceClearAccountingPids(device Device) Return {
+	return device.ClearAccountingPids()
 }
 
-func (Device Device) ClearAccountingPids() Return {
-	return DeviceClearAccountingPids(Device)
+func (device nvmlDevice) ClearAccountingPids() Return {
+	return nvmlDeviceClearAccountingPids(device)
 }
 
 // nvml.DeviceGetNvLinkState()
-func DeviceGetNvLinkState(Device Device, Link int) (EnableState, Return) {
-	var IsActive EnableState
-	ret := nvmlDeviceGetNvLinkState(Device, uint32(Link), &IsActive)
-	return IsActive, ret
+func (l *library) DeviceGetNvLinkState(device Device, link int) (EnableState, Return) {
+	return device.GetNvLinkState(link)
 }
 
-func (Device Device) GetNvLinkState(Link int) (EnableState, Return) {
-	return DeviceGetNvLinkState(Device, Link)
+func (device nvmlDevice) GetNvLinkState(link int) (EnableState, Return) {
+	var isActive EnableState
+	ret := nvmlDeviceGetNvLinkState(device, uint32(link), &isActive)
+	return isActive, ret
 }
 
 // nvml.DeviceGetNvLinkVersion()
-func DeviceGetNvLinkVersion(Device Device, Link int) (uint32, Return) {
-	var Version uint32
-	ret := nvmlDeviceGetNvLinkVersion(Device, uint32(Link), &Version)
-	return Version, ret
+func (l *library) DeviceGetNvLinkVersion(device Device, link int) (uint32, Return) {
+	return device.GetNvLinkVersion(link)
 }
 
-func (Device Device) GetNvLinkVersion(Link int) (uint32, Return) {
-	return DeviceGetNvLinkVersion(Device, Link)
+func (device nvmlDevice) GetNvLinkVersion(link int) (uint32, Return) {
+	var version uint32
+	ret := nvmlDeviceGetNvLinkVersion(device, uint32(link), &version)
+	return version, ret
 }
 
 // nvml.DeviceGetNvLinkCapability()
-func DeviceGetNvLinkCapability(Device Device, Link int, Capability NvLinkCapability) (uint32, Return) {
-	var CapResult uint32
-	ret := nvmlDeviceGetNvLinkCapability(Device, uint32(Link), Capability, &CapResult)
-	return CapResult, ret
+func (l *library) DeviceGetNvLinkCapability(device Device, link int, capability NvLinkCapability) (uint32, Return) {
+	return device.GetNvLinkCapability(link, capability)
 }
 
-func (Device Device) GetNvLinkCapability(Link int, Capability NvLinkCapability) (uint32, Return) {
-	return DeviceGetNvLinkCapability(Device, Link, Capability)
+func (device nvmlDevice) GetNvLinkCapability(link int, capability NvLinkCapability) (uint32, Return) {
+	var capResult uint32
+	ret := nvmlDeviceGetNvLinkCapability(device, uint32(link), capability, &capResult)
+	return capResult, ret
 }
 
 // nvml.DeviceGetNvLinkRemotePciInfo()
-func DeviceGetNvLinkRemotePciInfo(Device Device, Link int) (PciInfo, Return) {
-	var Pci PciInfo
-	ret := nvmlDeviceGetNvLinkRemotePciInfo(Device, uint32(Link), &Pci)
-	return Pci, ret
+func (l *library) DeviceGetNvLinkRemotePciInfo(device Device, link int) (PciInfo, Return) {
+	return device.GetNvLinkRemotePciInfo(link)
 }
 
-func (Device Device) GetNvLinkRemotePciInfo(Link int) (PciInfo, Return) {
-	return DeviceGetNvLinkRemotePciInfo(Device, Link)
+func (device nvmlDevice) GetNvLinkRemotePciInfo(link int) (PciInfo, Return) {
+	var pci PciInfo
+	ret := nvmlDeviceGetNvLinkRemotePciInfo(device, uint32(link), &pci)
+	return pci, ret
 }
 
 // nvml.DeviceGetNvLinkErrorCounter()
-func DeviceGetNvLinkErrorCounter(Device Device, Link int, Counter NvLinkErrorCounter) (uint64, Return) {
-	var CounterValue uint64
-	ret := nvmlDeviceGetNvLinkErrorCounter(Device, uint32(Link), Counter, &CounterValue)
-	return CounterValue, ret
+func (l *library) DeviceGetNvLinkErrorCounter(device Device, link int, counter NvLinkErrorCounter) (uint64, Return) {
+	return device.GetNvLinkErrorCounter(link, counter)
 }
 
-func (Device Device) GetNvLinkErrorCounter(Link int, Counter NvLinkErrorCounter) (uint64, Return) {
-	return DeviceGetNvLinkErrorCounter(Device, Link, Counter)
+func (device nvmlDevice) GetNvLinkErrorCounter(link int, counter NvLinkErrorCounter) (uint64, Return) {
+	var counterValue uint64
+	ret := nvmlDeviceGetNvLinkErrorCounter(device, uint32(link), counter, &counterValue)
+	return counterValue, ret
 }
 
 // nvml.DeviceResetNvLinkErrorCounters()
-func DeviceResetNvLinkErrorCounters(Device Device, Link int) Return {
-	return nvmlDeviceResetNvLinkErrorCounters(Device, uint32(Link))
+func (l *library) DeviceResetNvLinkErrorCounters(device Device, link int) Return {
+	return device.ResetNvLinkErrorCounters(link)
 }
 
-func (Device Device) ResetNvLinkErrorCounters(Link int) Return {
-	return DeviceResetNvLinkErrorCounters(Device, Link)
+func (device nvmlDevice) ResetNvLinkErrorCounters(link int) Return {
+	return nvmlDeviceResetNvLinkErrorCounters(device, uint32(link))
 }
 
 // nvml.DeviceSetNvLinkUtilizationControl()
-func DeviceSetNvLinkUtilizationControl(Device Device, Link int, Counter int, Control *NvLinkUtilizationControl, Reset bool) Return {
-	reset := uint32(0)
-	if Reset {
-		reset = 1
-	}
-	return nvmlDeviceSetNvLinkUtilizationControl(Device, uint32(Link), uint32(Counter), Control, reset)
+func (l *library) DeviceSetNvLinkUtilizationControl(device Device, link int, counter int, control *NvLinkUtilizationControl, reset bool) Return {
+	return device.SetNvLinkUtilizationControl(link, counter, control, reset)
 }
 
-func (Device Device) SetNvLinkUtilizationControl(Link int, Counter int, Control *NvLinkUtilizationControl, Reset bool) Return {
-	return DeviceSetNvLinkUtilizationControl(Device, Link, Counter, Control, Reset)
+func (device nvmlDevice) SetNvLinkUtilizationControl(link int, counter int, control *NvLinkUtilizationControl, reset bool) Return {
+	resetValue := uint32(0)
+	if reset {
+		resetValue = 1
+	}
+	return nvmlDeviceSetNvLinkUtilizationControl(device, uint32(link), uint32(counter), control, resetValue)
 }
 
 // nvml.DeviceGetNvLinkUtilizationControl()
-func DeviceGetNvLinkUtilizationControl(Device Device, Link int, Counter int) (NvLinkUtilizationControl, Return) {
-	var Control NvLinkUtilizationControl
-	ret := nvmlDeviceGetNvLinkUtilizationControl(Device, uint32(Link), uint32(Counter), &Control)
-	return Control, ret
+func (l *library) DeviceGetNvLinkUtilizationControl(device Device, link int, counter int) (NvLinkUtilizationControl, Return) {
+	return device.GetNvLinkUtilizationControl(link, counter)
 }
 
-func (Device Device) GetNvLinkUtilizationControl(Link int, Counter int) (NvLinkUtilizationControl, Return) {
-	return DeviceGetNvLinkUtilizationControl(Device, Link, Counter)
+func (device nvmlDevice) GetNvLinkUtilizationControl(link int, counter int) (NvLinkUtilizationControl, Return) {
+	var control NvLinkUtilizationControl
+	ret := nvmlDeviceGetNvLinkUtilizationControl(device, uint32(link), uint32(counter), &control)
+	return control, ret
 }
 
 // nvml.DeviceGetNvLinkUtilizationCounter()
-func DeviceGetNvLinkUtilizationCounter(Device Device, Link int, Counter int) (uint64, uint64, Return) {
-	var Rxcounter, Txcounter uint64
-	ret := nvmlDeviceGetNvLinkUtilizationCounter(Device, uint32(Link), uint32(Counter), &Rxcounter, &Txcounter)
-	return Rxcounter, Txcounter, ret
+func (l *library) DeviceGetNvLinkUtilizationCounter(device Device, link int, counter int) (uint64, uint64, Return) {
+	return device.GetNvLinkUtilizationCounter(link, counter)
 }
 
-func (Device Device) GetNvLinkUtilizationCounter(Link int, Counter int) (uint64, uint64, Return) {
-	return DeviceGetNvLinkUtilizationCounter(Device, Link, Counter)
+func (device nvmlDevice) GetNvLinkUtilizationCounter(link int, counter int) (uint64, uint64, Return) {
+	var rxCounter, txCounter uint64
+	ret := nvmlDeviceGetNvLinkUtilizationCounter(device, uint32(link), uint32(counter), &rxCounter, &txCounter)
+	return rxCounter, txCounter, ret
 }
 
 // nvml.DeviceFreezeNvLinkUtilizationCounter()
-func DeviceFreezeNvLinkUtilizationCounter(Device Device, Link int, Counter int, Freeze EnableState) Return {
-	return nvmlDeviceFreezeNvLinkUtilizationCounter(Device, uint32(Link), uint32(Counter), Freeze)
+func (l *library) DeviceFreezeNvLinkUtilizationCounter(device Device, link int, counter int, freeze EnableState) Return {
+	return device.FreezeNvLinkUtilizationCounter(link, counter, freeze)
 }
 
-func (Device Device) FreezeNvLinkUtilizationCounter(Link int, Counter int, Freeze EnableState) Return {
-	return DeviceFreezeNvLinkUtilizationCounter(Device, Link, Counter, Freeze)
+func (device nvmlDevice) FreezeNvLinkUtilizationCounter(link int, counter int, freeze EnableState) Return {
+	return nvmlDeviceFreezeNvLinkUtilizationCounter(device, uint32(link), uint32(counter), freeze)
 }
 
 // nvml.DeviceResetNvLinkUtilizationCounter()
-func DeviceResetNvLinkUtilizationCounter(Device Device, Link int, Counter int) Return {
-	return nvmlDeviceResetNvLinkUtilizationCounter(Device, uint32(Link), uint32(Counter))
+func (l *library) DeviceResetNvLinkUtilizationCounter(device Device, link int, counter int) Return {
+	return device.ResetNvLinkUtilizationCounter(link, counter)
 }
 
-func (Device Device) ResetNvLinkUtilizationCounter(Link int, Counter int) Return {
-	return DeviceResetNvLinkUtilizationCounter(Device, Link, Counter)
+func (device nvmlDevice) ResetNvLinkUtilizationCounter(link int, counter int) Return {
+	return nvmlDeviceResetNvLinkUtilizationCounter(device, uint32(link), uint32(counter))
 }
 
 // nvml.DeviceGetNvLinkRemoteDeviceType()
-func DeviceGetNvLinkRemoteDeviceType(Device Device, Link int) (IntNvLinkDeviceType, Return) {
-	var NvLinkDeviceType IntNvLinkDeviceType
-	ret := nvmlDeviceGetNvLinkRemoteDeviceType(Device, uint32(Link), &NvLinkDeviceType)
-	return NvLinkDeviceType, ret
+func (l *library) DeviceGetNvLinkRemoteDeviceType(device Device, link int) (IntNvLinkDeviceType, Return) {
+	return device.GetNvLinkRemoteDeviceType(link)
 }
 
-func (Device Device) GetNvLinkRemoteDeviceType(Link int) (IntNvLinkDeviceType, Return) {
-	return DeviceGetNvLinkRemoteDeviceType(Device, Link)
+func (device nvmlDevice) GetNvLinkRemoteDeviceType(link int) (IntNvLinkDeviceType, Return) {
+	var nvLinkDeviceType IntNvLinkDeviceType
+	ret := nvmlDeviceGetNvLinkRemoteDeviceType(device, uint32(link), &nvLinkDeviceType)
+	return nvLinkDeviceType, ret
 }
 
 // nvml.DeviceRegisterEvents()
-func DeviceRegisterEvents(Device Device, EventTypes uint64, Set EventSet) Return {
-	return nvmlDeviceRegisterEvents(Device, EventTypes, Set)
+func (l *library) DeviceRegisterEvents(device Device, eventTypes uint64, set EventSet) Return {
+	return device.RegisterEvents(eventTypes, set)
 }
 
-func (Device Device) RegisterEvents(EventTypes uint64, Set EventSet) Return {
-	return DeviceRegisterEvents(Device, EventTypes, Set)
+func (device nvmlDevice) RegisterEvents(eventTypes uint64, set EventSet) Return {
+	return nvmlDeviceRegisterEvents(device, eventTypes, set.(nvmlEventSet))
 }
 
 // nvmlDeviceGetSupportedEventTypes()
-func DeviceGetSupportedEventTypes(Device Device) (uint64, Return) {
-	var EventTypes uint64
-	ret := nvmlDeviceGetSupportedEventTypes(Device, &EventTypes)
-	return EventTypes, ret
+func (l *library) DeviceGetSupportedEventTypes(device Device) (uint64, Return) {
+	return device.GetSupportedEventTypes()
 }
 
-func (Device Device) GetSupportedEventTypes() (uint64, Return) {
-	return DeviceGetSupportedEventTypes(Device)
+func (device nvmlDevice) GetSupportedEventTypes() (uint64, Return) {
+	var eventTypes uint64
+	ret := nvmlDeviceGetSupportedEventTypes(device, &eventTypes)
+	return eventTypes, ret
 }
 
 // nvml.DeviceModifyDrainState()
-func DeviceModifyDrainState(PciInfo *PciInfo, NewState EnableState) Return {
-	return nvmlDeviceModifyDrainState(PciInfo, NewState)
+func (l *library) DeviceModifyDrainState(pciInfo *PciInfo, newState EnableState) Return {
+	return nvmlDeviceModifyDrainState(pciInfo, newState)
 }
 
 // nvml.DeviceQueryDrainState()
-func DeviceQueryDrainState(PciInfo *PciInfo) (EnableState, Return) {
-	var CurrentState EnableState
-	ret := nvmlDeviceQueryDrainState(PciInfo, &CurrentState)
-	return CurrentState, ret
+func (l *library) DeviceQueryDrainState(pciInfo *PciInfo) (EnableState, Return) {
+	var currentState EnableState
+	ret := nvmlDeviceQueryDrainState(pciInfo, &currentState)
+	return currentState, ret
 }
 
 // nvml.DeviceRemoveGpu()
-func DeviceRemoveGpu(PciInfo *PciInfo) Return {
-	return nvmlDeviceRemoveGpu(PciInfo)
+func (l *library) DeviceRemoveGpu(pciInfo *PciInfo) Return {
+	return nvmlDeviceRemoveGpu(pciInfo)
 }
 
 // nvml.DeviceRemoveGpu_v2()
-func DeviceRemoveGpu_v2(PciInfo *PciInfo, GpuState DetachGpuState, LinkState PcieLinkState) Return {
-	return nvmlDeviceRemoveGpu_v2(PciInfo, GpuState, LinkState)
+func (l *library) DeviceRemoveGpu_v2(pciInfo *PciInfo, gpuState DetachGpuState, linkState PcieLinkState) Return {
+	return nvmlDeviceRemoveGpu_v2(pciInfo, gpuState, linkState)
 }
 
 // nvml.DeviceDiscoverGpus()
-func DeviceDiscoverGpus() (PciInfo, Return) {
-	var PciInfo PciInfo
-	ret := nvmlDeviceDiscoverGpus(&PciInfo)
-	return PciInfo, ret
+func (l *library) DeviceDiscoverGpus() (PciInfo, Return) {
+	var pciInfo PciInfo
+	ret := nvmlDeviceDiscoverGpus(&pciInfo)
+	return pciInfo, ret
 }
 
 // nvml.DeviceGetFieldValues()
-func DeviceGetFieldValues(Device Device, Values []FieldValue) Return {
-	ValuesCount := len(Values)
-	return nvmlDeviceGetFieldValues(Device, int32(ValuesCount), &Values[0])
+func (l *library) DeviceGetFieldValues(device Device, values []FieldValue) Return {
+	return device.GetFieldValues(values)
 }
 
-func (Device Device) GetFieldValues(Values []FieldValue) Return {
-	return DeviceGetFieldValues(Device, Values)
+func (device nvmlDevice) GetFieldValues(values []FieldValue) Return {
+	valuesCount := len(values)
+	return nvmlDeviceGetFieldValues(device, int32(valuesCount), &values[0])
 }
 
 // nvml.DeviceGetVirtualizationMode()
-func DeviceGetVirtualizationMode(Device Device) (GpuVirtualizationMode, Return) {
-	var PVirtualMode GpuVirtualizationMode
-	ret := nvmlDeviceGetVirtualizationMode(Device, &PVirtualMode)
-	return PVirtualMode, ret
+func (l *library) DeviceGetVirtualizationMode(device Device) (GpuVirtualizationMode, Return) {
+	return device.GetVirtualizationMode()
 }
 
-func (Device Device) GetVirtualizationMode() (GpuVirtualizationMode, Return) {
-	return DeviceGetVirtualizationMode(Device)
+func (device nvmlDevice) GetVirtualizationMode() (GpuVirtualizationMode, Return) {
+	var pVirtualMode GpuVirtualizationMode
+	ret := nvmlDeviceGetVirtualizationMode(device, &pVirtualMode)
+	return pVirtualMode, ret
 }
 
 // nvml.DeviceGetHostVgpuMode()
-func DeviceGetHostVgpuMode(Device Device) (HostVgpuMode, Return) {
-	var PHostVgpuMode HostVgpuMode
-	ret := nvmlDeviceGetHostVgpuMode(Device, &PHostVgpuMode)
-	return PHostVgpuMode, ret
+func (l *library) DeviceGetHostVgpuMode(device Device) (HostVgpuMode, Return) {
+	return device.GetHostVgpuMode()
 }
 
-func (Device Device) GetHostVgpuMode() (HostVgpuMode, Return) {
-	return DeviceGetHostVgpuMode(Device)
+func (device nvmlDevice) GetHostVgpuMode() (HostVgpuMode, Return) {
+	var pHostVgpuMode HostVgpuMode
+	ret := nvmlDeviceGetHostVgpuMode(device, &pHostVgpuMode)
+	return pHostVgpuMode, ret
 }
 
 // nvml.DeviceSetVirtualizationMode()
-func DeviceSetVirtualizationMode(Device Device, VirtualMode GpuVirtualizationMode) Return {
-	return nvmlDeviceSetVirtualizationMode(Device, VirtualMode)
+func (l *library) DeviceSetVirtualizationMode(device Device, virtualMode GpuVirtualizationMode) Return {
+	return device.SetVirtualizationMode(virtualMode)
 }
 
-func (Device Device) SetVirtualizationMode(VirtualMode GpuVirtualizationMode) Return {
-	return DeviceSetVirtualizationMode(Device, VirtualMode)
+func (device nvmlDevice) SetVirtualizationMode(virtualMode GpuVirtualizationMode) Return {
+	return nvmlDeviceSetVirtualizationMode(device, virtualMode)
 }
 
 // nvml.DeviceGetGridLicensableFeatures()
-func DeviceGetGridLicensableFeatures(Device Device) (GridLicensableFeatures, Return) {
-	var PGridLicensableFeatures GridLicensableFeatures
-	ret := nvmlDeviceGetGridLicensableFeatures(Device, &PGridLicensableFeatures)
-	return PGridLicensableFeatures, ret
+func (l *library) DeviceGetGridLicensableFeatures(device Device) (GridLicensableFeatures, Return) {
+	return device.GetGridLicensableFeatures()
 }
 
-func (Device Device) GetGridLicensableFeatures() (GridLicensableFeatures, Return) {
-	return DeviceGetGridLicensableFeatures(Device)
+func (device nvmlDevice) GetGridLicensableFeatures() (GridLicensableFeatures, Return) {
+	var pGridLicensableFeatures GridLicensableFeatures
+	ret := nvmlDeviceGetGridLicensableFeatures(device, &pGridLicensableFeatures)
+	return pGridLicensableFeatures, ret
 }
 
 // nvml.DeviceGetProcessUtilization()
-func DeviceGetProcessUtilization(Device Device, LastSeenTimeStamp uint64) ([]ProcessUtilizationSample, Return) {
-	var ProcessSamplesCount uint32
-	ret := nvmlDeviceGetProcessUtilization(Device, nil, &ProcessSamplesCount, LastSeenTimeStamp)
+func (l *library) DeviceGetProcessUtilization(device Device, lastSeenTimestamp uint64) ([]ProcessUtilizationSample, Return) {
+	return device.GetProcessUtilization(lastSeenTimestamp)
+}
+
+func (device nvmlDevice) GetProcessUtilization(lastSeenTimestamp uint64) ([]ProcessUtilizationSample, Return) {
+	var processSamplesCount uint32
+	ret := nvmlDeviceGetProcessUtilization(device, nil, &processSamplesCount, lastSeenTimestamp)
 	if ret != ERROR_INSUFFICIENT_SIZE {
 		return nil, ret
 	}
-	if ProcessSamplesCount == 0 {
+	if processSamplesCount == 0 {
 		return []ProcessUtilizationSample{}, ret
 	}
-	Utilization := make([]ProcessUtilizationSample, ProcessSamplesCount)
-	ret = nvmlDeviceGetProcessUtilization(Device, &Utilization[0], &ProcessSamplesCount, LastSeenTimeStamp)
-	return Utilization[:ProcessSamplesCount], ret
-}
-
-func (Device Device) GetProcessUtilization(LastSeenTimeStamp uint64) ([]ProcessUtilizationSample, Return) {
-	return DeviceGetProcessUtilization(Device, LastSeenTimeStamp)
+	utilization := make([]ProcessUtilizationSample, processSamplesCount)
+	ret = nvmlDeviceGetProcessUtilization(device, &utilization[0], &processSamplesCount, lastSeenTimestamp)
+	return utilization[:processSamplesCount], ret
 }
 
 // nvml.DeviceGetSupportedVgpus()
-func DeviceGetSupportedVgpus(Device Device) ([]VgpuTypeId, Return) {
-	var VgpuCount uint32 = 1 // Will be reduced upon returning
+func (l *library) DeviceGetSupportedVgpus(device Device) ([]VgpuTypeId, Return) {
+	return device.GetSupportedVgpus()
+}
+
+func (device nvmlDevice) GetSupportedVgpus() ([]VgpuTypeId, Return) {
+	var vgpuCount uint32 = 1 // Will be reduced upon returning
 	for {
-		VgpuTypeIds := make([]VgpuTypeId, VgpuCount)
-		ret := nvmlDeviceGetSupportedVgpus(Device, &VgpuCount, &VgpuTypeIds[0])
+		vgpuTypeIds := make([]nvmlVgpuTypeId, vgpuCount)
+		ret := nvmlDeviceGetSupportedVgpus(device, &vgpuCount, &vgpuTypeIds[0])
 		if ret == SUCCESS {
-			return VgpuTypeIds[:VgpuCount], ret
+			return convertSlice[nvmlVgpuTypeId, VgpuTypeId](vgpuTypeIds[:vgpuCount]), ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		VgpuCount *= 2
+		vgpuCount *= 2
 	}
-}
-
-func (Device Device) GetSupportedVgpus() ([]VgpuTypeId, Return) {
-	return DeviceGetSupportedVgpus(Device)
 }
 
 // nvml.DeviceGetCreatableVgpus()
-func DeviceGetCreatableVgpus(Device Device) ([]VgpuTypeId, Return) {
-	var VgpuCount uint32 = 1 // Will be reduced upon returning
+func (l *library) DeviceGetCreatableVgpus(device Device) ([]VgpuTypeId, Return) {
+	return device.GetCreatableVgpus()
+}
+
+func (device nvmlDevice) GetCreatableVgpus() ([]VgpuTypeId, Return) {
+	var vgpuCount uint32 = 1 // Will be reduced upon returning
 	for {
-		VgpuTypeIds := make([]VgpuTypeId, VgpuCount)
-		ret := nvmlDeviceGetCreatableVgpus(Device, &VgpuCount, &VgpuTypeIds[0])
+		vgpuTypeIds := make([]nvmlVgpuTypeId, vgpuCount)
+		ret := nvmlDeviceGetCreatableVgpus(device, &vgpuCount, &vgpuTypeIds[0])
 		if ret == SUCCESS {
-			return VgpuTypeIds[:VgpuCount], ret
+			return convertSlice[nvmlVgpuTypeId, VgpuTypeId](vgpuTypeIds[:vgpuCount]), ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		VgpuCount *= 2
+		vgpuCount *= 2
 	}
-}
-
-func (Device Device) GetCreatableVgpus() ([]VgpuTypeId, Return) {
-	return DeviceGetCreatableVgpus(Device)
 }
 
 // nvml.DeviceGetActiveVgpus()
-func DeviceGetActiveVgpus(Device Device) ([]VgpuInstance, Return) {
-	var VgpuCount uint32 = 1 // Will be reduced upon returning
+func (l *library) DeviceGetActiveVgpus(device Device) ([]VgpuInstance, Return) {
+	return device.GetActiveVgpus()
+}
+
+func (device nvmlDevice) GetActiveVgpus() ([]VgpuInstance, Return) {
+	var vgpuCount uint32 = 1 // Will be reduced upon returning
 	for {
-		VgpuInstances := make([]VgpuInstance, VgpuCount)
-		ret := nvmlDeviceGetActiveVgpus(Device, &VgpuCount, &VgpuInstances[0])
+		vgpuInstances := make([]nvmlVgpuInstance, vgpuCount)
+		ret := nvmlDeviceGetActiveVgpus(device, &vgpuCount, &vgpuInstances[0])
 		if ret == SUCCESS {
-			return VgpuInstances[:VgpuCount], ret
+			return convertSlice[nvmlVgpuInstance, VgpuInstance](vgpuInstances[:vgpuCount]), ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		VgpuCount *= 2
+		vgpuCount *= 2
 	}
-}
-
-func (Device Device) GetActiveVgpus() ([]VgpuInstance, Return) {
-	return DeviceGetActiveVgpus(Device)
 }
 
 // nvml.DeviceGetVgpuMetadata()
-func DeviceGetVgpuMetadata(Device Device) (VgpuPgpuMetadata, Return) {
-	var VgpuPgpuMetadata VgpuPgpuMetadata
-	OpaqueDataSize := unsafe.Sizeof(VgpuPgpuMetadata.nvmlVgpuPgpuMetadata.OpaqueData)
-	VgpuPgpuMetadataSize := unsafe.Sizeof(VgpuPgpuMetadata.nvmlVgpuPgpuMetadata) - OpaqueDataSize
+func (l *library) DeviceGetVgpuMetadata(device Device) (VgpuPgpuMetadata, Return) {
+	return device.GetVgpuMetadata()
+}
+
+func (device nvmlDevice) GetVgpuMetadata() (VgpuPgpuMetadata, Return) {
+	var vgpuPgpuMetadata VgpuPgpuMetadata
+	opaqueDataSize := unsafe.Sizeof(vgpuPgpuMetadata.nvmlVgpuPgpuMetadata.OpaqueData)
+	vgpuPgpuMetadataSize := unsafe.Sizeof(vgpuPgpuMetadata.nvmlVgpuPgpuMetadata) - opaqueDataSize
 	for {
-		BufferSize := uint32(VgpuPgpuMetadataSize + OpaqueDataSize)
-		Buffer := make([]byte, BufferSize)
-		nvmlVgpuPgpuMetadataPtr := (*nvmlVgpuPgpuMetadata)(unsafe.Pointer(&Buffer[0]))
-		ret := nvmlDeviceGetVgpuMetadata(Device, nvmlVgpuPgpuMetadataPtr, &BufferSize)
+		bufferSize := uint32(vgpuPgpuMetadataSize + opaqueDataSize)
+		buffer := make([]byte, bufferSize)
+		nvmlVgpuPgpuMetadataPtr := (*nvmlVgpuPgpuMetadata)(unsafe.Pointer(&buffer[0]))
+		ret := nvmlDeviceGetVgpuMetadata(device, nvmlVgpuPgpuMetadataPtr, &bufferSize)
 		if ret == SUCCESS {
-			VgpuPgpuMetadata.nvmlVgpuPgpuMetadata = *nvmlVgpuPgpuMetadataPtr
-			VgpuPgpuMetadata.OpaqueData = Buffer[VgpuPgpuMetadataSize:BufferSize]
-			return VgpuPgpuMetadata, ret
+			vgpuPgpuMetadata.nvmlVgpuPgpuMetadata = *nvmlVgpuPgpuMetadataPtr
+			vgpuPgpuMetadata.OpaqueData = buffer[vgpuPgpuMetadataSize:bufferSize]
+			return vgpuPgpuMetadata, ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
-			return VgpuPgpuMetadata, ret
+			return vgpuPgpuMetadata, ret
 		}
-		OpaqueDataSize = 2 * OpaqueDataSize
+		opaqueDataSize = 2 * opaqueDataSize
 	}
 }
 
-func (Device Device) GetVgpuMetadata() (VgpuPgpuMetadata, Return) {
-	return DeviceGetVgpuMetadata(Device)
+// nvml.DeviceGetPgpuMetadataString()
+func (l *library) DeviceGetPgpuMetadataString(device Device) (string, Return) {
+	return device.GetPgpuMetadataString()
 }
 
-// nvml.DeviceGetPgpuMetadataString()
-func DeviceGetPgpuMetadataString(Device Device) (string, Return) {
-	var BufferSize uint32 = 1 // Will be reduced upon returning
+func (device nvmlDevice) GetPgpuMetadataString() (string, Return) {
+	var bufferSize uint32 = 1 // Will be reduced upon returning
 	for {
-		PgpuMetadata := make([]byte, BufferSize)
-		ret := nvmlDeviceGetPgpuMetadataString(Device, &PgpuMetadata[0], &BufferSize)
+		pgpuMetadata := make([]byte, bufferSize)
+		ret := nvmlDeviceGetPgpuMetadataString(device, &pgpuMetadata[0], &bufferSize)
 		if ret == SUCCESS {
-			return string(PgpuMetadata[:clen(PgpuMetadata)]), ret
+			return string(pgpuMetadata[:clen(pgpuMetadata)]), ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return "", ret
 		}
-		BufferSize *= 2
+		bufferSize *= 2
 	}
-}
-
-func (Device Device) GetPgpuMetadataString() (string, Return) {
-	return DeviceGetPgpuMetadataString(Device)
 }
 
 // nvml.DeviceGetVgpuUtilization()
-func DeviceGetVgpuUtilization(Device Device, LastSeenTimeStamp uint64) (ValueType, []VgpuInstanceUtilizationSample, Return) {
-	var SampleValType ValueType
-	var VgpuInstanceSamplesCount uint32 = 1 // Will be reduced upon returning
+func (l *library) DeviceGetVgpuUtilization(device Device, lastSeenTimestamp uint64) (ValueType, []VgpuInstanceUtilizationSample, Return) {
+	return device.GetVgpuUtilization(lastSeenTimestamp)
+}
+
+func (device nvmlDevice) GetVgpuUtilization(lastSeenTimestamp uint64) (ValueType, []VgpuInstanceUtilizationSample, Return) {
+	var sampleValType ValueType
+	var vgpuInstanceSamplesCount uint32 = 1 // Will be reduced upon returning
 	for {
-		UtilizationSamples := make([]VgpuInstanceUtilizationSample, VgpuInstanceSamplesCount)
-		ret := nvmlDeviceGetVgpuUtilization(Device, LastSeenTimeStamp, &SampleValType, &VgpuInstanceSamplesCount, &UtilizationSamples[0])
+		utilizationSamples := make([]VgpuInstanceUtilizationSample, vgpuInstanceSamplesCount)
+		ret := nvmlDeviceGetVgpuUtilization(device, lastSeenTimestamp, &sampleValType, &vgpuInstanceSamplesCount, &utilizationSamples[0])
 		if ret == SUCCESS {
-			return SampleValType, UtilizationSamples[:VgpuInstanceSamplesCount], ret
+			return sampleValType, utilizationSamples[:vgpuInstanceSamplesCount], ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
-			return SampleValType, nil, ret
+			return sampleValType, nil, ret
 		}
-		VgpuInstanceSamplesCount *= 2
+		vgpuInstanceSamplesCount *= 2
 	}
 }
 
-func (Device Device) GetVgpuUtilization(LastSeenTimeStamp uint64) (ValueType, []VgpuInstanceUtilizationSample, Return) {
-	return DeviceGetVgpuUtilization(Device, LastSeenTimeStamp)
-}
-
 // nvml.DeviceGetAttributes()
-func DeviceGetAttributes(Device Device) (DeviceAttributes, Return) {
-	var Attributes DeviceAttributes
-	ret := nvmlDeviceGetAttributes(Device, &Attributes)
-	return Attributes, ret
+func (l *library) DeviceGetAttributes(device Device) (DeviceAttributes, Return) {
+	return device.GetAttributes()
 }
 
-func (Device Device) GetAttributes() (DeviceAttributes, Return) {
-	return DeviceGetAttributes(Device)
+func (device nvmlDevice) GetAttributes() (DeviceAttributes, Return) {
+	var attributes DeviceAttributes
+	ret := nvmlDeviceGetAttributes(device, &attributes)
+	return attributes, ret
 }
 
 // nvml.DeviceGetRemappedRows()
-func DeviceGetRemappedRows(Device Device) (int, int, bool, bool, Return) {
-	var CorrRows, UncRows, IsPending, FailureOccured uint32
-	ret := nvmlDeviceGetRemappedRows(Device, &CorrRows, &UncRows, &IsPending, &FailureOccured)
-	return int(CorrRows), int(UncRows), (IsPending != 0), (FailureOccured != 0), ret
+func (l *library) DeviceGetRemappedRows(device Device) (int, int, bool, bool, Return) {
+	return device.GetRemappedRows()
 }
 
-func (Device Device) GetRemappedRows() (int, int, bool, bool, Return) {
-	return DeviceGetRemappedRows(Device)
+func (device nvmlDevice) GetRemappedRows() (int, int, bool, bool, Return) {
+	var corrRows, uncRows, isPending, failureOccured uint32
+	ret := nvmlDeviceGetRemappedRows(device, &corrRows, &uncRows, &isPending, &failureOccured)
+	return int(corrRows), int(uncRows), (isPending != 0), (failureOccured != 0), ret
 }
 
 // nvml.DeviceGetRowRemapperHistogram()
-func DeviceGetRowRemapperHistogram(Device Device) (RowRemapperHistogramValues, Return) {
-	var Values RowRemapperHistogramValues
-	ret := nvmlDeviceGetRowRemapperHistogram(Device, &Values)
-	return Values, ret
+func (l *library) DeviceGetRowRemapperHistogram(device Device) (RowRemapperHistogramValues, Return) {
+	return device.GetRowRemapperHistogram()
 }
 
-func (Device Device) GetRowRemapperHistogram() (RowRemapperHistogramValues, Return) {
-	return DeviceGetRowRemapperHistogram(Device)
+func (device nvmlDevice) GetRowRemapperHistogram() (RowRemapperHistogramValues, Return) {
+	var values RowRemapperHistogramValues
+	ret := nvmlDeviceGetRowRemapperHistogram(device, &values)
+	return values, ret
 }
 
 // nvml.DeviceGetArchitecture()
-func DeviceGetArchitecture(Device Device) (DeviceArchitecture, Return) {
-	var Arch DeviceArchitecture
-	ret := nvmlDeviceGetArchitecture(Device, &Arch)
-	return Arch, ret
+func (l *library) DeviceGetArchitecture(device Device) (DeviceArchitecture, Return) {
+	return device.GetArchitecture()
 }
 
-func (Device Device) GetArchitecture() (DeviceArchitecture, Return) {
-	return DeviceGetArchitecture(Device)
+func (device nvmlDevice) GetArchitecture() (DeviceArchitecture, Return) {
+	var arch DeviceArchitecture
+	ret := nvmlDeviceGetArchitecture(device, &arch)
+	return arch, ret
 }
 
 // nvml.DeviceGetVgpuProcessUtilization()
-func DeviceGetVgpuProcessUtilization(Device Device, LastSeenTimeStamp uint64) ([]VgpuProcessUtilizationSample, Return) {
-	var VgpuProcessSamplesCount uint32 = 1 // Will be reduced upon returning
+func (l *library) DeviceGetVgpuProcessUtilization(device Device, lastSeenTimestamp uint64) ([]VgpuProcessUtilizationSample, Return) {
+	return device.GetVgpuProcessUtilization(lastSeenTimestamp)
+}
+
+func (device nvmlDevice) GetVgpuProcessUtilization(lastSeenTimestamp uint64) ([]VgpuProcessUtilizationSample, Return) {
+	var vgpuProcessSamplesCount uint32 = 1 // Will be reduced upon returning
 	for {
-		UtilizationSamples := make([]VgpuProcessUtilizationSample, VgpuProcessSamplesCount)
-		ret := nvmlDeviceGetVgpuProcessUtilization(Device, LastSeenTimeStamp, &VgpuProcessSamplesCount, &UtilizationSamples[0])
+		utilizationSamples := make([]VgpuProcessUtilizationSample, vgpuProcessSamplesCount)
+		ret := nvmlDeviceGetVgpuProcessUtilization(device, lastSeenTimestamp, &vgpuProcessSamplesCount, &utilizationSamples[0])
 		if ret == SUCCESS {
-			return UtilizationSamples[:VgpuProcessSamplesCount], ret
+			return utilizationSamples[:vgpuProcessSamplesCount], ret
 		}
 		if ret != ERROR_INSUFFICIENT_SIZE {
 			return nil, ret
 		}
-		VgpuProcessSamplesCount *= 2
+		vgpuProcessSamplesCount *= 2
 	}
 }
 
-func (Device Device) GetVgpuProcessUtilization(LastSeenTimeStamp uint64) ([]VgpuProcessUtilizationSample, Return) {
-	return DeviceGetVgpuProcessUtilization(Device, LastSeenTimeStamp)
-}
-
 // nvml.GetExcludedDeviceCount()
-func GetExcludedDeviceCount() (int, Return) {
-	var DeviceCount uint32
-	ret := nvmlGetExcludedDeviceCount(&DeviceCount)
-	return int(DeviceCount), ret
+func (l *library) GetExcludedDeviceCount() (int, Return) {
+	var deviceCount uint32
+	ret := nvmlGetExcludedDeviceCount(&deviceCount)
+	return int(deviceCount), ret
 }
 
 // nvml.GetExcludedDeviceInfoByIndex()
-func GetExcludedDeviceInfoByIndex(Index int) (ExcludedDeviceInfo, Return) {
-	var Info ExcludedDeviceInfo
-	ret := nvmlGetExcludedDeviceInfoByIndex(uint32(Index), &Info)
-	return Info, ret
+func (l *library) GetExcludedDeviceInfoByIndex(index int) (ExcludedDeviceInfo, Return) {
+	var info ExcludedDeviceInfo
+	ret := nvmlGetExcludedDeviceInfoByIndex(uint32(index), &info)
+	return info, ret
 }
 
 // nvml.DeviceSetMigMode()
-func DeviceSetMigMode(Device Device, Mode int) (Return, Return) {
-	var ActivationStatus Return
-	ret := nvmlDeviceSetMigMode(Device, uint32(Mode), &ActivationStatus)
-	return ActivationStatus, ret
+func (l *library) DeviceSetMigMode(device Device, mode int) (Return, Return) {
+	return device.SetMigMode(mode)
 }
 
-func (Device Device) SetMigMode(Mode int) (Return, Return) {
-	return DeviceSetMigMode(Device, Mode)
+func (device nvmlDevice) SetMigMode(mode int) (Return, Return) {
+	var activationStatus Return
+	ret := nvmlDeviceSetMigMode(device, uint32(mode), &activationStatus)
+	return activationStatus, ret
 }
 
 // nvml.DeviceGetMigMode()
-func DeviceGetMigMode(Device Device) (int, int, Return) {
-	var CurrentMode, PendingMode uint32
-	ret := nvmlDeviceGetMigMode(Device, &CurrentMode, &PendingMode)
-	return int(CurrentMode), int(PendingMode), ret
+func (l *library) DeviceGetMigMode(device Device) (int, int, Return) {
+	return device.GetMigMode()
 }
 
-func (Device Device) GetMigMode() (int, int, Return) {
-	return DeviceGetMigMode(Device)
+func (device nvmlDevice) GetMigMode() (int, int, Return) {
+	var currentMode, pendingMode uint32
+	ret := nvmlDeviceGetMigMode(device, &currentMode, &pendingMode)
+	return int(currentMode), int(pendingMode), ret
 }
 
 // nvml.DeviceGetGpuInstanceProfileInfo()
-func DeviceGetGpuInstanceProfileInfo(Device Device, Profile int) (GpuInstanceProfileInfo, Return) {
-	var Info GpuInstanceProfileInfo
-	ret := nvmlDeviceGetGpuInstanceProfileInfo(Device, uint32(Profile), &Info)
-	return Info, ret
+func (l *library) DeviceGetGpuInstanceProfileInfo(device Device, profile int) (GpuInstanceProfileInfo, Return) {
+	return device.GetGpuInstanceProfileInfo(profile)
 }
 
-func (Device Device) GetGpuInstanceProfileInfo(Profile int) (GpuInstanceProfileInfo, Return) {
-	return DeviceGetGpuInstanceProfileInfo(Device, Profile)
+func (device nvmlDevice) GetGpuInstanceProfileInfo(profile int) (GpuInstanceProfileInfo, Return) {
+	var info GpuInstanceProfileInfo
+	ret := nvmlDeviceGetGpuInstanceProfileInfo(device, uint32(profile), &info)
+	return info, ret
 }
 
 // nvml.DeviceGetGpuInstanceProfileInfoV()
 type GpuInstanceProfileInfoV struct {
-	device  Device
+	device  nvmlDevice
 	profile int
 }
 
-func (InfoV GpuInstanceProfileInfoV) V1() (GpuInstanceProfileInfo, Return) {
-	return DeviceGetGpuInstanceProfileInfo(InfoV.device, InfoV.profile)
+func (infoV GpuInstanceProfileInfoV) V1() (GpuInstanceProfileInfo, Return) {
+	return DeviceGetGpuInstanceProfileInfo(infoV.device, infoV.profile)
 }
 
-func (InfoV GpuInstanceProfileInfoV) V2() (GpuInstanceProfileInfo_v2, Return) {
-	var Info GpuInstanceProfileInfo_v2
-	Info.Version = STRUCT_VERSION(Info, 2)
-	ret := nvmlDeviceGetGpuInstanceProfileInfoV(InfoV.device, uint32(InfoV.profile), &Info)
-	return Info, ret
+func (infoV GpuInstanceProfileInfoV) V2() (GpuInstanceProfileInfo_v2, Return) {
+	var info GpuInstanceProfileInfo_v2
+	info.Version = STRUCT_VERSION(info, 2)
+	ret := nvmlDeviceGetGpuInstanceProfileInfoV(infoV.device, uint32(infoV.profile), &info)
+	return info, ret
 }
 
-func DeviceGetGpuInstanceProfileInfoV(Device Device, Profile int) GpuInstanceProfileInfoV {
-	return GpuInstanceProfileInfoV{Device, Profile}
+func (l *library) DeviceGetGpuInstanceProfileInfoV(device Device, profile int) GpuInstanceProfileInfoV {
+	return device.GetGpuInstanceProfileInfoV(profile)
 }
 
-func (Device Device) GetGpuInstanceProfileInfoV(Profile int) GpuInstanceProfileInfoV {
-	return DeviceGetGpuInstanceProfileInfoV(Device, Profile)
+func (device nvmlDevice) GetGpuInstanceProfileInfoV(profile int) GpuInstanceProfileInfoV {
+	return GpuInstanceProfileInfoV{device, profile}
 }
 
 // nvml.DeviceGetGpuInstancePossiblePlacements()
-func DeviceGetGpuInstancePossiblePlacements(Device Device, Info *GpuInstanceProfileInfo) ([]GpuInstancePlacement, Return) {
-	if Info == nil {
+func (l *library) DeviceGetGpuInstancePossiblePlacements(device Device, info *GpuInstanceProfileInfo) ([]GpuInstancePlacement, Return) {
+	return device.GetGpuInstancePossiblePlacements(info)
+}
+
+func (device nvmlDevice) GetGpuInstancePossiblePlacements(info *GpuInstanceProfileInfo) ([]GpuInstancePlacement, Return) {
+	if info == nil {
 		return nil, ERROR_INVALID_ARGUMENT
 	}
-	var Count uint32
-	ret := nvmlDeviceGetGpuInstancePossiblePlacements(Device, Info.Id, nil, &Count)
+	var count uint32
+	ret := nvmlDeviceGetGpuInstancePossiblePlacements(device, info.Id, nil, &count)
 	if ret != SUCCESS {
 		return nil, ret
 	}
-	if Count == 0 {
+	if count == 0 {
 		return []GpuInstancePlacement{}, ret
 	}
-	Placements := make([]GpuInstancePlacement, Count)
-	ret = nvmlDeviceGetGpuInstancePossiblePlacements(Device, Info.Id, &Placements[0], &Count)
-	return Placements[:Count], ret
-}
-
-func (Device Device) GetGpuInstancePossiblePlacements(Info *GpuInstanceProfileInfo) ([]GpuInstancePlacement, Return) {
-	return DeviceGetGpuInstancePossiblePlacements(Device, Info)
+	placements := make([]GpuInstancePlacement, count)
+	ret = nvmlDeviceGetGpuInstancePossiblePlacements(device, info.Id, &placements[0], &count)
+	return placements[:count], ret
 }
 
 // nvml.DeviceGetGpuInstanceRemainingCapacity()
-func DeviceGetGpuInstanceRemainingCapacity(Device Device, Info *GpuInstanceProfileInfo) (int, Return) {
-	if Info == nil {
-		return 0, ERROR_INVALID_ARGUMENT
-	}
-	var Count uint32
-	ret := nvmlDeviceGetGpuInstanceRemainingCapacity(Device, Info.Id, &Count)
-	return int(Count), ret
+func (l *library) DeviceGetGpuInstanceRemainingCapacity(device Device, info *GpuInstanceProfileInfo) (int, Return) {
+	return device.GetGpuInstanceRemainingCapacity(info)
 }
 
-func (Device Device) GetGpuInstanceRemainingCapacity(Info *GpuInstanceProfileInfo) (int, Return) {
-	return DeviceGetGpuInstanceRemainingCapacity(Device, Info)
+func (device nvmlDevice) GetGpuInstanceRemainingCapacity(info *GpuInstanceProfileInfo) (int, Return) {
+	if info == nil {
+		return 0, ERROR_INVALID_ARGUMENT
+	}
+	var count uint32
+	ret := nvmlDeviceGetGpuInstanceRemainingCapacity(device, info.Id, &count)
+	return int(count), ret
 }
 
 // nvml.DeviceCreateGpuInstance()
-func DeviceCreateGpuInstance(Device Device, Info *GpuInstanceProfileInfo) (GpuInstance, Return) {
-	if Info == nil {
-		return GpuInstance{}, ERROR_INVALID_ARGUMENT
-	}
-	var GpuInstance GpuInstance
-	ret := nvmlDeviceCreateGpuInstance(Device, Info.Id, &GpuInstance)
-	return GpuInstance, ret
+func (l *library) DeviceCreateGpuInstance(device Device, info *GpuInstanceProfileInfo) (GpuInstance, Return) {
+	return device.CreateGpuInstance(info)
 }
 
-func (Device Device) CreateGpuInstance(Info *GpuInstanceProfileInfo) (GpuInstance, Return) {
-	return DeviceCreateGpuInstance(Device, Info)
+func (device nvmlDevice) CreateGpuInstance(info *GpuInstanceProfileInfo) (GpuInstance, Return) {
+	if info == nil {
+		return nil, ERROR_INVALID_ARGUMENT
+	}
+	var gpuInstance nvmlGpuInstance
+	ret := nvmlDeviceCreateGpuInstance(device, info.Id, &gpuInstance)
+	return gpuInstance, ret
 }
 
 // nvml.DeviceCreateGpuInstanceWithPlacement()
-func DeviceCreateGpuInstanceWithPlacement(Device Device, Info *GpuInstanceProfileInfo, Placement *GpuInstancePlacement) (GpuInstance, Return) {
-	if Info == nil {
-		return GpuInstance{}, ERROR_INVALID_ARGUMENT
-	}
-	var GpuInstance GpuInstance
-	ret := nvmlDeviceCreateGpuInstanceWithPlacement(Device, Info.Id, Placement, &GpuInstance)
-	return GpuInstance, ret
+func (l *library) DeviceCreateGpuInstanceWithPlacement(device Device, info *GpuInstanceProfileInfo, placement *GpuInstancePlacement) (GpuInstance, Return) {
+	return device.CreateGpuInstanceWithPlacement(info, placement)
 }
 
-func (Device Device) CreateGpuInstanceWithPlacement(Info *GpuInstanceProfileInfo, Placement *GpuInstancePlacement) (GpuInstance, Return) {
-	return DeviceCreateGpuInstanceWithPlacement(Device, Info, Placement)
+func (device nvmlDevice) CreateGpuInstanceWithPlacement(info *GpuInstanceProfileInfo, placement *GpuInstancePlacement) (GpuInstance, Return) {
+	if info == nil {
+		return nil, ERROR_INVALID_ARGUMENT
+	}
+	var gpuInstance nvmlGpuInstance
+	ret := nvmlDeviceCreateGpuInstanceWithPlacement(device, info.Id, placement, &gpuInstance)
+	return gpuInstance, ret
 }
 
 // nvml.GpuInstanceDestroy()
-func GpuInstanceDestroy(GpuInstance GpuInstance) Return {
-	return nvmlGpuInstanceDestroy(GpuInstance)
+func (l *library) GpuInstanceDestroy(gpuInstance GpuInstance) Return {
+	return gpuInstance.Destroy()
 }
 
-func (GpuInstance GpuInstance) Destroy() Return {
-	return GpuInstanceDestroy(GpuInstance)
+func (gpuInstance nvmlGpuInstance) Destroy() Return {
+	return nvmlGpuInstanceDestroy(gpuInstance)
 }
 
 // nvml.DeviceGetGpuInstances()
-func DeviceGetGpuInstances(Device Device, Info *GpuInstanceProfileInfo) ([]GpuInstance, Return) {
-	if Info == nil {
-		return nil, ERROR_INVALID_ARGUMENT
-	}
-	var Count uint32 = Info.InstanceCount
-	GpuInstances := make([]GpuInstance, Count)
-	ret := nvmlDeviceGetGpuInstances(Device, Info.Id, &GpuInstances[0], &Count)
-	return GpuInstances[:Count], ret
+func (l *library) DeviceGetGpuInstances(device Device, info *GpuInstanceProfileInfo) ([]GpuInstance, Return) {
+	return device.GetGpuInstances(info)
 }
 
-func (Device Device) GetGpuInstances(Info *GpuInstanceProfileInfo) ([]GpuInstance, Return) {
-	return DeviceGetGpuInstances(Device, Info)
+func (device nvmlDevice) GetGpuInstances(info *GpuInstanceProfileInfo) ([]GpuInstance, Return) {
+	if info == nil {
+		return nil, ERROR_INVALID_ARGUMENT
+	}
+	var count uint32 = info.InstanceCount
+	gpuInstances := make([]nvmlGpuInstance, count)
+	ret := nvmlDeviceGetGpuInstances(device, info.Id, &gpuInstances[0], &count)
+	return convertSlice[nvmlGpuInstance, GpuInstance](gpuInstances[:count]), ret
 }
 
 // nvml.DeviceGetGpuInstanceById()
-func DeviceGetGpuInstanceById(Device Device, Id int) (GpuInstance, Return) {
-	var GpuInstance GpuInstance
-	ret := nvmlDeviceGetGpuInstanceById(Device, uint32(Id), &GpuInstance)
-	return GpuInstance, ret
+func (l *library) DeviceGetGpuInstanceById(device Device, id int) (GpuInstance, Return) {
+	return device.GetGpuInstanceById(id)
 }
 
-func (Device Device) GetGpuInstanceById(Id int) (GpuInstance, Return) {
-	return DeviceGetGpuInstanceById(Device, Id)
+func (device nvmlDevice) GetGpuInstanceById(id int) (GpuInstance, Return) {
+	var gpuInstance nvmlGpuInstance
+	ret := nvmlDeviceGetGpuInstanceById(device, uint32(id), &gpuInstance)
+	return gpuInstance, ret
 }
 
 // nvml.GpuInstanceGetInfo()
-func GpuInstanceGetInfo(GpuInstance GpuInstance) (GpuInstanceInfo, Return) {
-	var Info GpuInstanceInfo
-	ret := nvmlGpuInstanceGetInfo(GpuInstance, &Info)
-	return Info, ret
+func (l *library) GpuInstanceGetInfo(gpuInstance GpuInstance) (GpuInstanceInfo, Return) {
+	return gpuInstance.GetInfo()
 }
 
-func (GpuInstance GpuInstance) GetInfo() (GpuInstanceInfo, Return) {
-	return GpuInstanceGetInfo(GpuInstance)
+func (gpuInstance nvmlGpuInstance) GetInfo() (GpuInstanceInfo, Return) {
+	var info nvmlGpuInstanceInfo
+	ret := nvmlGpuInstanceGetInfo(gpuInstance, &info)
+	return info.convert(), ret
 }
 
 // nvml.GpuInstanceGetComputeInstanceProfileInfo()
-func GpuInstanceGetComputeInstanceProfileInfo(GpuInstance GpuInstance, Profile int, EngProfile int) (ComputeInstanceProfileInfo, Return) {
-	var Info ComputeInstanceProfileInfo
-	ret := nvmlGpuInstanceGetComputeInstanceProfileInfo(GpuInstance, uint32(Profile), uint32(EngProfile), &Info)
-	return Info, ret
+func (l *library) GpuInstanceGetComputeInstanceProfileInfo(gpuInstance GpuInstance, profile int, engProfile int) (ComputeInstanceProfileInfo, Return) {
+	return gpuInstance.GetComputeInstanceProfileInfo(profile, engProfile)
 }
 
-func (GpuInstance GpuInstance) GetComputeInstanceProfileInfo(Profile int, EngProfile int) (ComputeInstanceProfileInfo, Return) {
-	return GpuInstanceGetComputeInstanceProfileInfo(GpuInstance, Profile, EngProfile)
+func (gpuInstance nvmlGpuInstance) GetComputeInstanceProfileInfo(profile int, engProfile int) (ComputeInstanceProfileInfo, Return) {
+	var info ComputeInstanceProfileInfo
+	ret := nvmlGpuInstanceGetComputeInstanceProfileInfo(gpuInstance, uint32(profile), uint32(engProfile), &info)
+	return info, ret
 }
 
 // nvml.GpuInstanceGetComputeInstanceProfileInfoV()
 type ComputeInstanceProfileInfoV struct {
-	gpuInstance GpuInstance
+	gpuInstance nvmlGpuInstance
 	profile     int
 	engProfile  int
 }
 
-func (InfoV ComputeInstanceProfileInfoV) V1() (ComputeInstanceProfileInfo, Return) {
-	return GpuInstanceGetComputeInstanceProfileInfo(InfoV.gpuInstance, InfoV.profile, InfoV.engProfile)
+func (infoV ComputeInstanceProfileInfoV) V1() (ComputeInstanceProfileInfo, Return) {
+	return GpuInstanceGetComputeInstanceProfileInfo(infoV.gpuInstance, infoV.profile, infoV.engProfile)
 }
 
-func (InfoV ComputeInstanceProfileInfoV) V2() (ComputeInstanceProfileInfo_v2, Return) {
-	var Info ComputeInstanceProfileInfo_v2
-	Info.Version = STRUCT_VERSION(Info, 2)
-	ret := nvmlGpuInstanceGetComputeInstanceProfileInfoV(InfoV.gpuInstance, uint32(InfoV.profile), uint32(InfoV.engProfile), &Info)
-	return Info, ret
+func (infoV ComputeInstanceProfileInfoV) V2() (ComputeInstanceProfileInfo_v2, Return) {
+	var info ComputeInstanceProfileInfo_v2
+	info.Version = STRUCT_VERSION(info, 2)
+	ret := nvmlGpuInstanceGetComputeInstanceProfileInfoV(infoV.gpuInstance, uint32(infoV.profile), uint32(infoV.engProfile), &info)
+	return info, ret
 }
 
-func GpuInstanceGetComputeInstanceProfileInfoV(GpuInstance GpuInstance, Profile int, EngProfile int) ComputeInstanceProfileInfoV {
-	return ComputeInstanceProfileInfoV{GpuInstance, Profile, EngProfile}
+func (l *library) GpuInstanceGetComputeInstanceProfileInfoV(gpuInstance GpuInstance, profile int, engProfile int) ComputeInstanceProfileInfoV {
+	return gpuInstance.GetComputeInstanceProfileInfoV(profile, engProfile)
 }
 
-func (GpuInstance GpuInstance) GetComputeInstanceProfileInfoV(Profile int, EngProfile int) ComputeInstanceProfileInfoV {
-	return GpuInstanceGetComputeInstanceProfileInfoV(GpuInstance, Profile, EngProfile)
+func (gpuInstance nvmlGpuInstance) GetComputeInstanceProfileInfoV(profile int, engProfile int) ComputeInstanceProfileInfoV {
+	return ComputeInstanceProfileInfoV{gpuInstance, profile, engProfile}
 }
 
 // nvml.GpuInstanceGetComputeInstanceRemainingCapacity()
-func GpuInstanceGetComputeInstanceRemainingCapacity(GpuInstance GpuInstance, Info *ComputeInstanceProfileInfo) (int, Return) {
-	if Info == nil {
-		return 0, ERROR_INVALID_ARGUMENT
-	}
-	var Count uint32
-	ret := nvmlGpuInstanceGetComputeInstanceRemainingCapacity(GpuInstance, Info.Id, &Count)
-	return int(Count), ret
+func (l *library) GpuInstanceGetComputeInstanceRemainingCapacity(gpuInstance GpuInstance, info *ComputeInstanceProfileInfo) (int, Return) {
+	return gpuInstance.GetComputeInstanceRemainingCapacity(info)
 }
 
-func (GpuInstance GpuInstance) GetComputeInstanceRemainingCapacity(Info *ComputeInstanceProfileInfo) (int, Return) {
-	return GpuInstanceGetComputeInstanceRemainingCapacity(GpuInstance, Info)
+func (gpuInstance nvmlGpuInstance) GetComputeInstanceRemainingCapacity(info *ComputeInstanceProfileInfo) (int, Return) {
+	if info == nil {
+		return 0, ERROR_INVALID_ARGUMENT
+	}
+	var count uint32
+	ret := nvmlGpuInstanceGetComputeInstanceRemainingCapacity(gpuInstance, info.Id, &count)
+	return int(count), ret
 }
 
 // nvml.GpuInstanceCreateComputeInstance()
-func GpuInstanceCreateComputeInstance(GpuInstance GpuInstance, Info *ComputeInstanceProfileInfo) (ComputeInstance, Return) {
-	if Info == nil {
-		return ComputeInstance{}, ERROR_INVALID_ARGUMENT
-	}
-	var ComputeInstance ComputeInstance
-	ret := nvmlGpuInstanceCreateComputeInstance(GpuInstance, Info.Id, &ComputeInstance)
-	return ComputeInstance, ret
+func (l *library) GpuInstanceCreateComputeInstance(gpuInstance GpuInstance, info *ComputeInstanceProfileInfo) (ComputeInstance, Return) {
+	return gpuInstance.CreateComputeInstance(info)
 }
 
-func (GpuInstance GpuInstance) CreateComputeInstance(Info *ComputeInstanceProfileInfo) (ComputeInstance, Return) {
-	return GpuInstanceCreateComputeInstance(GpuInstance, Info)
+func (gpuInstance nvmlGpuInstance) CreateComputeInstance(info *ComputeInstanceProfileInfo) (ComputeInstance, Return) {
+	if info == nil {
+		return nil, ERROR_INVALID_ARGUMENT
+	}
+	var computeInstance nvmlComputeInstance
+	ret := nvmlGpuInstanceCreateComputeInstance(gpuInstance, info.Id, &computeInstance)
+	return computeInstance, ret
 }
 
 // nvml.ComputeInstanceDestroy()
-func ComputeInstanceDestroy(ComputeInstance ComputeInstance) Return {
-	return nvmlComputeInstanceDestroy(ComputeInstance)
+func (l *library) ComputeInstanceDestroy(computeInstance ComputeInstance) Return {
+	return computeInstance.Destroy()
 }
 
-func (ComputeInstance ComputeInstance) Destroy() Return {
-	return ComputeInstanceDestroy(ComputeInstance)
+func (computeInstance nvmlComputeInstance) Destroy() Return {
+	return nvmlComputeInstanceDestroy(computeInstance)
 }
 
 // nvml.GpuInstanceGetComputeInstances()
-func GpuInstanceGetComputeInstances(GpuInstance GpuInstance, Info *ComputeInstanceProfileInfo) ([]ComputeInstance, Return) {
-	if Info == nil {
-		return nil, ERROR_INVALID_ARGUMENT
-	}
-	var Count uint32 = Info.InstanceCount
-	ComputeInstances := make([]ComputeInstance, Count)
-	ret := nvmlGpuInstanceGetComputeInstances(GpuInstance, Info.Id, &ComputeInstances[0], &Count)
-	return ComputeInstances[:Count], ret
+func (l *library) GpuInstanceGetComputeInstances(gpuInstance GpuInstance, info *ComputeInstanceProfileInfo) ([]ComputeInstance, Return) {
+	return gpuInstance.GetComputeInstances(info)
 }
 
-func (GpuInstance GpuInstance) GetComputeInstances(Info *ComputeInstanceProfileInfo) ([]ComputeInstance, Return) {
-	return GpuInstanceGetComputeInstances(GpuInstance, Info)
+func (gpuInstance nvmlGpuInstance) GetComputeInstances(info *ComputeInstanceProfileInfo) ([]ComputeInstance, Return) {
+	if info == nil {
+		return nil, ERROR_INVALID_ARGUMENT
+	}
+	var count uint32 = info.InstanceCount
+	computeInstances := make([]nvmlComputeInstance, count)
+	ret := nvmlGpuInstanceGetComputeInstances(gpuInstance, info.Id, &computeInstances[0], &count)
+	return convertSlice[nvmlComputeInstance, ComputeInstance](computeInstances[:count]), ret
 }
 
 // nvml.GpuInstanceGetComputeInstanceById()
-func GpuInstanceGetComputeInstanceById(GpuInstance GpuInstance, Id int) (ComputeInstance, Return) {
-	var ComputeInstance ComputeInstance
-	ret := nvmlGpuInstanceGetComputeInstanceById(GpuInstance, uint32(Id), &ComputeInstance)
-	return ComputeInstance, ret
+func (l *library) GpuInstanceGetComputeInstanceById(gpuInstance GpuInstance, id int) (ComputeInstance, Return) {
+	return gpuInstance.GetComputeInstanceById(id)
 }
 
-func (GpuInstance GpuInstance) GetComputeInstanceById(Id int) (ComputeInstance, Return) {
-	return GpuInstanceGetComputeInstanceById(GpuInstance, Id)
+func (gpuInstance nvmlGpuInstance) GetComputeInstanceById(id int) (ComputeInstance, Return) {
+	var computeInstance nvmlComputeInstance
+	ret := nvmlGpuInstanceGetComputeInstanceById(gpuInstance, uint32(id), &computeInstance)
+	return computeInstance, ret
 }
 
 // nvml.ComputeInstanceGetInfo()
-func ComputeInstanceGetInfo(ComputeInstance ComputeInstance) (ComputeInstanceInfo, Return) {
-	var Info ComputeInstanceInfo
-	ret := nvmlComputeInstanceGetInfo(ComputeInstance, &Info)
-	return Info, ret
+func (l *library) ComputeInstanceGetInfo(computeInstance ComputeInstance) (ComputeInstanceInfo, Return) {
+	return computeInstance.GetInfo()
 }
 
-func (ComputeInstance ComputeInstance) GetInfo() (ComputeInstanceInfo, Return) {
-	return ComputeInstanceGetInfo(ComputeInstance)
+func (computeInstance nvmlComputeInstance) GetInfo() (ComputeInstanceInfo, Return) {
+	var info nvmlComputeInstanceInfo
+	ret := nvmlComputeInstanceGetInfo(computeInstance, &info)
+	return info.convert(), ret
 }
 
 // nvml.DeviceIsMigDeviceHandle()
-func DeviceIsMigDeviceHandle(Device Device) (bool, Return) {
-	var IsMigDevice uint32
-	ret := nvmlDeviceIsMigDeviceHandle(Device, &IsMigDevice)
-	return (IsMigDevice != 0), ret
+func (l *library) DeviceIsMigDeviceHandle(device Device) (bool, Return) {
+	return device.IsMigDeviceHandle()
 }
 
-func (Device Device) IsMigDeviceHandle() (bool, Return) {
-	return DeviceIsMigDeviceHandle(Device)
+func (device nvmlDevice) IsMigDeviceHandle() (bool, Return) {
+	var isMigDevice uint32
+	ret := nvmlDeviceIsMigDeviceHandle(device, &isMigDevice)
+	return (isMigDevice != 0), ret
 }
 
 // nvml DeviceGetGpuInstanceId()
-func DeviceGetGpuInstanceId(Device Device) (int, Return) {
-	var Id uint32
-	ret := nvmlDeviceGetGpuInstanceId(Device, &Id)
-	return int(Id), ret
+func (l *library) DeviceGetGpuInstanceId(device Device) (int, Return) {
+	return device.GetGpuInstanceId()
 }
 
-func (Device Device) GetGpuInstanceId() (int, Return) {
-	return DeviceGetGpuInstanceId(Device)
+func (device nvmlDevice) GetGpuInstanceId() (int, Return) {
+	var id uint32
+	ret := nvmlDeviceGetGpuInstanceId(device, &id)
+	return int(id), ret
 }
 
 // nvml.DeviceGetComputeInstanceId()
-func DeviceGetComputeInstanceId(Device Device) (int, Return) {
-	var Id uint32
-	ret := nvmlDeviceGetComputeInstanceId(Device, &Id)
-	return int(Id), ret
+func (l *library) DeviceGetComputeInstanceId(device Device) (int, Return) {
+	return device.GetComputeInstanceId()
 }
 
-func (Device Device) GetComputeInstanceId() (int, Return) {
-	return DeviceGetComputeInstanceId(Device)
+func (device nvmlDevice) GetComputeInstanceId() (int, Return) {
+	var id uint32
+	ret := nvmlDeviceGetComputeInstanceId(device, &id)
+	return int(id), ret
 }
 
 // nvml.DeviceGetMaxMigDeviceCount()
-func DeviceGetMaxMigDeviceCount(Device Device) (int, Return) {
-	var Count uint32
-	ret := nvmlDeviceGetMaxMigDeviceCount(Device, &Count)
-	return int(Count), ret
+func (l *library) DeviceGetMaxMigDeviceCount(device Device) (int, Return) {
+	return device.GetMaxMigDeviceCount()
 }
 
-func (Device Device) GetMaxMigDeviceCount() (int, Return) {
-	return DeviceGetMaxMigDeviceCount(Device)
+func (device nvmlDevice) GetMaxMigDeviceCount() (int, Return) {
+	var count uint32
+	ret := nvmlDeviceGetMaxMigDeviceCount(device, &count)
+	return int(count), ret
 }
 
 // nvml.DeviceGetMigDeviceHandleByIndex()
-func DeviceGetMigDeviceHandleByIndex(device Device, Index int) (Device, Return) {
-	var MigDevice Device
-	ret := nvmlDeviceGetMigDeviceHandleByIndex(device, uint32(Index), &MigDevice)
-	return MigDevice, ret
+func (l *library) DeviceGetMigDeviceHandleByIndex(device Device, index int) (Device, Return) {
+	return device.GetMigDeviceHandleByIndex(index)
 }
 
-func (Device Device) GetMigDeviceHandleByIndex(Index int) (Device, Return) {
-	return DeviceGetMigDeviceHandleByIndex(Device, Index)
+func (device nvmlDevice) GetMigDeviceHandleByIndex(index int) (Device, Return) {
+	var migDevice nvmlDevice
+	ret := nvmlDeviceGetMigDeviceHandleByIndex(device, uint32(index), &migDevice)
+	return migDevice, ret
 }
 
 // nvml.DeviceGetDeviceHandleFromMigDeviceHandle()
-func DeviceGetDeviceHandleFromMigDeviceHandle(MigDevice Device) (Device, Return) {
-	var Device Device
-	ret := nvmlDeviceGetDeviceHandleFromMigDeviceHandle(MigDevice, &Device)
-	return Device, ret
+func (l *library) DeviceGetDeviceHandleFromMigDeviceHandle(migdevice Device) (Device, Return) {
+	return migdevice.GetDeviceHandleFromMigDeviceHandle()
 }
 
-func (MigDevice Device) GetDeviceHandleFromMigDeviceHandle() (Device, Return) {
-	return DeviceGetDeviceHandleFromMigDeviceHandle(MigDevice)
+func (migDevice nvmlDevice) GetDeviceHandleFromMigDeviceHandle() (Device, Return) {
+	var device nvmlDevice
+	ret := nvmlDeviceGetDeviceHandleFromMigDeviceHandle(migDevice, &device)
+	return device, ret
 }
 
 // nvml.DeviceGetBusType()
-func DeviceGetBusType(Device Device) (BusType, Return) {
-	var Type BusType
-	ret := nvmlDeviceGetBusType(Device, &Type)
-	return Type, ret
+func (l *library) DeviceGetBusType(device Device) (BusType, Return) {
+	return device.GetBusType()
 }
 
-func (Device Device) GetBusType() (BusType, Return) {
-	return DeviceGetBusType(Device)
+func (device nvmlDevice) GetBusType() (BusType, Return) {
+	var busType BusType
+	ret := nvmlDeviceGetBusType(device, &busType)
+	return busType, ret
 }
 
 // nvml.DeviceSetDefaultFanSpeed_v2()
-func DeviceSetDefaultFanSpeed_v2(Device Device, Fan int) Return {
-	return nvmlDeviceSetDefaultFanSpeed_v2(Device, uint32(Fan))
+func (l *library) DeviceSetDefaultFanSpeed_v2(device Device, fan int) Return {
+	return device.SetDefaultFanSpeed_v2(fan)
 }
 
-func (Device Device) SetDefaultFanSpeed_v2(Fan int) Return {
-	return DeviceSetDefaultFanSpeed_v2(Device, Fan)
+func (device nvmlDevice) SetDefaultFanSpeed_v2(fan int) Return {
+	return nvmlDeviceSetDefaultFanSpeed_v2(device, uint32(fan))
 }
 
 // nvml.DeviceGetMinMaxFanSpeed()
-func DeviceGetMinMaxFanSpeed(Device Device) (int, int, Return) {
-	var MinSpeed, MaxSpeed uint32
-	ret := nvmlDeviceGetMinMaxFanSpeed(Device, &MinSpeed, &MaxSpeed)
-	return int(MinSpeed), int(MaxSpeed), ret
+func (l *library) DeviceGetMinMaxFanSpeed(device Device) (int, int, Return) {
+	return device.GetMinMaxFanSpeed()
 }
 
-func (Device Device) GetMinMaxFanSpeed() (int, int, Return) {
-	return DeviceGetMinMaxFanSpeed(Device)
+func (device nvmlDevice) GetMinMaxFanSpeed() (int, int, Return) {
+	var minSpeed, maxSpeed uint32
+	ret := nvmlDeviceGetMinMaxFanSpeed(device, &minSpeed, &maxSpeed)
+	return int(minSpeed), int(maxSpeed), ret
 }
 
 // nvml.DeviceGetThermalSettings()
-func DeviceGetThermalSettings(Device Device, SensorIndex uint32) (GpuThermalSettings, Return) {
-	var PThermalSettings GpuThermalSettings
-	ret := nvmlDeviceGetThermalSettings(Device, SensorIndex, &PThermalSettings)
-	return PThermalSettings, ret
+func (l *library) DeviceGetThermalSettings(device Device, sensorIndex uint32) (GpuThermalSettings, Return) {
+	return device.GetThermalSettings(sensorIndex)
 }
 
-func (Device Device) GetThermalSettings(SensorIndex uint32) (GpuThermalSettings, Return) {
-	return DeviceGetThermalSettings(Device, SensorIndex)
+func (device nvmlDevice) GetThermalSettings(sensorIndex uint32) (GpuThermalSettings, Return) {
+	var pThermalSettings GpuThermalSettings
+	ret := nvmlDeviceGetThermalSettings(device, sensorIndex, &pThermalSettings)
+	return pThermalSettings, ret
 }
 
 // nvml.DeviceGetDefaultEccMode()
-func DeviceGetDefaultEccMode(Device Device) (EnableState, Return) {
-	var DefaultMode EnableState
-	ret := nvmlDeviceGetDefaultEccMode(Device, &DefaultMode)
-	return DefaultMode, ret
+func (l *library) DeviceGetDefaultEccMode(device Device) (EnableState, Return) {
+	return device.GetDefaultEccMode()
 }
 
-func (Device Device) GetDefaultEccMode() (EnableState, Return) {
-	return DeviceGetDefaultEccMode(Device)
+func (device nvmlDevice) GetDefaultEccMode() (EnableState, Return) {
+	var defaultMode EnableState
+	ret := nvmlDeviceGetDefaultEccMode(device, &defaultMode)
+	return defaultMode, ret
 }
 
 // nvml.DeviceGetPcieSpeed()
-func DeviceGetPcieSpeed(Device Device) (int, Return) {
-	var PcieSpeed uint32
-	ret := nvmlDeviceGetPcieSpeed(Device, &PcieSpeed)
-	return int(PcieSpeed), ret
+func (l *library) DeviceGetPcieSpeed(device Device) (int, Return) {
+	return device.GetPcieSpeed()
 }
 
-func (Device Device) GetPcieSpeed() (int, Return) {
-	return DeviceGetPcieSpeed(Device)
+func (device nvmlDevice) GetPcieSpeed() (int, Return) {
+	var pcieSpeed uint32
+	ret := nvmlDeviceGetPcieSpeed(device, &pcieSpeed)
+	return int(pcieSpeed), ret
 }
 
 // nvml.DeviceGetGspFirmwareVersion()
-func DeviceGetGspFirmwareVersion(Device Device) (string, Return) {
-	Version := make([]byte, GSP_FIRMWARE_VERSION_BUF_SIZE)
-	ret := nvmlDeviceGetGspFirmwareVersion(Device, &Version[0])
-	return string(Version[:clen(Version)]), ret
+func (l *library) DeviceGetGspFirmwareVersion(device Device) (string, Return) {
+	return device.GetGspFirmwareVersion()
 }
 
-func (Device Device) GetGspFirmwareVersion() (string, Return) {
-	return DeviceGetGspFirmwareVersion(Device)
+func (device nvmlDevice) GetGspFirmwareVersion() (string, Return) {
+	version := make([]byte, GSP_FIRMWARE_VERSION_BUF_SIZE)
+	ret := nvmlDeviceGetGspFirmwareVersion(device, &version[0])
+	return string(version[:clen(version)]), ret
 }
 
 // nvml.DeviceGetGspFirmwareMode()
-func DeviceGetGspFirmwareMode(Device Device) (bool, bool, Return) {
-	var IsEnabled, DefaultMode uint32
-	ret := nvmlDeviceGetGspFirmwareMode(Device, &IsEnabled, &DefaultMode)
-	return (IsEnabled != 0), (DefaultMode != 0), ret
+func (l *library) DeviceGetGspFirmwareMode(device Device) (bool, bool, Return) {
+	return device.GetGspFirmwareMode()
 }
 
-func (Device Device) GetGspFirmwareMode() (bool, bool, Return) {
-	return DeviceGetGspFirmwareMode(Device)
+func (device nvmlDevice) GetGspFirmwareMode() (bool, bool, Return) {
+	var isEnabled, defaultMode uint32
+	ret := nvmlDeviceGetGspFirmwareMode(device, &isEnabled, &defaultMode)
+	return (isEnabled != 0), (defaultMode != 0), ret
 }
 
 // nvml.DeviceGetDynamicPstatesInfo()
-func DeviceGetDynamicPstatesInfo(Device Device) (GpuDynamicPstatesInfo, Return) {
-	var PDynamicPstatesInfo GpuDynamicPstatesInfo
-	ret := nvmlDeviceGetDynamicPstatesInfo(Device, &PDynamicPstatesInfo)
-	return PDynamicPstatesInfo, ret
+func (l *library) DeviceGetDynamicPstatesInfo(device Device) (GpuDynamicPstatesInfo, Return) {
+	return device.GetDynamicPstatesInfo()
 }
 
-func (Device Device) GetDynamicPstatesInfo() (GpuDynamicPstatesInfo, Return) {
-	return DeviceGetDynamicPstatesInfo(Device)
+func (device nvmlDevice) GetDynamicPstatesInfo() (GpuDynamicPstatesInfo, Return) {
+	var pDynamicPstatesInfo GpuDynamicPstatesInfo
+	ret := nvmlDeviceGetDynamicPstatesInfo(device, &pDynamicPstatesInfo)
+	return pDynamicPstatesInfo, ret
 }
 
 // nvml.DeviceSetFanSpeed_v2()
-func DeviceSetFanSpeed_v2(Device Device, Fan int, Speed int) Return {
-	return nvmlDeviceSetFanSpeed_v2(Device, uint32(Fan), uint32(Speed))
+func (l *library) DeviceSetFanSpeed_v2(device Device, fan int, speed int) Return {
+	return device.SetFanSpeed_v2(fan, speed)
 }
 
-func (Device Device) SetFanSpeed_v2(Fan int, Speed int) Return {
-	return DeviceSetFanSpeed_v2(Device, Fan, Speed)
+func (device nvmlDevice) SetFanSpeed_v2(fan int, speed int) Return {
+	return nvmlDeviceSetFanSpeed_v2(device, uint32(fan), uint32(speed))
 }
 
 // nvml.DeviceGetGpcClkVfOffset()
-func DeviceGetGpcClkVfOffset(Device Device) (int, Return) {
-	var Offset int32
-	ret := nvmlDeviceGetGpcClkVfOffset(Device, &Offset)
-	return int(Offset), ret
+func (l *library) DeviceGetGpcClkVfOffset(device Device) (int, Return) {
+	return device.GetGpcClkVfOffset()
 }
 
-func (Device Device) GetGpcClkVfOffset() (int, Return) {
-	return DeviceGetGpcClkVfOffset(Device)
+func (device nvmlDevice) GetGpcClkVfOffset() (int, Return) {
+	var offset int32
+	ret := nvmlDeviceGetGpcClkVfOffset(device, &offset)
+	return int(offset), ret
 }
 
 // nvml.DeviceSetGpcClkVfOffset()
-func DeviceSetGpcClkVfOffset(Device Device, Offset int) Return {
-	return nvmlDeviceSetGpcClkVfOffset(Device, int32(Offset))
+func (l *library) DeviceSetGpcClkVfOffset(device Device, offset int) Return {
+	return device.SetGpcClkVfOffset(offset)
 }
 
-func (Device Device) SetGpcClkVfOffset(Offset int) Return {
-	return DeviceSetGpcClkVfOffset(Device, Offset)
+func (device nvmlDevice) SetGpcClkVfOffset(offset int) Return {
+	return nvmlDeviceSetGpcClkVfOffset(device, int32(offset))
 }
 
 // nvml.DeviceGetMinMaxClockOfPState()
-func DeviceGetMinMaxClockOfPState(Device Device, _type ClockType, Pstate Pstates) (uint32, uint32, Return) {
-	var MinClockMHz, MaxClockMHz uint32
-	ret := nvmlDeviceGetMinMaxClockOfPState(Device, _type, Pstate, &MinClockMHz, &MaxClockMHz)
-	return MinClockMHz, MaxClockMHz, ret
+func (l *library) DeviceGetMinMaxClockOfPState(device Device, clockType ClockType, pstate Pstates) (uint32, uint32, Return) {
+	return device.GetMinMaxClockOfPState(clockType, pstate)
 }
 
-func (Device Device) GetMinMaxClockOfPState(_type ClockType, Pstate Pstates) (uint32, uint32, Return) {
-	return DeviceGetMinMaxClockOfPState(Device, _type, Pstate)
+func (device nvmlDevice) GetMinMaxClockOfPState(clockType ClockType, pstate Pstates) (uint32, uint32, Return) {
+	var minClockMHz, maxClockMHz uint32
+	ret := nvmlDeviceGetMinMaxClockOfPState(device, clockType, pstate, &minClockMHz, &maxClockMHz)
+	return minClockMHz, maxClockMHz, ret
 }
 
 // nvml.DeviceGetSupportedPerformanceStates()
-func DeviceGetSupportedPerformanceStates(Device Device) ([]Pstates, Return) {
-	Pstates := make([]Pstates, MAX_GPU_PERF_PSTATES)
-	ret := nvmlDeviceGetSupportedPerformanceStates(Device, &Pstates[0], MAX_GPU_PERF_PSTATES)
-	for i := 0; i < MAX_GPU_PERF_PSTATES; i++ {
-		if Pstates[i] == PSTATE_UNKNOWN {
-			return Pstates[0:i], ret
-		}
-	}
-	return Pstates, ret
+func (l *library) DeviceGetSupportedPerformanceStates(device Device) ([]Pstates, Return) {
+	return device.GetSupportedPerformanceStates()
 }
 
-func (Device Device) GetSupportedPerformanceStates() ([]Pstates, Return) {
-	return DeviceGetSupportedPerformanceStates(Device)
+func (device nvmlDevice) GetSupportedPerformanceStates() ([]Pstates, Return) {
+	pstates := make([]Pstates, MAX_GPU_PERF_PSTATES)
+	ret := nvmlDeviceGetSupportedPerformanceStates(device, &pstates[0], MAX_GPU_PERF_PSTATES)
+	for i := 0; i < MAX_GPU_PERF_PSTATES; i++ {
+		if pstates[i] == PSTATE_UNKNOWN {
+			return pstates[0:i], ret
+		}
+	}
+	return pstates, ret
 }
 
 // nvml.DeviceGetTargetFanSpeed()
-func DeviceGetTargetFanSpeed(Device Device, Fan int) (int, Return) {
-	var TargetSpeed uint32
-	ret := nvmlDeviceGetTargetFanSpeed(Device, uint32(Fan), &TargetSpeed)
-	return int(TargetSpeed), ret
+func (l *library) DeviceGetTargetFanSpeed(device Device, fan int) (int, Return) {
+	return device.GetTargetFanSpeed(fan)
 }
 
-func (Device Device) GetTargetFanSpeed(Fan int) (int, Return) {
-	return DeviceGetTargetFanSpeed(Device, Fan)
+func (device nvmlDevice) GetTargetFanSpeed(fan int) (int, Return) {
+	var targetSpeed uint32
+	ret := nvmlDeviceGetTargetFanSpeed(device, uint32(fan), &targetSpeed)
+	return int(targetSpeed), ret
 }
 
 // nvml.DeviceGetMemClkVfOffset()
-func DeviceGetMemClkVfOffset(Device Device) (int, Return) {
-	var Offset int32
-	ret := nvmlDeviceGetMemClkVfOffset(Device, &Offset)
-	return int(Offset), ret
+func (l *library) DeviceGetMemClkVfOffset(device Device) (int, Return) {
+	return device.GetMemClkVfOffset()
 }
 
-func (Device Device) GetMemClkVfOffset() (int, Return) {
-	return DeviceGetMemClkVfOffset(Device)
+func (device nvmlDevice) GetMemClkVfOffset() (int, Return) {
+	var offset int32
+	ret := nvmlDeviceGetMemClkVfOffset(device, &offset)
+	return int(offset), ret
 }
 
 // nvml.DeviceSetMemClkVfOffset()
-func DeviceSetMemClkVfOffset(Device Device, Offset int) Return {
-	return nvmlDeviceSetMemClkVfOffset(Device, int32(Offset))
+func (l *library) DeviceSetMemClkVfOffset(device Device, offset int) Return {
+	return device.SetMemClkVfOffset(offset)
 }
 
-func (Device Device) SetMemClkVfOffset(Offset int) Return {
-	return DeviceSetMemClkVfOffset(Device, Offset)
+func (device nvmlDevice) SetMemClkVfOffset(offset int) Return {
+	return nvmlDeviceSetMemClkVfOffset(device, int32(offset))
 }
 
 // nvml.DeviceGetGpcClkMinMaxVfOffset()
-func DeviceGetGpcClkMinMaxVfOffset(Device Device) (int, int, Return) {
-	var MinOffset, MaxOffset int32
-	ret := nvmlDeviceGetGpcClkMinMaxVfOffset(Device, &MinOffset, &MaxOffset)
-	return int(MinOffset), int(MaxOffset), ret
+func (l *library) DeviceGetGpcClkMinMaxVfOffset(device Device) (int, int, Return) {
+	return device.GetGpcClkMinMaxVfOffset()
 }
 
-func (Device Device) GetGpcClkMinMaxVfOffset() (int, int, Return) {
-	return DeviceGetGpcClkMinMaxVfOffset(Device)
+func (device nvmlDevice) GetGpcClkMinMaxVfOffset() (int, int, Return) {
+	var minOffset, maxOffset int32
+	ret := nvmlDeviceGetGpcClkMinMaxVfOffset(device, &minOffset, &maxOffset)
+	return int(minOffset), int(maxOffset), ret
 }
 
 // nvml.DeviceGetMemClkMinMaxVfOffset()
-func DeviceGetMemClkMinMaxVfOffset(Device Device) (int, int, Return) {
-	var MinOffset, MaxOffset int32
-	ret := nvmlDeviceGetMemClkMinMaxVfOffset(Device, &MinOffset, &MaxOffset)
-	return int(MinOffset), int(MaxOffset), ret
+func (l *library) DeviceGetMemClkMinMaxVfOffset(device Device) (int, int, Return) {
+	return device.GetMemClkMinMaxVfOffset()
 }
 
-func (Device Device) GetMemClkMinMaxVfOffset() (int, int, Return) {
-	return DeviceGetMemClkMinMaxVfOffset(Device)
+func (device nvmlDevice) GetMemClkMinMaxVfOffset() (int, int, Return) {
+	var minOffset, maxOffset int32
+	ret := nvmlDeviceGetMemClkMinMaxVfOffset(device, &minOffset, &maxOffset)
+	return int(minOffset), int(maxOffset), ret
 }
 
 // nvml.DeviceGetGpuMaxPcieLinkGeneration()
-func DeviceGetGpuMaxPcieLinkGeneration(Device Device) (int, Return) {
-	var MaxLinkGenDevice uint32
-	ret := nvmlDeviceGetGpuMaxPcieLinkGeneration(Device, &MaxLinkGenDevice)
-	return int(MaxLinkGenDevice), ret
+func (l *library) DeviceGetGpuMaxPcieLinkGeneration(device Device) (int, Return) {
+	return device.GetGpuMaxPcieLinkGeneration()
 }
 
-func (Device Device) GetGpuMaxPcieLinkGeneration() (int, Return) {
-	return DeviceGetGpuMaxPcieLinkGeneration(Device)
+func (device nvmlDevice) GetGpuMaxPcieLinkGeneration() (int, Return) {
+	var maxLinkGenDevice uint32
+	ret := nvmlDeviceGetGpuMaxPcieLinkGeneration(device, &maxLinkGenDevice)
+	return int(maxLinkGenDevice), ret
 }
 
 // nvml.DeviceGetFanControlPolicy_v2()
-func DeviceGetFanControlPolicy_v2(Device Device, Fan int) (FanControlPolicy, Return) {
-	var Policy FanControlPolicy
-	ret := nvmlDeviceGetFanControlPolicy_v2(Device, uint32(Fan), &Policy)
-	return Policy, ret
+func (l *library) DeviceGetFanControlPolicy_v2(device Device, fan int) (FanControlPolicy, Return) {
+	return device.GetFanControlPolicy_v2(fan)
 }
 
-func (Device Device) GetFanControlPolicy_v2(Fan int) (FanControlPolicy, Return) {
-	return DeviceGetFanControlPolicy_v2(Device, Fan)
+func (device nvmlDevice) GetFanControlPolicy_v2(fan int) (FanControlPolicy, Return) {
+	var policy FanControlPolicy
+	ret := nvmlDeviceGetFanControlPolicy_v2(device, uint32(fan), &policy)
+	return policy, ret
 }
 
 // nvml.DeviceSetFanControlPolicy()
-func DeviceSetFanControlPolicy(Device Device, Fan int, Policy FanControlPolicy) Return {
-	return nvmlDeviceSetFanControlPolicy(Device, uint32(Fan), Policy)
+func (l *library) DeviceSetFanControlPolicy(device Device, fan int, policy FanControlPolicy) Return {
+	return device.SetFanControlPolicy(fan, policy)
 }
 
-func (Device Device) SetFanControlPolicy(Fan int, Policy FanControlPolicy) Return {
-	return DeviceSetFanControlPolicy(Device, Fan, Policy)
+func (device nvmlDevice) SetFanControlPolicy(fan int, policy FanControlPolicy) Return {
+	return nvmlDeviceSetFanControlPolicy(device, uint32(fan), policy)
 }
 
 // nvml.DeviceClearFieldValues()
-func DeviceClearFieldValues(Device Device, Values []FieldValue) Return {
-	ValuesCount := len(Values)
-	return nvmlDeviceClearFieldValues(Device, int32(ValuesCount), &Values[0])
+func (l *library) DeviceClearFieldValues(device Device, values []FieldValue) Return {
+	return device.ClearFieldValues(values)
 }
 
-func (Device Device) ClearFieldValues(Values []FieldValue) Return {
-	return DeviceClearFieldValues(Device, Values)
+func (device nvmlDevice) ClearFieldValues(values []FieldValue) Return {
+	valuesCount := len(values)
+	return nvmlDeviceClearFieldValues(device, int32(valuesCount), &values[0])
 }
 
 // nvml.DeviceGetVgpuCapabilities()
-func DeviceGetVgpuCapabilities(Device Device, Capability DeviceVgpuCapability) (bool, Return) {
-	var CapResult uint32
-	ret := nvmlDeviceGetVgpuCapabilities(Device, Capability, &CapResult)
-	return (CapResult != 0), ret
+func (l *library) DeviceGetVgpuCapabilities(device Device, capability DeviceVgpuCapability) (bool, Return) {
+	return device.GetVgpuCapabilities(capability)
 }
 
-func (Device Device) GetVgpuCapabilities(Capability DeviceVgpuCapability) (bool, Return) {
-	return DeviceGetVgpuCapabilities(Device, Capability)
+func (device nvmlDevice) GetVgpuCapabilities(capability DeviceVgpuCapability) (bool, Return) {
+	var capResult uint32
+	ret := nvmlDeviceGetVgpuCapabilities(device, capability, &capResult)
+	return (capResult != 0), ret
 }
 
 // nvml.DeviceGetVgpuSchedulerLog()
-func DeviceGetVgpuSchedulerLog(Device Device) (VgpuSchedulerLog, Return) {
-	var PSchedulerLog VgpuSchedulerLog
-	ret := nvmlDeviceGetVgpuSchedulerLog(Device, &PSchedulerLog)
-	return PSchedulerLog, ret
+func (l *library) DeviceGetVgpuSchedulerLog(device Device) (VgpuSchedulerLog, Return) {
+	return device.GetVgpuSchedulerLog()
 }
 
-func (Device Device) GetVgpuSchedulerLog() (VgpuSchedulerLog, Return) {
-	return DeviceGetVgpuSchedulerLog(Device)
+func (device nvmlDevice) GetVgpuSchedulerLog() (VgpuSchedulerLog, Return) {
+	var pSchedulerLog VgpuSchedulerLog
+	ret := nvmlDeviceGetVgpuSchedulerLog(device, &pSchedulerLog)
+	return pSchedulerLog, ret
 }
 
 // nvml.DeviceGetVgpuSchedulerState()
-func DeviceGetVgpuSchedulerState(Device Device) (VgpuSchedulerGetState, Return) {
-	var PSchedulerState VgpuSchedulerGetState
-	ret := nvmlDeviceGetVgpuSchedulerState(Device, &PSchedulerState)
-	return PSchedulerState, ret
+func (l *library) DeviceGetVgpuSchedulerState(device Device) (VgpuSchedulerGetState, Return) {
+	return device.GetVgpuSchedulerState()
 }
 
-func (Device Device) GetVgpuSchedulerState() (VgpuSchedulerGetState, Return) {
-	return DeviceGetVgpuSchedulerState(Device)
+func (device nvmlDevice) GetVgpuSchedulerState() (VgpuSchedulerGetState, Return) {
+	var pSchedulerState VgpuSchedulerGetState
+	ret := nvmlDeviceGetVgpuSchedulerState(device, &pSchedulerState)
+	return pSchedulerState, ret
 }
 
 // nvml.DeviceSetVgpuSchedulerState()
-func DeviceSetVgpuSchedulerState(Device Device, PSchedulerState *VgpuSchedulerSetState) Return {
-	return nvmlDeviceSetVgpuSchedulerState(Device, PSchedulerState)
+func (l *library) DeviceSetVgpuSchedulerState(device Device, pSchedulerState *VgpuSchedulerSetState) Return {
+	return device.SetVgpuSchedulerState(pSchedulerState)
 }
 
-func (Device Device) SetVgpuSchedulerState(PSchedulerState *VgpuSchedulerSetState) Return {
-	return DeviceSetVgpuSchedulerState(Device, PSchedulerState)
+func (device nvmlDevice) SetVgpuSchedulerState(pSchedulerState *VgpuSchedulerSetState) Return {
+	return nvmlDeviceSetVgpuSchedulerState(device, pSchedulerState)
 }
 
 // nvml.DeviceGetVgpuSchedulerCapabilities()
-func DeviceGetVgpuSchedulerCapabilities(Device Device) (VgpuSchedulerCapabilities, Return) {
-	var PCapabilities VgpuSchedulerCapabilities
-	ret := nvmlDeviceGetVgpuSchedulerCapabilities(Device, &PCapabilities)
-	return PCapabilities, ret
+func (l *library) DeviceGetVgpuSchedulerCapabilities(device Device) (VgpuSchedulerCapabilities, Return) {
+	return device.GetVgpuSchedulerCapabilities()
 }
 
-func (Device Device) GetVgpuSchedulerCapabilities() (VgpuSchedulerCapabilities, Return) {
-	return DeviceGetVgpuSchedulerCapabilities(Device)
+func (device nvmlDevice) GetVgpuSchedulerCapabilities() (VgpuSchedulerCapabilities, Return) {
+	var pCapabilities VgpuSchedulerCapabilities
+	ret := nvmlDeviceGetVgpuSchedulerCapabilities(device, &pCapabilities)
+	return pCapabilities, ret
 }
 
 // nvml.GpuInstanceGetComputeInstancePossiblePlacements()
-func GpuInstanceGetComputeInstancePossiblePlacements(GpuInstance GpuInstance, Info *ComputeInstanceProfileInfo) ([]ComputeInstancePlacement, Return) {
-	var Count uint32
-	ret := nvmlGpuInstanceGetComputeInstancePossiblePlacements(GpuInstance, Info.Id, nil, &Count)
+func (l *library) GpuInstanceGetComputeInstancePossiblePlacements(gpuInstance GpuInstance, info *ComputeInstanceProfileInfo) ([]ComputeInstancePlacement, Return) {
+	return gpuInstance.GetComputeInstancePossiblePlacements(info)
+}
+
+func (gpuInstance nvmlGpuInstance) GetComputeInstancePossiblePlacements(info *ComputeInstanceProfileInfo) ([]ComputeInstancePlacement, Return) {
+	var count uint32
+	ret := nvmlGpuInstanceGetComputeInstancePossiblePlacements(gpuInstance, info.Id, nil, &count)
 	if ret != SUCCESS {
 		return nil, ret
 	}
-	if Count == 0 {
+	if count == 0 {
 		return []ComputeInstancePlacement{}, ret
 	}
-	PlacementArray := make([]ComputeInstancePlacement, Count)
-	ret = nvmlGpuInstanceGetComputeInstancePossiblePlacements(GpuInstance, Info.Id, &PlacementArray[0], &Count)
-	return PlacementArray, ret
-}
-
-func (GpuInstance GpuInstance) GetComputeInstancePossiblePlacements(Info *ComputeInstanceProfileInfo) ([]ComputeInstancePlacement, Return) {
-	return GpuInstanceGetComputeInstancePossiblePlacements(GpuInstance, Info)
+	placementArray := make([]ComputeInstancePlacement, count)
+	ret = nvmlGpuInstanceGetComputeInstancePossiblePlacements(gpuInstance, info.Id, &placementArray[0], &count)
+	return placementArray, ret
 }
 
 // nvml.GpuInstanceCreateComputeInstanceWithPlacement()
-func GpuInstanceCreateComputeInstanceWithPlacement(GpuInstance GpuInstance, Info *ComputeInstanceProfileInfo, Placement *ComputeInstancePlacement, ComputeInstance *ComputeInstance) Return {
-	return nvmlGpuInstanceCreateComputeInstanceWithPlacement(GpuInstance, Info.Id, Placement, ComputeInstance)
+func (l *library) GpuInstanceCreateComputeInstanceWithPlacement(gpuInstance GpuInstance, info *ComputeInstanceProfileInfo, placement *ComputeInstancePlacement) (ComputeInstance, Return) {
+	return gpuInstance.CreateComputeInstanceWithPlacement(info, placement)
 }
 
-func (GpuInstance GpuInstance) CreateComputeInstanceWithPlacement(Info *ComputeInstanceProfileInfo, Placement *ComputeInstancePlacement, ComputeInstance *ComputeInstance) Return {
-	return GpuInstanceCreateComputeInstanceWithPlacement(GpuInstance, Info, Placement, ComputeInstance)
+func (gpuInstance nvmlGpuInstance) CreateComputeInstanceWithPlacement(info *ComputeInstanceProfileInfo, placement *ComputeInstancePlacement) (ComputeInstance, Return) {
+	var computeInstance nvmlComputeInstance
+	ret := nvmlGpuInstanceCreateComputeInstanceWithPlacement(gpuInstance, info.Id, placement, &computeInstance)
+	return computeInstance, ret
 }
 
 // nvml.DeviceGetGpuFabricInfo()
-func DeviceGetGpuFabricInfo(Device Device) (GpuFabricInfo, Return) {
-	var GpuFabricInfo GpuFabricInfo
-	ret := nvmlDeviceGetGpuFabricInfo(Device, &GpuFabricInfo)
-	return GpuFabricInfo, ret
+func (l *library) DeviceGetGpuFabricInfo(device Device) (GpuFabricInfo, Return) {
+	return device.GetGpuFabricInfo()
 }
 
-func (Device Device) GetGpuFabricInfo() (GpuFabricInfo, Return) {
-	return DeviceGetGpuFabricInfo(Device)
+func (device nvmlDevice) GetGpuFabricInfo() (GpuFabricInfo, Return) {
+	var gpuFabricInfo GpuFabricInfo
+	ret := nvmlDeviceGetGpuFabricInfo(device, &gpuFabricInfo)
+	return gpuFabricInfo, ret
 }
 
 // nvml.DeviceCcuGetStreamState()
-func DeviceCcuGetStreamState(Device Device) (int, Return) {
-	var State uint32
-	ret := nvmlDeviceCcuGetStreamState(Device, &State)
-	return int(State), ret
+func (l *library) DeviceCcuGetStreamState(device Device) (int, Return) {
+	return device.CcuGetStreamState()
 }
 
-func (Device Device) CcuGetStreamState() (int, Return) {
-	return DeviceCcuGetStreamState(Device)
+func (device nvmlDevice) CcuGetStreamState() (int, Return) {
+	var state uint32
+	ret := nvmlDeviceCcuGetStreamState(device, &state)
+	return int(state), ret
 }
 
 // nvml.DeviceCcuSetStreamState()
-func DeviceCcuSetStreamState(Device Device, State int) Return {
-	return nvmlDeviceCcuSetStreamState(Device, uint32(State))
+func (l *library) DeviceCcuSetStreamState(device Device, state int) Return {
+	return device.CcuSetStreamState(state)
 }
 
-func (Device Device) CcuSetStreamState(State int) Return {
-	return DeviceCcuSetStreamState(Device, State)
+func (device nvmlDevice) CcuSetStreamState(state int) Return {
+	return nvmlDeviceCcuSetStreamState(device, uint32(state))
 }
 
 // nvml.DeviceSetNvLinkDeviceLowPowerThreshold()
-func DeviceSetNvLinkDeviceLowPowerThreshold(Device Device, Info *NvLinkPowerThres) Return {
-	return nvmlDeviceSetNvLinkDeviceLowPowerThreshold(Device, Info)
+func (l *library) DeviceSetNvLinkDeviceLowPowerThreshold(device Device, info *NvLinkPowerThres) Return {
+	return device.SetNvLinkDeviceLowPowerThreshold(info)
 }
 
-func (Device Device) SetNvLinkDeviceLowPowerThreshold(Info *NvLinkPowerThres) Return {
-	return DeviceSetNvLinkDeviceLowPowerThreshold(Device, Info)
+func (device nvmlDevice) SetNvLinkDeviceLowPowerThreshold(info *NvLinkPowerThres) Return {
+	return nvmlDeviceSetNvLinkDeviceLowPowerThreshold(device, info)
 }
