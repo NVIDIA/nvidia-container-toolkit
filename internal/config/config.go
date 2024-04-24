@@ -33,8 +33,9 @@ const (
 	configOverride = "XDG_CONFIG_HOME"
 	configFilePath = "nvidia-container-runtime/config.toml"
 
-	nvidiaCTKExecutable      = "nvidia-ctk"
-	nvidiaCTKDefaultFilePath = "/usr/bin/nvidia-ctk"
+	nvidiaCTKExecutable          = "nvidia-ctk"
+	nvidiaCTKDefaultFilePath     = "/usr/bin/nvidia-ctk"
+	nvidiaCDIHookDefaultFilePath = "/usr/bin/nvidia-cdi-hook"
 
 	nvidiaContainerRuntimeHookExecutable  = "nvidia-container-runtime-hook"
 	nvidiaContainerRuntimeHookDefaultPath = "/usr/bin/nvidia-container-runtime-hook"
@@ -177,12 +178,35 @@ var getDistIDLike = func() []string {
 // This executable is used in hooks and needs to be an absolute path.
 // If the path is specified as an absolute path, it is used directly
 // without checking for existence of an executable at that path.
+//
+// Deprecated: Use ResolveNVIDIACDIHookPath directly instead.
 func ResolveNVIDIACTKPath(logger logger.Interface, nvidiaCTKPath string) string {
 	return resolveWithDefault(
 		logger,
 		"NVIDIA Container Toolkit CLI",
 		nvidiaCTKPath,
 		nvidiaCTKDefaultFilePath,
+	)
+}
+
+// ResolveNVIDIACDIHookPath resolves the path to the nvidia-cdi-hook binary.
+// This executable is used in hooks and needs to be an absolute path.
+// If the path is specified as an absolute path, it is used directly
+// without checking for existence of an executable at that path.
+func ResolveNVIDIACDIHookPath(logger logger.Interface, nvidiaCDIHookPath string) string {
+	if filepath.Base(nvidiaCDIHookPath) == "nvidia-ctk" {
+		return resolveWithDefault(
+			logger,
+			"NVIDIA Container Toolkit CLI",
+			nvidiaCDIHookPath,
+			nvidiaCTKDefaultFilePath,
+		)
+	}
+	return resolveWithDefault(
+		logger,
+		"NVIDIA CDI Hook CLI",
+		nvidiaCDIHookPath,
+		nvidiaCDIHookDefaultFilePath,
 	)
 }
 

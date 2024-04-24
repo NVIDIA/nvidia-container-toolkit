@@ -48,7 +48,7 @@ type nvcdilib struct {
 	deviceNamers       DeviceNamers
 	driverRoot         string
 	devRoot            string
-	nvidiaCTKPath      string
+	nvidiaCDIHookPath  string
 	ldconfigPath       string
 	configSearchPaths  []string
 	librarySearchPaths []string
@@ -87,8 +87,8 @@ func New(opts ...Option) (Interface, error) {
 	if l.devRoot == "" {
 		l.devRoot = l.driverRoot
 	}
-	if l.nvidiaCTKPath == "" {
-		l.nvidiaCTKPath = "/usr/bin/nvidia-ctk"
+	if l.nvidiaCDIHookPath == "" {
+		l.nvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
 	}
 	if l.infolib == nil {
 		l.infolib = info.New()

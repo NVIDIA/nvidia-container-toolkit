@@ -355,6 +355,13 @@ func Install(cli *cli.Context, opts *options) error {
 		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA Container Toolkit CLI: %v", err))
 	}
 
+	nvidiaCDIHookPath, err := installContainerCDIHookCLI(opts.toolkitRoot)
+	if err != nil && !opts.ignoreErrors {
+		return fmt.Errorf("error installing NVIDIA Container CDI Hook CLI: %v", err)
+	} else if err != nil {
+		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA Container CDI Hook CLI: %v", err))
+	}
+
 	err = installToolkitConfig(cli, toolkitConfigPath, nvidiaContainerCliExecutable, nvidiaCTKPath, nvidiaContainerRuntimeHookPath, opts)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
@@ -369,7 +376,7 @@ func Install(cli *cli.Context, opts *options) error {
 		log.Errorf("Ignoring error: %v", fmt.Errorf("error creating device nodes: %v", err))
 	}
 
-	err = generateCDISpec(opts, nvidiaCTKPath)
+	err = generateCDISpec(opts, nvidiaCDIHookPath)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error generating CDI specification: %v", err)
 	} else if err != nil {
@@ -533,6 +540,19 @@ func installContainerToolkitCLI(toolkitDir string) (string, error) {
 		target: executableTarget{
 			dotfileName: "nvidia-ctk.real",
 			wrapperName: "nvidia-ctk",
+		},
+	}
+
+	return e.install(toolkitDir)
+}
+
+// installContainerCDIHookCLI installs the nvidia-cdi-hook CLI executable and wrapper.
+func installContainerCDIHookCLI(toolkitDir string) (string, error) {
+	e := executable{
+		source: "/usr/bin/nvidia-cdi-hook",
+		target: executableTarget{
+			dotfileName: "nvidia-cdi-hook.real",
+			wrapperName: "nvidia-cdi-hook",
 		},
 	}
 
@@ -749,8 +769,8 @@ func createDeviceNodes(opts *options) error {
 	return nil
 }
 
-// generateCDISpec generates a CDI spec for use in managemnt containers
-func generateCDISpec(opts *options, nvidiaCTKPath string) error {
+// generateCDISpec generates a CDI spec for use in management containers
+func generateCDISpec(opts *options, nvidiaCDIHookPath string) error {
 	if !opts.cdiEnabled {
 		return nil
 	}
@@ -758,7 +778,7 @@ func generateCDISpec(opts *options, nvidiaCTKPath string) error {
 	cdilib, err := nvcdi.New(
 		nvcdi.WithMode(nvcdi.ModeManagement),
 		nvcdi.WithDriverRoot(opts.DriverRootCtrPath),
-		nvcdi.WithNVIDIACTKPath(nvidiaCTKPath),
+		nvcdi.WithNVIDIACDIHookPath(nvidiaCDIHookPath),
 		nvcdi.WithVendor(opts.cdiVendor),
 		nvcdi.WithClass(opts.cdiClass),
 	)

@@ -35,12 +35,12 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, image imag
 		return nil, nil
 	}
 
-	nvidiaCTKPath := cfg.NVIDIACTKConfig.Path
+	nvidiaCDIHookPath := cfg.NVIDIACTKConfig.Path
 
 	mounts, err := discover.NewGraphicsMountsDiscoverer(
 		logger,
 		driver,
-		nvidiaCTKPath,
+		nvidiaCDIHookPath,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mounts discoverer: %v", err)
@@ -52,7 +52,7 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, image imag
 		logger,
 		image.DevicesFromEnvvars(visibleDevicesEnvvar),
 		devRoot,
-		nvidiaCTKPath,
+		nvidiaCDIHookPath,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct discoverer: %v", err)

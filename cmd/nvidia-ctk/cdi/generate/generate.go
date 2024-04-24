@@ -47,7 +47,7 @@ type options struct {
 	deviceNameStrategies cli.StringSlice
 	driverRoot           string
 	devRoot              string
-	nvidiaCTKPath        string
+	nvidiaCDIHookPath    string
 	ldconfigPath         string
 	mode                 string
 	vendor               string
@@ -132,9 +132,12 @@ func (m command) build() *cli.Command {
 			Destination: &opts.librarySearchPaths,
 		},
 		&cli.StringFlag{
-			Name:        "nvidia-ctk-path",
-			Usage:       "Specify the path to use for the nvidia-ctk in the generated CDI specification. If this is left empty, the path will be searched.",
-			Destination: &opts.nvidiaCTKPath,
+			Name:    "nvidia-cdi-hook-path",
+			Aliases: []string{"nvidia-ctk-path"},
+			Usage: "Specify the path to use for the nvidia-cdi-hook in the generated CDI specification. " +
+				"If not specified, the PATH will be searched for `nvidia-cdi-hook`. " +
+				"NOTE: That if this is specified as `nvidia-ctk`, the PATH will be searched for `nvidia-ctk` instead.",
+			Destination: &opts.nvidiaCDIHookPath,
 		},
 		&cli.StringFlag{
 			Name:        "ldconfig-path",
@@ -198,7 +201,7 @@ func (m command) validateFlags(c *cli.Context, opts *options) error {
 		}
 	}
 
-	opts.nvidiaCTKPath = config.ResolveNVIDIACTKPath(m.logger, opts.nvidiaCTKPath)
+	opts.nvidiaCDIHookPath = config.ResolveNVIDIACDIHookPath(m.logger, opts.nvidiaCDIHookPath)
 
 	if outputFileFormat := formatFromFilename(opts.output); outputFileFormat != "" {
 		m.logger.Debugf("Inferred output format as %q from output file name", outputFileFormat)
@@ -262,7 +265,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithLogger(m.logger),
 		nvcdi.WithDriverRoot(opts.driverRoot),
 		nvcdi.WithDevRoot(opts.devRoot),
-		nvcdi.WithNVIDIACTKPath(opts.nvidiaCTKPath),
+		nvcdi.WithNVIDIACDIHookPath(opts.nvidiaCDIHookPath),
 		nvcdi.WithLdconfigPath(opts.ldconfigPath),
 		nvcdi.WithDeviceNamers(deviceNamers...),
 		nvcdi.WithMode(opts.mode),

@@ -98,13 +98,13 @@ func TestDeduplicate(t *testing.T) {
 					Hooks: []*specs.Hook{
 						{
 							HookName: "createContainer",
-							Path:     "/usr/bin/nvidia-ctk",
-							Args:     []string{"nvidia-ctk", "hook", "chmod", "--mode", "755", "--path", "/dev/dri"},
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "chmod", "--mode", "755", "--path", "/dev/dri"},
 						},
 						{
 							HookName: "createContainer",
-							Path:     "/usr/bin/nvidia-ctk",
-							Args:     []string{"nvidia-ctk", "hook", "chmod", "--mode", "755", "--path", "/dev/dri"},
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "chmod", "--mode", "755", "--path", "/dev/dri"},
 						},
 					},
 				},
@@ -114,8 +114,8 @@ func TestDeduplicate(t *testing.T) {
 					Hooks: []*specs.Hook{
 						{
 							HookName: "createContainer",
-							Path:     "/usr/bin/nvidia-ctk",
-							Args:     []string{"nvidia-ctk", "hook", "chmod", "--mode", "755", "--path", "/dev/dri"},
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "chmod", "--mode", "755", "--path", "/dev/dri"},
 						},
 					},
 				},

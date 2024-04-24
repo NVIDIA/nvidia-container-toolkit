@@ -185,7 +185,7 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devices []string) (spec.Interface, error) {
 	cdilib, err := nvcdi.New(
 		nvcdi.WithLogger(logger),
-		nvcdi.WithNVIDIACTKPath(cfg.NVIDIACTKConfig.Path),
+		nvcdi.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path),
 		nvcdi.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
 		nvcdi.WithVendor("runtime.nvidia.com"),
 		nvcdi.WithClass("gpu"),

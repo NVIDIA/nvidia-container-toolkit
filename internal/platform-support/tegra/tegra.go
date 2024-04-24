@@ -30,7 +30,7 @@ type tegraOptions struct {
 	csvFiles           []string
 	driverRoot         string
 	devRoot            string
-	nvidiaCTKPath      string
+	nvidiaCDIHookPath  string
 	ldconfigPath       string
 	librarySearchPaths []string
 	ignorePatterns     ignoreMountSpecPatterns
@@ -80,7 +80,7 @@ func New(opts ...Option) (discover.Discover, error) {
 		return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
 	}
 
-	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(o.logger, csvDiscoverer, o.nvidiaCTKPath, o.ldconfigPath)
+	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(o.logger, csvDiscoverer, o.nvidiaCDIHookPath, o.ldconfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ldcach update hook discoverer: %v", err)
 	}
@@ -133,10 +133,10 @@ func WithCSVFiles(csvFiles []string) Option {
 	}
 }
 
-// WithNVIDIACTKPath sets the path to the nvidia-container-toolkit binary.
-func WithNVIDIACTKPath(nvidiaCTKPath string) Option {
+// WithNVIDIACDIHookPath sets the path to the nvidia-cdi-hook binary.
+func WithNVIDIACDIHookPath(nvidiaCDIHookPath string) Option {
 	return func(o *tegraOptions) {
-		o.nvidiaCTKPath = nvidiaCTKPath
+		o.nvidiaCDIHookPath = nvidiaCDIHookPath
 	}
 }
 

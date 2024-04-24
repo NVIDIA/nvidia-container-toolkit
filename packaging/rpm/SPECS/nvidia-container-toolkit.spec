@@ -16,6 +16,7 @@ Source2: LICENSE
 Source3: nvidia-container-runtime
 Source4: nvidia-container-runtime.cdi
 Source5: nvidia-container-runtime.legacy
+Source6: nvidia-cdi-hook
 
 Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook <= 1.4.0-2
 Provides: nvidia-container-runtime
@@ -27,7 +28,7 @@ Requires: nvidia-container-toolkit-base == %{version}-%{release}
 Provides tools and utilities to enable GPU support in containers.
 
 %prep
-cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} .
+cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} .
 
 %install
 mkdir -p %{buildroot}%{_bindir}
@@ -36,6 +37,7 @@ install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime.cdi
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime.legacy
 install -m 755 -t %{buildroot}%{_bindir} nvidia-ctk
+install -m 755 -t %{buildroot}%{_bindir} nvidia-cdi-hook
 
 %post
 if [ $1 -gt 1 ]; then  # only on package upgrade
@@ -86,6 +88,7 @@ Provides tools such as the NVIDIA Container Runtime and NVIDIA Container Toolkit
 %license LICENSE
 %{_bindir}/nvidia-container-runtime
 %{_bindir}/nvidia-ctk
+%{_bindir}/nvidia-cdi-hook
 
 # The OPERATOR EXTENSIONS package consists of components that are required to enable GPU support in Kubernetes.
 # This package is not distributed as part of the NVIDIA Container Toolkit RPMs.

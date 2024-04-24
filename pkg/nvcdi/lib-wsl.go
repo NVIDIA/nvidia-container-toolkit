@@ -54,7 +54,7 @@ func (l *wsllib) GetAllDeviceSpecs() ([]specs.Device, error) {
 
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
 func (l *wsllib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	driver, err := newWSLDriverDiscoverer(l.logger, l.driverRoot, l.nvidiaCTKPath, l.ldconfigPath)
+	driver, err := newWSLDriverDiscoverer(l.logger, l.driverRoot, l.nvidiaCDIHookPath, l.ldconfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for WSL driver: %v", err)
 	}

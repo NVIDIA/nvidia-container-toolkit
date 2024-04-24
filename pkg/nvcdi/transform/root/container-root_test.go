@@ -165,27 +165,27 @@ func TestContainerRootTransformer(t *testing.T) {
 					Hooks: []*specs.Hook{
 						{
 							HookName: "createContainer",
-							Path:     "/root/usr/bin/nvidia-ctk",
+							Path:     "/root/usr/bin/nvidia-cdi-hook",
 							Args: []string{
-								"nvidia-ctk", "hook", "update-ldcache",
+								"nvidia-cdi-hook", "update-ldcache",
 								"--folder",
 								"/root/path/to/target",
 							},
 						},
 						{
 							HookName: "createContainer",
-							Path:     "/target-root/usr/bin/nvidia-ctk",
+							Path:     "/target-root/usr/bin/nvidia-cdi-hook",
 							Args: []string{
-								"nvidia-ctk", "hook", "update-ldcache",
+								"nvidia-cdi-hook", "update-ldcache",
 								"--folder",
 								"/target-root/path/to/target",
 							},
 						},
 						{
 							HookName: "createContainer",
-							Path:     "/different-root/usr/bin/nvidia-ctk",
+							Path:     "/different-root/usr/bin/nvidia-cdi-hook",
 							Args: []string{
-								"nvidia-ctk", "hook", "update-ldcache",
+								"nvidia-cdi-hook", "update-ldcache",
 								"--folder",
 								"/different-root/path/to/target",
 							},
@@ -198,27 +198,27 @@ func TestContainerRootTransformer(t *testing.T) {
 					Hooks: []*specs.Hook{
 						{
 							HookName: "createContainer",
-							Path:     "/root/usr/bin/nvidia-ctk",
+							Path:     "/root/usr/bin/nvidia-cdi-hook",
 							Args: []string{
-								"nvidia-ctk", "hook", "update-ldcache",
+								"nvidia-cdi-hook", "update-ldcache",
 								"--folder",
 								"/target-root/path/to/target",
 							},
 						},
 						{
 							HookName: "createContainer",
-							Path:     "/target-root/usr/bin/nvidia-ctk",
+							Path:     "/target-root/usr/bin/nvidia-cdi-hook",
 							Args: []string{
-								"nvidia-ctk", "hook", "update-ldcache",
+								"nvidia-cdi-hook", "update-ldcache",
 								"--folder",
 								"/target-root/path/to/target",
 							},
 						},
 						{
 							HookName: "createContainer",
-							Path:     "/different-root/usr/bin/nvidia-ctk",
+							Path:     "/different-root/usr/bin/nvidia-cdi-hook",
 							Args: []string{
-								"nvidia-ctk", "hook", "update-ldcache",
+								"nvidia-cdi-hook", "update-ldcache",
 								"--folder",
 								"/different-root/path/to/target",
 							},
@@ -236,7 +236,7 @@ func TestContainerRootTransformer(t *testing.T) {
 					Hooks: []*specs.Hook{
 						{
 							HookName: "startContainer",
-							Path:     "/root/usr/bin/nvidia-ctk",
+							Path:     "/root/usr/bin/nvidia-cdi-hook",
 							Args: []string{
 								"--link",
 								"/root/path/to/target::/root/path/to/link",
@@ -250,7 +250,7 @@ func TestContainerRootTransformer(t *testing.T) {
 					Hooks: []*specs.Hook{
 						{
 							HookName: "startContainer",
-							Path:     "/target-root/usr/bin/nvidia-ctk",
+							Path:     "/target-root/usr/bin/nvidia-cdi-hook",
 							Args: []string{
 								"--link",
 								"/target-root/path/to/target::/target-root/path/to/link",
@@ -269,7 +269,7 @@ func TestContainerRootTransformer(t *testing.T) {
 					Hooks: []*specs.Hook{
 						{
 							HookName: "createContainer",
-							Path:     "/root/usr/bin/nvidia-ctk",
+							Path:     "/root/usr/bin/nvidia-cdi-hook",
 							Args: []string{
 								"--link",
 								"/root/path/to/target::/root/path/to/link",
@@ -283,7 +283,7 @@ func TestContainerRootTransformer(t *testing.T) {
 					Hooks: []*specs.Hook{
 						{
 							HookName: "createContainer",
-							Path:     "/root/usr/bin/nvidia-ctk",
+							Path:     "/root/usr/bin/nvidia-cdi-hook",
 							Args: []string{
 								"--link",
 								"/target-root/path/to/target::/target-root/path/to/link",
@@ -302,7 +302,7 @@ func TestContainerRootTransformer(t *testing.T) {
 					Hooks: []*specs.Hook{
 						{
 							HookName: "createRuntime",
-							Path:     "/root/usr/bin/nvidia-ctk",
+							Path:     "/root/usr/bin/nvidia-cdi-hook",
 							Args: []string{
 								"--link",
 								"/root/path/to/target::/root/path/to/link",
@@ -316,7 +316,7 @@ func TestContainerRootTransformer(t *testing.T) {
 					Hooks: []*specs.Hook{
 						{
 							HookName: "createRuntime",
-							Path:     "/root/usr/bin/nvidia-ctk",
+							Path:     "/root/usr/bin/nvidia-cdi-hook",
 							Args: []string{
 								"--link",
 								"/root/path/to/target::/root/path/to/link",
