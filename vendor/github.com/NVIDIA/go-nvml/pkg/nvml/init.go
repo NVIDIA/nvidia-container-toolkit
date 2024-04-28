@@ -18,7 +18,7 @@ import "C"
 
 // nvml.Init()
 func (l *library) Init() Return {
-	if err := libnvml.load(); err != nil {
+	if err := l.load(); err != nil {
 		return ERROR_LIBRARY_NOT_FOUND
 	}
 	return nvmlInit()
@@ -26,7 +26,7 @@ func (l *library) Init() Return {
 
 // nvml.InitWithFlags()
 func (l *library) InitWithFlags(flags uint32) Return {
-	if err := libnvml.load(); err != nil {
+	if err := l.load(); err != nil {
 		return ERROR_LIBRARY_NOT_FOUND
 	}
 	return nvmlInitWithFlags(flags)
@@ -39,7 +39,7 @@ func (l *library) Shutdown() Return {
 		return ret
 	}
 
-	err := libnvml.close()
+	err := l.close()
 	if err != nil {
 		return ERROR_UNKNOWN
 	}
