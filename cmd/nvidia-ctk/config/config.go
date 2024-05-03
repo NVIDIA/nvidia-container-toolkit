@@ -38,7 +38,8 @@ type command struct {
 // options stores the subcommand options
 type options struct {
 	flags.Options
-	sets cli.StringSlice
+	setListSeparator string
+	sets             cli.StringSlice
 }
 
 // NewCommand constructs an config command with the specified logger
@@ -57,6 +58,9 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "config",
 		Usage: "Interact with the NVIDIA Container Toolkit configuration",
+		Before: func(ctx *cli.Context) error {
+			return validateFlags(ctx, &opts)
+		},
 		Action: func(ctx *cli.Context) error {
 			return run(ctx, &opts)
 		},
@@ -71,9 +75,20 @@ func (m command) build() *cli.Command {
 			Destination: &opts.Config,
 		},
 		&cli.StringSliceFlag{
-			Name:        "set",
-			Usage:       "Set a config value using the pattern key=value. If value is empty, this is equivalent to specifying the same key in unset. This flag can be specified multiple times",
+			Name: "set",
+			Usage: "Set a config value using the pattern 'key[=value]'. " +
+				"Specifying only 'key' is equivalent to 'key=true' for boolean settings. " +
+				"This flag can be specified multiple times, but only the last value for a specific " +
+				"config option is applied. " +
+				"If the setting represents a list, the elements are colon-separated.",
 			Destination: &opts.sets,
+		},
+		&cli.StringFlag{
+			Name:        "set-list-separator",
+			Usage:       "Specify a separator for lists applied using the set command.",
+			Hidden:      true,
+			Value:       ":",
+			Destination: &opts.setListSeparator,
 		},
 		&cli.BoolFlag{
 			Name:        "in-place",
@@ -96,6 +111,13 @@ func (m command) build() *cli.Command {
 	return &c
 }
 
+func validateFlags(c *cli.Context, opts *options) error {
+	if opts.setListSeparator == "" {
+		return fmt.Errorf("set-list-separator must be set")
+	}
+	return nil
+}
+
 func run(c *cli.Context, opts *options) error {
 	cfgToml, err := config.New(
 		config.WithConfigFile(opts.Config),
@@ -105,7 +127,7 @@ func run(c *cli.Context, opts *options) error {
 	}
 
 	for _, set := range opts.sets.Value() {
-		key, value, err := setFlagToKeyValue(set)
+		key, value, err := setFlagToKeyValue(set, opts.setListSeparator)
 		if err != nil {
 			return fmt.Errorf("invalid --set option %v: %w", set, err)
 		}
@@ -139,7 +161,7 @@ var errInvalidFormat = errors.New("invalid format")
 // setFlagToKeyValue converts a --set flag to a key-value pair.
 // The set flag is of the form key[=value], with the value being optional if key refers to a
 // boolean config option.
-func setFlagToKeyValue(setFlag string) (string, interface{}, error) {
+func setFlagToKeyValue(setFlag string, setListSeparator string) (string, interface{}, error) {
 	setParts := strings.SplitN(setFlag, "=", 2)
 	key := setParts[0]
 
@@ -172,7 +194,7 @@ func setFlagToKeyValue(setFlag string) (string, interface{}, error) {
 	case reflect.String:
 		return key, value, nil
 	case reflect.Slice:
-		valueParts := strings.Split(value, ",")
+		valueParts := strings.Split(value, setListSeparator)
 		switch field.Elem().Kind() {
 		case reflect.String:
 			return key, valueParts, nil
