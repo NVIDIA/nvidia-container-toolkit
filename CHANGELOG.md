@@ -2,6 +2,7 @@
 
 ## v1.15.1
 
+* Use : as a config --set list separator. This fixes a bug in modifying lists in the config file with the `nvidia-ctk config` command.
 
 ## v1.15.0
 
