@@ -5,7 +5,7 @@ package nvml
 
 import "unsafe"
 
-type Device struct {
+type nvmlDevice struct {
 	Handle *_Ctype_struct_nvmlDevice_st
 }
 
@@ -143,9 +143,9 @@ type ClkMonStatus struct {
 	ClkMonList     [32]ClkMonFaultInfo
 }
 
-type VgpuTypeId uint32
+type nvmlVgpuTypeId uint32
 
-type VgpuInstance uint32
+type nvmlVgpuInstance uint32
 
 type VgpuInstanceUtilizationSample struct {
 	VgpuInstance uint32
@@ -316,7 +316,7 @@ type FieldValue struct {
 	Value       [8]byte
 }
 
-type Unit struct {
+type nvmlUnit struct {
 	Handle *_Ctype_struct_nvmlUnit_st
 }
 
@@ -354,12 +354,12 @@ type UnitFanSpeeds struct {
 	Count uint32
 }
 
-type EventSet struct {
+type nvmlEventSet struct {
 	Handle *_Ctype_struct_nvmlEventSet_st
 }
 
-type EventData struct {
-	Device            Device
+type nvmlEventData struct {
+	Device            nvmlDevice
 	EventType         uint64
 	EventData         uint64
 	GpuInstanceId     uint32
@@ -494,14 +494,14 @@ type GpuInstanceProfileInfo_v2 struct {
 	Name                [96]int8
 }
 
-type GpuInstanceInfo struct {
-	Device    Device
+type nvmlGpuInstanceInfo struct {
+	Device    nvmlDevice
 	Id        uint32
 	ProfileId uint32
 	Placement GpuInstancePlacement
 }
 
-type GpuInstance struct {
+type nvmlGpuInstance struct {
 	Handle *_Ctype_struct_nvmlGpuInstance_st
 }
 
@@ -536,19 +536,19 @@ type ComputeInstanceProfileInfo_v2 struct {
 	Name                  [96]int8
 }
 
-type ComputeInstanceInfo struct {
-	Device      Device
-	GpuInstance GpuInstance
+type nvmlComputeInstanceInfo struct {
+	Device      nvmlDevice
+	GpuInstance nvmlGpuInstance
 	Id          uint32
 	ProfileId   uint32
 	Placement   ComputeInstancePlacement
 }
 
-type ComputeInstance struct {
+type nvmlComputeInstance struct {
 	Handle *_Ctype_struct_nvmlComputeInstance_st
 }
 
-type GpmSample struct {
+type nvmlGpmSample struct {
 	Handle *_Ctype_struct_nvmlGpmSample_st
 }
 
@@ -565,11 +565,11 @@ type GpmMetric struct {
 	MetricInfo GpmMetricMetricInfo
 }
 
-type GpmMetricsGetType struct {
+type nvmlGpmMetricsGetType struct {
 	Version    uint32
 	NumMetrics uint32
-	Sample1    GpmSample
-	Sample2    GpmSample
+	Sample1    nvmlGpmSample
+	Sample2    nvmlGpmSample
 	Metrics    [98]GpmMetric
 }
 
