@@ -1,5 +1,5 @@
 /**
-# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2024 NVIDIA CORPORATION
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,26 +17,19 @@
 package spec
 
 import (
-	"io"
+	"fmt"
 
+	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 )
 
-const (
-	// DetectMinimumVersion is a constant that triggers a spec to detect the minimum required version.
-	//
-	// Deprecated: DetectMinimumVersion is deprecated and will be removed.
-	DetectMinimumVersion = "DETECT_MINIMUM_VERSION"
+type setMinimumRequiredVersion struct{}
 
-	// FormatJSON indicates a JSON output format
-	FormatJSON = "json"
-	// FormatYAML indicates a YAML output format
-	FormatYAML = "yaml"
-)
-
-// Interface is the interface for the spec API
-type Interface interface {
-	io.WriterTo
-	Save(string) error
-	Raw() *specs.Spec
+func (d setMinimumRequiredVersion) Transform(spec *specs.Spec) error {
+	minVersion, err := cdi.MinimumRequiredVersion(spec)
+	if err != nil {
+		return fmt.Errorf("failed to get minimum required CDI spec version: %v", err)
+	}
+	spec.Version = minVersion
+	return nil
 }
