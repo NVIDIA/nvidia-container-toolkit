@@ -56,6 +56,9 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, n
 		driver.Root,
 		[]string{
 			"libnvidia-egl-gbm.so.*",
+			"gbm/nvidia-drm_gbm.so",
+			"libnvidia-egl-wayland.so.*",
+			"libnvidia-vulkan-producer.so*",
 		},
 	)
 
@@ -271,13 +274,23 @@ func newXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPa
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
 			lookup.WithRoot(driver.Root),
-			lookup.WithSearchPaths(libRoot, "/usr/lib/x86_64-linux-gnu"),
+			lookup.WithSearchPaths([]string{
+				libRoot + "/nvidia/xorg",
+				libRoot + "/xorg/modules/extensions",
+				libRoot + "/xorg/modules/drivers",
+				"/usr/lib/xorg/modules/extensions",
+				"/usr/lib/xorg/modules/drivers",
+				"/usr/X11R6/modules/extensions",
+				"/usr/X11R6/modules/drivers",
+				"/usr/lib64/xorg/modules/extensions",
+				"/usr/lib64/xorg/modules/drivers",
+			}),
 			lookup.WithCount(1),
 		),
 		driver.Root,
 		[]string{
-			"nvidia/xorg/nvidia_drv.so",
-			fmt.Sprintf("nvidia/xorg/libglxserver_nvidia.so.%s", version),
+			"nvidia_drv.so",
+			fmt.Sprintf("libglxserver_nvidia.so.%s", version),
 		},
 	)
 	xorgHooks := xorgHooks{
@@ -290,7 +303,10 @@ func newXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPa
 		logger,
 		driver.Configs(),
 		driver.Root,
-		[]string{"X11/xorg.conf.d/10-nvidia.conf"},
+		[]string{
+			"X11/xorg.conf.d/10-nvidia.conf",
+			"X11/xorg.conf.d/nvidia-drm-outputclass.conf",
+		},
 	)
 
 	d := Merge(
