@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
 )
@@ -155,11 +156,11 @@ func (o Options) SystemdRestart(service string) error {
 		args = append(args, "chroot", o.HostRootMount)
 	}
 	args = append(args, "systemctl", "restart", service)
+	args = oci.Escape(args)
 
 	logrus.Infof("Restarting %v%v using systemd: %v", service, msg, args)
 
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	cmd := exec.Command(args[0], args[1:]...)
+	cmd := exec.Command(args[0], args[1:]...) //nolint:gosec
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()

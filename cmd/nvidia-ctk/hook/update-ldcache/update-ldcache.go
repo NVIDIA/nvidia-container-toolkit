@@ -131,9 +131,9 @@ func (m command) run(c *cli.Context, cfg *options) error {
 	// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
 	// be configured to use a different config file by default.
 	args = append(args, "-f", "/etc/ld.so.conf")
+	args = oci.Escape(args)
 
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	return syscall.Exec(ldconfigPath, args, nil)
+	return syscall.Exec(ldconfigPath, args, nil) //nolint:gosec
 }
 
 type root string
