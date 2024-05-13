@@ -88,7 +88,7 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		return nil, err
 	}
 
-	featureModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, image)
+	featureModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, image, driver)
 	if err != nil {
 		return nil, err
 	}

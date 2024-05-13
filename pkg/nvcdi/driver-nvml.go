@@ -32,24 +32,35 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 )
 
-// NewDriverDiscoverer creates a discoverer for the libraries and binaries associated with a driver installation.
+// newDriverDiscoverer creates a discoverer for the libraries and binaries associated with a driver installation.
 // The supplied NVML Library is used to query the expected driver version.
-func NewDriverDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath string, ldconfigPath string, nvmllib nvml.Interface) (discover.Discover, error) {
-	if r := nvmllib.Init(); r != nvml.SUCCESS {
+func (l *nvmllib) newDriverDiscoverer() (discover.Discover, error) {
+	if r := l.nvmllib.Init(); r != nvml.SUCCESS {
 		return nil, fmt.Errorf("failed to initialize NVML: %v", r)
 	}
 	defer func() {
-		if r := nvmllib.Shutdown(); r != nvml.SUCCESS {
-			logger.Warningf("failed to shutdown NVML: %v", r)
+		if r := l.nvmllib.Shutdown(); r != nvml.SUCCESS {
+			l.logger.Warningf("failed to shutdown NVML: %v", r)
 		}
 	}()
 
-	version, r := nvmllib.SystemGetDriverVersion()
+	version, r := l.nvmllib.SystemGetDriverVersion()
 	if r != nvml.SUCCESS {
 		return nil, fmt.Errorf("failed to determine driver version: %v", r)
 	}
 
-	return newDriverVersionDiscoverer(logger, driver, nvidiaCTKPath, ldconfigPath, version)
+	driver, err := newDriverVersionDiscoverer(l.logger, l.driver, l.nvidiaCTKPath, l.ldconfigPath, version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create discoverer: %w", err)
+	}
+	discoverers := []discover.Discover{driver}
+
+	if !l.noDotSoSymlinks {
+		createDotSoSymlinksHook := discover.NewDotSoSymlinksDiscoverer(l.nvidiaCTKPath, version)
+		discoverers = append(discoverers, createDotSoSymlinksHook)
+	}
+
+	return discover.Merge(discoverers...), nil
 }
 
 func newDriverVersionDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath, ldconfigPath, version string) (discover.Discover, error) {

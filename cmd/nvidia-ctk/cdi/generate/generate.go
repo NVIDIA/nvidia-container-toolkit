@@ -60,6 +60,8 @@ type options struct {
 		files          cli.StringSlice
 		ignorePatterns cli.StringSlice
 	}
+
+	noDotSoSymlinks bool
 }
 
 // NewCommand constructs a generate-cdi command with the specified logger
@@ -166,6 +168,11 @@ func (m command) build() *cli.Command {
 			Usage:       "Specify a pattern the CSV mount specifications.",
 			Destination: &opts.csv.ignorePatterns,
 		},
+		&cli.BoolFlag{
+			Name:        "no-dot-so-symlinks",
+			Usage:       "Skip the generation of a hook for creating .so symlinks to driver files in the container",
+			Destination: &opts.noDotSoSymlinks,
+		},
 	}
 
 	return &c
@@ -270,6 +277,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths.Value()),
 		nvcdi.WithCSVFiles(opts.csv.files.Value()),
 		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns.Value()),
+		nvcdi.WithNoDotSoSymlinks(opts.noDotSoSymlinks),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)

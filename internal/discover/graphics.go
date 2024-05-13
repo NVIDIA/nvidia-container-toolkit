@@ -27,7 +27,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 )
 
@@ -252,20 +251,16 @@ func optionalXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidia
 }
 
 func newXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath string) (Discover, error) {
-	libCudaPaths, err := cuda.New(
-		driver.Libraries(),
-	).Locate(".*.*")
+	libRoot, err := driver.LibraryRoot()
 	if err != nil {
-		return nil, fmt.Errorf("failed to locate libcuda.so: %v", err)
-	}
-	libcudaPath := libCudaPaths[0]
-
-	version := strings.TrimPrefix(filepath.Base(libcudaPath), "libcuda.so.")
-	if version == "" {
-		return nil, fmt.Errorf("failed to determine libcuda.so version from path: %q", libcudaPath)
+		return nil, fmt.Errorf("failed to determine driver library root: %w", err)
 	}
 
-	libRoot := filepath.Dir(libcudaPath)
+	version, err := driver.Version()
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine driver version: %w", err)
+	}
+
 	xorgLibs := NewMounts(
 		logger,
 		lookup.NewFileLocator(

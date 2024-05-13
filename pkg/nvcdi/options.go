@@ -140,3 +140,10 @@ func WithLibrarySearchPaths(paths []string) Option {
 		o.librarySearchPaths = paths
 	}
 }
+
+// WithNoDotSoSymlinks sets the no-dot-so-symlinks feature.
+func WithNoDotSoSymlinks(noDotSoSymlinks bool) Option {
+	return func(o *nvcdilib) {
+		o.noDotSoSymlinks = noDotSoSymlinks
+	}
+}

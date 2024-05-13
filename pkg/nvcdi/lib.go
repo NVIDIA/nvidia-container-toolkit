@@ -63,6 +63,8 @@ type nvcdilib struct {
 	infolib info.Interface
 
 	mergedDeviceOptions []transform.MergedDeviceOption
+
+	noDotSoSymlinks bool
 }
 
 // New creates a new nvcdi library

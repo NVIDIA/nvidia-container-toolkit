@@ -66,6 +66,7 @@ func TestFactoryMethod(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 	driver := root.New(
 		root.WithDriverRoot("/nvidia/driver/root"),
+		root.WithVersion("999.88.77"),
 	)
 
 	testCases := []struct {

@@ -19,10 +19,11 @@ package config
 type featureName string
 
 const (
-	FeatureGDS      = featureName("gds")
-	FeatureMOFED    = featureName("mofed")
-	FeatureNVSWITCH = featureName("nvswitch")
-	FeatureGDRCopy  = featureName("gdrcopy")
+	FeatureGDS           = featureName("gds")
+	FeatureMOFED         = featureName("mofed")
+	FeatureNVSWITCH      = featureName("nvswitch")
+	FeatureGDRCopy       = featureName("gdrcopy")
+	FeatureDotSoSymlinks = featureName("dot-so-symlinks")
 )
 
 // features specifies a set of named features.
@@ -31,6 +32,9 @@ type features struct {
 	MOFED    *feature `toml:"mofed,omitempty"`
 	NVSWITCH *feature `toml:"nvswitch,omitempty"`
 	GDRCopy  *feature `toml:"gdrcopy,omitempty"`
+	// DotSoSymlinks allows for the creation of .so symlinks to .so.1 driver
+	// files to be opted in to.
+	DotSoSymlinks *feature `toml:"dot-so-symlinks,omitempty"`
 }
 
 type feature bool
@@ -40,10 +44,11 @@ type feature bool
 // variables can also be supplied.
 func (fs features) IsEnabled(n featureName, in ...getenver) bool {
 	featureEnvvars := map[featureName]string{
-		FeatureGDS:      "NVIDIA_GDS",
-		FeatureMOFED:    "NVIDIA_MOFED",
-		FeatureNVSWITCH: "NVIDIA_NVSWITCH",
-		FeatureGDRCopy:  "NVIDIA_GDRCOPY",
+		FeatureGDS:           "NVIDIA_GDS",
+		FeatureMOFED:         "NVIDIA_MOFED",
+		FeatureNVSWITCH:      "NVIDIA_NVSWITCH",
+		FeatureGDRCopy:       "NVIDIA_GDRCOPY",
+		FeatureDotSoSymlinks: "NVIDIA_DOT_SO_SYMLINKS",
 	}
 
 	envvar := featureEnvvars[n]
@@ -56,6 +61,8 @@ func (fs features) IsEnabled(n featureName, in ...getenver) bool {
 		return fs.NVSWITCH.isEnabled(envvar, in...)
 	case FeatureGDRCopy:
 		return fs.GDRCopy.isEnabled(envvar, in...)
+	case FeatureDotSoSymlinks:
+		return fs.DotSoSymlinks.isEnabled(envvar, in...)
 	default:
 		return false
 	}

@@ -43,3 +43,9 @@ func WithConfigSearchPaths(paths ...string) Option {
 		d.configSearchPaths = paths
 	}
 }
+
+func WithVersion(version string) Option {
+	return func(d *Driver) {
+		d.version = version
+	}
+}

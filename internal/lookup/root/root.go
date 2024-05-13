@@ -17,8 +17,11 @@
 package root
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
@@ -26,6 +29,7 @@ import (
 
 // Driver represents a filesystem in which a set of drivers or devices is defined.
 type Driver struct {
+	sync.Mutex
 	logger logger.Interface
 	// Root represents the root from the perspective of the driver libraries and binaries.
 	Root string
@@ -33,6 +37,10 @@ type Driver struct {
 	librarySearchPaths []string
 	// configSearchPaths specified explicit search paths for discovering driver config files.
 	configSearchPaths []string
+	// version stores the driver version. This can be specified at construction or cached on subsequent calls.
+	version string
+	// libraryRoot stores the absolute path where the driver libraries (libcuda.so.<VERSION>) can be found.
+	libraryRoot string
 }
 
 // New creates a new Driver root using the specified options.
@@ -78,6 +86,62 @@ func (r *Driver) configSearchOptions() []lookup.Option {
 		lookup.WithRoot(r.Root),
 		lookup.WithSearchPaths(searchPaths...),
 	}
+}
+
+// Version returns the driver version as a string.
+func (r *Driver) Version() (string, error) {
+	r.Lock()
+	defer r.Unlock()
+	if r.version != "" {
+		return r.version, nil
+	}
+
+	libcudaPath, err := r.libcudaPath()
+	if err != nil {
+		return "", fmt.Errorf("failed to locate libcuda.so: %v", err)
+	}
+
+	version := strings.TrimPrefix(filepath.Base(libcudaPath), "libcuda.so.")
+	if version == "" {
+		return "", fmt.Errorf("failed to determine libcuda.so version from path: %q", libcudaPath)
+	}
+
+	r.version = version
+	return r.version, nil
+}
+
+// LibraryRoot returns the folder in which the driver libraries can be found.
+func (r *Driver) LibraryRoot() (string, error) {
+	r.Lock()
+	defer r.Unlock()
+	if r.libraryRoot != "" {
+		return r.libraryRoot, nil
+	}
+
+	libcudaPath, err := r.libcudaPath()
+	if err != nil {
+		return "", fmt.Errorf("failed to locate libcuda.so: %v", err)
+	}
+
+	r.libraryRoot = filepath.Dir(libcudaPath)
+	return r.libraryRoot, nil
+}
+
+// libcudaPath returns the path to libcuda.so.*.* in the driver root.
+func (r *Driver) libcudaPath() (string, error) {
+	pattern := "libcuda.so.*.*"
+
+	locator := r.Libraries()
+	paths, err := locator.Locate(pattern)
+	if err != nil {
+		return "", fmt.Errorf("failed to locate %v: %v", pattern, err)
+	}
+
+	libcudaPath := paths[0]
+	if len(paths) > 1 {
+		r.logger.Warningf("Selecting %v out of multiple libcuda.so paths.", libcudaPath, paths)
+	}
+	return libcudaPath, nil
 }
 
 // normalizeSearchPaths takes a list of paths and normalized these.

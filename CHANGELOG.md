@@ -2,6 +2,7 @@
 
 ## v1.15.0
 
+* Add a hook to create `.so` symlinks for driver libraries in a container.
 * Remove `nvidia-container-runtime` and `nvidia-docker2` packages.
 * Use `XDG_DATA_DIRS` environment variable when locating config files such as graphics config files.
 * Add support for v0.7.0 Container Device Interface (CDI) specification.

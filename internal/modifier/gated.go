@@ -23,31 +23,31 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
 // NewFeatureGatedModifier creates the modifiers for optional features.
 // These include:
 //
+//	NVIDIA_DOT_SO_SYMLINKS=enabled
 //	NVIDIA_GDS=enabled
 //	NVIDIA_MOFED=enabled
 //	NVIDIA_NVSWITCH=enabled
 //	NVIDIA_GDRCOPY=enabled
 //
 // If not devices are selected, no changes are made.
-func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
+func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, driver *root.Driver) (oci.SpecModifier, error) {
 	if devices := image.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices.List()) == 0 {
 		logger.Infof("No modification required; no devices requested")
 		return nil, nil
 	}
 
-	var discoverers []discover.Discover
-
-	driverRoot := cfg.NVIDIAContainerCLIConfig.Root
 	devRoot := cfg.NVIDIAContainerCLIConfig.Root
 
+	var discoverers []discover.Discover
 	if cfg.Features.IsEnabled(config.FeatureGDS, image) {
-		d, err := discover.NewGDSDiscoverer(logger, driverRoot, devRoot)
+		d, err := discover.NewGDSDiscoverer(logger, driver.Root, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDS devices: %w", err)
 		}
@@ -75,6 +75,16 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDRCopy devices: %w", err)
 		}
+		discoverers = append(discoverers, d)
+	}
+
+	if cfg.Features.IsEnabled(config.FeatureDotSoSymlinks, image) {
+		version, err := driver.Version()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get driver version required for .so symlinks: %w", err)
+		}
+
+		d := discover.NewDotSoSymlinksDiscoverer(cfg.NVIDIACTKConfig.Path, version)
 		discoverers = append(discoverers, d)
 	}
 
