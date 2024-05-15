@@ -3,6 +3,7 @@
 ## v1.15.1
 
 * Use : as a config --set list separator. This fixes a bug in modifying lists in the config file with the `nvidia-ctk config` command.
+* Add `RUNTIME_CONFIG_OVERRIDE` (`--runtime-config-override`) to the `nvidia-ctk runtime configure` command and the toolkit container to allow for containerd runtime options to be set directly. This can be used to override the `SystemdCroup` option explicitly, for example.
 
 ## v1.15.0
 
