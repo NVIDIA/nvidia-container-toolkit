@@ -67,8 +67,8 @@ func ParseArgs(c *cli.Context, o *Options) error {
 }
 
 // Configure applies the options to the specified config
-func (o Options) Configure(cfg engine.Interface) error {
-	err := o.UpdateConfig(cfg)
+func (o Options) Configure(cfg engine.Interface, configOverrides ...map[string]interface{}) error {
+	err := o.UpdateConfig(cfg, configOverrides...)
 	if err != nil {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
@@ -98,14 +98,14 @@ func (o Options) flush(cfg engine.Interface) error {
 }
 
 // UpdateConfig updates the specified config to include the nvidia runtimes
-func (o Options) UpdateConfig(cfg engine.Interface) error {
+func (o Options) UpdateConfig(cfg engine.Interface, configOverrides ...map[string]interface{}) error {
 	runtimes := operator.GetRuntimes(
 		operator.WithNvidiaRuntimeName(o.RuntimeName),
 		operator.WithSetAsDefault(o.SetAsDefault),
 		operator.WithRoot(o.RuntimeDir),
 	)
 	for name, runtime := range runtimes {
-		err := cfg.AddRuntime(name, runtime.Path, runtime.SetAsDefault)
+		err := cfg.AddRuntime(name, runtime.Path, runtime.SetAsDefault, configOverrides...)
 		if err != nil {
 			return fmt.Errorf("failed to update runtime %q: %v", name, err)
 		}
