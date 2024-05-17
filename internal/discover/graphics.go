@@ -58,7 +58,7 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, n
 			"libnvidia-egl-gbm.so.*",
 			"gbm/nvidia-drm_gbm.so",
 			"libnvidia-egl-wayland.so.*",
-			"libnvidia-vulkan-producer.so*",
+			"libnvidia-vulkan-producer.so.*",
 		},
 	)
 
