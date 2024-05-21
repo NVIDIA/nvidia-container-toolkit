@@ -41,7 +41,7 @@ func (h Hook) Hooks() ([]Hook, error) {
 }
 
 // CreateCreateSymlinkHook creates a hook which creates a symlink from link -> target.
-func CreateCreateSymlinkHook(nvidiaCTKPath string, links []string) Discover {
+func CreateCreateSymlinkHook(nvidiaCDIHookPath string, links []string) Discover {
 	if len(links) == 0 {
 		return None{}
 	}
@@ -50,18 +50,31 @@ func CreateCreateSymlinkHook(nvidiaCTKPath string, links []string) Discover {
 	for _, link := range links {
 		args = append(args, "--link", link)
 	}
-	return CreateNvidiaCTKHook(
-		nvidiaCTKPath,
+	return CreateNvidiaCDIHook(
+		nvidiaCDIHookPath,
 		"create-symlinks",
 		args...,
 	)
 }
 
-// CreateNvidiaCTKHook creates a hook which invokes the NVIDIA Container CLI hook subcommand.
-func CreateNvidiaCTKHook(nvidiaCTKPath string, hookName string, additionalArgs ...string) Hook {
+// CreateNvidiaCDIHook creates a hook which invokes the NVIDIA Container CLI hook subcommand.
+func CreateNvidiaCDIHook(nvidiaCDIHookPath string, hookName string, additionalArgs ...string) Hook {
+	return cdiHook(nvidiaCDIHookPath).Create(hookName, additionalArgs...)
+}
+
+type cdiHook string
+
+func (c cdiHook) Create(name string, args ...string) Hook {
 	return Hook{
 		Lifecycle: cdi.CreateContainerHook,
-		Path:      nvidiaCTKPath,
-		Args:      append([]string{filepath.Base(nvidiaCTKPath), "hook", hookName}, additionalArgs...),
+		Path:      string(c),
+		Args:      append(c.requiredArgs(name), args...),
 	}
+}
+func (c cdiHook) requiredArgs(name string) []string {
+	base := filepath.Base(string(c))
+	if base == "nvidia-ctk" {
+		return []string{base, "hook", name}
+	}
+	return []string{base, name}
 }

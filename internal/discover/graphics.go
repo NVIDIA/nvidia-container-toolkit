@@ -36,20 +36,20 @@ import (
 // TODO: The logic for creating DRM devices should be consolidated between this
 // and the logic for generating CDI specs for a single device. This is only used
 // when applying OCI spec modifications to an incoming spec in "legacy" mode.
-func NewDRMNodesDiscoverer(logger logger.Interface, devices image.VisibleDevices, devRoot string, nvidiaCTKPath string) (Discover, error) {
+func NewDRMNodesDiscoverer(logger logger.Interface, devices image.VisibleDevices, devRoot string, nvidiaCDIHookPath string) (Discover, error) {
 	drmDeviceNodes, err := newDRMDeviceDiscoverer(logger, devices, devRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create DRM device discoverer: %v", err)
 	}
 
-	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, devRoot, nvidiaCTKPath)
+	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, devRoot, nvidiaCDIHookPath)
 
 	discover := Merge(drmDeviceNodes, drmByPathSymlinks)
 	return discover, nil
 }
 
 // NewGraphicsMountsDiscoverer creates a discoverer for the mounts required by graphics tools such as vulkan.
-func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath string) (Discover, error) {
+func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath string) (Discover, error) {
 	libraries := NewMounts(
 		logger,
 		driver.Libraries(),
@@ -74,7 +74,7 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, n
 		},
 	)
 
-	xorg := optionalXorgDiscoverer(logger, driver, nvidiaCTKPath)
+	xorg := optionalXorgDiscoverer(logger, driver, nvidiaCDIHookPath)
 
 	discover := Merge(
 		libraries,
@@ -87,19 +87,19 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, n
 
 type drmDevicesByPath struct {
 	None
-	logger        logger.Interface
-	nvidiaCTKPath string
-	devRoot       string
-	devicesFrom   Discover
+	logger            logger.Interface
+	nvidiaCDIHookPath string
+	devRoot           string
+	devicesFrom       Discover
 }
 
 // newCreateDRMByPathSymlinks creates a discoverer for a hook to create the by-path symlinks for DRM devices discovered by the specified devices discoverer
-func newCreateDRMByPathSymlinks(logger logger.Interface, devices Discover, devRoot string, nvidiaCTKPath string) Discover {
+func newCreateDRMByPathSymlinks(logger logger.Interface, devices Discover, devRoot string, nvidiaCDIHookPath string) Discover {
 	d := drmDevicesByPath{
-		logger:        logger,
-		nvidiaCTKPath: nvidiaCTKPath,
-		devRoot:       devRoot,
-		devicesFrom:   devices,
+		logger:            logger,
+		nvidiaCDIHookPath: nvidiaCDIHookPath,
+		devRoot:           devRoot,
+		devicesFrom:       devices,
 	}
 
 	return &d
@@ -127,8 +127,8 @@ func (d drmDevicesByPath) Hooks() ([]Hook, error) {
 		args = append(args, "--link", l)
 	}
 
-	hook := CreateNvidiaCTKHook(
-		d.nvidiaCTKPath,
+	hook := CreateNvidiaCDIHook(
+		d.nvidiaCDIHookPath,
 		"create-symlinks",
 		args...,
 	)
@@ -233,17 +233,17 @@ func newDRMDeviceFilter(devices image.VisibleDevices, devRoot string) (Filter, e
 }
 
 type xorgHooks struct {
-	libraries     Discover
-	driverVersion string
-	nvidiaCTKPath string
+	libraries         Discover
+	driverVersion     string
+	nvidiaCDIHookPath string
 }
 
 var _ Discover = (*xorgHooks)(nil)
 
 // optionalXorgDiscoverer creates a discoverer for Xorg libraries.
 // If the creation of the discoverer fails, a None discoverer is returned.
-func optionalXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath string) Discover {
-	xorg, err := newXorgDiscoverer(logger, driver, nvidiaCTKPath)
+func optionalXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath string) Discover {
+	xorg, err := newXorgDiscoverer(logger, driver, nvidiaCDIHookPath)
 	if err != nil {
 		logger.Warningf("Failed to create Xorg discoverer: %v; skipping xorg libraries", err)
 		return None{}
@@ -251,7 +251,7 @@ func optionalXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidia
 	return xorg
 }
 
-func newXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath string) (Discover, error) {
+func newXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath string) (Discover, error) {
 	libCudaPaths, err := cuda.New(
 		driver.Libraries(),
 	).Locate(".*.*")
@@ -281,9 +281,9 @@ func newXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPa
 		},
 	)
 	xorgHooks := xorgHooks{
-		libraries:     xorgLibs,
-		driverVersion: version,
-		nvidiaCTKPath: nvidiaCTKPath,
+		libraries:         xorgLibs,
+		driverVersion:     version,
+		nvidiaCDIHookPath: nvidiaCDIHookPath,
 	}
 
 	xorgConfig := NewMounts(
@@ -332,7 +332,7 @@ func (m xorgHooks) Hooks() ([]Hook, error) {
 	link := strings.TrimSuffix(target, "."+m.driverVersion)
 	links := []string{fmt.Sprintf("%s::%s", filepath.Base(target), link)}
 	symlinkHook := CreateCreateSymlinkHook(
-		m.nvidiaCTKPath,
+		m.nvidiaCDIHookPath,
 		links,
 	)
 

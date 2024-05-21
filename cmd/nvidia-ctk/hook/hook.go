@@ -17,13 +17,10 @@
 package hook
 
 import (
-	chmod "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/chmod"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/commands"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
 	"github.com/urfave/cli/v2"
-
-	symlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/create-symlinks"
-	ldcache "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/hook/update-ldcache"
 )
 
 type hookCommand struct {
@@ -46,11 +43,7 @@ func (m hookCommand) build() *cli.Command {
 		Usage: "A collection of hooks that may be injected into an OCI spec",
 	}
 
-	hook.Subcommands = []*cli.Command{
-		ldcache.NewCommand(m.logger),
-		symlinks.NewCommand(m.logger),
-		chmod.NewCommand(m.logger),
-	}
+	hook.Subcommands = commands.New(m.logger)
 
 	return &hook
 }

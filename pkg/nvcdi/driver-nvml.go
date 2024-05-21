@@ -34,7 +34,7 @@ import (
 
 // NewDriverDiscoverer creates a discoverer for the libraries and binaries associated with a driver installation.
 // The supplied NVML Library is used to query the expected driver version.
-func NewDriverDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath string, ldconfigPath string, nvmllib nvml.Interface) (discover.Discover, error) {
+func NewDriverDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath string, ldconfigPath string, nvmllib nvml.Interface) (discover.Discover, error) {
 	if r := nvmllib.Init(); r != nvml.SUCCESS {
 		return nil, fmt.Errorf("failed to initialize NVML: %v", r)
 	}
@@ -49,11 +49,11 @@ func NewDriverDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTK
 		return nil, fmt.Errorf("failed to determine driver version: %v", r)
 	}
 
-	return newDriverVersionDiscoverer(logger, driver, nvidiaCTKPath, ldconfigPath, version)
+	return newDriverVersionDiscoverer(logger, driver, nvidiaCDIHookPath, ldconfigPath, version)
 }
 
-func newDriverVersionDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath, ldconfigPath, version string) (discover.Discover, error) {
-	libraries, err := NewDriverLibraryDiscoverer(logger, driver, nvidiaCTKPath, ldconfigPath, version)
+func newDriverVersionDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath, ldconfigPath, version string) (discover.Discover, error) {
+	libraries, err := NewDriverLibraryDiscoverer(logger, driver, nvidiaCDIHookPath, ldconfigPath, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for driver libraries: %v", err)
 	}
@@ -81,7 +81,7 @@ func newDriverVersionDiscoverer(logger logger.Interface, driver *root.Driver, nv
 }
 
 // NewDriverLibraryDiscoverer creates a discoverer for the libraries associated with the specified driver version.
-func NewDriverLibraryDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCTKPath, ldconfigPath, version string) (discover.Discover, error) {
+func NewDriverLibraryDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath, ldconfigPath, version string) (discover.Discover, error) {
 	libraryPaths, err := getVersionLibs(logger, driver, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get libraries for driver version: %v", err)
@@ -97,7 +97,7 @@ func NewDriverLibraryDiscoverer(logger logger.Interface, driver *root.Driver, nv
 		libraryPaths,
 	)
 
-	hooks, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCTKPath, ldconfigPath)
+	hooks, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCDIHookPath, ldconfigPath)
 
 	d := discover.Merge(
 		libraries,

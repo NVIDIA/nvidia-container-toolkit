@@ -63,9 +63,16 @@ func WithLogger(logger logger.Interface) Option {
 }
 
 // WithNVIDIACTKPath sets the path to the NVIDIA Container Toolkit CLI path for the library
+//
+// Deprecated: Use WithNVIDIACDIHookPath instead.
 func WithNVIDIACTKPath(path string) Option {
+	return WithNVIDIACDIHookPath(path)
+}
+
+// WithNVIDIACDIHookPath sets the path to the NVIDIA Container Toolkit CLI path for the library
+func WithNVIDIACDIHookPath(path string) Option {
 	return func(l *nvcdilib) {
-		l.nvidiaCTKPath = path
+		l.nvidiaCDIHookPath = path
 	}
 }
 
