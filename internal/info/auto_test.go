@@ -19,6 +19,7 @@ package info
 import (
 	"testing"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
@@ -202,21 +203,22 @@ func TestResolveAutoMode(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			info := &infoInterfaceMock{
+			properties := &info.PropertyExtractorMock{
 				HasNvmlFunc: func() (bool, string) {
 					return tc.info["nvml"], "nvml"
+				},
+				HasDXCoreFunc: func() (bool, string) {
+					return tc.info["dxcore"], "dxcore"
 				},
 				IsTegraSystemFunc: func() (bool, string) {
 					return tc.info["tegra"], "tegra"
 				},
-				UsesNVGPUModuleFunc: func() (bool, string) {
+				HasTegraFilesFunc: func() (bool, string) {
+					return tc.info["tegra"], "tegra"
+				},
+				UsesOnlyNVGPUModuleFunc: func() (bool, string) {
 					return tc.info["nvgpu"], "nvgpu"
 				},
-			}
-
-			r := resolver{
-				logger: logger,
-				info:   info,
 			}
 
 			var mounts []specs.Mount
@@ -231,7 +233,7 @@ func TestResolveAutoMode(t *testing.T) {
 				image.WithEnvMap(tc.envmap),
 				image.WithMounts(mounts),
 			)
-			mode := r.resolveMode(tc.mode, image)
+			mode := resolveMode(logger, tc.mode, image, properties)
 			require.EqualValues(t, tc.expectedMode, mode)
 		})
 	}

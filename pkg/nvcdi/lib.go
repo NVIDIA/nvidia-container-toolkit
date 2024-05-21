@@ -91,7 +91,12 @@ func New(opts ...Option) (Interface, error) {
 		l.nvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
 	}
 	if l.infolib == nil {
-		l.infolib = info.New()
+		l.infolib = info.New(
+			info.WithRoot(l.driverRoot),
+			info.WithLogger(l.logger),
+			info.WithNvmlLib(l.nvmllib),
+			info.WithDeviceLib(l.devicelib),
+		)
 	}
 
 	l.driver = root.New(
@@ -184,26 +189,19 @@ func (l *nvcdilib) resolveMode() (rmode string) {
 		return l.mode
 	}
 	defer func() {
-		l.logger.Infof("Auto-detected mode as %q", rmode)
+		l.logger.Infof("Auto-detected mode as '%v'", rmode)
 	}()
 
-	isWSL, reason := l.infolib.HasDXCore()
-	l.logger.Debugf("Is WSL-based system? %v: %v", isWSL, reason)
-
-	if isWSL {
+	platform := l.infolib.ResolvePlatform()
+	switch platform {
+	case info.PlatformNVML:
+		return ModeNvml
+	case info.PlatformTegra:
+		return ModeCSV
+	case info.PlatformWSL:
 		return ModeWsl
 	}
-
-	isNvml, reason := l.infolib.HasNvml()
-	l.logger.Debugf("Is NVML-based system? %v: %v", isNvml, reason)
-
-	isTegra, reason := l.infolib.IsTegraSystem()
-	l.logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
-
-	if isTegra && !isNvml {
-		return ModeCSV
-	}
-
+	l.logger.Warningf("Unsupported platform detected: %v; assuming %v", platform, ModeNvml)
 	return ModeNvml
 }
 
