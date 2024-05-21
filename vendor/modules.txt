@@ -1,4 +1,4 @@
-# github.com/NVIDIA/go-nvlib v0.3.0
+# github.com/NVIDIA/go-nvlib v0.4.0
 ## explicit; go 1.20
 github.com/NVIDIA/go-nvlib/pkg/nvlib/device
 github.com/NVIDIA/go-nvlib/pkg/nvlib/info
@@ -63,7 +63,7 @@ github.com/urfave/cli/v2
 # github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
 ## explicit
 # github.com/xrash/smetrics v0.0.0-20240312152122-5f08fbb34913
-## explicit; go 1.15.0
+## explicit; go 1.15
 github.com/xrash/smetrics
 # golang.org/x/mod v0.17.0
 ## explicit; go 1.18
