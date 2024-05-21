@@ -17,73 +17,62 @@
 package info
 
 import (
+	"github.com/NVIDIA/go-nvml/pkg/nvml"
+
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
-	"github.com/NVIDIA/go-nvlib/pkg/nvml"
 )
 
-type builder struct {
+type infolib struct {
+	PropertyExtractor
+	PlatformResolver
+}
+
+type options struct {
 	logger    basicLogger
-	root      string
+	root      root
 	nvmllib   nvml.Interface
 	devicelib device.Interface
 
-	preHook    Resolver
-	properties Properties
+	platform          Platform
+	propertyExtractor PropertyExtractor
 }
 
-// New creates a new instance of the 'info' interface
+// New creates a new instance of the 'info' interface.
 func New(opts ...Option) Interface {
-	b := &builder{}
+	o := &options{}
 	for _, opt := range opts {
-		opt(b)
+		opt(o)
 	}
-	if b.logger == nil {
-		b.logger = &nullLogger{}
+	if o.logger == nil {
+		o.logger = &nullLogger{}
 	}
-	if b.root == "" {
-		b.root = "/"
+	if o.root == "" {
+		o.root = "/"
 	}
-	if b.nvmllib == nil {
-		b.nvmllib = nvml.New()
+	if o.nvmllib == nil {
+		o.nvmllib = nvml.New(
+			nvml.WithLibraryPath(o.root.tryResolveLibrary("libnvidia-ml.so.1")),
+		)
 	}
-	if b.devicelib == nil {
-		b.devicelib = device.New(device.WithNvml(b.nvmllib))
+	if o.devicelib == nil {
+		o.devicelib = device.New(device.WithNvml(o.nvmllib))
 	}
-	if b.preHook == nil {
-		b.preHook = noop{}
+	if o.platform == "" {
+		o.platform = PlatformAuto
 	}
-	if b.properties == nil {
-		b.properties = &info{
-			root:      b.root,
-			nvmllib:   b.nvmllib,
-			devicelib: b.devicelib,
+	if o.propertyExtractor == nil {
+		o.propertyExtractor = &propertyExtractor{
+			root:      o.root,
+			nvmllib:   o.nvmllib,
+			devicelib: o.devicelib,
 		}
 	}
-	return b.build()
-}
-
-func (b *builder) build() Interface {
 	return &infolib{
-		logger:     b.logger,
-		Resolver:   b.getResolvers(),
-		Properties: b.properties,
+		PlatformResolver: &platformResolver{
+			logger:            o.logger,
+			platform:          o.platform,
+			propertyExtractor: o.propertyExtractor,
+		},
+		PropertyExtractor: o.propertyExtractor,
 	}
-}
-
-func (b *builder) getResolvers() Resolver {
-	auto := &notEqualsResolver{
-		logger: b.logger,
-		mode:   "auto",
-	}
-
-	systemMode := &systemMode{
-		logger:     b.logger,
-		Properties: b.properties,
-	}
-
-	return firstOf([]Resolver{
-		auto,
-		b.preHook,
-		systemMode,
-	})
 }
