@@ -17,6 +17,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
 var (
@@ -143,10 +144,10 @@ func doPrestart() {
 
 	args = append(args, fmt.Sprintf("--pid=%s", strconv.FormatUint(uint64(container.Pid), 10)))
 	args = append(args, rootfs)
+	args = oci.Escape(args)
 
 	env := append(os.Environ(), cli.Environment...)
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection?
-	err = syscall.Exec(args[0], args, env)
+	err = syscall.Exec(args[0], args, env) //nolint:gosec
 	log.Panicln("exec failed:", err)
 }
 

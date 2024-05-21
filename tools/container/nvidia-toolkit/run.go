@@ -229,8 +229,7 @@ func installToolkit(o *options) error {
 		filepath.Join(o.root, toolkitSubDir),
 	}
 
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	cmd := exec.Command("sh", "-c", strings.Join(cmdline, " "))
+	cmd := exec.Command("sh", "-c", strings.Join(cmdline, " ")) //nolint:gosec
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
