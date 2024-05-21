@@ -16,24 +16,55 @@
 
 package info
 
-// Option defines a function for passing options to the New() call.
-type Option func(*infolib)
+import (
+	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
-// New creates a new instance of the 'info' interface.
-func New(opts ...Option) Interface {
-	i := &infolib{}
-	for _, opt := range opts {
-		opt(i)
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
+)
+
+// Option defines a function for passing options to the New() call.
+type Option func(*options)
+
+// WithDeviceLib sets the device library for the library.
+func WithDeviceLib(devicelib device.Interface) Option {
+	return func(i *options) {
+		i.devicelib = devicelib
 	}
-	if i.root == "" {
-		i.root = "/"
+}
+
+// WithLogger sets the logger for the library.
+func WithLogger(logger basicLogger) Option {
+	return func(i *options) {
+		i.logger = logger
 	}
-	return i
+}
+
+// WithNvmlLib sets the nvml library for the library.
+func WithNvmlLib(nvmllib nvml.Interface) Option {
+	return func(i *options) {
+		i.nvmllib = nvmllib
+	}
 }
 
 // WithRoot provides a Option to set the root of the 'info' interface.
-func WithRoot(root string) Option {
-	return func(i *infolib) {
-		i.root = root
+func WithRoot(r string) Option {
+	return func(i *options) {
+		i.root = root(r)
+	}
+}
+
+// WithPropertyExtractor provides an Option to set the PropertyExtractor
+// interface implementation.
+// This is predominantly used for testing.
+func WithPropertyExtractor(propertyExtractor PropertyExtractor) Option {
+	return func(i *options) {
+		i.propertyExtractor = propertyExtractor
+	}
+}
+
+// WithPlatform provides an option to set the platform explicitly.
+func WithPlatform(platform Platform) Option {
+	return func(i *options) {
+		i.platform = platform
 	}
 }

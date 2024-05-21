@@ -25,18 +25,9 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
-// infoInterface provides an alias for mocking.
-//
-//go:generate moq -stub -out info-interface_mock.go . infoInterface
-type infoInterface interface {
-	info.Interface
-	// UsesNVGPUModule indicates whether the system is using the nvgpu kernel module
-	UsesNVGPUModule() (bool, string)
-}
-
 type resolver struct {
 	logger logger.Interface
-	info   infoInterface
+	info   info.PropertyExtractor
 }
 
 // ResolveAutoMode determines the correct mode for the platform if set to "auto"
@@ -74,13 +65,13 @@ func (r resolver) resolveMode(mode string, image image.CUDA) (rmode string) {
 		return "cdi"
 	}
 
-	isTegra, reason := r.info.IsTegraSystem()
+	isTegra, reason := r.info.HasTegraFiles()
 	r.logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
 
 	hasNVML, reason := r.info.HasNvml()
 	r.logger.Debugf("Has NVML? %v: %v", hasNVML, reason)
 
-	usesNVGPUModule, reason := r.info.UsesNVGPUModule()
+	usesNVGPUModule, reason := r.info.UsesOnlyNVGPUModule()
 	r.logger.Debugf("Uses nvgpu kernel module? %v: %v", usesNVGPUModule, reason)
 
 	if (isTegra && !hasNVML) || usesNVGPUModule {
