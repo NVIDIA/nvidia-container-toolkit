@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
@@ -87,9 +88,15 @@ func TestResolveMode(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("test case %d", i), func(t *testing.T) {
 			l := nvcdilib{
-				logger:  logger,
-				mode:    tc.mode,
-				infolib: infoMock{hasDXCore: tc.hasDXCore, isTegra: tc.isTegra, hasNVML: tc.hasNVML},
+				logger: logger,
+				mode:   tc.mode,
+				infolib: infoMock{
+					PropertyExtractor: &info.PropertyExtractorMock{
+						HasDXCoreFunc:     func() (bool, string) { return tc.hasDXCore, "" },
+						HasNvmlFunc:       func() (bool, string) { return tc.hasNVML, "" },
+						HasTegraFilesFunc: func() (bool, string) { return tc.isTegra, "" },
+					},
+				},
 			}
 
 			require.Equal(t, tc.expected, l.resolveMode())
@@ -98,19 +105,9 @@ func TestResolveMode(t *testing.T) {
 }
 
 type infoMock struct {
-	hasDXCore bool
-	isTegra   bool
-	hasNVML   bool
+	info.PropertyExtractor
 }
 
-func (i infoMock) HasDXCore() (bool, string) {
-	return i.hasDXCore, ""
-}
-
-func (i infoMock) HasNvml() (bool, string) {
-	return i.hasNVML, ""
-}
-
-func (i infoMock) IsTegraSystem() (bool, string) {
-	return i.isTegra, ""
+func (i infoMock) ResolvePlatform() info.Platform {
+	return "not-implemented"
 }
