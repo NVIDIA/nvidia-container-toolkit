@@ -99,7 +99,7 @@ func New(opts ...Option) (Interface, error) {
 		l.nvmllib = nvml.New()
 	}
 	if l.devicelib == nil {
-		l.devicelib = device.New(device.WithNvml(l.nvmllib))
+		l.devicelib = device.New(l.nvmllib)
 	}
 	if l.infolib == nil {
 		l.infolib = info.New(
