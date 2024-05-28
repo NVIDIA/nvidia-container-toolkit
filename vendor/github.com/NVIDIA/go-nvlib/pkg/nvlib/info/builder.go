@@ -55,7 +55,7 @@ func New(opts ...Option) Interface {
 		)
 	}
 	if o.devicelib == nil {
-		o.devicelib = device.New(device.WithNvml(o.nvmllib))
+		o.devicelib = device.New(o.nvmllib)
 	}
 	if o.platform == "" {
 		o.platform = PlatformAuto

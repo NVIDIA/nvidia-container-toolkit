@@ -51,7 +51,7 @@ func (d *devicelib) NewDevice(dev nvml.Device) (Device, error) {
 
 // NewDeviceByUUID builds a new Device from a UUID.
 func (d *devicelib) NewDeviceByUUID(uuid string) (Device, error) {
-	dev, ret := d.nvml.DeviceGetHandleByUUID(uuid)
+	dev, ret := d.nvmllib.DeviceGetHandleByUUID(uuid)
 	if ret != nvml.SUCCESS {
 		return nil, fmt.Errorf("error getting device handle for uuid '%v': %v", uuid, ret)
 	}
@@ -334,13 +334,13 @@ func (d *device) isSkipped() (bool, error) {
 
 // VisitDevices visits each top-level device and invokes a callback function for it.
 func (d *devicelib) VisitDevices(visit func(int, Device) error) error {
-	count, ret := d.nvml.DeviceGetCount()
+	count, ret := d.nvmllib.DeviceGetCount()
 	if ret != nvml.SUCCESS {
 		return fmt.Errorf("error getting device count: %v", ret)
 	}
 
 	for i := 0; i < count; i++ {
-		device, ret := d.nvml.DeviceGetHandleByIndex(i)
+		device, ret := d.nvmllib.DeviceGetHandleByIndex(i)
 		if ret != nvml.SUCCESS {
 			return fmt.Errorf("error getting device handle for index '%v': %v", i, ret)
 		}
@@ -469,5 +469,5 @@ func (d *devicelib) hasSymbol(symbol string) bool {
 		return true
 	}
 
-	return d.nvml.Extensions().LookupSymbol(symbol) == nil
+	return d.nvmllib.Extensions().LookupSymbol(symbol) == nil
 }
