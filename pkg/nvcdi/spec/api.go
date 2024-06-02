@@ -24,6 +24,8 @@ import (
 
 const (
 	// DetectMinimumVersion is a constant that triggers a spec to detect the minimum required version.
+	//
+	// Deprecated: DetectMinimumVersion is deprecated and will be removed.
 	DetectMinimumVersion = "DETECT_MINIMUM_VERSION"
 
 	// FormatJSON indicates a JSON output format

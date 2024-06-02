@@ -24,12 +24,15 @@ import (
 
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
 
 type spec struct {
 	*specs.Spec
-	format      string
-	permissions os.FileMode
+	format          string
+	permissions     os.FileMode
+	transformOnSave transform.Transformer
 }
 
 var _ Interface = (*spec)(nil)
@@ -41,6 +44,12 @@ func New(opts ...Option) (Interface, error) {
 
 // Save writes the spec to the specified path and overwrites the file if it exists.
 func (s *spec) Save(path string) error {
+	if s.transformOnSave != nil {
+		err := s.transformOnSave.Transform(s.Raw())
+		if err != nil {
+			return fmt.Errorf("error applying transform: %w", err)
+		}
+	}
 	path, err := s.normalizePath(path)
 	if err != nil {
 		return fmt.Errorf("failed to normalize path: %w", err)

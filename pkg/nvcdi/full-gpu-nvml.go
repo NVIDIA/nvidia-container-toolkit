@@ -58,7 +58,7 @@ func (l *nvmllib) GetGPUDeviceSpecs(i int, d device.Device) ([]specs.Device, err
 
 // GetGPUDeviceEdits returns the CDI edits for the full GPU represented by 'device'.
 func (l *nvmllib) GetGPUDeviceEdits(d device.Device) (*cdi.ContainerEdits, error) {
-	device, err := newFullGPUDiscoverer(l.logger, l.devRoot, l.nvidiaCTKPath, d)
+	device, err := newFullGPUDiscoverer(l.logger, l.devRoot, l.nvidiaCDIHookPath, d)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
 	}
@@ -73,17 +73,17 @@ func (l *nvmllib) GetGPUDeviceEdits(d device.Device) (*cdi.ContainerEdits, error
 
 // byPathHookDiscoverer discovers the entities required for injecting by-path DRM device links
 type byPathHookDiscoverer struct {
-	logger        logger.Interface
-	devRoot       string
-	nvidiaCTKPath string
-	pciBusID      string
-	deviceNodes   discover.Discover
+	logger            logger.Interface
+	devRoot           string
+	nvidiaCDIHookPath string
+	pciBusID          string
+	deviceNodes       discover.Discover
 }
 
 var _ discover.Discover = (*byPathHookDiscoverer)(nil)
 
 // newFullGPUDiscoverer creates a discoverer for the full GPU defined by the specified device.
-func newFullGPUDiscoverer(logger logger.Interface, devRoot string, nvidiaCTKPath string, d device.Device) (discover.Discover, error) {
+func newFullGPUDiscoverer(logger logger.Interface, devRoot string, nvidiaCDIHookPath string, d device.Device) (discover.Discover, error) {
 	// TODO: The functionality to get device paths should be integrated into the go-nvlib/pkg/device.Device interface.
 	// This will allow reuse here and in other code where the paths are queried such as the NVIDIA device plugin.
 	minor, ret := d.GetMinorNumber()
@@ -112,17 +112,17 @@ func newFullGPUDiscoverer(logger logger.Interface, devRoot string, nvidiaCTKPath
 	)
 
 	byPathHooks := &byPathHookDiscoverer{
-		logger:        logger,
-		devRoot:       devRoot,
-		nvidiaCTKPath: nvidiaCTKPath,
-		pciBusID:      pciBusID,
-		deviceNodes:   deviceNodes,
+		logger:            logger,
+		devRoot:           devRoot,
+		nvidiaCDIHookPath: nvidiaCDIHookPath,
+		pciBusID:          pciBusID,
+		deviceNodes:       deviceNodes,
 	}
 
 	deviceFolderPermissionHooks := newDeviceFolderPermissionHookDiscoverer(
 		logger,
 		devRoot,
-		nvidiaCTKPath,
+		nvidiaCDIHookPath,
 		deviceNodes,
 	)
 
@@ -157,8 +157,8 @@ func (d *byPathHookDiscoverer) Hooks() ([]discover.Hook, error) {
 		args = append(args, "--link", l)
 	}
 
-	hook := discover.CreateNvidiaCTKHook(
-		d.nvidiaCTKPath,
+	hook := discover.CreateNvidiaCDIHook(
+		d.nvidiaCDIHookPath,
 		"create-symlinks",
 		args...,
 	)

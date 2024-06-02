@@ -36,12 +36,12 @@ func (l *nvmllib) newCommonNVMLDiscoverer() (discover.Discover, error) {
 		},
 	)
 
-	graphicsMounts, err := discover.NewGraphicsMountsDiscoverer(l.logger, l.driver, l.nvidiaCTKPath)
+	graphicsMounts, err := discover.NewGraphicsMountsDiscoverer(l.logger, l.driver, l.nvidiaCDIHookPath)
 	if err != nil {
 		l.logger.Warningf("failed to create discoverer for graphics mounts: %v", err)
 	}
 
-	driverFiles, err := NewDriverDiscoverer(l.logger, l.driver, l.nvidiaCTKPath, l.ldconfigPath, l.nvmllib)
+	driverFiles, err := NewDriverDiscoverer(l.logger, l.driver, l.nvidiaCDIHookPath, l.ldconfigPath, l.nvmllib)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for driver files: %v", err)
 	}

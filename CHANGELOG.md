@@ -1,5 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
+* Move `nvidia-ctk hook` commands to a separate `nvidia-cdi-hook` binary. The same subcommands are supported.
+
 ## v1.15.0
 
 * Remove `nvidia-container-runtime` and `nvidia-docker2` packages.

@@ -33,7 +33,7 @@ variables:
   # On the multi-arch builder we don't need the qemu setup.
   SKIP_QEMU_SETUP: "1"
   # Define the public staging registry
-  STAGING_REGISTRY: ghcr.io/nvidia/
+  STAGING_REGISTRY: ghcr.io/nvidia
   STAGING_VERSION: ${CI_COMMIT_SHORT_SHA}
   ARTIFACTORY_REPO_BASE: "https://urm.nvidia.com/artifactory/sw-gpu-cloudnative"
   KITMAKER_RELEASE_FOLDER: "kitmaker"

@@ -48,7 +48,7 @@ type nvcdilib struct {
 	deviceNamers       DeviceNamers
 	driverRoot         string
 	devRoot            string
-	nvidiaCTKPath      string
+	nvidiaCDIHookPath  string
 	ldconfigPath       string
 	configSearchPaths  []string
 	librarySearchPaths []string
@@ -81,24 +81,34 @@ func New(opts ...Option) (Interface, error) {
 		indexNamer, _ := NewDeviceNamer(DeviceNameStrategyIndex)
 		l.deviceNamers = []DeviceNamer{indexNamer}
 	}
+	if l.nvidiaCDIHookPath == "" {
+		l.nvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
+	}
 	if l.driverRoot == "" {
 		l.driverRoot = "/"
 	}
 	if l.devRoot == "" {
 		l.devRoot = l.driverRoot
 	}
-	if l.nvidiaCTKPath == "" {
-		l.nvidiaCTKPath = "/usr/bin/nvidia-ctk"
-	}
-	if l.infolib == nil {
-		l.infolib = info.New()
-	}
-
 	l.driver = root.New(
 		root.WithLogger(l.logger),
 		root.WithDriverRoot(l.driverRoot),
 		root.WithLibrarySearchPaths(l.librarySearchPaths...),
 	)
+	if l.nvmllib == nil {
+		l.nvmllib = nvml.New()
+	}
+	if l.devicelib == nil {
+		l.devicelib = device.New(l.nvmllib)
+	}
+	if l.infolib == nil {
+		l.infolib = info.New(
+			info.WithRoot(l.driverRoot),
+			info.WithLogger(l.logger),
+			info.WithNvmlLib(l.nvmllib),
+			info.WithDeviceLib(l.devicelib),
+		)
+	}
 
 	var lib Interface
 	switch l.resolveMode() {
@@ -113,13 +123,6 @@ func New(opts ...Option) (Interface, error) {
 		}
 		lib = (*managementlib)(l)
 	case ModeNvml:
-		if l.nvmllib == nil {
-			l.nvmllib = nvml.New()
-		}
-		if l.devicelib == nil {
-			l.devicelib = device.New(device.WithNvml(l.nvmllib))
-		}
-
 		lib = (*nvmllib)(l)
 	case ModeWsl:
 		lib = (*wsllib)(l)
@@ -184,26 +187,19 @@ func (l *nvcdilib) resolveMode() (rmode string) {
 		return l.mode
 	}
 	defer func() {
-		l.logger.Infof("Auto-detected mode as %q", rmode)
+		l.logger.Infof("Auto-detected mode as '%v'", rmode)
 	}()
 
-	isWSL, reason := l.infolib.HasDXCore()
-	l.logger.Debugf("Is WSL-based system? %v: %v", isWSL, reason)
-
-	if isWSL {
+	platform := l.infolib.ResolvePlatform()
+	switch platform {
+	case info.PlatformNVML:
+		return ModeNvml
+	case info.PlatformTegra:
+		return ModeCSV
+	case info.PlatformWSL:
 		return ModeWsl
 	}
-
-	isNvml, reason := l.infolib.HasNvml()
-	l.logger.Debugf("Is NVML-based system? %v: %v", isNvml, reason)
-
-	isTegra, reason := l.infolib.IsTegraSystem()
-	l.logger.Debugf("Is Tegra-based system? %v: %v", isTegra, reason)
-
-	if isTegra && !isNvml {
-		return ModeCSV
-	}
-
+	l.logger.Warningf("Unsupported platform detected: %v; assuming %v", platform, ModeNvml)
 	return ModeNvml
 }
 

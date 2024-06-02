@@ -62,7 +62,7 @@ func NewCSVModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 	cdilib, err := nvcdi.New(
 		nvcdi.WithLogger(logger),
 		nvcdi.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
-		nvcdi.WithNVIDIACTKPath(cfg.NVIDIACTKConfig.Path),
+		nvcdi.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path),
 		nvcdi.WithMode(nvcdi.ModeCSV),
 		nvcdi.WithCSVFiles(csvFiles),
 	)

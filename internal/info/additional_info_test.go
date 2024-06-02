@@ -243,7 +243,7 @@ func TestUsesNVGPUModule(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			sut := additionalInfo{
 				nvmllib:   tc.nvmllib,
-				devicelib: device.New(device.WithNvml(tc.nvmllib)),
+				devicelib: device.New(tc.nvmllib),
 			}
 
 			flag, _ := sut.UsesNVGPUModule()

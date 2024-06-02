@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	testNvidiaCTKPath = "/foo/bar/nvidia-ctk"
-	testLdconfigPath  = "/bar/baz/ldconfig"
+	testNvidiaCDIHookPath = "/foo/bar/nvidia-cdi-hook"
+	testLdconfigPath      = "/bar/baz/ldconfig"
 )
 
 func TestLDCacheUpdateHook(t *testing.T) {
@@ -42,7 +42,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 	}{
 		{
 			description:  "empty mounts",
-			expectedArgs: []string{"nvidia-ctk", "hook", "update-ldcache"},
+			expectedArgs: []string{"nvidia-cdi-hook", "update-ldcache"},
 		},
 		{
 			description:   "mount error",
@@ -65,7 +65,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 					Path: "/usr/local/lib/libbar.so",
 				},
 			},
-			expectedArgs: []string{"nvidia-ctk", "hook", "update-ldcache", "--folder", "/usr/local/lib", "--folder", "/usr/local/libother"},
+			expectedArgs: []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/usr/local/lib", "--folder", "/usr/local/libother"},
 		},
 		{
 			description: "host paths are ignored",
@@ -75,12 +75,12 @@ func TestLDCacheUpdateHook(t *testing.T) {
 					Path:     "/usr/local/lib/libfoo.so",
 				},
 			},
-			expectedArgs: []string{"nvidia-ctk", "hook", "update-ldcache", "--folder", "/usr/local/lib"},
+			expectedArgs: []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/usr/local/lib"},
 		},
 		{
 			description:  "explicit ldconfig path is passed",
 			ldconfigPath: testLdconfigPath,
-			expectedArgs: []string{"nvidia-ctk", "hook", "update-ldcache", "--ldconfig-path", testLdconfigPath},
+			expectedArgs: []string{"nvidia-cdi-hook", "update-ldcache", "--ldconfig-path", testLdconfigPath},
 		},
 	}
 
@@ -92,12 +92,12 @@ func TestLDCacheUpdateHook(t *testing.T) {
 				},
 			}
 			expectedHook := Hook{
-				Path:      testNvidiaCTKPath,
+				Path:      testNvidiaCDIHookPath,
 				Args:      tc.expectedArgs,
 				Lifecycle: "createContainer",
 			}
 
-			d, err := NewLDCacheUpdateHook(logger, mountMock, testNvidiaCTKPath, tc.ldconfigPath)
+			d, err := NewLDCacheUpdateHook(logger, mountMock, testNvidiaCDIHookPath, tc.ldconfigPath)
 			require.NoError(t, err)
 
 			hooks, err := d.Hooks()

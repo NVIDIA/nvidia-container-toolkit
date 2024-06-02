@@ -18,6 +18,7 @@ package nvcdi
 
 import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -31,6 +32,13 @@ type Option func(*nvcdilib)
 func WithDeviceLib(devicelib device.Interface) Option {
 	return func(l *nvcdilib) {
 		l.devicelib = devicelib
+	}
+}
+
+// WithInfoLib sets the info library for CDI spec generation.
+func WithInfoLib(infolib info.Interface) Option {
+	return func(l *nvcdilib) {
+		l.infolib = infolib
 	}
 }
 
@@ -63,9 +71,16 @@ func WithLogger(logger logger.Interface) Option {
 }
 
 // WithNVIDIACTKPath sets the path to the NVIDIA Container Toolkit CLI path for the library
+//
+// Deprecated: Use WithNVIDIACDIHookPath instead.
 func WithNVIDIACTKPath(path string) Option {
+	return WithNVIDIACDIHookPath(path)
+}
+
+// WithNVIDIACDIHookPath sets the path to the NVIDIA Container Toolkit CLI path for the library
+func WithNVIDIACDIHookPath(path string) Option {
 	return func(l *nvcdilib) {
-		l.nvidiaCTKPath = path
+		l.nvidiaCDIHookPath = path
 	}
 }
 

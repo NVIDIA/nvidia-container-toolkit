@@ -66,6 +66,7 @@ func (r rt) Run(argv []string) (rerr error) {
 	if r.modeOverride != "" {
 		cfg.NVIDIAContainerRuntimeConfig.Mode = r.modeOverride
 	}
+	//nolint:staticcheck  // TODO(elezar): We should swith the nvidia-container-runtime from using nvidia-ctk to using nvidia-cdi-hook.
 	cfg.NVIDIACTKConfig.Path = config.ResolveNVIDIACTKPath(r.logger, cfg.NVIDIACTKConfig.Path)
 	cfg.NVIDIAContainerRuntimeHookConfig.Path = config.ResolveNVIDIAContainerRuntimeHookPath(r.logger, cfg.NVIDIAContainerRuntimeHookConfig.Path)
 
