@@ -254,6 +254,26 @@ func optionalXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidia
 	return xorg
 }
 
+func buildXOrgSearchPaths(libRoot string) []string {
+	paths := []string{
+		libRoot + "/nvidia/xorg",
+	}
+
+	directories := []string{"drivers", "extensions"}
+	pathOptions := []string{"modules", "modules/updates"}
+	prefixes := []string{libRoot + "/xorg", "/usr/lib/xorg", "/usr/lib64/xorg", "/usr/X11R6/lib", "/usr/X11R6/lib64"}
+
+	for _, prefix := range prefixes {
+		for _, pathOption := range pathOptions {
+			for _, directory := range directories {
+				paths = append(paths, prefix+"/"+pathOption+"/"+directory)
+			}
+		}
+	}
+
+	return paths
+}
+
 func newXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath string) (Discover, error) {
 	libCudaPaths, err := cuda.New(
 		driver.Libraries(),
@@ -274,27 +294,7 @@ func newXorgDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHo
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
 			lookup.WithRoot(driver.Root),
-			lookup.WithSearchPaths([]string{
-				libRoot + "/nvidia/xorg",
-				libRoot + "/xorg/modules/extensions",
-				libRoot + "/xorg/modules/drivers",
-				"/usr/lib/xorg/modules/extensions",
-				"/usr/lib/xorg/modules/drivers",
-				"/usr/lib64/xorg/modules/extensions",
-				"/usr/lib64/xorg/modules/drivers",
-				"/usr/lib/xorg/modules/updates/extensions",
-				"/usr/lib/xorg/modules/updates/drivers",
-				"/usr/lib64/xorg/modules/updates/extensions",
-				"/usr/lib64/xorg/modules/updates/drivers",
-				"/usr/X11R6/lib/modules/extensions",
-				"/usr/X11R6/lib/modules/drivers",
-				"/usr/X11R6/lib64/modules/extensions",
-				"/usr/X11R6/lib64/modules/drivers",
-				"/usr/X11R6/lib/modules/updates/extensions",
-				"/usr/X11R6/lib/modules/updates/drivers",
-				"/usr/X11R6/lib64/modules/updates/extensions",
-				"/usr/X11R6/lib64/modules/updates/drivers",
-			}),
+			lookup.WithSearchPaths(buildXOrgSearchPaths(libRoot)...),
 			lookup.WithCount(1),
 		),
 		driver.Root,
