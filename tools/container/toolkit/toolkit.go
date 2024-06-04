@@ -48,7 +48,9 @@ const (
 
 type options struct {
 	DriverRoot        string
+	DevRoot           string
 	DriverRootCtrPath string
+	DevRootCtrPath    string
 
 	ContainerRuntimeMode     string
 	ContainerRuntimeDebug    string
@@ -131,6 +133,18 @@ func main() {
 			Value:       DefaultNvidiaDriverRoot,
 			Destination: &opts.DriverRootCtrPath,
 			EnvVars:     []string{"DRIVER_ROOT_CTR_PATH"},
+		},
+		&cli.StringFlag{
+			Name:        "dev-root",
+			Usage:       "Specify the root where `/dev` is located. If this is not specified, the driver-root is assumed.",
+			Destination: &opts.DevRoot,
+			EnvVars:     []string{"NVIDIA_DEV_ROOT", "DEV_ROOT"},
+		},
+		&cli.StringFlag{
+			Name:        "dev-root-ctr-path",
+			Usage:       "Specify the root where `/dev` is located in the container. If this is not specified, the driver-root-ctr-path is assumed.",
+			Destination: &opts.DevRootCtrPath,
+			EnvVars:     []string{"DEV_ROOT_CTR_PATH"},
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-container-runtime.debug",
@@ -750,14 +764,14 @@ func createDeviceNodes(opts *options) error {
 	}
 
 	devices, err := nvdevices.New(
-		nvdevices.WithDevRoot(opts.DriverRootCtrPath),
+		nvdevices.WithDevRoot(opts.DevRootCtrPath),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create library: %v", err)
 	}
 
 	for _, mode := range modes {
-		log.Infof("Creating %v device nodes at %v", mode, opts.DriverRootCtrPath)
+		log.Infof("Creating %v device nodes at %v", mode, opts.DevRootCtrPath)
 		if mode != "control" {
 			log.Warningf("Unrecognised device mode: %v", mode)
 			continue
@@ -778,6 +792,7 @@ func generateCDISpec(opts *options, nvidiaCDIHookPath string) error {
 	cdilib, err := nvcdi.New(
 		nvcdi.WithMode(nvcdi.ModeManagement),
 		nvcdi.WithDriverRoot(opts.DriverRootCtrPath),
+		nvcdi.WithDevRoot(opts.DevRootCtrPath),
 		nvcdi.WithNVIDIACDIHookPath(nvidiaCDIHookPath),
 		nvcdi.WithVendor(opts.cdiVendor),
 		nvcdi.WithClass(opts.cdiClass),
@@ -790,11 +805,14 @@ func generateCDISpec(opts *options, nvidiaCDIHookPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to genereate CDI spec for management containers: %v", err)
 	}
-	err = transformroot.New(
-		transformroot.WithRoot(opts.DriverRootCtrPath),
-		transformroot.WithTargetRoot(opts.DriverRoot),
-	).Transform(spec.Raw())
-	if err != nil {
+
+	transformer := transformroot.NewDriverTransformer(
+		transformroot.WithDriverRoot(opts.DriverRootCtrPath),
+		transformroot.WithTargetDriverRoot(opts.DriverRoot),
+		transformroot.WithDevRoot(opts.DevRootCtrPath),
+		transformroot.WithTargetDevRoot(opts.DevRoot),
+	)
+	if err := transformer.Transform(spec.Raw()); err != nil {
 		return fmt.Errorf("failed to transform driver root in CDI spec: %v", err)
 	}
 
