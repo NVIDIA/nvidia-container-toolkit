@@ -32,6 +32,7 @@ type command struct {
 
 type options struct {
 	driverRoot string
+	devRoot    string
 
 	dryRun bool
 
@@ -71,6 +72,12 @@ func (m command) build() *cli.Command {
 			Destination: &opts.driverRoot,
 			EnvVars:     []string{"NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"},
 		},
+		&cli.StringFlag{
+			Name:        "dev-root",
+			Usage:       "specify the root where `/dev` is located. If this is not specified, the root is assumed.",
+			Destination: &opts.devRoot,
+			EnvVars:     []string{"NVIDIA_DEV_ROOT", "DEV_ROOT"},
+		},
 		&cli.BoolFlag{
 			Name:        "control-devices",
 			Usage:       "create all control device nodes: nvidiactl, nvidia-modeset, nvidia-uvm, nvidia-uvm-tools",
@@ -83,7 +90,7 @@ func (m command) build() *cli.Command {
 		},
 		&cli.BoolFlag{
 			Name:        "dry-run",
-			Usage:       "if set, the command will not create any symlinks.",
+			Usage:       "if set, the command will not perform any operations",
 			Value:       false,
 			Destination: &opts.dryRun,
 			EnvVars:     []string{"DRY_RUN"},
@@ -94,6 +101,10 @@ func (m command) build() *cli.Command {
 }
 
 func (m command) validateFlags(r *cli.Context, opts *options) error {
+	if opts.devRoot == "" && opts.driverRoot != "" {
+		m.logger.Infof("Using dev-root %q", opts.driverRoot)
+		opts.devRoot = opts.driverRoot
+	}
 	return nil
 }
 
@@ -113,12 +124,12 @@ func (m command) run(c *cli.Context, opts *options) error {
 		devices, err := nvdevices.New(
 			nvdevices.WithLogger(m.logger),
 			nvdevices.WithDryRun(opts.dryRun),
-			nvdevices.WithDevRoot(opts.driverRoot),
+			nvdevices.WithDevRoot(opts.devRoot),
 		)
 		if err != nil {
 			return err
 		}
-		m.logger.Infof("Creating control device nodes at %s", opts.driverRoot)
+		m.logger.Infof("Creating control device nodes at %s", opts.devRoot)
 		if err := devices.CreateNVIDIAControlDevices(); err != nil {
 			return fmt.Errorf("failed to create NVIDIA control device nodes: %v", err)
 		}
