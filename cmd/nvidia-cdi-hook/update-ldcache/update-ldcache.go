@@ -153,8 +153,11 @@ func (m command) resolveLDConfigPath(path string) string {
 	return strings.TrimPrefix(config.NormalizeLDConfigPath("@"+path), "@")
 }
 
-// createConfig creates (or updates) /etc/ld.so.conf.d/nvcr-<RANDOM_STRING>.conf in the container
+// createConfig creates (or updates) /etc/ld.so.conf.d/00-nvcr-<RANDOM_STRING>.conf in the container
 // to include the required paths.
+// Note that the 00-nvcr prefix is chosen to ensure that these libraries have
+// a higher precedence than other libraries on the system but are applied AFTER
+// 00-cuda-compat.conf.
 func (m command) createConfig(root string, folders []string) error {
 	if len(folders) == 0 {
 		m.logger.Debugf("No folders to add to /etc/ld.so.conf")
@@ -165,7 +168,7 @@ func (m command) createConfig(root string, folders []string) error {
 		return fmt.Errorf("failed to create ld.so.conf.d: %v", err)
 	}
 
-	configFile, err := os.CreateTemp(filepath.Join(root, "/etc/ld.so.conf.d"), "nvcr-*.conf")
+	configFile, err := os.CreateTemp(filepath.Join(root, "/etc/ld.so.conf.d"), "00-nvcr-*.conf")
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %v", err)
 	}
