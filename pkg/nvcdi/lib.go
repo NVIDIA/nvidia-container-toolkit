@@ -96,7 +96,16 @@ func New(opts ...Option) (Interface, error) {
 		root.WithLibrarySearchPaths(l.librarySearchPaths...),
 	)
 	if l.nvmllib == nil {
-		l.nvmllib = nvml.New()
+		var nvmlOpts []nvml.LibraryOption
+		candidates, err := l.driver.Libraries().Locate("libnvidia-ml.so.1")
+		if err != nil {
+			l.logger.Warningf("Ignoring error in locating libnvidia-ml.so.1: %v", err)
+		} else {
+			libNvidiaMlPath := candidates[0]
+			l.logger.Infof("Using %v", libNvidiaMlPath)
+			nvmlOpts = append(nvmlOpts, nvml.WithLibraryPath(libNvidiaMlPath))
+		}
+		l.nvmllib = nvml.New(nvmlOpts...)
 	}
 	if l.devicelib == nil {
 		l.devicelib = device.New(l.nvmllib)
