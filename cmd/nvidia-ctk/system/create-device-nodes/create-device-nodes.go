@@ -31,8 +31,8 @@ type command struct {
 }
 
 type options struct {
-	driverRoot string
-	devRoot    string
+	root    string
+	devRoot string
 
 	dryRun bool
 
@@ -66,11 +66,15 @@ func (m command) build() *cli.Command {
 
 	c.Flags = []cli.Flag{
 		&cli.StringFlag{
-			Name:        "driver-root",
-			Usage:       "the path to the driver root. Device nodes will be created at `DRIVER_ROOT`/dev",
+			Name: "root",
+			// TODO: Remove this alias
+			Aliases: []string{"driver-root"},
+			Usage: "the path to to the root to use to load the kernel modules. This root must be a chrootable path. " +
+				"If device nodes to be created these will be created at `ROOT`/dev unless an alternative path is specified",
 			Value:       "/",
-			Destination: &opts.driverRoot,
-			EnvVars:     []string{"NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"},
+			Destination: &opts.root,
+			// TODO: Remove the NVIDIA_DRIVER_ROOT and DRIVER_ROOT envvars.
+			EnvVars: []string{"ROOT", "NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"},
 		},
 		&cli.StringFlag{
 			Name:        "dev-root",
@@ -101,9 +105,9 @@ func (m command) build() *cli.Command {
 }
 
 func (m command) validateFlags(r *cli.Context, opts *options) error {
-	if opts.devRoot == "" && opts.driverRoot != "" {
-		m.logger.Infof("Using dev-root %q", opts.driverRoot)
-		opts.devRoot = opts.driverRoot
+	if opts.devRoot == "" && opts.root != "" {
+		m.logger.Infof("Using dev-root %q", opts.root)
+		opts.devRoot = opts.root
 	}
 	return nil
 }
@@ -113,7 +117,7 @@ func (m command) run(c *cli.Context, opts *options) error {
 		modules := nvmodules.New(
 			nvmodules.WithLogger(m.logger),
 			nvmodules.WithDryRun(opts.dryRun),
-			nvmodules.WithRoot(opts.driverRoot),
+			nvmodules.WithRoot(opts.root),
 		)
 		if err := modules.LoadAll(); err != nil {
 			return fmt.Errorf("failed to load NVIDIA kernel modules: %v", err)
