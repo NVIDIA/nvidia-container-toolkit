@@ -56,8 +56,8 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, n
 		driver.Root,
 		[]string{
 			"libnvidia-egl-gbm.so.*",
-			"gbm/nvidia-drm_gbm.so",
 			"libnvidia-egl-wayland.so.*",
+			"libnvidia-allocator.so.*",
 			"libnvidia-vulkan-producer.so.*",
 		},
 	)
@@ -77,15 +77,73 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, n
 		},
 	)
 
+	symlinks := newGraphicsDriverSymlinks(logger, libraries, nvidiaCDIHookPath)
 	xorg := optionalXorgDiscoverer(logger, driver, nvidiaCDIHookPath)
 
 	discover := Merge(
 		libraries,
 		jsonMounts,
+		symlinks,
 		xorg,
 	)
 
 	return discover, nil
+}
+
+type graphicsDriverSymlinks struct {
+	None
+	logger            logger.Interface
+	libraries         Discover
+	nvidiaCDIHookPath string
+}
+
+var _ Discover = (*graphicsDriverSymlinks)(nil)
+
+func newGraphicsDriverSymlinks(logger logger.Interface, libraries Discover, nvidiaCDIHookPath string) Discover {
+	return &graphicsDriverSymlinks{
+		logger:            logger,
+		libraries:         libraries,
+		nvidiaCDIHookPath: nvidiaCDIHookPath,
+	}
+}
+
+// Create necessary library symlinks for graphics drivers
+func (d graphicsDriverSymlinks) Hooks() ([]Hook, error) {
+	mounts, err := d.libraries.Mounts()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get library mounts: %v", err)
+	}
+
+	links := []string{}
+
+	for _, mount := range mounts {
+		filename := filepath.Base(mount.HostPath)
+
+		// nvidia-drm_gbm.so is a symlink to libnvidia-allocator.so
+		// Make sure this is actually available
+		if strings.HasPrefix(filename, "libnvidia-allocator.so.") {
+			linkDir := filepath.Dir(mount.Path)
+			linkPath := filepath.Join(linkDir, "gbm", "nvidia-drm_gbm.so")
+			target := filepath.Join("..", filename)
+			links = append(links, fmt.Sprintf("%s::%s", target, linkPath))
+		}
+
+		// Address the vulkan-producer lib for nvidia drivers prior driver version 545
+		if strings.HasPrefix(filename, "libnvidia-vulkan-producer.so.") {
+			linkDir := filepath.Dir(mount.Path)
+			linkPath := filepath.Join(linkDir, "libnvidia-vulkan-producer.so")
+			links = append(links, fmt.Sprintf("%s::%s", filename, linkPath))
+		}
+	}
+
+	if len(links) == 0 {
+		return nil, nil
+	}
+
+	hooks := CreateCreateSymlinkHook(d.nvidiaCDIHookPath, links)
+
+	return hooks.Hooks()
 }
 
 type drmDevicesByPath struct {
