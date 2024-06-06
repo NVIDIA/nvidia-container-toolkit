@@ -47,6 +47,16 @@ func New(opts ...Option) *Driver {
 	return d
 }
 
+// Files returns a Locator for arbitrary driver files.
+func (r *Driver) Files(opts ...lookup.Option) lookup.Locator {
+	return lookup.NewFileLocator(
+		append(opts,
+			lookup.WithLogger(r.logger),
+			lookup.WithRoot(r.Root),
+		)...,
+	)
+}
+
 // Libraries returns a Locator for driver libraries.
 func (r *Driver) Libraries() lookup.Locator {
 	return lookup.NewLibraryLocator(
