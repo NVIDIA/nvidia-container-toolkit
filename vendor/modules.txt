@@ -62,8 +62,8 @@ github.com/syndtr/gocapability/capability
 github.com/urfave/cli/v2
 # github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
 ## explicit
-# github.com/xrash/smetrics v0.0.0-20240312152122-5f08fbb34913
-## explicit; go 1.15.0
+# github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1
+## explicit; go 1.15
 github.com/xrash/smetrics
 # golang.org/x/mod v0.17.0
 ## explicit; go 1.18
