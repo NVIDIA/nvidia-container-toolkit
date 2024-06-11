@@ -17,6 +17,15 @@
 ARG BASEIMAGE
 FROM ${BASEIMAGE}
 
+# centos:stream8 is EOL.
+# We switch to the vault repositories for this base image.
+ARG BASEIMAGE
+RUN if [ "${BASEIMAGE}" = "quay.io/centos/centos:stream8" ]; then \
+        sed -i -e "s|mirrorlist=|#mirrorlist=|g" \
+               -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" \
+                  /etc/yum.repos.d/CentOS-Stream-*; \
+    fi
+
 RUN yum install -y \
         ca-certificates \
         gcc \
