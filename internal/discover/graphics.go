@@ -50,17 +50,7 @@ func NewDRMNodesDiscoverer(logger logger.Interface, devices image.VisibleDevices
 
 // NewGraphicsMountsDiscoverer creates a discoverer for the mounts required by graphics tools such as vulkan.
 func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath string) (Discover, error) {
-	libraries := NewMounts(
-		logger,
-		driver.Libraries(),
-		driver.Root,
-		[]string{
-			"libnvidia-egl-gbm.so.*",
-			"libnvidia-egl-wayland.so.*",
-			"libnvidia-allocator.so.*",
-			"libnvidia-vulkan-producer.so.*",
-		},
-	)
+	libraries := newGraphicsLibrariesDiscoverer(logger, driver, nvidiaCDIHookPath)
 
 	jsonMounts := NewMounts(
 		logger,
@@ -77,66 +67,78 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, n
 		},
 	)
 
-	symlinks := newGraphicsDriverSymlinks(logger, libraries, nvidiaCDIHookPath)
 	xorg := optionalXorgDiscoverer(logger, driver, nvidiaCDIHookPath)
 
 	discover := Merge(
 		libraries,
 		jsonMounts,
-		symlinks,
 		xorg,
 	)
 
 	return discover, nil
 }
 
-type graphicsDriverSymlinks struct {
-	None
+type graphicsDriverLibraries struct {
+	Discover
 	logger            logger.Interface
-	libraries         Discover
 	nvidiaCDIHookPath string
 }
 
-var _ Discover = (*graphicsDriverSymlinks)(nil)
+var _ Discover = (*graphicsDriverLibraries)(nil)
 
-func newGraphicsDriverSymlinks(logger logger.Interface, libraries Discover, nvidiaCDIHookPath string) Discover {
-	return &graphicsDriverSymlinks{
+func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath string) Discover {
+	libraries := NewMounts(
+		logger,
+		driver.Libraries(),
+		driver.Root,
+		[]string{
+			"libnvidia-egl-gbm.so.*",
+			"libnvidia-egl-wayland.so.*",
+			// We include the following libraries to have them available for
+			// symlink creation below:
+			// If CDI injection is used, these should already be detected as:
+			// * libnvidia-allocator.so.RM_VERSION
+			// * libnvidia-vulkan-producer.so.RM_VERSION
+			// but need to be handled for the legacy case too.
+			"libnvidia-allocator.so.*",
+			"libnvidia-vulkan-producer.so.*",
+		},
+	)
+
+	return &graphicsDriverLibraries{
+		Discover:          libraries,
 		logger:            logger,
-		libraries:         libraries,
 		nvidiaCDIHookPath: nvidiaCDIHookPath,
 	}
 }
 
 // Create necessary library symlinks for graphics drivers
-func (d graphicsDriverSymlinks) Hooks() ([]Hook, error) {
-	mounts, err := d.libraries.Mounts()
-
+func (d graphicsDriverLibraries) Hooks() ([]Hook, error) {
+	mounts, err := d.Discover.Mounts()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get library mounts: %v", err)
 	}
 
-	links := []string{}
-
+	var links []string
 	for _, mount := range mounts {
-		filename := filepath.Base(mount.HostPath)
-
-		// nvidia-drm_gbm.so is a symlink to libnvidia-allocator.so
-		// Make sure this is actually available
-		if strings.HasPrefix(filename, "libnvidia-allocator.so.") {
-			linkDir := filepath.Dir(mount.Path)
-			linkPath := filepath.Join(linkDir, "gbm", "nvidia-drm_gbm.so")
-			target := filepath.Join("..", filename)
-			links = append(links, fmt.Sprintf("%s::%s", target, linkPath))
-		}
-
-		// Address the vulkan-producer lib for nvidia drivers prior driver version 545
-		if strings.HasPrefix(filename, "libnvidia-vulkan-producer.so.") {
-			linkDir := filepath.Dir(mount.Path)
-			linkPath := filepath.Join(linkDir, "libnvidia-vulkan-producer.so")
+		dir, filename := filepath.Split(mount.Path)
+		switch {
+		case strings.HasPrefix(filename, "libnvidia-allocator.so."):
+			// gbm/nvidia-drm_gbm.so is a symlink to ../libnvidia-allocator.so.1 which
+			// in turn symlinks to libnvidia-allocator.so.RM_VERSION and is created
+			// when ldconfig is run in the container.
+			// create libnvidia-allocate.so.1 -> libnvidia-allocate.so.RM_VERSION symlink
+			links = append(links, fmt.Sprintf("%s::%s", filename, filepath.Join(dir, "libnvidia-allocator.so.1")))
+			// create gbm/nvidia-drm_gbm.so -> ../libnvidia-allocate.so.1 symlink
+			linkPath := filepath.Join(dir, "gbm", "nvidia-drm_gbm.so")
+			links = append(links, fmt.Sprintf("%s::%s", "../libnvidia-allocator.so.1", linkPath))
+		case strings.HasPrefix(filename, "libnvidia-vulkan-producer.so."):
+			// libnvidia-vulkan-producer.so is a drirect symlink to libnvidia-vulkan-producer.so.RM_VERSION
+			// create libnvidia-vulkan-producer.so -> libnvidia-vulkan-producer.so.RM_VERSION symlink
+			linkPath := filepath.Join(dir, "libnvidia-vulkan-producer.so")
 			links = append(links, fmt.Sprintf("%s::%s", filename, linkPath))
 		}
 	}
-
 	if len(links) == 0 {
 		return nil, nil
 	}
