@@ -33,6 +33,7 @@ stages:
   - test
   - scan
   - release
+  - sign
 
 .pipeline-trigger-rules:
   rules:
