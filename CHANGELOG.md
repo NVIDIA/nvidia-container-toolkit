@@ -1,5 +1,6 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.16.0-rc.1
 * Move `nvidia-ctk hook` commands to a separate `nvidia-cdi-hook` binary. The same subcommands are supported.
 
 ## v1.15.0
