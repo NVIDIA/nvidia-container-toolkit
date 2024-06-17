@@ -1,0 +1,52 @@
+# Copyright 2024 NVIDIA CORPORATION
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Run this workflow on new tags
+name: Release
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        name: Check out code
+      - name: Create Draft Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          GH_EXTRA_ARGS=""
+          if [[ ${{ github.ref }} == *-rc.* ]]; then
+            GH_EXTRA_ARGS="--prerelease"
+          fi
+          gh release create ${{ github.ref }} \
+            --draft \
+            -t "${{ github.ref }}" \
+            -R $OWNER/$REPO \
+            --verify-tag \
+            $GH_EXTRA_ARGS
+
+      - name: Upload Release Artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          gh release upload ${{ github.ref }} CHANGELOG.md -R $OWNER/$REPO

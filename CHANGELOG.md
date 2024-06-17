@@ -1,7 +1,20 @@
 # NVIDIA Container Toolkit Changelog
 
 ## v1.16.0-rc.1
-* Move `nvidia-ctk hook` commands to a separate `nvidia-cdi-hook` binary. The same subcommands are supported.
+
+- Support vulkan ICD files directly in a driver root. This allows for the discovery of vulkan files in GKE driver installations.
+- Increase priority of ld.so.conf.d config file injected into container. This ensures that injected libraries are preferred over libraries present in the container.
+- Set default CDI spec permissions to 644. This fixes permission issues when using the `nvidia-ctk cdi transform` functions.
+- Add `dev-root` option to `nvidia-ctk system create-device-nodes` command.
+- Fix location of `libnvidia-ml.so.1` when a non-standard driver root is used. This enabled CDI spec generation when using the driver container on a host.
+- Recalculate minimum required CDI spec version on save.
+- Move `nvidia-ctk hook` commands to a separate `nvidia-cdi-hook` binary. The same subcommands are supported.
+- Use `:` as an `nvidia-ctk config --set` list separator. This fixes a bug when trying to set config options that are lists.
+
+- [toolkit-container] Bump CUDA base image version to 12.5.0
+- [toolkit-container] Allow the path to `toolkit.pid` to be specified directly.
+- [toolkit-container] Remove provenance information from image manifests.
+- [toolkit-container] Add `dev-root` option when configuring the toolkit. This adds support for GKE driver installations.
 
 ## v1.15.0
 
