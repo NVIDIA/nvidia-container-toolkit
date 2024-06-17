@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	runDir         = "/run/nvidia"
-	pidFile        = runDir + "/toolkit.pid"
-	toolkitCommand = "toolkit"
-	toolkitSubDir  = "toolkit"
+	toolkitPidFilename = "toolkit.pid"
+	defaultPidFile     = "/run/nvidia/toolkit/" + toolkitPidFilename
+	toolkitCommand     = "toolkit"
+	toolkitSubDir      = "toolkit"
 
 	defaultToolkitArgs = ""
 	defaultRuntime     = "docker"
@@ -36,6 +36,7 @@ type options struct {
 	runtime     string
 	runtimeArgs string
 	root        string
+	pidFile     string
 }
 
 // Version defines the CLI version. This is set at build time using LD FLAGS
@@ -56,6 +57,9 @@ func main() {
 	c.UsageText = "[DESTINATION] [-n | --no-daemon] [-r | --runtime] [-u | --runtime-args]"
 	c.Description = "DESTINATION points to the host path underneath which the nvidia-container-toolkit should be installed.\nIt will be installed at ${DESTINATION}/toolkit"
 	c.Version = Version
+	c.Before = func(ctx *cli.Context) error {
+		return validateFlags(ctx, &options)
+	}
 	c.Action = func(ctx *cli.Context) error {
 		return Run(ctx, &options)
 	}
@@ -92,6 +96,13 @@ func main() {
 			Destination: &options.root,
 			EnvVars:     []string{"ROOT"},
 		},
+		&cli.StringFlag{
+			Name:        "pid-file",
+			Value:       defaultPidFile,
+			Usage:       "the path to a toolkit.pid file to ensure that only a single configuration instance is running",
+			Destination: &options.pidFile,
+			EnvVars:     []string{"TOOLKIT_PID_FILE", "PID_FILE"},
+		},
 	}
 
 	// Run the CLI
@@ -104,6 +115,14 @@ func main() {
 	log.Infof("Completed %v", c.Name)
 }
 
+func validateFlags(_ *cli.Context, o *options) error {
+	if filepath.Base(o.pidFile) != toolkitPidFilename {
+		return fmt.Errorf("invalid toolkit.pid path %v", o.pidFile)
+	}
+
+	return nil
+}
+
 // Run runs the core logic of the CLI
 func Run(c *cli.Context, o *options) error {
 	err := verifyFlags(o)
@@ -111,11 +130,11 @@ func Run(c *cli.Context, o *options) error {
 		return fmt.Errorf("unable to verify flags: %v", err)
 	}
 
-	err = initialize()
+	err = initialize(o.pidFile)
 	if err != nil {
 		return fmt.Errorf("unable to initialize: %v", err)
 	}
-	defer shutdown()
+	defer shutdown(o.pidFile)
 
 	err = installToolkit(o)
 	if err != nil {
@@ -182,8 +201,15 @@ func verifyFlags(o *options) error {
 	return nil
 }
 
-func initialize() error {
+func initialize(pidFile string) error {
 	log.Infof("Initializing")
+
+	if dir := filepath.Dir(pidFile); dir != "" {
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			return fmt.Errorf("unable to create folder for pidfile: %w", err)
+		}
+	}
 
 	f, err := os.Create(pidFile)
 	if err != nil {
@@ -211,7 +237,7 @@ func initialize() error {
 			signalReceived <- true
 		default:
 			log.Infof("Signal received, exiting early")
-			shutdown()
+			shutdown(pidFile)
 			os.Exit(0)
 		}
 	}()
@@ -286,7 +312,7 @@ func cleanupRuntime(o *options) error {
 	return nil
 }
 
-func shutdown() {
+func shutdown(pidFile string) {
 	log.Infof("Shutting Down")
 
 	err := os.Remove(pidFile)

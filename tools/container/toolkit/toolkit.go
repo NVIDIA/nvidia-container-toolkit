@@ -17,6 +17,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -44,6 +45,8 @@ const (
 
 	nvidiaContainerToolkitConfigSource = "/etc/nvidia-container-runtime/config.toml"
 	configFilename                     = "config.toml"
+
+	toolkitPidFilename = "toolkit.pid"
 )
 
 type options struct {
@@ -111,7 +114,7 @@ func main() {
 		return validateOptions(c, &opts)
 	}
 	delete.Action = func(c *cli.Context) error {
-		return Delete(c, &opts)
+		return TryDelete(c, &opts)
 	}
 
 	// Register the subcommand with the top-level CLI
@@ -301,12 +304,29 @@ func validateOptions(c *cli.Context, opts *options) error {
 	return nil
 }
 
-// Delete removes the NVIDIA container toolkit
-func Delete(cli *cli.Context, opts *options) error {
-	log.Infof("Deleting NVIDIA container toolkit from '%v'", opts.toolkitRoot)
-	err := os.RemoveAll(opts.toolkitRoot)
-	if err != nil {
-		return fmt.Errorf("error deleting toolkit directory: %v", err)
+// TryDelete attempts to remove the specified toolkit folder.
+// A toolkit.pid file -- if present -- is skipped.
+func TryDelete(cli *cli.Context, opts *options) error {
+	log.Infof("Attempting to delete NVIDIA container toolkit from '%v'", opts.toolkitRoot)
+
+	contents, err := os.ReadDir(opts.toolkitRoot)
+	if err != nil && errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to read the contents of %v: %w", opts.toolkitRoot, err)
+	}
+
+	for _, content := range contents {
+		if content.Name() == toolkitPidFilename {
+			continue
+		}
+		name := filepath.Join(opts.toolkitRoot, content.Name())
+		if err := os.RemoveAll(name); err != nil {
+			log.Warningf("could not remove %v: %v", name, err)
+		}
+	}
+	if err := os.RemoveAll(opts.toolkitRoot); err != nil {
+		log.Warningf("could not remove %v: %v", opts.toolkitRoot, err)
 	}
 	return nil
 }
