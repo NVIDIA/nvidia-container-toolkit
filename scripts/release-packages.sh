@@ -58,7 +58,7 @@ fi
 PACKAGE_CACHE=release-${VERSION}-${REPO}
 
 echo "Fetching packages with SHA '${SHA}' as tag '${VERSION}' to ${PACKAGE_CACHE}"
-${SCRIPTS_DIR}/pull-packages.sh \
+${SCRIPTS_DIR}/../hack/pull-packages.sh \
     ${IMAGE_NAME}:${IMAGE_TAG} \
     ${PACKAGE_CACHE}
 

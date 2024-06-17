@@ -26,27 +26,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         name: Check out code
+
+      - name: Prepare Artifacts
+        run: |
+          ./hack/prepare-artifacts.sh ${{ github.ref_name }}
+
       - name: Create Draft Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER: ${{ github.repository_owner }}
-          REPO: ${{ github.event.repository.name }}
         run: |
-          GH_EXTRA_ARGS=""
-          if [[ ${{ github.ref_name }} == *-rc.* ]]; then
-            GH_EXTRA_ARGS="--prerelease"
-          fi
-          gh release create ${{ github.ref_name }} \
-            --draft \
-            -t "${{ github.ref_name }}" \
-            -R $OWNER/$REPO \
-            --verify-tag \
-            $GH_EXTRA_ARGS
-
-      - name: Upload Release Artifacts
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER: ${{ github.repository_owner }}
-          REPO: ${{ github.event.repository.name }}
-        run: |
-          gh release upload ${{ github.ref_name }} CHANGELOG.md -R $OWNER/$REPO
+          ./hack/create-release.sh ${{ github.ref_name }}
