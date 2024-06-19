@@ -26,7 +26,7 @@ import (
 
 // SpecModifier defines an interface for modifying a (raw) OCI spec
 type SpecModifier interface {
-	// Modify is a method that accepts a pointer to an OCI Srec and returns an
+	// Modify is a method that accepts a pointer to an OCI Spec and returns an
 	// error. The intention is that the function would modify the spec in-place.
 	Modify(*specs.Spec) error
 }
