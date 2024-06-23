@@ -38,7 +38,7 @@ type Interface interface {
 }
 
 type devicelib struct {
-	nvml           nvml.Interface
+	nvmllib        nvml.Interface
 	skippedDevices map[string]struct{}
 	verifySymbols  *bool
 	migProfiles    []MigProfile
@@ -47,13 +47,12 @@ type devicelib struct {
 var _ Interface = &devicelib{}
 
 // New creates a new instance of the 'device' interface.
-func New(opts ...Option) Interface {
-	d := &devicelib{}
+func New(nvmllib nvml.Interface, opts ...Option) Interface {
+	d := &devicelib{
+		nvmllib: nvmllib,
+	}
 	for _, opt := range opts {
 		opt(d)
-	}
-	if d.nvml == nil {
-		d.nvml = nvml.New()
 	}
 	if d.verifySymbols == nil {
 		verify := true
@@ -66,13 +65,6 @@ func New(opts ...Option) Interface {
 		)(d)
 	}
 	return d
-}
-
-// WithNvml provides an Option to set the NVML library used by the 'device' interface.
-func WithNvml(nvml nvml.Interface) Option {
-	return func(d *devicelib) {
-		d.nvml = nvml
-	}
 }
 
 // WithVerifySymbols provides an option to toggle whether to verify select symbols exist in dynamic libraries before calling them.

@@ -18,6 +18,7 @@ package device
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 )
@@ -30,6 +31,7 @@ type Device interface {
 	GetCudaComputeCapabilityAsString() (string, error)
 	GetMigDevices() ([]MigDevice, error)
 	GetMigProfiles() ([]MigProfile, error)
+	GetPCIBusID() (string, error)
 	IsMigCapable() (bool, error)
 	IsMigEnabled() (bool, error)
 	VisitMigDevices(func(j int, m MigDevice) error) error
@@ -51,7 +53,7 @@ func (d *devicelib) NewDevice(dev nvml.Device) (Device, error) {
 
 // NewDeviceByUUID builds a new Device from a UUID.
 func (d *devicelib) NewDeviceByUUID(uuid string) (Device, error) {
-	dev, ret := d.nvml.DeviceGetHandleByUUID(uuid)
+	dev, ret := d.nvmllib.DeviceGetHandleByUUID(uuid)
 	if ret != nvml.SUCCESS {
 		return nil, fmt.Errorf("error getting device handle for uuid '%v': %v", uuid, ret)
 	}
@@ -138,6 +140,29 @@ func (d *device) GetBrandAsString() (string, error) {
 		return "TitanRTX", nil
 	}
 	return "", fmt.Errorf("error interpreting device brand as string: %v", brand)
+}
+
+// GetPCIBusID returns the string representation of the bus ID.
+func (d *device) GetPCIBusID() (string, error) {
+	info, ret := d.GetPciInfo()
+	if ret != nvml.SUCCESS {
+		return "", fmt.Errorf("error getting PCI info: %w", ret)
+	}
+
+	var bytes []byte
+	for _, b := range info.BusId {
+		if byte(b) == '\x00' {
+			break
+		}
+		bytes = append(bytes, byte(b))
+	}
+	id := strings.ToLower(string(bytes))
+
+	if id != "0000" {
+		id = strings.TrimPrefix(id, "0000")
+	}
+
+	return id, nil
 }
 
 // GetCudaComputeCapabilityAsString returns the Device's CUDA compute capability as a version string.
@@ -334,13 +359,13 @@ func (d *device) isSkipped() (bool, error) {
 
 // VisitDevices visits each top-level device and invokes a callback function for it.
 func (d *devicelib) VisitDevices(visit func(int, Device) error) error {
-	count, ret := d.nvml.DeviceGetCount()
+	count, ret := d.nvmllib.DeviceGetCount()
 	if ret != nvml.SUCCESS {
 		return fmt.Errorf("error getting device count: %v", ret)
 	}
 
 	for i := 0; i < count; i++ {
-		device, ret := d.nvml.DeviceGetHandleByIndex(i)
+		device, ret := d.nvmllib.DeviceGetHandleByIndex(i)
 		if ret != nvml.SUCCESS {
 			return fmt.Errorf("error getting device handle for index '%v': %v", i, ret)
 		}
@@ -469,5 +494,5 @@ func (d *devicelib) hasSymbol(symbol string) bool {
 		return true
 	}
 
-	return d.nvml.Extensions().LookupSymbol(symbol) == nil
+	return d.nvmllib.Extensions().LookupSymbol(symbol) == nil
 }
