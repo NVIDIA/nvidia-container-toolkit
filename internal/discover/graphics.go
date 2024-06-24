@@ -216,7 +216,7 @@ func getCUDALibRootAndVersionPattern(logger logger.Interface, driver *root.Drive
 		version = "*.*"
 	}
 
-	return libRoot, version
+	return driver.RelativeToRoot(libRoot), version
 }
 
 // buildXOrgSearchPaths returns the ordered list of search paths for XOrg files.
