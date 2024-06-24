@@ -7,6 +7,7 @@
 * Ensure consistent construction of libraries for CDI spec generation.
 * Ensure that `nvidia-ctk cdi transform` creates specs with world-readable permissions.
 * Remove provenance information from published images.
+* Fix bug in processing of `--log=` argument of `nvidia-container-runtime`.
 
 ## v1.15.0
 
