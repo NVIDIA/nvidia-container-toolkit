@@ -17,12 +17,12 @@
 package cdi
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/errors"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
