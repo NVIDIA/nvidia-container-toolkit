@@ -19,6 +19,7 @@ package root
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
@@ -45,6 +46,18 @@ func New(opts ...Option) *Driver {
 		d.logger = logger.New()
 	}
 	return d
+}
+
+// RelativeToRoot returns the specified path relative to the driver root.
+func (r *Driver) RelativeToRoot(path string) string {
+	if r.Root == "" || r.Root == "/" {
+		return path
+	}
+	if !filepath.IsAbs(path) {
+		return path
+	}
+
+	return strings.TrimPrefix(path, r.Root)
 }
 
 // Files returns a Locator for arbitrary driver files.
