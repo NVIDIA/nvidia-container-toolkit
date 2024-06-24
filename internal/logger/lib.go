@@ -45,3 +45,6 @@ func (l *NullLogger) Warning(...interface{}) {}
 
 // Warningf is a no-op for the null logger
 func (l *NullLogger) Warningf(string, ...interface{}) {}
+
+// Tracef is a no-op for the null logger
+func (l *NullLogger) Tracef(string, ...interface{}) {}
