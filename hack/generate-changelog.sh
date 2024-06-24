@@ -77,4 +77,4 @@ echo ""
 echo "### Version $VERSION"
 
 # Iterate over the commit messages and ignore the ones that start with "Merge" or "Bump"
-git log --pretty=format:"%s" $REFERENCE..@ | grep -Ev "(^Merge )|(^Bump)" |  sed 's/^\(.*\)/- \1/g'
+git log --pretty=format:"%s" $REFERENCE..@ | grep -Ev "(^Merge )|(^Bump)|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g'
