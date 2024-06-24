@@ -63,3 +63,8 @@ func (s pathRuntime) Exec(args []string) error {
 
 	return s.execRuntime.Exec(runtimeArgs)
 }
+
+// String returns the path to the specified runtime as the string representation.
+func (s pathRuntime) String() string {
+	return s.path
+}

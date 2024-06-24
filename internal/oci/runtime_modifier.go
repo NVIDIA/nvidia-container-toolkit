@@ -83,3 +83,8 @@ func (r *modifyingRuntimeWrapper) modify() error {
 	}
 	return nil
 }
+
+// String returns a string representation of the runtime.
+func (r *modifyingRuntimeWrapper) String() string {
+	return fmt.Sprintf("modify on-create and forward to %s", r.runtime.String())
+}
