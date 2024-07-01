@@ -238,7 +238,7 @@ func parseArgs(args []string) loggerConfig {
 		var value string
 		switch {
 		case len(parts) == 2:
-			value = parts[2]
+			value = parts[1]
 		case i+1 < len(args):
 			value = args[i+1]
 			i++
