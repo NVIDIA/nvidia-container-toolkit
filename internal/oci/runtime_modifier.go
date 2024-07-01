@@ -35,7 +35,7 @@ var _ Runtime = (*modifyingRuntimeWrapper)(nil)
 // before invoking the wrapped runtime. If the modifier is nil, the input runtime is returned.
 func NewModifyingRuntimeWrapper(logger logger.Interface, runtime Runtime, spec Spec, modifier SpecModifier) Runtime {
 	if modifier == nil {
-		logger.Infof("Using low-level runtime with no modification")
+		logger.Tracef("Using low-level runtime with no modification")
 		return runtime
 	}
 
@@ -52,16 +52,15 @@ func NewModifyingRuntimeWrapper(logger logger.Interface, runtime Runtime, spec S
 // into the wrapped runtime.
 func (r *modifyingRuntimeWrapper) Exec(args []string) error {
 	if HasCreateSubcommand(args) {
+		r.logger.Debugf("Create command detected; applying OCI specification modifications")
 		err := r.modify()
 		if err != nil {
-			return fmt.Errorf("could not apply required modification to OCI specification: %v", err)
+			return fmt.Errorf("could not apply required modification to OCI specification: %w", err)
 		}
-		r.logger.Infof("Applied required modification to OCI specification")
-	} else {
-		r.logger.Infof("No modification of OCI specification required")
+		r.logger.Debugf("Applied required modification to OCI specification")
 	}
 
-	r.logger.Infof("Forwarding command to runtime")
+	r.logger.Debugf("Forwarding command to runtime %v", r.runtime.String())
 	return r.runtime.Exec(args)
 }
 
@@ -82,4 +81,9 @@ func (r *modifyingRuntimeWrapper) modify() error {
 		return fmt.Errorf("error writing modified OCI specification: %v", err)
 	}
 	return nil
+}
+
+// String returns a string representation of the runtime.
+func (r *modifyingRuntimeWrapper) String() string {
+	return fmt.Sprintf("modify on-create and forward to %s", r.runtime.String())
 }

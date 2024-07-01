@@ -49,7 +49,7 @@ func New(opts ...Option) (engine.Interface, error) {
 }
 
 // AddRuntime adds a new runtime to the docker config
-func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
+func (c *Config) AddRuntime(name string, path string, setAsDefault bool, _ ...map[string]interface{}) error {
 	if c == nil {
 		return fmt.Errorf("config is nil")
 	}

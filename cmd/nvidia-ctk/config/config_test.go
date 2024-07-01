@@ -25,11 +25,12 @@ import (
 func TestSetFlagToKeyValue(t *testing.T) {
 	// TODO: We need to enable this test again since switching to reflect.
 	testCases := []struct {
-		description   string
-		setFlag       string
-		expectedKey   string
-		expectedValue interface{}
-		expectedError error
+		description      string
+		setFlag          string
+		setListSeparator string
+		expectedKey      string
+		expectedValue    interface{}
+		expectedError    error
 	}{
 		{
 			description:   "option not present returns an error",
@@ -106,22 +107,34 @@ func TestSetFlagToKeyValue(t *testing.T) {
 			expectedValue: []string{"string-value"},
 		},
 		{
-			description:   "[]string option returns multiple values",
-			setFlag:       "nvidia-container-cli.environment=first,second",
-			expectedKey:   "nvidia-container-cli.environment",
-			expectedValue: []string{"first", "second"},
+			description:      "[]string option returns multiple values",
+			setFlag:          "nvidia-container-cli.environment=first,second",
+			setListSeparator: ",",
+			expectedKey:      "nvidia-container-cli.environment",
+			expectedValue:    []string{"first", "second"},
 		},
 		{
-			description:   "[]string option returns values with equals",
-			setFlag:       "nvidia-container-cli.environment=first=1,second=2",
-			expectedKey:   "nvidia-container-cli.environment",
-			expectedValue: []string{"first=1", "second=2"},
+			description:      "[]string option returns values with equals",
+			setFlag:          "nvidia-container-cli.environment=first=1,second=2",
+			setListSeparator: ",",
+			expectedKey:      "nvidia-container-cli.environment",
+			expectedValue:    []string{"first=1", "second=2"},
+		},
+		{
+			description:      "[]string option returns multiple values semi-colon",
+			setFlag:          "nvidia-container-cli.environment=first;second",
+			setListSeparator: ";",
+			expectedKey:      "nvidia-container-cli.environment",
+			expectedValue:    []string{"first", "second"},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			k, v, err := setFlagToKeyValue(tc.setFlag)
+			if tc.setListSeparator == "" {
+				tc.setListSeparator = ","
+			}
+			k, v, err := setFlagToKeyValue(tc.setFlag, tc.setListSeparator)
 			require.ErrorIs(t, err, tc.expectedError)
 			require.EqualValues(t, tc.expectedKey, k)
 			require.EqualValues(t, tc.expectedValue, v)

@@ -35,8 +35,9 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 		return nil, fmt.Errorf("error constructing low-level runtime: %v", err)
 	}
 
+	logger.Tracef("Using low-level runtime %v", lowLevelRuntime.String())
 	if !oci.HasCreateSubcommand(argv) {
-		logger.Debugf("Skipping modifier for non-create subcommand")
+		logger.Tracef("Skipping modifier for non-create subcommand")
 		return lowLevelRuntime, nil
 	}
 
@@ -50,7 +51,7 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 		return nil, fmt.Errorf("failed to construct OCI spec modifier: %v", err)
 	}
 
-	// Create the wrapping runtime with the specified modifier
+	// Create the wrapping runtime with the specified modifier.
 	r := oci.NewModifyingRuntimeWrapper(
 		logger,
 		lowLevelRuntime,
