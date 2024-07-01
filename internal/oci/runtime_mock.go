@@ -20,6 +20,9 @@ var _ Runtime = &RuntimeMock{}
 //			ExecFunc: func(strings []string) error {
 //				panic("mock out the Exec method")
 //			},
+//			StringFunc: func() string {
+//				panic("mock out the String method")
+//			},
 //		}
 //
 //		// use mockedRuntime in code that requires Runtime
@@ -30,6 +33,9 @@ type RuntimeMock struct {
 	// ExecFunc mocks the Exec method.
 	ExecFunc func(strings []string) error
 
+	// StringFunc mocks the String method.
+	StringFunc func() string
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// Exec holds details about calls to the Exec method.
@@ -37,8 +43,12 @@ type RuntimeMock struct {
 			// Strings is the strings argument value.
 			Strings []string
 		}
+		// String holds details about calls to the String method.
+		String []struct {
+		}
 	}
-	lockExec sync.RWMutex
+	lockExec   sync.RWMutex
+	lockString sync.RWMutex
 }
 
 // Exec calls ExecFunc.
@@ -73,5 +83,35 @@ func (mock *RuntimeMock) ExecCalls() []struct {
 	mock.lockExec.RLock()
 	calls = mock.calls.Exec
 	mock.lockExec.RUnlock()
+	return calls
+}
+
+// String calls StringFunc.
+func (mock *RuntimeMock) String() string {
+	callInfo := struct {
+	}{}
+	mock.lockString.Lock()
+	mock.calls.String = append(mock.calls.String, callInfo)
+	mock.lockString.Unlock()
+	if mock.StringFunc == nil {
+		var (
+			sOut string
+		)
+		return sOut
+	}
+	return mock.StringFunc()
+}
+
+// StringCalls gets all the calls that were made to String.
+// Check the length with:
+//
+//	len(mockedRuntime.StringCalls())
+func (mock *RuntimeMock) StringCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockString.RLock()
+	calls = mock.calls.String
+	mock.lockString.RUnlock()
 	return calls
 }
