@@ -76,6 +76,32 @@ type nvpci struct {
 var _ Interface = (*nvpci)(nil)
 var _ ResourceInterface = (*MemoryResources)(nil)
 
+// SriovInfo indicates whether device is VF/PF for SRIOV capable devices.
+// Only one should be set at any given time.
+type SriovInfo struct {
+	PhysicalFunction *SriovPhysicalFunction
+	VirtualFunction  *SriovVirtualFunction
+}
+
+// SriovPhysicalFunction stores info about SRIOV physical function.
+type SriovPhysicalFunction struct {
+	TotalVFs uint64
+	NumVFs   uint64
+}
+
+// SriovVirtualFunction keeps data about SRIOV virtual function.
+type SriovVirtualFunction struct {
+	PhysicalFunction *NvidiaPCIDevice
+}
+
+func (s *SriovInfo) IsPF() bool {
+	return s != nil && s.PhysicalFunction != nil
+}
+
+func (s *SriovInfo) IsVF() bool {
+	return s != nil && s.VirtualFunction != nil
+}
+
 // NvidiaPCIDevice represents a PCI device for an NVIDIA product.
 type NvidiaPCIDevice struct {
 	Path       string
@@ -90,7 +116,7 @@ type NvidiaPCIDevice struct {
 	NumaNode   int
 	Config     *ConfigSpace
 	Resources  MemoryResources
-	IsVF       bool
+	SriovInfo  SriovInfo
 }
 
 // IsVGAController if class == 0x300.
@@ -178,9 +204,11 @@ func (p *nvpci) GetAllDevices() ([]*NvidiaPCIDevice, error) {
 	}
 
 	var nvdevices []*NvidiaPCIDevice
+	// Cache devices for each GetAllDevices invocation to speed things up.
+	cache := make(map[string]*NvidiaPCIDevice)
 	for _, deviceDir := range deviceDirs {
 		deviceAddress := deviceDir.Name()
-		nvdevice, err := p.GetGPUByPciBusID(deviceAddress)
+		nvdevice, err := p.getGPUByPciBusID(deviceAddress, cache)
 		if err != nil {
 			return nil, fmt.Errorf("error constructing NVIDIA PCI device %s: %v", deviceAddress, err)
 		}
@@ -206,6 +234,16 @@ func (p *nvpci) GetAllDevices() ([]*NvidiaPCIDevice, error) {
 
 // GetGPUByPciBusID constructs an NvidiaPCIDevice for the specified address (PCI Bus ID).
 func (p *nvpci) GetGPUByPciBusID(address string) (*NvidiaPCIDevice, error) {
+	// Pass nil as to force reading device information from sysfs.
+	return p.getGPUByPciBusID(address, nil)
+}
+
+func (p *nvpci) getGPUByPciBusID(address string, cache map[string]*NvidiaPCIDevice) (*NvidiaPCIDevice, error) {
+	if cache != nil {
+		if pciDevice, exists := cache[address]; exists {
+			return pciDevice, nil
+		}
+	}
 	devicePath := filepath.Join(p.pciDevicesRoot, address)
 
 	vendor, err := os.ReadFile(path.Join(devicePath, "vendor"))
@@ -265,16 +303,6 @@ func (p *nvpci) GetGPUByPciBusID(address string) (*NvidiaPCIDevice, error) {
 		return nil, fmt.Errorf("unable to detect iommu_group for %s: %v", address, err)
 	}
 
-	// device is a virtual function (VF) if "physfn" symlink exists.
-	var isVF bool
-	_, err = filepath.EvalSymlinks(path.Join(devicePath, "physfn"))
-	if err == nil {
-		isVF = true
-	}
-	if err != nil && !os.IsNotExist(err) {
-		return nil, fmt.Errorf("unable to resolve %s: %v", path.Join(devicePath, "physfn"), err)
-	}
-
 	numa, err := os.ReadFile(path.Join(devicePath, "numa_node"))
 	if err != nil {
 		return nil, fmt.Errorf("unable to read PCI NUMA node for %s: %v", address, err)
@@ -328,6 +356,28 @@ func (p *nvpci) GetGPUByPciBusID(address string) (*NvidiaPCIDevice, error) {
 		className = UnknownClassString
 	}
 
+	var sriovInfo SriovInfo
+	// Device is a virtual function (VF) if "physfn" symlink exists.
+	physFnAddress, err := filepath.EvalSymlinks(path.Join(devicePath, "physfn"))
+	if err == nil {
+		physFn, err := p.getGPUByPciBusID(filepath.Base(physFnAddress), cache)
+		if err != nil {
+			return nil, fmt.Errorf("unable to detect physfn for %s: %v", address, err)
+		}
+		sriovInfo = SriovInfo{
+			VirtualFunction: &SriovVirtualFunction{
+				PhysicalFunction: physFn,
+			},
+		}
+	} else if os.IsNotExist(err) {
+		sriovInfo, err = p.getSriovInfoForPhysicalFunction(devicePath)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read SRIOV physical function details for %s: %v", devicePath, err)
+		}
+	} else {
+		return nil, fmt.Errorf("unable to read %s: %v", path.Join(devicePath, "physfn"), err)
+	}
+
 	nvdevice := &NvidiaPCIDevice{
 		Path:       devicePath,
 		Address:    address,
@@ -339,9 +389,14 @@ func (p *nvpci) GetGPUByPciBusID(address string) (*NvidiaPCIDevice, error) {
 		NumaNode:   int(numaNode),
 		Config:     config,
 		Resources:  resources,
-		IsVF:       isVF,
 		DeviceName: deviceName,
 		ClassName:  className,
+		SriovInfo:  sriovInfo,
+	}
+
+	// Cache physical functions only as VF can't be a root device.
+	if cache != nil && sriovInfo.IsPF() {
+		cache[address] = nvdevice
 	}
 
 	return nvdevice, nil
@@ -407,7 +462,7 @@ func (p *nvpci) GetGPUs() ([]*NvidiaPCIDevice, error) {
 
 	var filtered []*NvidiaPCIDevice
 	for _, d := range devices {
-		if d.IsGPU() && !d.IsVF {
+		if d.IsGPU() && !d.SriovInfo.IsVF() {
 			filtered = append(filtered, d)
 		}
 	}
@@ -427,4 +482,42 @@ func (p *nvpci) GetGPUByIndex(i int) (*NvidiaPCIDevice, error) {
 	}
 
 	return gpus[i], nil
+}
+
+func (p *nvpci) getSriovInfoForPhysicalFunction(devicePath string) (sriovInfo SriovInfo, err error) {
+	totalVfsPath := filepath.Join(devicePath, "sriov_totalvfs")
+	numVfsPath := filepath.Join(devicePath, "sriov_numvfs")
+
+	// No file for sriov_totalvfs exists? Not an SRIOV device, return nil
+	_, err = os.Stat(totalVfsPath)
+	if err != nil && os.IsNotExist(err) {
+		return sriovInfo, nil
+	}
+	sriovTotalVfs, err := os.ReadFile(totalVfsPath)
+	if err != nil {
+		return sriovInfo, fmt.Errorf("unable to read sriov_totalvfs: %v", err)
+	}
+	totalVfsStr := strings.TrimSpace(string(sriovTotalVfs))
+	totalVfsInt, err := strconv.ParseUint(totalVfsStr, 10, 16)
+	if err != nil {
+		return sriovInfo, fmt.Errorf("unable to convert sriov_totalvfs to uint64: %v", err)
+	}
+
+	sriovNumVfs, err := os.ReadFile(numVfsPath)
+	if err != nil {
+		return sriovInfo, fmt.Errorf("unable to read sriov_numvfs for: %v", err)
+	}
+	numVfsStr := strings.TrimSpace(string(sriovNumVfs))
+	numVfsInt, err := strconv.ParseUint(numVfsStr, 10, 16)
+	if err != nil {
+		return sriovInfo, fmt.Errorf("unable to convert sriov_numvfs to uint64: %v", err)
+	}
+
+	sriovInfo = SriovInfo{
+		PhysicalFunction: &SriovPhysicalFunction{
+			TotalVFs: totalVfsInt,
+			NumVFs:   numVfsInt,
+		},
+	}
+	return sriovInfo, nil
 }
