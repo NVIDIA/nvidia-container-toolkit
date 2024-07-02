@@ -24,7 +24,6 @@ import (
 )
 
 // NewForDevice creates a discoverer for the specified Device.
-// nvsandboxutils is used for discovery if specified, otherwise NVML is used.
 func NewForDevice(d device.Device, opts ...Option) (discover.Discover, error) {
 	o := &options{}
 	for _, opt := range opts {
@@ -36,4 +35,23 @@ func NewForDevice(d device.Device, opts ...Option) (discover.Discover, error) {
 	}
 
 	return o.newNvmlDGPUDiscoverer(&toRequiredInfo{d})
+}
+
+// NewForDevice creates a discoverer for the specified device and its associated MIG device.
+func NewForMigDevice(d device.Device, mig device.MigDevice, opts ...Option) (discover.Discover, error) {
+	o := &options{}
+	for _, opt := range opts {
+		opt(o)
+	}
+
+	if o.logger == nil {
+		o.logger = logger.New()
+	}
+
+	return o.newNvmlMigDiscoverer(
+		&toRequiredMigInfo{
+			MigDevice: mig,
+			parent:    &toRequiredInfo{d},
+		},
+	)
 }

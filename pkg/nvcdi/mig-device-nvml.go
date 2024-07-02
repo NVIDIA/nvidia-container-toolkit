@@ -20,14 +20,11 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
-	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/dgpu"
 )
 
 // GetMIGDeviceSpecs returns the CDI device specs for the full GPU represented by 'device'.
@@ -54,74 +51,19 @@ func (l *nvmllib) GetMIGDeviceSpecs(i int, d device.Device, j int, mig device.Mi
 
 // GetMIGDeviceEdits returns the CDI edits for the MIG device represented by 'mig' on 'parent'.
 func (l *nvmllib) GetMIGDeviceEdits(parent device.Device, mig device.MigDevice) (*cdi.ContainerEdits, error) {
-	gpu, ret := parent.GetMinorNumber()
-	if ret != nvml.SUCCESS {
-		return nil, fmt.Errorf("error getting GPU minor: %v", ret)
-	}
-
-	gi, ret := mig.GetGpuInstanceId()
-	if ret != nvml.SUCCESS {
-		return nil, fmt.Errorf("error getting GPU Instance ID: %v", ret)
-	}
-
-	ci, ret := mig.GetComputeInstanceId()
-	if ret != nvml.SUCCESS {
-		return nil, fmt.Errorf("error getting Compute Instance ID: %v", ret)
-	}
-
-	editsForDevice, err := l.GetEditsForComputeInstance(gpu, gi, ci)
+	deviceNodes, err := dgpu.NewForMigDevice(parent, mig,
+		dgpu.WithDevRoot(l.devRoot),
+		dgpu.WithLogger(l.logger),
+		dgpu.WithNVIDIACDIHookPath(l.nvidiaCDIHookPath),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create container edits for MIG device: %v", err)
+		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
 	}
 
-	return editsForDevice, nil
-}
-
-// GetEditsForComputeInstance returns the CDI edits for a particular compute instance defined by the (gpu, gi, ci) tuple
-func (l *nvmllib) GetEditsForComputeInstance(gpu int, gi int, ci int) (*cdi.ContainerEdits, error) {
-	computeInstance, err := newComputeInstanceDiscoverer(l.logger, l.devRoot, gpu, gi, ci)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create discoverer for Compute Instance: %v", err)
-	}
-
-	editsForDevice, err := edits.FromDiscoverer(computeInstance)
+	editsForDevice, err := edits.FromDiscoverer(deviceNodes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for Compute Instance: %v", err)
 	}
 
 	return editsForDevice, nil
-}
-
-// newComputeInstanceDiscoverer returns a discoverer for the specified compute instance
-func newComputeInstanceDiscoverer(logger logger.Interface, devRoot string, gpu int, gi int, ci int) (discover.Discover, error) {
-	parentPath := fmt.Sprintf("/dev/nvidia%d", gpu)
-
-	migCaps, err := nvcaps.NewMigCaps()
-	if err != nil {
-		return nil, fmt.Errorf("error getting MIG capability device paths: %v", err)
-	}
-
-	giCap := nvcaps.NewGPUInstanceCap(gpu, gi)
-	giCapDevicePath, err := migCaps.GetCapDevicePath(giCap)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get GI cap device path: %v", err)
-	}
-
-	ciCap := nvcaps.NewComputeInstanceCap(gpu, gi, ci)
-	ciCapDevicePath, err := migCaps.GetCapDevicePath(ciCap)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get CI cap device path: %v", err)
-	}
-
-	deviceNodes := discover.NewCharDeviceDiscoverer(
-		logger,
-		devRoot,
-		[]string{
-			parentPath,
-			giCapDevicePath,
-			ciCapDevicePath,
-		},
-	)
-
-	return deviceNodes, nil
 }
