@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/pelletier/go-toml"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
@@ -32,6 +33,7 @@ const (
 )
 
 func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
 	const runtimeDir = "/test/runtime/dir"
 
 	testCases := []struct {
@@ -76,6 +78,7 @@ func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
 			require.NoError(t, err)
 
 			v2 := &containerd.Config{
+				Logger:      logger,
 				Tree:        config,
 				RuntimeType: runtimeType,
 			}
@@ -90,6 +93,7 @@ func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
 }
 
 func TestUpdateV2Config(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
 	const runtimeDir = "/test/runtime/dir"
 
 	testCases := []struct {
@@ -200,8 +204,9 @@ func TestUpdateV2Config(t *testing.T) {
 			require.NoError(t, err)
 
 			v2 := &containerd.Config{
+				Logger:               logger,
 				Tree:                 config,
-				RuntimeType:          runtimeType,
+				RuntimeType:          o.runtimeType,
 				ContainerAnnotations: []string{"cdi.k8s.io/*"},
 			}
 
@@ -218,6 +223,7 @@ func TestUpdateV2Config(t *testing.T) {
 }
 
 func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
 	const runtimeDir = "/test/runtime/dir"
 
 	testCases := []struct {
@@ -353,6 +359,7 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 			require.NoError(t, err)
 
 			v2 := &containerd.Config{
+				Logger:               logger,
 				Tree:                 config,
 				RuntimeType:          runtimeType,
 				ContainerAnnotations: []string{"cdi.k8s.io/*"},
