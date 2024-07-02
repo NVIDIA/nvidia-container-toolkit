@@ -92,6 +92,12 @@ func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool, confi
 		}
 	}
 
+	// If SystemdCgroup is not explicitly set through the runc or the default runtime we set it here.
+	valueSet := config.GetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "options", "SystemdCgroup"})
+	if valueSet == nil {
+		config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "options", "SystemdCgroup"}, c.HasSystemd)
+	}
+
 	runtimeSubtree := subtreeAtPath(config, "plugins", "cri", "containerd", "runtimes", name)
 	if err := runtimeSubtree.applyOverrides(configOverrides...); err != nil {
 		return fmt.Errorf("failed to apply config overrides: %w", err)

@@ -70,6 +70,12 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool, configO
 		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"}, name)
 	}
 
+	// If SystemdCgroup is not explicitly set through the runc or the default runtime we set it here.
+	valueSet := config.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name, "options", "SystemdCgroup"})
+	if valueSet == nil {
+		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name, "options", "SystemdCgroup"}, c.HasSystemd)
+	}
+
 	runtimeSubtree := subtreeAtPath(config, "plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name)
 	if err := runtimeSubtree.applyOverrides(configOverrides...); err != nil {
 		return fmt.Errorf("failed to apply config overrides: %w", err)

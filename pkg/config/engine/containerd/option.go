@@ -32,6 +32,7 @@ const (
 
 type builder struct {
 	logger               logger.Interface
+	hostRoot             string
 	path                 string
 	runtimeType          string
 	useLegacyConfig      bool
@@ -45,6 +46,13 @@ type Option func(*builder)
 func WithLogger(logger logger.Interface) Option {
 	return func(b *builder) {
 		b.logger = logger
+	}
+}
+
+// WithHostRoot sets the root to the host file system for the config builder.
+func WithHostRoot(hostRoot string) Option {
+	return func(b *builder) {
+		b.hostRoot = hostRoot
 	}
 }
 
@@ -93,6 +101,7 @@ func (b *builder) build() (engine.Interface, error) {
 	config.RuntimeType = b.runtimeType
 	config.UseDefaultRuntimeName = !b.useLegacyConfig
 	config.ContainerAnnotations = b.containerAnnotations
+	config.HasSystemd = b.hasSystemd()
 
 	version, err := config.parseVersion(b.useLegacyConfig)
 	if err != nil {
