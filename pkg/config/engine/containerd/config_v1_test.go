@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAddRuntime(t *testing.T) {
+func TestAddRuntimeV1(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 	testCases := []struct {
 		description     string
@@ -37,18 +37,19 @@ func TestAddRuntime(t *testing.T) {
 		{
 			description: "empty config not default runtime",
 			expectedConfig: `
-			version = 2
+			version = 1
 			[plugins]
-			[plugins."io.containerd.grpc.v1.cri"]
-				[plugins."io.containerd.grpc.v1.cri".containerd]
-				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
+			[plugins.cri]
+				[plugins.cri.containerd]
+				[plugins.cri.containerd.runtimes]
+					[plugins.cri.containerd.runtimes.test]
 					privileged_without_host_devices = false
 					runtime_engine = ""
 					runtime_root = ""
 					runtime_type = ""
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test.options]
+					[plugins.cri.containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
+						Runtime = "/usr/bin/test"
 			`,
 			expectedError: nil,
 		},
@@ -62,161 +63,162 @@ func TestAddRuntime(t *testing.T) {
 				},
 			},
 			expectedConfig: `
-			version = 2
+			version = 1
 			[plugins]
-			[plugins."io.containerd.grpc.v1.cri"]
-				[plugins."io.containerd.grpc.v1.cri".containerd]
-				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
+			[plugins.cri]
+				[plugins.cri.containerd]
+				[plugins.cri.containerd.runtimes]
+					[plugins.cri.containerd.runtimes.test]
 					privileged_without_host_devices = false
 					runtime_engine = ""
 					runtime_root = ""
 					runtime_type = ""
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test.options]
+					[plugins.cri.containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
+						Runtime = "/usr/bin/test"
 						SystemdCgroup = true
 			`,
 		},
 		{
 			description: "options from runc are imported",
 			config: `
-			version = 2
 			[plugins]
-			[plugins."io.containerd.grpc.v1.cri"]
-				[plugins."io.containerd.grpc.v1.cri".containerd]
-				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+			[plugins.cri]
+				[plugins.cri.containerd]
+				[plugins.cri.containerd.runtimes]
+					[plugins.cri.containerd.runtimes.runc]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
 					runtime_root = "root"
 					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+					[plugins.cri.containerd.runtimes.runc.options]
 						BinaryName = "/usr/bin/runc"
 						SystemdCgroup = true
 			`,
 			expectedConfig: `
-			version = 2
+			version = 1
 			[plugins]
-			[plugins."io.containerd.grpc.v1.cri"]
-				[plugins."io.containerd.grpc.v1.cri".containerd]
-				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+			[plugins.cri]
+				[plugins.cri.containerd]
+				[plugins.cri.containerd.runtimes]
+					[plugins.cri.containerd.runtimes.runc]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
 					runtime_root = "root"
 					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+					[plugins.cri.containerd.runtimes.runc.options]
 						BinaryName = "/usr/bin/runc"
 						SystemdCgroup = true
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
+					[plugins.cri.containerd.runtimes.test]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
 					runtime_root = "root"
 					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test.options]
+					[plugins.cri.containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
+						Runtime = "/usr/bin/test"
 						SystemdCgroup = true
 				`,
 		},
 		{
 			description: "options from default runtime are imported",
 			config: `
-			version = 2
 			[plugins]
-			[plugins."io.containerd.grpc.v1.cri"]
-				[plugins."io.containerd.grpc.v1.cri".containerd]
+			[plugins.cri]
+				[plugins.cri.containerd]
 				default_runtime_name = "default"
-				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.default]
+				[plugins.cri.containerd.runtimes]
+					[plugins.cri.containerd.runtimes.default]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
 					runtime_root = "root"
 					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.default.options]
+					[plugins.cri.containerd.runtimes.default.options]
 						BinaryName = "/usr/bin/default"
 						SystemdCgroup = true
 			`,
 			expectedConfig: `
-			version = 2
+			version = 1
 			[plugins]
-			[plugins."io.containerd.grpc.v1.cri"]
-				[plugins."io.containerd.grpc.v1.cri".containerd]
+			[plugins.cri]
+				[plugins.cri.containerd]
 				default_runtime_name = "default"
-				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.default]
+				[plugins.cri.containerd.runtimes]
+					[plugins.cri.containerd.runtimes.default]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
 					runtime_root = "root"
 					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.default.options]
+					[plugins.cri.containerd.runtimes.default.options]
 						BinaryName = "/usr/bin/default"
 						SystemdCgroup = true
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
+					[plugins.cri.containerd.runtimes.test]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
 					runtime_root = "root"
 					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test.options]
+					[plugins.cri.containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
+						Runtime = "/usr/bin/test"
 						SystemdCgroup = true
 				`,
 		},
 		{
 			description: "options from runc take precedence over default runtime",
 			config: `
-			version = 2
 			[plugins]
-			[plugins."io.containerd.grpc.v1.cri"]
-				[plugins."io.containerd.grpc.v1.cri".containerd]
+			[plugins.cri]
+				[plugins.cri.containerd]
 				default_runtime_name = "default"
-				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+				[plugins.cri.containerd.runtimes]
+					[plugins.cri.containerd.runtimes.runc]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
 					runtime_root = "root"
 					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+					[plugins.cri.containerd.runtimes.runc.options]
 						BinaryName = "/usr/bin/runc"
 						SystemdCgroup = true
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.default]
+					[plugins.cri.containerd.runtimes.default]
 					privileged_without_host_devices = false
 					runtime_engine = "defaultengine"
 					runtime_root = "defaultroot"
 					runtime_type = "defaulttype"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.default.options]
+					[plugins.cri.containerd.runtimes.default.options]
 						BinaryName = "/usr/bin/default"
 						SystemdCgroup = false
 			`,
 			expectedConfig: `
-			version = 2
+			version = 1
 			[plugins]
-			[plugins."io.containerd.grpc.v1.cri"]
-				[plugins."io.containerd.grpc.v1.cri".containerd]
+			[plugins.cri]
+				[plugins.cri.containerd]
 				default_runtime_name = "default"
-				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+				[plugins.cri.containerd.runtimes]
+					[plugins.cri.containerd.runtimes.runc]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
 					runtime_root = "root"
 					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+					[plugins.cri.containerd.runtimes.runc.options]
 						BinaryName = "/usr/bin/runc"
 						SystemdCgroup = true
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.default]
+					[plugins.cri.containerd.runtimes.default]
 					privileged_without_host_devices = false
 					runtime_engine = "defaultengine"
 					runtime_root = "defaultroot"
 					runtime_type = "defaulttype"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.default.options]
+					[plugins.cri.containerd.runtimes.default.options]
 						BinaryName = "/usr/bin/default"
 						SystemdCgroup = false
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
+					[plugins.cri.containerd.runtimes.test]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
 					runtime_root = "root"
 					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test.options]
+					[plugins.cri.containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
+						Runtime = "/usr/bin/test"
 						SystemdCgroup = true
 				`,
 		},
@@ -229,7 +231,7 @@ func TestAddRuntime(t *testing.T) {
 			expectedConfig, err := toml.Load(tc.expectedConfig)
 			require.NoError(t, err)
 
-			c := &Config{
+			c := &ConfigV1{
 				Logger: logger,
 				Tree:   config,
 			}

@@ -9,6 +9,7 @@
 * Remove provenance information from published images.
 * Fix bug in processing of `--log=` argument of `nvidia-container-runtime`.
 * Reduce verbosity of logging in the NVIDIA Container Runtime especially for non-`create` commands.
+* Extract runtime options from default runtime if runc is not present in config.
 
 ## v1.15.0
 
