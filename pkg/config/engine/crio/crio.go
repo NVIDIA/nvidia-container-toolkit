@@ -47,6 +47,19 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool, _ ...ma
 
 	config := (toml.Tree)(*c)
 
+	// By default we extract the runtime options from the runc settings; if this does not exist we get the options from the default runtime specified in the config.
+	runtimeNamesForConfig := []string{"runc"}
+	if name, ok := config.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok && name != "" {
+		runtimeNamesForConfig = append(runtimeNamesForConfig, name)
+	}
+	for _, runtimeNameForOptions := range runtimeNamesForConfig {
+		if options, ok := config.GetPath([]string{"crio", "runtime", "runtimes", runtimeNameForOptions}).(*toml.Tree); ok {
+			options, _ = toml.Load(options.String())
+			config.SetPath([]string{"crio", "runtime", "runtimes", name}, options)
+			break
+		}
+	}
+
 	if runc, ok := config.Get("crio.runtime.runtimes.runc").(*toml.Tree); ok {
 		runc, _ = toml.Load(runc.String())
 		config.SetPath([]string{"crio", "runtime", "runtimes", name}, runc)

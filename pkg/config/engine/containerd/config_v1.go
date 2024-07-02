@@ -39,9 +39,17 @@ func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool, confi
 
 	config.Set("version", int64(1))
 
-	if runc, ok := config.GetPath([]string{"plugins", "cri", "containerd", "runtimes", "runc"}).(*toml.Tree); ok {
-		runc, _ = toml.Load(runc.String())
-		config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name}, runc)
+	// By default we extract the runtime options from the runc settings; if this does not exist we get the options from the default runtime specified in the config.
+	runtimeNamesForConfig := []string{"runc"}
+	if name, ok := config.GetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"}).(string); ok && name != "" {
+		runtimeNamesForConfig = append(runtimeNamesForConfig, name)
+	}
+	for _, runtimeNameForOptions := range runtimeNamesForConfig {
+		if options, ok := config.GetPath([]string{"plugins", "cri", "containerd", "runtimes", runtimeNameForOptions}).(*toml.Tree); ok {
+			options, _ = toml.Load(options.String())
+			config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name}, options)
+			break
+		}
 	}
 
 	if config.GetPath([]string{"plugins", "cri", "containerd", "runtimes", name}) == nil {
