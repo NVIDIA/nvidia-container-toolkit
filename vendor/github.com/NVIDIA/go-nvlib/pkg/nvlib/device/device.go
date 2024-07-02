@@ -18,6 +18,7 @@ package device
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 )
@@ -30,6 +31,7 @@ type Device interface {
 	GetCudaComputeCapabilityAsString() (string, error)
 	GetMigDevices() ([]MigDevice, error)
 	GetMigProfiles() ([]MigProfile, error)
+	GetPCIBusID() (string, error)
 	IsMigCapable() (bool, error)
 	IsMigEnabled() (bool, error)
 	VisitMigDevices(func(j int, m MigDevice) error) error
@@ -138,6 +140,29 @@ func (d *device) GetBrandAsString() (string, error) {
 		return "TitanRTX", nil
 	}
 	return "", fmt.Errorf("error interpreting device brand as string: %v", brand)
+}
+
+// GetPCIBusID returns the string representation of the bus ID.
+func (d *device) GetPCIBusID() (string, error) {
+	info, ret := d.GetPciInfo()
+	if ret != nvml.SUCCESS {
+		return "", fmt.Errorf("error getting PCI info: %w", ret)
+	}
+
+	var bytes []byte
+	for _, b := range info.BusId {
+		if byte(b) == '\x00' {
+			break
+		}
+		bytes = append(bytes, byte(b))
+	}
+	id := strings.ToLower(string(bytes))
+
+	if id != "0000" {
+		id = strings.TrimPrefix(id, "0000")
+	}
+
+	return id, nil
 }
 
 // GetCudaComputeCapabilityAsString returns the Device's CUDA compute capability as a version string.
