@@ -25,14 +25,14 @@ const (
 )
 
 // Runtime defines a runtime to be configured.
-// The path and whether the runtime is the default runtime can be specfied
+// The path and whether the runtime is the default runtime can be specified
 type Runtime struct {
 	name         string
 	Path         string
 	SetAsDefault bool
 }
 
-// Runtimes defines a set of runtimes to be configure for use in the GPU Operator
+// Runtimes defines a set of runtimes to be configured for use in the GPU Operator
 type Runtimes map[string]Runtime
 
 type config struct {
@@ -76,8 +76,8 @@ func (r Runtimes) DefaultRuntimeName() string {
 }
 
 // Add a runtime to the set of runtimes.
-func (r *Runtimes) add(runtime Runtime) {
-	(*r)[runtime.name] = runtime
+func (r Runtimes) add(runtime Runtime) {
+	r[runtime.name] = runtime
 }
 
 // nvidiaRuntime creates a runtime that corresponds to the nvidia runtime.
