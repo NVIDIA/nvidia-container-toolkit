@@ -26,6 +26,7 @@ import (
 // Config represents the containerd config
 type Config struct {
 	*toml.Tree
+	Logger                logger.Interface
 	RuntimeType           string
 	UseDefaultRuntimeName bool
 	ContainerAnnotations  []string

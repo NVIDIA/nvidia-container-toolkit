@@ -89,6 +89,7 @@ func (b *builder) build() (engine.Interface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %v", err)
 	}
+	config.Logger = b.logger
 	config.RuntimeType = b.runtimeType
 	config.UseDefaultRuntimeName = !b.useLegacyConfig
 	config.ContainerAnnotations = b.containerAnnotations

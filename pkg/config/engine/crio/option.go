@@ -48,12 +48,16 @@ func WithPath(path string) Option {
 }
 
 func (b *builder) build() (*Config, error) {
-	if b.path == "" {
-		empty := toml.Tree{}
-		return (*Config)(&empty), nil
-	}
 	if b.logger == nil {
 		b.logger = logger.New()
+	}
+	if b.path == "" {
+		empty := toml.Tree{}
+		c := Config{
+			Tree:   &empty,
+			Logger: b.logger,
+		}
+		return &c, nil
 	}
 
 	return b.loadConfig(b.path)
@@ -82,5 +86,9 @@ func (b *builder) loadConfig(config string) (*Config, error) {
 
 	b.logger.Infof("Successfully loaded config")
 
-	return (*Config)(cfg), nil
+	c := Config{
+		Tree:   cfg,
+		Logger: b.logger,
+	}
+	return &c, nil
 }

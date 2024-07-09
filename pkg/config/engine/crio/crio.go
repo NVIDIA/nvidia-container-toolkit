@@ -21,11 +21,15 @@ import (
 
 	"github.com/pelletier/go-toml"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 )
 
 // Config represents the cri-o config
-type Config toml.Tree
+type Config struct {
+	*toml.Tree
+	Logger logger.Interface
+}
 
 var _ engine.Interface = (*Config)(nil)
 
@@ -45,11 +49,20 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool, _ ...ma
 		return fmt.Errorf("config is nil")
 	}
 
-	config := (toml.Tree)(*c)
+	config := *c.Tree
 
-	if runc, ok := config.Get("crio.runtime.runtimes.runc").(*toml.Tree); ok {
-		runc, _ = toml.Load(runc.String())
-		config.SetPath([]string{"crio", "runtime", "runtimes", name}, runc)
+	// By default we extract the runtime options from the runc settings; if this does not exist we get the options from the default runtime specified in the config.
+	runtimeNamesForConfig := []string{"runc"}
+	if name, ok := config.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok && name != "" {
+		runtimeNamesForConfig = append(runtimeNamesForConfig, name)
+	}
+	for _, r := range runtimeNamesForConfig {
+		if options, ok := config.GetPath([]string{"crio", "runtime", "runtimes", r}).(*toml.Tree); ok {
+			c.Logger.Debugf("using options from runtime %v: %v", r, options.String())
+			options, _ = toml.Load(options.String())
+			config.SetPath([]string{"crio", "runtime", "runtimes", name}, options)
+			break
+		}
 	}
 
 	config.SetPath([]string{"crio", "runtime", "runtimes", name, "runtime_path"}, path)
@@ -59,14 +72,16 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool, _ ...ma
 		config.SetPath([]string{"crio", "runtime", "default_runtime"}, name)
 	}
 
-	*c = (Config)(config)
+	*c.Tree = config
 	return nil
 }
 
 // DefaultRuntime returns the default runtime for the cri-o config
-func (c Config) DefaultRuntime() string {
-	config := (toml.Tree)(c)
-	if runtime, ok := config.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok {
+func (c *Config) DefaultRuntime() string {
+	if c == nil || c.Tree == nil {
+		return ""
+	}
+	if runtime, ok := c.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok {
 		return runtime
 	}
 	return ""
@@ -78,7 +93,7 @@ func (c *Config) RemoveRuntime(name string) error {
 		return nil
 	}
 
-	config := (toml.Tree)(*c)
+	config := *c.Tree
 	if runtime, ok := config.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok {
 		if runtime == name {
 			config.DeletePath([]string{"crio", "runtime", "default_runtime"})
@@ -97,20 +112,20 @@ func (c *Config) RemoveRuntime(name string) error {
 		}
 	}
 
-	*c = (Config)(config)
+	*c.Tree = config
 	return nil
 }
 
 // Set sets the specified cri-o option.
 func (c *Config) Set(key string, value interface{}) {
-	config := (toml.Tree)(*c)
+	config := *c.Tree
 	config.Set(key, value)
-	*c = (Config)(config)
+	*c.Tree = config
 }
 
 // Save writes the config to the specified path
 func (c Config) Save(path string) (int64, error) {
-	config := (toml.Tree)(c)
+	config := c.Tree
 	output, err := config.Marshal()
 	if err != nil {
 		return 0, fmt.Errorf("unable to convert to TOML: %v", err)
