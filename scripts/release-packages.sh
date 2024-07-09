@@ -45,7 +45,7 @@ if [[ $# -ge 2 ]]; then
 fi
 
 SHA=$(git rev-parse --short=8 ${REFERENCE})
-IMAGE_NAME="registry.gitlab.com/nvidia/container-toolkit/container-toolkit/staging/container-toolkit"
+IMAGE_NAME="ghcr.io/nvidia/container-toolkit"
 IMAGE_TAG=${SHA}-packaging
 
 : ${VERSION:="$(get_version_from_image ${IMAGE_NAME}:${IMAGE_TAG} ${SHA})"}
