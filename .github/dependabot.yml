@@ -47,13 +47,6 @@ updates:
     schedule:
       interval: "daily"
 
-  - package-ecosystem: "github-actions"
-    target-branch: gh-pages
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-
   # Allow dependabot to update the libnvidia-container submodule.
   - package-ecosystem: "gitsubmodule"
     target-branch: main
