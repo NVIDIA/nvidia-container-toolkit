@@ -165,8 +165,11 @@ echo "Creating a version bump branch: bump-release-${release}"
 git checkout -f -b bump-release-${release}
 
 # Patch versions.mk
+LIB_VERSION=${${release%-*}#v}
+LIB_TAG=${release#*-}
 echo Patching versions.mk to refer to $release
-$SED -i "s/^VERSION.*$/VERSION ?= $release/" versions.mk
+$SED -i "s/^LIB_VERSION.*$/LIB_VERSION := $LIB_VERSION/" versions.mk
+$SED -i "s/^LIB_TAG.*$/LIB_TAG := $LIB_TAG/" versions.mk
 
 git add versions.mk
 git commit -s -m "Bump version for $release release"
