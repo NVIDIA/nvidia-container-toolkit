@@ -1,4 +1,7 @@
-#!/bin/bash
+//go:build tools
+// +build tools
+
+/**
 # Copyright 2024 NVIDIA CORPORATION
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +15,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+**/
 
-SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../scripts && pwd )"
+package main
 
-DOCKERFILE_ROOT=${SCRIPTS_DIR}/../deployments/devel
-
-GOLANG_VERSION=$(grep -E "^FROM golang:.*$" ${DOCKERFILE_ROOT}/Dockerfile | grep -oE "[0-9\.]+")
-
-echo $GOLANG_VERSION
+// Define the tooling required to build the device plugin.
+import (
+	_ "github.com/matryer/moq"
+)
