@@ -42,6 +42,13 @@ updates:
     - dependencies
     - maintenance
 
+  - package-ecosystem: "gomod"
+    target-branch: main
+    directory: "deployments/devel"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

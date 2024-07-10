@@ -112,6 +112,17 @@ coverage: test
 generate:
 	go generate $(MODULE)/...
 
+# Generate an image for containerized builds
+# Note: This image is local only
+.PHONY: .build-image
+.build-image:
+	make -f deployments/devel/Makefile .build-image
+
+ifeq ($(BUILD_DEVEL_IMAGE),yes)
+$(DOCKER_TARGETS): .build-image
+.shell: .build-image
+endif
+
 $(DOCKER_TARGETS): docker-%:
 	@echo "Running 'make $(*)' in container image $(BUILDIMAGE)"
 	$(DOCKER) run \

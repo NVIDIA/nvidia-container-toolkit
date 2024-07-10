@@ -12,8 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This Dockerfile is used to define the golang version used in this
-# project.
-# This allows dependabot to manage this version in addition to other
-# images.
-FROM golang:1.22.1
+download:
+	@echo Download go.mod dependencies
+	@go mod download
+
+install-tools: download
+	@echo Installing tools from tools.go
+	@cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
+
+
+DOCKER ?= docker
+-include $(CURDIR)/versions.mk
+
+DOCKERFILE_DEVEL = deployments/devel/Dockerfile
+DOCKERFILE_CONTEXT = deployments/devel
+
+.PHONY: .build-image
+.build-image:
+	$(DOCKER) build \
+		--progress=plain \
+		--tag $(BUILDIMAGE) \
+		-f $(DOCKERFILE_DEVEL) \
+		$(DOCKERFILE_CONTEXT)

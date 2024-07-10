@@ -24,7 +24,7 @@ PACKAGE_REVISION := 1
 GOLANG_VERSION := $(shell ./hack/golang-version.sh)
 
 BUILDIMAGE_TAG ?= devel-go$(GOLANG_VERSION)
-BUILDIMAGE ?=  ghcr.io/nvidia/k8s-test-infra:$(BUILDIMAGE_TAG)
+BUILDIMAGE ?=  $(LIB_NAME):$(BUILDIMAGE_TAG)
 
 GIT_COMMIT ?= $(shell git describe --match="" --dirty --long --always --abbrev=40 2> /dev/null || echo "")
 GIT_COMMIT_SHORT ?= $(shell git rev-parse --short HEAD 2> /dev/null || echo "")

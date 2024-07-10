@@ -51,26 +51,34 @@ jobs:
     - name: Check golang modules
       run: make check-vendor
   test:
-      name: Unit test
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
-        - name: Get Golang version
-          id: vars
-          run: |
-            GOLANG_VERSION=$(./hack/golang-version.sh)
-            echo "GOLANG_VERSION=${GOLANG_VERSION##GOLANG_VERSION := }" >> $GITHUB_ENV
-        - name: Install Go
-          uses: actions/setup-go@v5
-          with:
-            go-version: ${{ env.GOLANG_VERSION }}
-        - run: make test
-  build:
+    name: Unit test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      name: Checkout code
-
-    - name: Build
-      run: make docker-build
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Get Golang version
+        id: vars
+        run: |
+          GOLANG_VERSION=$(./hack/golang-version.sh)
+          echo "GOLANG_VERSION=${GOLANG_VERSION##GOLANG_VERSION := }" >> $GITHUB_ENV
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+      - run: make test
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Get Golang version
+        id: vars
+        run: |
+          GOLANG_VERSION=$(./hack/golang-version.sh)
+          echo "GOLANG_VERSION=${GOLANG_VERSION##GOLANG_VERSION ?= }" >> $GITHUB_ENV
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+      - run: make build
