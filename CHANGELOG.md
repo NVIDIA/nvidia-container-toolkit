@@ -1,5 +1,14 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.16.0-rc.2
+- Use relative path to locate driver libraries
+- Add RelativeToRoot function to Driver
+- Inject additional libraries for full X11 functionality
+- Extract options from default runtime if runc does not exist
+- Avoid using map pointers as maps are always passed by reference
+- Reduce logging for the NVIDIA Container runtime
+- Fix bug in argument parsing for logger creation
+
 ## v1.16.0-rc.1
 
 - Support vulkan ICD files directly in a driver root. This allows for the discovery of vulkan files in GKE driver installations.
