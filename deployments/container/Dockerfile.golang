@@ -16,4 +16,4 @@
 # project.
 # This allows dependabot to manage this version in addition to other
 # images.
-FROM golang:1.22.1
+FROM golang:1.22.5
