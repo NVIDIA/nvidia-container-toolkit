@@ -13,8 +13,8 @@ require (
 	github.com/urfave/cli/v2 v2.27.2
 	golang.org/x/mod v0.18.0
 	golang.org/x/sys v0.21.0
-	tags.cncf.io/container-device-interface v0.7.2
-	tags.cncf.io/container-device-interface/specs-go v0.7.0
+	tags.cncf.io/container-device-interface v0.8.0
+	tags.cncf.io/container-device-interface/specs-go v0.8.0
 )
 
 require (
