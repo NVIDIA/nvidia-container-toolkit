@@ -49,6 +49,13 @@ updates:
       interval: "weekly"
       day: "sunday"
 
+  # A dependabot rule to bump the golang version.
+  - package-ecosystem: "docker"
+    target-branch: main
+    directory: "/deployments/devel"
+    schedule:
+      interval: "daily"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
