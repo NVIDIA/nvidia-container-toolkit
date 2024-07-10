@@ -21,7 +21,7 @@ LIB_TAG := rc.2
 PACKAGE_VERSION := $(LIB_VERSION)$(if $(LIB_TAG),~$(LIB_TAG))
 PACKAGE_REVISION := 1
 
-GOLANG_VERSION := 1.22.1
+GOLANG_VERSION := $(shell ./hack/golang-version.sh)
 
 BUILDIMAGE_TAG ?= devel-go$(GOLANG_VERSION)
 BUILDIMAGE ?=  ghcr.io/nvidia/k8s-test-infra:$(BUILDIMAGE_TAG)
