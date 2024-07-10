@@ -42,7 +42,7 @@ if [[ -z ${DIST_DIR} ]]; then
     exit 1
 fi
 
-if [[ -e ${DIST_DIR} ]]; then
+if [[ x"${IGNORE_DIST_DIR}" != x"yes" && -e ${DIST_DIR} ]]; then
     echo "ERROR: The specified DIST_DIR ${DIST_DIR} exists."
     exit 1
 fi
