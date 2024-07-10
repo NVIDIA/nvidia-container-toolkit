@@ -30,7 +30,12 @@ Options:
 EOF
 }
 
-VERSION=""
+LIB_VERSION=$(awk -F= '/^LIB_VERSION/ { print $2 }' versions.mk | tr -d '[:space:]')
+LIB_TAG=$(awk -F= '/^LIB_TAG/ { print $2 }' versions.mk | tr -d '[:space:]')
+
+VERSION="v${LIB_VERSION}${LIB_TAG+-${LIB_TAG}}"
+>&2 echo "VERSION=$VERSION"
+
 REFERENCE=
 
 # Parse command line options
@@ -74,9 +79,9 @@ fi
 >&2 echo "Using ${REFERENCE} as previous version"
 
 # Print the changelog
-echo "## Changelog"
+echo "# Changelog"
 echo ""
-echo "### Version $VERSION"
+echo "## $VERSION"
 
 # Iterate over the commit messages and ignore the ones that start with "Merge" or "Bump"
 git log --pretty=format:"%s" $REFERENCE..@ | grep -Ev "(^Merge )|(^Bump)|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g'
