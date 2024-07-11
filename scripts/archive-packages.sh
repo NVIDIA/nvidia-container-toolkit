@@ -61,7 +61,7 @@ PACKAGE_CACHE=release-${VERSION}-${REPO}
 REMOVE_PACKAGE_CACHE=no
 if [ ! -d ${PACKAGE_CACHE} ]; then
 echo "Fetching packages with SHA '${SHA}' as tag '${VERSION}' to ${PACKAGE_CACHE}"
-${SCRIPTS_DIR}/pull-packages.sh \
+${SCRIPTS_DIR}/../hack/pull-packages.sh \
     ${PACKAGE_IMAGE_NAME}:${PACKAGE_IMAGE_TAG} \
     ${PACKAGE_CACHE}
     REMOVE_PACKAGE_CACHE=yes
@@ -113,7 +113,7 @@ function upload_archive() {
 
     for var in "CI_PROJECT_ID" "CI_PIPELINE_ID" "CI_JOB_ID" "CI_JOB_URL" "CI_PROJECT_PATH"; do
         if [ -n "${!var}" ]; then
-            optionally_add_property "${var}" "${!var}"
+            props+=("${property}=${value}")
         fi
     done
     local PROPS=$(join_by ";" "${props[@]}")

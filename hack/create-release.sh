@@ -30,8 +30,7 @@ REPOSITORY=NVIDIA/nvidia-container-toolkit
 
 echo "Creating draft release"
 ./hack/generate-changelog.sh --version ${VERSION} | \
-    grep -v "### Version v" | \
-        echo gh release create ${VERSION} --notes-file "-" \
+    gh release create ${VERSION} --notes-file "-" \
                 --draft \
                 --title "${VERSION}" \
                 -R "${REPOSITORY}" \
@@ -43,5 +42,7 @@ echo "Uploading release artifacts for ${VERSION}"
 PACKAGE_ROOT=release-${VERSION}-${REPO}
 
 gh release upload ${VERSION} \
-    ${PACKAGE_ROOT}/nvidia-container-toolkit-${VERSION}.*.tar.gz \
+    ${PACKAGE_ROOT}/nvidia-container-toolkit_${VERSION#v}_*.tar.gz \
+    ${PACKAGE_ROOT}/nvidia-container-toolkit_${VERSION#v}_checksums.txt \
+    --clobber \
     -R ${REPOSITORY}
