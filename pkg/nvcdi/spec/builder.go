@@ -67,7 +67,7 @@ func newBuilder(opts ...Option) *builder {
 		s.format = FormatYAML
 	}
 	if s.permissions == 0 {
-		s.permissions = 0600
+		s.permissions = 0644
 	}
 	return s
 }

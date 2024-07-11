@@ -17,6 +17,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -47,6 +48,8 @@ type options struct {
 	runtimeType     string
 
 	ContainerRuntimeModesCDIAnnotationPrefixes cli.StringSlice
+
+	runtimeConfigOverrideJSON string
 }
 
 func main() {
@@ -162,6 +165,13 @@ func main() {
 			Destination: &options.ContainerRuntimeModesCDIAnnotationPrefixes,
 			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODES_CDI_ANNOTATION_PREFIXES"},
 		},
+		&cli.StringFlag{
+			Name:        "runtime-config-override",
+			Destination: &options.runtimeConfigOverrideJSON,
+			Usage:       "specify additional runtime options as a JSON string. The paths are relative to the runtime config.",
+			Value:       "{}",
+			EnvVars:     []string{"RUNTIME_CONFIG_OVERRIDE", "CONTAINERD_RUNTIME_CONFIG_OVERRIDE"},
+		},
 	}
 
 	// Update the subcommand flags with the common subcommand flags
@@ -170,7 +180,7 @@ func main() {
 
 	// Run the top-level CLI
 	if err := c.Run(os.Args); err != nil {
-		log.Fatal(fmt.Errorf("Error: %v", err))
+		log.Fatal(fmt.Errorf("error: %v", err))
 	}
 }
 
@@ -188,7 +198,11 @@ func Setup(c *cli.Context, o *options) error {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	err = o.Configure(cfg)
+	runtimeConfigOverride, err := o.runtimeConfigOverride()
+	if err != nil {
+		return fmt.Errorf("unable to parse config overrides: %w", err)
+	}
+	err = o.Configure(cfg, runtimeConfigOverride)
 	if err != nil {
 		return fmt.Errorf("unable to configure containerd: %v", err)
 	}
@@ -245,4 +259,17 @@ func (o *options) containerAnnotationsFromCDIPrefixes() []string {
 	}
 
 	return annotations
+}
+
+func (o *options) runtimeConfigOverride() (map[string]interface{}, error) {
+	if o.runtimeConfigOverrideJSON == "" {
+		return nil, nil
+	}
+
+	runtimeOptions := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(o.runtimeConfigOverrideJSON), &runtimeOptions); err != nil {
+		return nil, fmt.Errorf("failed to read %v as JSON: %w", o.runtimeConfigOverrideJSON, err)
+	}
+
+	return runtimeOptions, nil
 }

@@ -37,3 +37,7 @@ func (r syscallExec) Exec(args []string) error {
 	// err is nil or not.
 	return fmt.Errorf("unexpected return from exec '%v'", args[0])
 }
+
+func (r syscallExec) String() string {
+	return "exec"
+}

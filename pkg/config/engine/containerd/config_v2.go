@@ -25,7 +25,7 @@ import (
 )
 
 // AddRuntime adds a runtime to the containerd config
-func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
+func (c *Config) AddRuntime(name string, path string, setAsDefault bool, configOverrides ...map[string]interface{}) error {
 	if c == nil || c.Tree == nil {
 		return fmt.Errorf("config is nil")
 	}
@@ -33,12 +33,22 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 
 	config.Set("version", int64(2))
 
-	if runc, ok := config.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", "runc"}).(*toml.Tree); ok {
-		runc, _ = toml.Load(runc.String())
-		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name}, runc)
+	// By default we extract the runtime options from the runc settings; if this does not exist we get the options from the default runtime specified in the config.
+	runtimeNamesForConfig := []string{"runc"}
+	if name, ok := config.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"}).(string); ok && name != "" {
+		runtimeNamesForConfig = append(runtimeNamesForConfig, name)
+	}
+	for _, r := range runtimeNamesForConfig {
+		if options, ok := config.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", r}).(*toml.Tree); ok {
+			c.Logger.Debugf("using options from runtime %v: %v", r, options.String())
+			options, _ = toml.Load(options.String())
+			config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name}, options)
+			break
+		}
 	}
 
 	if config.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name}) == nil {
+		c.Logger.Warningf("could not infer options from runtimes %v; using defaults", runtimeNamesForConfig)
 		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name, "runtime_type"}, c.RuntimeType)
 		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name, "runtime_root"}, "")
 		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name, "runtime_engine"}, "")
@@ -58,6 +68,11 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 
 	if setAsDefault {
 		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"}, name)
+	}
+
+	runtimeSubtree := subtreeAtPath(config, "plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name)
+	if err := runtimeSubtree.applyOverrides(configOverrides...); err != nil {
+		return fmt.Errorf("failed to apply config overrides: %w", err)
 	}
 
 	*c.Tree = config

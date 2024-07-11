@@ -1,5 +1,16 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.15.1
+
+* Use : as a config --set list separator. This fixes a bug in modifying lists in the config file with the `nvidia-ctk config` command.
+* Add `RUNTIME_CONFIG_OVERRIDE` (`--runtime-config-override`) to the `nvidia-ctk runtime configure` command and the toolkit container to allow for containerd runtime options to be set directly. This can be used to override the `SystemdCroup` option explicitly, for example.
+* Ensure consistent construction of libraries for CDI spec generation.
+* Ensure that `nvidia-ctk cdi transform` creates specs with world-readable permissions.
+* Remove provenance information from published images.
+* Fix bug in processing of `--log=` argument of `nvidia-container-runtime`.
+* Reduce verbosity of logging in the NVIDIA Container Runtime especially for non-`create` commands.
+* Extract runtime options from default runtime if runc is not present in config.
+
 ## v1.15.0
 
 * Remove `nvidia-container-runtime` and `nvidia-docker2` packages.

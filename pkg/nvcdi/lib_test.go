@@ -29,11 +29,12 @@ func TestResolveMode(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
 	testCases := []struct {
-		mode      string
-		isTegra   bool
-		hasDXCore bool
-		hasNVML   bool
-		expected  string
+		mode                string
+		isTegra             bool
+		hasDXCore           bool
+		hasNVML             bool
+		UsesOnlyNVGPUModule bool
+		expected            string
 	}{
 		{
 			mode:      "auto",
@@ -68,6 +69,13 @@ func TestResolveMode(t *testing.T) {
 			expected:  "nvml",
 		},
 		{
+			mode:                "auto",
+			isTegra:             true,
+			hasNVML:             true,
+			UsesOnlyNVGPUModule: true,
+			expected:            "csv",
+		},
+		{
 			mode:      "nvml",
 			hasDXCore: true,
 			isTegra:   true,
@@ -90,24 +98,16 @@ func TestResolveMode(t *testing.T) {
 			l := nvcdilib{
 				logger: logger,
 				mode:   tc.mode,
-				infolib: infoMock{
-					PropertyExtractor: &info.PropertyExtractorMock{
-						HasDXCoreFunc:     func() (bool, string) { return tc.hasDXCore, "" },
-						HasNvmlFunc:       func() (bool, string) { return tc.hasNVML, "" },
-						HasTegraFilesFunc: func() (bool, string) { return tc.isTegra, "" },
-					},
-				},
+				infolib: info.New(
+					info.WithPropertyExtractor(&info.PropertyExtractorMock{
+						HasDXCoreFunc:           func() (bool, string) { return tc.hasDXCore, "" },
+						HasNvmlFunc:             func() (bool, string) { return tc.hasNVML, "" },
+						HasTegraFilesFunc:       func() (bool, string) { return tc.isTegra, "" },
+						UsesOnlyNVGPUModuleFunc: func() (bool, string) { return tc.UsesOnlyNVGPUModule, "" },
+					}),
+				),
 			}
-
 			require.Equal(t, tc.expected, l.resolveMode())
 		})
 	}
-}
-
-type infoMock struct {
-	info.PropertyExtractor
-}
-
-func (i infoMock) ResolvePlatform() info.Platform {
-	return "not-implemented"
 }
