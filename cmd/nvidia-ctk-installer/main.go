@@ -14,6 +14,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
 const (
@@ -36,10 +37,11 @@ var signalReceived = make(chan bool, 1)
 type options struct {
 	toolkitInstallDir string
 
-	noDaemon   bool
-	runtime    string
-	pidFile    string
-	sourceRoot string
+	noDaemon    bool
+	runtime     string
+	pidFile     string
+	sourceRoot  string
+	packageType string
 
 	toolkitOptions toolkit.Options
 	runtimeOptions runtime.Options
@@ -123,11 +125,17 @@ func (a app) build() *cli.App {
 			EnvVars:     []string{"TOOLKIT_INSTALL_DIR", "ROOT"},
 		},
 		&cli.StringFlag{
-			Name:        "source-root",
-			Value:       "/",
-			Usage:       "The folder where the required toolkit artifacts can be found",
+			Name:        "toolkit-source-root",
+			Usage:       "The folder where the required toolkit artifacts can be found. If this is not specified, the path /artifacts/{{ .ToolkitPackageType }} is used where ToolkitPackageType is the resolved package type",
 			Destination: &options.sourceRoot,
-			EnvVars:     []string{"SOURCE_ROOT"},
+			EnvVars:     []string{"TOOLKIT_SOURCE_ROOT"},
+		},
+		&cli.StringFlag{
+			Name:        "toolkit-package-type",
+			Usage:       "specify the package type to use for the toolkit. One of ['deb', 'rpm', 'auto', '']. If 'auto' or '' are used, the type is inferred automatically.",
+			Value:       "auto",
+			Destination: &options.packageType,
+			EnvVars:     []string{"TOOLKIT_PACKAGE_TYPE"},
 		},
 		&cli.StringFlag{
 			Name:        "pid-file",
@@ -145,6 +153,15 @@ func (a app) build() *cli.App {
 }
 
 func (a *app) Before(c *cli.Context, o *options) error {
+	if o.sourceRoot == "" {
+		sourceRoot, err := a.resolveSourceRoot(o.runtimeOptions.HostRootMount, o.packageType)
+		if err != nil {
+			return fmt.Errorf("failed to resolve source root: %v", err)
+		}
+		a.logger.Infof("Resolved source root to %v", sourceRoot)
+		o.sourceRoot = sourceRoot
+	}
+
 	a.toolkit = toolkit.NewInstaller(
 		toolkit.WithLogger(a.logger),
 		toolkit.WithSourceRoot(o.sourceRoot),
@@ -276,4 +293,36 @@ func (a *app) shutdown(pidFile string) {
 	if err != nil {
 		a.logger.Warningf("Unable to remove pidfile: %v", err)
 	}
+}
+
+func (a *app) resolveSourceRoot(hostRoot string, packageType string) (string, error) {
+	resolvedPackageType, err := a.resolvePackageType(hostRoot, packageType)
+	if err != nil {
+		return "", err
+	}
+	switch resolvedPackageType {
+	case "deb":
+		return "/artifacts/deb", nil
+	case "rpm":
+		return "/artifacts/rpm", nil
+	default:
+		return "", fmt.Errorf("invalid package type: %v", resolvedPackageType)
+	}
+}
+
+func (a *app) resolvePackageType(hostRoot string, packageType string) (rPackageTypes string, rerr error) {
+	if packageType != "" && packageType != "auto" {
+		return packageType, nil
+	}
+
+	locator := lookup.NewExecutableLocator(a.logger, hostRoot)
+	if candidates, err := locator.Locate("/usr/bin/rpm"); err == nil && len(candidates) > 0 {
+		return "rpm", nil
+	}
+
+	if candidates, err := locator.Locate("/usr/bin/dpkg"); err == nil && len(candidates) > 0 {
+		return "deb", nil
+	}
+
+	return "deb", nil
 }

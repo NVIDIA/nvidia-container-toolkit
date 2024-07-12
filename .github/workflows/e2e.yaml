@@ -72,7 +72,7 @@ jobs:
         env:
           E2E_INSTALL_CTK: "true"
           E2E_IMAGE_NAME: ghcr.io/nvidia/container-toolkit
-          E2E_IMAGE_TAG: ${{ inputs.version }}-ubuntu20.04
+          E2E_IMAGE_TAG: ${{ inputs.version }}-ubi8
           E2E_SSH_USER: ${{ secrets.E2E_SSH_USER }}
           E2E_SSH_HOST: ${{ steps.holodeck_public_dns_name.outputs.result }}
         run: |
