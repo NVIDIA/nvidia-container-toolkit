@@ -1,5 +1,12 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.16.0
+- Promote v1.16.0-rc.2 to v1.16.0
+
+### Changes in the Toolkit Container
+- Bump CUDA base image version to 12.5.1
+
+
 ## v1.16.0-rc.2
 - Use relative path to locate driver libraries
 - Add RelativeToRoot function to Driver
