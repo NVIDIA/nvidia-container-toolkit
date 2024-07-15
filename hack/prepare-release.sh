@@ -138,18 +138,19 @@ else
 fi
 
 # TODO: We need to ensure that this tooling also works on `release-*` branches.
-if [[ "$FORCE_BRANCH" != "yes" && "$(git rev-parse --abbrev-ref HEAD)" != "main" ]]; then
-    echo "Release scripts should be run on 'main'"
-    exit 1
-fi
-
-git fetch
-git diff --quiet FETCH_HEAD
-if [[ $? -ne 0 ]]; then
-    echo "Local changes detected:"
-    git diff FETCH_HEAD | cat
-    echo "Exiting"
-    exit 1
+if [[ "$FORCE" != "yes" ]]; then
+    if [[ "$(git rev-parse --abbrev-ref HEAD)" != "main" ]]; then
+        echo "Release scripts should be run on 'main'"
+        exit 1
+    fi
+    git fetch
+    git diff --quiet FETCH_HEAD
+    if [[ $? -ne 0 ]]; then
+        echo "Local changes detected:"
+        git diff FETCH_HEAD | cat
+        echo "Exiting"
+        exit 1
+    fi
 fi
 
 # Create a release issue.
@@ -160,16 +161,21 @@ cat RELEASE.md | sed "s/{{ .VERSION }}/$release/g" | \
         --title "Release nvidia-container-toolkit $release" \
         --label release
 
-
 echo "Creating a version bump branch: bump-release-${release}"
 git checkout -f -b bump-release-${release}
 
 # Patch versions.mk
-LIB_VERSION=${${release%-*}#v}
-LIB_TAG=${release#*-}
+LIB_VERSION=${release%-*}
+LIB_VERSION=${LIB_VERSION#v}
+if [[ ${release} == v*-rc.* ]]; then
+    LIB_TAG_STRING=" ${release#*-}"
+else
+    LIB_TAG_STRING=
+fi
+
 echo Patching versions.mk to refer to $release
 $SED -i "s/^LIB_VERSION.*$/LIB_VERSION := $LIB_VERSION/" versions.mk
-$SED -i "s/^LIB_TAG.*$/LIB_TAG := $LIB_TAG/" versions.mk
+$SED -i "s/^LIB_TAG.*$/LIB_TAG :=$LIB_TAG_STRING/" versions.mk
 
 git add versions.mk
 git commit -s -m "Bump version for $release release"
