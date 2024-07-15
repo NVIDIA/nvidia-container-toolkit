@@ -33,7 +33,7 @@ EOF
 LIB_VERSION=$(awk -F= '/^LIB_VERSION/ { print $2 }' versions.mk | tr -d '[:space:]')
 LIB_TAG=$(awk -F= '/^LIB_TAG/ { print $2 }' versions.mk | tr -d '[:space:]')
 
-VERSION="v${LIB_VERSION}${LIB_TAG+-${LIB_TAG}}"
+VERSION="v${LIB_VERSION}${LIB_TAG:+-${LIB_TAG}}"
 >&2 echo "VERSION=$VERSION"
 
 REFERENCE=
