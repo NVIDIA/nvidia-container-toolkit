@@ -66,10 +66,9 @@ remote=$( git remote -v | grep -E "NVIDIA/nvidia-container-toolkit(\.git)?\s" | 
 >&2 echo "Detected remote as '${remote}'"
 git fetch ${remote} --tags
 
-git tag | grep ${VERSION} > /dev/null
+SHA=$(git rev-parse ${VERSION})
 if [[ $? -ne 0 ]]; then
-    >&2 echo "${VERSION} is not a valid git reference, using HEAD"
-    VERSION=HEAD
+    SHA="HEAD"
 fi
 
 # if REFERENCE is not set, get the latest tag
@@ -87,24 +86,28 @@ fi
 # Print the changelog
 echo "## What's Changed"
 echo ""
+if [[ ${VERSION} != v*-rc.* ]]; then
+echo "- Promote $REFERENCE to $VERSION"
+fi
+
 # Iterate over the commit messages and ignore the ones that start with "Merge" or "Bump"
-git log --pretty=format:"%s" $REFERENCE..$VERSION -- ':!deployments/container' ':!tools' | grep -Ev "(^Merge )|(^Bump)|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g'
+git log --pretty=format:"%s" $REFERENCE..$SHA -- ':!deployments/container' ':!tools' | grep -Ev "(^Merge )|(^Bump)|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g'
 
 echo ""
 echo "### Changes in the Toolkit Container"
 echo ""
-git log --pretty=format:"%s" $REFERENCE..$VERSION -- deployments/container tools | grep -Ev "(^Merge )|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g'
+git log --pretty=format:"%s" $REFERENCE..$SHA -- deployments/container tools | grep -Ev "(^Merge )|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g'
 
 LIB_NVIDIA_CONTAINER_REFERENCE=$( git ls-tree $REFERENCE third_party/libnvidia-container --object-only )
-LIB_NVIDIA_CONTAINER_VERSION=$( git ls-tree $VERSION third_party/libnvidia-container --object-only )
+LIB_NVIDIA_CONTAINER_VERSION=$( git ls-tree $SHA third_party/libnvidia-container --object-only )
 
 echo ""
 if [[ $(git -C third_party/libnvidia-container log --pretty=format:"%s" $LIB_NVIDIA_CONTAINER_REFERENCE..$LIB_NVIDIA_CONTAINER_VERSION | grep -Ev "(^Merge )|(^Bump)|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g' | wc -l) -gt 0  ]]; then
 echo "### Changes in libnvidia-container"
 echo ""
 git -C third_party/libnvidia-container log --pretty=format:"%s" $LIB_NVIDIA_CONTAINER_REFERENCE..$LIB_NVIDIA_CONTAINER_VERSION | grep -Ev "(^Merge )|(^Bump)|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g'
+echo ""
 fi
 
-echo ""
 echo "**Full Changelog**: https://github.com/NVIDIA/nvidia-container-toolkit/compare/${REFERENCE}...${VERSION}"
 echo ""
