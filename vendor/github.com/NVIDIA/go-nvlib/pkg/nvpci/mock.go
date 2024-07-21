@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvpci/bytes"
 )
@@ -55,14 +57,82 @@ func (m *MockNvpci) Cleanup() {
 	os.RemoveAll(m.pciDevicesRoot)
 }
 
+func validatePCIAddress(addr string) error {
+	r := regexp.MustCompile(`0{4}:[0-9a-f]{2}:[0-9a-f]{2}\.[0-9]`)
+	if !r.Match([]byte(addr)) {
+		return fmt.Errorf(`invalid PCI address should match 0{4}:[0-9a-f]{2}:[0-9a-f]{2}\.[0-9]: %s`, addr)
+	}
+
+	return nil
+}
+
 // AddMockA100 Create an A100 like GPU mock device.
-func (m *MockNvpci) AddMockA100(address string, numaNode int) error {
-	deviceDir := filepath.Join(m.pciDevicesRoot, address)
-	err := os.MkdirAll(deviceDir, 0755)
+func (m *MockNvpci) AddMockA100(address string, numaNode int, sriov *SriovInfo) error {
+	err := validatePCIAddress(address)
 	if err != nil {
 		return err
 	}
 
+	deviceDir := filepath.Join(m.pciDevicesRoot, address)
+	err = os.MkdirAll(deviceDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	err = createNVIDIAgpuFiles(deviceDir)
+	if err != nil {
+		return err
+	}
+
+	iommuGroup := 20
+	_, err = os.Create(filepath.Join(deviceDir, strconv.Itoa(iommuGroup)))
+	if err != nil {
+		return err
+	}
+	err = os.Symlink(filepath.Join(deviceDir, strconv.Itoa(iommuGroup)), filepath.Join(deviceDir, "iommu_group"))
+	if err != nil {
+		return err
+	}
+
+	numa, err := os.Create(filepath.Join(deviceDir, "numa_node"))
+	if err != nil {
+		return err
+	}
+	_, err = numa.WriteString(fmt.Sprintf("%v", numaNode))
+	if err != nil {
+		return err
+	}
+
+	if sriov != nil && sriov.PhysicalFunction != nil {
+		totalVFs, err := os.Create(filepath.Join(deviceDir, "sriov_totalvfs"))
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintf(totalVFs, "%d", sriov.PhysicalFunction.TotalVFs)
+		if err != nil {
+			return err
+		}
+
+		numVFs, err := os.Create(filepath.Join(deviceDir, "sriov_numvfs"))
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintf(numVFs, "%d", sriov.PhysicalFunction.NumVFs)
+		if err != nil {
+			return err
+		}
+		for i := 1; i <= int(sriov.PhysicalFunction.NumVFs); i++ {
+			err = m.createVf(address, i, iommuGroup, numaNode)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func createNVIDIAgpuFiles(deviceDir string) error {
 	vendor, err := os.Create(filepath.Join(deviceDir, "vendor"))
 	if err != nil {
 		return err
@@ -95,24 +165,6 @@ func (m *MockNvpci) AddMockA100(address string, numaNode int) error {
 		return err
 	}
 	err = os.Symlink(filepath.Join(deviceDir, "nvidia"), filepath.Join(deviceDir, "driver"))
-	if err != nil {
-		return err
-	}
-
-	_, err = os.Create(filepath.Join(deviceDir, "20"))
-	if err != nil {
-		return err
-	}
-	err = os.Symlink(filepath.Join(deviceDir, "20"), filepath.Join(deviceDir, "iommu_group"))
-	if err != nil {
-		return err
-	}
-
-	numa, err := os.Create(filepath.Join(deviceDir, "numa_node"))
-	if err != nil {
-		return err
-	}
-	_, err = numa.WriteString(fmt.Sprintf("%v", numaNode))
 	if err != nil {
 		return err
 	}
@@ -150,6 +202,56 @@ func (m *MockNvpci) AddMockA100(address string, numaNode int) error {
 	data = bytes.New(&_data).LittleEndian()
 	data.Write32(0, pmcID)
 	_, err = resource0.Write(*data.Raw())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *MockNvpci) createVf(pfAddress string, id, iommu_group, numaNode int) error {
+	functionID := pfAddress[len(pfAddress)-1]
+	// we are verifying the last character of pfAddress is integer.
+	functionNumber, err := strconv.Atoi(string(functionID))
+	if err != nil {
+		return fmt.Errorf("can't conver physical function pci address function number %s to integer: %v", string(functionID), err)
+	}
+
+	vfFunctionNumber := functionNumber + id
+	vfAddress := pfAddress[:len(pfAddress)-1] + strconv.Itoa(vfFunctionNumber)
+
+	deviceDir := filepath.Join(m.pciDevicesRoot, vfAddress)
+	err = os.MkdirAll(deviceDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	err = createNVIDIAgpuFiles(deviceDir)
+	if err != nil {
+		return err
+	}
+
+	vfIommuGroup := strconv.Itoa(iommu_group + id)
+
+	_, err = os.Create(filepath.Join(deviceDir, vfIommuGroup))
+	if err != nil {
+		return err
+	}
+	err = os.Symlink(filepath.Join(deviceDir, vfIommuGroup), filepath.Join(deviceDir, "iommu_group"))
+	if err != nil {
+		return err
+	}
+
+	numa, err := os.Create(filepath.Join(deviceDir, "numa_node"))
+	if err != nil {
+		return err
+	}
+	_, err = numa.WriteString(fmt.Sprintf("%v", numaNode))
+	if err != nil {
+		return err
+	}
+
+	err = os.Symlink(filepath.Join(m.pciDevicesRoot, pfAddress), filepath.Join(deviceDir, "physfn"))
 	if err != nil {
 		return err
 	}

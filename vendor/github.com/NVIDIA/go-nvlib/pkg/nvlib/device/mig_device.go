@@ -50,7 +50,7 @@ func (d *devicelib) NewMigDevice(handle nvml.Device) (MigDevice, error) {
 
 // NewMigDeviceByUUID builds a new MigDevice from a UUID.
 func (d *devicelib) NewMigDeviceByUUID(uuid string) (MigDevice, error) {
-	dev, ret := d.nvml.DeviceGetHandleByUUID(uuid)
+	dev, ret := d.nvmllib.DeviceGetHandleByUUID(uuid)
 	if ret != nvml.SUCCESS {
 		return nil, fmt.Errorf("error getting device handle for uuid '%v': %v", uuid, ret)
 	}

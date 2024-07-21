@@ -36,7 +36,7 @@ var _ nvml.GpuInstance = &GpuInstance{}
 //			GetComputeInstanceProfileInfoFunc: func(n1 int, n2 int) (nvml.ComputeInstanceProfileInfo, nvml.Return) {
 //				panic("mock out the GetComputeInstanceProfileInfo method")
 //			},
-//			GetComputeInstanceProfileInfoVFunc: func(n1 int, n2 int) nvml.ComputeInstanceProfileInfoV {
+//			GetComputeInstanceProfileInfoVFunc: func(n1 int, n2 int) nvml.ComputeInstanceProfileInfoHandler {
 //				panic("mock out the GetComputeInstanceProfileInfoV method")
 //			},
 //			GetComputeInstanceRemainingCapacityFunc: func(computeInstanceProfileInfo *nvml.ComputeInstanceProfileInfo) (int, nvml.Return) {
@@ -74,7 +74,7 @@ type GpuInstance struct {
 	GetComputeInstanceProfileInfoFunc func(n1 int, n2 int) (nvml.ComputeInstanceProfileInfo, nvml.Return)
 
 	// GetComputeInstanceProfileInfoVFunc mocks the GetComputeInstanceProfileInfoV method.
-	GetComputeInstanceProfileInfoVFunc func(n1 int, n2 int) nvml.ComputeInstanceProfileInfoV
+	GetComputeInstanceProfileInfoVFunc func(n1 int, n2 int) nvml.ComputeInstanceProfileInfoHandler
 
 	// GetComputeInstanceRemainingCapacityFunc mocks the GetComputeInstanceRemainingCapacity method.
 	GetComputeInstanceRemainingCapacityFunc func(computeInstanceProfileInfo *nvml.ComputeInstanceProfileInfo) (int, nvml.Return)
@@ -348,7 +348,7 @@ func (mock *GpuInstance) GetComputeInstanceProfileInfoCalls() []struct {
 }
 
 // GetComputeInstanceProfileInfoV calls GetComputeInstanceProfileInfoVFunc.
-func (mock *GpuInstance) GetComputeInstanceProfileInfoV(n1 int, n2 int) nvml.ComputeInstanceProfileInfoV {
+func (mock *GpuInstance) GetComputeInstanceProfileInfoV(n1 int, n2 int) nvml.ComputeInstanceProfileInfoHandler {
 	if mock.GetComputeInstanceProfileInfoVFunc == nil {
 		panic("GpuInstance.GetComputeInstanceProfileInfoVFunc: method is nil but GpuInstance.GetComputeInstanceProfileInfoV was just called")
 	}
