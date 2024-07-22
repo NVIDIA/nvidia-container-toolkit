@@ -145,9 +145,9 @@ type toRequiredMigInfo struct {
 }
 
 func (d *toRequiredMigInfo) getPlacementInfo() (int, int, int, error) {
-	gpu, ret := d.parent.GetMinorNumber()
-	if ret != nvml.SUCCESS {
-		return 0, 0, 0, fmt.Errorf("error getting GPU minor: %v", ret)
+	gpu, err := d.parent.GetMinorNumber()
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("error getting GPU minor: %w", err)
 	}
 
 	gi, ret := d.GetGpuInstanceId()
