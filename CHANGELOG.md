@@ -1,5 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.16.1
+- Fix bug with processing errors during CDI spec generation for MIG devices
+
 ## v1.16.0
 - Promote v1.16.0-rc.2 to v1.16.0
 
