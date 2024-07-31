@@ -18,12 +18,18 @@ package dgpu
 
 import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 )
 
 type options struct {
 	logger            logger.Interface
 	devRoot           string
 	nvidiaCDIHookPath string
+
+	// migCaps stores the MIG capabilities for the system.
+	// If MIG is not available, this is nil.
+	migCaps      nvcaps.MigCaps
+	migCapsError error
 }
 
 type Option func(*options)
@@ -46,5 +52,12 @@ func WithLogger(logger logger.Interface) Option {
 func WithNVIDIACDIHookPath(path string) Option {
 	return func(l *options) {
 		l.nvidiaCDIHookPath = path
+	}
+}
+
+// WithMIGCaps sets the MIG capabilities.
+func WithMIGCaps(migCaps nvcaps.MigCaps) Option {
+	return func(l *options) {
+		l.migCaps = migCaps
 	}
 }

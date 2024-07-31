@@ -21,32 +21,19 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 )
 
 // NewForDevice creates a discoverer for the specified Device.
 func NewForDevice(d device.Device, opts ...Option) (discover.Discover, error) {
-	o := &options{}
-	for _, opt := range opts {
-		opt(o)
-	}
-
-	if o.logger == nil {
-		o.logger = logger.New()
-	}
+	o := new(opts...)
 
 	return o.newNvmlDGPUDiscoverer(&toRequiredInfo{d})
 }
 
 // NewForDevice creates a discoverer for the specified device and its associated MIG device.
 func NewForMigDevice(d device.Device, mig device.MigDevice, opts ...Option) (discover.Discover, error) {
-	o := &options{}
-	for _, opt := range opts {
-		opt(o)
-	}
-
-	if o.logger == nil {
-		o.logger = logger.New()
-	}
+	o := new(opts...)
 
 	return o.newNvmlMigDiscoverer(
 		&toRequiredMigInfo{
@@ -54,4 +41,27 @@ func NewForMigDevice(d device.Device, mig device.MigDevice, opts ...Option) (dis
 			parent:    &toRequiredInfo{d},
 		},
 	)
+}
+
+func new(opts ...Option) *options {
+	o := &options{}
+	for _, opt := range opts {
+		opt(o)
+	}
+
+	if o.logger == nil {
+		o.logger = logger.New()
+	}
+
+	if o.migCaps == nil {
+		migCaps, err := nvcaps.NewMigCaps()
+		if err != nil {
+			o.logger.Debugf("ignoring error getting MIG capability device paths: %v", err)
+			o.migCapsError = err
+		} else {
+			o.migCaps = migCaps
+		}
+	}
+
+	return o
 }
