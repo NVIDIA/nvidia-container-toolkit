@@ -78,24 +78,23 @@ type requiredMigInfo interface {
 }
 
 func (o *options) newNvmlMigDiscoverer(d requiredMigInfo) (discover.Discover, error) {
+	if o.migCaps == nil || o.migCapsError != nil {
+		return nil, fmt.Errorf("error getting MIG capability device paths: %v", o.migCapsError)
+	}
+
 	gpu, gi, ci, err := d.getPlacementInfo()
 	if err != nil {
 		return nil, fmt.Errorf("error getting placement info: %w", err)
 	}
 
-	migCaps, err := nvcaps.NewMigCaps()
-	if err != nil {
-		return nil, fmt.Errorf("error getting MIG capability device paths: %v", err)
-	}
-
 	giCap := nvcaps.NewGPUInstanceCap(gpu, gi)
-	giCapDevicePath, err := migCaps.GetCapDevicePath(giCap)
+	giCapDevicePath, err := o.migCaps.GetCapDevicePath(giCap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get GI cap device path: %v", err)
 	}
 
 	ciCap := nvcaps.NewComputeInstanceCap(gpu, gi, ci)
-	ciCapDevicePath, err := migCaps.GetCapDevicePath(ciCap)
+	ciCapDevicePath, err := o.migCaps.GetCapDevicePath(ciCap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CI cap device path: %v", err)
 	}
