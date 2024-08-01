@@ -22,7 +22,7 @@ updates:
 
   - package-ecosystem: "gomod"
     # This defines a specific dependabot rule for the latest release-* branch.
-    target-branch: release-1.15
+    target-branch: release-1.16
     directory: "/"
     schedule:
       interval: "weekly"
@@ -34,7 +34,7 @@ updates:
     - maintenance
 
   - package-ecosystem: "docker"
-    target-branch: release-1.15
+    target-branch: release-1.16
     directory: "/deployments/container"
     schedule:
       interval: "daily"
