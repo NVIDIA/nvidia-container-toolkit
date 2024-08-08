@@ -44,6 +44,10 @@ const (
 	defaultContainerdConfigFilePath = "/etc/containerd/config.toml"
 	defaultCrioConfigFilePath       = "/etc/crio/crio.conf"
 	defaultDockerConfigFilePath     = "/etc/docker/daemon.json"
+
+	defaultConfigSource = configSourceFile
+	configSourceCommand = "command"
+	configSourceFile    = "file"
 )
 
 type command struct {
@@ -64,6 +68,7 @@ type config struct {
 	dryRun         bool
 	runtime        string
 	configFilePath string
+	configSource   string
 	mode           string
 	hookFilePath   string
 
@@ -119,6 +124,12 @@ func (m command) build() *cli.Command {
 			Name:        "config-mode",
 			Usage:       "the config mode for runtimes that support multiple configuration mechanisms",
 			Destination: &config.mode,
+		},
+		&cli.StringFlag{
+			Name:        "config-source",
+			Usage:       "the source to retrieve the container runtime configuration; one of [command, file]\"",
+			Destination: &config.configSource,
+			Value:       defaultConfigSource,
 		},
 		&cli.StringFlag{
 			Name:        "oci-hook-path",
@@ -202,6 +213,18 @@ func (m command) validateFlags(c *cli.Context, config *config) error {
 		config.runtimeConfigOverrideJSON = ""
 	}
 
+	switch config.configSource {
+	case configSourceCommand:
+		if config.runtime == "docker" {
+			m.logger.Warningf("A %v Config Source is not supported for %v; using %v", config.configSource, config.runtime, configSourceFile)
+			config.configSource = configSourceFile
+		}
+	case configSourceFile:
+		break
+	default:
+		return fmt.Errorf("unrecognized Config Source: %v", config.configSource)
+	}
+
 	return nil
 }
 
@@ -220,20 +243,25 @@ func (m command) configureWrapper(c *cli.Context, config *config) error {
 func (m command) configureConfigFile(c *cli.Context, config *config) error {
 	configFilePath := config.resolveConfigFilePath()
 
-	var cfg engine.Interface
 	var err error
+	configSource, err := config.resolveConfigSource()
+	if err != nil {
+		return err
+	}
+
+	var cfg engine.Interface
 	switch config.runtime {
 	case "containerd":
 		cfg, err = containerd.New(
 			containerd.WithLogger(m.logger),
 			containerd.WithPath(configFilePath),
-			containerd.WithConfigSource(toml.FromFile(configFilePath)),
+			containerd.WithConfigSource(configSource),
 		)
 	case "crio":
 		cfg, err = crio.New(
 			crio.WithLogger(m.logger),
 			crio.WithPath(configFilePath),
-			crio.WithConfigSource(toml.FromFile(configFilePath)),
+			crio.WithConfigSource(configSource),
 		)
 	case "docker":
 		cfg, err = docker.New(
@@ -293,6 +321,29 @@ func (c *config) resolveConfigFilePath() string {
 		return defaultDockerConfigFilePath
 	}
 	return ""
+}
+
+// resolveConfigSource returns the default config source or the user provided config source
+func (c *config) resolveConfigSource() (toml.Loader, error) {
+	switch c.configSource {
+	case configSourceCommand:
+		return c.getCommandConfigSource(), nil
+	case configSourceFile:
+		return toml.FromFile(c.configFilePath), nil
+	default:
+		return nil, fmt.Errorf("unrecognized config source: %s", c.configSource)
+	}
+}
+
+// getConfigSourceCommand returns the default cli command to fetch the current runtime config
+func (c *config) getCommandConfigSource() toml.Loader {
+	switch c.runtime {
+	case "containerd":
+		return containerd.CommandLineSource("")
+	case "crio":
+		return crio.CommandLineSource("")
+	}
+	return toml.Empty
 }
 
 // getOuputConfigPath returns the configured config path or "" if dry-run is enabled

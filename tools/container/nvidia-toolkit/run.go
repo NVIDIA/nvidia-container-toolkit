@@ -22,11 +22,13 @@ const (
 	toolkitCommand     = "toolkit"
 	toolkitSubDir      = "toolkit"
 
-	defaultRuntime     = "docker"
-	defaultRuntimeArgs = ""
+	defaultRuntime       = "docker"
+	defaultRuntimeArgs   = ""
+	defaultHostRootMount = "/host"
 )
 
 var availableRuntimes = map[string]struct{}{"docker": {}, "crio": {}, "containerd": {}}
+var defaultLowLevelRuntimes = []string{"docker-runc", "runc", "crun"}
 
 var waitingForSignal = make(chan bool, 1)
 var signalReceived = make(chan bool, 1)
@@ -155,6 +157,15 @@ func Run(c *cli.Context, o *options) error {
 	}
 	defer shutdown(o.pidFile)
 
+	if len(o.toolkitOptions.ContainerRuntimeRuntimes.Value()) == 0 {
+		lowlevelRuntimePaths, err := runtime.GetLowlevelRuntimePaths(&o.runtimeOptions, o.runtime)
+		if err != nil {
+			return fmt.Errorf("unable to determine runtime options: %w", err)
+		}
+		lowlevelRuntimePaths = append(lowlevelRuntimePaths, defaultLowLevelRuntimes...)
+
+		o.toolkitOptions.ContainerRuntimeRuntimes = *cli.NewStringSlice(lowlevelRuntimePaths...)
+	}
 	err = toolkit.Install(c, &o.toolkitOptions, o.toolkitRoot())
 	if err != nil {
 		return fmt.Errorf("unable to install toolkit: %v", err)

@@ -30,6 +30,22 @@ type Config struct {
 	Logger logger.Interface
 }
 
+type crioRuntime struct {
+	tree *toml.Tree
+}
+
+var _ engine.RuntimeConfig = (*crioRuntime)(nil)
+
+// GetBinaryPath retrieves the path to the actual low-level runtime binary invoked by the runtime handler
+func (c *crioRuntime) GetBinaryPath() string {
+	if c.tree != nil {
+		if binaryPath, ok := c.tree.GetPath([]string{"runtime_path"}).(string); ok {
+			return binaryPath
+		}
+	}
+	return ""
+}
+
 var _ engine.Interface = (*Config)(nil)
 
 // New creates a cri-o config with the specified options
@@ -65,11 +81,7 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 
 	config := *c.Tree
 
-	// By default we extract the runtime options from the runc settings; if this does not exist we get the options from the default runtime specified in the config.
-	runtimeNamesForConfig := []string{"runc"}
-	if name, ok := config.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok && name != "" {
-		runtimeNamesForConfig = append(runtimeNamesForConfig, name)
-	}
+	runtimeNamesForConfig := engine.GetLowLevelRuntimes(c)
 	for _, r := range runtimeNamesForConfig {
 		if options, ok := config.GetPath([]string{"crio", "runtime", "runtimes", r}).(*toml.Tree); ok {
 			c.Logger.Debugf("using options from runtime %v: %v", r, options.String())
@@ -128,4 +140,28 @@ func (c *Config) RemoveRuntime(name string) error {
 
 	*c.Tree = config
 	return nil
+}
+
+func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
+	if c == nil || c.Tree == nil {
+		return nil, fmt.Errorf("config is nil")
+	}
+	runtimeData := c.GetSubtreeByPath([]string{"crio", "runtime", "runtimes", name})
+	return &crioRuntime{
+		tree: runtimeData,
+	}, nil
+}
+
+// CommandLineSource returns the CLI-based crio config loader
+func CommandLineSource(hostRoot string) toml.Loader {
+	commandLine := chrootIfRequired(hostRoot, "crio", "status", "config")
+	return toml.FromCommandLine(commandLine[0], commandLine[1:]...)
+}
+
+func chrootIfRequired(hostRoot string, commandLine ...string) []string {
+	if hostRoot == "" || hostRoot == "/" {
+		return commandLine
+	}
+
+	return append([]string{"chroot", hostRoot}, commandLine...)
 }

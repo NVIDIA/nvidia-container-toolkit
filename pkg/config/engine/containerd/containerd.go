@@ -35,6 +35,22 @@ type Config struct {
 
 var _ engine.Interface = (*Config)(nil)
 
+type containerdCfgRuntime struct {
+	tree *toml.Tree
+}
+
+var _ engine.RuntimeConfig = (*containerdCfgRuntime)(nil)
+
+// GetBinaryPath retrieves the path to the actual low-level runtime binary invoked by the runtime handler
+func (c *containerdCfgRuntime) GetBinaryPath() string {
+	if c == nil || c.tree == nil {
+		return ""
+	}
+
+	binPath, _ := c.tree.GetPath([]string{"options", "BinaryName"}).(string)
+	return binPath
+}
+
 // New creates a containerd config with the specified options
 func New(opts ...Option) (engine.Interface, error) {
 	b := &builder{
@@ -97,4 +113,28 @@ func (c *Config) parseVersion(useLegacyConfig bool) (int, error) {
 	default:
 		return -1, fmt.Errorf("unsupported type for version field: %v", v)
 	}
+}
+
+func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
+	if c == nil || c.Tree == nil {
+		return nil, fmt.Errorf("config is nil")
+	}
+	runtimeData := c.GetSubtreeByPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name})
+	return &containerdCfgRuntime{
+		tree: runtimeData,
+	}, nil
+}
+
+// CommandLineSource returns the CLI-based containerd config loader
+func CommandLineSource(hostRoot string) toml.Loader {
+	commandLine := chrootIfRequired(hostRoot, "containerd", "config", "dump")
+	return toml.FromCommandLine(commandLine[0], commandLine[1:]...)
+}
+
+func chrootIfRequired(hostRoot string, commandLine ...string) []string {
+	if hostRoot == "" || hostRoot == "/" {
+		return commandLine
+	}
+
+	return append([]string{"chroot", hostRoot}, commandLine...)
 }
