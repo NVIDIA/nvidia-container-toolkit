@@ -31,6 +31,7 @@ func TestAddRuntimeV1(t *testing.T) {
 		config          string
 		setAsDefault    bool
 		configOverrides []map[string]interface{}
+		hasSystemd      bool
 		expectedConfig  string
 		expectedError   error
 	}{
@@ -50,6 +51,28 @@ func TestAddRuntimeV1(t *testing.T) {
 					[plugins.cri.containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
 						Runtime = "/usr/bin/test"
+						SystemdCgroup = false
+			`,
+			expectedError: nil,
+		},
+		{
+			description: "empty config not default runtime with systemd",
+			hasSystemd:  true,
+			expectedConfig: `
+			version = 1
+			[plugins]
+			[plugins.cri]
+				[plugins.cri.containerd]
+				[plugins.cri.containerd.runtimes]
+					[plugins.cri.containerd.runtimes.test]
+					privileged_without_host_devices = false
+					runtime_engine = ""
+					runtime_root = ""
+					runtime_type = ""
+					[plugins.cri.containerd.runtimes.test.options]
+						BinaryName = "/usr/bin/test"
+						Runtime = "/usr/bin/test"
+						SystemdCgroup = true
 			`,
 			expectedError: nil,
 		},
@@ -232,8 +255,9 @@ func TestAddRuntimeV1(t *testing.T) {
 			require.NoError(t, err)
 
 			c := &ConfigV1{
-				Logger: logger,
-				Tree:   config,
+				Logger:     logger,
+				HasSystemd: tc.hasSystemd,
+				Tree:       config,
 			}
 
 			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault, tc.configOverrides...)

@@ -49,6 +49,7 @@ func TestAddRuntime(t *testing.T) {
 					runtime_type = ""
 					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
+						SystemdCgroup = false
 			`,
 			expectedError: nil,
 		},

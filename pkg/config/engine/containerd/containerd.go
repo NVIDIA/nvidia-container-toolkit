@@ -30,6 +30,7 @@ type Config struct {
 	RuntimeType           string
 	UseDefaultRuntimeName bool
 	ContainerAnnotations  []string
+	HasSystemd            bool
 }
 
 var _ engine.Interface = (*Config)(nil)
@@ -43,6 +44,9 @@ func New(opts ...Option) (engine.Interface, error) {
 
 	if b.logger == nil {
 		b.logger = logger.New()
+	}
+	if b.hostRoot == "" {
+		b.hostRoot = "/"
 	}
 
 	return b.build()

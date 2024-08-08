@@ -115,7 +115,8 @@ func TestUpdateV2Config(t *testing.T) {
 									"privileged_without_host_devices": false,
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime",
+										"BinaryName":    "/test/runtime/dir/nvidia-container-runtime",
+										"SystemdCgroup": false,
 									},
 								},
 								"nvidia-cdi": map[string]interface{}{
@@ -125,7 +126,8 @@ func TestUpdateV2Config(t *testing.T) {
 									"privileged_without_host_devices": false,
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.cdi",
+										"BinaryName":    "/test/runtime/dir/nvidia-container-runtime.cdi",
+										"SystemdCgroup": false,
 									},
 								},
 								"nvidia-legacy": map[string]interface{}{
@@ -135,7 +137,8 @@ func TestUpdateV2Config(t *testing.T) {
 									"privileged_without_host_devices": false,
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.legacy",
+										"BinaryName":    "/test/runtime/dir/nvidia-container-runtime.legacy",
+										"SystemdCgroup": false,
 									},
 								},
 							},
@@ -159,7 +162,8 @@ func TestUpdateV2Config(t *testing.T) {
 									"privileged_without_host_devices": false,
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime",
+										"BinaryName":    "/test/runtime/dir/nvidia-container-runtime",
+										"SystemdCgroup": false,
 									},
 								},
 								"nvidia-cdi": map[string]interface{}{
@@ -169,7 +173,8 @@ func TestUpdateV2Config(t *testing.T) {
 									"privileged_without_host_devices": false,
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.cdi",
+										"BinaryName":    "/test/runtime/dir/nvidia-container-runtime.cdi",
+										"SystemdCgroup": false,
 									},
 								},
 								"nvidia-legacy": map[string]interface{}{
@@ -179,7 +184,8 @@ func TestUpdateV2Config(t *testing.T) {
 									"privileged_without_host_devices": false,
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.legacy",
+										"BinaryName":    "/test/runtime/dir/nvidia-container-runtime.legacy",
+										"SystemdCgroup": false,
 									},
 								},
 							},
@@ -208,6 +214,7 @@ func TestUpdateV2Config(t *testing.T) {
 				Tree:                 config,
 				RuntimeType:          o.runtimeType,
 				ContainerAnnotations: []string{"cdi.k8s.io/*"},
+				HasSystemd:           false,
 			}
 
 			err = o.UpdateConfig(v2)
@@ -255,8 +262,9 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 									"privileged_without_host_devices": true,
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime",
+										"runc-option":   "value",
+										"BinaryName":    "/test/runtime/dir/nvidia-container-runtime",
+										"SystemdCgroup": false,
 									},
 								},
 								"nvidia-cdi": map[string]interface{}{
@@ -266,8 +274,9 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 									"privileged_without_host_devices": true,
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.cdi",
+										"runc-option":   "value",
+										"BinaryName":    "/test/runtime/dir/nvidia-container-runtime.cdi",
+										"SystemdCgroup": false,
 									},
 								},
 								"nvidia-legacy": map[string]interface{}{
@@ -277,8 +286,9 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 									"privileged_without_host_devices": true,
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.legacy",
+										"runc-option":   "value",
+										"BinaryName":    "/test/runtime/dir/nvidia-container-runtime.legacy",
+										"SystemdCgroup": false,
 									},
 								},
 							},
@@ -312,8 +322,9 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 									"privileged_without_host_devices": true,
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime",
+										"runc-option":   "value",
+										"BinaryName":    "/test/runtime/dir/nvidia-container-runtime",
+										"SystemdCgroup": false,
 									},
 								},
 								"nvidia-cdi": map[string]interface{}{
@@ -323,8 +334,9 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 									"privileged_without_host_devices": true,
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.cdi",
+										"runc-option":   "value",
+										"BinaryName":    "/test/runtime/dir/nvidia-container-runtime.cdi",
+										"SystemdCgroup": false,
 									},
 								},
 								"nvidia-legacy": map[string]interface{}{
@@ -334,8 +346,9 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 									"privileged_without_host_devices": true,
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.legacy",
+										"runc-option":   "value",
+										"BinaryName":    "/test/runtime/dir/nvidia-container-runtime.legacy",
+										"SystemdCgroup": false,
 									},
 								},
 							},
@@ -363,6 +376,7 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 				Tree:                 config,
 				RuntimeType:          runtimeType,
 				ContainerAnnotations: []string{"cdi.k8s.io/*"},
+				HasSystemd:           false,
 			}
 
 			err = o.UpdateConfig(v2)
