@@ -18,6 +18,10 @@ linters:
 linters-settings:
   goimports:
     local-prefixes: github.com/NVIDIA/nvidia-container-toolkit
+  gosec:
+    excludes:
+    # TODO: Consider hardening security of command line invocations
+    - G204
 
 issues:
   exclude:

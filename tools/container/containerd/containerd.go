@@ -193,6 +193,7 @@ func Setup(c *cli.Context, o *options) error {
 		containerd.WithRuntimeType(o.runtimeType),
 		containerd.WithUseLegacyConfig(o.useLegacyConfig),
 		containerd.WithContainerAnnotations(o.containerAnnotationsFromCDIPrefixes()...),
+		containerd.WithHostRootMount(o.HostRootMount),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)

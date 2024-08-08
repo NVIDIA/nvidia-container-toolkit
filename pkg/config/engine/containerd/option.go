@@ -18,7 +18,7 @@ package containerd
 
 import (
 	"fmt"
-	"os"
+	"os/exec"
 
 	"github.com/pelletier/go-toml"
 
@@ -36,6 +36,7 @@ type builder struct {
 	runtimeType          string
 	useLegacyConfig      bool
 	containerAnnotations []string
+	hostRootMount        string
 }
 
 // Option defines a function that can be used to configure the config builder
@@ -76,6 +77,13 @@ func WithContainerAnnotations(containerAnnotations ...string) Option {
 	}
 }
 
+// WithHostRootMount sets the container annotations for the config builder
+func WithHostRootMount(hostRootMount string) Option {
+	return func(b *builder) {
+		b.hostRootMount = hostRootMount
+	}
+}
+
 func (b *builder) build() (engine.Interface, error) {
 	if b.path == "" {
 		return nil, fmt.Errorf("config path is empty")
@@ -85,7 +93,7 @@ func (b *builder) build() (engine.Interface, error) {
 		b.runtimeType = defaultRuntimeType
 	}
 
-	config, err := b.loadConfig(b.path)
+	config, err := b.loadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %v", err)
 	}
@@ -109,23 +117,28 @@ func (b *builder) build() (engine.Interface, error) {
 }
 
 // loadConfig loads the containerd config from disk
-func (b *builder) loadConfig(config string) (*Config, error) {
-	info, err := os.Stat(config)
-	if os.IsExist(err) && info.IsDir() {
-		return nil, fmt.Errorf("config file is a directory")
-	}
+func (b *builder) loadConfig() (*Config, error) {
+	var args []string
 
-	if os.IsNotExist(err) {
-		b.logger.Infof("Config file does not exist; using empty config")
-		config = "/dev/null"
-	} else {
-		b.logger.Infof("Loading config from %v", config)
+	if b.hostRootMount != "" {
+		args = append(args, "chroot", b.hostRootMount)
 	}
+	args = append(args, "containerd", "config", "dump")
 
-	tomlConfig, err := toml.LoadFile(config)
+	b.logger.Infof("Getting current containerd config")
+
+	// TODO: Can we harden this so that there is less risk of command injection
+	cmd := exec.Command(args[0], args[1:]...)
+	output, err := cmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error executing containerd confg command: %w", err)
 	}
+	tomlConfig, err := toml.LoadBytes(output)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling containerd config toml: %w", err)
+	}
+
+	b.logger.Infof("Successfully loaded containerd config")
 
 	cfg := Config{
 		Tree: tomlConfig,
