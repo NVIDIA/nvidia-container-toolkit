@@ -28,6 +28,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/ocihook"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
 
@@ -222,6 +223,7 @@ func setupConfig(o *options) error {
 
 	cfg, err := crio.New(
 		crio.WithPath(o.Config),
+		crio.WithConfigSource(toml.FromFile(o.Config)),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
@@ -273,6 +275,7 @@ func cleanupConfig(o *options) error {
 
 	cfg, err := crio.New(
 		crio.WithPath(o.Config),
+		crio.WithConfigSource(toml.FromFile(o.Config)),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)

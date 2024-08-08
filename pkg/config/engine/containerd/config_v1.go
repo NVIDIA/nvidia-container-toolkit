@@ -45,12 +45,14 @@ func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool) error
 		runtimeNamesForConfig = append(runtimeNamesForConfig, name)
 	}
 	for _, r := range runtimeNamesForConfig {
-		if options, ok := config.GetPath([]string{"plugins", "cri", "containerd", "runtimes", r}).(*toml.Tree); ok {
-			c.Logger.Debugf("using options from runtime %v: %v", r, options.String())
-			options, _ = toml.Load(options.String())
-			config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name}, options)
-			break
+		options := config.GetSubtreeByPath([]string{"plugins", "cri", "containerd", "runtimes", r})
+		if options == nil {
+			continue
 		}
+		c.Logger.Debugf("using options from runtime %v: %v", r, options)
+		config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name}, options.Copy())
+		break
+
 	}
 
 	if config.GetPath([]string{"plugins", "cri", "containerd", "runtimes", name}) == nil {

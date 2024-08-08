@@ -19,9 +19,10 @@ package crio
 import (
 	"testing"
 
-	"github.com/pelletier/go-toml"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 func TestAddRuntime(t *testing.T) {
@@ -126,20 +127,20 @@ func TestAddRuntime(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			config, err := toml.Load(tc.config)
+			cfg, err := toml.Load(tc.config)
 			require.NoError(t, err)
 			expectedConfig, err := toml.Load(tc.expectedConfig)
 			require.NoError(t, err)
 
 			c := &Config{
 				Logger: logger,
-				Tree:   config,
+				Tree:   cfg,
 			}
 
 			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault)
 			require.NoError(t, err)
 
-			require.EqualValues(t, expectedConfig.String(), config.String())
+			require.EqualValues(t, expectedConfig.String(), cfg.String())
 		})
 	}
 }
