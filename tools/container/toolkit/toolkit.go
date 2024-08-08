@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	toml "github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
@@ -419,7 +418,9 @@ func installLibrary(libName string, toolkitRoot string) error {
 func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, nvidaContainerRuntimeHookPath string, opts *Options) error {
 	log.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
 
-	cfg, err := loadConfig(nvidiaContainerToolkitConfigSource)
+	cfg, err := config.New(
+		config.WithConfigFile(nvidiaContainerToolkitConfigSource),
+	)
 	if err != nil {
 		return fmt.Errorf("could not open source config file: %v", err)
 	}
@@ -450,6 +451,12 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 		"nvidia-container-runtime-hook.path":                nvidaContainerRuntimeHookPath,
 		"nvidia-container-runtime-hook.skip-mode-detection": opts.ContainerRuntimeHookSkipModeDetection,
 	}
+
+	toolkitRuntimeList := opts.ContainerRuntimeRuntimes.Value()
+	if len(toolkitRuntimeList) > 0 {
+		configValues["nvidia-container-runtime.runtimes"] = toolkitRuntimeList
+	}
+
 	for key, value := range configValues {
 		cfg.Set(key, value)
 	}
@@ -501,16 +508,6 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 	}
 
 	return nil
-}
-
-func loadConfig(path string) (*toml.Tree, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return toml.LoadFile(path)
-	} else if os.IsNotExist(err) {
-		return toml.TreeFromMap(nil)
-	}
-	return nil, err
 }
 
 // installContainerToolkitCLI installs the nvidia-ctk CLI executable and wrapper.

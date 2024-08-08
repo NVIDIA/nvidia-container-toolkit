@@ -138,7 +138,7 @@ func TestAddRuntimeV1(t *testing.T) {
 				`,
 		},
 		{
-			description: "options from runc take precedence over default runtime",
+			description: "options from the default runtime take precedence over runc",
 			config: `
 			[plugins]
 			[plugins.cri]
@@ -186,14 +186,14 @@ func TestAddRuntimeV1(t *testing.T) {
 						BinaryName = "/usr/bin/default"
 						SystemdCgroup = false
 					[plugins.cri.containerd.runtimes.test]
-					privileged_without_host_devices = true
-					runtime_engine = "engine"
-					runtime_root = "root"
-					runtime_type = "type"
+					privileged_without_host_devices = false
+					runtime_engine = "defaultengine"
+					runtime_root = "defaultroot"
+					runtime_type = "defaulttype"
 					[plugins.cri.containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
 						Runtime = "/usr/bin/test"
-						SystemdCgroup = true
+						SystemdCgroup = false
 				`,
 		},
 	}

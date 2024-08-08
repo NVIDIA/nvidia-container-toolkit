@@ -22,6 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/docker"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
@@ -95,4 +96,14 @@ func Cleanup(c *cli.Context, o *container.Options) error {
 // RestartDocker restarts docker depending on the value of restartModeFlag
 func RestartDocker(o *container.Options) error {
 	return o.Restart("docker", SignalDocker)
+}
+
+func GetLowlevelRuntimePaths(o *container.Options) ([]string, error) {
+	cfg, err := docker.New(
+		docker.WithPath(o.Config),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load docker config: %w", err)
+	}
+	return engine.GetBinaryPathsForRuntimes(cfg), nil
 }

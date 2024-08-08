@@ -137,7 +137,7 @@ func TestAddRuntime(t *testing.T) {
 				`,
 		},
 		{
-			description: "options from runc take precedence over default runtime",
+			description: "options from the default runtime take precedence over runc",
 			config: `
 			version = 2
 			[plugins]
@@ -186,13 +186,13 @@ func TestAddRuntime(t *testing.T) {
 						BinaryName = "/usr/bin/default"
 						SystemdCgroup = false
 					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
-					privileged_without_host_devices = true
-					runtime_engine = "engine"
-					runtime_root = "root"
-					runtime_type = "type"
+					privileged_without_host_devices = false
+					runtime_engine = "defaultengine"
+					runtime_root = "defaultroot"
+					runtime_type = "defaulttype"
 					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
-						SystemdCgroup = true
+						SystemdCgroup = false
 				`,
 		},
 	}
@@ -213,6 +213,102 @@ func TestAddRuntime(t *testing.T) {
 			require.NoError(t, err)
 
 			require.EqualValues(t, expectedConfig.String(), cfg.String())
+		})
+	}
+}
+
+func TestGetRuntimeConfig(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+	config := `
+	version = 2
+	[plugins]
+	[plugins."io.containerd.grpc.v1.cri"]
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      default_runtime_name = "nvidia"
+      disable_snapshot_annotations = true
+      discard_unpacked_layers = false
+      ignore_blockio_not_enabled_errors = false
+      ignore_rdt_not_enabled_errors = false
+      no_pivot = false
+      snapshotter = "overlayfs"
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.default_runtime]
+        base_runtime_spec = ""
+        cni_conf_dir = ""
+        cni_max_conf_num = 0
+        container_annotations = []
+        pod_annotations = []
+        privileged_without_host_devices = false
+        privileged_without_host_devices_all_devices_allowed = false
+        runtime_engine = ""
+        runtime_path = ""
+        runtime_root = ""
+        runtime_type = ""
+        sandbox_mode = ""
+        snapshotter = ""
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          base_runtime_spec = ""
+          cni_conf_dir = ""
+          cni_max_conf_num = 0
+          container_annotations = []
+          pod_annotations = []
+          privileged_without_host_devices = false
+          privileged_without_host_devices_all_devices_allowed = false
+          runtime_engine = ""
+          runtime_path = ""
+          runtime_root = ""
+          runtime_type = "io.containerd.runc.v2"
+          sandbox_mode = "podsandbox"
+          snapshotter = ""
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
+            CriuImagePath = ""
+            CriuPath = ""
+            CriuWorkPath = ""
+            IoGid = 0
+            IoUid = 0
+            NoNewKeyring = false
+            NoPivotRoot = false
+            Root = ""
+            ShimCgroup = ""
+            SystemdCgroup = false
+`
+	testCases := []struct {
+		description   string
+		runtime       string
+		expected      string
+		expectedError error
+	}{
+		{
+			description:   "valid runtime config, existing runtime",
+			runtime:       "runc",
+			expected:      "/usr/bin/runc",
+			expectedError: nil,
+		},
+		{
+			description:   "valid runtime config, non-existing runtime",
+			runtime:       "some-other-runtime",
+			expected:      "",
+			expectedError: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			cfg, err := toml.Load(config)
+			require.NoError(t, err)
+
+			c := &Config{
+				Logger: logger,
+				Tree:   cfg,
+			}
+			rc, err := c.GetRuntimeConfig(tc.runtime)
+			require.Equal(t, tc.expectedError, err)
+			require.Equal(t, tc.expected, rc.GetBinaryPath())
 		})
 	}
 }

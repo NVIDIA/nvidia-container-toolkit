@@ -166,3 +166,16 @@ func Cleanup(c *cli.Context, opts *Options, runtime string) error {
 		return fmt.Errorf("undefined runtime %v", runtime)
 	}
 }
+
+func GetLowlevelRuntimePaths(opts *Options, runtime string) ([]string, error) {
+	switch runtime {
+	case containerd.Name:
+		return containerd.GetLowlevelRuntimePaths(&opts.Options, &opts.containerdOptions)
+	case crio.Name:
+		return crio.GetLowlevelRuntimePaths(&opts.Options)
+	case docker.Name:
+		return docker.GetLowlevelRuntimePaths(&opts.Options)
+	default:
+		return nil, fmt.Errorf("undefined runtime %v", runtime)
+	}
+}

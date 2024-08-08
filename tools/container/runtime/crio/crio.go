@@ -25,6 +25,7 @@ import (
 	cli "github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/ocihook"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
@@ -117,6 +118,7 @@ func setupConfig(o *container.Options) error {
 
 	cfg, err := crio.New(
 		crio.WithPath(o.Config),
+		crio.WithConfigSource(crio.CommandLineSource(o.HostRootMount)),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
@@ -168,6 +170,7 @@ func cleanupConfig(o *container.Options) error {
 
 	cfg, err := crio.New(
 		crio.WithPath(o.Config),
+		crio.WithConfigSource(crio.CommandLineSource(o.HostRootMount)),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
@@ -189,4 +192,14 @@ func cleanupConfig(o *container.Options) error {
 // RestartCrio restarts crio depending on the value of restartModeFlag
 func RestartCrio(o *container.Options) error {
 	return o.Restart("crio", func(string) error { return fmt.Errorf("supporting crio via signal is unsupported") })
+}
+
+func GetLowlevelRuntimePaths(o *container.Options) ([]string, error) {
+	cfg, err := crio.New(
+		crio.WithConfigSource(crio.CommandLineSource(o.HostRootMount)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load crio config: %w", err)
+	}
+	return engine.GetBinaryPathsForRuntimes(cfg), nil
 }

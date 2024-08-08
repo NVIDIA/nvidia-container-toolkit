@@ -23,6 +23,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
@@ -85,6 +86,7 @@ func Setup(c *cli.Context, o *container.Options, co *Options) error {
 
 	cfg, err := containerd.New(
 		containerd.WithPath(o.Config),
+		containerd.WithConfigSource(containerd.CommandLineSource(o.HostRootMount)),
 		containerd.WithRuntimeType(co.runtimeType),
 		containerd.WithUseLegacyConfig(co.useLegacyConfig),
 		containerd.WithContainerAnnotations(co.containerAnnotationsFromCDIPrefixes()...),
@@ -114,6 +116,7 @@ func Cleanup(c *cli.Context, o *container.Options, co *Options) error {
 
 	cfg, err := containerd.New(
 		containerd.WithPath(o.Config),
+		containerd.WithConfigSource(containerd.CommandLineSource(o.HostRootMount)),
 		containerd.WithRuntimeType(co.runtimeType),
 		containerd.WithUseLegacyConfig(co.useLegacyConfig),
 		containerd.WithContainerAnnotations(co.containerAnnotationsFromCDIPrefixes()...),
@@ -163,4 +166,16 @@ func (o *Options) runtimeConfigOverride() (map[string]interface{}, error) {
 	}
 
 	return runtimeOptions, nil
+}
+
+func GetLowlevelRuntimePaths(o *container.Options, co *Options) ([]string, error) {
+	cfg, err := containerd.New(
+		containerd.WithConfigSource(containerd.CommandLineSource(o.HostRootMount)),
+		containerd.WithRuntimeType(co.runtimeType),
+		containerd.WithUseLegacyConfig(co.useLegacyConfig),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load containerd config: %w", err)
+	}
+	return engine.GetBinaryPathsForRuntimes(cfg), nil
 }
