@@ -308,8 +308,9 @@ func TestGetConfig(t *testing.T) {
 			// We first handle the ldconfig path since this is currently system-dependent.
 			if tc.inspectLdconfig {
 				ldconfig := cfg.NVIDIAContainerCLIConfig.Ldconfig
-				require.True(t, strings.HasPrefix(ldconfig, "@/sbin/ldconfig"))
-				remaining := strings.TrimPrefix(ldconfig, "@/sbin/ldconfig")
+				relLdconfig := getLdConfigPath()
+				require.True(t, strings.HasPrefix(ldconfig, relLdconfig))
+				remaining := strings.TrimPrefix(ldconfig, relLdconfig)
 				require.True(t, remaining == ".real" || remaining == "")
 
 				cfg.NVIDIAContainerCLIConfig.Ldconfig = "WAS_CHECKED"
