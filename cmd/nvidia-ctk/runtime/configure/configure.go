@@ -28,6 +28,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/docker"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/ocihook"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 const (
@@ -226,11 +227,13 @@ func (m command) configureConfigFile(c *cli.Context, config *config) error {
 		cfg, err = containerd.New(
 			containerd.WithLogger(m.logger),
 			containerd.WithPath(configFilePath),
+			containerd.WithConfigSource(toml.FromFile(configFilePath)),
 		)
 	case "crio":
 		cfg, err = crio.New(
 			crio.WithLogger(m.logger),
 			crio.WithPath(configFilePath),
+			crio.WithConfigSource(toml.FromFile(configFilePath)),
 		)
 	case "docker":
 		cfg, err = docker.New(

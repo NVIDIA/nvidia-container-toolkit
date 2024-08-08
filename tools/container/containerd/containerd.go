@@ -25,6 +25,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
 
@@ -189,6 +190,7 @@ func Setup(c *cli.Context, o *options) error {
 
 	cfg, err := containerd.New(
 		containerd.WithPath(o.Config),
+		containerd.WithConfigSource(toml.FromFile(o.Config)),
 		containerd.WithRuntimeType(o.runtimeType),
 		containerd.WithUseLegacyConfig(o.useLegacyConfig),
 		containerd.WithContainerAnnotations(o.containerAnnotationsFromCDIPrefixes()...),
@@ -218,6 +220,7 @@ func Cleanup(c *cli.Context, o *options) error {
 
 	cfg, err := containerd.New(
 		containerd.WithPath(o.Config),
+		containerd.WithConfigSource(toml.FromFile(o.Config)),
 		containerd.WithRuntimeType(o.runtimeType),
 		containerd.WithUseLegacyConfig(o.useLegacyConfig),
 		containerd.WithContainerAnnotations(o.containerAnnotationsFromCDIPrefixes()...),

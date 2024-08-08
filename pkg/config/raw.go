@@ -1,5 +1,5 @@
 /**
-# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2024 NVIDIA CORPORATION
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package engine
+package config
 
 import (
 	"fmt"
@@ -22,11 +22,11 @@ import (
 	"path/filepath"
 )
 
-// Config represents a runtime config
-type Config string
+// Raw represents a raw config file
+type Raw string
 
 // Write writes the specified contents to a config file.
-func (c Config) Write(output []byte) (int, error) {
+func (c Raw) Write(output []byte) (int, error) {
 	path := string(c)
 	if path == "" {
 		n, err := os.Stdout.Write(output)
