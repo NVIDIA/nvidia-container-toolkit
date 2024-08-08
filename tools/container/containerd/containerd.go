@@ -25,6 +25,7 @@ import (
 	cli "github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
@@ -189,6 +190,7 @@ func Setup(c *cli.Context, o *options) error {
 	log.Infof("Starting 'setup' for %v", c.App.Name)
 
 	cfg, err := containerd.New(
+		containerd.WithReference(config.FromFile(o.Config)),
 		containerd.WithPath(o.Config),
 		containerd.WithRuntimeType(o.runtimeType),
 		containerd.WithUseLegacyConfig(o.useLegacyConfig),

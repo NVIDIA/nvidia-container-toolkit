@@ -20,8 +20,6 @@ import (
 	"fmt"
 
 	"github.com/pelletier/go-toml"
-
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 )
 
 // AddRuntime adds a runtime to the containerd config
@@ -150,16 +148,4 @@ func (c *Config) RemoveRuntime(name string) error {
 
 	*c.Tree = config
 	return nil
-}
-
-// Save writes the config to the specified path
-func (c Config) Save(path string) (int64, error) {
-	config := c.Tree
-	output, err := config.Marshal()
-	if err != nil {
-		return 0, fmt.Errorf("unable to convert to TOML: %v", err)
-	}
-
-	n, err := engine.Config(path).Write(output)
-	return int64(n), err
 }
