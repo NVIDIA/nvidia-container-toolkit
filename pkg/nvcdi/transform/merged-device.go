@@ -109,7 +109,6 @@ func mergeDeviceSpecs(deviceSpecs []specs.Device, mergedDeviceName string) (*spe
 	}
 
 	mergedEdits := edits.NewContainerEdits()
-
 	for _, d := range deviceSpecs {
 		d := d
 		edit := cdi.ContainerEdits{
@@ -118,9 +117,6 @@ func mergeDeviceSpecs(deviceSpecs []specs.Device, mergedDeviceName string) (*spe
 		mergedEdits.Append(&edit)
 	}
 
-	merged := specs.Device{
-		Name:           mergedDeviceName,
-		ContainerEdits: *mergedEdits.ContainerEdits,
-	}
+	merged := edits.NewResource(mergedDeviceName, mergedEdits)
 	return &merged, nil
 }

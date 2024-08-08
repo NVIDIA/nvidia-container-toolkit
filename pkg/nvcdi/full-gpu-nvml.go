@@ -30,7 +30,7 @@ import (
 
 // GetGPUDeviceSpecs returns the CDI device specs for the full GPU represented by 'device'.
 func (l *nvmllib) GetGPUDeviceSpecs(i int, d device.Device) ([]specs.Device, error) {
-	edits, err := l.GetGPUDeviceEdits(d)
+	e, err := l.GetGPUDeviceEdits(d)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get edits for device: %v", err)
 	}
@@ -41,10 +41,7 @@ func (l *nvmllib) GetGPUDeviceSpecs(i int, d device.Device) ([]specs.Device, err
 		return nil, fmt.Errorf("failed to get device name: %v", err)
 	}
 	for _, name := range names {
-		spec := specs.Device{
-			Name:           name,
-			ContainerEdits: *edits.ContainerEdits,
-		}
+		spec := edits.NewResource(name, e)
 		deviceSpecs = append(deviceSpecs, spec)
 	}
 

@@ -17,6 +17,9 @@
 package edits
 
 import (
+	"os"
+
+	"golang.org/x/sys/unix"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
@@ -32,9 +35,15 @@ func (d device) toEdits() (*cdi.ContainerEdits, error) {
 		return nil, err
 	}
 
+	var additionalGIDs []uint32
+	if requiredGID, _ := d.getRequiredGID(); requiredGID != 0 {
+		additionalGIDs = append(additionalGIDs, requiredGID)
+	}
+
 	e := cdi.ContainerEdits{
 		ContainerEdits: &specs.ContainerEdits{
-			DeviceNodes: []*specs.DeviceNode{deviceNode},
+			DeviceNodes:    []*specs.DeviceNode{deviceNode},
+			AdditionalGIDs: additionalGIDs,
 		},
 	}
 	return &e, nil
@@ -52,10 +61,37 @@ func (d device) toSpec() (*specs.DeviceNode, error) {
 	if hostPath == d.Path {
 		hostPath = ""
 	}
+
 	s := specs.DeviceNode{
 		HostPath: hostPath,
 		Path:     d.Path,
 	}
 
 	return &s, nil
+}
+
+// getRequiredGID returns the group id of the device if the device is not world read/writable
+func (d device) getRequiredGID() (uint32, error) {
+	path := d.HostPath
+	if path == "" {
+		path = d.Path
+	}
+	if path == "" {
+		return 0, nil
+	}
+
+	var stat unix.Stat_t
+	if err := unix.Lstat(path, &stat); err != nil {
+		return 0, err
+	}
+	// This is only supported for char devices
+	if stat.Mode&unix.S_IFMT != unix.S_IFCHR {
+		return 0, nil
+	}
+
+	permissions := os.FileMode(stat.Mode).Perm()
+	if permissions&06 == 0 {
+		return stat.Gid, nil
+	}
+	return 0, nil
 }
