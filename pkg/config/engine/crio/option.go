@@ -18,7 +18,7 @@ package crio
 
 import (
 	"fmt"
-	"os"
+	"os/exec"
 
 	"github.com/pelletier/go-toml"
 
@@ -26,8 +26,9 @@ import (
 )
 
 type builder struct {
-	logger logger.Interface
-	path   string
+	logger        logger.Interface
+	path          string
+	hostRootMount string
 }
 
 // Option defines a function that can be used to configure the config builder
@@ -47,6 +48,13 @@ func WithPath(path string) Option {
 	}
 }
 
+// WithHostRootMount sets the host root mount for the config builder
+func WithHostRootMount(hostRootMount string) Option {
+	return func(b *builder) {
+		b.hostRootMount = hostRootMount
+	}
+}
+
 func (b *builder) build() (*Config, error) {
 	if b.logger == nil {
 		b.logger = logger.New()
@@ -60,34 +68,35 @@ func (b *builder) build() (*Config, error) {
 		return &c, nil
 	}
 
-	return b.loadConfig(b.path)
+	return b.loadConfig()
 }
 
 // loadConfig loads the cri-o config from disk
-func (b *builder) loadConfig(config string) (*Config, error) {
-	b.logger.Infof("Loading config: %v", config)
+func (b *builder) loadConfig() (*Config, error) {
 
-	info, err := os.Stat(config)
-	if os.IsExist(err) && info.IsDir() {
-		return nil, fmt.Errorf("config file is a directory")
+	var args []string
+	if b.hostRootMount != "" {
+		args = append(args, "chroot", b.hostRootMount)
 	}
+	args = append(args, "crio", "status", "config")
 
-	if os.IsNotExist(err) {
-		b.logger.Infof("Config file does not exist; using empty config")
-		config = "/dev/null"
-	} else {
-		b.logger.Infof("Loading config from %v", config)
-	}
+	b.logger.Infof("Getting current crio config")
 
-	cfg, err := toml.LoadFile(config)
+	// TODO: Can we harden this so that there is less risk of command injection
+	cmd := exec.Command(args[0], args[1:]...)
+	output, err := cmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error executing crio status command: %w", err)
+	}
+	tomlConfig, err := toml.LoadBytes(output)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling crio config toml: %w", err)
 	}
 
-	b.logger.Infof("Successfully loaded config")
+	b.logger.Infof("Successfully loaded crio config")
 
 	c := Config{
-		Tree:   cfg,
+		Tree:   tomlConfig,
 		Logger: b.logger,
 	}
 	return &c, nil

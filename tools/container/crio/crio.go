@@ -222,6 +222,7 @@ func setupConfig(o *options) error {
 
 	cfg, err := crio.New(
 		crio.WithPath(o.Config),
+		crio.WithHostRootMount(o.HostRootMount),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
