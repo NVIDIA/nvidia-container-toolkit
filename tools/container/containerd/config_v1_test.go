@@ -24,6 +24,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
@@ -92,12 +93,12 @@ func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {
 				useLegacyConfig: tc.legacyConfig,
 			}
 
-			config, err := toml.TreeFromMap(map[string]interface{}{})
+			cfg, err := config.Empty.Load()
 			require.NoError(t, err, "%d: %v", i, tc)
 
 			v1 := &containerd.ConfigV1{
 				Logger:                logger,
-				Tree:                  config,
+				Toml:                  cfg,
 				UseDefaultRuntimeName: !tc.legacyConfig,
 				RuntimeType:           runtimeType,
 			}
@@ -240,12 +241,12 @@ func TestUpdateV1Config(t *testing.T) {
 				},
 			}
 
-			config, err := toml.TreeFromMap(map[string]interface{}{})
+			cfg, err := config.Empty.Load()
 			require.NoError(t, err)
 
 			v1 := &containerd.ConfigV1{
 				Logger:                logger,
-				Tree:                  config,
+				Toml:                  cfg,
 				UseDefaultRuntimeName: true,
 				RuntimeType:           runtimeType,
 				ContainerAnnotations:  []string{"cdi.k8s.io/*"},
@@ -257,7 +258,7 @@ func TestUpdateV1Config(t *testing.T) {
 			expected, err := toml.TreeFromMap(tc.expectedConfig)
 			require.NoError(t, err)
 
-			require.Equal(t, expected.String(), config.String())
+			require.Equal(t, expected.String(), cfg.String())
 		})
 	}
 }
@@ -401,12 +402,12 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 				},
 			}
 
-			config, err := toml.TreeFromMap(runcConfigMapV1("/runc-binary"))
+			cfg, err := config.LoadMap(runcConfigMapV1("/runc-binary"))
 			require.NoError(t, err)
 
 			v1 := &containerd.ConfigV1{
 				Logger:                logger,
-				Tree:                  config,
+				Toml:                  cfg,
 				UseDefaultRuntimeName: true,
 				RuntimeType:           runtimeType,
 				ContainerAnnotations:  []string{"cdi.k8s.io/*"},
@@ -418,7 +419,7 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 			expected, err := toml.TreeFromMap(tc.expectedConfig)
 			require.NoError(t, err)
 
-			require.Equal(t, expected.String(), config.String())
+			require.Equal(t, expected.String(), cfg.String())
 		})
 	}
 }
@@ -479,14 +480,14 @@ func TestRevertV1Config(t *testing.T) {
 				},
 			}
 
-			config, err := toml.TreeFromMap(tc.config)
+			cfg, err := config.LoadMap(tc.config)
 			require.NoError(t, err, "%d: %v", i, tc)
 
 			expected, err := toml.TreeFromMap(tc.expected)
 			require.NoError(t, err, "%d: %v", i, tc)
 
 			v1 := &containerd.ConfigV1{
-				Tree:                  config,
+				Toml:                  cfg,
 				UseDefaultRuntimeName: true,
 				RuntimeType:           runtimeType,
 			}
@@ -494,7 +495,7 @@ func TestRevertV1Config(t *testing.T) {
 			err = o.RevertConfig(v1)
 			require.NoError(t, err, "%d: %v", i, tc)
 
-			configContents, _ := toml.Marshal(config)
+			configContents, _ := toml.Marshal(cfg)
 			expectedContents, _ := toml.Marshal(expected)
 
 			require.Equal(t, string(expectedContents), string(configContents), "%d: %v", i, tc)
