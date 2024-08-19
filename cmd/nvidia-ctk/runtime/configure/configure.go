@@ -160,7 +160,7 @@ func (m command) build() *cli.Command {
 			Name:        "runtime-config-override",
 			Destination: &config.runtimeConfigOverrideJSON,
 			Usage:       "specify additional runtime options as a JSON string. The paths are relative to the runtime config.",
-			Value:       "{}",
+			Value:       "",
 			EnvVars:     []string{"RUNTIME_CONFIG_OVERRIDE"},
 		},
 	}
