@@ -100,7 +100,7 @@ func TestMounts(t *testing.T) {
 				lookup: &lookup.LocatorMock{
 					LocateFunc: func(s string) ([]string, error) {
 						if s == "error" {
-							return nil, fmt.Errorf(s)
+							return nil, fmt.Errorf("error")
 						}
 						return []string{s}, nil
 					},
