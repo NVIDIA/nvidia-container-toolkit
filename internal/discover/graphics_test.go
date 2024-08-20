@@ -62,11 +62,7 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 					return mounts, nil
 				},
 			},
-			expectedMounts: []Mount{
-				{
-					Path: "/usr/lib64/libnvidia-allocator.so.123.45.67",
-				},
-			},
+			expectedMounts: nil,
 			expectedHooks: []Hook{
 				{
 					Lifecycle: "createContainer",
@@ -121,9 +117,6 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 				},
 			},
 			expectedMounts: []Mount{
-				{
-					Path: "/usr/lib64/libnvidia-allocator.so.123.45.67",
-				},
 				{
 					Path: "/usr/lib64/libnvidia-vulkan-producer.so.123.45.67",
 				},
