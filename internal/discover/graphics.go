@@ -146,6 +146,27 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 	}
 }
 
+// Mounts discovers the required libraries and filters out libnvidia-allocator.so.
+// The library libnvidia-allocator.so is already handled by either the *.RM_VERSION
+// injection or by libnvidia-container. We therefore filter it out here as a
+// workaround for the case where libnvidia-container will re-mount this in the
+// container, which causes issues with shared mount propagation.
+func (d graphicsDriverLibraries) Mounts() ([]Mount, error) {
+	mounts, err := d.Discover.Mounts()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get library mounts: %v", err)
+	}
+
+	var filtered []Mount
+	for _, mount := range mounts {
+		if d.isDriverLibrary(filepath.Base(mount.Path), "libnvidia-allocator.so") {
+			continue
+		}
+		filtered = append(filtered, mount)
+	}
+	return filtered, nil
+}
+
 // Create necessary library symlinks for graphics drivers
 func (d graphicsDriverLibraries) Hooks() ([]Hook, error) {
 	mounts, err := d.Discover.Mounts()
