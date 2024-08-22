@@ -23,6 +23,8 @@ issues:
   exclude:
   # The legacy hook relies on spec.Hooks.Prestart, which is deprecated as of the v1.2.0 OCI runtime spec.
   - "SA1019:(.+).Prestart is deprecated(.+)"
+  # TODO: We should address each of the following integer overflows.
+  - "G115: integer overflow conversion(.+)"
   exclude-rules:
   # Exclude the gocritic dupSubExpr issue for cgo files.
   - path: internal/dxcore/dxcore.go
