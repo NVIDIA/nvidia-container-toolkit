@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
 
@@ -15,7 +16,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 		description    string
 		env            map[string]string
 		privileged     bool
-		hookConfig     *HookConfig
+		hookConfig     *hookConfig
 		expectedConfig *nvidiaConfig
 		expectedPanic  bool
 	}{
@@ -394,8 +395,10 @@ func TestGetNvidiaConfig(t *testing.T) {
 				envNVDriverCapabilities: "all",
 			},
 			privileged: true,
-			hookConfig: &HookConfig{
-				SupportedDriverCapabilities: "video,display",
+			hookConfig: &hookConfig{
+				Config: &config.Config{
+					SupportedDriverCapabilities: "video,display",
+				},
 			},
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
@@ -409,8 +412,10 @@ func TestGetNvidiaConfig(t *testing.T) {
 				envNVDriverCapabilities: "video,display",
 			},
 			privileged: true,
-			hookConfig: &HookConfig{
-				SupportedDriverCapabilities: "video,display,compute,utility",
+			hookConfig: &hookConfig{
+				Config: &config.Config{
+					SupportedDriverCapabilities: "video,display,compute,utility",
+				},
 			},
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
@@ -423,8 +428,10 @@ func TestGetNvidiaConfig(t *testing.T) {
 				envNVVisibleDevices: "all",
 			},
 			privileged: true,
-			hookConfig: &HookConfig{
-				SupportedDriverCapabilities: "video,display,utility,compute",
+			hookConfig: &hookConfig{
+				Config: &config.Config{
+					SupportedDriverCapabilities: "video,display,utility,compute",
+				},
 			},
 			expectedConfig: &nvidiaConfig{
 				Devices:            "all",
@@ -438,9 +445,11 @@ func TestGetNvidiaConfig(t *testing.T) {
 				"DOCKER_SWARM_RESOURCE": "GPU1,GPU2",
 			},
 			privileged: true,
-			hookConfig: &HookConfig{
-				SwarmResource:               "DOCKER_SWARM_RESOURCE",
-				SupportedDriverCapabilities: "video,display,utility,compute",
+			hookConfig: &hookConfig{
+				Config: &config.Config{
+					SwarmResource:               "DOCKER_SWARM_RESOURCE",
+					SupportedDriverCapabilities: "video,display,utility,compute",
+				},
 			},
 			expectedConfig: &nvidiaConfig{
 				Devices:            "GPU1,GPU2",
@@ -454,9 +463,11 @@ func TestGetNvidiaConfig(t *testing.T) {
 				"DOCKER_SWARM_RESOURCE": "GPU1,GPU2",
 			},
 			privileged: true,
-			hookConfig: &HookConfig{
-				SwarmResource:               "NOT_DOCKER_SWARM_RESOURCE,DOCKER_SWARM_RESOURCE",
-				SupportedDriverCapabilities: "video,display,utility,compute",
+			hookConfig: &hookConfig{
+				Config: &config.Config{
+					SwarmResource:               "NOT_DOCKER_SWARM_RESOURCE,DOCKER_SWARM_RESOURCE",
+					SupportedDriverCapabilities: "video,display,utility,compute",
+				},
 			},
 			expectedConfig: &nvidiaConfig{
 				Devices:            "GPU1,GPU2",
@@ -470,14 +481,14 @@ func TestGetNvidiaConfig(t *testing.T) {
 				image.WithEnvMap(tc.env),
 			)
 			// Wrap the call to getNvidiaConfig() in a closure.
-			var config *nvidiaConfig
+			var cfg *nvidiaConfig
 			getConfig := func() {
-				hookConfig := tc.hookConfig
-				if hookConfig == nil {
-					defaultConfig, _ := getDefaultHookConfig()
-					hookConfig = &defaultConfig
+				hookCfg := tc.hookConfig
+				if hookCfg == nil {
+					defaultConfig, _ := config.GetDefault()
+					hookCfg = &hookConfig{defaultConfig}
 				}
-				config = getNvidiaConfig(hookConfig, image, nil, tc.privileged)
+				cfg = hookCfg.getNvidiaConfig(image, nil, tc.privileged)
 			}
 
 			// For any tests that are expected to panic, make sure they do.
@@ -491,18 +502,18 @@ func TestGetNvidiaConfig(t *testing.T) {
 
 			// And start comparing the test results to the expected results.
 			if tc.expectedConfig == nil {
-				require.Nil(t, config, tc.description)
+				require.Nil(t, cfg, tc.description)
 				return
 			}
 
-			require.NotNil(t, config, tc.description)
+			require.NotNil(t, cfg, tc.description)
 
-			require.Equal(t, tc.expectedConfig.Devices, config.Devices)
-			require.Equal(t, tc.expectedConfig.MigConfigDevices, config.MigConfigDevices)
-			require.Equal(t, tc.expectedConfig.MigMonitorDevices, config.MigMonitorDevices)
-			require.Equal(t, tc.expectedConfig.DriverCapabilities, config.DriverCapabilities)
+			require.Equal(t, tc.expectedConfig.Devices, cfg.Devices)
+			require.Equal(t, tc.expectedConfig.MigConfigDevices, cfg.MigConfigDevices)
+			require.Equal(t, tc.expectedConfig.MigMonitorDevices, cfg.MigMonitorDevices)
+			require.Equal(t, tc.expectedConfig.DriverCapabilities, cfg.DriverCapabilities)
 
-			require.ElementsMatch(t, tc.expectedConfig.Requirements, config.Requirements)
+			require.ElementsMatch(t, tc.expectedConfig.Requirements, cfg.Requirements)
 		})
 	}
 }
@@ -689,10 +700,11 @@ func TestDeviceListSourcePriority(t *testing.T) {
 						},
 					),
 				)
-				hookConfig, _ := getDefaultHookConfig()
-				hookConfig.AcceptEnvvarUnprivileged = tc.acceptUnprivileged
-				hookConfig.AcceptDeviceListAsVolumeMounts = tc.acceptMounts
-				devices = getDevices(&hookConfig, image, tc.mountDevices, tc.privileged)
+				defaultConfig, _ := config.GetDefault()
+				cfg := &hookConfig{defaultConfig}
+				cfg.AcceptEnvvarUnprivileged = tc.acceptUnprivileged
+				cfg.AcceptDeviceListAsVolumeMounts = tc.acceptMounts
+				devices = cfg.getDevices(image, tc.mountDevices, tc.privileged)
 			}
 
 			// For all other tests, just grab the devices and check the results
@@ -1028,8 +1040,10 @@ func TestGetDriverCapabilities(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			var capabilities string
 
-			c := HookConfig{
-				SupportedDriverCapabilities: tc.supportedCapabilities,
+			c := hookConfig{
+				Config: &config.Config{
+					SupportedDriverCapabilities: tc.supportedCapabilities,
+				},
 			}
 
 			image, _ := image.New(

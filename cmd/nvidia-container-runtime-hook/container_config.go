@@ -236,7 +236,7 @@ func getDevicesFromMounts(mounts []Mount) *string {
 	return &ret
 }
 
-func getDevices(hookConfig *HookConfig, image image.CUDA, mounts []Mount, privileged bool) *string {
+func (hookConfig *hookConfig) getDevices(image image.CUDA, mounts []Mount, privileged bool) *string {
 	// If enabled, try and get the device list from volume mounts first
 	if hookConfig.AcceptDeviceListAsVolumeMounts {
 		devices := getDevicesFromMounts(mounts)
@@ -284,10 +284,10 @@ func getImexChannels(image image.CUDA) *string {
 	return &chans
 }
 
-func (c *HookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage bool) image.DriverCapabilities {
+func (hookConfig *hookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage bool) image.DriverCapabilities {
 	// We use the default driver capabilities by default. This is filtered to only include the
 	// supported capabilities
-	supportedDriverCapabilities := image.NewDriverCapabilities(c.SupportedDriverCapabilities)
+	supportedDriverCapabilities := image.NewDriverCapabilities(hookConfig.SupportedDriverCapabilities)
 
 	capabilities := supportedDriverCapabilities.Intersection(image.DefaultDriverCapabilities)
 
@@ -311,11 +311,11 @@ func (c *HookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage boo
 	return capabilities
 }
 
-func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, mounts []Mount, privileged bool) *nvidiaConfig {
+func (hookConfig *hookConfig) getNvidiaConfig(image image.CUDA, mounts []Mount, privileged bool) *nvidiaConfig {
 	legacyImage := image.IsLegacy()
 
 	var devices string
-	if d := getDevices(hookConfig, image, mounts, privileged); d != nil {
+	if d := hookConfig.getDevices(image, mounts, privileged); d != nil {
 		devices = *d
 	} else {
 		// 'nil' devices means this is not a GPU container.
@@ -360,7 +360,7 @@ func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, mounts []Mount, p
 	}
 }
 
-func getContainerConfig(hook HookConfig) (config containerConfig) {
+func (hookConfig *hookConfig) getContainerConfig() (config containerConfig) {
 	var h HookState
 	d := json.NewDecoder(os.Stdin)
 	if err := d.Decode(&h); err != nil {
@@ -376,7 +376,7 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 
 	image, err := image.New(
 		image.WithEnv(s.Process.Env),
-		image.WithDisableRequire(hook.DisableRequire),
+		image.WithDisableRequire(hookConfig.DisableRequire),
 	)
 	if err != nil {
 		log.Panicln(err)
@@ -387,6 +387,6 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,
 		Image:  image,
-		Nvidia: getNvidiaConfig(&hook, image, s.Mounts, privileged),
+		Nvidia: hookConfig.getNvidiaConfig(image, s.Mounts, privileged),
 	}
 }
