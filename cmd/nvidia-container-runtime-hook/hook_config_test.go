@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
 
@@ -89,10 +90,10 @@ func TestGetHookConfig(t *testing.T) {
 				}
 			}
 
-			var config HookConfig
+			var cfg hookConfig
 			getHookConfig := func() {
 				c, _ := getHookConfig()
-				config = *c
+				cfg = *c
 			}
 
 			if tc.expectedPanic {
@@ -102,7 +103,7 @@ func TestGetHookConfig(t *testing.T) {
 
 			getHookConfig()
 
-			require.EqualValues(t, tc.expectedDriverCapabilities, config.SupportedDriverCapabilities)
+			require.EqualValues(t, tc.expectedDriverCapabilities, cfg.SupportedDriverCapabilities)
 		})
 	}
 }
@@ -144,8 +145,10 @@ func TestGetSwarmResourceEnvvars(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			c := &HookConfig{
-				SwarmResource: tc.value,
+			c := &hookConfig{
+				Config: &config.Config{
+					SwarmResource: tc.value,
+				},
 			}
 
 			envvars := c.getSwarmResourceEnvvars()

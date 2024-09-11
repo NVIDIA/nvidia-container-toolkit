@@ -75,7 +75,7 @@ func doPrestart() {
 	}
 	cli := hook.NVIDIAContainerCLIConfig
 
-	container := getContainerConfig(*hook)
+	container := hook.getContainerConfig()
 	nvidia := container.Nvidia
 	if nvidia == nil {
 		// Not a GPU container, nothing to do.
