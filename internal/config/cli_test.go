@@ -33,7 +33,7 @@ func TestNormalizeLDConfigPath(t *testing.T) {
 
 	testCases := []struct {
 		description string
-		ldconfig    string
+		ldconfig    ldconfigPath
 		expected    string
 	}{
 		{
@@ -51,12 +51,12 @@ func TestNormalizeLDConfigPath(t *testing.T) {
 		},
 		{
 			description: "host .real file exists is returned",
-			ldconfig:    "@" + filepath.Join(testDir, "exists.real"),
+			ldconfig:    ldconfigPath("@" + filepath.Join(testDir, "exists.real")),
 			expected:    "@" + filepath.Join(testDir, "exists.real"),
 		},
 		{
 			description: "host resolves .real file",
-			ldconfig:    "@" + filepath.Join(testDir, "exists"),
+			ldconfig:    ldconfigPath("@" + filepath.Join(testDir, "exists")),
 			expected:    "@" + filepath.Join(testDir, "exists.real"),
 		},
 		{
