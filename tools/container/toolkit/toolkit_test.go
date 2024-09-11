@@ -161,7 +161,7 @@ kind: example.com/class
 			// Ensure that the config file has the required contents.
 			// TODO: Add checks for additional config options.
 			require.Equal(t, "/host/driver/root", cfg.NVIDIAContainerCLIConfig.Root)
-			require.Equal(t, "@/host/driver/root/sbin/ldconfig", cfg.NVIDIAContainerCLIConfig.Ldconfig)
+			require.Equal(t, "@/host/driver/root/sbin/ldconfig", string(cfg.NVIDIAContainerCLIConfig.Ldconfig))
 			require.EqualValues(t, filepath.Join(toolkitRoot, "nvidia-container-cli"), cfg.NVIDIAContainerCLIConfig.Path)
 			require.EqualValues(t, filepath.Join(toolkitRoot, "nvidia-ctk"), cfg.NVIDIACTKConfig.Path)
 
