@@ -20,15 +20,6 @@ const (
 // HookConfig : options for the nvidia-container-runtime-hook.
 type HookConfig config.Config
 
-func getDefaultHookConfig() (HookConfig, error) {
-	defaultCfg, err := config.GetDefault()
-	if err != nil {
-		return HookConfig{}, err
-	}
-
-	return *(*HookConfig)(defaultCfg), nil
-}
-
 // loadConfig loads the required paths for the hook config.
 func loadConfig() (*config.Config, error) {
 	var configPaths []string
