@@ -24,6 +24,7 @@ const (
 	FeatureNVSWITCH                   = featureName("nvswitch")
 	FeatureGDRCopy                    = featureName("gdrcopy")
 	FeatureAllowLDConfigFromContainer = featureName("allow-ldconfig-from-container")
+	FeatureIncludePersistencedSocket  = featureName("include-persistenced-socket")
 )
 
 // features specifies a set of named features.
@@ -36,6 +37,9 @@ type features struct {
 	// If this feature flag is not set to 'true' only host-rooted config paths
 	// (i.e. paths starting with an '@' are considered valid)
 	AllowLDConfigFromContainer *feature `toml:"allow-ldconfig-from-container,omitempty"`
+	// IncludePersistencedSocket enables the injection of the nvidia-persistenced
+	// socket into containers.
+	IncludePersistencedSocket *feature `toml:"include-persistenced-socket,omitempty"`
 }
 
 type feature bool
@@ -57,6 +61,8 @@ func (fs features) IsEnabledInEnvironment(n featureName, in ...getenver) bool {
 	// Features without envvar overrides
 	case FeatureAllowLDConfigFromContainer:
 		return fs.AllowLDConfigFromContainer.IsEnabled()
+	case FeatureIncludePersistencedSocket:
+		return fs.IncludePersistencedSocket.IsEnabled()
 	default:
 		return false
 	}
