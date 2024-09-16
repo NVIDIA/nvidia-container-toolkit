@@ -189,6 +189,7 @@ func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devic
 		nvcdi.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
 		nvcdi.WithVendor("runtime.nvidia.com"),
 		nvcdi.WithClass("gpu"),
+		nvcdi.WithOptInFeature("include-persistenced-socket", cfg.Features.IncludePersistencedSocket.IsEnabled()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct CDI library: %w", err)

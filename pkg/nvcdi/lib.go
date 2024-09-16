@@ -63,6 +63,8 @@ type nvcdilib struct {
 	infolib info.Interface
 
 	mergedDeviceOptions []transform.MergedDeviceOption
+
+	optInFeatures map[string]bool
 }
 
 // New creates a new nvcdi library
