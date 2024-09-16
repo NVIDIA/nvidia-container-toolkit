@@ -90,6 +90,10 @@ func doPrestart() {
 
 	args := []string{getCLIPath(cli)}
 
+	// Only include GSP firmware if explicitly renabled.
+	if !hook.Features.IncludeGSPFirmware.IsEnabled() {
+		args = append(args, "--no-gsp-firmware")
+	}
 	// Only include the nvidia-persistenced socket if it is explicitly enabled.
 	if !hook.Features.IncludePersistencedSocket.IsEnabled() {
 		args = append(args, "--no-persistenced")

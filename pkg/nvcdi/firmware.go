@@ -31,7 +31,7 @@ import (
 
 // newDriverFirmwareDiscoverer creates a discoverer for GSP firmware associated with the specified driver version.
 func (l *nvcdilib) newDriverFirmwareDiscoverer(logger logger.Interface, driverRoot string, version string) (discover.Discover, error) {
-	if !l.optInFeatures["allow-gsp-firmware"] {
+	if !l.optInFeatures["include-gsp-firmware"] {
 		return discover.None{}, nil
 	}
 

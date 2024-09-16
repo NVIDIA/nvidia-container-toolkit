@@ -69,7 +69,9 @@ type nvcdilib struct {
 
 // New creates a new nvcdi library
 func New(opts ...Option) (Interface, error) {
-	l := &nvcdilib{}
+	l := &nvcdilib{
+		optInFeatures: make(map[string]bool),
+	}
 	for _, opt := range opts {
 		opt(l)
 	}
