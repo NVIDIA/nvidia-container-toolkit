@@ -149,13 +149,12 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	for _, l := range links {
 		parts := strings.Split(l, "::")
 		if len(parts) != 2 {
-			m.logger.Warningf("Invalid link specification %v", l)
-			continue
+			return fmt.Errorf("invalid symlink specification %v", l)
 		}
 
 		err := m.createLink(created, cfg.hostRoot, containerRoot, parts[0], parts[1])
 		if err != nil {
-			m.logger.Warningf("Failed to create link %v: %v", parts, err)
+			return fmt.Errorf("failed to create link %v: %w", parts, err)
 		}
 	}
 
@@ -166,16 +165,27 @@ func (m command) run(c *cli.Context, cfg *config) error {
 func (m command) createLink(created map[string]bool, hostRoot string, containerRoot string, target string, link string) error {
 	linkPath, err := changeRoot(hostRoot, containerRoot, link)
 	if err != nil {
-		m.logger.Warningf("Failed to resolve path for link %v relative to %v: %v", link, containerRoot, err)
+		return fmt.Errorf("failed to resolve path for link %v relative to %v: %w", link, containerRoot, err)
 	}
 	if created[linkPath] {
 		m.logger.Debugf("Link %v already created", linkPath)
 		return nil
 	}
+	if err := assertPathInRoot(containerRoot, linkPath); err != nil {
+		return err
+	}
 
 	targetPath, err := changeRoot(hostRoot, "/", target)
 	if err != nil {
-		m.logger.Warningf("Failed to resolve path for target %v relative to %v: %v", target, "/", err)
+		return fmt.Errorf("failed to resolve path for target %v relative to %v: %w", target, "/", err)
+	}
+
+	parent := containerRoot
+	if !filepath.IsAbs(targetPath) {
+		parent = filepath.Dir(linkPath)
+	}
+	if err := assertPathInRoot(containerRoot, filepath.Join(parent, targetPath)); err != nil {
+		return err
 	}
 
 	m.logger.Infof("Symlinking %v to %v", linkPath, targetPath)
@@ -189,6 +199,59 @@ func (m command) createLink(created map[string]bool, hostRoot string, containerR
 	}
 
 	return nil
+}
+
+// assertPathInRoot ensures that the specified path is a subpath of root.
+// This includes the resolution of relative paths and symlinks.
+func assertPathInRoot(root string, path string) error {
+	resolved, err := tryResolveLink(filepath.Clean(path))
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(resolved, root) {
+		return fmt.Errorf("path %v resolves to %v which is outside the root %v", path, resolved, root)
+	}
+	return nil
+}
+
+// tryResolveLink resolves the specified path following symlinks.
+// If the path does not exist, recursively resolve the parent of the path until
+// one resolves successfully.
+//
+// For example, assuming that we call this with a path
+//
+//	/container-root/foo/bar/baz.so
+//
+// If this path exists, then the symlink evaluation will succeed and the target
+// will be returned.
+//
+// Assuming that /container-root/foo exists, but /container-root/foo/bar does
+// not, the first call to EvalSymlinks with argument
+// /container-root/foo/bar/baz.so will fail resulting in a recursive call to
+// this function with an argument /container-root/foo/bar. Since this path also
+// doesn't exist this will result in an additional recursive call with an
+// argument /container-root/foo. Here EvalSymlinks will succeed and the strings
+// /bar and /baz.so will be appended to the result as we return along the
+// recursive call stack.
+//
+// If none of the parents of the path (with the exception of /) exist the path
+// will be returned as is with no error.
+func tryResolveLink(path string) (string, error) {
+	if path == "" || path == "/" {
+		return path, nil
+	}
+
+	resolved, err := filepath.EvalSymlinks(path)
+	if os.IsNotExist(err) {
+		resolvedParent, err := tryResolveLink(filepath.Dir(path))
+		if err != nil {
+			return "", err
+		}
+		resolved := filepath.Join(resolvedParent, filepath.Base(path))
+		return resolved, nil
+	}
+
+	return resolved, err
 }
 
 func changeRoot(current string, new string, path string) (string, error) {
