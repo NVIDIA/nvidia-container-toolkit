@@ -79,6 +79,8 @@ type Options struct {
 	acceptNVIDIAVisibleDevicesAsVolumeMounts   bool
 
 	ignoreErrors bool
+
+	optInFeatures cli.StringSlice
 }
 
 func Flags(opts *Options) []cli.Flag {
@@ -201,6 +203,12 @@ func Flags(opts *Options) []cli.Flag {
 			Value:       cli.NewStringSlice("control"),
 			Destination: &opts.createDeviceNodes,
 			EnvVars:     []string{"CREATE_DEVICE_NODES"},
+		},
+		&cli.StringSliceFlag{
+			Name:        "opt-in-features",
+			Hidden:      true,
+			Destination: &opts.optInFeatures,
+			EnvVars:     []string{"NVIDIA_CONTAINER_TOOLKIT_OPT_IN_FEATURES"},
 		},
 	}
 
@@ -457,6 +465,10 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 		configValues["nvidia-container-runtime.runtimes"] = toolkitRuntimeList
 	}
 
+	for _, optInFeature := range opts.optInFeatures.Value() {
+		configValues["features."+optInFeature] = true
+	}
+
 	for key, value := range configValues {
 		cfg.Set(key, value)
 	}
@@ -471,6 +483,7 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 		"nvidia-container-runtime.runtimes":                      opts.ContainerRuntimeRuntimes,
 		"nvidia-container-cli.debug":                             opts.ContainerCLIDebug,
 	}
+
 	for key, value := range optionalConfigValues {
 		if !c.IsSet(key) {
 			log.Infof("Skipping unset option: %v", key)
