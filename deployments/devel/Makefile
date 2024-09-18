@@ -34,3 +34,10 @@ DOCKERFILE_CONTEXT = deployments/devel
 		--tag $(BUILDIMAGE) \
 		-f $(DOCKERFILE_DEVEL) \
 		$(DOCKERFILE_CONTEXT)
+
+modules:
+	go mod tidy
+	go mod verify
+
+check-modules: modules
+	git diff --quiet HEAD -- go.mod go.sum
