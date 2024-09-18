@@ -90,11 +90,6 @@ func doPrestart() {
 
 	args := []string{getCLIPath(cli)}
 
-	// Only include the nvidia-persistenced socket if it is explicitly enabled.
-	if !hook.Features.IncludePersistencedSocket.IsEnabled() {
-		args = append(args, "--no-persistenced")
-	}
-
 	if cli.Root != "" {
 		args = append(args, fmt.Sprintf("--root=%s", cli.Root))
 	}
@@ -116,6 +111,11 @@ func doPrestart() {
 		args = append(args, fmt.Sprintf("--user=%s", cli.User))
 	}
 	args = append(args, "configure")
+
+	// Only include the nvidia-persistenced socket if it is explicitly enabled.
+	if !hook.Features.IncludePersistencedSocket.IsEnabled() {
+		args = append(args, "--no-persistenced")
+	}
 
 	if ldconfigPath := cli.NormalizeLDConfigPath(); ldconfigPath != "" {
 		args = append(args, fmt.Sprintf("--ldconfig=%s", ldconfigPath))
