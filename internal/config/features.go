@@ -19,10 +19,11 @@ package config
 type featureName string
 
 const (
-	FeatureGDS      = featureName("gds")
-	FeatureMOFED    = featureName("mofed")
-	FeatureNVSWITCH = featureName("nvswitch")
-	FeatureGDRCopy  = featureName("gdrcopy")
+	FeatureGDS                       = featureName("gds")
+	FeatureMOFED                     = featureName("mofed")
+	FeatureNVSWITCH                  = featureName("nvswitch")
+	FeatureGDRCopy                   = featureName("gdrcopy")
+	FeatureIncludePersistencedSocket = featureName("include-persistenced-socket")
 )
 
 // features specifies a set of named features.
@@ -31,53 +32,57 @@ type features struct {
 	MOFED    *feature `toml:"mofed,omitempty"`
 	NVSWITCH *feature `toml:"nvswitch,omitempty"`
 	GDRCopy  *feature `toml:"gdrcopy,omitempty"`
+	// IncludePersistencedSocket enables the injection of the nvidia-persistenced
+	// socket into containers.
+	IncludePersistencedSocket *feature `toml:"include-persistenced-socket,omitempty"`
 }
 
 type feature bool
 
-// IsEnabled checks whether a specified named feature is enabled.
+// IsEnabledInEnvironment checks whether a specified named feature is enabled.
 // An optional list of environments to check for feature-specific environment
 // variables can also be supplied.
-func (fs features) IsEnabled(n featureName, in ...getenver) bool {
-	featureEnvvars := map[featureName]string{
-		FeatureGDS:      "NVIDIA_GDS",
-		FeatureMOFED:    "NVIDIA_MOFED",
-		FeatureNVSWITCH: "NVIDIA_NVSWITCH",
-		FeatureGDRCopy:  "NVIDIA_GDRCOPY",
-	}
-
-	envvar := featureEnvvars[n]
+func (fs features) IsEnabledInEnvironment(n featureName, in ...getenver) bool {
 	switch n {
+	// Features with envvar overrides
 	case FeatureGDS:
-		return fs.GDS.isEnabled(envvar, in...)
+		return fs.GDS.isEnabledWithEnvvarOverride("NVIDIA_GDS", in...)
 	case FeatureMOFED:
-		return fs.MOFED.isEnabled(envvar, in...)
+		return fs.MOFED.isEnabledWithEnvvarOverride("NVIDIA_MOFED", in...)
 	case FeatureNVSWITCH:
-		return fs.NVSWITCH.isEnabled(envvar, in...)
+		return fs.NVSWITCH.isEnabledWithEnvvarOverride("NVIDIA_NVSWITCH", in...)
 	case FeatureGDRCopy:
-		return fs.GDRCopy.isEnabled(envvar, in...)
+		return fs.GDRCopy.isEnabledWithEnvvarOverride("NVIDIA_GDRCOPY", in...)
+	// Features without envvar overrides
+	case FeatureIncludePersistencedSocket:
+		return fs.IncludePersistencedSocket.IsEnabled()
 	default:
 		return false
 	}
 }
 
-// isEnabled checks whether a feature is enabled.
-// If the enabled value is explicitly set, this is returned, otherwise the
-// associated envvar is checked in the specified getenver for the string "enabled"
-// A CUDA container / image can be passed here.
-func (f *feature) isEnabled(envvar string, ins ...getenver) bool {
+// IsEnabled checks whether a feature is enabled.
+func (f *feature) IsEnabled() bool {
 	if f != nil {
 		return bool(*f)
 	}
-	if envvar == "" {
-		return false
-	}
-	for _, in := range ins {
-		if in.Getenv(envvar) == "enabled" {
-			return true
+	return false
+}
+
+// isEnabledWithEnvvarOverride checks whether a feature is enabled and allows an envvar to overide the feature.
+// If the enabled value is explicitly set, this is returned, otherwise the
+// associated envvar is checked in the specified getenver for the string "enabled"
+// A CUDA container / image can be passed here.
+func (f *feature) isEnabledWithEnvvarOverride(envvar string, ins ...getenver) bool {
+	if envvar != "" {
+		for _, in := range ins {
+			if in.Getenv(envvar) == "enabled" {
+				return true
+			}
 		}
 	}
-	return false
+
+	return f.IsEnabled()
 }
 
 type getenver interface {
