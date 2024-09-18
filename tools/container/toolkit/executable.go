@@ -18,71 +18,78 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
 
 type executableTarget struct {
-	dotfileName string
 	wrapperName string
 }
 
 type executable struct {
-	source   string
-	target   executableTarget
-	env      map[string]string
-	preLines []string
-	argLines []string
+	source string
+	target executableTarget
+	argv   []string
+	envm   map[string]string
 }
 
 // install installs an executable component of the NVIDIA container toolkit. The source executable
 // is copied to a `.real` file and a wapper is created to set up the environment as required.
 func (e executable) install(destFolder string) (string, error) {
+	if destFolder == "" {
+		return "", fmt.Errorf("destination folder must be specified")
+	}
+	if e.source == "" {
+		return "", fmt.Errorf("source executable must be specified")
+	}
 	log.Infof("Installing executable '%v' to %v", e.source, destFolder)
-
-	dotfileName := e.dotfileName()
-
-	installedDotfileName, err := installFileToFolderWithName(destFolder, dotfileName, e.source)
+	dotRealFilename := e.dotRealFilename()
+	dotRealPath, err := installFileToFolderWithName(destFolder, dotRealFilename, e.source)
 	if err != nil {
-		return "", fmt.Errorf("error installing file '%v' as '%v': %v", e.source, dotfileName, err)
+		return "", fmt.Errorf("error installing file '%v' as '%v': %v", e.source, dotRealFilename, err)
 	}
-	log.Infof("Installed '%v'", installedDotfileName)
+	log.Infof("Installed '%v'", dotRealPath)
 
-	wrapperFilename, err := e.installWrapper(destFolder, installedDotfileName)
+	wrapperPath, err := e.installWrapper(destFolder)
 	if err != nil {
-		return "", fmt.Errorf("error wrapping '%v': %v", installedDotfileName, err)
+		return "", fmt.Errorf("error installing wrapper: %v", err)
 	}
-	log.Infof("Installed wrapper '%v'", wrapperFilename)
-
-	return wrapperFilename, nil
+	log.Infof("Installed wrapper '%v'", wrapperPath)
+	return wrapperPath, nil
 }
 
-func (e executable) dotfileName() string {
-	return e.target.dotfileName
+func (e executable) dotRealFilename() string {
+	return e.wrapperName() + ".real"
 }
 
 func (e executable) wrapperName() string {
+	if e.target.wrapperName == "" {
+		return filepath.Base(e.source)
+	}
 	return e.target.wrapperName
 }
 
-func (e executable) installWrapper(destFolder string, dotfileName string) (string, error) {
-	wrapperPath := filepath.Join(destFolder, e.wrapperName())
-	wrapper, err := os.Create(wrapperPath)
+func (e executable) installWrapper(destFolder string) (string, error) {
+	currentExe, err := os.Executable()
 	if err != nil {
-		return "", fmt.Errorf("error creating executable wrapper: %v", err)
+		return "", fmt.Errorf("error getting current executable: %v", err)
 	}
-	defer wrapper.Close()
-
-	err = e.writeWrapperTo(wrapper, destFolder, dotfileName)
+	src := filepath.Join(filepath.Dir(currentExe), "wrapper")
+	wrapperPath, err := installFileToFolderWithName(destFolder, e.wrapperName(), src)
 	if err != nil {
-		return "", fmt.Errorf("error writing wrapper contents: %v", err)
+		return "", fmt.Errorf("error installing wrapper program: %v", err)
 	}
-
+	err = e.writeWrapperArgv(wrapperPath, destFolder)
+	if err != nil {
+		return "", fmt.Errorf("error writing wrapper argv: %v", err)
+	}
+	err = e.writeWrapperEnvv(wrapperPath, destFolder)
+	if err != nil {
+		return "", fmt.Errorf("error writing wrapper envv: %v", err)
+	}
 	err = ensureExecutable(wrapperPath)
 	if err != nil {
 		return "", fmt.Errorf("error making wrapper executable: %v", err)
@@ -90,51 +97,54 @@ func (e executable) installWrapper(destFolder string, dotfileName string) (strin
 	return wrapperPath, nil
 }
 
-func (e executable) writeWrapperTo(wrapper io.Writer, destFolder string, dotfileName string) error {
+func (e executable) writeWrapperArgv(wrapperPath string, destFolder string) error {
+	if e.argv == nil {
+		return nil
+	}
 	r := newReplacements(destDirPattern, destFolder)
-
-	// Add the shebang
-	fmt.Fprintln(wrapper, "#! /bin/sh")
-
-	// Add the preceding lines if any
-	for _, line := range e.preLines {
-		fmt.Fprintf(wrapper, "%s\n", r.apply(line))
+	f, err := os.OpenFile(wrapperPath+".argv", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0440)
+	if err != nil {
+		return err
 	}
+	defer f.Close()
+	for _, arg := range e.argv {
+		fmt.Fprintf(f, "%s\n", r.apply(arg))
+	}
+	return nil
+}
 
-	// Update the path to include the destination folder
-	var env map[string]string
-	if e.env == nil {
-		env = make(map[string]string)
+func (e executable) writeWrapperEnvv(wrapperPath string, destFolder string) error {
+	r := newReplacements(destDirPattern, destFolder)
+	f, err := os.OpenFile(wrapperPath+".envv", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0440)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// Update PATH to insert the destination folder at the head.
+	var envm map[string]string
+	if e.envm == nil {
+		envm = make(map[string]string)
 	} else {
-		env = e.env
+		envm = e.envm
+	}
+	if path, ok := envm["PATH"]; ok {
+		envm["PATH"] = destFolder + ":" + path
+	} else {
+		// Replace PATH with <PATH, which instructs wrapper to insert the value at the head of a
+		// colon-separated environment variable list.
+		delete(envm, "PATH")
+		envm["<PATH"] = destFolder
 	}
 
-	path, specified := env["PATH"]
-	if !specified {
-		path = "$PATH"
+	var envv []string
+	for k, v := range envm {
+		envv = append(envv, k+"="+r.apply(v))
 	}
-	env["PATH"] = strings.Join([]string{destFolder, path}, ":")
-
-	var sortedEnvvars []string
-	for e := range env {
-		sortedEnvvars = append(sortedEnvvars, e)
+	sort.Strings(envv)
+	for _, e := range envv {
+		fmt.Fprintf(f, "%s\n", e)
 	}
-	sort.Strings(sortedEnvvars)
-
-	for _, e := range sortedEnvvars {
-		v := env[e]
-		fmt.Fprintf(wrapper, "%s=%s \\\n", e, r.apply(v))
-	}
-	// Add the call to the target executable
-	fmt.Fprintf(wrapper, "%s \\\n", dotfileName)
-
-	// Insert additional lines in the `arg` list
-	for _, line := range e.argLines {
-		fmt.Fprintf(wrapper, "\t%s \\\n", r.apply(line))
-	}
-	// Add the script arguments "$@"
-	fmt.Fprintln(wrapper, "\t\"$@\"")
-
 	return nil
 }
 
