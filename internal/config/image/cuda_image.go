@@ -274,3 +274,7 @@ func (i CUDA) CDIDevicesFromMounts() []string {
 	}
 	return devices
 }
+
+func (i CUDA) IsEnabled(envvar string) bool {
+	return i.Getenv(envvar) == "enabled"
+}
