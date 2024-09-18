@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit/installer/wrappercore"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
@@ -40,6 +41,7 @@ func TestInstall(t *testing.T) {
 	require.NoError(t, err)
 
 	artifactRoot := filepath.Join(moduleRoot, "testdata", "installer", "artifacts")
+	wrapperProgramPath := filepath.Join(artifactRoot, "deb", wrappercore.InstallerWrapperFilename)
 
 	testCases := []struct {
 		description     string
@@ -153,6 +155,7 @@ containerEdits:
 				WithLogger(logger),
 				WithToolkitRoot(toolkitRoot),
 				WithSourceRoot(sourceRoot),
+				WithWrapperProgramPath(wrapperProgramPath),
 			)
 			require.NoError(t, ti.ValidateOptions(&options))
 
