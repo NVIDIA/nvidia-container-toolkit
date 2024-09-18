@@ -24,7 +24,13 @@ import (
 type ipcMounts mounts
 
 // NewIPCDiscoverer creats a discoverer for NVIDIA IPC sockets.
-func NewIPCDiscoverer(logger logger.Interface, driverRoot string) (Discover, error) {
+func NewIPCDiscoverer(logger logger.Interface, driverRoot string, includePersistencedSocket bool) (Discover, error) {
+	var requiredSockets []string
+	if includePersistencedSocket {
+		requiredSockets = append(requiredSockets, "/nvidia-persistenced/socket")
+	}
+	requiredSockets = append(requiredSockets, "/nvidia-fabricmanager/socket")
+
 	sockets := newMounts(
 		logger,
 		lookup.NewFileLocator(
@@ -34,10 +40,7 @@ func NewIPCDiscoverer(logger logger.Interface, driverRoot string) (Discover, err
 			lookup.WithCount(1),
 		),
 		driverRoot,
-		[]string{
-			"/nvidia-persistenced/socket",
-			"/nvidia-fabricmanager/socket",
-		},
+		requiredSockets,
 	)
 
 	mps := newMounts(
