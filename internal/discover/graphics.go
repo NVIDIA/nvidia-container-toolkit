@@ -180,10 +180,10 @@ func (d graphicsDriverLibraries) Hooks() ([]Hook, error) {
 		switch {
 		case d.isDriverLibrary(filename, "libnvidia-allocator.so"):
 			// gbm/nvidia-drm_gbm.so is a symlink to ../libnvidia-allocator.so.1 which
-			// in turn symlinks to libnvidia-allocator.so.RM_VERSION and is created
-			// when ldconfig is run in the container.
-			// create libnvidia-allocate.so.1 -> libnvidia-allocate.so.RM_VERSION symlink
-			links = append(links, fmt.Sprintf("%s::%s", filename, filepath.Join(dir, "libnvidia-allocator.so.1")))
+			// in turn symlinks to libnvidia-allocator.so.RM_VERSION.
+			// The libnvidia-allocator.so.1 -> libnvidia-allocator.so.RM_VERSION symlink
+			// is created when ldconfig is run against the container and there
+			// is no explicit need to create it.
 			// create gbm/nvidia-drm_gbm.so -> ../libnvidia-allocate.so.1 symlink
 			linkPath := filepath.Join(dir, "gbm", "nvidia-drm_gbm.so")
 			links = append(links, fmt.Sprintf("%s::%s", "../libnvidia-allocator.so.1", linkPath))
