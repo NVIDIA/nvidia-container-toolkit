@@ -60,8 +60,6 @@ type options struct {
 		files          cli.StringSlice
 		ignorePatterns cli.StringSlice
 	}
-
-	includePersistencedSocket bool
 }
 
 // NewCommand constructs a generate-cdi command with the specified logger
@@ -171,11 +169,6 @@ func (m command) build() *cli.Command {
 			Usage:       "Specify a pattern the CSV mount specifications.",
 			Destination: &opts.csv.ignorePatterns,
 		},
-		&cli.BoolFlag{
-			Name:        "include-persistenced-socket",
-			Usage:       "Include the nvidia-persistenced socket in the generated CDI specification.",
-			Destination: &opts.includePersistencedSocket,
-		},
 	}
 
 	return &c
@@ -280,7 +273,6 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths.Value()),
 		nvcdi.WithCSVFiles(opts.csv.files.Value()),
 		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns.Value()),
-		nvcdi.WithOptInFeature("include-persistenced-socket", opts.includePersistencedSocket),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)

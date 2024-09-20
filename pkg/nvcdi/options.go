@@ -155,14 +155,3 @@ func WithLibrarySearchPaths(paths []string) Option {
 		o.librarySearchPaths = paths
 	}
 }
-
-// WithOptInFeature sets a specific opt-in feature.
-// Note that previous opt-in-features are not removed.
-func WithOptInFeature(feature string, enabled bool) Option {
-	return func(n *nvcdilib) {
-		if n.optInFeatures == nil {
-			n.optInFeatures = make(map[string]bool)
-		}
-		n.optInFeatures[feature] = enabled
-	}
-}
