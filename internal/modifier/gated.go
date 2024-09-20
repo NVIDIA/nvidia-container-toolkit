@@ -46,7 +46,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 	driverRoot := cfg.NVIDIAContainerCLIConfig.Root
 	devRoot := cfg.NVIDIAContainerCLIConfig.Root
 
-	if cfg.Features.IsEnabledInEnvironment(config.FeatureGDS, image) {
+	if cfg.Features.IsEnabled(config.FeatureGDS, image) {
 		d, err := discover.NewGDSDiscoverer(logger, driverRoot, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDS devices: %w", err)
@@ -54,7 +54,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 		discoverers = append(discoverers, d)
 	}
 
-	if cfg.Features.IsEnabledInEnvironment(config.FeatureMOFED, image) {
+	if cfg.Features.IsEnabled(config.FeatureMOFED, image) {
 		d, err := discover.NewMOFEDDiscoverer(logger, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for MOFED devices: %w", err)
@@ -62,7 +62,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 		discoverers = append(discoverers, d)
 	}
 
-	if cfg.Features.IsEnabledInEnvironment(config.FeatureNVSWITCH, image) {
+	if cfg.Features.IsEnabled(config.FeatureNVSWITCH, image) {
 		d, err := discover.NewNvSwitchDiscoverer(logger, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for NVSWITCH devices: %w", err)
@@ -70,7 +70,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 		discoverers = append(discoverers, d)
 	}
 
-	if cfg.Features.IsEnabledInEnvironment(config.FeatureGDRCopy, image) {
+	if cfg.Features.IsEnabled(config.FeatureGDRCopy, image) {
 		d, err := discover.NewGDRCopyDiscoverer(logger, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDRCopy devices: %w", err)

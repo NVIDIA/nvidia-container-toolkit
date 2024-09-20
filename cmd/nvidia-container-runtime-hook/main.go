@@ -89,12 +89,6 @@ func doPrestart() {
 	rootfs := getRootfsPath(container)
 
 	args := []string{getCLIPath(cli)}
-
-	// Only include the nvidia-persistenced socket if it is explicitly enabled.
-	if !hook.Features.IncludePersistencedSocket.IsEnabled() {
-		args = append(args, "--no-persistenced")
-	}
-
 	if cli.Root != "" {
 		args = append(args, fmt.Sprintf("--root=%s", cli.Root))
 	}
