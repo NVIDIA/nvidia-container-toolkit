@@ -63,8 +63,6 @@ type nvcdilib struct {
 	infolib info.Interface
 
 	mergedDeviceOptions []transform.MergedDeviceOption
-
-	optInFeatures map[string]bool
 }
 
 // New creates a new nvcdi library
@@ -132,9 +130,6 @@ func New(opts ...Option) (Interface, error) {
 		if l.vendor == "" {
 			l.vendor = "management.nvidia.com"
 		}
-		// For management specifications we always allow the fabricmanager and
-		// persistenced sockets.
-		WithOptInFeature("include-persistenced-socket", true)(l)
 		lib = (*managementlib)(l)
 	case ModeNvml:
 		lib = (*nvmllib)(l)
