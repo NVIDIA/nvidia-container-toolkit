@@ -1,5 +1,5 @@
 /**
-# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2024 NVIDIA CORPORATION
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,16 +17,13 @@
 package edits
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
+	"tags.cncf.io/container-device-interface/pkg/cdi"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
-func TestFromDiscovererAllowsMountsToIterate(t *testing.T) {
-	edits, err := New().EditsFromDiscoverer(discover.None{})
-	require.NoError(t, err)
-
-	require.Empty(t, edits.Mounts)
+type Interface interface {
+	EditsFromDiscoverer(discover.Discover) (*cdi.ContainerEdits, error)
+	SpecModifierFromDiscoverer(discover.Discover) (oci.SpecModifier, error)
 }

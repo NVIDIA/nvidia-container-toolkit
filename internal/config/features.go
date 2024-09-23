@@ -17,12 +17,17 @@
 package config
 
 type featureName string
+type feature bool
 
 const (
-	FeatureGDS      = featureName("gds")
-	FeatureMOFED    = featureName("mofed")
-	FeatureNVSWITCH = featureName("nvswitch")
-	FeatureGDRCopy  = featureName("gdrcopy")
+	FeatureAllowAdditionalGIDs = featureName("allow-additional-gids")
+	FeatureGDRCopy             = featureName("gdrcopy")
+	FeatureGDS                 = featureName("gds")
+	FeatureMOFED               = featureName("mofed")
+	FeatureNVSWITCH            = featureName("nvswitch")
+
+	featureEnabled  feature = true
+	featureDisabled feature = false
 )
 
 // features specifies a set of named features.
@@ -31,19 +36,23 @@ type features struct {
 	MOFED    *feature `toml:"mofed,omitempty"`
 	NVSWITCH *feature `toml:"nvswitch,omitempty"`
 	GDRCopy  *feature `toml:"gdrcopy,omitempty"`
+	// AllowAdditionalGIDs triggers the additionalGIDs field in internal CDI
+	// specifications to be populated if required. This can be useful when
+	// running the container as a user id that may not have access to device
+	// nodes.
+	AllowAdditionalGIDs *feature `toml:"allow-additional-gids,omitempty"`
 }
-
-type feature bool
 
 // IsEnabled checks whether a specified named feature is enabled.
 // An optional list of environments to check for feature-specific environment
 // variables can also be supplied.
 func (fs features) IsEnabled(n featureName, in ...getenver) bool {
 	featureEnvvars := map[featureName]string{
-		FeatureGDS:      "NVIDIA_GDS",
-		FeatureMOFED:    "NVIDIA_MOFED",
-		FeatureNVSWITCH: "NVIDIA_NVSWITCH",
-		FeatureGDRCopy:  "NVIDIA_GDRCOPY",
+		FeatureGDS:                 "NVIDIA_GDS",
+		FeatureMOFED:               "NVIDIA_MOFED",
+		FeatureNVSWITCH:            "NVIDIA_NVSWITCH",
+		FeatureGDRCopy:             "NVIDIA_GDRCOPY",
+		FeatureAllowAdditionalGIDs: "NVIDIA_ALLOW_ADDITIONAL_GIDS",
 	}
 
 	envvar := featureEnvvars[n]
@@ -56,6 +65,8 @@ func (fs features) IsEnabled(n featureName, in ...getenver) bool {
 		return fs.NVSWITCH.isEnabled(envvar, in...)
 	case FeatureGDRCopy:
 		return fs.GDRCopy.isEnabled(envvar, in...)
+	case FeatureAllowAdditionalGIDs:
+		return fs.AllowAdditionalGIDs.isEnabled(envvar, in...)
 	default:
 		return false
 	}
@@ -66,16 +77,18 @@ func (fs features) IsEnabled(n featureName, in ...getenver) bool {
 // associated envvar is checked in the specified getenver for the string "enabled"
 // A CUDA container / image can be passed here.
 func (f *feature) isEnabled(envvar string, ins ...getenver) bool {
+	if envvar != "" {
+		for _, in := range ins {
+			switch in.Getenv(envvar) {
+			case "enabled", "true":
+				return true
+			case "disabled", "false":
+				return false
+			}
+		}
+	}
 	if f != nil {
 		return bool(*f)
-	}
-	if envvar == "" {
-		return false
-	}
-	for _, in := range ins {
-		if in.Getenv(envvar) == "enabled" {
-			return true
-		}
 	}
 	return false
 }

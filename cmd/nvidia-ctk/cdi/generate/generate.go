@@ -60,6 +60,11 @@ type options struct {
 		files          cli.StringSlice
 		ignorePatterns cli.StringSlice
 	}
+
+	// spec represents the CDI spec options.
+	spec struct {
+		allowAdditionalGIDs bool
+	}
 }
 
 // NewCommand constructs a generate-cdi command with the specified logger
@@ -169,6 +174,11 @@ func (m command) build() *cli.Command {
 			Usage:       "Specify a pattern the CSV mount specifications.",
 			Destination: &opts.csv.ignorePatterns,
 		},
+		&cli.BoolFlag{
+			Name:        "--allow-additional-gids",
+			Usage:       "Allow the use of the additionalGIDs field for generated CDI specifications. Note this will generate a v0.7.0 CDI specification.",
+			Destination: &opts.spec.allowAdditionalGIDs,
+		},
 	}
 
 	return &c
@@ -273,6 +283,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths.Value()),
 		nvcdi.WithCSVFiles(opts.csv.files.Value()),
 		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns.Value()),
+		nvcdi.WithAllowAdditionalGIDs(opts.spec.allowAdditionalGIDs),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)

@@ -1,5 +1,5 @@
 /**
-# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2024 NVIDIA CORPORATION
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,17 +16,23 @@
 
 package edits
 
-import (
-	"testing"
+import "github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
-	"github.com/stretchr/testify/require"
+type options struct {
+	logger              logger.Interface
+	allowAdditionalGIDs bool
+}
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-)
+type Option func(*options)
 
-func TestFromDiscovererAllowsMountsToIterate(t *testing.T) {
-	edits, err := New().EditsFromDiscoverer(discover.None{})
-	require.NoError(t, err)
+func WithLogger(logger logger.Interface) Option {
+	return func(o *options) {
+		o.logger = logger
+	}
+}
 
-	require.Empty(t, edits.Mounts)
+func WithAllowAdditionalGIDs(allowAdditionalGIDs bool) Option {
+	return func(o *options) {
+		o.allowAdditionalGIDs = allowAdditionalGIDs
+	}
 }

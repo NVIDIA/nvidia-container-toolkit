@@ -24,6 +24,8 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
@@ -63,6 +65,8 @@ type nvcdilib struct {
 	infolib info.Interface
 
 	mergedDeviceOptions []transform.MergedDeviceOption
+
+	allowAdditionalGIDs bool
 }
 
 // New creates a new nvcdi library
@@ -188,6 +192,15 @@ func (m *wrapper) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	edits.Env = append(edits.Env, "NVIDIA_VISIBLE_DEVICES=void")
 
 	return edits, nil
+}
+
+// editsFromDiscoverer
+func (l *nvcdilib) editsFromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
+	e := edits.New(
+		edits.WithLogger(l.logger),
+		edits.WithAllowAdditionalGIDs(l.allowAdditionalGIDs),
+	)
+	return e.EditsFromDiscoverer(d)
 }
 
 // resolveMode resolves the mode for CDI spec generation based on the current system.

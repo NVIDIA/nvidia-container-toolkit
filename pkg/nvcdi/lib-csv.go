@@ -23,7 +23,6 @@ import (
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
@@ -53,7 +52,7 @@ func (l *csvlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for CSV files: %v", err)
 	}
-	e, err := edits.FromDiscoverer(d)
+	e, err := (*nvcdilib)(l).editsFromDiscoverer(d)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for CSV files: %v", err)
 	}
@@ -64,10 +63,7 @@ func (l *csvlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 	}
 	var deviceSpecs []specs.Device
 	for _, name := range names {
-		deviceSpec := specs.Device{
-			Name:           name,
-			ContainerEdits: *e.ContainerEdits,
-		}
+		deviceSpec := edits.NewResource(name, e)
 		deviceSpecs = append(deviceSpecs, deviceSpec)
 	}
 
@@ -76,8 +72,7 @@ func (l *csvlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
 func (l *csvlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	d := discover.None{}
-	return edits.FromDiscoverer(d)
+	return edits.NewContainerEdits(), nil
 }
 
 // GetGPUDeviceEdits generates a CDI specification that can be used for GPU devices

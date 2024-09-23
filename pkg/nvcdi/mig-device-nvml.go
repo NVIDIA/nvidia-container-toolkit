@@ -29,7 +29,7 @@ import (
 
 // GetMIGDeviceSpecs returns the CDI device specs for the full GPU represented by 'device'.
 func (l *nvmllib) GetMIGDeviceSpecs(i int, d device.Device, j int, mig device.MigDevice) ([]specs.Device, error) {
-	edits, err := l.GetMIGDeviceEdits(d, mig)
+	e, err := l.GetMIGDeviceEdits(d, mig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get edits for device: %v", err)
 	}
@@ -40,10 +40,7 @@ func (l *nvmllib) GetMIGDeviceSpecs(i int, d device.Device, j int, mig device.Mi
 	}
 	var deviceSpecs []specs.Device
 	for _, name := range names {
-		spec := specs.Device{
-			Name:           name,
-			ContainerEdits: *edits.ContainerEdits,
-		}
+		spec := edits.NewResource(name, e)
 		deviceSpecs = append(deviceSpecs, spec)
 	}
 	return deviceSpecs, nil
@@ -60,7 +57,7 @@ func (l *nvmllib) GetMIGDeviceEdits(parent device.Device, mig device.MigDevice) 
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
 	}
 
-	editsForDevice, err := edits.FromDiscoverer(deviceNodes)
+	editsForDevice, err := (*nvcdilib)(l).editsFromDiscoverer(deviceNodes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for Compute Instance: %v", err)
 	}

@@ -38,22 +38,19 @@ func (l *mofedlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MOFED discoverer: %v", err)
 	}
-	edits, err := edits.FromDiscoverer(discoverer)
+	e, err := (*nvcdilib)(l).editsFromDiscoverer(discoverer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for MOFED devices: %v", err)
 	}
 
-	deviceSpec := specs.Device{
-		Name:           "all",
-		ContainerEdits: *edits.ContainerEdits,
-	}
+	deviceSpec := edits.NewResource("all", e)
 
 	return []specs.Device{deviceSpec}, nil
 }
 
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
 func (l *mofedlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	return edits.FromDiscoverer(discover.None{})
+	return edits.NewContainerEdits(), nil
 }
 
 // GetSpec is unsppported for the mofedlib specs.

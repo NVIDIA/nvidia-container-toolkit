@@ -17,72 +17,16 @@
 package edits
 
 import (
-	"fmt"
-
 	ociSpecs "github.com/opencontainers/runtime-spec/specs-go"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
 type edits struct {
 	cdi.ContainerEdits
 	logger logger.Interface
-}
-
-// NewSpecEdits creates a SpecModifier that defines the required OCI spec edits (as CDI ContainerEdits) from the specified
-// discoverer.
-func NewSpecEdits(logger logger.Interface, d discover.Discover) (oci.SpecModifier, error) {
-	c, err := FromDiscoverer(d)
-	if err != nil {
-		return nil, fmt.Errorf("error constructing container edits: %v", err)
-	}
-	e := edits{
-		ContainerEdits: *c,
-		logger:         logger,
-	}
-
-	return &e, nil
-}
-
-// FromDiscoverer creates CDI container edits for the specified discoverer.
-func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
-	devices, err := d.Devices()
-	if err != nil {
-		return nil, fmt.Errorf("failed to discover devices: %v", err)
-	}
-
-	mounts, err := d.Mounts()
-	if err != nil {
-		return nil, fmt.Errorf("failed to discover mounts: %v", err)
-	}
-
-	hooks, err := d.Hooks()
-	if err != nil {
-		return nil, fmt.Errorf("failed to discover hooks: %v", err)
-	}
-
-	c := NewContainerEdits()
-	for _, d := range devices {
-		edits, err := device(d).toEdits()
-		if err != nil {
-			return nil, fmt.Errorf("failed to created container edits for device: %v", err)
-		}
-		c.Append(edits)
-	}
-
-	for _, m := range mounts {
-		c.Append(mount(m).toEdits())
-	}
-
-	for _, h := range hooks {
-		c.Append(hook(h).toEdits())
-	}
-
-	return c, nil
 }
 
 // NewContainerEdits is a utility function to create a CDI ContainerEdits struct.

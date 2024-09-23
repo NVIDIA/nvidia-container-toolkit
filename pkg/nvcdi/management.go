@@ -43,19 +43,16 @@ func (m *managementlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
 	}
 
-	edits, err := edits.FromDiscoverer(devices)
+	e, err := (*nvcdilib)(m).editsFromDiscoverer(devices)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create edits from discoverer: %v", err)
 	}
 
-	if len(edits.DeviceNodes) == 0 {
+	if len(e.DeviceNodes) == 0 {
 		return nil, fmt.Errorf("no NVIDIA device nodes found")
 	}
 
-	device := specs.Device{
-		Name:           "all",
-		ContainerEdits: *edits.ContainerEdits,
-	}
+	device := edits.NewResource("all", e)
 	return []specs.Device{device}, nil
 }
 
@@ -71,7 +68,7 @@ func (m *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 		return nil, fmt.Errorf("failed to create driver library discoverer: %v", err)
 	}
 
-	edits, err := edits.FromDiscoverer(driver)
+	edits, err := (*nvcdilib)(m).editsFromDiscoverer(driver)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create edits from discoverer: %v", err)
 	}

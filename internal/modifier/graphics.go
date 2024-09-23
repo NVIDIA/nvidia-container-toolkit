@@ -62,7 +62,9 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, image imag
 		drmNodes,
 		mounts,
 	)
-	return NewModifierFromDiscoverer(logger, d)
+
+	allowAdditionalGIDs := cfg.Features.IsEnabled(config.FeatureAllowAdditionalGIDs, image)
+	return NewModifierFromDiscoverer(logger, d, allowAdditionalGIDs)
 }
 
 // requiresGraphicsModifier determines whether a graphics modifier is required.

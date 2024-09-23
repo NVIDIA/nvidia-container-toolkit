@@ -1,5 +1,5 @@
 /**
-# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2024 NVIDIA CORPORATION
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,16 +17,14 @@
 package edits
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
-
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"tags.cncf.io/container-device-interface/pkg/cdi"
+	"tags.cncf.io/container-device-interface/specs-go"
 )
 
-func TestFromDiscovererAllowsMountsToIterate(t *testing.T) {
-	edits, err := New().EditsFromDiscoverer(discover.None{})
-	require.NoError(t, err)
-
-	require.Empty(t, edits.Mounts)
+// NewResource creates a CDI resource (Device) with the specified name.
+func NewResource(name string, edits *cdi.ContainerEdits) specs.Device {
+	return specs.Device{
+		Name:           name,
+		ContainerEdits: *edits.ContainerEdits,
+	}
 }

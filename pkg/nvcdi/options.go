@@ -155,3 +155,11 @@ func WithLibrarySearchPaths(paths []string) Option {
 		o.librarySearchPaths = paths
 	}
 }
+
+// WithAllowAdditionalGIDs specifies whether a generated CDI spec can contain
+// the additionaGIDs field.
+func WithAllowAdditionalGIDs(allowAdditionalGIDs bool) Option {
+	return func(o *nvcdilib) {
+		o.allowAdditionalGIDs = allowAdditionalGIDs
+	}
+}

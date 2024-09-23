@@ -78,5 +78,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 		discoverers = append(discoverers, d)
 	}
 
-	return NewModifierFromDiscoverer(logger, discover.Merge(discoverers...))
+	allowAdditionalGIDs := !cfg.Features.IsEnabled(config.FeatureAllowAdditionalGIDs, image)
+
+	return NewModifierFromDiscoverer(logger, discover.Merge(discoverers...), allowAdditionalGIDs)
 }

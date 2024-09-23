@@ -26,7 +26,6 @@ import (
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
 
@@ -74,7 +73,7 @@ func (l *nvmllib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 		return nil, fmt.Errorf("failed to create discoverer for common entities: %v", err)
 	}
 
-	return edits.FromDiscoverer(common)
+	return (*nvcdilib)(l).editsFromDiscoverer(common)
 }
 
 // GetDeviceSpecsByID returns the CDI device specs for the GPU(s) represented by
