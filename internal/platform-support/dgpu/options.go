@@ -19,6 +19,7 @@ package dgpu
 import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 )
 
 type options struct {
@@ -26,10 +27,13 @@ type options struct {
 	devRoot           string
 	nvidiaCDIHookPath string
 
+	isMigDevice bool
 	// migCaps stores the MIG capabilities for the system.
 	// If MIG is not available, this is nil.
 	migCaps      nvcaps.MigCaps
 	migCapsError error
+
+	nvsandboxutilslib nvsandboxutils.Interface
 }
 
 type Option func(*options)
@@ -59,5 +63,12 @@ func WithNVIDIACDIHookPath(path string) Option {
 func WithMIGCaps(migCaps nvcaps.MigCaps) Option {
 	return func(l *options) {
 		l.migCaps = migCaps
+	}
+}
+
+// WithNvsandboxuitilsLib sets the nvsandboxutils library implementation.
+func WithNvsandboxuitilsLib(nvsandboxutilslib nvsandboxutils.Interface) Option {
+	return func(l *options) {
+		l.nvsandboxutilslib = nvsandboxutilslib
 	}
 }
