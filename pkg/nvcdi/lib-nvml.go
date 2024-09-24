@@ -27,6 +27,7 @@ import (
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
 
@@ -51,6 +52,19 @@ func (l *nvmllib) GetAllDeviceSpecs() ([]specs.Device, error) {
 			l.logger.Warningf("failed to shutdown NVML: %v", r)
 		}
 	}()
+
+	if l.nvsandboxutilslib != nil {
+		if r := l.nvsandboxutilslib.Init(l.driverRoot); r != nvsandboxutils.SUCCESS {
+			l.logger.Warningf("Failed to init nvsandboxutils: %v; ignoring", r)
+			l.nvsandboxutilslib = nil
+		}
+		defer func() {
+			if l.nvsandboxutilslib == nil {
+				return
+			}
+			_ = l.nvsandboxutilslib.Shutdown()
+		}()
+	}
 
 	gpuDeviceSpecs, err := l.getGPUDeviceSpecs()
 	if err != nil {
