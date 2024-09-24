@@ -1,5 +1,18 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.16.2
+- Exclude libnvidia-allocator from graphics mounts. This fixes a bug that leaks mounts when a container is started with bi-directional mount propagation.
+- Use empty string for default runtime-config-override. This removes a redundant warning for runtimes (e.g. Docker) where this is not applicable.
+
+### Changes in the Toolkit Container
+- Bump CUDA base image version to 12.6.0
+
+### Changes in libnvidia-container
+- Add no-gsp-firmware command line option
+- Add no-fabricmanager command line option
+- Add no-persistenced command line option
+- Skip directories and symlinks when mounting libraries.
+
 ## v1.16.1
 - Fix bug with processing errors during CDI spec generation for MIG devices
 
@@ -8,7 +21,6 @@
 
 ### Changes in the Toolkit Container
 - Bump CUDA base image version to 12.5.1
-
 
 ## v1.16.0-rc.2
 - Use relative path to locate driver libraries
