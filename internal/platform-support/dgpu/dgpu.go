@@ -17,6 +17,8 @@
 package dgpu
 
 import (
+	"errors"
+
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
@@ -25,22 +27,78 @@ import (
 )
 
 // NewForDevice creates a discoverer for the specified Device.
+// nvsandboxutils is used for discovery if specified, otherwise NVML is used.
 func NewForDevice(d device.Device, opts ...Option) (discover.Discover, error) {
 	o := new(opts...)
 
-	return o.newNvmlDGPUDiscoverer(&toRequiredInfo{d})
+	var discoverers []discover.Discover
+	var errs error
+	nvsandboxutilsDiscoverer, err := o.newNvsandboxutilsDGPUDiscoverer(d)
+	if err != nil {
+		// TODO: Log a warning
+		errs = errors.Join(errs, err)
+	} else if nvsandboxutilsDiscoverer != nil {
+		discoverers = append(discoverers, nvsandboxutilsDiscoverer)
+	}
+
+	nvmlDiscoverer, err := o.newNvmlDGPUDiscoverer(&toRequiredInfo{d})
+	if err != nil {
+		// TODO: Log a warning
+		errs = errors.Join(errs, err)
+	} else if nvmlDiscoverer != nil {
+		discoverers = append(discoverers, nvmlDiscoverer)
+	}
+
+	if len(discoverers) == 0 {
+		return nil, errs
+	}
+
+	return discover.WithCache(
+		discover.FirstValid(
+			discoverers...,
+		),
+	), nil
 }
 
-// NewForDevice creates a discoverer for the specified device and its associated MIG device.
+// NewForMigDevice creates a discoverer for the specified device and its associated MIG device.
+// nvsandboxutils is used for discovery if specified, otherwise NVML is used.
 func NewForMigDevice(d device.Device, mig device.MigDevice, opts ...Option) (discover.Discover, error) {
 	o := new(opts...)
+	o.isMigDevice = true
 
-	return o.newNvmlMigDiscoverer(
+	var discoverers []discover.Discover
+	var errs error
+	nvsandboxutilsDiscoverer, err := o.newNvsandboxutilsDGPUDiscoverer(mig)
+	if err != nil {
+		// TODO: Log a warning
+		errs = errors.Join(errs, err)
+	} else if nvsandboxutilsDiscoverer != nil {
+		discoverers = append(discoverers, nvsandboxutilsDiscoverer)
+	}
+
+	nvmlDiscoverer, err := o.newNvmlMigDiscoverer(
 		&toRequiredMigInfo{
 			MigDevice: mig,
 			parent:    &toRequiredInfo{d},
 		},
 	)
+	if err != nil {
+		// TODO: Log a warning
+		errs = errors.Join(errs, err)
+	} else if nvmlDiscoverer != nil {
+		discoverers = append(discoverers, nvmlDiscoverer)
+	}
+
+	if len(discoverers) == 0 {
+		return nil, errs
+	}
+
+	return discover.WithCache(
+		discover.FirstValid(
+			discoverers...,
+		),
+	), nil
+
 }
 
 func new(opts ...Option) *options {

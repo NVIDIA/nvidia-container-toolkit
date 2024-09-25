@@ -36,3 +36,8 @@ issues:
     linters:
     - errcheck
     text: config.Delete
+  # RENDERD refers to the Render Device and not the past tense of render.
+  - path: .*.go
+    linters:
+    - misspell
+    text: "`RENDERD` is a misspelling of `RENDERED`"
