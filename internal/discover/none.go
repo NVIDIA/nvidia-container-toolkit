@@ -24,15 +24,15 @@ var _ Discover = (*None)(nil)
 
 // Devices returns an empty list of devices
 func (e None) Devices() ([]Device, error) {
-	return []Device{}, nil
+	return nil, nil
 }
 
 // Mounts returns an empty list of mounts
 func (e None) Mounts() ([]Mount, error) {
-	return []Mount{}, nil
+	return nil, nil
 }
 
 // Hooks returns an empty list of hooks
 func (e None) Hooks() ([]Hook, error) {
-	return []Hook{}, nil
+	return nil, nil
 }

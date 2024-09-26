@@ -97,11 +97,15 @@ func NewDriverLibraryDiscoverer(logger logger.Interface, driver *root.Driver, nv
 		libraryPaths,
 	)
 
-	hooks, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCDIHookPath, ldconfigPath)
+	updateLDCache, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCDIHookPath, ldconfigPath)
 
 	d := discover.Merge(
-		libraries,
-		hooks,
+		discover.WithDriverDotSoSymlinks(
+			libraries,
+			version,
+			nvidiaCDIHookPath,
+		),
+		updateLDCache,
 	)
 
 	return d, nil
