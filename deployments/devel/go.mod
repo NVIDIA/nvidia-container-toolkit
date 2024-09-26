@@ -1,12 +1,11 @@
 module github.com/NVIDIA/k8s-device-plugin/deployments/devel
 
 go 1.22.1
-
 toolchain go1.23.1
 
 require (
 	github.com/golangci/golangci-lint v1.60.1
-	github.com/matryer/moq v0.3.4
+	github.com/matryer/moq v0.5.0
 )
 
 require (
