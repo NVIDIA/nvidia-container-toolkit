@@ -18,6 +18,7 @@ package nvsandboxutils
 
 import (
 	"strings"
+	"unsafe"
 )
 
 import "C"
@@ -54,7 +55,7 @@ func (l *library) GetGpuResource(uuid string) ([]GpuFileInfo, Ret) {
 	var fileInfos []GpuFileInfo
 	for fileInfo := request.Files; fileInfo != nil; fileInfo = fileInfo.Next {
 		fi := GpuFileInfo{
-			Path:    C.GoString((*C.char)(fileInfo.FilePath)),
+			Path:    C.GoString((*C.char)(unsafe.Pointer(fileInfo.FilePath))),
 			Type:    FileType(fileInfo.FileType),
 			SubType: FileSystemSubType(fileInfo.FileSubType),
 			Module:  FileModule(fileInfo.Module),
