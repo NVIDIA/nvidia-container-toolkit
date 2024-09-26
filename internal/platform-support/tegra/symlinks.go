@@ -18,8 +18,6 @@ package tegra
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -31,7 +29,6 @@ type symlinkHook struct {
 	logger            logger.Interface
 	nvidiaCDIHookPath string
 	targets           []string
-	mountsFrom        discover.Discover
 
 	// The following can be overridden for testing
 	symlinkChainLocator lookup.Locator
@@ -39,12 +36,11 @@ type symlinkHook struct {
 }
 
 // createCSVSymlinkHooks creates a discoverer for a hook that creates required symlinks in the container
-func (o tegraOptions) createCSVSymlinkHooks(targets []string, mounts discover.Discover) discover.Discover {
+func (o tegraOptions) createCSVSymlinkHooks(targets []string) discover.Discover {
 	return symlinkHook{
 		logger:              o.logger,
 		nvidiaCDIHookPath:   o.nvidiaCDIHookPath,
 		targets:             targets,
-		mountsFrom:          mounts,
 		symlinkChainLocator: o.symlinkChainLocator,
 		resolveSymlink:      o.resolveSymlink,
 	}
@@ -52,60 +48,10 @@ func (o tegraOptions) createCSVSymlinkHooks(targets []string, mounts discover.Di
 
 // Hooks returns a hook to create the symlinks from the required CSV files
 func (d symlinkHook) Hooks() ([]discover.Hook, error) {
-	specificLinks, err := d.getSpecificLinks()
-	if err != nil {
-		return nil, fmt.Errorf("failed to determine specific links: %v", err)
-	}
-
-	csvSymlinks := d.getCSVFileSymlinks()
-
 	return discover.CreateCreateSymlinkHook(
 		d.nvidiaCDIHookPath,
-		append(csvSymlinks, specificLinks...),
+		d.getCSVFileSymlinks(),
 	).Hooks()
-}
-
-// getSpecificLinks returns the required specic links that need to be created
-func (d symlinkHook) getSpecificLinks() ([]string, error) {
-	mounts, err := d.mountsFrom.Mounts()
-	if err != nil {
-		return nil, fmt.Errorf("failed to discover mounts for ldcache update: %v", err)
-	}
-
-	linkProcessed := make(map[string]bool)
-	var links []string
-	for _, m := range mounts {
-		var target string
-		var link string
-
-		lib := filepath.Base(m.Path)
-
-		switch {
-		case strings.HasPrefix(lib, "libcuda.so"):
-			// XXX Many applications wrongly assume that libcuda.so exists (e.g. with dlopen).
-			target = "libcuda.so.1"
-			link = "libcuda.so"
-		case strings.HasPrefix(lib, "libGLX_nvidia.so"):
-			// XXX GLVND requires this symlink for indirect GLX support.
-			target = lib
-			link = "libGLX_indirect.so.0"
-		case strings.HasPrefix(lib, "libnvidia-opticalflow.so"):
-			// XXX Fix missing symlink for libnvidia-opticalflow.so.
-			target = "libnvidia-opticalflow.so.1"
-			link = "libnvidia-opticalflow.so"
-		default:
-			continue
-		}
-		if linkProcessed[link] {
-			continue
-		}
-		linkProcessed[link] = true
-
-		linkPath := filepath.Join(filepath.Dir(m.Path), link)
-		links = append(links, fmt.Sprintf("%v::%v", target, linkPath))
-	}
-
-	return links, nil
 }
 
 // getSymlinkCandidates returns a list of symlinks that are candidates for being created.
