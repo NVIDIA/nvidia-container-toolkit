@@ -200,7 +200,10 @@ func getVersionLibs(logger logger.Interface, driver *root.Driver, version string
 
 	libraries := lookup.NewFileLocator(
 		lookup.WithLogger(logger),
-		lookup.WithSearchPaths(libRoot),
+		lookup.WithSearchPaths(
+			libRoot,
+			filepath.Join(libRoot, "vdpau"),
+		),
 		lookup.WithOptional(true),
 	)
 
