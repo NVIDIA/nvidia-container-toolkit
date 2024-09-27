@@ -14,7 +14,7 @@
 # limitations under the License.
 */
 
-package main
+package containerd
 
 import (
 	"fmt"
@@ -28,106 +28,69 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
 
-func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {
+const (
+	runtimeType = "runtime_type"
+)
+
+func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 	const runtimeDir = "/test/runtime/dir"
 
 	testCases := []struct {
-		legacyConfig                 bool
-		setAsDefault                 bool
-		runtimeName                  string
-		expectedDefaultRuntimeName   interface{}
-		expectedDefaultRuntimeBinary interface{}
+		setAsDefault               bool
+		runtimeName                string
+		expectedDefaultRuntimeName interface{}
 	}{
 		{},
 		{
-			legacyConfig:                 true,
-			setAsDefault:                 false,
-			expectedDefaultRuntimeName:   nil,
-			expectedDefaultRuntimeBinary: nil,
+			setAsDefault:               false,
+			runtimeName:                "nvidia",
+			expectedDefaultRuntimeName: nil,
 		},
 		{
-			legacyConfig:                 true,
-			setAsDefault:                 true,
-			expectedDefaultRuntimeName:   nil,
-			expectedDefaultRuntimeBinary: "/test/runtime/dir/nvidia-container-runtime",
+			setAsDefault:               false,
+			runtimeName:                "NAME",
+			expectedDefaultRuntimeName: nil,
 		},
 		{
-			legacyConfig:                 true,
-			setAsDefault:                 true,
-			runtimeName:                  "NAME",
-			expectedDefaultRuntimeName:   nil,
-			expectedDefaultRuntimeBinary: "/test/runtime/dir/nvidia-container-runtime",
+			setAsDefault:               true,
+			runtimeName:                "nvidia",
+			expectedDefaultRuntimeName: "nvidia",
 		},
 		{
-			legacyConfig:                 false,
-			setAsDefault:                 false,
-			expectedDefaultRuntimeName:   nil,
-			expectedDefaultRuntimeBinary: nil,
-		},
-		{
-			legacyConfig:                 false,
-			setAsDefault:                 true,
-			expectedDefaultRuntimeName:   "nvidia",
-			expectedDefaultRuntimeBinary: nil,
-		},
-		{
-			legacyConfig:                 false,
-			setAsDefault:                 true,
-			runtimeName:                  "NAME",
-			expectedDefaultRuntimeName:   "NAME",
-			expectedDefaultRuntimeBinary: nil,
+			setAsDefault:               true,
+			runtimeName:                "NAME",
+			expectedDefaultRuntimeName: "NAME",
 		},
 	}
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &options{
-				Options: container.Options{
-					RuntimeName:  tc.runtimeName,
-					RuntimeDir:   runtimeDir,
-					SetAsDefault: tc.setAsDefault,
-				},
-				runtimeType:     runtimeType,
-				useLegacyConfig: tc.legacyConfig,
+			o := &container.Options{
+				RuntimeName:  tc.runtimeName,
+				RuntimeDir:   runtimeDir,
+				SetAsDefault: tc.setAsDefault,
 			}
 
-			cfg, err := toml.Empty.Load()
-			require.NoError(t, err, "%d: %v", i, tc)
+			cfg, err := toml.LoadMap(map[string]interface{}{})
+			require.NoError(t, err)
 
-			v1 := &containerd.ConfigV1{
-				Logger:                logger,
-				Tree:                  cfg,
-				UseDefaultRuntimeName: !tc.legacyConfig,
-				RuntimeType:           runtimeType,
+			v2 := &containerd.Config{
+				Logger:      logger,
+				Tree:        cfg,
+				RuntimeType: runtimeType,
 			}
 
-			err = o.UpdateConfig(v1)
-			require.NoError(t, err, "%d: %v", i, tc)
+			err = o.UpdateConfig(v2)
+			require.NoError(t, err)
 
-			defaultRuntimeName := v1.GetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"})
-			require.EqualValues(t, tc.expectedDefaultRuntimeName, defaultRuntimeName, "%d: %v", i, tc)
-
-			defaultRuntime := v1.GetPath([]string{"plugins", "cri", "containerd", "default_runtime"})
-			if tc.expectedDefaultRuntimeBinary == nil {
-				require.Nil(t, defaultRuntime, "%d: %v", i, tc)
-			} else {
-				require.NotNil(t, defaultRuntime)
-
-				expected, err := defaultRuntimeTomlConfigV1(tc.expectedDefaultRuntimeBinary.(string))
-				require.NoError(t, err, "%d: %v", i, tc)
-
-				configContents, _ := toml.Marshal(defaultRuntime.(*toml.Tree))
-				expectedContents, _ := toml.Marshal(expected)
-
-				require.Equal(t, string(expectedContents), string(configContents), "%d: %v: %v", i, tc)
-			}
-
+			defaultRuntimeName := cfg.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"})
+			require.EqualValues(t, tc.expectedDefaultRuntimeName, defaultRuntimeName)
 		})
 	}
 }
 
-func TestUpdateV1Config(t *testing.T) {
+func TestUpdateV2Config(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 	const runtimeDir = "/test/runtime/dir"
 
@@ -138,9 +101,9 @@ func TestUpdateV1Config(t *testing.T) {
 		{
 			runtimeName: "nvidia",
 			expectedConfig: map[string]interface{}{
-				"version": int64(1),
+				"version": int64(2),
 				"plugins": map[string]interface{}{
-					"cri": map[string]interface{}{
+					"io.containerd.grpc.v1.cri": map[string]interface{}{
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
 								"nvidia": map[string]interface{}{
@@ -151,7 +114,6 @@ func TestUpdateV1Config(t *testing.T) {
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
 										"BinaryName": "/test/runtime/dir/nvidia-container-runtime",
-										"Runtime":    "/test/runtime/dir/nvidia-container-runtime",
 									},
 								},
 								"nvidia-cdi": map[string]interface{}{
@@ -162,7 +124,6 @@ func TestUpdateV1Config(t *testing.T) {
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
 										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.cdi",
-										"Runtime":    "/test/runtime/dir/nvidia-container-runtime.cdi",
 									},
 								},
 								"nvidia-legacy": map[string]interface{}{
@@ -173,7 +134,6 @@ func TestUpdateV1Config(t *testing.T) {
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
 										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.legacy",
-										"Runtime":    "/test/runtime/dir/nvidia-container-runtime.legacy",
 									},
 								},
 							},
@@ -185,9 +145,9 @@ func TestUpdateV1Config(t *testing.T) {
 		{
 			runtimeName: "NAME",
 			expectedConfig: map[string]interface{}{
-				"version": int64(1),
+				"version": int64(2),
 				"plugins": map[string]interface{}{
-					"cri": map[string]interface{}{
+					"io.containerd.grpc.v1.cri": map[string]interface{}{
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
 								"NAME": map[string]interface{}{
@@ -198,7 +158,6 @@ func TestUpdateV1Config(t *testing.T) {
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
 										"BinaryName": "/test/runtime/dir/nvidia-container-runtime",
-										"Runtime":    "/test/runtime/dir/nvidia-container-runtime",
 									},
 								},
 								"nvidia-cdi": map[string]interface{}{
@@ -209,7 +168,6 @@ func TestUpdateV1Config(t *testing.T) {
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
 										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.cdi",
-										"Runtime":    "/test/runtime/dir/nvidia-container-runtime.cdi",
 									},
 								},
 								"nvidia-legacy": map[string]interface{}{
@@ -220,7 +178,6 @@ func TestUpdateV1Config(t *testing.T) {
 									"container_annotations":           []string{"cdi.k8s.io/*"},
 									"options": map[string]interface{}{
 										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.legacy",
-										"Runtime":    "/test/runtime/dir/nvidia-container-runtime.legacy",
 									},
 								},
 							},
@@ -233,25 +190,22 @@ func TestUpdateV1Config(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &options{
-				Options: container.Options{
-					RuntimeName: tc.runtimeName,
-					RuntimeDir:  runtimeDir,
-				},
+			o := &container.Options{
+				RuntimeName: tc.runtimeName,
+				RuntimeDir:  runtimeDir,
 			}
 
-			cfg, err := toml.Empty.Load()
+			cfg, err := toml.LoadMap(map[string]interface{}{})
 			require.NoError(t, err)
 
-			v1 := &containerd.ConfigV1{
-				Logger:                logger,
-				Tree:                  cfg,
-				UseDefaultRuntimeName: true,
-				RuntimeType:           runtimeType,
-				ContainerAnnotations:  []string{"cdi.k8s.io/*"},
+			v2 := &containerd.Config{
+				Logger:               logger,
+				Tree:                 cfg,
+				RuntimeType:          runtimeType,
+				ContainerAnnotations: []string{"cdi.k8s.io/*"},
 			}
 
-			err = o.UpdateConfig(v1)
+			err = o.UpdateConfig(v2)
 			require.NoError(t, err)
 
 			expected, err := toml.TreeFromMap(tc.expectedConfig)
@@ -260,9 +214,10 @@ func TestUpdateV1Config(t *testing.T) {
 			require.Equal(t, expected.String(), cfg.String())
 		})
 	}
+
 }
 
-func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
+func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 	const runtimeDir = "/test/runtime/dir"
 
@@ -273,9 +228,9 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 		{
 			runtimeName: "nvidia",
 			expectedConfig: map[string]interface{}{
-				"version": int64(1),
+				"version": int64(2),
 				"plugins": map[string]interface{}{
-					"cri": map[string]interface{}{
+					"io.containerd.grpc.v1.cri": map[string]interface{}{
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
 								"runc": map[string]interface{}{
@@ -297,7 +252,6 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 									"options": map[string]interface{}{
 										"runc-option": "value",
 										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime",
-										"Runtime":     "/test/runtime/dir/nvidia-container-runtime",
 									},
 								},
 								"nvidia-cdi": map[string]interface{}{
@@ -309,7 +263,6 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 									"options": map[string]interface{}{
 										"runc-option": "value",
 										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.cdi",
-										"Runtime":     "/test/runtime/dir/nvidia-container-runtime.cdi",
 									},
 								},
 								"nvidia-legacy": map[string]interface{}{
@@ -321,7 +274,6 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 									"options": map[string]interface{}{
 										"runc-option": "value",
 										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.legacy",
-										"Runtime":     "/test/runtime/dir/nvidia-container-runtime.legacy",
 									},
 								},
 							},
@@ -333,9 +285,9 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 		{
 			runtimeName: "NAME",
 			expectedConfig: map[string]interface{}{
-				"version": int64(1),
+				"version": int64(2),
 				"plugins": map[string]interface{}{
-					"cri": map[string]interface{}{
+					"io.containerd.grpc.v1.cri": map[string]interface{}{
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
 								"runc": map[string]interface{}{
@@ -357,7 +309,6 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 									"options": map[string]interface{}{
 										"runc-option": "value",
 										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime",
-										"Runtime":     "/test/runtime/dir/nvidia-container-runtime",
 									},
 								},
 								"nvidia-cdi": map[string]interface{}{
@@ -369,7 +320,6 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 									"options": map[string]interface{}{
 										"runc-option": "value",
 										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.cdi",
-										"Runtime":     "/test/runtime/dir/nvidia-container-runtime.cdi",
 									},
 								},
 								"nvidia-legacy": map[string]interface{}{
@@ -381,7 +331,6 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 									"options": map[string]interface{}{
 										"runc-option": "value",
 										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.legacy",
-										"Runtime":     "/test/runtime/dir/nvidia-container-runtime.legacy",
 									},
 								},
 							},
@@ -394,25 +343,22 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &options{
-				Options: container.Options{
-					RuntimeName: tc.runtimeName,
-					RuntimeDir:  runtimeDir,
-				},
+			o := &container.Options{
+				RuntimeName: tc.runtimeName,
+				RuntimeDir:  runtimeDir,
 			}
 
-			cfg, err := toml.TreeFromMap(runcConfigMapV1("/runc-binary"))
+			cfg, err := toml.LoadMap(runcConfigMapV2("/runc-binary"))
 			require.NoError(t, err)
 
-			v1 := &containerd.ConfigV1{
-				Logger:                logger,
-				Tree:                  cfg,
-				UseDefaultRuntimeName: true,
-				RuntimeType:           runtimeType,
-				ContainerAnnotations:  []string{"cdi.k8s.io/*"},
+			v2 := &containerd.Config{
+				Logger:               logger,
+				Tree:                 cfg,
+				RuntimeType:          runtimeType,
+				ContainerAnnotations: []string{"cdi.k8s.io/*"},
 			}
 
-			err = o.UpdateConfig(v1)
+			err = o.UpdateConfig(v2)
 			require.NoError(t, err)
 
 			expected, err := toml.TreeFromMap(tc.expectedConfig)
@@ -423,7 +369,7 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 	}
 }
 
-func TestRevertV1Config(t *testing.T) {
+func TestRevertV2Config(t *testing.T) {
 	testCases := []struct {
 		config map[string]interface {
 		}
@@ -432,19 +378,17 @@ func TestRevertV1Config(t *testing.T) {
 		{},
 		{
 			config: map[string]interface{}{
-				"version": int64(1),
+				"version": int64(2),
 			},
 		},
 		{
 			config: map[string]interface{}{
-				"version": int64(1),
+				"version": int64(2),
 				"plugins": map[string]interface{}{
-					"cri": map[string]interface{}{
+					"io.containerd.grpc.v1.cri": map[string]interface{}{
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
-								"nvidia":        runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
-								"nvidia-cdi":    runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.cdi"),
-								"nvidia-legacy": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.legacy"),
+								"nvidia": runtimeMapV2("/test/runtime/dir/nvidia-container-runtime"),
 							},
 						},
 					},
@@ -453,16 +397,13 @@ func TestRevertV1Config(t *testing.T) {
 		},
 		{
 			config: map[string]interface{}{
-				"version": int64(1),
+				"version": int64(2),
 				"plugins": map[string]interface{}{
-					"cri": map[string]interface{}{
+					"io.containerd.grpc.v1.cri": map[string]interface{}{
 						"containerd": map[string]interface{}{
 							"runtimes": map[string]interface{}{
-								"nvidia":        runtimeMapV1("/test/runtime/dir/nvidia-container-runtime"),
-								"nvidia-cdi":    runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.cdi"),
-								"nvidia-legacy": runtimeMapV1("/test/runtime/dir/nvidia-container-runtime.legacy"),
+								"nvidia": runtimeMapV2("/test/runtime/dir/nvidia-container-runtime"),
 							},
-							"default_runtime":      defaultRuntimeV1("/test/runtime/dir/nvidia-container-runtime"),
 							"default_runtime_name": "nvidia",
 						},
 					},
@@ -473,40 +414,33 @@ func TestRevertV1Config(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &options{
-				Options: container.Options{
-					RuntimeName: "nvidia",
-				},
+			o := &container.Options{
+				RuntimeName: "nvidia",
 			}
 
 			cfg, err := toml.LoadMap(tc.config)
-			require.NoError(t, err, "%d: %v", i, tc)
+			require.NoError(t, err)
 
 			expected, err := toml.TreeFromMap(tc.expected)
-			require.NoError(t, err, "%d: %v", i, tc)
+			require.NoError(t, err)
 
-			v1 := &containerd.ConfigV1{
-				Tree:                  cfg,
-				UseDefaultRuntimeName: true,
-				RuntimeType:           runtimeType,
+			v2 := &containerd.Config{
+				Tree:        cfg,
+				RuntimeType: runtimeType,
 			}
 
-			err = o.RevertConfig(v1)
-			require.NoError(t, err, "%d: %v", i, tc)
+			err = o.RevertConfig(v2)
+			require.NoError(t, err)
 
 			configContents, _ := toml.Marshal(cfg)
 			expectedContents, _ := toml.Marshal(expected)
 
-			require.Equal(t, string(expectedContents), string(configContents), "%d: %v", i, tc)
+			require.Equal(t, string(expectedContents), string(configContents))
 		})
 	}
 }
 
-func defaultRuntimeTomlConfigV1(binary string) (*toml.Tree, error) {
-	return toml.TreeFromMap(defaultRuntimeV1(binary))
-}
-
-func defaultRuntimeV1(binary string) map[string]interface{} {
+func runtimeMapV2(binary string) map[string]interface{} {
 	return map[string]interface{}{
 		"runtime_type":                    runtimeType,
 		"runtime_root":                    "",
@@ -514,28 +448,14 @@ func defaultRuntimeV1(binary string) map[string]interface{} {
 		"privileged_without_host_devices": false,
 		"options": map[string]interface{}{
 			"BinaryName": binary,
-			"Runtime":    binary,
 		},
 	}
 }
 
-func runtimeMapV1(binary string) map[string]interface{} {
-	return map[string]interface{}{
-		"runtime_type":                    runtimeType,
-		"runtime_root":                    "",
-		"runtime_engine":                  "",
-		"privileged_without_host_devices": false,
-		"options": map[string]interface{}{
-			"BinaryName": binary,
-			"Runtime":    binary,
-		},
-	}
-}
-
-func runcConfigMapV1(binary string) map[string]interface{} {
+func runcConfigMapV2(binary string) map[string]interface{} {
 	return map[string]interface{}{
 		"plugins": map[string]interface{}{
-			"cri": map[string]interface{}{
+			"io.containerd.grpc.v1.cri": map[string]interface{}{
 				"containerd": map[string]interface{}{
 					"runtimes": map[string]interface{}{
 						"runc": map[string]interface{}{
