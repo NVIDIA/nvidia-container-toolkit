@@ -14,7 +14,7 @@
 # limitations under the License.
 */
 
-package main
+package docker
 
 import (
 	"encoding/json"
@@ -52,12 +52,10 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		o := &options{
-			Options: container.Options{
-				RuntimeName:  tc.runtimeName,
-				RuntimeDir:   runtimeDir,
-				SetAsDefault: tc.setAsDefault,
-			},
+		o := &container.Options{
+			RuntimeName:  tc.runtimeName,
+			RuntimeDir:   runtimeDir,
+			SetAsDefault: tc.setAsDefault,
 		}
 
 		config := docker.Config(map[string]interface{}{})
@@ -238,12 +236,10 @@ func TestUpdateConfig(t *testing.T) {
 	for i, tc := range testCases {
 		tc := tc
 
-		o := &options{
-			Options: container.Options{
-				RuntimeName:  tc.runtimeName,
-				RuntimeDir:   runtimeDir,
-				SetAsDefault: tc.setAsDefault,
-			},
+		o := &container.Options{
+			RuntimeName:  tc.runtimeName,
+			RuntimeDir:   runtimeDir,
+			SetAsDefault: tc.setAsDefault,
 		}
 
 		err := o.UpdateConfig(&tc.config)
@@ -365,7 +361,7 @@ func TestRevertConfig(t *testing.T) {
 
 	for i, tc := range testCases {
 		tc := tc
-		o := &options{}
+		o := &container.Options{}
 		err := o.RevertConfig(&tc.config)
 
 		require.NoError(t, err, "%d: %v", i, tc)

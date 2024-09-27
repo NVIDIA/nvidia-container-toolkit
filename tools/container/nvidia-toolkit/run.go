@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
@@ -92,6 +91,7 @@ func main() {
 			Destination: &options.runtime,
 			EnvVars:     []string{"RUNTIME"},
 		},
+		// TODO: Remove runtime-args
 		&cli.StringFlag{
 			Name:        "runtime-args",
 			Aliases:     []string{"u"},
@@ -136,7 +136,7 @@ func validateFlags(_ *cli.Context, o *options) error {
 	if err := toolkit.ValidateOptions(&o.toolkitOptions, o.toolkitRoot()); err != nil {
 		return err
 	}
-	if err := runtime.ValidateOptions(&o.runtimeOptions, o.toolkitRoot()); err != nil {
+	if err := runtime.ValidateOptions(&o.runtimeOptions, o.runtime, o.toolkitRoot()); err != nil {
 		return err
 	}
 	return nil
@@ -160,7 +160,7 @@ func Run(c *cli.Context, o *options) error {
 		return fmt.Errorf("unable to install toolkit: %v", err)
 	}
 
-	err = setupRuntime(o)
+	err = runtime.Setup(c, &o.runtimeOptions, o.runtime)
 	if err != nil {
 		return fmt.Errorf("unable to setup runtime: %v", err)
 	}
@@ -171,7 +171,7 @@ func Run(c *cli.Context, o *options) error {
 			return fmt.Errorf("unable to wait for signal: %v", err)
 		}
 
-		err = cleanupRuntime(o)
+		err = runtime.Cleanup(c, &o.runtimeOptions, o.runtime)
 		if err != nil {
 			return fmt.Errorf("unable to cleanup runtime: %v", err)
 		}
@@ -264,48 +264,10 @@ func initialize(pidFile string) error {
 	return nil
 }
 
-func setupRuntime(o *options) error {
-	toolkitDir := filepath.Join(o.root, toolkitSubDir)
-
-	log.Infof("Setting up runtime")
-
-	cmdline := fmt.Sprintf("%v setup %v %v\n", o.runtime, o.runtimeArgs, toolkitDir)
-
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	cmd := exec.Command("sh", "-c", cmdline)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error running %v command: %v", o.runtime, err)
-	}
-
-	return nil
-}
-
 func waitForSignal() error {
 	log.Infof("Waiting for signal")
 	waitingForSignal <- true
 	<-signalReceived
-	return nil
-}
-
-func cleanupRuntime(o *options) error {
-	toolkitDir := filepath.Join(o.root, toolkitSubDir)
-
-	log.Infof("Cleaning up Runtime")
-
-	cmdline := fmt.Sprintf("%v cleanup %v %v\n", o.runtime, o.runtimeArgs, toolkitDir)
-
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	cmd := exec.Command("sh", "-c", cmdline)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error running %v command: %v", o.runtime, err)
-	}
-
 	return nil
 }
 
