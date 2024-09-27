@@ -13,6 +13,7 @@ import (
 	cli "github.com/urfave/cli/v2"
 	unix "golang.org/x/sys/unix"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/runtime"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/toolkit"
 )
 
@@ -40,6 +41,7 @@ type options struct {
 	pidFile     string
 
 	toolkitOptions toolkit.Options
+	runtimeOptions runtime.Options
 }
 
 func (o options) toolkitRoot() string {
@@ -115,6 +117,7 @@ func main() {
 	}
 
 	c.Flags = append(c.Flags, toolkit.Flags(&options.toolkitOptions)...)
+	c.Flags = append(c.Flags, runtime.Flags(&options.runtimeOptions)...)
 
 	// Run the CLI
 	log.Infof("Starting %v", c.Name)
@@ -133,7 +136,9 @@ func validateFlags(_ *cli.Context, o *options) error {
 	if err := toolkit.ValidateOptions(&o.toolkitOptions, o.toolkitRoot()); err != nil {
 		return err
 	}
-
+	if err := runtime.ValidateOptions(&o.runtimeOptions, o.toolkitRoot()); err != nil {
+		return err
+	}
 	return nil
 }
 
