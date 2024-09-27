@@ -14,7 +14,7 @@
 # limitations under the License.
 */
 
-package main
+package containerd
 
 import (
 	"fmt"
@@ -66,12 +66,10 @@ func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &options{
-				Options: container.Options{
-					RuntimeName:  tc.runtimeName,
-					RuntimeDir:   runtimeDir,
-					SetAsDefault: tc.setAsDefault,
-				},
+			o := &container.Options{
+				RuntimeName:  tc.runtimeName,
+				RuntimeDir:   runtimeDir,
+				SetAsDefault: tc.setAsDefault,
 			}
 
 			config, err := toml.TreeFromMap(map[string]interface{}{})
@@ -192,12 +190,9 @@ func TestUpdateV2Config(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &options{
-				Options: container.Options{
-					RuntimeName: tc.runtimeName,
-					RuntimeDir:  runtimeDir,
-				},
-				runtimeType: runtimeType,
+			o := &container.Options{
+				RuntimeName: tc.runtimeName,
+				RuntimeDir:  runtimeDir,
 			}
 
 			config, err := toml.TreeFromMap(map[string]interface{}{})
@@ -206,7 +201,7 @@ func TestUpdateV2Config(t *testing.T) {
 			v2 := &containerd.Config{
 				Logger:               logger,
 				Tree:                 config,
-				RuntimeType:          o.runtimeType,
+				RuntimeType:          runtimeType,
 				ContainerAnnotations: []string{"cdi.k8s.io/*"},
 			}
 
@@ -348,11 +343,9 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &options{
-				Options: container.Options{
-					RuntimeName: tc.runtimeName,
-					RuntimeDir:  runtimeDir,
-				},
+			o := &container.Options{
+				RuntimeName: tc.runtimeName,
+				RuntimeDir:  runtimeDir,
 			}
 
 			config, err := toml.TreeFromMap(runcConfigMapV2("/runc-binary"))
@@ -421,10 +414,8 @@ func TestRevertV2Config(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &options{
-				Options: container.Options{
-					RuntimeName: "nvidia",
-				},
+			o := &container.Options{
+				RuntimeName: "nvidia",
 			}
 
 			config, err := toml.TreeFromMap(tc.config)

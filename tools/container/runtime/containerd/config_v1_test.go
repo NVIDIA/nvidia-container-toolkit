@@ -14,7 +14,7 @@
 # limitations under the License.
 */
 
-package main
+package containerd
 
 import (
 	"fmt"
@@ -82,14 +82,10 @@ func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &options{
-				Options: container.Options{
-					RuntimeName:  tc.runtimeName,
-					RuntimeDir:   runtimeDir,
-					SetAsDefault: tc.setAsDefault,
-				},
-				runtimeType:     runtimeType,
-				useLegacyConfig: tc.legacyConfig,
+			o := &container.Options{
+				RuntimeName:  tc.runtimeName,
+				RuntimeDir:   runtimeDir,
+				SetAsDefault: tc.setAsDefault,
 			}
 
 			config, err := toml.TreeFromMap(map[string]interface{}{})
@@ -233,11 +229,9 @@ func TestUpdateV1Config(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &options{
-				Options: container.Options{
-					RuntimeName: tc.runtimeName,
-					RuntimeDir:  runtimeDir,
-				},
+			o := &container.Options{
+				RuntimeName: tc.runtimeName,
+				RuntimeDir:  runtimeDir,
 			}
 
 			config, err := toml.TreeFromMap(map[string]interface{}{})
@@ -394,11 +388,9 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &options{
-				Options: container.Options{
-					RuntimeName: tc.runtimeName,
-					RuntimeDir:  runtimeDir,
-				},
+			o := &container.Options{
+				RuntimeName: tc.runtimeName,
+				RuntimeDir:  runtimeDir,
 			}
 
 			config, err := toml.TreeFromMap(runcConfigMapV1("/runc-binary"))
@@ -473,10 +465,8 @@ func TestRevertV1Config(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &options{
-				Options: container.Options{
-					RuntimeName: "nvidia",
-				},
+			o := &container.Options{
+				RuntimeName: "nvidia",
 			}
 
 			config, err := toml.TreeFromMap(tc.config)

@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package main
+package containerd
 
 import (
 	"testing"
@@ -25,7 +25,7 @@ import (
 func TestRuntimeOptions(t *testing.T) {
 	testCases := []struct {
 		description   string
-		options       options
+		options       Options
 		expected      map[string]interface{}
 		expectedError error
 	}{
@@ -34,7 +34,7 @@ func TestRuntimeOptions(t *testing.T) {
 		},
 		{
 			description: "empty json",
-			options: options{
+			options: Options{
 				runtimeConfigOverrideJSON: "{}",
 			},
 			expected:      map[string]interface{}{},
@@ -42,7 +42,7 @@ func TestRuntimeOptions(t *testing.T) {
 		},
 		{
 			description: "SystemdCgroup is true",
-			options: options{
+			options: Options{
 				runtimeConfigOverrideJSON: "{\"SystemdCgroup\": true}",
 			},
 			expected: map[string]interface{}{
@@ -52,7 +52,7 @@ func TestRuntimeOptions(t *testing.T) {
 		},
 		{
 			description: "SystemdCgroup is false",
-			options: options{
+			options: Options{
 				runtimeConfigOverrideJSON: "{\"SystemdCgroup\": false}",
 			},
 			expected: map[string]interface{}{
