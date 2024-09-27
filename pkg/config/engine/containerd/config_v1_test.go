@@ -27,12 +27,11 @@ import (
 func TestAddRuntimeV1(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 	testCases := []struct {
-		description     string
-		config          string
-		setAsDefault    bool
-		configOverrides []map[string]interface{}
-		expectedConfig  string
-		expectedError   error
+		description    string
+		config         string
+		setAsDefault   bool
+		expectedConfig string
+		expectedError  error
 	}{
 		{
 			description: "empty config not default runtime",
@@ -52,32 +51,6 @@ func TestAddRuntimeV1(t *testing.T) {
 						Runtime = "/usr/bin/test"
 			`,
 			expectedError: nil,
-		},
-		{
-			description: "empty config not default runtime with overrides",
-			configOverrides: []map[string]interface{}{
-				{
-					"options": map[string]interface{}{
-						"SystemdCgroup": true,
-					},
-				},
-			},
-			expectedConfig: `
-			version = 1
-			[plugins]
-			[plugins.cri]
-				[plugins.cri.containerd]
-				[plugins.cri.containerd.runtimes]
-					[plugins.cri.containerd.runtimes.test]
-					privileged_without_host_devices = false
-					runtime_engine = ""
-					runtime_root = ""
-					runtime_type = ""
-					[plugins.cri.containerd.runtimes.test.options]
-						BinaryName = "/usr/bin/test"
-						Runtime = "/usr/bin/test"
-						SystemdCgroup = true
-			`,
 		},
 		{
 			description: "options from runc are imported",
@@ -236,7 +209,7 @@ func TestAddRuntimeV1(t *testing.T) {
 				Tree:   config,
 			}
 
-			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault, tc.configOverrides...)
+			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault)
 			require.NoError(t, err)
 
 			require.EqualValues(t, expectedConfig.String(), config.String())

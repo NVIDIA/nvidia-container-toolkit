@@ -17,7 +17,6 @@
 package configure
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 
@@ -156,13 +155,6 @@ func (m command) build() *cli.Command {
 			Usage:       "Enable CDI in the configured runtime",
 			Destination: &config.cdi.enabled,
 		},
-		&cli.StringFlag{
-			Name:        "runtime-config-override",
-			Destination: &config.runtimeConfigOverrideJSON,
-			Usage:       "specify additional runtime options as a JSON string. The paths are relative to the runtime config.",
-			Value:       "",
-			EnvVars:     []string{"RUNTIME_CONFIG_OVERRIDE"},
-		},
 	}
 
 	return &configure
@@ -252,16 +244,10 @@ func (m command) configureConfigFile(c *cli.Context, config *config) error {
 		return fmt.Errorf("unable to load config for runtime %v: %v", config.runtime, err)
 	}
 
-	runtimeConfigOverride, err := config.runtimeConfigOverride()
-	if err != nil {
-		return fmt.Errorf("unable to parse config overrides: %w", err)
-	}
-
 	err = cfg.AddRuntime(
 		config.nvidiaRuntime.name,
 		config.nvidiaRuntime.path,
 		config.nvidiaRuntime.setAsDefault,
-		runtimeConfigOverride,
 	)
 	if err != nil {
 		return fmt.Errorf("unable to update config: %v", err)
@@ -312,20 +298,6 @@ func (c *config) getOuputConfigPath() string {
 		return ""
 	}
 	return c.resolveConfigFilePath()
-}
-
-// runtimeConfigOverride converts the specified runtimeConfigOverride JSON string to a map.
-func (o *config) runtimeConfigOverride() (map[string]interface{}, error) {
-	if o.runtimeConfigOverrideJSON == "" {
-		return nil, nil
-	}
-
-	runtimeOptions := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(o.runtimeConfigOverrideJSON), &runtimeOptions); err != nil {
-		return nil, fmt.Errorf("failed to read %v as JSON: %w", o.runtimeConfigOverrideJSON, err)
-	}
-
-	return runtimeOptions, nil
 }
 
 // configureOCIHook creates and configures the OCI hook for the NVIDIA runtime

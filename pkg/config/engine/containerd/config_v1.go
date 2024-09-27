@@ -30,7 +30,7 @@ type ConfigV1 Config
 var _ engine.Interface = (*ConfigV1)(nil)
 
 // AddRuntime adds a runtime to the containerd config
-func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool, configOverrides ...map[string]interface{}) error {
+func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool) error {
 	if c == nil || c.Tree == nil {
 		return fmt.Errorf("config is nil")
 	}
@@ -85,16 +85,6 @@ func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool, confi
 		}
 		config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "options", "BinaryName"}, path)
 		config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "options", "Runtime"}, path)
-
-		defaultRuntimeSubtree := subtreeAtPath(config, "plugins", "cri", "containerd", "default_runtime")
-		if err := defaultRuntimeSubtree.applyOverrides(configOverrides...); err != nil {
-			return fmt.Errorf("failed to apply config overrides to default_runtime: %w", err)
-		}
-	}
-
-	runtimeSubtree := subtreeAtPath(config, "plugins", "cri", "containerd", "runtimes", name)
-	if err := runtimeSubtree.applyOverrides(configOverrides...); err != nil {
-		return fmt.Errorf("failed to apply config overrides: %w", err)
 	}
 
 	*c.Tree = config

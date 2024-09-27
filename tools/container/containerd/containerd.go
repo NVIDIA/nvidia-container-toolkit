@@ -17,7 +17,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -198,11 +197,7 @@ func Setup(c *cli.Context, o *options) error {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	runtimeConfigOverride, err := o.runtimeConfigOverride()
-	if err != nil {
-		return fmt.Errorf("unable to parse config overrides: %w", err)
-	}
-	err = o.Configure(cfg, runtimeConfigOverride)
+	err = o.Configure(cfg)
 	if err != nil {
 		return fmt.Errorf("unable to configure containerd: %v", err)
 	}
@@ -259,17 +254,4 @@ func (o *options) containerAnnotationsFromCDIPrefixes() []string {
 	}
 
 	return annotations
-}
-
-func (o *options) runtimeConfigOverride() (map[string]interface{}, error) {
-	if o.runtimeConfigOverrideJSON == "" {
-		return nil, nil
-	}
-
-	runtimeOptions := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(o.runtimeConfigOverrideJSON), &runtimeOptions); err != nil {
-		return nil, fmt.Errorf("failed to read %v as JSON: %w", o.runtimeConfigOverrideJSON, err)
-	}
-
-	return runtimeOptions, nil
 }

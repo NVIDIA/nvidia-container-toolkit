@@ -25,7 +25,7 @@ import (
 )
 
 // AddRuntime adds a runtime to the containerd config
-func (c *Config) AddRuntime(name string, path string, setAsDefault bool, configOverrides ...map[string]interface{}) error {
+func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	if c == nil || c.Tree == nil {
 		return fmt.Errorf("config is nil")
 	}
@@ -68,11 +68,6 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool, configO
 
 	if setAsDefault {
 		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"}, name)
-	}
-
-	runtimeSubtree := subtreeAtPath(config, "plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name)
-	if err := runtimeSubtree.applyOverrides(configOverrides...); err != nil {
-		return fmt.Errorf("failed to apply config overrides: %w", err)
 	}
 
 	*c.Tree = config

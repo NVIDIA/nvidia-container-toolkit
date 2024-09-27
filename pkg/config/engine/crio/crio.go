@@ -44,7 +44,7 @@ func New(opts ...Option) (engine.Interface, error) {
 }
 
 // AddRuntime adds a new runtime to the crio config
-func (c *Config) AddRuntime(name string, path string, setAsDefault bool, _ ...map[string]interface{}) error {
+func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	if c == nil {
 		return fmt.Errorf("config is nil")
 	}
