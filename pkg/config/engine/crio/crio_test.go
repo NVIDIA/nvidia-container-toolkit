@@ -27,12 +27,11 @@ import (
 func TestAddRuntime(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 	testCases := []struct {
-		description     string
-		config          string
-		setAsDefault    bool
-		configOverrides []map[string]interface{}
-		expectedConfig  string
-		expectedError   error
+		description    string
+		config         string
+		setAsDefault   bool
+		expectedConfig string
+		expectedError  error
 	}{
 		{
 			description: "empty config not default runtime",
@@ -137,7 +136,7 @@ func TestAddRuntime(t *testing.T) {
 				Tree:   config,
 			}
 
-			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault, tc.configOverrides...)
+			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault)
 			require.NoError(t, err)
 
 			require.EqualValues(t, expectedConfig.String(), config.String())
