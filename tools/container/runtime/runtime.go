@@ -22,6 +22,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/runtime/containerd"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/runtime/docker"
 )
 
@@ -36,6 +37,8 @@ const (
 
 type Options struct {
 	container.Options
+
+	containerdOptions containerd.Options
 }
 
 func Flags(opts *Options) []cli.Flag {
@@ -86,6 +89,8 @@ func Flags(opts *Options) []cli.Flag {
 		},
 	}
 
+	flags = append(flags, containerd.Flags(&opts.containerdOptions)...)
+
 	return flags
 }
 
@@ -96,6 +101,16 @@ func ValidateOptions(opts *Options, runtime string, toolkitRoot string) error {
 
 	// Apply the runtime-specific config changes.
 	switch runtime {
+	case containerd.Name:
+		if opts.Config == runtimeSpecificDefault {
+			opts.Config = containerd.DefaultConfig
+		}
+		if opts.Socket == runtimeSpecificDefault {
+			opts.Socket = containerd.DefaultSocket
+		}
+		if opts.RestartMode == runtimeSpecificDefault {
+			opts.RestartMode = containerd.DefaultRestartMode
+		}
 	case docker.Name:
 		if opts.Config == runtimeSpecificDefault {
 			opts.Config = docker.DefaultConfig
@@ -115,6 +130,8 @@ func ValidateOptions(opts *Options, runtime string, toolkitRoot string) error {
 
 func Setup(c *cli.Context, opts *Options, runtime string) error {
 	switch runtime {
+	case containerd.Name:
+		return containerd.Setup(c, &opts.Options, &opts.containerdOptions)
 	case docker.Name:
 		return docker.Setup(c, &opts.Options)
 	default:
@@ -124,6 +141,8 @@ func Setup(c *cli.Context, opts *Options, runtime string) error {
 
 func Cleanup(c *cli.Context, opts *Options, runtime string) error {
 	switch runtime {
+	case containerd.Name:
+		return containerd.Cleanup(c, &opts.Options, &opts.containerdOptions)
 	case docker.Name:
 		return docker.Cleanup(c, &opts.Options)
 	default:

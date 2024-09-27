@@ -34,6 +34,12 @@ const (
 	DefaultRestartMode = "signal"
 )
 
+type Options struct{}
+
+func Flags(opts *Options) []cli.Flag {
+	return nil
+}
+
 // Setup updates docker configuration to include the nvidia runtime and reloads it
 func Setup(c *cli.Context, o *container.Options) error {
 	log.Infof("Starting 'setup' for %v", c.App.Name)
