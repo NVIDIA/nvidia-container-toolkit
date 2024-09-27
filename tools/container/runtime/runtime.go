@@ -22,6 +22,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/runtime/docker"
 )
 
 const (
@@ -89,20 +90,43 @@ func Flags(opts *Options) []cli.Flag {
 }
 
 // ValidateOptions checks whether the specified options are valid
-func ValidateOptions(opts *Options, toolkitRoot string) error {
-	// We set this option here to ensure that it is avalable in future calls.
+func ValidateOptions(opts *Options, runtime string, toolkitRoot string) error {
+	// We set this option here to ensure that it is available in future calls.
 	opts.RuntimeDir = toolkitRoot
+
+	// Apply the runtime-specific config changes.
+	switch runtime {
+	case docker.Name:
+		if opts.Config == runtimeSpecificDefault {
+			opts.Config = docker.DefaultConfig
+		}
+		if opts.Socket == runtimeSpecificDefault {
+			opts.Socket = docker.DefaultSocket
+		}
+		if opts.RestartMode == runtimeSpecificDefault {
+			opts.RestartMode = docker.DefaultRestartMode
+		}
+	default:
+		return fmt.Errorf("undefined runtime %v", runtime)
+	}
+
 	return nil
 }
 
 func Setup(c *cli.Context, opts *Options, runtime string) error {
 	switch runtime {
+	case docker.Name:
+		return docker.Setup(c, &opts.Options)
+	default:
+		return fmt.Errorf("undefined runtime %v", runtime)
 	}
-	return fmt.Errorf("undefined runtime %v", runtime)
 }
 
 func Cleanup(c *cli.Context, opts *Options, runtime string) error {
 	switch runtime {
+	case docker.Name:
+		return docker.Cleanup(c, &opts.Options)
+	default:
+		return fmt.Errorf("undefined runtime %v", runtime)
 	}
-	return fmt.Errorf("undefined runtime %v", runtime)
 }
