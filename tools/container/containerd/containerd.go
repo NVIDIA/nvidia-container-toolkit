@@ -17,7 +17,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -26,6 +25,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
 
@@ -190,6 +190,7 @@ func Setup(c *cli.Context, o *options) error {
 
 	cfg, err := containerd.New(
 		containerd.WithPath(o.Config),
+		containerd.WithConfigSource(toml.FromFile(o.Config)),
 		containerd.WithRuntimeType(o.runtimeType),
 		containerd.WithUseLegacyConfig(o.useLegacyConfig),
 		containerd.WithContainerAnnotations(o.containerAnnotationsFromCDIPrefixes()...),
@@ -198,11 +199,7 @@ func Setup(c *cli.Context, o *options) error {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	runtimeConfigOverride, err := o.runtimeConfigOverride()
-	if err != nil {
-		return fmt.Errorf("unable to parse config overrides: %w", err)
-	}
-	err = o.Configure(cfg, runtimeConfigOverride)
+	err = o.Configure(cfg)
 	if err != nil {
 		return fmt.Errorf("unable to configure containerd: %v", err)
 	}
@@ -223,6 +220,7 @@ func Cleanup(c *cli.Context, o *options) error {
 
 	cfg, err := containerd.New(
 		containerd.WithPath(o.Config),
+		containerd.WithConfigSource(toml.FromFile(o.Config)),
 		containerd.WithRuntimeType(o.runtimeType),
 		containerd.WithUseLegacyConfig(o.useLegacyConfig),
 		containerd.WithContainerAnnotations(o.containerAnnotationsFromCDIPrefixes()...),
@@ -259,17 +257,4 @@ func (o *options) containerAnnotationsFromCDIPrefixes() []string {
 	}
 
 	return annotations
-}
-
-func (o *options) runtimeConfigOverride() (map[string]interface{}, error) {
-	if o.runtimeConfigOverrideJSON == "" {
-		return nil, nil
-	}
-
-	runtimeOptions := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(o.runtimeConfigOverrideJSON), &runtimeOptions); err != nil {
-		return nil, fmt.Errorf("failed to read %v as JSON: %w", o.runtimeConfigOverrideJSON, err)
-	}
-
-	return runtimeOptions, nil
 }

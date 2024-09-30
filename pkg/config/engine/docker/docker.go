@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 )
 
@@ -49,7 +50,7 @@ func New(opts ...Option) (engine.Interface, error) {
 }
 
 // AddRuntime adds a new runtime to the docker config
-func (c *Config) AddRuntime(name string, path string, setAsDefault bool, _ ...map[string]interface{}) error {
+func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	if c == nil {
 		return fmt.Errorf("config is nil")
 	}
@@ -128,6 +129,6 @@ func (c Config) Save(path string) (int64, error) {
 		return 0, fmt.Errorf("unable to convert to JSON: %v", err)
 	}
 
-	n, err := engine.Config(path).Write(output)
+	n, err := config.Raw(path).Write(output)
 	return int64(n), err
 }

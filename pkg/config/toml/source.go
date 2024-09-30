@@ -1,5 +1,5 @@
 /**
-# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2024 NVIDIA CORPORATION
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,22 @@
 # limitations under the License.
 **/
 
-package engine
+package toml
 
-// Interface defines the API for a runtime config updater.
-type Interface interface {
-	DefaultRuntime() string
-	AddRuntime(string, string, bool) error
-	Set(string, interface{})
-	RemoveRuntime(string) error
-	Save(string) (int64, error)
+const (
+	Empty = empty("")
+)
+
+// Loader represents a source for a toml config.
+type Loader interface {
+	Load() (*Tree, error)
+}
+
+// FromFile creates a TOML source from the specified file.
+// If an empty string is passed an empty toml config is used.
+func FromFile(path string) Loader {
+	if path == "" {
+		return Empty
+	}
+	return tomlFile(path)
 }

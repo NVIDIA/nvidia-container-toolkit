@@ -19,10 +19,9 @@ package crio
 import (
 	"fmt"
 
-	"github.com/pelletier/go-toml"
-
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 // Config represents the cri-o config
@@ -39,12 +38,27 @@ func New(opts ...Option) (engine.Interface, error) {
 	for _, opt := range opts {
 		opt(b)
 	}
+	if b.logger == nil {
+		b.logger = logger.New()
+	}
+	if b.configSource == nil {
+		b.configSource = toml.FromFile(b.path)
+	}
 
-	return b.build()
+	tomlConfig, err := b.configSource.Load()
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := Config{
+		Tree:   tomlConfig,
+		Logger: b.logger,
+	}
+	return &cfg, nil
 }
 
 // AddRuntime adds a new runtime to the crio config
-func (c *Config) AddRuntime(name string, path string, setAsDefault bool, _ ...map[string]interface{}) error {
+func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	if c == nil {
 		return fmt.Errorf("config is nil")
 	}
@@ -114,23 +128,4 @@ func (c *Config) RemoveRuntime(name string) error {
 
 	*c.Tree = config
 	return nil
-}
-
-// Set sets the specified cri-o option.
-func (c *Config) Set(key string, value interface{}) {
-	config := *c.Tree
-	config.Set(key, value)
-	*c.Tree = config
-}
-
-// Save writes the config to the specified path
-func (c Config) Save(path string) (int64, error) {
-	config := c.Tree
-	output, err := config.Marshal()
-	if err != nil {
-		return 0, fmt.Errorf("unable to convert to TOML: %v", err)
-	}
-
-	n, err := engine.Config(path).Write(output)
-	return int64(n), err
 }

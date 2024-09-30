@@ -1,5 +1,5 @@
 /**
-# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2024 NVIDIA CORPORATION
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,22 @@
 # limitations under the License.
 **/
 
-package engine
+package toml
 
-// Interface defines the API for a runtime config updater.
-type Interface interface {
-	DefaultRuntime() string
-	AddRuntime(string, string, bool) error
-	Set(string, interface{})
-	RemoveRuntime(string) error
-	Save(string) (int64, error)
+import (
+	"github.com/pelletier/go-toml"
+)
+
+type empty string
+
+var _ Loader = (*empty)(nil)
+
+// Load is a no-op for an empty source.
+func (e empty) Load() (*Tree, error) {
+	return newEmpty(), nil
+}
+
+func newEmpty() *Tree {
+	tomlTree, _ := toml.TreeFromMap(nil)
+	return (*Tree)(tomlTree)
 }

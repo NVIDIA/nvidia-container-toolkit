@@ -19,20 +19,20 @@ package containerd
 import (
 	"testing"
 
-	"github.com/pelletier/go-toml"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 func TestAddRuntime(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 	testCases := []struct {
-		description     string
-		config          string
-		setAsDefault    bool
-		configOverrides []map[string]interface{}
-		expectedConfig  string
-		expectedError   error
+		description    string
+		config         string
+		setAsDefault   bool
+		expectedConfig string
+		expectedError  error
 	}{
 		{
 			description: "empty config not default runtime",
@@ -51,31 +51,6 @@ func TestAddRuntime(t *testing.T) {
 						BinaryName = "/usr/bin/test"
 			`,
 			expectedError: nil,
-		},
-		{
-			description: "empty config not default runtime with overrides",
-			configOverrides: []map[string]interface{}{
-				{
-					"options": map[string]interface{}{
-						"SystemdCgroup": true,
-					},
-				},
-			},
-			expectedConfig: `
-			version = 2
-			[plugins]
-			[plugins."io.containerd.grpc.v1.cri"]
-				[plugins."io.containerd.grpc.v1.cri".containerd]
-				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
-					privileged_without_host_devices = false
-					runtime_engine = ""
-					runtime_root = ""
-					runtime_type = ""
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test.options]
-						BinaryName = "/usr/bin/test"
-						SystemdCgroup = true
-			`,
 		},
 		{
 			description: "options from runc are imported",
@@ -224,20 +199,20 @@ func TestAddRuntime(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			config, err := toml.Load(tc.config)
+			cfg, err := toml.Load(tc.config)
 			require.NoError(t, err)
 			expectedConfig, err := toml.Load(tc.expectedConfig)
 			require.NoError(t, err)
 
 			c := &Config{
 				Logger: logger,
-				Tree:   config,
+				Tree:   cfg,
 			}
 
-			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault, tc.configOverrides...)
+			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault)
 			require.NoError(t, err)
 
-			require.EqualValues(t, expectedConfig.String(), config.String())
+			require.EqualValues(t, expectedConfig.String(), cfg.String())
 		})
 	}
 }

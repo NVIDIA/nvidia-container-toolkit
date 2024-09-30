@@ -19,13 +19,11 @@ package containerd
 import (
 	"fmt"
 
-	"github.com/pelletier/go-toml"
-
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 // AddRuntime adds a runtime to the containerd config
-func (c *Config) AddRuntime(name string, path string, setAsDefault bool, configOverrides ...map[string]interface{}) error {
+func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	if c == nil || c.Tree == nil {
 		return fmt.Errorf("config is nil")
 	}
@@ -39,12 +37,13 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool, configO
 		runtimeNamesForConfig = append(runtimeNamesForConfig, name)
 	}
 	for _, r := range runtimeNamesForConfig {
-		if options, ok := config.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", r}).(*toml.Tree); ok {
-			c.Logger.Debugf("using options from runtime %v: %v", r, options.String())
-			options, _ = toml.Load(options.String())
-			config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name}, options)
-			break
+		options := config.GetSubtreeByPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", r})
+		if options == nil {
+			continue
 		}
+		c.Logger.Debugf("using options from runtime %v: %v", r, options)
+		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name}, options.Copy())
+		break
 	}
 
 	if config.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name}) == nil {
@@ -68,11 +67,6 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool, configO
 
 	if setAsDefault {
 		config.SetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"}, name)
-	}
-
-	runtimeSubtree := subtreeAtPath(config, "plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name)
-	if err := runtimeSubtree.applyOverrides(configOverrides...); err != nil {
-		return fmt.Errorf("failed to apply config overrides: %w", err)
 	}
 
 	*c.Tree = config
@@ -150,16 +144,4 @@ func (c *Config) RemoveRuntime(name string) error {
 
 	*c.Tree = config
 	return nil
-}
-
-// Save writes the config to the specified path
-func (c Config) Save(path string) (int64, error) {
-	config := c.Tree
-	output, err := config.Marshal()
-	if err != nil {
-		return 0, fmt.Errorf("unable to convert to TOML: %v", err)
-	}
-
-	n, err := engine.Config(path).Write(output)
-	return int64(n), err
 }
