@@ -1,6 +1,7 @@
 module github.com/NVIDIA/k8s-device-plugin/deployments/devel
 
-go 1.22.1
+go 1.23
+
 toolchain go1.23.1
 
 require (
