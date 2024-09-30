@@ -49,7 +49,9 @@ jobs:
         args: -v --timeout 5m
         skip-cache: true
     - name: Check golang modules
-      run: make check-vendor
+      run: | 
+        make check-vendor
+        make -C deployments/devel check-modules
   test:
     name: Unit test
     runs-on: ubuntu-latest
