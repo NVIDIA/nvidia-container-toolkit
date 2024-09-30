@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
@@ -12,6 +11,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 	unix "golang.org/x/sys/unix"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/runtime"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/toolkit"
 )
 
 const (
@@ -20,7 +22,6 @@ const (
 	toolkitCommand     = "toolkit"
 	toolkitSubDir      = "toolkit"
 
-	defaultToolkitArgs = ""
 	defaultRuntime     = "docker"
 	defaultRuntimeArgs = ""
 )
@@ -37,6 +38,13 @@ type options struct {
 	runtimeArgs string
 	root        string
 	pidFile     string
+
+	toolkitOptions toolkit.Options
+	runtimeOptions runtime.Options
+}
+
+func (o options) toolkitRoot() string {
+	return filepath.Join(o.root, toolkitSubDir)
 }
 
 // Version defines the CLI version. This is set at build time using LD FLAGS
@@ -49,7 +57,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	options := options{}
+	options := options{
+		toolkitOptions: toolkit.Options{},
+	}
 	// Create the top-level CLI
 	c := cli.NewApp()
 	c.Name = "nvidia-toolkit"
@@ -81,6 +91,7 @@ func main() {
 			Destination: &options.runtime,
 			EnvVars:     []string{"RUNTIME"},
 		},
+		// TODO: Remove runtime-args
 		&cli.StringFlag{
 			Name:        "runtime-args",
 			Aliases:     []string{"u"},
@@ -105,6 +116,9 @@ func main() {
 		},
 	}
 
+	c.Flags = append(c.Flags, toolkit.Flags(&options.toolkitOptions)...)
+	c.Flags = append(c.Flags, runtime.Flags(&options.runtimeOptions)...)
+
 	// Run the CLI
 	log.Infof("Starting %v", c.Name)
 	if err := c.Run(remainingArgs); err != nil {
@@ -119,7 +133,12 @@ func validateFlags(_ *cli.Context, o *options) error {
 	if filepath.Base(o.pidFile) != toolkitPidFilename {
 		return fmt.Errorf("invalid toolkit.pid path %v", o.pidFile)
 	}
-
+	if err := toolkit.ValidateOptions(&o.toolkitOptions, o.toolkitRoot()); err != nil {
+		return err
+	}
+	if err := runtime.ValidateOptions(&o.runtimeOptions, o.runtime, o.toolkitRoot()); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -136,12 +155,12 @@ func Run(c *cli.Context, o *options) error {
 	}
 	defer shutdown(o.pidFile)
 
-	err = installToolkit(o)
+	err = toolkit.Install(c, &o.toolkitOptions, o.toolkitRoot())
 	if err != nil {
 		return fmt.Errorf("unable to install toolkit: %v", err)
 	}
 
-	err = setupRuntime(o)
+	err = runtime.Setup(c, &o.runtimeOptions, o.runtime)
 	if err != nil {
 		return fmt.Errorf("unable to setup runtime: %v", err)
 	}
@@ -152,7 +171,7 @@ func Run(c *cli.Context, o *options) error {
 			return fmt.Errorf("unable to wait for signal: %v", err)
 		}
 
-		err = cleanupRuntime(o)
+		err = runtime.Cleanup(c, &o.runtimeOptions, o.runtime)
 		if err != nil {
 			return fmt.Errorf("unable to cleanup runtime: %v", err)
 		}
@@ -245,70 +264,10 @@ func initialize(pidFile string) error {
 	return nil
 }
 
-func installToolkit(o *options) error {
-	log.Infof("Installing toolkit")
-
-	cmdline := []string{
-		toolkitCommand,
-		"install",
-		"--toolkit-root",
-		filepath.Join(o.root, toolkitSubDir),
-	}
-
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	cmd := exec.Command("sh", "-c", strings.Join(cmdline, " "))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error running %v command: %v", cmdline, err)
-	}
-
-	return nil
-}
-
-func setupRuntime(o *options) error {
-	toolkitDir := filepath.Join(o.root, toolkitSubDir)
-
-	log.Infof("Setting up runtime")
-
-	cmdline := fmt.Sprintf("%v setup %v %v\n", o.runtime, o.runtimeArgs, toolkitDir)
-
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	cmd := exec.Command("sh", "-c", cmdline)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error running %v command: %v", o.runtime, err)
-	}
-
-	return nil
-}
-
 func waitForSignal() error {
 	log.Infof("Waiting for signal")
 	waitingForSignal <- true
 	<-signalReceived
-	return nil
-}
-
-func cleanupRuntime(o *options) error {
-	toolkitDir := filepath.Join(o.root, toolkitSubDir)
-
-	log.Infof("Cleaning up Runtime")
-
-	cmdline := fmt.Sprintf("%v cleanup %v %v\n", o.runtime, o.runtimeArgs, toolkitDir)
-
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	cmd := exec.Command("sh", "-c", cmdline)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error running %v command: %v", o.runtime, err)
-	}
-
 	return nil
 }
 
