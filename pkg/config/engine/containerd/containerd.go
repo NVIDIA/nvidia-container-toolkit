@@ -98,3 +98,14 @@ func (c *Config) parseVersion(useLegacyConfig bool) (int, error) {
 		return -1, fmt.Errorf("unsupported type for version field: %v", v)
 	}
 }
+
+func (c *Config) GetRuntimeConfig(name string) (engine.Runtime, error) {
+	if c == nil || c.Tree == nil {
+		return nil, fmt.Errorf("config is nil")
+	}
+	config := *c.Tree
+	runtimeData := config.GetSubtreeByPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name})
+	return &ctrdCfgV2Runtime{
+		tree: runtimeData,
+	}, nil
+}

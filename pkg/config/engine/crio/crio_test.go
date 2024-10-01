@@ -91,7 +91,7 @@ func TestAddRuntime(t *testing.T) {
 			`,
 		},
 		{
-			description: "options from runc take precedence over default runtime",
+			description: "options from runc do NOT take precedence over default runtime",
 			config: `
 			[crio]
 			[crio.runtime]
@@ -120,7 +120,7 @@ func TestAddRuntime(t *testing.T) {
 			[crio.runtime.runtimes.test]
 			runtime_path = "/usr/bin/test"
 			runtime_type = "oci"
-			runc_option = "option"
+			default_option = "option"
 			`,
 		},
 	}

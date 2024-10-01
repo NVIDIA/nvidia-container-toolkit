@@ -27,6 +27,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/ocihook"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
 
@@ -115,8 +116,10 @@ func setupHook(o *container.Options, co *Options) error {
 func setupConfig(o *container.Options) error {
 	log.Infof("Updating config file")
 
+	crioCommand := getCRIOConfigCommand(o)
 	cfg, err := crio.New(
 		crio.WithPath(o.Config),
+		crio.WithConfigSource(toml.FromCommandLine(crioCommand)),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
@@ -166,8 +169,10 @@ func cleanupHook(co *Options) error {
 func cleanupConfig(o *container.Options) error {
 	log.Infof("Reverting config file modifications")
 
+	crioCommand := getCRIOConfigCommand(o)
 	cfg, err := crio.New(
 		crio.WithPath(o.Config),
+		crio.WithConfigSource(toml.FromCommandLine(crioCommand)),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
@@ -189,4 +194,14 @@ func cleanupConfig(o *container.Options) error {
 // RestartCrio restarts crio depending on the value of restartModeFlag
 func RestartCrio(o *container.Options) error {
 	return o.Restart("crio", func(string) error { return fmt.Errorf("supporting crio via signal is unsupported") })
+}
+
+// getCRIOConfigCommand returns a string slice which contains the CLI args to retrieve the current runtime configuration
+func getCRIOConfigCommand(o *container.Options) []string {
+	var cliArgs []string
+	if o.HostRootMount != "" {
+		cliArgs = append(cliArgs, "chroot", o.HostRootMount)
+	}
+	cliArgs = append(cliArgs, "crio", "status", "config")
+	return cliArgs
 }

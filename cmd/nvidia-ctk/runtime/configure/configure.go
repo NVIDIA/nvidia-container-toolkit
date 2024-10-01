@@ -44,6 +44,10 @@ const (
 	defaultContainerdConfigFilePath = "/etc/containerd/config.toml"
 	defaultCrioConfigFilePath       = "/etc/crio/crio.conf"
 	defaultDockerConfigFilePath     = "/etc/docker/daemon.json"
+
+	runtimeContainerd = "containerd"
+	runtimeCrio       = "crio"
+	runtimeDocker     = "docker"
 )
 
 type command struct {
@@ -174,14 +178,14 @@ func (m command) validateFlags(c *cli.Context, config *config) error {
 	config.mode = "config-file"
 
 	switch config.runtime {
-	case "containerd", "crio", "docker":
+	case runtimeContainerd, runtimeCrio, runtimeDocker:
 		break
 	default:
 		return fmt.Errorf("unrecognized runtime '%v'", config.runtime)
 	}
 
 	switch config.runtime {
-	case "containerd", "crio":
+	case runtimeContainerd, runtimeCrio:
 		if config.nvidiaRuntime.path == defaultNVIDIARuntimeExecutable {
 			config.nvidiaRuntime.path = defaultNVIDIARuntimeExpecutablePath
 		}
@@ -190,7 +194,7 @@ func (m command) validateFlags(c *cli.Context, config *config) error {
 		}
 	}
 
-	if config.runtime != "containerd" && config.runtime != "docker" {
+	if config.runtime != runtimeContainerd && config.runtime != runtimeDocker {
 		if config.cdi.enabled {
 			m.logger.Warningf("Ignoring cdi.enabled flag for %v", config.runtime)
 		}
@@ -219,23 +223,24 @@ func (m command) configureWrapper(c *cli.Context, config *config) error {
 // configureConfigFile updates the specified container engine config file to enable the NVIDIA runtime.
 func (m command) configureConfigFile(c *cli.Context, config *config) error {
 	configFilePath := config.resolveConfigFilePath()
+	configCommand := config.resolveConfigCommand()
 
 	var cfg engine.Interface
 	var err error
 	switch config.runtime {
-	case "containerd":
+	case runtimeContainerd:
 		cfg, err = containerd.New(
 			containerd.WithLogger(m.logger),
 			containerd.WithPath(configFilePath),
-			containerd.WithConfigSource(toml.FromFile(configFilePath)),
+			containerd.WithConfigSource(toml.FromCommandLine(configCommand)),
 		)
-	case "crio":
+	case runtimeCrio:
 		cfg, err = crio.New(
 			crio.WithLogger(m.logger),
 			crio.WithPath(configFilePath),
-			crio.WithConfigSource(toml.FromFile(configFilePath)),
+			crio.WithConfigSource(toml.FromCommandLine(configCommand)),
 		)
-	case "docker":
+	case runtimeDocker:
 		cfg, err = docker.New(
 			docker.WithLogger(m.logger),
 			docker.WithPath(configFilePath),
@@ -285,14 +290,25 @@ func (c *config) resolveConfigFilePath() string {
 		return c.configFilePath
 	}
 	switch c.runtime {
-	case "containerd":
+	case runtimeContainerd:
 		return defaultContainerdConfigFilePath
-	case "crio":
+	case runtimeCrio:
 		return defaultCrioConfigFilePath
-	case "docker":
+	case runtimeDocker:
 		return defaultDockerConfigFilePath
 	}
 	return ""
+}
+
+// resolveConfigCommand returns the default cli command to fetch the current runtime config
+func (c *config) resolveConfigCommand() []string {
+	switch c.runtime {
+	case runtimeContainerd:
+		return []string{"containerd", "config", "dump"}
+	case runtimeCrio:
+		return []string{"crio", "status", "config"}
+	}
+	return []string{}
 }
 
 // getOuputConfigPath returns the configured config path or "" if dry-run is enabled
@@ -318,9 +334,9 @@ func enableCDI(config *config, cfg engine.Interface) error {
 		return nil
 	}
 	switch config.runtime {
-	case "containerd":
+	case runtimeContainerd:
 		cfg.Set("enable_cdi", true)
-	case "docker":
+	case runtimeDocker:
 		cfg.Set("features", map[string]bool{"cdi": true})
 	default:
 		return fmt.Errorf("enabling CDI in %s is not supported", config.runtime)

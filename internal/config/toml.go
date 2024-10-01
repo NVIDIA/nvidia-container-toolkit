@@ -170,9 +170,24 @@ func (t *Toml) Get(key string) interface{} {
 	return (*toml.Tree)(t).Get(key)
 }
 
+// GetDefault returns the value for the specified key and falls back to the default value if the Get call fails
+func (t *Toml) GetDefault(key string, def interface{}) interface{} {
+	val := t.Get(key)
+	if val == nil {
+		return def
+	}
+	return val
+}
+
 // Set sets the specified key to the specified value in the TOML config.
 func (t *Toml) Set(key string, value interface{}) {
 	(*toml.Tree)(t).Set(key, value)
+}
+
+// WriteTo encode the Tree as Toml and writes it to the writer w.
+// Returns the number of bytes written in case of success, or an error if anything happened.
+func (t *Toml) WriteTo(w io.Writer) (int64, error) {
+	return (*toml.Tree)(t).WriteTo(w)
 }
 
 // commentDefaults applies the required comments for default values to the Toml.

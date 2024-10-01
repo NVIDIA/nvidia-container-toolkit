@@ -24,6 +24,7 @@ import (
 	cli "github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
 
@@ -83,8 +84,10 @@ func Flags(opts *Options) []cli.Flag {
 func Setup(c *cli.Context, o *container.Options, co *Options) error {
 	log.Infof("Starting 'setup' for %v", c.App.Name)
 
+	containerdCommand := getContainerdConfigCommand(o)
 	cfg, err := containerd.New(
 		containerd.WithPath(o.Config),
+		containerd.WithConfigSource(toml.FromCommandLine(containerdCommand)),
 		containerd.WithRuntimeType(co.runtimeType),
 		containerd.WithUseLegacyConfig(co.useLegacyConfig),
 		containerd.WithContainerAnnotations(co.containerAnnotationsFromCDIPrefixes()...),
@@ -112,8 +115,10 @@ func Setup(c *cli.Context, o *container.Options, co *Options) error {
 func Cleanup(c *cli.Context, o *container.Options, co *Options) error {
 	log.Infof("Starting 'cleanup' for %v", c.App.Name)
 
+	containerdCommand := getContainerdConfigCommand(o)
 	cfg, err := containerd.New(
 		containerd.WithPath(o.Config),
+		containerd.WithConfigSource(toml.FromCommandLine(containerdCommand)),
 		containerd.WithRuntimeType(co.runtimeType),
 		containerd.WithUseLegacyConfig(co.useLegacyConfig),
 		containerd.WithContainerAnnotations(co.containerAnnotationsFromCDIPrefixes()...),
@@ -163,4 +168,14 @@ func (o *Options) runtimeConfigOverride() (map[string]interface{}, error) {
 	}
 
 	return runtimeOptions, nil
+}
+
+// getContainerdConfigCommand returns a string slice which contains the CLI args to retrieve the current runtime configuration
+func getContainerdConfigCommand(o *container.Options) []string {
+	var cliArgs []string
+	if o.HostRootMount != "" {
+		cliArgs = append(cliArgs, "chroot", o.HostRootMount)
+	}
+	cliArgs = append(cliArgs, "crio", "status", "config")
+	return cliArgs
 }

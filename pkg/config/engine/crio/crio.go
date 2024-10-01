@@ -30,6 +30,17 @@ type Config struct {
 	Logger logger.Interface
 }
 
+type crioRuntime struct {
+	tree *toml.Tree
+}
+
+func (c *crioRuntime) GetBinPath() string {
+	if binaryPath, ok := c.tree.GetPath([]string{"runtime_path"}).(string); ok && binaryPath != "" {
+		return binaryPath
+	}
+	return ""
+}
+
 var _ engine.Interface = (*Config)(nil)
 
 // New creates a cri-o config with the specified options
@@ -65,11 +76,12 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 
 	config := *c.Tree
 
-	// By default we extract the runtime options from the runc settings; if this does not exist we get the options from the default runtime specified in the config.
-	runtimeNamesForConfig := []string{"runc"}
+	// By default, we extract the runtime options from the runc settings; if this does not exist we get the options from the default runtime specified in the config.
+	var runtimeNamesForConfig []string
 	if name, ok := config.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok && name != "" {
 		runtimeNamesForConfig = append(runtimeNamesForConfig, name)
 	}
+	runtimeNamesForConfig = append(runtimeNamesForConfig, "runc")
 	for _, r := range runtimeNamesForConfig {
 		if options, ok := config.GetPath([]string{"crio", "runtime", "runtimes", r}).(*toml.Tree); ok {
 			c.Logger.Debugf("using options from runtime %v: %v", r, options.String())
@@ -128,4 +140,15 @@ func (c *Config) RemoveRuntime(name string) error {
 
 	*c.Tree = config
 	return nil
+}
+
+func (c *Config) GetRuntimeConfig(name string) (engine.Runtime, error) {
+	if c == nil || c.Tree == nil {
+		return nil, fmt.Errorf("config is nil")
+	}
+	config := *c.Tree
+	runtimeData := config.GetSubtreeByPath([]string{"crio", "runtime", "runtimes", name})
+	return &crioRuntime{
+		tree: runtimeData,
+	}, nil
 }

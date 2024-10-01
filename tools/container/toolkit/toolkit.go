@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	toml "github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
@@ -32,6 +31,10 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
+	cfgtoml "github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	transformroot "github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform/root"
 )
@@ -39,6 +42,9 @@ import (
 const (
 	// DefaultNvidiaDriverRoot specifies the default NVIDIA driver run directory
 	DefaultNvidiaDriverRoot = "/run/nvidia/driver"
+
+	// DefaultHostRootMount specifies the path to the host root to be used when executing shell commands
+	DefaultHostRootMount = "/host"
 
 	nvidiaContainerCliSource         = "/usr/bin/nvidia-container-cli"
 	nvidiaContainerRuntimeHookSource = "/usr/bin/nvidia-container-runtime-hook"
@@ -54,6 +60,7 @@ type Options struct {
 	DevRoot           string
 	DriverRootCtrPath string
 	DevRootCtrPath    string
+	HostRootMount     string
 
 	ContainerRuntimeMode     string
 	ContainerRuntimeDebug    string
@@ -78,6 +85,8 @@ type Options struct {
 
 	acceptNVIDIAVisibleDevicesWhenUnprivileged bool
 	acceptNVIDIAVisibleDevicesAsVolumeMounts   bool
+
+	toolkitConfigSource string
 
 	ignoreErrors bool
 }
@@ -108,6 +117,13 @@ func Flags(opts *Options) []cli.Flag {
 			Usage:       "Specify the root where `/dev` is located in the container. If this is not specified, the driver-root-ctr-path is assumed.",
 			Destination: &opts.DevRootCtrPath,
 			EnvVars:     []string{"DEV_ROOT_CTR_PATH"},
+		},
+		&cli.StringFlag{
+			Name:        "host-root",
+			Usage:       "Specify the path to the host root to be used when executing shell commands.",
+			Value:       DefaultHostRootMount,
+			Destination: &opts.HostRootMount,
+			EnvVars:     []string{"HOST_ROOT_MOUNT"},
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-container-runtime.debug",
@@ -189,6 +205,13 @@ func Flags(opts *Options) []cli.Flag {
 			Value:       "management.nvidia.com/gpu",
 			Destination: &opts.cdiKind,
 			EnvVars:     []string{"CDI_KIND"},
+		},
+		&cli.StringFlag{
+			Name:        "toolkit-config-source",
+			Usage:       "The file where the NVIDIA Container toolkit source configuration is specified",
+			Value:       nvidiaContainerToolkitConfigSource,
+			Destination: &opts.toolkitConfigSource,
+			EnvVars:     []string{"TOOLKIT_CONFIG_SOURCE"},
 		},
 		&cli.BoolFlag{
 			Name:        "ignore-errors",
@@ -342,7 +365,14 @@ func Install(cli *cli.Context, opts *Options, toolkitRoot string) error {
 		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA Container CDI Hook CLI: %v", err))
 	}
 
-	err = installToolkitConfig(cli, toolkitConfigPath, nvidiaContainerCliExecutable, nvidiaCTKPath, nvidiaContainerRuntimeHookPath, opts)
+	var runtimeBinPaths []string
+	runtimeBinPaths, err = getRuntimeBinaryPaths(opts.HostRootMount)
+	if err != nil {
+		log.Warningf("Error retrieving runtime binary paths: %v", err)
+	}
+
+	err = installToolkitConfig(cli, toolkitConfigPath, nvidiaContainerCliExecutable, nvidiaCTKPath, nvidiaContainerRuntimeHookPath,
+		runtimeBinPaths, opts)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
 	} else if err != nil {
@@ -416,10 +446,13 @@ func installLibrary(libName string, toolkitRoot string) error {
 
 // installToolkitConfig installs the config file for the NVIDIA container toolkit ensuring
 // that the settings are updated to match the desired install and nvidia driver directories.
-func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, nvidaContainerRuntimeHookPath string, opts *Options) error {
+func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string,
+	nvidaContainerRuntimeHookPath string, runtimeBinaryPaths []string, opts *Options) error {
 	log.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
 
-	cfg, err := loadConfig(nvidiaContainerToolkitConfigSource)
+	cfg, err := config.New(
+		config.WithConfigFile(opts.toolkitConfigSource),
+	)
 	if err != nil {
 		return fmt.Errorf("could not open source config file: %v", err)
 	}
@@ -436,6 +469,18 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 	// Use the driver run root as the root:
 	driverLdconfigPath := config.NormalizeLDConfigPath("@" + filepath.Join(opts.DriverRoot, strings.TrimPrefix(ldconfigPath, "@/")))
 
+	var ctkRuntimes []string
+	defaultCfg, err := cfg.Config()
+	if err == nil {
+		defaultCfgRuntimes := defaultCfg.NVIDIAContainerRuntimeConfig.Runtimes
+		if len(runtimeBinaryPaths) > 0 {
+			ctkRuntimes = append(ctkRuntimes, runtimeBinaryPaths...)
+		}
+		ctkRuntimes = append(ctkRuntimes, defaultCfgRuntimes...)
+	} else {
+		log.Warningf("could not get default toolkit config: %v", err)
+	}
+
 	configValues := map[string]interface{}{
 		// Set the options in the root toml table
 		"accept-nvidia-visible-devices-envvar-when-unprivileged": opts.acceptNVIDIAVisibleDevicesWhenUnprivileged,
@@ -450,6 +495,11 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 		"nvidia-container-runtime-hook.path":                nvidaContainerRuntimeHookPath,
 		"nvidia-container-runtime-hook.skip-mode-detection": opts.ContainerRuntimeHookSkipModeDetection,
 	}
+
+	if len(ctkRuntimes) > 0 {
+		configValues["nvidia-container-runtime.runtimes"] = ctkRuntimes
+	}
+
 	for key, value := range configValues {
 		cfg.Set(key, value)
 	}
@@ -501,16 +551,6 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 	}
 
 	return nil
-}
-
-func loadConfig(path string) (*toml.Tree, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return toml.LoadFile(path)
-	} else if os.IsNotExist(err) {
-		return toml.TreeFromMap(nil)
-	}
-	return nil, err
 }
 
 // installContainerToolkitCLI installs the nvidia-ctk CLI executable and wrapper.
@@ -792,4 +832,68 @@ func generateCDISpec(opts *Options, nvidiaCDIHookPath string) error {
 	}
 
 	return nil
+}
+
+// getRuntimeBinaryPaths extracts the full paths of the low-level runtime binaries specified in the container runtime config
+func getRuntimeBinaryPaths(hostRoot string) ([]string, error) {
+	var runtimeBinaryPaths []string
+
+	if r, ok := os.LookupEnv("RUNTIME"); ok {
+
+		runtimeConfigCommand := getRuntimeConfigCommand(hostRoot, r)
+
+		var cfg engine.Interface
+		var err error
+		switch r {
+		case "containerd":
+			cfg, err = containerd.New(
+				containerd.WithConfigSource(cfgtoml.FromCommandLine(runtimeConfigCommand)),
+			)
+			if err != nil {
+				return nil, fmt.Errorf("unable to load containerd config: %w", err)
+			}
+
+		case "crio":
+			cfg, err = crio.New(
+				crio.WithConfigSource(cfgtoml.FromCommandLine(runtimeConfigCommand)),
+			)
+			if err != nil {
+				return nil, fmt.Errorf("unable to load crio config: %w", err)
+			}
+		}
+
+		if cfg == nil {
+			return nil, fmt.Errorf("unable to load runtime config for %s", r)
+		}
+		defaultRuntime := cfg.DefaultRuntime()
+		if defaultRuntime != "" {
+			runtimeCfg, err := cfg.GetRuntimeConfig(defaultRuntime)
+			if err == nil {
+				binPath := runtimeCfg.GetBinPath()
+				if binPath != "" {
+					runtimeBinaryPaths = append(runtimeBinaryPaths, binPath)
+				}
+			} else {
+				log.Warningf("Unable to determine runtime binary path: %v", err)
+			}
+		}
+	}
+	return runtimeBinaryPaths, nil
+}
+
+// getRuntimeConfigCommand returns the default cli command to fetch the current runtime config
+func getRuntimeConfigCommand(hostRoot, runtime string) []string {
+	var cliArgs []string
+	if hostRoot != "" {
+		cliArgs = append(cliArgs, "chroot", hostRoot)
+	}
+	switch runtime {
+	case "containerd":
+		cliArgs = append(cliArgs, "containerd", "config", "dump")
+		return cliArgs
+	case "crio":
+		cliArgs = append(cliArgs, "crio", "status", "config")
+		return cliArgs
+	}
+	return []string{}
 }

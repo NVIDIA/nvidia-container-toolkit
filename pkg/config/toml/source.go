@@ -33,3 +33,16 @@ func FromFile(path string) Loader {
 	}
 	return tomlFile(path)
 }
+
+// FromCommandLine creates a TOML source from the output
+// of a shell command specified via string slice.
+// If an empty slice is passed an empty toml config is used.
+func FromCommandLine(params []string) Loader {
+	if len(params) == 0 {
+		return Empty
+	}
+	return &tomlCliSource{
+		command: params[0],
+		args:    params[1:],
+	}
+}

@@ -18,6 +18,7 @@ package docker
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -131,4 +132,8 @@ func (c Config) Save(path string) (int64, error) {
 
 	n, err := config.Raw(path).Write(output)
 	return int64(n), err
+}
+
+func (c *Config) GetRuntimeConfig(name string) (engine.Runtime, error) {
+	return nil, errors.New("Not Implemented")
 }

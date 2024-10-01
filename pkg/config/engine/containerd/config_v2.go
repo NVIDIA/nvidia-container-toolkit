@@ -22,6 +22,17 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
+type ctrdCfgV2Runtime struct {
+	tree *toml.Tree
+}
+
+func (c *ctrdCfgV2Runtime) GetBinPath() string {
+	if binPath, ok := c.tree.GetPath([]string{"options", "BinaryName"}).(string); ok {
+		return binPath
+	}
+	return ""
+}
+
 // AddRuntime adds a runtime to the containerd config
 func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	if c == nil || c.Tree == nil {

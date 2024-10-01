@@ -22,12 +22,24 @@ import (
 	"github.com/pelletier/go-toml"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
+	cfgtoml "github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 // ConfigV1 represents a version 1 containerd config
 type ConfigV1 Config
 
 var _ engine.Interface = (*ConfigV1)(nil)
+
+type ctrdCfgV1Runtime struct {
+	tree *cfgtoml.Tree
+}
+
+func (c *ctrdCfgV1Runtime) GetBinPath() string {
+	if binPath, ok := c.tree.GetPath([]string{"options", "BinaryName"}).(string); ok {
+		return binPath
+	}
+	return ""
+}
 
 // AddRuntime adds a runtime to the containerd config
 func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool) error {
@@ -156,4 +168,16 @@ func (c *ConfigV1) Set(key string, value interface{}) {
 // Save wrotes the config to a file
 func (c ConfigV1) Save(path string) (int64, error) {
 	return (Config)(c).Save(path)
+}
+
+func (c *ConfigV1) GetRuntimeConfig(name string) (engine.Runtime, error) {
+	if c == nil || c.Tree == nil {
+		return nil, fmt.Errorf("config is nil")
+	}
+	config := *c.Tree
+	runtimeData := config.GetSubtreeByPath([]string{"plugins", "cri", "containerd", "runtimes", name})
+
+	return &ctrdCfgV1Runtime{
+		tree: runtimeData,
+	}, nil
 }

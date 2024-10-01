@@ -23,4 +23,10 @@ type Interface interface {
 	Set(string, interface{})
 	RemoveRuntime(string) error
 	Save(string) (int64, error)
+	GetRuntimeConfig(string) (Runtime, error)
+}
+
+// Runtime defines the interface to query container runtime handler configuration
+type Runtime interface {
+	GetBinPath() string
 }
