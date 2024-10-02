@@ -263,6 +263,10 @@ func (l *nvcdilib) getCudaVersionNvml() (string, error) {
 }
 
 func (l *nvcdilib) getCudaVersionNvsandboxutils() (string, error) {
+	if l.nvsandboxutilslib == nil {
+		return "", fmt.Errorf("libnvsandboxutils is not available")
+	}
+
 	// Sandboxutils initialization should happen before this function is called
 	version, ret := l.nvsandboxutilslib.GetDriverVersion()
 	if ret != nvsandboxutils.SUCCESS {
