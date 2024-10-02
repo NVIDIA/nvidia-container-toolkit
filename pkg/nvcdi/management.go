@@ -28,6 +28,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
 
@@ -61,6 +62,19 @@ func (m *managementlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 
 // GetCommonEdits returns the common edits for use in managementlib containers.
 func (m *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
+	if m.nvsandboxutilslib != nil {
+		if r := m.nvsandboxutilslib.Init(m.driverRoot); r != nvsandboxutils.SUCCESS {
+			m.logger.Warningf("Failed to init nvsandboxutils: %v; ignoring", r)
+			m.nvsandboxutilslib = nil
+		}
+		defer func() {
+			if m.nvsandboxutilslib == nil {
+				return
+			}
+			_ = m.nvsandboxutilslib.Shutdown()
+		}()
+	}
+
 	version, err := m.getCudaVersion()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CUDA version: %v", err)
