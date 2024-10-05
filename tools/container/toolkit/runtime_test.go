@@ -17,8 +17,7 @@
 package toolkit
 
 import (
-	"bytes"
-	"strings"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -26,32 +25,10 @@ import (
 
 func TestNvidiaContainerRuntimeInstallerWrapper(t *testing.T) {
 	r := newNvidiaContainerRuntimeInstaller(nvidiaContainerRuntimeSource)
-
-	const shebang = "#! /bin/sh"
-	const destFolder = "/dest/folder"
-	const dotfileName = "source.real"
-
-	buf := &bytes.Buffer{}
-
-	err := r.writeWrapperTo(buf, destFolder, dotfileName)
-	require.NoError(t, err)
-
-	expectedLines := []string{
-		shebang,
-		"",
-		"cat /proc/modules | grep -e \"^nvidia \" >/dev/null 2>&1",
-		"if [ \"${?}\" != \"0\" ]; then",
-		"	echo \"nvidia driver modules are not yet loaded, invoking runc directly\"",
-		"	exec runc \"$@\"",
-		"fi",
-		"",
-		"PATH=/dest/folder:$PATH \\",
-		"XDG_CONFIG_HOME=/dest/folder/.config \\",
-		"source.real \\",
-		"\t\"$@\"",
-		"",
-	}
-
-	exepectedContents := strings.Join(expectedLines, "\n")
-	require.Equal(t, exepectedContents, buf.String())
+	require.Equal(t, nvidiaContainerRuntimeSource, r.source)
+	require.Equal(t, filepath.Base(nvidiaContainerRuntimeSource), r.target.wrapperName)
+	require.Equal(t, filepath.Base(nvidiaContainerRuntimeSource), r.wrapperName())
+	require.Equal(t, filepath.Base(nvidiaContainerRuntimeSource)+".real", r.dotRealFilename())
+	require.Nil(t, r.argv)
+	require.Equal(t, map[string]string{"XDG_CONFIG_HOME": filepath.Join(destDirPattern, ".config")}, r.envm)
 }
