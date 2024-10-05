@@ -108,6 +108,19 @@ func loadConfigTomlFrom(reader io.Reader) (*Toml, error) {
 
 // Config returns the typed config associated with the toml tree.
 func (t *Toml) Config() (*Config, error) {
+	cfg, err := t.configNoOverrides()
+	if err != nil {
+		return nil, err
+	}
+	if err := cfg.assertValid(); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+// configNoOverrides returns the typed config associated with the toml tree.
+// This config does not include feature-specific overrides.
+func (t *Toml) configNoOverrides() (*Config, error) {
 	cfg, err := GetDefault()
 	if err != nil {
 		return nil, err
