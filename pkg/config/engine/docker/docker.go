@@ -39,7 +39,8 @@ type dockerRuntime map[string]interface{}
 
 var _ engine.RuntimeConfig = (*dockerRuntime)(nil)
 
-// GetBinaryPath retrieves the path to the actual low-level runtime binary invoked by the runtime handler
+// GetBinaryPath retrieves the path to the low-level runtime binary for a runtime.
+// If no path is available, the empty string is returned.
 func (d dockerRuntime) GetBinaryPath() string {
 	if d == nil {
 		return ""
