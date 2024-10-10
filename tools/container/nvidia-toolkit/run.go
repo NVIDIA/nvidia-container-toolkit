@@ -9,8 +9,8 @@ import (
 	"syscall"
 
 	log "github.com/sirupsen/logrus"
-	cli "github.com/urfave/cli/v2"
-	unix "golang.org/x/sys/unix"
+	"github.com/urfave/cli/v2"
+	"golang.org/x/sys/unix"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/runtime"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/toolkit"
@@ -19,12 +19,10 @@ import (
 const (
 	toolkitPidFilename = "toolkit.pid"
 	defaultPidFile     = "/run/nvidia/toolkit/" + toolkitPidFilename
-	toolkitCommand     = "toolkit"
 	toolkitSubDir      = "toolkit"
 
-	defaultRuntime       = "docker"
-	defaultRuntimeArgs   = ""
-	defaultHostRootMount = "/host"
+	defaultRuntime     = "docker"
+	defaultRuntimeArgs = ""
 )
 
 var availableRuntimes = map[string]struct{}{"docker": {}, "crio": {}, "containerd": {}}
@@ -192,7 +190,7 @@ func Run(c *cli.Context, o *options) error {
 }
 
 // ParseArgs checks if a single positional argument was defined and extracts this the root.
-// If no positional arguments are defined, the it is assumed that the root is specified as a flag.
+// If no positional arguments are defined, it is assumed that the root is specified as a flag.
 func ParseArgs(args []string) ([]string, string, error) {
 	log.Infof("Parsing arguments")
 

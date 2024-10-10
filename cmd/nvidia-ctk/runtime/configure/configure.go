@@ -54,7 +54,7 @@ type command struct {
 	logger logger.Interface
 }
 
-// NewCommand constructs an configure command with the specified logger
+// NewCommand constructs a configure command with the specified logger
 func NewCommand(logger logger.Interface) *cli.Command {
 	c := command{
 		logger: logger,
@@ -289,7 +289,7 @@ func (m command) configureConfigFile(c *cli.Context, config *config) error {
 		return fmt.Errorf("failed to enable CDI in %s: %w", config.runtime, err)
 	}
 
-	outputPath := config.getOuputConfigPath()
+	outputPath := config.getOutputConfigPath()
 	n, err := cfg.Save(outputPath)
 	if err != nil {
 		return fmt.Errorf("unable to flush config: %v", err)
@@ -346,8 +346,8 @@ func (c *config) getCommandConfigSource() toml.Loader {
 	return toml.Empty
 }
 
-// getOuputConfigPath returns the configured config path or "" if dry-run is enabled
-func (c *config) getOuputConfigPath() string {
+// getOutputConfigPath returns the configured config path or "" if dry-run is enabled
+func (c *config) getOutputConfigPath() string {
 	if c.dryRun {
 		return ""
 	}
