@@ -44,23 +44,21 @@ func TestGetConfigWithCustomConfig(t *testing.T) {
 
 func TestGetConfig(t *testing.T) {
 	testCases := []struct {
-		description     string
-		contents        []string
-		expectedError   error
-		inspectLdconfig bool
-		distIdsLike     []string
-		expectedConfig  *Config
+		description    string
+		contents       []string
+		expectedError  error
+		distIdsLike    []string
+		expectedConfig *Config
 	}{
 		{
-			description:     "empty config is default",
-			inspectLdconfig: true,
+			description: "empty config is default",
 			expectedConfig: &Config{
 				AcceptEnvvarUnprivileged:    true,
 				SupportedDriverCapabilities: "compat32,compute,display,graphics,ngx,utility,video",
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root:      "",
 					LoadKmods: true,
-					Ldconfig:  "WAS_CHECKED",
+					Ldconfig:  "@/test/ld/config/path",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/dev/null",
@@ -93,7 +91,7 @@ func TestGetConfig(t *testing.T) {
 				"supported-driver-capabilities = \"compute,utility\"",
 				"nvidia-container-cli.root = \"/bar/baz\"",
 				"nvidia-container-cli.load-kmods = false",
-				"nvidia-container-cli.ldconfig = \"/foo/bar/ldconfig\"",
+				"nvidia-container-cli.ldconfig = \"@/foo/bar/ldconfig\"",
 				"nvidia-container-cli.user = \"foo:bar\"",
 				"nvidia-container-runtime.debug = \"/foo/bar\"",
 				"nvidia-container-runtime.discover-mode = \"not-legacy\"",
@@ -113,7 +111,7 @@ func TestGetConfig(t *testing.T) {
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root:      "/bar/baz",
 					LoadKmods: false,
-					Ldconfig:  "/foo/bar/ldconfig",
+					Ldconfig:  "@/foo/bar/ldconfig",
 					User:      "foo:bar",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
@@ -147,6 +145,53 @@ func TestGetConfig(t *testing.T) {
 			},
 		},
 		{
+			description: "feature allows ldconfig to be overridden",
+			contents: []string{
+				"[nvidia-container-cli]",
+				"ldconfig = \"/foo/bar/ldconfig\"",
+				"[features]",
+				"allow-ldconfig-from-container = true",
+			},
+			expectedConfig: &Config{
+				AcceptEnvvarUnprivileged:    true,
+				SupportedDriverCapabilities: "compat32,compute,display,graphics,ngx,utility,video",
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
+					Ldconfig:  "/foo/bar/ldconfig",
+					LoadKmods: true,
+				},
+				NVIDIAContainerRuntimeConfig: RuntimeConfig{
+					DebugFilePath: "/dev/null",
+					LogLevel:      "info",
+					Runtimes:      []string{"docker-runc", "runc", "crun"},
+					Mode:          "auto",
+					Modes: modesConfig{
+						CSV: csvModeConfig{
+							MountSpecPath: "/etc/nvidia-container-runtime/host-files-for-container.d",
+						},
+						CDI: cdiModeConfig{
+							DefaultKind: "nvidia.com/gpu",
+							AnnotationPrefixes: []string{
+								"cdi.k8s.io/",
+							},
+							SpecDirs: []string{
+								"/etc/cdi",
+								"/var/run/cdi",
+							},
+						},
+					},
+				},
+				NVIDIAContainerRuntimeHookConfig: RuntimeHookConfig{
+					Path: "nvidia-container-runtime-hook",
+				},
+				NVIDIACTKConfig: CTKConfig{
+					Path: "nvidia-ctk",
+				},
+				Features: features{
+					AllowLDConfigFromContainer: ptr(feature(true)),
+				},
+			},
+		},
+		{
 			description: "config options set in section",
 			contents: []string{
 				"accept-nvidia-visible-devices-envvar-when-unprivileged = false",
@@ -154,7 +199,7 @@ func TestGetConfig(t *testing.T) {
 				"[nvidia-container-cli]",
 				"root = \"/bar/baz\"",
 				"load-kmods = false",
-				"ldconfig = \"/foo/bar/ldconfig\"",
+				"ldconfig = \"@/foo/bar/ldconfig\"",
 				"user = \"foo:bar\"",
 				"[nvidia-container-runtime]",
 				"debug = \"/foo/bar\"",
@@ -179,7 +224,7 @@ func TestGetConfig(t *testing.T) {
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root:      "/bar/baz",
 					LoadKmods: false,
-					Ldconfig:  "/foo/bar/ldconfig",
+					Ldconfig:  "@/foo/bar/ldconfig",
 					User:      "foo:bar",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
@@ -213,16 +258,15 @@ func TestGetConfig(t *testing.T) {
 			},
 		},
 		{
-			description:     "suse config",
-			distIdsLike:     []string{"suse", "opensuse"},
-			inspectLdconfig: true,
+			description: "suse config",
+			distIdsLike: []string{"suse", "opensuse"},
 			expectedConfig: &Config{
 				AcceptEnvvarUnprivileged:    true,
 				SupportedDriverCapabilities: "compat32,compute,display,graphics,ngx,utility,video",
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root:      "",
 					LoadKmods: true,
-					Ldconfig:  "WAS_CHECKED",
+					Ldconfig:  "@/test/ld/config/path",
 					User:      "root:video",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
@@ -250,9 +294,8 @@ func TestGetConfig(t *testing.T) {
 			},
 		},
 		{
-			description:     "suse config overrides user",
-			distIdsLike:     []string{"suse", "opensuse"},
-			inspectLdconfig: true,
+			description: "suse config overrides user",
+			distIdsLike: []string{"suse", "opensuse"},
 			contents: []string{
 				"nvidia-container-cli.user = \"foo:bar\"",
 			},
@@ -262,7 +305,7 @@ func TestGetConfig(t *testing.T) {
 				NVIDIAContainerCLIConfig: ContainerCLIConfig{
 					Root:      "",
 					LoadKmods: true,
-					Ldconfig:  "WAS_CHECKED",
+					Ldconfig:  "@/test/ld/config/path",
 					User:      "foo:bar",
 				},
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
@@ -293,6 +336,7 @@ func TestGetConfig(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
+			defer setGetLdConfigPathForTest()()
 			defer setGetDistIDLikeForTest(tc.distIdsLike)()
 			reader := strings.NewReader(strings.Join(tc.contents, "\n"))
 
@@ -305,17 +349,59 @@ func TestGetConfig(t *testing.T) {
 			cfg, err := tomlCfg.Config()
 			require.NoError(t, err)
 
-			// We first handle the ldconfig path since this is currently system-dependent.
-			if tc.inspectLdconfig {
-				ldconfig := cfg.NVIDIAContainerCLIConfig.Ldconfig
-				require.True(t, strings.HasPrefix(ldconfig, "@/sbin/ldconfig"))
-				remaining := strings.TrimPrefix(ldconfig, "@/sbin/ldconfig")
-				require.True(t, remaining == ".real" || remaining == "")
-
-				cfg.NVIDIAContainerCLIConfig.Ldconfig = "WAS_CHECKED"
-			}
-
 			require.EqualValues(t, tc.expectedConfig, cfg)
+		})
+	}
+}
+
+func TestAssertValid(t *testing.T) {
+	defer setGetLdConfigPathForTest()()
+
+	testCases := []struct {
+		description   string
+		config        *Config
+		expectedError error
+	}{
+		{
+			description: "default is valid",
+			config: func() *Config {
+				config, _ := GetDefault()
+				return config
+			}(),
+		},
+		{
+			description: "alternative host ldconfig path is valid",
+			config: &Config{
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
+					Ldconfig: "@/some/host/path",
+				},
+			},
+		},
+		{
+			description: "non-host path is invalid",
+			config: &Config{
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
+					Ldconfig: "/non/host/path",
+				},
+			},
+			expectedError: errInvalidConfig,
+		},
+		{
+			description: "feature flag allows non-host path",
+			config: &Config{
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
+					Ldconfig: "/non/host/path",
+				},
+				Features: features{
+					AllowLDConfigFromContainer: ptr(feature(true)),
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			require.ErrorIs(t, tc.config.assertValid(), tc.expectedError)
 		})
 	}
 }
@@ -333,5 +419,20 @@ func setGetDistIDLikeForTest(ids []string) func() {
 
 	return func() {
 		getDistIDLike = original
+	}
+}
+
+// prt returns a reference to whatever type is passed into it
+func ptr[T any](x T) *T {
+	return &x
+}
+
+func setGetLdConfigPathForTest() func() {
+	previous := getLdConfigPath
+	getLdConfigPath = func() string {
+		return "@/test/ld/config/path"
+	}
+	return func() {
+		getLdConfigPath = previous
 	}
 }

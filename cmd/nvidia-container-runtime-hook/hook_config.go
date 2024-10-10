@@ -17,16 +17,10 @@ const (
 	driverPath = "/run/nvidia/driver"
 )
 
-// HookConfig : options for the nvidia-container-runtime-hook.
-type HookConfig config.Config
-
-func getDefaultHookConfig() (HookConfig, error) {
-	defaultCfg, err := config.GetDefault()
-	if err != nil {
-		return HookConfig{}, err
-	}
-
-	return *(*HookConfig)(defaultCfg), nil
+// hookConfig wraps the toolkit config.
+// This allows for functions to be defined on the local type.
+type hookConfig struct {
+	*config.Config
 }
 
 // loadConfig loads the required paths for the hook config.
@@ -56,12 +50,12 @@ func loadConfig() (*config.Config, error) {
 	return config.GetDefault()
 }
 
-func getHookConfig() (*HookConfig, error) {
+func getHookConfig() (*hookConfig, error) {
 	cfg, err := loadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %v", err)
 	}
-	config := (*HookConfig)(cfg)
+	config := &hookConfig{cfg}
 
 	allSupportedDriverCapabilities := image.SupportedDriverCapabilities
 	if config.SupportedDriverCapabilities == "all" {
@@ -79,7 +73,7 @@ func getHookConfig() (*HookConfig, error) {
 
 // getConfigOption returns the toml config option associated with the
 // specified struct field.
-func (c HookConfig) getConfigOption(fieldName string) string {
+func (c hookConfig) getConfigOption(fieldName string) string {
 	t := reflect.TypeOf(c)
 	f, ok := t.FieldByName(fieldName)
 	if !ok {
@@ -93,7 +87,7 @@ func (c HookConfig) getConfigOption(fieldName string) string {
 }
 
 // getSwarmResourceEnvvars returns the swarm resource envvars for the config.
-func (c *HookConfig) getSwarmResourceEnvvars() []string {
+func (c *hookConfig) getSwarmResourceEnvvars() []string {
 	if c.SwarmResource == "" {
 		return nil
 	}
