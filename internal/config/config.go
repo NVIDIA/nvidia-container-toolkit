@@ -128,7 +128,12 @@ func GetDefault() (*Config, error) {
 }
 
 func getLdConfigPath() string {
-	return NormalizeLDConfigPath("@/sbin/ldconfig")
+	filePath := "/sbin/ldconfig"
+	fileInfo, err := os.Lstat(filePath)
+	if err != nil || fileInfo.Mode()&os.ModeSymlink != 0 {
+		filePath = "@/sbin/ldconfig"
+	}
+	return NormalizeLDConfigPath(filePath)
 }
 
 func getUserGroup() string {
