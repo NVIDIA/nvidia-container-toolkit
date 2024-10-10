@@ -19,9 +19,8 @@ package containerd
 import (
 	"fmt"
 
-	"github.com/pelletier/go-toml"
-
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 // ConfigV1 represents a version 1 containerd config
@@ -39,11 +38,7 @@ func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool) error
 
 	config.Set("version", int64(1))
 
-	// By default we extract the runtime options from the runc settings; if this does not exist we get the options from the default runtime specified in the config.
-	runtimeNamesForConfig := []string{"runc"}
-	if name, ok := config.GetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"}).(string); ok && name != "" {
-		runtimeNamesForConfig = append(runtimeNamesForConfig, name)
-	}
+	runtimeNamesForConfig := engine.GetLowLevelRuntimes(c)
 	for _, r := range runtimeNamesForConfig {
 		options := config.GetSubtreeByPath([]string{"plugins", "cri", "containerd", "runtimes", r})
 		if options == nil {
@@ -156,4 +151,15 @@ func (c *ConfigV1) Set(key string, value interface{}) {
 // Save wrotes the config to a file
 func (c ConfigV1) Save(path string) (int64, error) {
 	return (Config)(c).Save(path)
+}
+
+func (c *ConfigV1) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
+	if c == nil || c.Tree == nil {
+		return nil, fmt.Errorf("config is nil")
+	}
+	runtimeData := c.GetSubtreeByPath([]string{"plugins", "cri", "containerd", "runtimes", name})
+
+	return &containerdCfgRuntime{
+		tree: runtimeData,
+	}, nil
 }

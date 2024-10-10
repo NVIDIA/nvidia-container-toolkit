@@ -35,6 +35,20 @@ type Config map[string]interface{}
 
 var _ engine.Interface = (*Config)(nil)
 
+type dockerRuntime map[string]interface{}
+
+var _ engine.RuntimeConfig = (*dockerRuntime)(nil)
+
+// GetBinaryPath retrieves the path to the actual low-level runtime binary invoked by the runtime handler
+func (d dockerRuntime) GetBinaryPath() string {
+	if d == nil {
+		return ""
+	}
+
+	path, _ := d["path"].(string)
+	return path
+}
+
 // New creates a docker config with the specified options
 func New(opts ...Option) (engine.Interface, error) {
 	b := &builder{}
@@ -131,4 +145,23 @@ func (c Config) Save(path string) (int64, error) {
 
 	n, err := config.Raw(path).Write(output)
 	return int64(n), err
+}
+
+// GetRuntimeConfig returns the runtime info of the runtime passed as input
+func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
+	if c == nil {
+		return nil, fmt.Errorf("config is nil")
+	}
+
+	cfg := *c
+
+	var runtimes map[string]interface{}
+	if _, ok := cfg["runtimes"]; ok {
+		runtimes = cfg["runtimes"].(map[string]interface{})
+		if r, ok := runtimes[name]; ok {
+			dr := dockerRuntime(r.(map[string]interface{}))
+			return &dr, nil
+		}
+	}
+	return &dockerRuntime{}, nil
 }

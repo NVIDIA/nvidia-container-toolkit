@@ -19,6 +19,7 @@ package containerd
 import (
 	"fmt"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
@@ -31,11 +32,7 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 
 	config.Set("version", int64(2))
 
-	// By default we extract the runtime options from the runc settings; if this does not exist we get the options from the default runtime specified in the config.
-	runtimeNamesForConfig := []string{"runc"}
-	if name, ok := config.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"}).(string); ok && name != "" {
-		runtimeNamesForConfig = append(runtimeNamesForConfig, name)
-	}
+	runtimeNamesForConfig := engine.GetLowLevelRuntimes(c)
 	for _, r := range runtimeNamesForConfig {
 		options := config.GetSubtreeByPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", r})
 		if options == nil {
