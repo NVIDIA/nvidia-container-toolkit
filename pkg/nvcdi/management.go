@@ -131,6 +131,7 @@ func (m *managementlib) newManagementDeviceDiscoverer() (discover.Discover, erro
 			"/dev/nvidia-uvm-tools",
 			"/dev/nvidia-uvm",
 			"/dev/nvidiactl",
+			"/dev/nvidia-caps-imex-channels/channel*",
 		},
 	)
 
