@@ -36,7 +36,8 @@ type crioRuntime struct {
 
 var _ engine.RuntimeConfig = (*crioRuntime)(nil)
 
-// GetBinaryPath retrieves the path to the actual low-level runtime binary invoked by the runtime handler
+// GetBinaryPath retrieves the path to the low-level runtime binary for a runtime.
+// If no path is available, the empty string is returned.
 func (c *crioRuntime) GetBinaryPath() string {
 	if c.tree != nil {
 		if binaryPath, ok := c.tree.GetPath([]string{"runtime_path"}).(string); ok {

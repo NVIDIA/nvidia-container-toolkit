@@ -62,7 +62,7 @@ func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
 		o.nvidiaCDIHookPath,
 	)
 
-	// We process the expliclitlty requested symlinks.
+	// We process the explicitly requested symlinks.
 	symlinkTargets := o.ignorePatterns.Apply(targetsByType[csv.MountSpecSym]...)
 	o.logger.Debugf("Filtered symlink targets: %v", symlinkTargets)
 	symlinks := discover.NewMounts(
