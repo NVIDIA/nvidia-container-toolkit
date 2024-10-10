@@ -49,14 +49,20 @@ func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
 		targetsByType[csv.MountSpecDir],
 	)
 
-	// Libraries and symlinks use the same locator.
-	libraries := discover.NewMounts(
-		o.logger,
-		o.symlinkLocator,
-		o.driverRoot,
-		targetsByType[csv.MountSpecLib],
+	// We create a discoverer for mounted libraries and add additional .so
+	// symlinks for the driver.
+	libraries := discover.WithDriverDotSoSymlinks(
+		discover.NewMounts(
+			o.logger,
+			o.symlinkLocator,
+			o.driverRoot,
+			targetsByType[csv.MountSpecLib],
+		),
+		"",
+		o.nvidiaCDIHookPath,
 	)
 
+	// We process the expliclitlty requested symlinks.
 	symlinkTargets := o.ignorePatterns.Apply(targetsByType[csv.MountSpecSym]...)
 	o.logger.Debugf("Filtered symlink targets: %v", symlinkTargets)
 	symlinks := discover.NewMounts(
@@ -65,7 +71,7 @@ func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
 		o.driverRoot,
 		symlinkTargets,
 	)
-	createSymlinks := o.createCSVSymlinkHooks(symlinkTargets, libraries)
+	createSymlinks := o.createCSVSymlinkHooks(symlinkTargets)
 
 	d := discover.Merge(
 		devices,
