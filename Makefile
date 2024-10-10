@@ -60,7 +60,7 @@ endif
 cmds: $(CMD_TARGETS)
 
 ifneq ($(shell uname),Darwin)
-EXTLDFLAGS = -Wl,--export-dynamic -Wl,--unresolved-symbols=ignore-in-object-files
+EXTLDFLAGS = -Wl,--export-dynamic -Wl,--unresolved-symbols=ignore-in-object-files -Wl,-z,lazy
 else
 EXTLDFLAGS = -Wl,-undefined,dynamic_lookup
 endif
