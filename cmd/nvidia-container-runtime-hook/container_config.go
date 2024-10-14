@@ -21,7 +21,7 @@ type nvidiaConfig struct {
 	Devices            []string
 	MigConfigDevices   string
 	MigMonitorDevices  string
-	ImexChannels       string
+	ImexChannels       []string
 	DriverCapabilities string
 	// Requirements defines the requirements DSL for the container to run.
 	// This is empty if no specific requirements are needed, or if requirements are
@@ -197,12 +197,24 @@ func getMigDevices(image image.CUDA, envvar string) *string {
 	return &devices
 }
 
-func getImexChannels(i image.CUDA) *string {
-	if !i.HasEnvvar(image.EnvVarNvidiaImexChannels) {
+func getImexChannels(hookConfig *HookConfig, image image.CUDA, privileged bool) []string {
+	// If enabled, try and get the device list from volume mounts first
+	if hookConfig.AcceptDeviceListAsVolumeMounts {
+		devices := image.ImexChannelsFromMounts()
+		if len(devices) > 0 {
+			return devices
+		}
+	}
+	devices := image.ImexChannelsFromEnvVar()
+	if len(devices) == 0 {
 		return nil
 	}
-	chans := i.Getenv(image.EnvVarNvidiaImexChannels)
-	return &chans
+
+	if privileged || hookConfig.AcceptEnvvarUnprivileged {
+		return devices
+	}
+
+	return nil
 }
 
 func (c *HookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage bool) image.DriverCapabilities {
@@ -257,10 +269,7 @@ func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, privileged bool) 
 		log.Panicln("cannot set MIG_MONITOR_DEVICES in non privileged container")
 	}
 
-	var imexChannels string
-	if c := getImexChannels(image); c != nil {
-		imexChannels = *c
-	}
+	imexChannels := getImexChannels(hookConfig, image, privileged)
 
 	driverCapabilities := hookConfig.getDriverCapabilities(image, legacyImage).String()
 

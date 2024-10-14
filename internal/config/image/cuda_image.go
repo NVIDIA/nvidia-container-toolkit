@@ -30,7 +30,8 @@ import (
 const (
 	DeviceListAsVolumeMountsRoot = "/var/run/nvidia-container-devices"
 
-	volumeMountDevicePrefixCDI = "cdi/"
+	volumeMountDevicePrefixCDI  = "cdi/"
+	volumeMountDevicePrefixImex = "imex/"
 )
 
 // CUDA represents a CUDA image that can be used for GPU computing. This wraps
@@ -225,7 +226,10 @@ func (i CUDA) VisibleDevicesFromEnvVar() []string {
 func (i CUDA) VisibleDevicesFromMounts() []string {
 	var devices []string
 	for _, device := range i.DevicesFromMounts() {
-		if strings.HasPrefix(device, volumeMountDevicePrefixCDI) {
+		switch {
+		case strings.HasPrefix(device, volumeMountDevicePrefixCDI):
+			continue
+		case strings.HasPrefix(device, volumeMountDevicePrefixImex):
 			continue
 		}
 		devices = append(devices, device)
@@ -286,6 +290,19 @@ func (i CUDA) CDIDevicesFromMounts() []string {
 	return devices
 }
 
-func (i CUDA) IsEnabled(envvar string) bool {
-	return i.Getenv(envvar) == "enabled"
+// ImexChannelsFromEnvVar returns the list of IMEX channels requested for the image.
+func (i CUDA) ImexChannelsFromEnvVar() []string {
+	return i.DevicesFromEnvvars(EnvVarNvidiaImexChannels).List()
+}
+
+// ImexChannelsFromMounts returns the list of IMEX channels requested for the image.
+func (i CUDA) ImexChannelsFromMounts() []string {
+	var channels []string
+	for _, mountDevice := range i.DevicesFromMounts() {
+		if !strings.HasPrefix(mountDevice, volumeMountDevicePrefixImex) {
+			continue
+		}
+		channels = append(channels, strings.TrimPrefix(mountDevice, volumeMountDevicePrefixImex))
+	}
+	return channels
 }
