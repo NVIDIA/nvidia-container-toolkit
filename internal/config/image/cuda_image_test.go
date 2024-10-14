@@ -189,6 +189,11 @@ func TestGetVisibleDevicesFromMounts(t *testing.T) {
 			mounts:          makeTestMounts("GPU0", "cdi/nvidia.com/gpu=all", "GPU1"),
 			expectedDevices: []string{"GPU0", "GPU1"},
 		},
+		{
+			description:     "imex devices are ignored",
+			mounts:          makeTestMounts("GPU0", "imex/0", "GPU1"),
+			expectedDevices: []string{"GPU0", "GPU1"},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
