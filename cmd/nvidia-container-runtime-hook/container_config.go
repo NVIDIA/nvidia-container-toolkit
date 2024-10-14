@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"golang.org/x/mod/semver"
@@ -36,7 +35,7 @@ const (
 )
 
 type nvidiaConfig struct {
-	Devices            string
+	Devices            []string
 	MigConfigDevices   string
 	MigMonitorDevices  string
 	ImexChannels       string
@@ -172,34 +171,19 @@ func isPrivileged(s *Spec) bool {
 	return image.IsPrivileged(&fullSpec)
 }
 
-func getDevicesFromEnvvar(image image.CUDA, swarmResourceEnvvars []string) *string {
+func getDevicesFromEnvvar(image image.CUDA, swarmResourceEnvvars []string) []string {
 	// We check if the image has at least one of the Swarm resource envvars defined and use this
 	// if specified.
-	var hasSwarmEnvvar bool
 	for _, envvar := range swarmResourceEnvvars {
 		if image.HasEnvvar(envvar) {
-			hasSwarmEnvvar = true
-			break
+			return image.DevicesFromEnvvars(swarmResourceEnvvars...).List()
 		}
 	}
 
-	var devices []string
-	if hasSwarmEnvvar {
-		devices = image.DevicesFromEnvvars(swarmResourceEnvvars...).List()
-	} else {
-		devices = image.DevicesFromEnvvars(envNVVisibleDevices).List()
-	}
-
-	if len(devices) == 0 {
-		return nil
-	}
-
-	devicesString := strings.Join(devices, ",")
-
-	return &devicesString
+	return image.DevicesFromEnvvars(envNVVisibleDevices).List()
 }
 
-func getDevicesFromMounts(mounts []Mount) *string {
+func getDevicesFromMounts(mounts []Mount) []string {
 	var devices []string
 	for _, m := range mounts {
 		root := filepath.Clean(deviceListAsVolumeMountsRoot)
@@ -232,22 +216,21 @@ func getDevicesFromMounts(mounts []Mount) *string {
 		return nil
 	}
 
-	ret := strings.Join(devices, ",")
-	return &ret
+	return devices
 }
 
-func getDevices(hookConfig *HookConfig, image image.CUDA, mounts []Mount, privileged bool) *string {
+func getDevices(hookConfig *HookConfig, image image.CUDA, mounts []Mount, privileged bool) []string {
 	// If enabled, try and get the device list from volume mounts first
 	if hookConfig.AcceptDeviceListAsVolumeMounts {
 		devices := getDevicesFromMounts(mounts)
-		if devices != nil {
+		if len(devices) > 0 {
 			return devices
 		}
 	}
 
 	// Fallback to reading from the environment variable if privileges are correct
 	devices := getDevicesFromEnvvar(image, hookConfig.getSwarmResourceEnvvars())
-	if devices == nil {
+	if len(devices) == 0 {
 		return nil
 	}
 	if privileged || hookConfig.AcceptEnvvarUnprivileged {
@@ -314,11 +297,9 @@ func (c *HookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage boo
 func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, mounts []Mount, privileged bool) *nvidiaConfig {
 	legacyImage := image.IsLegacy()
 
-	var devices string
-	if d := getDevices(hookConfig, image, mounts, privileged); d != nil {
-		devices = *d
-	} else {
-		// 'nil' devices means this is not a GPU container.
+	devices := getDevices(hookConfig, image, mounts, privileged)
+	if len(devices) == 0 {
+		// empty devices means this is not a GPU container.
 		return nil
 	}
 
