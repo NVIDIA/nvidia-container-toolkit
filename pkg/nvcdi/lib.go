@@ -24,6 +24,7 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
@@ -200,7 +201,7 @@ func (m *wrapper) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	if err != nil {
 		return nil, err
 	}
-	edits.Env = append(edits.Env, "NVIDIA_VISIBLE_DEVICES=void")
+	edits.Env = append(edits.Env, image.EnvVarNvidiaVisibleDevices+"=void")
 
 	return edits, nil
 }

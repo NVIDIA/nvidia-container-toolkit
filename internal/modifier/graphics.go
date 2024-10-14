@@ -29,8 +29,8 @@ import (
 
 // NewGraphicsModifier constructs a modifier that injects graphics-related modifications into an OCI runtime specification.
 // The value of the NVIDIA_DRIVER_CAPABILITIES environment variable is checked to determine if this modification should be made.
-func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, driver *root.Driver) (oci.SpecModifier, error) {
-	if required, reason := requiresGraphicsModifier(image); !required {
+func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, containerImage image.CUDA, driver *root.Driver) (oci.SpecModifier, error) {
+	if required, reason := requiresGraphicsModifier(containerImage); !required {
 		logger.Infof("No graphics modifier required: %v", reason)
 		return nil, nil
 	}
@@ -50,7 +50,7 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, image imag
 	devRoot := driver.Root
 	drmNodes, err := discover.NewDRMNodesDiscoverer(
 		logger,
-		image.DevicesFromEnvvars(visibleDevicesEnvvar),
+		containerImage.DevicesFromEnvvars(image.EnvVarNvidiaVisibleDevices),
 		devRoot,
 		nvidiaCDIHookPath,
 	)
@@ -67,7 +67,7 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, image imag
 
 // requiresGraphicsModifier determines whether a graphics modifier is required.
 func requiresGraphicsModifier(cudaImage image.CUDA) (bool, string) {
-	if devices := cudaImage.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices.List()) == 0 {
+	if devices := cudaImage.VisibleDevicesFromEnvVar(); len(devices) == 0 {
 		return false, "no devices requested"
 	}
 
