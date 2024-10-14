@@ -18,6 +18,9 @@ package config
 
 // features specifies a set of named features.
 type features struct {
+	// DisableImexChannelCreation ensures that the implicit creation of
+	// requested IMEX channels is skipped when invoking the nvidia-container-cli.
+	DisableImexChannelCreation *feature `toml:"disable-imex-channel-creation,omitempty"`
 }
 
 //nolint:unused
