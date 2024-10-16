@@ -36,3 +36,9 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace (
+	tags.cncf.io/container-device-interface => ../container-device-interface
+	tags.cncf.io/container-device-interface/specs-go => ../container-device-interface/specs-go
+	tags.cncf.io/container-device-interface/api/producer => ../container-device-interface/api/producer
+)
