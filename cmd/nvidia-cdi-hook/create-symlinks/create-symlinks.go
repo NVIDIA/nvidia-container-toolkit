@@ -107,6 +107,17 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	return nil
 }
 
+// createLink creates a symbolic link in the specified container root.
+// This is equivalent to:
+//
+//	chroot {{ .containerRoot }} ln -s {{ .target }} {{ .link }}
+//
+// If the specified link already exists and points to the same target, this
+// operation is a no-op. If the link points to a different target, an error is
+// returned.
+//
+// Note that if the link path resolves to an absolute path oudside of the
+// specified root, this is treated as an absolute path in this root.
 func (m command) createLink(containerRoot string, targetPath string, link string) error {
 	linkPath := filepath.Join(containerRoot, link)
 
