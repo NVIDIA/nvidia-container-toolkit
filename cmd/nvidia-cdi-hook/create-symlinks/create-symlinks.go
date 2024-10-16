@@ -17,6 +17,7 @@
 package symlinks
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,6 +26,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
@@ -121,8 +123,17 @@ func (m command) run(c *cli.Context, cfg *config) error {
 func (m command) createLink(containerRoot string, targetPath string, link string) error {
 	linkPath := filepath.Join(containerRoot, link)
 
+	exists, err := doesLinkExist(targetPath, linkPath)
+	if err != nil {
+		return fmt.Errorf("failed to check if link exists: %w", err)
+	}
+	if exists {
+		m.logger.Debugf("Link %s already exists", linkPath)
+		return nil
+	}
+
 	m.logger.Infof("Symlinking %v to %v", linkPath, targetPath)
-	err := os.MkdirAll(filepath.Dir(linkPath), 0755)
+	err = os.MkdirAll(filepath.Dir(linkPath), 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)
 	}
@@ -132,4 +143,20 @@ func (m command) createLink(containerRoot string, targetPath string, link string
 	}
 
 	return nil
+}
+
+// doesLinkExist returns true if link exists and points to target.
+// An error is returned if link exists but points to a different target.
+func doesLinkExist(target string, link string) (bool, error) {
+	currentTarget, err := symlinks.Resolve(link)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("failed to resolve existing symlink %s: %w", link, err)
+	}
+	if currentTarget == target {
+		return true, nil
+	}
+	return true, fmt.Errorf("unexpected link target: %s", currentTarget)
 }
