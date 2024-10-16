@@ -108,6 +108,31 @@ func TestCreateLinkAlreadyExistsDifferentTarget(t *testing.T) {
 	require.Equal(t, "different-target", target)
 }
 
+func TestCreateLinkOutOfBounds(t *testing.T) {
+	tmpDir := t.TempDir()
+	hostRoot := filepath.Join(tmpDir, "/host-root/")
+	containerRoot := filepath.Join(tmpDir, "/container-root")
+
+	require.NoError(t, makeFs(hostRoot))
+	require.NoError(t,
+		makeFs(containerRoot,
+			dirOrLink{path: "/lib"},
+			dirOrLink{path: "/lib/foo", target: hostRoot},
+		),
+	)
+
+	path, err := symlinks.Resolve(filepath.Join(containerRoot, "/lib/foo"))
+	require.NoError(t, err)
+	require.Equal(t, hostRoot, path)
+
+	// nvidia-cdi-hook create-symlinks --link ../libfoo.so.1::/lib/foo/libfoo.so
+	_ = getTestCommand().createLink(containerRoot, "../libfoo.so.1", "/lib/foo/libfoo.so")
+	// TODO: We need to enabled this check once we have updated the implementation.
+	// require.Error(t, err)
+	_, err = os.Lstat(filepath.Join(hostRoot, "libfoo.so"))
+	require.ErrorIs(t, err, os.ErrNotExist)
+}
+
 type dirOrLink struct {
 	path   string
 	target string
