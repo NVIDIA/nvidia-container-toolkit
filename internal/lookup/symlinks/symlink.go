@@ -25,7 +25,7 @@ import (
 func Resolve(filename string) (string, error) {
 	info, err := os.Lstat(filename)
 	if err != nil {
-		return filename, fmt.Errorf("failed to get file info: %v", info)
+		return filename, fmt.Errorf("failed to get file info: %w", err)
 	}
 	if info.Mode()&os.ModeSymlink == 0 {
 		return filename, nil
