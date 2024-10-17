@@ -198,9 +198,12 @@ func TestTomlContents(t *testing.T) {
 }
 
 func TestConfigFromToml(t *testing.T) {
+	defer setGetLdConfigPathForTest()()
+
 	testCases := []struct {
 		description    string
 		contents       map[string]interface{}
+		expectedError  error
 		expectedConfig *Config
 	}{
 		{
@@ -226,13 +229,39 @@ func TestConfigFromToml(t *testing.T) {
 				return c
 			}(),
 		},
+		{
+			description: "invalid ldconfig value raises error",
+			contents: map[string]interface{}{
+				"nvidia-container-cli": map[string]interface{}{
+					"ldconfig": "/some/ldconfig/path",
+				},
+			},
+			expectedError: errInvalidConfig,
+		},
+		{
+			description: "feature allows ldconfig override",
+			contents: map[string]interface{}{
+				"nvidia-container-cli": map[string]interface{}{
+					"ldconfig": "/some/ldconfig/path",
+				},
+				"features": map[string]interface{}{
+					"allow-ldconfig-from-container": true,
+				},
+			},
+			expectedConfig: func() *Config {
+				c, _ := GetDefault()
+				c.NVIDIAContainerCLIConfig.Ldconfig = "/some/ldconfig/path"
+				c.Features.AllowLDConfigFromContainer = ptr(feature(true))
+				return c
+			}(),
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			tomlCfg := fromMap(tc.contents)
 			config, err := tomlCfg.Config()
-			require.NoError(t, err)
+			require.ErrorIs(t, err, tc.expectedError)
 			require.EqualValues(t, tc.expectedConfig, config)
 		})
 	}

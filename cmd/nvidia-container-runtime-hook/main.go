@@ -75,7 +75,7 @@ func doPrestart() {
 	}
 	cli := hook.NVIDIAContainerCLIConfig
 
-	container := getContainerConfig(*hook)
+	container := hook.getContainerConfig()
 	nvidia := container.Nvidia
 	if nvidia == nil {
 		// Not a GPU container, nothing to do.
@@ -89,6 +89,16 @@ func doPrestart() {
 	rootfs := getRootfsPath(container)
 
 	args := []string{getCLIPath(cli)}
+
+	// Only include GSP firmware if explicitly renabled.
+	if !hook.Features.IncludeGSPFirmware.IsEnabled() {
+		args = append(args, "--no-gsp-firmware")
+	}
+	// Only include the nvidia-persistenced socket if it is explicitly enabled.
+	if !hook.Features.IncludePersistencedSocket.IsEnabled() {
+		args = append(args, "--no-persistenced")
+	}
+
 	if cli.Root != "" {
 		args = append(args, fmt.Sprintf("--root=%s", cli.Root))
 	}

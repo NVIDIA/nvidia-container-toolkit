@@ -18,6 +18,8 @@ package config
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,6 +52,8 @@ var (
 	// NVIDIAContainerToolkitExecutable is the executable name for the NVIDIA Container Toolkit (an alias for the NVIDIA Container Runtime Hook)
 	NVIDIAContainerToolkitExecutable = "nvidia-container-toolkit"
 )
+
+var errInvalidConfig = errors.New("invalid config value")
 
 // Config represents the contents of the config.toml file for the NVIDIA Container Toolkit
 // Note: This is currently duplicated by the HookConfig in cmd/nvidia-container-toolkit/hook_config.go
@@ -127,7 +131,18 @@ func GetDefault() (*Config, error) {
 	return &d, nil
 }
 
-func getLdConfigPath() string {
+// assertValid checks for a valid config.
+func (c *Config) assertValid() error {
+	if !c.Features.AllowLDConfigFromContainer.IsEnabled() && !strings.HasPrefix(c.NVIDIAContainerCLIConfig.Ldconfig, "@") {
+		return fmt.Errorf("%w: nvidia-container-cli.ldconfig value %q is not host-relative (does not start with a '@')", errInvalidConfig, c.NVIDIAContainerCLIConfig.Ldconfig)
+	}
+	return nil
+}
+
+// getLdConfigPath allows us to override this function for testing.
+var getLdConfigPath = getLdConfigPathStub
+
+func getLdConfigPathStub() string {
 	return NormalizeLDConfigPath("@/sbin/ldconfig")
 }
 

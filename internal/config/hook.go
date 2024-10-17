@@ -24,13 +24,3 @@ type RuntimeHookConfig struct {
 	// SkipModeDetection disables the mode check for the runtime hook.
 	SkipModeDetection bool `toml:"skip-mode-detection"`
 }
-
-// GetDefaultRuntimeHookConfig defines the default values for the config
-func GetDefaultRuntimeHookConfig() (*RuntimeHookConfig, error) {
-	cfg, err := GetDefault()
-	if err != nil {
-		return nil, err
-	}
-
-	return &cfg.NVIDIAContainerRuntimeHookConfig, nil
-}
