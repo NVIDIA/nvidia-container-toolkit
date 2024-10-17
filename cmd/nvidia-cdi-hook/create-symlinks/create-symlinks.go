@@ -211,21 +211,14 @@ func changeRoot(current string, new string, path string) (string, error) {
 // Locate returns the link target of the specified filename or an empty slice if the
 // specified filename is not a symlink.
 func (m command) Locate(filename string) ([]string, error) {
-	info, err := os.Lstat(filename)
+	target, err := symlinks.Resolve(filename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get file info: %v", info)
+		return nil, err
 	}
-	if info.Mode()&os.ModeSymlink == 0 {
+	if target == filename {
 		m.logger.Debugf("%v is not a symlink", filename)
 		return nil, nil
 	}
-
-	target, err := os.Readlink(filename)
-	if err != nil {
-		return nil, fmt.Errorf("error checking symlink: %v", err)
-	}
-
 	m.logger.Debugf("Resolved link: '%v' => '%v'", filename, target)
-
 	return []string{target}, nil
 }
