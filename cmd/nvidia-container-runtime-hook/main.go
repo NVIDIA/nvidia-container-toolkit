@@ -95,6 +95,9 @@ func doPrestart() {
 	if cli.LoadKmods {
 		args = append(args, "--load-kmods")
 	}
+	if hook.Features.DisableImexChannelCreation.IsEnabled() {
+		args = append(args, "--no-create-imex-channels")
+	}
 	if cli.NoPivot {
 		args = append(args, "--no-pivot")
 	}
