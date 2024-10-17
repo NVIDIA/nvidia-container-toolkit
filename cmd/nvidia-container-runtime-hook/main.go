@@ -120,8 +120,8 @@ func doPrestart() {
 	if cli.NoCgroups {
 		args = append(args, "--no-cgroups")
 	}
-	if len(nvidia.Devices) > 0 {
-		args = append(args, fmt.Sprintf("--device=%s", nvidia.Devices))
+	if devicesString := strings.Join(nvidia.Devices, ","); len(devicesString) > 0 {
+		args = append(args, fmt.Sprintf("--device=%s", devicesString))
 	}
 	if len(nvidia.MigConfigDevices) > 0 {
 		args = append(args, fmt.Sprintf("--mig-config=%s", nvidia.MigConfigDevices))
@@ -129,8 +129,8 @@ func doPrestart() {
 	if len(nvidia.MigMonitorDevices) > 0 {
 		args = append(args, fmt.Sprintf("--mig-monitor=%s", nvidia.MigMonitorDevices))
 	}
-	if len(nvidia.ImexChannels) > 0 {
-		args = append(args, fmt.Sprintf("--imex-channel=%s", nvidia.ImexChannels))
+	if imexString := strings.Join(nvidia.ImexChannels, ","); len(imexString) > 0 {
+		args = append(args, fmt.Sprintf("--imex-channel=%s", imexString))
 	}
 
 	for _, cap := range strings.Split(nvidia.DriverCapabilities, ",") {

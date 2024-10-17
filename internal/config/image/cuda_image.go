@@ -28,12 +28,10 @@ import (
 )
 
 const (
-	envCUDAVersion          = "CUDA_VERSION"
-	envNVRequirePrefix      = "NVIDIA_REQUIRE_"
-	envNVRequireCUDA        = envNVRequirePrefix + "CUDA"
-	envNVRequireJetpack     = envNVRequirePrefix + "JETPACK"
-	envNVDisableRequire     = "NVIDIA_DISABLE_REQUIRE"
-	envNVDriverCapabilities = "NVIDIA_DRIVER_CAPABILITIES"
+	DeviceListAsVolumeMountsRoot = "/var/run/nvidia-container-devices"
+
+	volumeMountDevicePrefixCDI  = "cdi/"
+	volumeMountDevicePrefixImex = "imex/"
 )
 
 // CUDA represents a CUDA image that can be used for GPU computing. This wraps
@@ -80,8 +78,8 @@ func (i CUDA) HasEnvvar(key string) bool {
 // image is considered legacy if it has a CUDA_VERSION environment variable defined
 // and no NVIDIA_REQUIRE_CUDA environment variable defined.
 func (i CUDA) IsLegacy() bool {
-	legacyCudaVersion := i.env[envCUDAVersion]
-	cudaRequire := i.env[envNVRequireCUDA]
+	legacyCudaVersion := i.env[EnvVarCudaVersion]
+	cudaRequire := i.env[EnvVarNvidiaRequireCuda]
 	return len(legacyCudaVersion) > 0 && len(cudaRequire) == 0
 }
 
@@ -95,7 +93,7 @@ func (i CUDA) GetRequirements() ([]string, error) {
 	// All variables with the "NVIDIA_REQUIRE_" prefix are passed to nvidia-container-cli
 	var requirements []string
 	for name, value := range i.env {
-		if strings.HasPrefix(name, envNVRequirePrefix) && !strings.HasPrefix(name, envNVRequireJetpack) {
+		if strings.HasPrefix(name, NvidiaRequirePrefix) && !strings.HasPrefix(name, EnvVarNvidiaRequireJetpack) {
 			requirements = append(requirements, value)
 		}
 	}
@@ -113,7 +111,7 @@ func (i CUDA) GetRequirements() ([]string, error) {
 // HasDisableRequire checks for the value of the NVIDIA_DISABLE_REQUIRE. If set
 // to a valid (true) boolean value this can be used to disable the requirement checks
 func (i CUDA) HasDisableRequire() bool {
-	if disable, exists := i.env[envNVDisableRequire]; exists {
+	if disable, exists := i.env[EnvVarNvidiaDisableRequire]; exists {
 		// i.logger.Debugf("NVIDIA_DISABLE_REQUIRE=%v; skipping requirement checks", disable)
 		d, _ := strconv.ParseBool(disable)
 		return d
@@ -157,7 +155,7 @@ func (i CUDA) DevicesFromEnvvars(envVars ...string) VisibleDevices {
 
 // GetDriverCapabilities returns the requested driver capabilities.
 func (i CUDA) GetDriverCapabilities() DriverCapabilities {
-	env := i.env[envNVDriverCapabilities]
+	env := i.env[EnvVarNvidiaDriverCapabilities]
 
 	capabilities := make(DriverCapabilities)
 	for _, c := range strings.Split(env, ",") {
@@ -168,7 +166,7 @@ func (i CUDA) GetDriverCapabilities() DriverCapabilities {
 }
 
 func (i CUDA) legacyVersion() (string, error) {
-	cudaVersion := i.env[envCUDAVersion]
+	cudaVersion := i.env[EnvVarCudaVersion]
 	majorMinor, err := parseMajorMinorVersion(cudaVersion)
 	if err != nil {
 		return "", fmt.Errorf("invalid CUDA version %v: %v", cudaVersion, err)
@@ -202,7 +200,7 @@ func parseMajorMinorVersion(version string) (string, error) {
 // OnlyFullyQualifiedCDIDevices returns true if all devices requested in the image are requested as CDI devices/
 func (i CUDA) OnlyFullyQualifiedCDIDevices() bool {
 	var hasCDIdevice bool
-	for _, device := range i.DevicesFromEnvvars("NVIDIA_VISIBLE_DEVICES").List() {
+	for _, device := range i.VisibleDevicesFromEnvVar() {
 		if !parser.IsQualifiedName(device) {
 			return false
 		}
@@ -218,14 +216,31 @@ func (i CUDA) OnlyFullyQualifiedCDIDevices() bool {
 	return hasCDIdevice
 }
 
-const (
-	deviceListAsVolumeMountsRoot = "/var/run/nvidia-container-devices"
-)
+// VisibleDevicesFromEnvVar returns the set of visible devices requested through
+// the NVIDIA_VISIBLE_DEVICES environment variable.
+func (i CUDA) VisibleDevicesFromEnvVar() []string {
+	return i.DevicesFromEnvvars(EnvVarNvidiaVisibleDevices).List()
+}
+
+// VisibleDevicesFromMounts returns the set of visible devices requested as mounts.
+func (i CUDA) VisibleDevicesFromMounts() []string {
+	var devices []string
+	for _, device := range i.DevicesFromMounts() {
+		switch {
+		case strings.HasPrefix(device, volumeMountDevicePrefixCDI):
+			continue
+		case strings.HasPrefix(device, volumeMountDevicePrefixImex):
+			continue
+		}
+		devices = append(devices, device)
+	}
+	return devices
+}
 
 // DevicesFromMounts returns a list of device specified as mounts.
 // TODO: This should be merged with getDevicesFromMounts used in the NVIDIA Container Runtime
 func (i CUDA) DevicesFromMounts() []string {
-	root := filepath.Clean(deviceListAsVolumeMountsRoot)
+	root := filepath.Clean(DeviceListAsVolumeMountsRoot)
 	seen := make(map[string]bool)
 	var devices []string
 	for _, m := range i.mounts {
@@ -260,10 +275,10 @@ func (i CUDA) DevicesFromMounts() []string {
 func (i CUDA) CDIDevicesFromMounts() []string {
 	var devices []string
 	for _, mountDevice := range i.DevicesFromMounts() {
-		if !strings.HasPrefix(mountDevice, "cdi/") {
+		if !strings.HasPrefix(mountDevice, volumeMountDevicePrefixCDI) {
 			continue
 		}
-		parts := strings.SplitN(strings.TrimPrefix(mountDevice, "cdi/"), "/", 3)
+		parts := strings.SplitN(strings.TrimPrefix(mountDevice, volumeMountDevicePrefixCDI), "/", 3)
 		if len(parts) != 3 {
 			continue
 		}
@@ -275,6 +290,19 @@ func (i CUDA) CDIDevicesFromMounts() []string {
 	return devices
 }
 
-func (i CUDA) IsEnabled(envvar string) bool {
-	return i.Getenv(envvar) == "enabled"
+// ImexChannelsFromEnvVar returns the list of IMEX channels requested for the image.
+func (i CUDA) ImexChannelsFromEnvVar() []string {
+	return i.DevicesFromEnvvars(EnvVarNvidiaImexChannels).List()
+}
+
+// ImexChannelsFromMounts returns the list of IMEX channels requested for the image.
+func (i CUDA) ImexChannelsFromMounts() []string {
+	var channels []string
+	for _, mountDevice := range i.DevicesFromMounts() {
+		if !strings.HasPrefix(mountDevice, volumeMountDevicePrefixImex) {
+			continue
+		}
+		channels = append(channels, strings.TrimPrefix(mountDevice, volumeMountDevicePrefixImex))
+	}
+	return channels
 }

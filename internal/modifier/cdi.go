@@ -90,11 +90,9 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 		}
 	}
 
-	envDevices := container.DevicesFromEnvvars(visibleDevicesEnvvar)
-
 	var devices []string
 	seen := make(map[string]bool)
-	for _, name := range envDevices.List() {
+	for _, name := range container.VisibleDevicesFromEnvVar() {
 		if !parser.IsQualifiedName(name) {
 			name = fmt.Sprintf("%s=%s", cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind, name)
 		}

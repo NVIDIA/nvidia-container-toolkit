@@ -6,8 +6,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"path/filepath"
-	"strings"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"golang.org/x/mod/semver"
@@ -16,30 +14,14 @@ import (
 )
 
 const (
-	envCUDAVersion          = "CUDA_VERSION"
-	envNVRequirePrefix      = "NVIDIA_REQUIRE_"
-	envNVRequireCUDA        = envNVRequirePrefix + "CUDA"
-	envNVDisableRequire     = "NVIDIA_DISABLE_REQUIRE"
-	envNVVisibleDevices     = "NVIDIA_VISIBLE_DEVICES"
-	envNVMigConfigDevices   = "NVIDIA_MIG_CONFIG_DEVICES"
-	envNVMigMonitorDevices  = "NVIDIA_MIG_MONITOR_DEVICES"
-	envNVImexChannels       = "NVIDIA_IMEX_CHANNELS"
-	envNVDriverCapabilities = "NVIDIA_DRIVER_CAPABILITIES"
-)
-
-const (
 	capSysAdmin = "CAP_SYS_ADMIN"
 )
 
-const (
-	deviceListAsVolumeMountsRoot = "/var/run/nvidia-container-devices"
-)
-
 type nvidiaConfig struct {
-	Devices            string
+	Devices            []string
 	MigConfigDevices   string
 	MigMonitorDevices  string
-	ImexChannels       string
+	ImexChannels       []string
 	DriverCapabilities string
 	// Requirements defines the requirements DSL for the container to run.
 	// This is empty if no specific requirements are needed, or if requirements are
@@ -77,23 +59,14 @@ type LinuxCapabilities struct {
 	Ambient     []string `json:"ambient,omitempty" platform:"linux"`
 }
 
-// Mount from OCI runtime spec
-// https://github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L103
-type Mount struct {
-	Destination string   `json:"destination"`
-	Type        string   `json:"type,omitempty" platform:"linux,solaris"`
-	Source      string   `json:"source,omitempty"`
-	Options     []string `json:"options,omitempty"`
-}
-
 // Spec from OCI runtime spec
 // We use pointers to structs, similarly to the latest version of runtime-spec:
 // https://github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L5-L28
 type Spec struct {
-	Version *string  `json:"ociVersion"`
-	Process *Process `json:"process,omitempty"`
-	Root    *Root    `json:"root,omitempty"`
-	Mounts  []Mount  `json:"mounts,omitempty"`
+	Version *string       `json:"ociVersion"`
+	Process *Process      `json:"process,omitempty"`
+	Root    *Root         `json:"root,omitempty"`
+	Mounts  []specs.Mount `json:"mounts,omitempty"`
 }
 
 // HookState holds state information about the hook
@@ -172,82 +145,30 @@ func isPrivileged(s *Spec) bool {
 	return image.IsPrivileged(&fullSpec)
 }
 
-func getDevicesFromEnvvar(image image.CUDA, swarmResourceEnvvars []string) *string {
+func getDevicesFromEnvvar(containerImage image.CUDA, swarmResourceEnvvars []string) []string {
 	// We check if the image has at least one of the Swarm resource envvars defined and use this
 	// if specified.
-	var hasSwarmEnvvar bool
 	for _, envvar := range swarmResourceEnvvars {
-		if image.HasEnvvar(envvar) {
-			hasSwarmEnvvar = true
-			break
+		if containerImage.HasEnvvar(envvar) {
+			return containerImage.DevicesFromEnvvars(swarmResourceEnvvars...).List()
 		}
 	}
 
-	var devices []string
-	if hasSwarmEnvvar {
-		devices = image.DevicesFromEnvvars(swarmResourceEnvvars...).List()
-	} else {
-		devices = image.DevicesFromEnvvars(envNVVisibleDevices).List()
-	}
-
-	if len(devices) == 0 {
-		return nil
-	}
-
-	devicesString := strings.Join(devices, ",")
-
-	return &devicesString
+	return containerImage.VisibleDevicesFromEnvVar()
 }
 
-func getDevicesFromMounts(mounts []Mount) *string {
-	var devices []string
-	for _, m := range mounts {
-		root := filepath.Clean(deviceListAsVolumeMountsRoot)
-		source := filepath.Clean(m.Source)
-		destination := filepath.Clean(m.Destination)
-
-		// Only consider mounts who's host volume is /dev/null
-		if source != "/dev/null" {
-			continue
-		}
-		// Only consider container mount points that begin with 'root'
-		if len(destination) < len(root) {
-			continue
-		}
-		if destination[:len(root)] != root {
-			continue
-		}
-		// Grab the full path beyond 'root' and add it to the list of devices
-		device := destination[len(root):]
-		if len(device) > 0 && device[0] == '/' {
-			device = device[1:]
-		}
-		if len(device) == 0 {
-			continue
-		}
-		devices = append(devices, device)
-	}
-
-	if devices == nil {
-		return nil
-	}
-
-	ret := strings.Join(devices, ",")
-	return &ret
-}
-
-func getDevices(hookConfig *HookConfig, image image.CUDA, mounts []Mount, privileged bool) *string {
+func getDevices(hookConfig *HookConfig, image image.CUDA, privileged bool) []string {
 	// If enabled, try and get the device list from volume mounts first
 	if hookConfig.AcceptDeviceListAsVolumeMounts {
-		devices := getDevicesFromMounts(mounts)
-		if devices != nil {
+		devices := image.VisibleDevicesFromMounts()
+		if len(devices) > 0 {
 			return devices
 		}
 	}
 
 	// Fallback to reading from the environment variable if privileges are correct
 	devices := getDevicesFromEnvvar(image, hookConfig.getSwarmResourceEnvvars())
-	if devices == nil {
+	if len(devices) == 0 {
 		return nil
 	}
 	if privileged || hookConfig.AcceptEnvvarUnprivileged {
@@ -260,12 +181,12 @@ func getDevices(hookConfig *HookConfig, image image.CUDA, mounts []Mount, privil
 	return nil
 }
 
-func getMigConfigDevices(image image.CUDA) *string {
-	return getMigDevices(image, envNVMigConfigDevices)
+func getMigConfigDevices(i image.CUDA) *string {
+	return getMigDevices(i, image.EnvVarNvidiaMigConfigDevices)
 }
 
-func getMigMonitorDevices(image image.CUDA) *string {
-	return getMigDevices(image, envNVMigMonitorDevices)
+func getMigMonitorDevices(i image.CUDA) *string {
+	return getMigDevices(i, image.EnvVarNvidiaMigMonitorDevices)
 }
 
 func getMigDevices(image image.CUDA, envvar string) *string {
@@ -276,12 +197,24 @@ func getMigDevices(image image.CUDA, envvar string) *string {
 	return &devices
 }
 
-func getImexChannels(image image.CUDA) *string {
-	if !image.HasEnvvar(envNVImexChannels) {
+func getImexChannels(hookConfig *HookConfig, image image.CUDA, privileged bool) []string {
+	// If enabled, try and get the device list from volume mounts first
+	if hookConfig.AcceptDeviceListAsVolumeMounts {
+		devices := image.ImexChannelsFromMounts()
+		if len(devices) > 0 {
+			return devices
+		}
+	}
+	devices := image.ImexChannelsFromEnvVar()
+	if len(devices) == 0 {
 		return nil
 	}
-	chans := image.Getenv(envNVImexChannels)
-	return &chans
+
+	if privileged || hookConfig.AcceptEnvvarUnprivileged {
+		return devices
+	}
+
+	return nil
 }
 
 func (c *HookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage bool) image.DriverCapabilities {
@@ -291,8 +224,8 @@ func (c *HookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage boo
 
 	capabilities := supportedDriverCapabilities.Intersection(image.DefaultDriverCapabilities)
 
-	capsEnvSpecified := cudaImage.HasEnvvar(envNVDriverCapabilities)
-	capsEnv := cudaImage.Getenv(envNVDriverCapabilities)
+	capsEnvSpecified := cudaImage.HasEnvvar(image.EnvVarNvidiaDriverCapabilities)
+	capsEnv := cudaImage.Getenv(image.EnvVarNvidiaDriverCapabilities)
 
 	if !capsEnvSpecified && legacyImage {
 		// Environment variable unset with legacy image: set all capabilities.
@@ -311,14 +244,12 @@ func (c *HookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage boo
 	return capabilities
 }
 
-func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, mounts []Mount, privileged bool) *nvidiaConfig {
+func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, privileged bool) *nvidiaConfig {
 	legacyImage := image.IsLegacy()
 
-	var devices string
-	if d := getDevices(hookConfig, image, mounts, privileged); d != nil {
-		devices = *d
-	} else {
-		// 'nil' devices means this is not a GPU container.
+	devices := getDevices(hookConfig, image, privileged)
+	if len(devices) == 0 {
+		// empty devices means this is not a GPU container.
 		return nil
 	}
 
@@ -338,10 +269,7 @@ func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, mounts []Mount, p
 		log.Panicln("cannot set MIG_MONITOR_DEVICES in non privileged container")
 	}
 
-	var imexChannels string
-	if c := getImexChannels(image); c != nil {
-		imexChannels = *c
-	}
+	imexChannels := getImexChannels(hookConfig, image, privileged)
 
 	driverCapabilities := hookConfig.getDriverCapabilities(image, legacyImage).String()
 
@@ -376,6 +304,7 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 
 	image, err := image.New(
 		image.WithEnv(s.Process.Env),
+		image.WithMounts(s.Mounts),
 		image.WithDisableRequire(hook.DisableRequire),
 	)
 	if err != nil {
@@ -387,6 +316,6 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,
 		Image:  image,
-		Nvidia: getNvidiaConfig(&hook, image, s.Mounts, privileged),
+		Nvidia: getNvidiaConfig(&hook, image, privileged),
 	}
 }

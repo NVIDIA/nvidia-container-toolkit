@@ -47,7 +47,7 @@ func New(opt ...Option) (CUDA, error) {
 // build creates a CUDA image from the builder.
 func (b builder) build() (CUDA, error) {
 	if b.disableRequire {
-		b.env[envNVDisableRequire] = "true"
+		b.env[EnvVarNvidiaDisableRequire] = "true"
 	}
 
 	c := CUDA{
