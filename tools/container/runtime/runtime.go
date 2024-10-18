@@ -50,14 +50,14 @@ func Flags(opts *Options) []cli.Flag {
 			Usage:       "Path to the runtime config file",
 			Value:       runtimeSpecificDefault,
 			Destination: &opts.Config,
-			EnvVars:     []string{"RUNTIME_CONFIG"},
+			EnvVars:     []string{"RUNTIME_CONFIG", "CONTAINERD_CONFIG", "DOCKER_CONFIG"},
 		},
 		&cli.StringFlag{
 			Name:        "socket",
 			Usage:       "Path to the runtime socket file",
 			Value:       runtimeSpecificDefault,
 			Destination: &opts.Socket,
-			EnvVars:     []string{"RUNTIME_SOCKET"},
+			EnvVars:     []string{"RUNTIME_SOCKET", "CONTAINERD_SOCKET", "DOCKER_SOCKET"},
 		},
 		&cli.StringFlag{
 			Name:        "restart-mode",
@@ -79,14 +79,14 @@ func Flags(opts *Options) []cli.Flag {
 			Usage:       "Specify the name of the `nvidia` runtime. If set-as-default is selected, the runtime is used as the default runtime.",
 			Value:       defaultRuntimeName,
 			Destination: &opts.RuntimeName,
-			EnvVars:     []string{"NVIDIA_RUNTIME_NAME"},
+			EnvVars:     []string{"NVIDIA_RUNTIME_NAME", "CONTAINERD_RUNTIME_CLASS", "DOCKER_RUNTIME_NAME"},
 		},
 		&cli.BoolFlag{
 			Name:        "set-as-default",
 			Usage:       "Set the `nvidia` runtime as the default runtime.",
 			Value:       defaultSetAsDefault,
 			Destination: &opts.SetAsDefault,
-			EnvVars:     []string{"NVIDIA_RUNTIME_SET_AS_DEFAULT"},
+			EnvVars:     []string{"NVIDIA_RUNTIME_SET_AS_DEFAULT", "CONTAINERD_SET_AS_DEFAULT", "DOCKER_SET_AS_DEFAULT"},
 			Hidden:      true,
 		},
 	}
