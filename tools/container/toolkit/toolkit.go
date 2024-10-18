@@ -528,7 +528,6 @@ func installContainerToolkitCLI(toolkitDir string) (string, error) {
 	e := executable{
 		source: "/usr/bin/nvidia-ctk",
 		target: executableTarget{
-			dotfileName: "nvidia-ctk.real",
 			wrapperName: "nvidia-ctk",
 		},
 	}
@@ -541,7 +540,6 @@ func installContainerCDIHookCLI(toolkitDir string) (string, error) {
 	e := executable{
 		source: "/usr/bin/nvidia-cdi-hook",
 		target: executableTarget{
-			dotfileName: "nvidia-cdi-hook.real",
 			wrapperName: "nvidia-cdi-hook",
 		},
 	}
@@ -554,17 +552,16 @@ func installContainerCDIHookCLI(toolkitDir string) (string, error) {
 func installContainerCLI(toolkitRoot string) (string, error) {
 	log.Infof("Installing NVIDIA container CLI from '%v'", nvidiaContainerCliSource)
 
-	env := map[string]string{
+	envm := map[string]string{
 		"LD_LIBRARY_PATH": toolkitRoot,
 	}
 
 	e := executable{
 		source: nvidiaContainerCliSource,
 		target: executableTarget{
-			dotfileName: "nvidia-container-cli.real",
 			wrapperName: "nvidia-container-cli",
 		},
-		env: env,
+		envm: envm,
 	}
 
 	installedPath, err := e.install(toolkitRoot)
@@ -579,17 +576,12 @@ func installContainerCLI(toolkitRoot string) (string, error) {
 func installRuntimeHook(toolkitRoot string, configFilePath string) (string, error) {
 	log.Infof("Installing NVIDIA container runtime hook from '%v'", nvidiaContainerRuntimeHookSource)
 
-	argLines := []string{
-		fmt.Sprintf("-config \"%s\"", configFilePath),
-	}
-
 	e := executable{
 		source: nvidiaContainerRuntimeHookSource,
 		target: executableTarget{
-			dotfileName: "nvidia-container-runtime-hook.real",
 			wrapperName: "nvidia-container-runtime-hook",
 		},
-		argLines: argLines,
+		argv: []string{"-config", configFilePath},
 	}
 
 	installedPath, err := e.install(toolkitRoot)
