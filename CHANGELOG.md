@@ -1,5 +1,28 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.17.0-rc.1
+- Allow IMEX channels to be requested as volume mounts
+- Fix typo in error message
+- Add disable-imex-channel-creation feature flag
+- Add -z,lazy to LDFLAGS
+- Add imex channels to management CDI spec
+- Add support to fetch current container runtime config from the command line.
+- Add creation of select driver symlinks to CDI spec generation.
+- Remove support for config overrides when configuring runtimes.
+- Skip explicit creation of libnvidia-allocator.so.1 symlink
+- Add vdpau as as a driver library search path.
+- Add support for using libnvsandboxutils to generate CDI specifications.
+
+### Changes in the Toolkit Container
+
+- Allow opt-in features to be selected when deploying the toolkit-container.
+- Bump CUDA base image version to 12.6.2
+- Remove support for config overrides when configuring runtimes.
+
+### Changes in libnvidia-container
+
+- Add no-create-imex-channels command line option.
+
 ## v1.16.2
 - Exclude libnvidia-allocator from graphics mounts. This fixes a bug that leaks mounts when a container is started with bi-directional mount propagation.
 - Use empty string for default runtime-config-override. This removes a redundant warning for runtimes (e.g. Docker) where this is not applicable.
