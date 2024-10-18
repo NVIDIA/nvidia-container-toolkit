@@ -46,11 +46,10 @@ func NewCommand(logger logger.Interface) *cli.Command {
 	return c.build()
 }
 
-// build
+// build creates the create-symlink command.
 func (m command) build() *cli.Command {
 	cfg := config{}
 
-	// Create the '' command
 	c := cli.Command{
 		Name:  "create-symlinks",
 		Usage: "A hook to create symlinks in the container.",
@@ -60,20 +59,23 @@ func (m command) build() *cli.Command {
 	}
 
 	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "host-root",
-			Usage:       "The root on the host filesystem to use to resolve symlinks",
-			Destination: &cfg.hostRoot,
-		},
 		&cli.StringSliceFlag{
 			Name:        "link",
 			Usage:       "Specify a specific link to create. The link is specified as target::link",
 			Destination: &cfg.links,
 		},
+		// The following flags are testing-only flags.
+		&cli.StringFlag{
+			Name:        "host-root",
+			Usage:       "The root on the host filesystem to use to resolve symlinks. This is only intended for testing.",
+			Destination: &cfg.hostRoot,
+			Hidden:      true,
+		},
 		&cli.StringFlag{
 			Name:        "container-spec",
-			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
+			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN. This is only intended for testing.",
 			Destination: &cfg.containerSpec,
+			Hidden:      true,
 		},
 	}
 
