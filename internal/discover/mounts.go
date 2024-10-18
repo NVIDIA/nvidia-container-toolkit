@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
@@ -35,15 +34,13 @@ type mounts struct {
 	lookup   lookup.Locator
 	root     string
 	required []string
-	sync.Mutex
-	cache []Mount
 }
 
 var _ Discover = (*mounts)(nil)
 
 // NewMounts creates a discoverer for the required mounts using the specified locator.
 func NewMounts(logger logger.Interface, lookup lookup.Locator, root string, required []string) Discover {
-	return newMounts(logger, lookup, root, required)
+	return WithCache(newMounts(logger, lookup, root, required))
 }
 
 // newMounts creates a discoverer for the required mounts using the specified locator.
@@ -60,15 +57,6 @@ func (d *mounts) Mounts() ([]Mount, error) {
 	if d.lookup == nil {
 		return nil, fmt.Errorf("no lookup defined")
 	}
-
-	if d.cache != nil {
-		d.logger.Debugf("returning cached mounts")
-		return d.cache, nil
-	}
-
-	d.Lock()
-	defer d.Unlock()
-
 	uniqueMounts := make(map[string]Mount)
 
 	for _, candidate := range d.required {
@@ -112,10 +100,7 @@ func (d *mounts) Mounts() ([]Mount, error) {
 	for _, m := range uniqueMounts {
 		mounts = append(mounts, m)
 	}
-
-	d.cache = mounts
-
-	return d.cache, nil
+	return mounts, nil
 }
 
 // relativeTo returns the path relative to the root for the file locator
