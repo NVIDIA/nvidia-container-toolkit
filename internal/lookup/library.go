@@ -56,6 +56,7 @@ func NewLibraryLocator(opts ...Option) Locator {
 			"/lib/aarch64-linux-gnu",
 			"/lib/x86_64-linux-gnu/nvidia/current",
 			"/lib/aarch64-linux-gnu/nvidia/current",
+			"/glibc/lib",
 		}...),
 	)
 	// We construct a symlink locator for expected library locations.
