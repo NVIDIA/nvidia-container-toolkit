@@ -3,10 +3,10 @@ package symlinks
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
@@ -14,7 +14,6 @@ import (
 
 func TestDoesLinkExist(t *testing.T) {
 	tmpDir := t.TempDir()
-
 	require.NoError(
 		t,
 		makeFs(tmpDir,
@@ -40,6 +39,120 @@ func TestDoesLinkExist(t *testing.T) {
 	exists, err = doesLinkExist("foo", filepath.Join(tmpDir, "/a/b/does-not-exist"))
 	require.NoError(t, err)
 	require.False(t, exists)
+}
+
+func TestCreateLink(t *testing.T) {
+	type link struct {
+		path   string
+		target string
+	}
+	type expectedLink struct {
+		link
+		err error
+	}
+
+	testCases := []struct {
+		description         string
+		containerContents   []dirOrLink
+		link                link
+		expectedCreateError error
+		expectedLinks       []expectedLink
+	}{
+		{
+			description: "link to / resolves to container root",
+			containerContents: []dirOrLink{
+				{path: "/lib/foo", target: "/"},
+			},
+			link: link{
+				path:   "/lib/foo/libfoo.so",
+				target: "libfoo.so.1",
+			},
+			expectedLinks: []expectedLink{
+				{
+					link: link{
+						path:   "{{ .containerRoot }}/libfoo.so",
+						target: "libfoo.so.1",
+					},
+				},
+			},
+		},
+		{
+			description: "link to / resolves to container root; parent relative link",
+			containerContents: []dirOrLink{
+				{path: "/lib/foo", target: "/"},
+			},
+			link: link{
+				path:   "/lib/foo/libfoo.so",
+				target: "../libfoo.so.1",
+			},
+			expectedLinks: []expectedLink{
+				{
+					link: link{
+						path:   "{{ .containerRoot }}/libfoo.so",
+						target: "../libfoo.so.1",
+					},
+				},
+			},
+		},
+		{
+			description: "link to / resolves to container root; absolute link",
+			containerContents: []dirOrLink{
+				{path: "/lib/foo", target: "/"},
+			},
+			link: link{
+				path:   "/lib/foo/libfoo.so",
+				target: "/a-path-in-container/foo/libfoo.so.1",
+			},
+			expectedLinks: []expectedLink{
+				{
+					link: link{
+						path:   "{{ .containerRoot }}/libfoo.so",
+						target: "/a-path-in-container/foo/libfoo.so.1",
+					},
+				},
+				{
+					// We also check that the target is NOT created.
+					link: link{
+						path: "{{ .containerRoot }}/a-path-in-container/foo/libfoo.so.1",
+					},
+					err: os.ErrNotExist,
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			hostRoot := filepath.Join(tmpDir, "/host-root/")
+			containerRoot := filepath.Join(tmpDir, "/container-root")
+
+			require.NoError(t, makeFs(hostRoot))
+			require.NoError(t, makeFs(containerRoot, tc.containerContents...))
+
+			// nvidia-cdi-hook create-symlinks --link linkSpec
+			err := getTestCommand().createLink(containerRoot, tc.link.target, tc.link.path)
+			// TODO: We may be able to replace this with require.ErrorIs.
+			if tc.expectedCreateError != nil {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			for _, expectedLink := range tc.expectedLinks {
+				path := strings.Replace(expectedLink.path, "{{ .containerRoot }}", containerRoot, -1)
+				path = strings.Replace(path, "{{ .hostRoot }}", hostRoot, -1)
+				if expectedLink.target != "" {
+					target, err := symlinks.Resolve(path)
+					require.ErrorIs(t, err, expectedLink.err)
+					require.Equal(t, expectedLink.target, target)
+				} else {
+					_, err := os.Stat(path)
+					require.ErrorIs(t, err, expectedLink.err)
+				}
+			}
+		})
+	}
 }
 
 func TestCreateLinkRelativePath(t *testing.T) {
@@ -131,6 +244,8 @@ func TestCreateLinkOutOfBounds(t *testing.T) {
 	// require.Error(t, err)
 	_, err = os.Lstat(filepath.Join(hostRoot, "libfoo.so"))
 	require.ErrorIs(t, err, os.ErrNotExist)
+	_, err = os.Lstat(filepath.Join(containerRoot, hostRoot, "libfoo.so"))
+	require.NoError(t, err)
 }
 
 type dirOrLink struct {

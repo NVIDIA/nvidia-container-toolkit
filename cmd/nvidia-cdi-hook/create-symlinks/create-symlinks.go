@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/moby/sys/symlink"
 	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -96,13 +97,12 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		}
 		parts := strings.Split(l, "::")
 		if len(parts) != 2 {
-			m.logger.Warningf("Invalid link specification %v", l)
-			continue
+			return fmt.Errorf("invalid symlink specification %v", l)
 		}
 
 		err := m.createLink(containerRoot, parts[0], parts[1])
 		if err != nil {
-			m.logger.Warningf("Failed to create link %v: %v", parts, err)
+			return fmt.Errorf("failed to create link %v: %w", parts, err)
 		}
 		created[l] = true
 	}
@@ -132,12 +132,17 @@ func (m command) createLink(containerRoot string, targetPath string, link string
 		return nil
 	}
 
-	m.logger.Infof("Symlinking %v to %v", linkPath, targetPath)
-	err = os.MkdirAll(filepath.Dir(linkPath), 0755)
+	resolvedLinkPath, err := symlink.FollowSymlinkInScope(linkPath, containerRoot)
+	if err != nil {
+		return fmt.Errorf("failed to follow path for link %v relative to %v: %w", link, containerRoot, err)
+	}
+
+	m.logger.Infof("Symlinking %v to %v", resolvedLinkPath, targetPath)
+	err = os.MkdirAll(filepath.Dir(resolvedLinkPath), 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)
 	}
-	err = os.Symlink(targetPath, linkPath)
+	err = os.Symlink(targetPath, resolvedLinkPath)
 	if err != nil {
 		return fmt.Errorf("failed to create symlink: %v", err)
 	}

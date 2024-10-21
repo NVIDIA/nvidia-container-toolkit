@@ -27,6 +27,9 @@ github.com/google/uuid
 ## explicit
 # github.com/kr/pretty v0.3.1
 ## explicit; go 1.12
+# github.com/moby/sys/symlink v0.3.0
+## explicit; go 1.17
+github.com/moby/sys/symlink
 # github.com/opencontainers/runtime-spec v1.2.0
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
