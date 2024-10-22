@@ -108,13 +108,10 @@ func (m command) run(c *cli.Context, cfg *config) error {
 }
 
 func (m command) createLink(containerRoot string, targetPath string, link string) error {
-	linkPath, err := changeRoot(containerRoot, link)
-	if err != nil {
-		m.logger.Warningf("Failed to resolve path for link %v relative to %v: %v", link, containerRoot, err)
-	}
+	linkPath := filepath.Join(containerRoot, link)
 
 	m.logger.Infof("Symlinking %v to %v", linkPath, targetPath)
-	err = os.MkdirAll(filepath.Dir(linkPath), 0755)
+	err := os.MkdirAll(filepath.Dir(linkPath), 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)
 	}
@@ -124,12 +121,4 @@ func (m command) createLink(containerRoot string, targetPath string, link string
 	}
 
 	return nil
-}
-
-func changeRoot(new string, path string) (string, error) {
-	if !filepath.IsAbs(path) {
-		return path, nil
-	}
-
-	return filepath.Join(new, path), nil
 }
