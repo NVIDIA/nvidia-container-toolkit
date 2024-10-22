@@ -114,15 +114,10 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	return nil
 }
 
-func (m command) createLink(hostRoot string, containerRoot string, target string, link string) error {
+func (m command) createLink(hostRoot string, containerRoot string, targetPath string, link string) error {
 	linkPath, err := changeRoot(hostRoot, containerRoot, link)
 	if err != nil {
 		m.logger.Warningf("Failed to resolve path for link %v relative to %v: %v", link, containerRoot, err)
-	}
-
-	targetPath, err := changeRoot(hostRoot, "/", target)
-	if err != nil {
-		m.logger.Warningf("Failed to resolve path for target %v relative to %v: %v", target, "/", err)
 	}
 
 	m.logger.Infof("Symlinking %v to %v", linkPath, targetPath)
@@ -130,7 +125,7 @@ func (m command) createLink(hostRoot string, containerRoot string, target string
 	if err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)
 	}
-	err = os.Symlink(target, linkPath)
+	err = os.Symlink(targetPath, linkPath)
 	if err != nil {
 		return fmt.Errorf("failed to create symlink: %v", err)
 	}
