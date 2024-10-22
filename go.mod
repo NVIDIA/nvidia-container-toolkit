@@ -14,6 +14,7 @@ require (
 	golang.org/x/mod v0.22.0
 	golang.org/x/sys v0.29.0
 	tags.cncf.io/container-device-interface v0.8.0
+	tags.cncf.io/container-device-interface/api/producer v0.0.0
 	tags.cncf.io/container-device-interface/specs-go v0.8.0
 )
 
@@ -39,6 +40,6 @@ require (
 
 replace (
 	tags.cncf.io/container-device-interface => ../container-device-interface
-	tags.cncf.io/container-device-interface/specs-go => ../container-device-interface/specs-go
 	tags.cncf.io/container-device-interface/api/producer => ../container-device-interface/api/producer
+	tags.cncf.io/container-device-interface/specs-go => ../container-device-interface/specs-go
 )

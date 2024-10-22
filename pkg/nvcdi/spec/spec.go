@@ -17,22 +17,18 @@
 package spec
 
 import (
-	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 
-	"tags.cncf.io/container-device-interface/pkg/cdi"
-	"tags.cncf.io/container-device-interface/specs-go"
+	"tags.cncf.io/container-device-interface/api/producer"
+	cdi "tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
 
 type spec struct {
-	*specs.Spec
-	format          string
-	permissions     os.FileMode
+	raw             *cdi.Spec
 	transformOnSave transform.Transformer
+	*producer.SpecWriter
 }
 
 var _ Interface = (*spec)(nil)
@@ -42,96 +38,32 @@ func New(opts ...Option) (Interface, error) {
 	return newBuilder(opts...).Build()
 }
 
+// Raw returns a pointer to the raw spec.
+func (s *spec) Raw() *cdi.Spec {
+	return s.raw
+}
+
 // Save writes the spec to the specified path and overwrites the file if it exists.
 func (s *spec) Save(path string) error {
 	if s.transformOnSave != nil {
-		err := s.transformOnSave.Transform(s.Raw())
+		err := s.transformOnSave.Transform(s.raw)
 		if err != nil {
-			return fmt.Errorf("error applying transform: %w", err)
+			return err
 		}
 	}
-	path, err := s.normalizePath(path)
-	if err != nil {
-		return fmt.Errorf("failed to normalize path: %w", err)
-	}
-
-	specDir := filepath.Dir(path)
-	cache, _ := cdi.NewCache(
-		cdi.WithAutoRefresh(false),
-		cdi.WithSpecDirs(specDir),
-	)
-	if err := cache.WriteSpec(s.Raw(), filepath.Base(path)); err != nil {
-		return fmt.Errorf("failed to write spec: %w", err)
-	}
-
-	if err := os.Chmod(path, s.permissions); err != nil {
-		return fmt.Errorf("failed to set permissions on spec file: %w", err)
-	}
-
-	return nil
+	// TODO: We should add validation here.
+	_, err := s.SpecWriter.Save(s.raw, path)
+	return err
 }
 
-// WriteTo writes the spec to the specified writer.
+// WriteTo writes the configured spec to the specified writer.
 func (s *spec) WriteTo(w io.Writer) (int64, error) {
-	name, err := cdi.GenerateNameForSpec(s.Raw())
-	if err != nil {
-		return 0, err
-	}
-
-	path, _ := s.normalizePath(name)
-	tmpFile, err := os.CreateTemp("", "*"+filepath.Base(path))
-	if err != nil {
-		return 0, err
-	}
-	defer os.Remove(tmpFile.Name())
-
-	if err := s.Save(tmpFile.Name()); err != nil {
-		return 0, err
-	}
-
-	err = tmpFile.Close()
-	if err != nil {
-		return 0, fmt.Errorf("failed to close temporary file: %w", err)
-	}
-
-	r, err := os.Open(tmpFile.Name())
-	if err != nil {
-		return 0, fmt.Errorf("failed to open temporary file: %w", err)
-	}
-	defer r.Close()
-
-	return io.Copy(w, r)
-}
-
-// Raw returns a pointer to the raw spec.
-func (s *spec) Raw() *specs.Spec {
-	return s.Spec
-}
-
-// normalizePath ensures that the specified path has a supported extension
-func (s *spec) normalizePath(path string) (string, error) {
-	if ext := filepath.Ext(path); ext != ".yaml" && ext != ".json" {
-		path += s.extension()
-	}
-
-	if filepath.Clean(filepath.Dir(path)) == "." {
-		pwd, err := os.Getwd()
+	if s.transformOnSave != nil {
+		err := s.transformOnSave.Transform(s.raw)
 		if err != nil {
-			return path, fmt.Errorf("failed to get current working directory: %v", err)
+			return 0, err
 		}
-		path = filepath.Join(pwd, path)
 	}
-
-	return path, nil
-}
-
-func (s *spec) extension() string {
-	switch s.format {
-	case FormatJSON:
-		return ".json"
-	case FormatYAML:
-		return ".yaml"
-	}
-
-	return ".yaml"
+	// TODO: We should add validation here.
+	return s.SpecWriter.WriteSpecTo(s.raw, w)
 }

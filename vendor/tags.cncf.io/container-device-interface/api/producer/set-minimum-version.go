@@ -1,8 +1,5 @@
-//go:build !linux
-// +build !linux
-
 /*
-   Copyright © 2022 The CDI Authors
+   Copyright © 2025 The CDI Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,23 +14,23 @@
    limitations under the License.
 */
 
-package cdi
+package producer
 
 import (
-	"os"
-	"path/filepath"
+	"fmt"
+
+	cdi "tags.cncf.io/container-device-interface/specs-go"
 )
 
-// Rename src to dst, both relative to the directory dir. If dst already exists
-// refuse renaming with an error unless overwrite is explicitly asked for.
-func renameIn(dir, src, dst string, overwrite bool) error {
-	src = filepath.Join(dir, src)
-	dst = filepath.Join(dir, dst)
+type setMinimumRequiredVersion struct{}
 
-	_, err := os.Stat(dst)
-	if err == nil && !overwrite {
-		return os.ErrExist
+// Transform detects the minimum required version required for the specified
+// spec and sets the version field accordingly.
+func (d setMinimumRequiredVersion) Transform(spec *cdi.Spec) error {
+	minVersion, err := cdi.MinimumRequiredVersion(spec)
+	if err != nil {
+		return fmt.Errorf("failed to get minimum required CDI spec version: %w", err)
 	}
-
-	return os.Rename(src, dst)
+	spec.Version = minVersion
+	return nil
 }
