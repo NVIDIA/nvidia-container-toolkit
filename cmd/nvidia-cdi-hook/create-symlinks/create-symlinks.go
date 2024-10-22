@@ -33,7 +33,6 @@ type command struct {
 }
 
 type config struct {
-	hostRoot      string
 	links         cli.StringSlice
 	containerSpec string
 }
@@ -65,12 +64,6 @@ func (m command) build() *cli.Command {
 			Destination: &cfg.links,
 		},
 		// The following flags are testing-only flags.
-		&cli.StringFlag{
-			Name:        "host-root",
-			Usage:       "The root on the host filesystem to use to resolve symlinks. This is only intended for testing.",
-			Destination: &cfg.hostRoot,
-			Hidden:      true,
-		},
 		&cli.StringFlag{
 			Name:        "container-spec",
 			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN. This is only intended for testing.",
@@ -105,7 +98,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 			continue
 		}
 
-		err := m.createLink(cfg.hostRoot, containerRoot, parts[0], parts[1])
+		err := m.createLink(containerRoot, parts[0], parts[1])
 		if err != nil {
 			m.logger.Warningf("Failed to create link %v: %v", parts, err)
 		}
@@ -114,8 +107,8 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	return nil
 }
 
-func (m command) createLink(hostRoot string, containerRoot string, targetPath string, link string) error {
-	linkPath, err := changeRoot(hostRoot, containerRoot, link)
+func (m command) createLink(containerRoot string, targetPath string, link string) error {
+	linkPath, err := changeRoot(containerRoot, link)
 	if err != nil {
 		m.logger.Warningf("Failed to resolve path for link %v relative to %v: %v", link, containerRoot, err)
 	}
@@ -133,19 +126,10 @@ func (m command) createLink(hostRoot string, containerRoot string, targetPath st
 	return nil
 }
 
-func changeRoot(current string, new string, path string) (string, error) {
+func changeRoot(new string, path string) (string, error) {
 	if !filepath.IsAbs(path) {
 		return path, nil
 	}
 
-	relative := path
-	if current != "" {
-		r, err := filepath.Rel(current, path)
-		if err != nil {
-			return "", err
-		}
-		relative = r
-	}
-
-	return filepath.Join(new, relative), nil
+	return filepath.Join(new, path), nil
 }
