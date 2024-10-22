@@ -95,28 +95,29 @@ func (m command) run(c *cli.Context, cfg *config) error {
 
 	created := make(map[string]bool)
 	for _, l := range cfg.links.Value() {
+		if created[l] {
+			m.logger.Debugf("Link %v already processed", l)
+			continue
+		}
 		parts := strings.Split(l, "::")
 		if len(parts) != 2 {
 			m.logger.Warningf("Invalid link specification %v", l)
 			continue
 		}
 
-		err := m.createLink(created, cfg.hostRoot, containerRoot, parts[0], parts[1])
+		err := m.createLink(cfg.hostRoot, containerRoot, parts[0], parts[1])
 		if err != nil {
 			m.logger.Warningf("Failed to create link %v: %v", parts, err)
 		}
+		created[l] = true
 	}
 	return nil
 }
 
-func (m command) createLink(created map[string]bool, hostRoot string, containerRoot string, target string, link string) error {
+func (m command) createLink(hostRoot string, containerRoot string, target string, link string) error {
 	linkPath, err := changeRoot(hostRoot, containerRoot, link)
 	if err != nil {
 		m.logger.Warningf("Failed to resolve path for link %v relative to %v: %v", link, containerRoot, err)
-	}
-	if created[linkPath] {
-		m.logger.Debugf("Link %v already created", linkPath)
-		return nil
 	}
 
 	targetPath, err := changeRoot(hostRoot, "/", target)
