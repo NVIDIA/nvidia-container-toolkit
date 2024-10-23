@@ -155,8 +155,10 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 
 // CommandLineSource returns the CLI-based crio config loader
 func CommandLineSource(hostRoot string) toml.Loader {
-	commandLine := chrootIfRequired(hostRoot, "crio", "status", "config")
-	return toml.FromCommandLine(commandLine[0], commandLine[1:]...)
+	return toml.LoadFirst(
+		toml.FromCommandLine(chrootIfRequired(hostRoot, "crio", "status", "config")...),
+		toml.FromCommandLine(chrootIfRequired(hostRoot, "crio-status", "config")...),
+	)
 }
 
 func chrootIfRequired(hostRoot string, commandLine ...string) []string {
