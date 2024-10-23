@@ -128,8 +128,7 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 
 // CommandLineSource returns the CLI-based containerd config loader
 func CommandLineSource(hostRoot string) toml.Loader {
-	commandLine := chrootIfRequired(hostRoot, "containerd", "config", "dump")
-	return toml.FromCommandLine(commandLine[0], commandLine[1:]...)
+	return toml.FromCommandLine(chrootIfRequired(hostRoot, "containerd", "config", "dump")...)
 }
 
 func chrootIfRequired(hostRoot string, commandLine ...string) []string {

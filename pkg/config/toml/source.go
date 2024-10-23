@@ -36,12 +36,12 @@ func FromFile(path string) Loader {
 
 // FromCommandLine creates a TOML source from the output of a shell command and its corresponding args.
 // If the command is empty, an empty config is returned.
-func FromCommandLine(cmd string, args ...string) Loader {
-	if len(cmd) == 0 {
+func FromCommandLine(cmds ...string) Loader {
+	if len(cmds) == 0 {
 		return Empty
 	}
 	return &tomlCliSource{
-		command: cmd,
-		args:    args,
+		command: cmds[0],
+		args:    cmds[1:],
 	}
 }
