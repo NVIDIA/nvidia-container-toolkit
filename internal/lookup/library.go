@@ -16,20 +16,6 @@
 
 package lookup
 
-import (
-	"fmt"
-
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-)
-
-type ldcacheLocator struct {
-	logger logger.Interface
-	cache  ldcache.LDCache
-}
-
-var _ Locator = (*ldcacheLocator)(nil)
-
 // NewLibraryLocator creates a library locator using the specified options.
 func NewLibraryLocator(opts ...Option) Locator {
 	b := newBuilder(opts...)
@@ -63,39 +49,7 @@ func NewLibraryLocator(opts ...Option) Locator {
 
 	l := First(
 		symlinkLocator,
-		newLdcacheLocator(opts...),
+		NewLdcacheLocator(opts...),
 	)
 	return l
-}
-
-func newLdcacheLocator(opts ...Option) Locator {
-	b := newBuilder(opts...)
-
-	cache, err := ldcache.New(b.logger, b.root)
-	if err != nil {
-		// If we failed to open the LDCache, we default to a symlink locator.
-		b.logger.Warningf("Failed to load ldcache: %v", err)
-		return nil
-	}
-
-	return &ldcacheLocator{
-		logger: b.logger,
-		cache:  cache,
-	}
-}
-
-// Locate finds the specified libraryname.
-// If the input is a library name, the ldcache is searched otherwise the
-// provided path is resolved as a symlink.
-func (l ldcacheLocator) Locate(libname string) ([]string, error) {
-	paths32, paths64 := l.cache.Lookup(libname)
-	if len(paths32) > 0 {
-		l.logger.Warningf("Ignoring 32-bit libraries for %v: %v", libname, paths32)
-	}
-
-	if len(paths64) == 0 {
-		return nil, fmt.Errorf("64-bit library %v: %w", libname, ErrNotFound)
-	}
-
-	return paths64, nil
 }

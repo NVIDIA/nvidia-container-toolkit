@@ -1,5 +1,5 @@
 /**
-# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2024 NVIDIA CORPORATION
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,24 +14,23 @@
 # limitations under the License.
 **/
 
-package ldcache
+package lookup
 
-import "github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+import "fmt"
 
-type empty struct {
-	logger logger.Interface
-	path   string
+// A null locator always returns an empty response.
+type null struct {
 }
 
-var _ LDCache = (*empty)(nil)
-
-// List always returns nil for an empty ldcache
-func (e *empty) List() ([]string, []string) {
+// Locate always returns empty for a null locator.
+func (l *null) Locate(string) ([]string, error) {
 	return nil, nil
 }
 
-// Lookup logs a debug message and returns nil for an empty ldcache
-func (e *empty) Lookup(prefixes ...string) ([]string, []string) {
-	e.logger.Debugf("Calling Lookup(%v) on empty ldcache: %v", prefixes, e.path)
-	return nil, nil
+// A notFound locator always returns an ErrNotFound error.
+type notFound struct {
+}
+
+func (l *notFound) Locate(s string) ([]string, error) {
+	return nil, fmt.Errorf("%s: %w", s, ErrNotFound)
 }
