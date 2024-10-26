@@ -76,6 +76,8 @@ type app struct {
 	logger logger.Interface
 	// defaultRoot stores the root to use if the --root flag is not specified.
 	defaultRoot string
+
+	toolkit *toolkit.Installer
 }
 
 // NewApp creates the CLI app fro the specified options.
@@ -155,6 +157,10 @@ func (a app) build() *cli.App {
 }
 
 func (a *app) Before(c *cli.Context, o *options) error {
+	a.toolkit = toolkit.NewInstaller(
+		toolkit.WithLogger(a.logger),
+		toolkit.WithToolkitRoot(o.toolkitRoot()),
+	)
 	return a.validateFlags(c, o)
 }
 
@@ -169,7 +175,7 @@ func (a *app) validateFlags(_ *cli.Context, o *options) error {
 		return fmt.Errorf("invalid toolkit.pid path %v", o.pidFile)
 	}
 
-	if err := toolkit.ValidateOptions(&o.toolkitOptions, o.toolkitRoot()); err != nil {
+	if err := a.toolkit.ValidateOptions(&o.toolkitOptions); err != nil {
 		return err
 	}
 	if err := runtime.ValidateOptions(&o.runtimeOptions, o.runtime, o.toolkitRoot()); err != nil {
@@ -178,7 +184,9 @@ func (a *app) validateFlags(_ *cli.Context, o *options) error {
 	return nil
 }
 
-// Run runs the core logic of the CLI
+// Run installs the NVIDIA Container Toolkit and updates the requested runtime.
+// If the application is run as a daemon, the application waits and unconfigures
+// the runtime on termination.
 func (a *app) Run(c *cli.Context, o *options) error {
 	err := a.initialize(o.pidFile)
 	if err != nil {
@@ -195,7 +203,8 @@ func (a *app) Run(c *cli.Context, o *options) error {
 
 		o.toolkitOptions.ContainerRuntimeRuntimes = *cli.NewStringSlice(lowlevelRuntimePaths...)
 	}
-	err = toolkit.Install(c, &o.toolkitOptions, "", o.toolkitRoot())
+
+	err = a.toolkit.Install(c, &o.toolkitOptions)
 	if err != nil {
 		return fmt.Errorf("unable to install toolkit: %v", err)
 	}
