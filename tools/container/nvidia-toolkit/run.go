@@ -130,6 +130,12 @@ func main() {
 }
 
 func validateFlags(_ *cli.Context, o *options) error {
+	if o.root == "" {
+		return fmt.Errorf("the install root must be specified")
+	}
+	if _, exists := availableRuntimes[o.runtime]; !exists {
+		return fmt.Errorf("unknown runtime: %v", o.runtime)
+	}
 	if filepath.Base(o.pidFile) != toolkitPidFilename {
 		return fmt.Errorf("invalid toolkit.pid path %v", o.pidFile)
 	}
@@ -144,12 +150,7 @@ func validateFlags(_ *cli.Context, o *options) error {
 
 // Run runs the core logic of the CLI
 func Run(c *cli.Context, o *options) error {
-	err := verifyFlags(o)
-	if err != nil {
-		return fmt.Errorf("unable to verify flags: %v", err)
-	}
-
-	err = initialize(o.pidFile)
+	err := initialize(o.pidFile)
 	if err != nil {
 		return fmt.Errorf("unable to initialize: %v", err)
 	}
@@ -215,18 +216,6 @@ func ParseArgs(args []string) ([]string, string, error) {
 	}
 
 	return nil, "", fmt.Errorf("unexpected positional argument(s) %v", args[2:lastPositionalArg+1])
-}
-
-func verifyFlags(o *options) error {
-	log.Infof("Verifying Flags")
-	if o.root == "" {
-		return fmt.Errorf("the install root must be specified")
-	}
-
-	if _, exists := availableRuntimes[o.runtime]; !exists {
-		return fmt.Errorf("unknown runtime: %v", o.runtime)
-	}
-	return nil
 }
 
 func initialize(pidFile string) error {
