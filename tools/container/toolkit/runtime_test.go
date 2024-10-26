@@ -21,11 +21,18 @@ import (
 	"strings"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNvidiaContainerRuntimeInstallerWrapper(t *testing.T) {
-	r := newNvidiaContainerRuntimeInstaller(nvidiaContainerRuntimeSource)
+	logger, _ := testlog.NewNullLogger()
+	i := Installer{
+		fileInstaller: fileInstaller{
+			logger: logger,
+		},
+	}
+	r := i.newNvidiaContainerRuntimeInstaller(nvidiaContainerRuntimeSource)
 
 	const shebang = "#! /bin/sh"
 	const destFolder = "/dest/folder"
