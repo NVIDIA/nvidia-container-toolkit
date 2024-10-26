@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestParseArgs(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
 	testCases := []struct {
 		args              []string
 		expectedRemaining []string
@@ -70,7 +72,7 @@ func TestParseArgs(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			remaining, root, err := ParseArgs(tc.args)
+			remaining, root, err := ParseArgs(logger, tc.args)
 			if tc.expectedError != nil {
 				require.EqualError(t, err, tc.expectedError.Error())
 			} else {

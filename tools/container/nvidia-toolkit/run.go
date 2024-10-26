@@ -74,6 +74,8 @@ func main() {
 type app struct {
 	logger      logger.Interface
 	defaultRoot string
+
+	toolkit *toolkit.Installer
 }
 
 func new(logger logger.Interface, defaultRoot string) *cli.App {
@@ -96,6 +98,7 @@ func (a app) build() *cli.App {
 	c.Description = "DESTINATION points to the host path underneath which the nvidia-container-toolkit should be installed.\nIt will be installed at ${DESTINATION}/toolkit"
 	c.Version = Version
 	c.Before = func(ctx *cli.Context) error {
+		a.init(&options)
 		return a.validateFlags(ctx, &options)
 	}
 	c.Action = func(ctx *cli.Context) error {
@@ -150,6 +153,13 @@ func (a app) build() *cli.App {
 	return c
 }
 
+func (a *app) init(o *options) {
+	a.toolkit = toolkit.NewInstaller(
+		toolkit.WithLogger(a.logger),
+		toolkit.WithToolkitRoot(o.toolkitRoot()),
+	)
+}
+
 func (a *app) validateFlags(_ *cli.Context, o *options) error {
 	if o.root == "" {
 		return fmt.Errorf("the install root must be specified")
@@ -161,7 +171,7 @@ func (a *app) validateFlags(_ *cli.Context, o *options) error {
 		return fmt.Errorf("invalid toolkit.pid path %v", o.pidFile)
 	}
 
-	if err := toolkit.ValidateOptions(&o.toolkitOptions, o.toolkitRoot()); err != nil {
+	if err := a.toolkit.ValidateOptions(&o.toolkitOptions); err != nil {
 		return err
 	}
 	if err := runtime.ValidateOptions(&o.runtimeOptions, o.runtime, o.toolkitRoot()); err != nil {
@@ -187,7 +197,12 @@ func (a *app) Run(c *cli.Context, o *options) error {
 
 		o.toolkitOptions.ContainerRuntimeRuntimes = *cli.NewStringSlice(lowlevelRuntimePaths...)
 	}
-	err = toolkit.Install(c, &o.toolkitOptions, "", o.toolkitRoot())
+
+	installer := toolkit.NewInstaller(
+		toolkit.WithLogger(a.logger),
+		toolkit.WithToolkitRoot(o.toolkitRoot()),
+	)
+	err = installer.Install(c, &o.toolkitOptions)
 	if err != nil {
 		return fmt.Errorf("unable to install toolkit: %v", err)
 	}
