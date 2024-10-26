@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/pkg/parser"
@@ -44,8 +43,6 @@ const (
 
 	nvidiaContainerToolkitConfigSource = "/etc/nvidia-container-runtime/config.toml"
 	configFilename                     = "config.toml"
-
-	toolkitPidFilename = "toolkit.pid"
 )
 
 type Options struct {
@@ -254,33 +251,6 @@ func ValidateOptions(opts *Options, toolkitRoot string) error {
 		opts.createDeviceNodes = *cli.NewStringSlice()
 	}
 
-	return nil
-}
-
-// TryDelete attempts to remove the specified toolkit folder.
-// A toolkit.pid file -- if present -- is skipped.
-func TryDelete(cli *cli.Context, toolkitRoot string) error {
-	log.Infof("Attempting to delete NVIDIA container toolkit from '%v'", toolkitRoot)
-
-	contents, err := os.ReadDir(toolkitRoot)
-	if err != nil && errors.Is(err, os.ErrNotExist) {
-		return nil
-	} else if err != nil {
-		return fmt.Errorf("failed to read the contents of %v: %w", toolkitRoot, err)
-	}
-
-	for _, content := range contents {
-		if content.Name() == toolkitPidFilename {
-			continue
-		}
-		name := filepath.Join(toolkitRoot, content.Name())
-		if err := os.RemoveAll(name); err != nil {
-			log.Warningf("could not remove %v: %v", name, err)
-		}
-	}
-	if err := os.RemoveAll(toolkitRoot); err != nil {
-		log.Warningf("could not remove %v: %v", toolkitRoot, err)
-	}
 	return nil
 }
 
