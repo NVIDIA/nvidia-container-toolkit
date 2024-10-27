@@ -176,12 +176,6 @@ image-packaging:
       optional: true
 
 # Define publish test helpers
-.test:toolkit:
-  extends:
-    - .integration
-  variables:
-    TEST_CASES: "toolkit"
-
 .test:docker:
   extends:
     - .integration

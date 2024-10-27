@@ -1,5 +1,5 @@
-dist
-artifacts
+/dist
+/artifacts
 *.swp
 *.swo
 /coverage.out*

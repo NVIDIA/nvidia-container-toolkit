@@ -19,7 +19,6 @@ shopt -s lastpipe
 readonly basedir="$(dirname "$(realpath "$0")")"
 source "${basedir}/common.sh"
 
-source "${basedir}/toolkit_test.sh"
 source "${basedir}/docker_test.sh"
 source "${basedir}/crio_test.sh"
 source "${basedir}/containerd_test.sh"
@@ -66,7 +65,7 @@ done
 
 trap '"$CLEANUP" && testing::cleanup' ERR
 
-readonly test_cases="${TEST_CASES:-toolkit docker crio containerd}"
+readonly test_cases="${TEST_CASES:-docker crio containerd}"
 
 testing::cleanup
 for tc in ${test_cases}; do

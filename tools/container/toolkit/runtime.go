@@ -29,10 +29,10 @@ const (
 
 // installContainerRuntimes sets up the NVIDIA container runtimes, copying the executables
 // and implementing the required wrapper
-func installContainerRuntimes(toolkitDir string, driverRoot string) error {
+func installContainerRuntimes(sourceRoot string, toolkitDir string) error {
 	runtimes := operator.GetRuntimes()
 	for _, runtime := range runtimes {
-		r := newNvidiaContainerRuntimeInstaller(runtime.Path)
+		r := newNvidiaContainerRuntimeInstaller(filepath.Join(sourceRoot, runtime.Path))
 
 		_, err := r.install(toolkitDir)
 		if err != nil {
