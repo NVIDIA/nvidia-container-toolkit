@@ -1,5 +1,14 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.17.0-rc.2
+- Fix bug in locating libcuda.so form ldcache
+- Fix bug in sorting of symlink chain
+- Remove unsupported print-ldcache command
+- Remove csv-filename support from create-symlinks
+
+## Changes in the Toolkit Container
+- Fallback to `crio-status` if `crio status` does not work when configuring the crio runtime
+
 ## v1.17.0-rc.1
 - Allow IMEX channels to be requested as volume mounts
 - Fix typo in error message
