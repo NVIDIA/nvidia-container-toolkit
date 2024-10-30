@@ -30,11 +30,11 @@ func getDefaultHookConfig() (HookConfig, error) {
 }
 
 // loadConfig loads the required paths for the hook config.
-func loadConfig() (*config.Config, error) {
+func (a *app) loadConfig() (*config.Config, error) {
 	var configPaths []string
 	var required bool
-	if len(*configflag) != 0 {
-		configPaths = append(configPaths, *configflag)
+	if len(a.configFile) != 0 {
+		configPaths = append(configPaths, a.configFile)
 		required = true
 	} else {
 		configPaths = append(configPaths, path.Join(driverPath, configPath), configPath)
@@ -56,8 +56,8 @@ func loadConfig() (*config.Config, error) {
 	return config.GetDefault()
 }
 
-func getHookConfig() (*HookConfig, error) {
-	cfg, err := loadConfig()
+func (a *app) getHookConfig() (*HookConfig, error) {
+	cfg, err := a.loadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %v", err)
 	}
