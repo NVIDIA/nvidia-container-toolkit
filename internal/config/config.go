@@ -32,9 +32,9 @@ import (
 
 const (
 	FilePathOverrideEnvVar = "NVIDIA_CTK_CONFIG_FILE_PATH"
+	RelativeFilePath       = "nvidia-container-runtime/config.toml"
 
-	configOverride = "XDG_CONFIG_HOME"
-	configFilePath = "nvidia-container-runtime/config.toml"
+	configRootOverride = "XDG_CONFIG_HOME"
 
 	nvidiaCTKExecutable          = "nvidia-ctk"
 	nvidiaCTKDefaultFilePath     = "/usr/bin/nvidia-ctk"
@@ -79,11 +79,12 @@ func GetConfigFilePath() string {
 	if configFilePathOverride := os.Getenv(FilePathOverrideEnvVar); configFilePathOverride != "" {
 		return configFilePathOverride
 	}
-	if XDGConfigDir := os.Getenv(configOverride); len(XDGConfigDir) != 0 {
-		return filepath.Join(XDGConfigDir, configFilePath)
+	configRoot := "/etc"
+	if XDGConfigDir := os.Getenv(configRootOverride); len(XDGConfigDir) != 0 {
+		configRoot = XDGConfigDir
 	}
 
-	return filepath.Join("/etc", configFilePath)
+	return filepath.Join(configRoot, RelativeFilePath)
 }
 
 // GetConfig sets up the config struct. Values are read from a toml file
