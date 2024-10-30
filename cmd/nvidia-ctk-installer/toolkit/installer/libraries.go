@@ -28,7 +28,7 @@ import (
 // A predefined set of library candidates are considered, with the first one
 // resulting in success being installed to the toolkit folder. The install process
 // resolves the symlink for the library and copies the versioned library itself.
-func (t *toolkitInstaller) collectLibraries() ([]Installer, error) {
+func (t *ToolkitInstaller) collectLibraries() ([]Installer, error) {
 	requiredLibraries := []string{
 		"libnvidia-container.so.1",
 		"libnvidia-container-go.so.1",

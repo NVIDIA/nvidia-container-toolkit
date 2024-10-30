@@ -19,29 +19,29 @@ package installer
 
 import "github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
-type Option func(*toolkitInstaller)
+type Option func(*ToolkitInstaller)
 
 func WithLogger(logger logger.Interface) Option {
-	return func(ti *toolkitInstaller) {
+	return func(ti *ToolkitInstaller) {
 		ti.logger = logger
 	}
 }
 
 func WithArtifactRoot(artifactRoot *artifactRoot) Option {
-	return func(ti *toolkitInstaller) {
+	return func(ti *ToolkitInstaller) {
 		ti.artifactRoot = artifactRoot
 	}
 }
 
 func WithIgnoreErrors(ignoreErrors bool) Option {
-	return func(ti *toolkitInstaller) {
+	return func(ti *ToolkitInstaller) {
 		ti.ignoreErrors = ignoreErrors
 	}
 }
 
 // WithSourceRoot sets the root directory for locating artifacts to be installed.
 func WithSourceRoot(sourceRoot string) Option {
-	return func(ti *toolkitInstaller) {
+	return func(ti *ToolkitInstaller) {
 		ti.sourceRoot = sourceRoot
 	}
 }

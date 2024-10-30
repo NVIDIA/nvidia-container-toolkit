@@ -112,7 +112,7 @@ func TestToolkitInstaller(t *testing.T) {
 			return nil
 		},
 	}
-	i := toolkitInstaller{
+	i := ToolkitInstaller{
 		logger:                logger,
 		artifactRoot:          r,
 		ensureTargetDirectory: createDirectory,
@@ -172,8 +172,8 @@ if [ "${?}" != "0" ]; then
 	echo "nvidia driver modules are not yet loaded, invoking runc directly"
 	exec runc "$@"
 fi
+NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
 PATH=/foo/bar/baz:$PATH \
-XDG_CONFIG_HOME=/foo/bar/baz/.config \
 	/foo/bar/baz/nvidia-container-runtime.real \
 		"$@"
 `,
@@ -187,8 +187,8 @@ if [ "${?}" != "0" ]; then
 	echo "nvidia driver modules are not yet loaded, invoking runc directly"
 	exec runc "$@"
 fi
+NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
 PATH=/foo/bar/baz:$PATH \
-XDG_CONFIG_HOME=/foo/bar/baz/.config \
 	/foo/bar/baz/nvidia-container-runtime.cdi.real \
 		"$@"
 `,
@@ -202,8 +202,8 @@ if [ "${?}" != "0" ]; then
 	echo "nvidia driver modules are not yet loaded, invoking runc directly"
 	exec runc "$@"
 fi
+NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
 PATH=/foo/bar/baz:$PATH \
-XDG_CONFIG_HOME=/foo/bar/baz/.config \
 	/foo/bar/baz/nvidia-container-runtime.legacy.real \
 		"$@"
 `,
@@ -240,9 +240,9 @@ PATH=/foo/bar/baz:$PATH \
 				path: "/foo/bar/baz/nvidia-container-runtime-hook",
 				mode: 0777,
 				wrapper: `#! /bin/sh
+NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
 PATH=/foo/bar/baz:$PATH \
 	/foo/bar/baz/nvidia-container-runtime-hook.real \
-		-config /foo/bar/baz/.config/nvidia-container-runtime/config.toml \
 		"$@"
 `,
 			},
