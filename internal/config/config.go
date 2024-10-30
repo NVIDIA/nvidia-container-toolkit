@@ -31,6 +31,8 @@ import (
 )
 
 const (
+	FilePathOverrideEnvVar = "NVIDIA_CTK_CONFIG_FILE_PATH"
+
 	configOverride = "XDG_CONFIG_HOME"
 	configFilePath = "nvidia-container-runtime/config.toml"
 
@@ -74,6 +76,9 @@ type Config struct {
 
 // GetConfigFilePath returns the path to the config file for the configured system
 func GetConfigFilePath() string {
+	if configFilePathOverride := os.Getenv(FilePathOverrideEnvVar); configFilePathOverride != "" {
+		return configFilePathOverride
+	}
 	if XDGConfigDir := os.Getenv(configOverride); len(XDGConfigDir) != 0 {
 		return filepath.Join(XDGConfigDir, configFilePath)
 	}
