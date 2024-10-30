@@ -18,6 +18,7 @@ package runtime
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
@@ -41,6 +42,11 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 		return lowLevelRuntime, nil
 	}
 
+	if cfg.Features.RequireNvidiaKernelModules.IsEnabled() && !isNvidiaModuleLoaded() {
+		logger.Tracef("NVIDIA driver modules are not yet loaded; skipping modifer")
+		return lowLevelRuntime, nil
+	}
+
 	ociSpec, err := oci.NewSpec(logger, argv)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing OCI specification: %v", err)
@@ -60,6 +66,19 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 	)
 
 	return r, nil
+}
+
+// isNvidiaKernelModuleLoaded checks whether the NVIDIA GPU driver is installed
+// and the kernel module is available.
+func isNvidiaModuleLoaded() bool {
+	// TODO: This was implemented as:
+	// cat /proc/modules | grep -e \"^nvidia \" >/dev/null 2>&1
+	// if [ "${?}" != "0" ]; then
+	//	echo "nvidia driver modules are not yet loaded, invoking runc directly"
+	//	exec runc "$@"
+	// fi
+	_, err := os.Stat("/proc/driver/nvidia/version")
+	return err == nil
 }
 
 // newSpecModifier is a factory method that creates constructs an OCI spec modifer based on the provided config.

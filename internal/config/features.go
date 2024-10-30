@@ -21,6 +21,9 @@ type features struct {
 	// DisableImexChannelCreation ensures that the implicit creation of
 	// requested IMEX channels is skipped when invoking the nvidia-container-cli.
 	DisableImexChannelCreation *feature `toml:"disable-imex-channel-creation,omitempty"`
+	// RequireNvidiaKernelModules indicates that the NVIDIA kernel module must be
+	// loaded for the NVIDIA Container Runtime to perform any OCI spec modifications.
+	RequireNvidiaKernelModules *feature `toml:"require-nvidia-kernel-module,omitempty"`
 }
 
 //nolint:unused
