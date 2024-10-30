@@ -28,20 +28,18 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/operator"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 )
 
 type executable struct {
 	requiresKernelModule bool
 	path                 string
 	symlink              string
-	args                 []string
 	env                  map[string]string
 }
 
-func (t *toolkitInstaller) collectExecutables(destDir string) ([]Installer, error) {
-	configHome := filepath.Join(destDir, ".config")
-	configDir := filepath.Join(configHome, "nvidia-container-runtime")
-	configPath := filepath.Join(configDir, "config.toml")
+func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, error) {
+	configFilePath := t.ConfigFilePath(destDir)
 
 	executables := []executable{
 		{
@@ -56,7 +54,7 @@ func (t *toolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 			path:                 runtime.Path,
 			requiresKernelModule: true,
 			env: map[string]string{
-				"XDG_CONFIG_HOME": configHome,
+				config.FilePathOverrideEnvVar: configFilePath,
 			},
 		}
 		executables = append(executables, e)
@@ -72,7 +70,9 @@ func (t *toolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 		executable{
 			path:    "nvidia-container-runtime-hook",
 			symlink: "nvidia-container-toolkit",
-			args:    []string{fmt.Sprintf("-config %s", configPath)},
+			env: map[string]string{
+				config.FilePathOverrideEnvVar: configFilePath,
+			},
 		},
 	)
 
@@ -94,7 +94,6 @@ func (t *toolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 			Source:            executablePath,
 			WrappedExecutable: dotRealFilename,
 			CheckModules:      executable.requiresKernelModule,
-			Args:              executable.args,
 			Envvars: map[string]string{
 				"PATH": strings.Join([]string{destDir, "$PATH"}, ":"),
 			},
@@ -124,7 +123,6 @@ type wrapper struct {
 	Envvars           map[string]string
 	WrappedExecutable string
 	CheckModules      bool
-	Args              []string
 }
 
 type render struct {
@@ -165,9 +163,6 @@ fi
 {{$key}}={{$value}} \
 {{- end }}
 	{{ .DestDir }}/{{ .WrappedExecutable }} \
-{{- range $arg := .Args }}
-		{{$arg}} \
-{{- end }}
 		"$@"
 `
 

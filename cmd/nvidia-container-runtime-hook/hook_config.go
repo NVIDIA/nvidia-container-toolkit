@@ -13,10 +13,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 )
 
-const (
-	driverPath = "/run/nvidia/driver"
-)
-
 // hookConfig wraps the toolkit config.
 // This allows for functions to be defined on the local type.
 type hookConfig struct {

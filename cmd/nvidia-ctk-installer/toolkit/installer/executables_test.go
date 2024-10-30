@@ -70,19 +70,6 @@ PATH=/foo/bar/baz \
 		"$@"
 `,
 		},
-		{
-			description: "args are added",
-			w: &wrapper{
-				WrappedExecutable: "some-runtime",
-				Args:              []string{"--config foo", "bar"},
-			},
-			expected: `#! /bin/sh
-	/dest-dir/some-runtime \
-		--config foo \
-		bar \
-		"$@"
-`,
-		},
 	}
 
 	for _, tc := range testCases {
