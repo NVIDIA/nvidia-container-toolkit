@@ -61,23 +61,6 @@ func TestWrapper(t *testing.T) {
 		},
 		{
 			e: executable{
-				preLines: []string{
-					"preline1",
-					"preline2",
-				},
-			},
-			expectedLines: []string{
-				shebang,
-				"preline1",
-				"preline2",
-				"PATH=/dest/folder:$PATH \\",
-				"source.real \\",
-				"\t\"$@\"",
-				"",
-			},
-		},
-		{
-			e: executable{
 				argLines: []string{
 					"argline1",
 					"argline2",

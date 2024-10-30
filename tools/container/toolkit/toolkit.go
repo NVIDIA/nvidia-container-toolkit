@@ -465,6 +465,8 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 		configValues["nvidia-container-runtime.runtimes"] = toolkitRuntimeList
 	}
 
+	// We require the NVIDIA kernel modules to be loaded.
+	configValues["features.require-nvidia-kernel-modules"] = true
 	for _, optInFeature := range opts.optInFeatures.Value() {
 		configValues["features."+optInFeature] = true
 	}
