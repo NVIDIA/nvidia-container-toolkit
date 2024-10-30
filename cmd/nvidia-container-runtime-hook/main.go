@@ -174,6 +174,7 @@ func main() {
 			Name:        "config",
 			Destination: &a.configFile,
 			Usage:       "The path to the configuration file to use",
+			EnvVars:     []string{config.FilePathOverrideEnvVar},
 		},
 	}
 
