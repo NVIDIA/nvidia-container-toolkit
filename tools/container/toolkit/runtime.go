@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
 )
 
@@ -29,10 +30,10 @@ const (
 
 // installContainerRuntimes sets up the NVIDIA container runtimes, copying the executables
 // and implementing the required wrapper
-func installContainerRuntimes(toolkitDir string, driverRoot string) error {
+func installContainerRuntimes(toolkitDir string, configFilePath string) error {
 	runtimes := operator.GetRuntimes()
 	for _, runtime := range runtimes {
-		r := newNvidiaContainerRuntimeInstaller(runtime.Path)
+		r := newNvidiaContainerRuntimeInstaller(runtime.Path, configFilePath)
 
 		_, err := r.install(toolkitDir)
 		if err != nil {
@@ -46,17 +47,17 @@ func installContainerRuntimes(toolkitDir string, driverRoot string) error {
 // This installer will copy the specified source executable to the toolkit directory.
 // The executable is copied to a file with the same name as the source, but with a ".real" suffix and a wrapper is
 // created to allow for the configuration of the runtime environment.
-func newNvidiaContainerRuntimeInstaller(source string) *executable {
+func newNvidiaContainerRuntimeInstaller(source string, configFilePath string) *executable {
 	wrapperName := filepath.Base(source)
 	dotfileName := wrapperName + ".real"
 	target := executableTarget{
 		dotfileName: dotfileName,
 		wrapperName: wrapperName,
 	}
-	return newRuntimeInstaller(source, target, nil)
+	return newRuntimeInstaller(source, target, configFilePath, nil)
 }
 
-func newRuntimeInstaller(source string, target executableTarget, env map[string]string) *executable {
+func newRuntimeInstaller(source string, target executableTarget, configFilePath string, env map[string]string) *executable {
 	preLines := []string{
 		"",
 		"cat /proc/modules | grep -e \"^nvidia \" >/dev/null 2>&1",
@@ -68,7 +69,7 @@ func newRuntimeInstaller(source string, target executableTarget, env map[string]
 	}
 
 	runtimeEnv := make(map[string]string)
-	runtimeEnv["XDG_CONFIG_HOME"] = filepath.Join(destDirPattern, ".config")
+	runtimeEnv[config.FilePathOverrideEnvVar] = configFilePath
 	for k, v := range env {
 		runtimeEnv[k] = v
 	}

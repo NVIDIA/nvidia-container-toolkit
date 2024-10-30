@@ -25,7 +25,7 @@ import (
 )
 
 func TestNvidiaContainerRuntimeInstallerWrapper(t *testing.T) {
-	r := newNvidiaContainerRuntimeInstaller(nvidiaContainerRuntimeSource)
+	r := newNvidiaContainerRuntimeInstaller(nvidiaContainerRuntimeSource, "/config/file/path/config.toml")
 
 	const shebang = "#! /bin/sh"
 	const destFolder = "/dest/folder"
@@ -45,8 +45,8 @@ func TestNvidiaContainerRuntimeInstallerWrapper(t *testing.T) {
 		"	exec runc \"$@\"",
 		"fi",
 		"",
+		"NVCTK_CONFIG_FILE_PATH=/config/file/path/config.toml \\",
 		"PATH=/dest/folder:$PATH \\",
-		"XDG_CONFIG_HOME=/dest/folder/.config \\",
 		"source.real \\",
 		"\t\"$@\"",
 		"",
