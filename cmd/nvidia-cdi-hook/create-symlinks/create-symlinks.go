@@ -17,14 +17,17 @@
 package symlinks
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/moby/sys/symlink"
 	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
@@ -33,7 +36,6 @@ type command struct {
 }
 
 type config struct {
-	hostRoot      string
 	links         cli.StringSlice
 	containerSpec string
 }
@@ -66,12 +68,6 @@ func (m command) build() *cli.Command {
 		},
 		// The following flags are testing-only flags.
 		&cli.StringFlag{
-			Name:        "host-root",
-			Usage:       "The root on the host filesystem to use to resolve symlinks. This is only intended for testing.",
-			Destination: &cfg.hostRoot,
-			Hidden:      true,
-		},
-		&cli.StringFlag{
 			Name:        "container-spec",
 			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN. This is only intended for testing.",
 			Destination: &cfg.containerSpec,
@@ -95,41 +91,58 @@ func (m command) run(c *cli.Context, cfg *config) error {
 
 	created := make(map[string]bool)
 	for _, l := range cfg.links.Value() {
-		parts := strings.Split(l, "::")
-		if len(parts) != 2 {
-			m.logger.Warningf("Invalid link specification %v", l)
+		if created[l] {
+			m.logger.Debugf("Link %v already processed", l)
 			continue
 		}
-
-		err := m.createLink(created, cfg.hostRoot, containerRoot, parts[0], parts[1])
-		if err != nil {
-			m.logger.Warningf("Failed to create link %v: %v", parts, err)
+		parts := strings.Split(l, "::")
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid symlink specification %v", l)
 		}
+
+		err := m.createLink(containerRoot, parts[0], parts[1])
+		if err != nil {
+			return fmt.Errorf("failed to create link %v: %w", parts, err)
+		}
+		created[l] = true
 	}
 	return nil
 }
 
-func (m command) createLink(created map[string]bool, hostRoot string, containerRoot string, target string, link string) error {
-	linkPath, err := changeRoot(hostRoot, containerRoot, link)
+// createLink creates a symbolic link in the specified container root.
+// This is equivalent to:
+//
+//	chroot {{ .containerRoot }} ln -s {{ .target }} {{ .link }}
+//
+// If the specified link already exists and points to the same target, this
+// operation is a no-op. If the link points to a different target, an error is
+// returned.
+//
+// Note that if the link path resolves to an absolute path oudside of the
+// specified root, this is treated as an absolute path in this root.
+func (m command) createLink(containerRoot string, targetPath string, link string) error {
+	linkPath := filepath.Join(containerRoot, link)
+
+	exists, err := doesLinkExist(targetPath, linkPath)
 	if err != nil {
-		m.logger.Warningf("Failed to resolve path for link %v relative to %v: %v", link, containerRoot, err)
+		return fmt.Errorf("failed to check if link exists: %w", err)
 	}
-	if created[linkPath] {
-		m.logger.Debugf("Link %v already created", linkPath)
+	if exists {
+		m.logger.Debugf("Link %s already exists", linkPath)
 		return nil
 	}
 
-	targetPath, err := changeRoot(hostRoot, "/", target)
+	resolvedLinkPath, err := symlink.FollowSymlinkInScope(linkPath, containerRoot)
 	if err != nil {
-		m.logger.Warningf("Failed to resolve path for target %v relative to %v: %v", target, "/", err)
+		return fmt.Errorf("failed to follow path for link %v relative to %v: %w", link, containerRoot, err)
 	}
 
-	m.logger.Infof("Symlinking %v to %v", linkPath, targetPath)
-	err = os.MkdirAll(filepath.Dir(linkPath), 0755)
+	m.logger.Infof("Symlinking %v to %v", resolvedLinkPath, targetPath)
+	err = os.MkdirAll(filepath.Dir(resolvedLinkPath), 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)
 	}
-	err = os.Symlink(target, linkPath)
+	err = os.Symlink(targetPath, resolvedLinkPath)
 	if err != nil {
 		return fmt.Errorf("failed to create symlink: %v", err)
 	}
@@ -137,19 +150,18 @@ func (m command) createLink(created map[string]bool, hostRoot string, containerR
 	return nil
 }
 
-func changeRoot(current string, new string, path string) (string, error) {
-	if !filepath.IsAbs(path) {
-		return path, nil
+// doesLinkExist returns true if link exists and points to target.
+// An error is returned if link exists but points to a different target.
+func doesLinkExist(target string, link string) (bool, error) {
+	currentTarget, err := symlinks.Resolve(link)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
 	}
-
-	relative := path
-	if current != "" {
-		r, err := filepath.Rel(current, path)
-		if err != nil {
-			return "", err
-		}
-		relative = r
+	if err != nil {
+		return false, fmt.Errorf("failed to resolve existing symlink %s: %w", link, err)
 	}
-
-	return filepath.Join(new, relative), nil
+	if currentTarget == target {
+		return true, nil
+	}
+	return true, fmt.Errorf("unexpected link target: %s", currentTarget)
 }
