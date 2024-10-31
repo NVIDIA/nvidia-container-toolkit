@@ -140,8 +140,8 @@ func TestCreateLink(t *testing.T) {
 			}
 
 			for _, expectedLink := range tc.expectedLinks {
-				path := strings.Replace(expectedLink.path, "{{ .containerRoot }}", containerRoot, -1)
-				path = strings.Replace(path, "{{ .hostRoot }}", hostRoot, -1)
+				path := strings.ReplaceAll(expectedLink.path, "{{ .containerRoot }}", containerRoot)
+				path = strings.ReplaceAll(path, "{{ .hostRoot }}", hostRoot)
 				if expectedLink.target != "" {
 					target, err := symlinks.Resolve(path)
 					require.ErrorIs(t, err, expectedLink.err)
