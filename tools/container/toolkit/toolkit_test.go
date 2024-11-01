@@ -17,8 +17,10 @@
 package toolkit
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,16 +32,20 @@ import (
 )
 
 func TestInstall(t *testing.T) {
+	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
+
 	moduleRoot, err := test.GetModuleRoot()
 	require.NoError(t, err)
 
 	artifactRoot := filepath.Join(moduleRoot, "testdata", "installer", "artifacts")
 
 	testCases := []struct {
-		description   string
-		hostRoot      string
-		packageType   string
-		expectedError error
+		description     string
+		hostRoot        string
+		packageType     string
+		cdiEnabled      bool
+		expectedError   error
+		expectedCdiSpec string
 	}{
 		{
 			hostRoot:    "rootfs-empty",
@@ -49,22 +55,80 @@ func TestInstall(t *testing.T) {
 			hostRoot:    "rootfs-empty",
 			packageType: "rpm",
 		},
+		{
+			hostRoot:      "rootfs-empty",
+			packageType:   "deb",
+			cdiEnabled:    true,
+			expectedError: fmt.Errorf("no NVIDIA device nodes found"),
+		},
+		{
+			hostRoot:    "rootfs-1",
+			packageType: "deb",
+			cdiEnabled:  true,
+			expectedCdiSpec: `---
+cdiVersion: 0.5.0
+containerEdits:
+  env:
+  - NVIDIA_VISIBLE_DEVICES=void
+  hooks:
+  - args:
+    - nvidia-cdi-hook
+    - create-symlinks
+    - --link
+    - libcuda.so.1::/lib/x86_64-linux-gnu/libcuda.so
+    hookName: createContainer
+    path: {{ .toolkitRoot }}/nvidia-cdi-hook
+  - args:
+    - nvidia-cdi-hook
+    - update-ldcache
+    - --folder
+    - /lib/x86_64-linux-gnu
+    hookName: createContainer
+    path: {{ .toolkitRoot }}/nvidia-cdi-hook
+  mounts:
+  - containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
+    hostPath: /host/driver/root/lib/x86_64-linux-gnu/libcuda.so.999.88.77
+    options:
+    - ro
+    - nosuid
+    - nodev
+    - bind
+devices:
+- containerEdits:
+    deviceNodes:
+    - hostPath: /host/driver/root/dev/nvidia0
+      path: /dev/nvidia0
+    - hostPath: /host/driver/root/dev/nvidiactl
+      path: /dev/nvidiactl
+  name: all
+kind: example.com/class
+`,
+		},
 	}
 
 	for _, tc := range testCases {
 		// hostRoot := filepath.Join(moduleRoot, "testdata", "lookup", tc.hostRoot)
 		t.Run(tc.description, func(t *testing.T) {
-			toolkitRoot := filepath.Join(t.TempDir(), "toolkit-test")
+			testRoot := t.TempDir()
+			toolkitRoot := filepath.Join(testRoot, "toolkit-test")
+			cdiOutputDir := filepath.Join(moduleRoot, "toolkit-test", "/var/cdi")
 			sourceRoot := filepath.Join(artifactRoot, tc.packageType)
 			options := Options{
-				DriverRoot: "/host/driver/root",
-				cdiKind:    "example.com/class",
+				DriverRoot:        "/host/driver/root",
+				DriverRootCtrPath: filepath.Join(moduleRoot, "testdata", "lookup", tc.hostRoot),
+				cdiEnabled:        tc.cdiEnabled,
+				cdiOutputDir:      cdiOutputDir,
+				cdiKind:           "example.com/class",
 			}
 
 			require.NoError(t, ValidateOptions(&options, toolkitRoot))
 
 			err := Install(&cli.Context{}, &options, sourceRoot, toolkitRoot)
-			require.ErrorIs(t, err, tc.expectedError)
+			if tc.expectedError == nil {
+				require.NoError(t, err)
+			} else {
+				require.Contains(t, err.Error(), tc.expectedError.Error())
+			}
 
 			require.DirExists(t, toolkitRoot)
 			requireSymlink(t, toolkitRoot, "libnvidia-container.so.1", "libnvidia-container.so.99.88.77")
@@ -100,6 +164,17 @@ func TestInstall(t *testing.T) {
 			require.Equal(t, "@/host/driver/root/sbin/ldconfig", cfg.NVIDIAContainerCLIConfig.Ldconfig)
 			require.EqualValues(t, filepath.Join(toolkitRoot, "nvidia-container-cli"), cfg.NVIDIAContainerCLIConfig.Path)
 			require.EqualValues(t, filepath.Join(toolkitRoot, "nvidia-ctk"), cfg.NVIDIACTKConfig.Path)
+
+			if len(tc.expectedCdiSpec) > 0 {
+				cdiSpecFile := filepath.Join(cdiOutputDir, "example.com-class.yaml")
+				require.FileExists(t, cdiSpecFile)
+				info, err := os.Stat(cdiSpecFile)
+				require.NoError(t, err)
+				require.NotZero(t, info.Mode()&0004)
+				contents, err := os.ReadFile(cdiSpecFile)
+				require.NoError(t, err)
+				require.Equal(t, strings.ReplaceAll(tc.expectedCdiSpec, "{{ .toolkitRoot }}", toolkitRoot), string(contents))
+			}
 		})
 	}
 }
