@@ -95,10 +95,13 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 		--provenance=false --sbom=false \
 		$(DOCKER_BUILD_OPTIONS) \
 		$(DOCKER_BUILD_PLATFORM_OPTIONS) \
+		$(INTERMEDIATE_TARGET) \
 		--tag $(IMAGE) \
 		--build-arg ARTIFACTS_ROOT="$(ARTIFACTS_ROOT)" \
 		--build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
 		--build-arg PACKAGE_DIST="$(PACKAGE_DIST)" \
+		--build-arg PACKAGE_DIST_DEB="$(PACKAGE_DIST_DEB)" \
+		--build-arg PACKAGE_DIST_RPM="$(PACKAGE_DIST_RPM)" \
 		--build-arg PACKAGE_VERSION="$(PACKAGE_VERSION)" \
 		--build-arg VERSION="$(VERSION)" \
 		--build-arg GIT_COMMIT="$(GIT_COMMIT)" \
@@ -109,14 +112,18 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 		$(CURDIR)
 
 
+PACKAGE_DIST_DEB = ubuntu18.04
+# TODO: This needs to be set to centos8 for ppc64le builds
+PACKAGE_DIST_RPM = centos7
+
 build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
 build-ubuntu%: PACKAGE_DIST = ubuntu18.04
 
 build-ubi8: DOCKERFILE_SUFFIX := ubi8
 build-ubi8: PACKAGE_DIST = centos7
 
-build-packaging: DOCKERFILE_SUFFIX := packaging
-build-packaging: PACKAGE_ARCH := amd64
+build-packaging: DOCKERFILE_SUFFIX := ubi8
+build-packaging: INTERMEDIATE_TARGET := --target=packaging
 build-packaging: PACKAGE_DIST = all
 
 # Test targets
