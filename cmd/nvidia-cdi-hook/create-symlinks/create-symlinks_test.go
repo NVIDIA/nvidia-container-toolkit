@@ -12,7 +12,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 )
 
-func TestDoesLinkExist(t *testing.T) {
+func TestLinkExist(t *testing.T) {
 	tmpDir := t.TempDir()
 	require.NoError(
 		t,
@@ -22,21 +22,23 @@ func TestDoesLinkExist(t *testing.T) {
 		),
 	)
 
-	exists, err := doesLinkExist("d", filepath.Join(tmpDir, "/a/b/c"))
+	exists, err := linkExists("d", filepath.Join(tmpDir, "/a/b/c"))
 	require.NoError(t, err)
 	require.True(t, exists)
 
-	exists, err = doesLinkExist("/a/b/f", filepath.Join(tmpDir, "/a/b/e"))
+	exists, err = linkExists("/a/b/f", filepath.Join(tmpDir, "/a/b/e"))
 	require.NoError(t, err)
 	require.True(t, exists)
 
-	_, err = doesLinkExist("different-target", filepath.Join(tmpDir, "/a/b/c"))
-	require.Error(t, err)
+	exists, err = linkExists("different-target", filepath.Join(tmpDir, "/a/b/c"))
+	require.NoError(t, err)
+	require.False(t, exists)
 
-	_, err = doesLinkExist("/a/b/d", filepath.Join(tmpDir, "/a/b/c"))
-	require.Error(t, err)
+	exists, err = linkExists("/a/b/d", filepath.Join(tmpDir, "/a/b/c"))
+	require.NoError(t, err)
+	require.False(t, exists)
 
-	exists, err = doesLinkExist("foo", filepath.Join(tmpDir, "/a/b/does-not-exist"))
+	exists, err = linkExists("foo", filepath.Join(tmpDir, "/a/b/does-not-exist"))
 	require.NoError(t, err)
 	require.False(t, exists)
 }
@@ -190,43 +192,55 @@ func TestCreateLinkAbsolutePath(t *testing.T) {
 }
 
 func TestCreateLinkAlreadyExists(t *testing.T) {
-	tmpDir := t.TempDir()
-	hostRoot := filepath.Join(tmpDir, "/host-root/")
-	containerRoot := filepath.Join(tmpDir, "/container-root")
+	testCases := []struct {
+		description       string
+		containerContents []dirOrLink
+		shouldExist       []string
+	}{
+		{
+			description:       "link already exists with correct target",
+			containerContents: []dirOrLink{{path: "/lib/libfoo.so", target: "libfoo.so.1"}},
+			shouldExist:       []string{},
+		},
+		{
+			description:       "link already exists with different target",
+			containerContents: []dirOrLink{{path: "/lib/libfoo.so", target: "different-target"}, {path: "different-target"}},
+			shouldExist:       []string{"{{ .containerRoot }}/different-target"},
+		},
+	}
 
-	require.NoError(t, makeFs(hostRoot))
-	require.NoError(t, makeFs(containerRoot, dirOrLink{path: "/lib/libfoo.so", target: "libfoo.so.1"}))
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			hostRoot := filepath.Join(tmpDir, "/host-root/")
+			containerRoot := filepath.Join(tmpDir, "/container-root")
+			require.NoError(t, makeFs(hostRoot))
+			require.NoError(t, makeFs(containerRoot, tc.containerContents...))
 
-	// nvidia-cdi-hook create-symlinks --link libfoo.so.1::/lib/libfoo.so
-	err := getTestCommand().createLink(containerRoot, "libfoo.so.1", "/lib/libfoo.so")
-	require.NoError(t, err)
-	target, err := symlinks.Resolve(filepath.Join(containerRoot, "lib/libfoo.so"))
-	require.NoError(t, err)
-	require.Equal(t, "libfoo.so.1", target)
-}
+			// nvidia-cdi-hook create-symlinks --link libfoo.so.1::/lib/libfoo.so
+			err := getTestCommand().createLink(containerRoot, "libfoo.so.1", "/lib/libfoo.so")
+			require.NoError(t, err)
+			target, err := symlinks.Resolve(filepath.Join(containerRoot, "lib/libfoo.so"))
+			require.NoError(t, err)
+			require.Equal(t, "libfoo.so.1", target)
 
-func TestCreateLinkAlreadyExistsDifferentTarget(t *testing.T) {
-	tmpDir := t.TempDir()
-	hostRoot := filepath.Join(tmpDir, "/host-root/")
-	containerRoot := filepath.Join(tmpDir, "/container-root")
-
-	require.NoError(t, makeFs(hostRoot))
-	require.NoError(t, makeFs(containerRoot, dirOrLink{path: "/lib/libfoo.so", target: "different-target"}))
-
-	// nvidia-cdi-hook create-symlinks --link libfoo.so.1::/lib/libfoo.so
-	err := getTestCommand().createLink(containerRoot, "libfoo.so.1", "/lib/libfoo.so")
-	require.Error(t, err)
-	target, err := symlinks.Resolve(filepath.Join(containerRoot, "lib/libfoo.so"))
-	require.NoError(t, err)
-	require.Equal(t, "different-target", target)
+			for _, p := range tc.shouldExist {
+				require.DirExists(t, strings.ReplaceAll(p, "{{ .containerRoot }}", containerRoot))
+			}
+		})
+	}
 }
 
 func TestCreateLinkOutOfBounds(t *testing.T) {
 	tmpDir := t.TempDir()
-	hostRoot := filepath.Join(tmpDir, "/host-root/")
+	hostRoot := filepath.Join(tmpDir, "/host-root")
 	containerRoot := filepath.Join(tmpDir, "/container-root")
 
-	require.NoError(t, makeFs(hostRoot))
+	require.NoError(t,
+		makeFs(hostRoot,
+			dirOrLink{path: "libfoo.so"},
+		),
+	)
 	require.NoError(t,
 		makeFs(containerRoot,
 			dirOrLink{path: "/lib"},
@@ -240,12 +254,13 @@ func TestCreateLinkOutOfBounds(t *testing.T) {
 
 	// nvidia-cdi-hook create-symlinks --link ../libfoo.so.1::/lib/foo/libfoo.so
 	_ = getTestCommand().createLink(containerRoot, "../libfoo.so.1", "/lib/foo/libfoo.so")
-	// TODO: We need to enabled this check once we have updated the implementation.
-	// require.Error(t, err)
-	_, err = os.Lstat(filepath.Join(hostRoot, "libfoo.so"))
-	require.ErrorIs(t, err, os.ErrNotExist)
-	_, err = os.Lstat(filepath.Join(containerRoot, hostRoot, "libfoo.so"))
 	require.NoError(t, err)
+
+	target, err := symlinks.Resolve(filepath.Join(containerRoot, hostRoot, "libfoo.so"))
+	require.NoError(t, err)
+	require.Equal(t, "../libfoo.so.1", target)
+
+	require.DirExists(t, filepath.Join(hostRoot, "libfoo.so"))
 }
 
 type dirOrLink struct {
