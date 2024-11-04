@@ -63,7 +63,7 @@ func (m command) build() *cli.Command {
 	c.Flags = []cli.Flag{
 		&cli.StringSliceFlag{
 			Name:        "link",
-			Usage:       "Specify a specific link to create. The link is specified as target::link",
+			Usage:       "Specify a specific link to create. The link is specified as target::link. If the link exists in the container root, it is removed.",
 			Destination: &cfg.links,
 		},
 		// The following flags are testing-only flags.
@@ -112,18 +112,19 @@ func (m command) run(c *cli.Context, cfg *config) error {
 // createLink creates a symbolic link in the specified container root.
 // This is equivalent to:
 //
-//	chroot {{ .containerRoot }} ln -s {{ .target }} {{ .link }}
+//	chroot {{ .containerRoot }} ln -f -s {{ .target }} {{ .link }}
 //
 // If the specified link already exists and points to the same target, this
-// operation is a no-op. If the link points to a different target, an error is
-// returned.
+// operation is a no-op.
+// If a file exists at the link path or the link points to a different target
+// this file is removed before creating the link.
 //
 // Note that if the link path resolves to an absolute path oudside of the
 // specified root, this is treated as an absolute path in this root.
 func (m command) createLink(containerRoot string, targetPath string, link string) error {
 	linkPath := filepath.Join(containerRoot, link)
 
-	exists, err := doesLinkExist(targetPath, linkPath)
+	exists, err := linkExists(targetPath, linkPath)
 	if err != nil {
 		return fmt.Errorf("failed to check if link exists: %w", err)
 	}
@@ -132,17 +133,21 @@ func (m command) createLink(containerRoot string, targetPath string, link string
 		return nil
 	}
 
-	resolvedLinkPath, err := symlink.FollowSymlinkInScope(linkPath, containerRoot)
+	// We resolve the parent of the symlink that we're creating in the container root.
+	// If we resolve the full link path, an existing link at the location itself
+	// is also resolved here and we are unable to force create the link.
+	resolvedLinkParent, err := symlink.FollowSymlinkInScope(filepath.Dir(linkPath), containerRoot)
 	if err != nil {
 		return fmt.Errorf("failed to follow path for link %v relative to %v: %w", link, containerRoot, err)
 	}
+	resolvedLinkPath := filepath.Join(resolvedLinkParent, filepath.Base(linkPath))
 
 	m.logger.Infof("Symlinking %v to %v", resolvedLinkPath, targetPath)
 	err = os.MkdirAll(filepath.Dir(resolvedLinkPath), 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)
 	}
-	err = os.Symlink(targetPath, resolvedLinkPath)
+	err = symlinks.ForceCreate(targetPath, resolvedLinkPath)
 	if err != nil {
 		return fmt.Errorf("failed to create symlink: %v", err)
 	}
@@ -150,9 +155,9 @@ func (m command) createLink(containerRoot string, targetPath string, link string
 	return nil
 }
 
-// doesLinkExist returns true if link exists and points to target.
-// An error is returned if link exists but points to a different target.
-func doesLinkExist(target string, link string) (bool, error) {
+// linkExists checks whether the specified link exists.
+// A link exists if the path exists, is a symlink, and points to the specified target.
+func linkExists(target string, link string) (bool, error) {
 	currentTarget, err := symlinks.Resolve(link)
 	if errors.Is(err, os.ErrNotExist) {
 		return false, nil
@@ -163,5 +168,5 @@ func doesLinkExist(target string, link string) (bool, error) {
 	if currentTarget == target {
 		return true, nil
 	}
-	return true, fmt.Errorf("unexpected link target: %s", currentTarget)
+	return false, nil
 }
