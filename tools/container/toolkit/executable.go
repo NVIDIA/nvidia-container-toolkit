@@ -37,7 +37,6 @@ type executable struct {
 	target   executableTarget
 	env      map[string]string
 	preLines []string
-	argLines []string
 }
 
 // install installs an executable component of the NVIDIA container toolkit. The source executable
@@ -128,10 +127,6 @@ func (e executable) writeWrapperTo(wrapper io.Writer, destFolder string, dotfile
 	// Add the call to the target executable
 	fmt.Fprintf(wrapper, "%s \\\n", dotfileName)
 
-	// Insert additional lines in the `arg` list
-	for _, line := range e.argLines {
-		fmt.Fprintf(wrapper, "\t%s \\\n", r.apply(line))
-	}
 	// Add the script arguments "$@"
 	fmt.Fprintln(wrapper, "\t\"$@\"")
 

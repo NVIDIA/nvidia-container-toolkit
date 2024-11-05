@@ -297,10 +297,9 @@ func Install(cli *cli.Context, opts *Options, toolkitRoot string) error {
 		log.Errorf("Ignoring error: %v", fmt.Errorf("error removing toolkit directory: %v", err))
 	}
 
-	toolkitConfigDir := filepath.Join(toolkitRoot, ".config", "nvidia-container-runtime")
-	toolkitConfigPath := filepath.Join(toolkitConfigDir, configFilename)
+	toolkitConfigFilePath := filepath.Join(toolkitRoot, ".config", config.RelativeFilePath)
 
-	err = createDirectories(toolkitRoot, toolkitConfigDir)
+	err = createDirectories(toolkitRoot, filepath.Dir(toolkitConfigFilePath))
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("could not create required directories: %v", err)
 	} else if err != nil {
@@ -314,7 +313,7 @@ func Install(cli *cli.Context, opts *Options, toolkitRoot string) error {
 		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container library: %v", err))
 	}
 
-	err = installContainerRuntimes(toolkitRoot, opts.DriverRoot)
+	err = installContainerRuntimes(toolkitRoot, toolkitConfigFilePath)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container runtime: %v", err)
 	} else if err != nil {
@@ -328,7 +327,7 @@ func Install(cli *cli.Context, opts *Options, toolkitRoot string) error {
 		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container CLI: %v", err))
 	}
 
-	nvidiaContainerRuntimeHookPath, err := installRuntimeHook(toolkitRoot, toolkitConfigPath)
+	nvidiaContainerRuntimeHookPath, err := installRuntimeHook(toolkitRoot, toolkitConfigFilePath)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container runtime hook: %v", err)
 	} else if err != nil {
@@ -349,7 +348,7 @@ func Install(cli *cli.Context, opts *Options, toolkitRoot string) error {
 		log.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA Container CDI Hook CLI: %v", err))
 	}
 
-	err = installToolkitConfig(cli, toolkitConfigPath, nvidiaContainerCliExecutable, nvidiaCTKPath, nvidiaContainerRuntimeHookPath, opts)
+	err = installToolkitConfig(cli, toolkitConfigFilePath, nvidiaContainerCliExecutable, nvidiaCTKPath, nvidiaContainerRuntimeHookPath, opts)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
 	} else if err != nil {
@@ -423,8 +422,8 @@ func installLibrary(libName string, toolkitRoot string) error {
 
 // installToolkitConfig installs the config file for the NVIDIA container toolkit ensuring
 // that the settings are updated to match the desired install and nvidia driver directories.
-func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, nvidaContainerRuntimeHookPath string, opts *Options) error {
-	log.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
+func installToolkitConfig(c *cli.Context, toolkitConfigFilePath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, nvidaContainerRuntimeHookPath string, opts *Options) error {
+	log.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigFilePath)
 
 	cfg, err := config.New(
 		config.WithConfigFile(nvidiaContainerToolkitConfigSource),
@@ -433,7 +432,7 @@ func installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContai
 		return fmt.Errorf("could not open source config file: %v", err)
 	}
 
-	targetConfig, err := os.Create(toolkitConfigPath)
+	targetConfig, err := os.Create(toolkitConfigFilePath)
 	if err != nil {
 		return fmt.Errorf("could not create target config file: %v", err)
 	}
@@ -579,17 +578,15 @@ func installContainerCLI(toolkitRoot string) (string, error) {
 func installRuntimeHook(toolkitRoot string, configFilePath string) (string, error) {
 	log.Infof("Installing NVIDIA container runtime hook from '%v'", nvidiaContainerRuntimeHookSource)
 
-	argLines := []string{
-		fmt.Sprintf("-config \"%s\"", configFilePath),
-	}
-
 	e := executable{
 		source: nvidiaContainerRuntimeHookSource,
 		target: executableTarget{
 			dotfileName: "nvidia-container-runtime-hook.real",
 			wrapperName: "nvidia-container-runtime-hook",
 		},
-		argLines: argLines,
+		env: map[string]string{
+			config.FilePathOverrideEnvVar: configFilePath,
+		},
 	}
 
 	installedPath, err := e.install(toolkitRoot)

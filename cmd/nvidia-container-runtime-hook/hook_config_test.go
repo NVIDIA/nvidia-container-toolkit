@@ -72,8 +72,9 @@ func TestGetHookConfig(t *testing.T) {
 				if len(filename) > 0 {
 					os.Remove(filename)
 				}
-				configflag = nil
 			}()
+
+			a := &app{}
 
 			if tc.lines != nil {
 				configFile, err := os.CreateTemp("", "*.toml")
@@ -81,7 +82,7 @@ func TestGetHookConfig(t *testing.T) {
 				defer configFile.Close()
 
 				filename = configFile.Name()
-				configflag = &filename
+				a.configFile = filename
 
 				for _, line := range tc.lines {
 					_, err := configFile.WriteString(fmt.Sprintf("%s\n", line))
@@ -91,7 +92,7 @@ func TestGetHookConfig(t *testing.T) {
 
 			var config HookConfig
 			getHookConfig := func() {
-				c, _ := getHookConfig()
+				c, _ := a.getHookConfig()
 				config = *c
 			}
 

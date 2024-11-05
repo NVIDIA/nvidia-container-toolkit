@@ -76,23 +76,6 @@ func TestWrapper(t *testing.T) {
 				"",
 			},
 		},
-		{
-			e: executable{
-				argLines: []string{
-					"argline1",
-					"argline2",
-				},
-			},
-			expectedLines: []string{
-				shebang,
-				"PATH=/dest/folder:$PATH \\",
-				"source.real \\",
-				"\targline1 \\",
-				"\targline2 \\",
-				"\t\"$@\"",
-				"",
-			},
-		},
 	}
 
 	for i, tc := range testCases {
