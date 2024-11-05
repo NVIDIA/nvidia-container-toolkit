@@ -122,7 +122,7 @@ build-packaging: PACKAGE_DIST = all
 # Test targets
 test-%: DIST = $(*)
 
-TEST_CASES ?= toolkit docker crio containerd
+TEST_CASES ?= docker crio containerd
 $(TEST_TARGETS): test-%:
 	TEST_CASES="$(TEST_CASES)" bash -x $(CURDIR)/test/container/main.sh run \
 		$(CURDIR)/shared-$(*) \

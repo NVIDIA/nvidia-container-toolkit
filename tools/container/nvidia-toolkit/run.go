@@ -164,7 +164,7 @@ func Run(c *cli.Context, o *options) error {
 
 		o.toolkitOptions.ContainerRuntimeRuntimes = *cli.NewStringSlice(lowlevelRuntimePaths...)
 	}
-	err = toolkit.Install(c, &o.toolkitOptions, o.toolkitRoot())
+	err = toolkit.Install(c, &o.toolkitOptions, "", o.toolkitRoot())
 	if err != nil {
 		return fmt.Errorf("unable to install toolkit: %v", err)
 	}
