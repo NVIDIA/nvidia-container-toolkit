@@ -33,3 +33,18 @@ func Resolve(filename string) (string, error) {
 
 	return os.Readlink(filename)
 }
+
+// ForceCreate creates a specified symlink.
+// If a file (or empty directory) exists at the path it is removed.
+func ForceCreate(target string, link string) error {
+	_, err := os.Lstat(link)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to get file info: %w", err)
+	}
+	if !os.IsNotExist(err) {
+		if err := os.Remove(link); err != nil {
+			return fmt.Errorf("failed to remove existing file: %w", err)
+		}
+	}
+	return os.Symlink(target, link)
+}
