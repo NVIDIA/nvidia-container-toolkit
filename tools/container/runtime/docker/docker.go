@@ -45,9 +45,7 @@ func Flags(opts *Options) []cli.Flag {
 func Setup(c *cli.Context, o *container.Options) error {
 	log.Infof("Starting 'setup' for %v", c.App.Name)
 
-	cfg, err := docker.New(
-		docker.WithPath(o.Config),
-	)
+	cfg, err := getRuntimeConfig(o)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
@@ -71,9 +69,7 @@ func Setup(c *cli.Context, o *container.Options) error {
 func Cleanup(c *cli.Context, o *container.Options) error {
 	log.Infof("Starting 'cleanup' for %v", c.App.Name)
 
-	cfg, err := docker.New(
-		docker.WithPath(o.Config),
-	)
+	cfg, err := getRuntimeConfig(o)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
@@ -106,4 +102,10 @@ func GetLowlevelRuntimePaths(o *container.Options) ([]string, error) {
 		return nil, fmt.Errorf("unable to load docker config: %w", err)
 	}
 	return engine.GetBinaryPathsForRuntimes(cfg), nil
+}
+
+func getRuntimeConfig(o *container.Options) (engine.Interface, error) {
+	return docker.New(
+		docker.WithPath(o.Config),
+	)
 }
