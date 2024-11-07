@@ -25,6 +25,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
 
@@ -84,13 +85,7 @@ func Flags(opts *Options) []cli.Flag {
 func Setup(c *cli.Context, o *container.Options, co *Options) error {
 	log.Infof("Starting 'setup' for %v", c.App.Name)
 
-	cfg, err := containerd.New(
-		containerd.WithPath(o.Config),
-		containerd.WithConfigSource(containerd.CommandLineSource(o.HostRootMount)),
-		containerd.WithRuntimeType(co.runtimeType),
-		containerd.WithUseLegacyConfig(co.useLegacyConfig),
-		containerd.WithContainerAnnotations(co.containerAnnotationsFromCDIPrefixes()...),
-	)
+	cfg, err := getRuntimeConfig(o, co)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
@@ -114,13 +109,7 @@ func Setup(c *cli.Context, o *container.Options, co *Options) error {
 func Cleanup(c *cli.Context, o *container.Options, co *Options) error {
 	log.Infof("Starting 'cleanup' for %v", c.App.Name)
 
-	cfg, err := containerd.New(
-		containerd.WithPath(o.Config),
-		containerd.WithConfigSource(containerd.CommandLineSource(o.HostRootMount)),
-		containerd.WithRuntimeType(co.runtimeType),
-		containerd.WithUseLegacyConfig(co.useLegacyConfig),
-		containerd.WithContainerAnnotations(co.containerAnnotationsFromCDIPrefixes()...),
-	)
+	cfg, err := getRuntimeConfig(o, co)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
@@ -169,13 +158,24 @@ func (o *Options) runtimeConfigOverride() (map[string]interface{}, error) {
 }
 
 func GetLowlevelRuntimePaths(o *container.Options, co *Options) ([]string, error) {
-	cfg, err := containerd.New(
-		containerd.WithConfigSource(containerd.CommandLineSource(o.HostRootMount)),
-		containerd.WithRuntimeType(co.runtimeType),
-		containerd.WithUseLegacyConfig(co.useLegacyConfig),
-	)
+	cfg, err := getRuntimeConfig(o, co)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load containerd config: %w", err)
 	}
 	return engine.GetBinaryPathsForRuntimes(cfg), nil
+}
+
+func getRuntimeConfig(o *container.Options, co *Options) (engine.Interface, error) {
+	return containerd.New(
+		containerd.WithPath(o.Config),
+		containerd.WithConfigSource(
+			toml.LoadFirst(
+				containerd.CommandLineSource(o.HostRootMount),
+				toml.FromFile(o.Config),
+			),
+		),
+		containerd.WithRuntimeType(co.runtimeType),
+		containerd.WithUseLegacyConfig(co.useLegacyConfig),
+		containerd.WithContainerAnnotations(co.containerAnnotationsFromCDIPrefixes()...),
+	)
 }
