@@ -18,7 +18,6 @@ package toolkit
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -78,28 +77,6 @@ type Options struct {
 	ignoreErrors bool
 
 	optInFeatures cli.StringSlice
-}
-
-type Installer struct {
-	fileInstaller
-	toolkitRoot string
-}
-
-type fileInstaller struct {
-	logger     logger.Interface
-	sourceRoot string
-}
-
-func NewInstaller(opts ...Option) *Installer {
-	i := &Installer{}
-	for _, opt := range opts {
-		opt(i)
-	}
-
-	if i.logger == nil {
-		i.logger = logger.New()
-	}
-	return i
 }
 
 func Flags(opts *Options) []cli.Flag {
@@ -234,6 +211,26 @@ func Flags(opts *Options) []cli.Flag {
 	return flags
 }
 
+// An Installer is used to install the NVIDIA Container Toolkit from the toolkit container.
+type Installer struct {
+	fileInstaller
+	// toolkitRoot specifies the destination path at which the toolkit is installed.
+	toolkitRoot string
+}
+
+// NewInstaller creates an installer for the NVIDIA Container Toolkit.
+func NewInstaller(opts ...Option) *Installer {
+	i := &Installer{}
+	for _, opt := range opts {
+		opt(i)
+	}
+
+	if i.logger == nil {
+		i.logger = logger.New()
+	}
+	return i
+}
+
 // ValidateOptions checks whether the specified options are valid
 func (t *Installer) ValidateOptions(opts *Options) error {
 	if t == nil {
@@ -280,7 +277,6 @@ func (t *Installer) ValidateOptions(opts *Options) error {
 }
 
 // Install installs the components of the NVIDIA container toolkit.
-// The specified sourceRoot is searched for the components to install.
 // Any existing installation is removed.
 func (t *Installer) Install(cli *cli.Context, opts *Options) error {
 	if t == nil {
@@ -618,69 +614,6 @@ func (t *Installer) installSymlink(toolkitRoot string, link string, target strin
 	err := os.Symlink(targetPath, symlinkPath)
 	if err != nil {
 		return fmt.Errorf("error creating symlink '%v' => '%v': %v", symlinkPath, targetPath, err)
-	}
-	return nil
-}
-
-// installFileToFolder copies a source file to a destination folder.
-// The path of the input file is ignored.
-// e.g. installFileToFolder("/some/path/file.txt", "/output/path")
-// will result in a file "/output/path/file.txt" being generated
-func (t *fileInstaller) installFileToFolder(destFolder string, src string) (string, error) {
-	name := filepath.Base(src)
-	return t.installFileToFolderWithName(destFolder, name, src)
-}
-
-// cp src destFolder/name
-func (t *fileInstaller) installFileToFolderWithName(destFolder string, name, src string) (string, error) {
-	dest := filepath.Join(destFolder, name)
-	err := t.installFile(dest, src)
-	if err != nil {
-		return "", fmt.Errorf("error copying '%v' to '%v': %v", src, dest, err)
-	}
-	return dest, nil
-}
-
-// installFile copies a file from src to dest and maintains
-// file modes
-func (t *fileInstaller) installFile(dest string, src string) error {
-	src = filepath.Join(t.sourceRoot, src)
-	t.logger.Infof("Installing '%v' to '%v'", src, dest)
-
-	source, err := os.Open(src)
-	if err != nil {
-		return fmt.Errorf("error opening source: %v", err)
-	}
-	defer source.Close()
-
-	destination, err := os.Create(dest)
-	if err != nil {
-		return fmt.Errorf("error creating destination: %v", err)
-	}
-	defer destination.Close()
-
-	_, err = io.Copy(destination, source)
-	if err != nil {
-		return fmt.Errorf("error copying file: %v", err)
-	}
-
-	err = applyModeFromSource(dest, src)
-	if err != nil {
-		return fmt.Errorf("error setting destination file mode: %v", err)
-	}
-	return nil
-}
-
-// applyModeFromSource sets the file mode for a destination file
-// to match that of a specified source file
-func applyModeFromSource(dest string, src string) error {
-	sourceInfo, err := os.Stat(src)
-	if err != nil {
-		return fmt.Errorf("error getting file info for '%v': %v", src, err)
-	}
-	err = os.Chmod(dest, sourceInfo.Mode())
-	if err != nil {
-		return fmt.Errorf("error setting mode for '%v': %v", dest, err)
 	}
 	return nil
 }
