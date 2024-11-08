@@ -225,6 +225,17 @@ func (m command) validateFlags(c *cli.Context, config *config) error {
 		return fmt.Errorf("unrecognized Config Source: %v", config.configSource)
 	}
 
+	if config.configFilePath == "" {
+		switch config.runtime {
+		case "containerd":
+			config.configFilePath = defaultContainerdConfigFilePath
+		case "crio":
+			config.configFilePath = defaultCrioConfigFilePath
+		case "docker":
+			config.configFilePath = defaultDockerConfigFilePath
+		}
+	}
+
 	return nil
 }
 
@@ -241,9 +252,6 @@ func (m command) configureWrapper(c *cli.Context, config *config) error {
 
 // configureConfigFile updates the specified container engine config file to enable the NVIDIA runtime.
 func (m command) configureConfigFile(c *cli.Context, config *config) error {
-	configFilePath := config.resolveConfigFilePath()
-
-	var err error
 	configSource, err := config.resolveConfigSource()
 	if err != nil {
 		return err
@@ -254,19 +262,19 @@ func (m command) configureConfigFile(c *cli.Context, config *config) error {
 	case "containerd":
 		cfg, err = containerd.New(
 			containerd.WithLogger(m.logger),
-			containerd.WithPath(configFilePath),
+			containerd.WithPath(config.configFilePath),
 			containerd.WithConfigSource(configSource),
 		)
 	case "crio":
 		cfg, err = crio.New(
 			crio.WithLogger(m.logger),
-			crio.WithPath(configFilePath),
+			crio.WithPath(config.configFilePath),
 			crio.WithConfigSource(configSource),
 		)
 	case "docker":
 		cfg, err = docker.New(
 			docker.WithLogger(m.logger),
-			docker.WithPath(configFilePath),
+			docker.WithPath(config.configFilePath),
 		)
 	default:
 		err = fmt.Errorf("unrecognized runtime '%v'", config.runtime)
@@ -307,22 +315,6 @@ func (m command) configureConfigFile(c *cli.Context, config *config) error {
 	return nil
 }
 
-// resolveConfigFilePath returns the default config file path for the configured container engine
-func (c *config) resolveConfigFilePath() string {
-	if c.configFilePath != "" {
-		return c.configFilePath
-	}
-	switch c.runtime {
-	case "containerd":
-		return defaultContainerdConfigFilePath
-	case "crio":
-		return defaultCrioConfigFilePath
-	case "docker":
-		return defaultDockerConfigFilePath
-	}
-	return ""
-}
-
 // resolveConfigSource returns the default config source or the user provided config source
 func (c *config) resolveConfigSource() (toml.Loader, error) {
 	switch c.configSource {
@@ -351,7 +343,7 @@ func (c *config) getOutputConfigPath() string {
 	if c.dryRun {
 		return ""
 	}
-	return c.resolveConfigFilePath()
+	return c.configFilePath
 }
 
 // configureOCIHook creates and configures the OCI hook for the NVIDIA runtime
