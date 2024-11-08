@@ -74,7 +74,9 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) {
 		if argLogFile != nil {
 			logFiles = append(logFiles, argLogFile)
 		}
-		argLogFileError = errors.Join(argLogFileError, err)
+		if err != nil {
+			argLogFileError = errors.Join(argLogFileError, err)
+		}
 	}
 	defer func() {
 		if argLogFileError != nil {
