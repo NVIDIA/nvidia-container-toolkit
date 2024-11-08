@@ -28,6 +28,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/ocihook"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
 
@@ -116,10 +117,7 @@ func setupHook(o *container.Options, co *Options) error {
 func setupConfig(o *container.Options) error {
 	log.Infof("Updating config file")
 
-	cfg, err := crio.New(
-		crio.WithPath(o.Config),
-		crio.WithConfigSource(crio.CommandLineSource(o.HostRootMount)),
-	)
+	cfg, err := getRuntimeConfig(o)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
@@ -168,10 +166,7 @@ func cleanupHook(co *Options) error {
 func cleanupConfig(o *container.Options) error {
 	log.Infof("Reverting config file modifications")
 
-	cfg, err := crio.New(
-		crio.WithPath(o.Config),
-		crio.WithConfigSource(crio.CommandLineSource(o.HostRootMount)),
-	)
+	cfg, err := getRuntimeConfig(o)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
@@ -195,11 +190,21 @@ func RestartCrio(o *container.Options) error {
 }
 
 func GetLowlevelRuntimePaths(o *container.Options) ([]string, error) {
-	cfg, err := crio.New(
-		crio.WithConfigSource(crio.CommandLineSource(o.HostRootMount)),
-	)
+	cfg, err := getRuntimeConfig(o)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load crio config: %w", err)
 	}
 	return engine.GetBinaryPathsForRuntimes(cfg), nil
+}
+
+func getRuntimeConfig(o *container.Options) (engine.Interface, error) {
+	return crio.New(
+		crio.WithPath(o.Config),
+		crio.WithConfigSource(
+			toml.LoadFirst(
+				crio.CommandLineSource(o.HostRootMount),
+				toml.FromFile(o.Config),
+			),
+		),
+	)
 }
