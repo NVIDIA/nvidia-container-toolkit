@@ -1,5 +1,13 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.17.1
+- Fixed a bug where specific symlinks existing in a container image could cause a container to fail to start.
+- Fixed a bug on Tegra-based systems where a container would fail to start.
+- Fixed a bug where the default container runtime config path was not properly set.
+
+### Changes in the Toolkit Container
+- Fallback to using a config file if the current runtime config can not be determined from the command line.
+
 ## v1.17.0
 - Promote v1.17.0-rc.2 to v1.17.0
 - Fix bug when using just-in-time CDI spec generation
