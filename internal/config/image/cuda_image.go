@@ -292,7 +292,11 @@ func (i CUDA) CDIDevicesFromMounts() []string {
 
 // ImexChannelsFromEnvVar returns the list of IMEX channels requested for the image.
 func (i CUDA) ImexChannelsFromEnvVar() []string {
-	return i.DevicesFromEnvvars(EnvVarNvidiaImexChannels).List()
+	imexChannels := i.DevicesFromEnvvars(EnvVarNvidiaImexChannels).List()
+	if len(imexChannels) == 1 && imexChannels[0] == "all" {
+		return nil
+	}
+	return imexChannels
 }
 
 // ImexChannelsFromMounts returns the list of IMEX channels requested for the image.
