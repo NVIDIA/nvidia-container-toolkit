@@ -203,6 +203,37 @@ func TestGetVisibleDevicesFromMounts(t *testing.T) {
 	}
 }
 
+func TestImexChannelsFromEnvVar(t *testing.T) {
+	testCases := []struct {
+		description string
+		env         []string
+		expected    []string
+	}{
+		{
+			description: "no imex channels specified",
+		},
+		{
+			description: "imex channel specified",
+			env: []string{
+				"NVIDIA_IMEX_CHANNELS=3,4",
+			},
+			expected: []string{"3", "4"},
+		},
+	}
+
+	for _, tc := range testCases {
+		for id, baseEnvvars := range map[string][]string{"": nil, "legacy": {"CUDA_VERSION=1.2.3"}} {
+			t.Run(tc.description+id, func(t *testing.T) {
+				i, err := NewCUDAImageFromEnv(append(baseEnvvars, tc.env...))
+				require.NoError(t, err)
+
+				channels := i.ImexChannelsFromEnvVar()
+				require.EqualValues(t, tc.expected, channels)
+			})
+		}
+	}
+}
+
 func makeTestMounts(paths ...string) []specs.Mount {
 	var mounts []specs.Mount
 	for _, path := range paths {
