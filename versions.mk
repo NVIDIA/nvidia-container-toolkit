@@ -13,7 +13,7 @@
 # limitations under the License.
 
 LIB_NAME := nvidia-container-toolkit
-LIB_VERSION := 1.17.1
+LIB_VERSION := 1.17.2
 LIB_TAG :=
 
 # The package version is the combination of the library version and tag.
