@@ -1,5 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.17.2
+- Fixed a bug where legacy images would set imex channels as `all`.
+
 ## v1.17.1
 - Fixed a bug where specific symlinks existing in a container image could cause a container to fail to start.
 - Fixed a bug on Tegra-based systems where a container would fail to start.
