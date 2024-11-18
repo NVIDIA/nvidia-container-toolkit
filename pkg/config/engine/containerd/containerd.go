@@ -24,9 +24,15 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
+const (
+	defaultConfigVersion = 2
+	defaultRuntimeType   = "io.containerd.runc.v2"
+)
+
 // Config represents the containerd config
 type Config struct {
 	*toml.Tree
+	Version              int64
 	Logger               logger.Interface
 	RuntimeType          string
 	ContainerAnnotations []string
@@ -60,7 +66,8 @@ func (c *containerdCfgRuntime) GetBinaryPath() string {
 // New creates a containerd config with the specified options
 func New(opts ...Option) (engine.Interface, error) {
 	b := &builder{
-		runtimeType: defaultRuntimeType,
+		configVersion: defaultConfigVersion,
+		runtimeType:   defaultRuntimeType,
 	}
 	for _, opt := range opts {
 		opt(b)
@@ -77,46 +84,46 @@ func New(opts ...Option) (engine.Interface, error) {
 		return nil, fmt.Errorf("failed to load config: %v", err)
 	}
 
+	configVersion, err := b.parseVersion(tomlConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config version: %w", err)
+	}
+
 	cfg := &Config{
 		Tree:                 tomlConfig,
+		Version:              configVersion,
 		Logger:               b.logger,
 		RuntimeType:          b.runtimeType,
-		ContainerAnnotations: b.containerAnnotations,
 		UseLegacyConfig:      b.useLegacyConfig,
+		ContainerAnnotations: b.containerAnnotations,
 	}
 
-	version, err := cfg.parseVersion()
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse config version: %v", err)
-	}
-	switch version {
+	switch configVersion {
 	case 1:
 		return (*ConfigV1)(cfg), nil
-	case 2:
+	case 2, 3:
 		return cfg, nil
 	}
-
-	return nil, fmt.Errorf("unsupported config version: %v", version)
+	return nil, fmt.Errorf("unsupported config version: %v", configVersion)
 }
 
 // parseVersion returns the version of the config
-func (c *Config) parseVersion() (int, error) {
-	defaultVersion := 2
-	// For legacy configs, we default to v1 configs.
-	if c.UseLegacyConfig {
-		defaultVersion = 1
+func (b *builder) parseVersion(c *toml.Tree) (int64, error) {
+	if c == nil || len(c.Keys()) == 0 {
+		// No config exists, or the config file is empty.
+		if b.useLegacyConfig {
+			// If a legacy config is explicitly requested, we default to a v1 config.
+			return 1, nil
+		}
+		// Use the requested version.
+		return int64(b.configVersion), nil
 	}
 
 	switch v := c.Get("version").(type) {
 	case nil:
-		switch len(c.Keys()) {
-		case 0: // No config exists, or the config file is empty, use version inferred from containerd
-			return defaultVersion, nil
-		default: // A config file exists, has content, and no version is set
-			return 1, nil
-		}
+		return 1, nil
 	case int64:
-		return int(v), nil
+		return v, nil
 	default:
 		return -1, fmt.Errorf("unsupported type for version field: %v", v)
 	}

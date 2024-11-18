@@ -88,37 +88,36 @@ func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {
 				SetAsDefault: tc.setAsDefault,
 			}
 
-			cfg, err := toml.Empty.Load()
-			require.NoError(t, err, "%d: %v", i, tc)
-
-			v1 := &containerd.ConfigV1{
-				Logger:          logger,
-				Tree:            cfg,
-				UseLegacyConfig: tc.legacyConfig,
-				RuntimeType:     runtimeType,
-			}
+			v1, err := containerd.New(
+				containerd.WithLogger(logger),
+				containerd.WithConfigSource(toml.Empty),
+				containerd.WithRuntimeType(runtimeType),
+				containerd.WithUseLegacyConfig(tc.legacyConfig),
+				containerd.WithConfigVersion(1),
+			)
+			require.NoError(t, err)
 
 			err = o.UpdateConfig(v1)
-			require.NoError(t, err, "%d: %v", i, tc)
+			require.NoError(t, err)
 
-			defaultRuntimeName := v1.GetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"})
-			require.EqualValues(t, tc.expectedDefaultRuntimeName, defaultRuntimeName, "%d: %v", i, tc)
+			cfg := v1.(*containerd.ConfigV1)
+			defaultRuntimeName := cfg.GetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"})
+			require.EqualValues(t, tc.expectedDefaultRuntimeName, defaultRuntimeName)
 
-			defaultRuntime := v1.GetPath([]string{"plugins", "cri", "containerd", "default_runtime"})
+			defaultRuntime := cfg.GetPath([]string{"plugins", "cri", "containerd", "default_runtime"})
 			if tc.expectedDefaultRuntimeBinary == nil {
-				require.Nil(t, defaultRuntime, "%d: %v", i, tc)
+				require.Nil(t, defaultRuntime)
 			} else {
 				require.NotNil(t, defaultRuntime)
 
 				expected, err := defaultRuntimeTomlConfigV1(tc.expectedDefaultRuntimeBinary.(string))
-				require.NoError(t, err, "%d: %v", i, tc)
+				require.NoError(t, err)
 
 				configContents, _ := toml.Marshal(defaultRuntime.(*toml.Tree))
 				expectedContents, _ := toml.Marshal(expected)
 
 				require.Equal(t, string(expectedContents), string(configContents), "%d: %v: %v", i, tc)
 			}
-
 		})
 	}
 }
@@ -234,16 +233,14 @@ func TestUpdateV1Config(t *testing.T) {
 				RuntimeDir:  runtimeDir,
 			}
 
-			cfg, err := toml.Empty.Load()
+			v1, err := containerd.New(
+				containerd.WithLogger(logger),
+				containerd.WithConfigSource(toml.Empty),
+				containerd.WithRuntimeType(runtimeType),
+				containerd.WithConfigVersion(1),
+				containerd.WithContainerAnnotations("cdi.k8s.io/*"),
+			)
 			require.NoError(t, err)
-
-			v1 := &containerd.ConfigV1{
-				Logger:               logger,
-				Tree:                 cfg,
-				UseLegacyConfig:      true,
-				RuntimeType:          runtimeType,
-				ContainerAnnotations: []string{"cdi.k8s.io/*"},
-			}
 
 			err = o.UpdateConfig(v1)
 			require.NoError(t, err)
@@ -251,7 +248,7 @@ func TestUpdateV1Config(t *testing.T) {
 			expected, err := toml.TreeFromMap(tc.expectedConfig)
 			require.NoError(t, err)
 
-			require.Equal(t, expected.String(), cfg.String())
+			require.Equal(t, expected.String(), v1.String())
 		})
 	}
 }
@@ -393,16 +390,14 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 				RuntimeDir:  runtimeDir,
 			}
 
-			cfg, err := toml.TreeFromMap(runcConfigMapV1("/runc-binary"))
+			v1, err := containerd.New(
+				containerd.WithLogger(logger),
+				containerd.WithConfigSource(toml.FromMap(runcConfigMapV1("/runc-binary"))),
+				containerd.WithRuntimeType(runtimeType),
+				containerd.WithConfigVersion(1),
+				containerd.WithContainerAnnotations("cdi.k8s.io/*"),
+			)
 			require.NoError(t, err)
-
-			v1 := &containerd.ConfigV1{
-				Logger:               logger,
-				Tree:                 cfg,
-				UseLegacyConfig:      true,
-				RuntimeType:          runtimeType,
-				ContainerAnnotations: []string{"cdi.k8s.io/*"},
-			}
 
 			err = o.UpdateConfig(v1)
 			require.NoError(t, err)
@@ -410,12 +405,13 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 			expected, err := toml.TreeFromMap(tc.expectedConfig)
 			require.NoError(t, err)
 
-			require.Equal(t, expected.String(), cfg.String())
+			require.Equal(t, expected.String(), v1.String())
 		})
 	}
 }
 
 func TestRevertV1Config(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
 	testCases := []struct {
 		config map[string]interface {
 		}
@@ -469,25 +465,22 @@ func TestRevertV1Config(t *testing.T) {
 				RuntimeName: "nvidia",
 			}
 
-			cfg, err := toml.LoadMap(tc.config)
-			require.NoError(t, err, "%d: %v", i, tc)
-
 			expected, err := toml.TreeFromMap(tc.expected)
-			require.NoError(t, err, "%d: %v", i, tc)
+			require.NoError(t, err)
 
-			v1 := &containerd.ConfigV1{
-				Tree:            cfg,
-				UseLegacyConfig: true,
-				RuntimeType:     runtimeType,
-			}
+			v1, err := containerd.New(
+				containerd.WithLogger(logger),
+				containerd.WithConfigSource(toml.FromMap(tc.config)),
+				containerd.WithRuntimeType(runtimeType),
+
+				containerd.WithContainerAnnotations("cdi.k8s.io/*"),
+			)
+			require.NoError(t, err)
 
 			err = o.RevertConfig(v1)
-			require.NoError(t, err, "%d: %v", i, tc)
+			require.NoError(t, err)
 
-			configContents, _ := toml.Marshal(cfg)
-			expectedContents, _ := toml.Marshal(expected)
-
-			require.Equal(t, string(expectedContents), string(configContents), "%d: %v", i, tc)
+			require.Equal(t, expected.String(), v1.String())
 		})
 	}
 }
