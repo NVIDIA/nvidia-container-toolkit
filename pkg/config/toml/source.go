@@ -25,15 +25,6 @@ type Loader interface {
 	Load() (*Tree, error)
 }
 
-// FromFile creates a TOML source from the specified file.
-// If an empty string is passed an empty toml config is used.
-func FromFile(path string) Loader {
-	if path == "" {
-		return Empty
-	}
-	return tomlFile(path)
-}
-
 // FromCommandLine creates a TOML source from the output of a shell command and its corresponding args.
 // If the command is empty, an empty config is returned.
 func FromCommandLine(cmds ...string) Loader {
@@ -44,6 +35,24 @@ func FromCommandLine(cmds ...string) Loader {
 		command: cmds[0],
 		args:    cmds[1:],
 	}
+}
+
+// FromFile creates a TOML source from the specified file.
+// If an empty string is passed an empty toml config is used.
+func FromFile(path string) Loader {
+	if path == "" {
+		return Empty
+	}
+	return tomlFile(path)
+}
+
+// FromMap creates a TOML source for the specified map.
+// If an empty map is passed and empty tomly config is used.
+func FromMap(m map[string]interface{}) Loader {
+	if m == nil {
+		return Empty
+	}
+	return tomlMap(m)
 }
 
 // FromString creates a TOML source for the specified contents.
