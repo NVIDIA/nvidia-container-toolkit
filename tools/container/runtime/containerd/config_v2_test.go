@@ -72,17 +72,18 @@ func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
 				SetAsDefault: tc.setAsDefault,
 			}
 
-			cfg, err := toml.LoadMap(map[string]interface{}{})
+			v2, err := containerd.New(
+				containerd.WithLogger(logger),
+				containerd.WithConfigSource(toml.Empty),
+				containerd.WithRuntimeType(runtimeType),
+				containerd.WithContainerAnnotations("cdi.k8s.io/*"),
+			)
 			require.NoError(t, err)
-
-			v2 := &containerd.Config{
-				Logger:      logger,
-				Tree:        cfg,
-				RuntimeType: runtimeType,
-			}
 
 			err = o.UpdateConfig(v2)
 			require.NoError(t, err)
+
+			cfg := v2.(*containerd.Config)
 
 			defaultRuntimeName := cfg.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"})
 			require.EqualValues(t, tc.expectedDefaultRuntimeName, defaultRuntimeName)
@@ -195,15 +196,13 @@ func TestUpdateV2Config(t *testing.T) {
 				RuntimeDir:  runtimeDir,
 			}
 
-			cfg, err := toml.LoadMap(map[string]interface{}{})
+			v2, err := containerd.New(
+				containerd.WithLogger(logger),
+				containerd.WithConfigSource(toml.Empty),
+				containerd.WithRuntimeType(runtimeType),
+				containerd.WithContainerAnnotations("cdi.k8s.io/*"),
+			)
 			require.NoError(t, err)
-
-			v2 := &containerd.Config{
-				Logger:               logger,
-				Tree:                 cfg,
-				RuntimeType:          runtimeType,
-				ContainerAnnotations: []string{"cdi.k8s.io/*"},
-			}
 
 			err = o.UpdateConfig(v2)
 			require.NoError(t, err)
@@ -211,7 +210,7 @@ func TestUpdateV2Config(t *testing.T) {
 			expected, err := toml.TreeFromMap(tc.expectedConfig)
 			require.NoError(t, err)
 
-			require.Equal(t, expected.String(), cfg.String())
+			require.Equal(t, expected.String(), v2.String())
 		})
 	}
 
@@ -348,15 +347,13 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 				RuntimeDir:  runtimeDir,
 			}
 
-			cfg, err := toml.LoadMap(runcConfigMapV2("/runc-binary"))
+			v2, err := containerd.New(
+				containerd.WithLogger(logger),
+				containerd.WithConfigSource(toml.FromMap(runcConfigMapV2("/runc-binary"))),
+				containerd.WithRuntimeType(runtimeType),
+				containerd.WithContainerAnnotations("cdi.k8s.io/*"),
+			)
 			require.NoError(t, err)
-
-			v2 := &containerd.Config{
-				Logger:               logger,
-				Tree:                 cfg,
-				RuntimeType:          runtimeType,
-				ContainerAnnotations: []string{"cdi.k8s.io/*"},
-			}
 
 			err = o.UpdateConfig(v2)
 			require.NoError(t, err)
@@ -364,12 +361,14 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 			expected, err := toml.TreeFromMap(tc.expectedConfig)
 			require.NoError(t, err)
 
-			require.Equal(t, expected.String(), cfg.String())
+			require.Equal(t, expected.String(), v2.String())
 		})
 	}
 }
 
 func TestRevertV2Config(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
 	testCases := []struct {
 		config map[string]interface {
 		}
@@ -418,24 +417,21 @@ func TestRevertV2Config(t *testing.T) {
 				RuntimeName: "nvidia",
 			}
 
-			cfg, err := toml.LoadMap(tc.config)
-			require.NoError(t, err)
-
 			expected, err := toml.TreeFromMap(tc.expected)
 			require.NoError(t, err)
 
-			v2 := &containerd.Config{
-				Tree:        cfg,
-				RuntimeType: runtimeType,
-			}
+			v2, err := containerd.New(
+				containerd.WithLogger(logger),
+				containerd.WithConfigSource(toml.FromMap(tc.config)),
+				containerd.WithRuntimeType(runtimeType),
+				containerd.WithContainerAnnotations("cdi.k8s.io/*"),
+			)
+			require.NoError(t, err)
 
 			err = o.RevertConfig(v2)
 			require.NoError(t, err)
 
-			configContents, _ := toml.Marshal(cfg)
-			expectedContents, _ := toml.Marshal(expected)
-
-			require.Equal(t, string(expectedContents), string(configContents))
+			require.Equal(t, expected.String(), v2.String())
 		})
 	}
 }
@@ -454,6 +450,7 @@ func runtimeMapV2(binary string) map[string]interface{} {
 
 func runcConfigMapV2(binary string) map[string]interface{} {
 	return map[string]interface{}{
+		"version": 2,
 		"plugins": map[string]interface{}{
 			"io.containerd.grpc.v1.cri": map[string]interface{}{
 				"containerd": map[string]interface{}{
