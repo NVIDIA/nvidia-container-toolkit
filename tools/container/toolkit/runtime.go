@@ -57,16 +57,6 @@ func newNvidiaContainerRuntimeInstaller(source string) *executable {
 }
 
 func newRuntimeInstaller(source string, target executableTarget, env map[string]string) *executable {
-	preLines := []string{
-		"",
-		"cat /proc/modules | grep -e \"^nvidia \" >/dev/null 2>&1",
-		"if [ \"${?}\" != \"0\" ]; then",
-		"	echo \"nvidia driver modules are not yet loaded, invoking runc directly\"",
-		"	exec runc \"$@\"",
-		"fi",
-		"",
-	}
-
 	runtimeEnv := make(map[string]string)
 	runtimeEnv["XDG_CONFIG_HOME"] = filepath.Join(destDirPattern, ".config")
 	for k, v := range env {
@@ -74,10 +64,9 @@ func newRuntimeInstaller(source string, target executableTarget, env map[string]
 	}
 
 	r := executable{
-		source:   source,
-		target:   target,
-		env:      runtimeEnv,
-		preLines: preLines,
+		source: source,
+		target: target,
+		env:    runtimeEnv,
 	}
 
 	return &r

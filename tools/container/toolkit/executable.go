@@ -36,7 +36,6 @@ type executable struct {
 	source   string
 	target   executableTarget
 	env      map[string]string
-	preLines []string
 	argLines []string
 }
 
@@ -95,11 +94,6 @@ func (e executable) writeWrapperTo(wrapper io.Writer, destFolder string, dotfile
 
 	// Add the shebang
 	fmt.Fprintln(wrapper, "#! /bin/sh")
-
-	// Add the preceding lines if any
-	for _, line := range e.preLines {
-		fmt.Fprintf(wrapper, "%s\n", r.apply(line))
-	}
 
 	// Update the path to include the destination folder
 	var env map[string]string

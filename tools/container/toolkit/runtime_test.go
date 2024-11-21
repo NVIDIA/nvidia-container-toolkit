@@ -38,13 +38,6 @@ func TestNvidiaContainerRuntimeInstallerWrapper(t *testing.T) {
 
 	expectedLines := []string{
 		shebang,
-		"",
-		"cat /proc/modules | grep -e \"^nvidia \" >/dev/null 2>&1",
-		"if [ \"${?}\" != \"0\" ]; then",
-		"	echo \"nvidia driver modules are not yet loaded, invoking runc directly\"",
-		"	exec runc \"$@\"",
-		"fi",
-		"",
 		"PATH=/dest/folder:$PATH \\",
 		"XDG_CONFIG_HOME=/dest/folder/.config \\",
 		"source.real \\",
