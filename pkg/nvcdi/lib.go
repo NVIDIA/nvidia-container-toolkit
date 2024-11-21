@@ -161,6 +161,11 @@ func New(opts ...Option) (Interface, error) {
 			l.class = "mofed"
 		}
 		lib = (*mofedlib)(l)
+	case ModeImex:
+		if l.class == "" {
+			l.class = classImexChannel
+		}
+		lib = (*imexlib)(l)
 	default:
 		return nil, fmt.Errorf("unknown mode %q", l.mode)
 	}

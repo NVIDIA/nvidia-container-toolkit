@@ -40,6 +40,8 @@ const (
 	// ModeCSV configures the CDI spec generator to generate a spec based on the contents of CSV
 	// mountspec files.
 	ModeCSV = Mode("csv")
+	// ModeImex configures the CDI spec generated to generate a spec for the available IMEX channels.
+	ModeImex = Mode("imex")
 )
 
 type modeConstraint interface {
