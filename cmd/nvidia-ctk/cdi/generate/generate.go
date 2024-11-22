@@ -104,10 +104,12 @@ func (m command) build() *cli.Command {
 			Destination: &opts.format,
 		},
 		&cli.StringFlag{
-			Name:        "mode",
-			Aliases:     []string{"discovery-mode"},
-			Usage:       "The mode to use when discovering the available entities. One of [auto | nvml | wsl]. If mode is set to 'auto' the mode will be determined based on the system configuration.",
-			Value:       nvcdi.ModeAuto,
+			Name:    "mode",
+			Aliases: []string{"discovery-mode"},
+			Usage: "The mode to use when discovering the available entities. " +
+				"One of [" + strings.Join(nvcdi.AllModes[string](), " | ") + "]. " +
+				"If mode is set to 'auto' the mode will be determined based on the system configuration.",
+			Value:       string(nvcdi.ModeAuto),
 			Destination: &opts.mode,
 		},
 		&cli.StringFlag{
@@ -184,13 +186,7 @@ func (m command) validateFlags(c *cli.Context, opts *options) error {
 	}
 
 	opts.mode = strings.ToLower(opts.mode)
-	switch opts.mode {
-	case nvcdi.ModeAuto:
-	case nvcdi.ModeCSV:
-	case nvcdi.ModeNvml:
-	case nvcdi.ModeWsl:
-	case nvcdi.ModeManagement:
-	default:
+	if !nvcdi.IsValidMode(opts.mode) {
 		return fmt.Errorf("invalid discovery mode: %v", opts.mode)
 	}
 
