@@ -46,7 +46,7 @@ type nvcdilib struct {
 	logger             logger.Interface
 	nvmllib            nvml.Interface
 	nvsandboxutilslib  nvsandboxutils.Interface
-	mode               string
+	mode               Mode
 	devicelib          device.Interface
 	deviceNamers       DeviceNamers
 	driverRoot         string
@@ -204,28 +204,6 @@ func (m *wrapper) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	edits.Env = append(edits.Env, image.EnvVarNvidiaVisibleDevices+"=void")
 
 	return edits, nil
-}
-
-// resolveMode resolves the mode for CDI spec generation based on the current system.
-func (l *nvcdilib) resolveMode() (rmode string) {
-	if l.mode != ModeAuto {
-		return l.mode
-	}
-	defer func() {
-		l.logger.Infof("Auto-detected mode as '%v'", rmode)
-	}()
-
-	platform := l.infolib.ResolvePlatform()
-	switch platform {
-	case info.PlatformNVML:
-		return ModeNvml
-	case info.PlatformTegra:
-		return ModeCSV
-	case info.PlatformWSL:
-		return ModeWsl
-	}
-	l.logger.Warningf("Unsupported platform detected: %v; assuming %v", platform, ModeNvml)
-	return ModeNvml
 }
 
 // getCudaVersion returns the CUDA version of the current system.
