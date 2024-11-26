@@ -1,5 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.17.3
+- Only allow host-relative LDConfig paths by default.
+
 ## v1.17.2
 - Fixed a bug where legacy images would set imex channels as `all`.
 
