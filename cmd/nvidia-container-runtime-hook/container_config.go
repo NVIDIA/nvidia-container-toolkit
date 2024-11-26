@@ -157,7 +157,7 @@ func getDevicesFromEnvvar(containerImage image.CUDA, swarmResourceEnvvars []stri
 	return containerImage.VisibleDevicesFromEnvVar()
 }
 
-func getDevices(hookConfig *HookConfig, image image.CUDA, privileged bool) []string {
+func (hookConfig *hookConfig) getDevices(image image.CUDA, privileged bool) []string {
 	// If enabled, try and get the device list from volume mounts first
 	if hookConfig.AcceptDeviceListAsVolumeMounts {
 		devices := image.VisibleDevicesFromMounts()
@@ -197,7 +197,7 @@ func getMigDevices(image image.CUDA, envvar string) *string {
 	return &devices
 }
 
-func getImexChannels(hookConfig *HookConfig, image image.CUDA, privileged bool) []string {
+func (hookConfig *hookConfig) getImexChannels(image image.CUDA, privileged bool) []string {
 	// If enabled, try and get the device list from volume mounts first
 	if hookConfig.AcceptDeviceListAsVolumeMounts {
 		devices := image.ImexChannelsFromMounts()
@@ -217,10 +217,10 @@ func getImexChannels(hookConfig *HookConfig, image image.CUDA, privileged bool) 
 	return nil
 }
 
-func (c *HookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage bool) image.DriverCapabilities {
+func (hookConfig *hookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage bool) image.DriverCapabilities {
 	// We use the default driver capabilities by default. This is filtered to only include the
 	// supported capabilities
-	supportedDriverCapabilities := image.NewDriverCapabilities(c.SupportedDriverCapabilities)
+	supportedDriverCapabilities := image.NewDriverCapabilities(hookConfig.SupportedDriverCapabilities)
 
 	capabilities := supportedDriverCapabilities.Intersection(image.DefaultDriverCapabilities)
 
@@ -244,10 +244,10 @@ func (c *HookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage boo
 	return capabilities
 }
 
-func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, privileged bool) *nvidiaConfig {
+func (hookConfig *hookConfig) getNvidiaConfig(image image.CUDA, privileged bool) *nvidiaConfig {
 	legacyImage := image.IsLegacy()
 
-	devices := getDevices(hookConfig, image, privileged)
+	devices := hookConfig.getDevices(image, privileged)
 	if len(devices) == 0 {
 		// empty devices means this is not a GPU container.
 		return nil
@@ -269,7 +269,7 @@ func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, privileged bool) 
 		log.Panicln("cannot set MIG_MONITOR_DEVICES in non privileged container")
 	}
 
-	imexChannels := getImexChannels(hookConfig, image, privileged)
+	imexChannels := hookConfig.getImexChannels(image, privileged)
 
 	driverCapabilities := hookConfig.getDriverCapabilities(image, legacyImage).String()
 
@@ -288,7 +288,7 @@ func getNvidiaConfig(hookConfig *HookConfig, image image.CUDA, privileged bool) 
 	}
 }
 
-func getContainerConfig(hook HookConfig) (config containerConfig) {
+func (hookConfig *hookConfig) getContainerConfig() (config containerConfig) {
 	var h HookState
 	d := json.NewDecoder(os.Stdin)
 	if err := d.Decode(&h); err != nil {
@@ -305,7 +305,7 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 	image, err := image.New(
 		image.WithEnv(s.Process.Env),
 		image.WithMounts(s.Mounts),
-		image.WithDisableRequire(hook.DisableRequire),
+		image.WithDisableRequire(hookConfig.DisableRequire),
 	)
 	if err != nil {
 		log.Panicln(err)
@@ -316,6 +316,6 @@ func getContainerConfig(hook HookConfig) (config containerConfig) {
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,
 		Image:  image,
-		Nvidia: getNvidiaConfig(&hook, image, privileged),
+		Nvidia: hookConfig.getNvidiaConfig(image, privileged),
 	}
 }
