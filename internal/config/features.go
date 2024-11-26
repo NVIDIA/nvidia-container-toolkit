@@ -21,14 +21,15 @@ type features struct {
 	// DisableImexChannelCreation ensures that the implicit creation of
 	// requested IMEX channels is skipped when invoking the nvidia-container-cli.
 	DisableImexChannelCreation *feature `toml:"disable-imex-channel-creation,omitempty"`
+	// AllowLDConfigFromContainer allows non-host ldconfig paths to be used.
+	// If this feature flag is not set to 'true' only host-rooted config paths
+	// (i.e. paths starting with an '@' are considered valid)
+	AllowLDConfigFromContainer *feature `toml:"allow-ldconfig-from-container,omitempty"`
 }
 
-//nolint:unused
 type feature bool
 
 // IsEnabled checks whether a feature is explicitly enabled.
-//
-//nolint:unused
 func (f *feature) IsEnabled() bool {
 	if f != nil {
 		return bool(*f)
