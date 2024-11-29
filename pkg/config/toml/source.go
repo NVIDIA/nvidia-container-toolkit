@@ -45,3 +45,12 @@ func FromCommandLine(cmds ...string) Loader {
 		args:    cmds[1:],
 	}
 }
+
+// FromString creates a TOML source for the specified contents.
+// If an empty string is passed an empty toml config is used.
+func FromString(contents string) Loader {
+	if contents == "" {
+		return Empty
+	}
+	return tomlString(contents)
+}
