@@ -27,10 +27,15 @@ import (
 // Config represents the containerd config
 type Config struct {
 	*toml.Tree
-	Logger                logger.Interface
-	RuntimeType           string
-	UseDefaultRuntimeName bool
-	ContainerAnnotations  []string
+	Logger               logger.Interface
+	RuntimeType          string
+	ContainerAnnotations []string
+	// UseLegacyConfig indicates whether a config file pre v1.3 should be generated.
+	// For version 1 config prior to containerd v1.4 the default runtime was
+	// specified in a containerd.runtimes.default_runtime section.
+	// This was deprecated in v1.4 in favour of containerd.default_runtime_name.
+	// Support for this section has been removed in v2.0.
+	UseLegacyConfig bool
 }
 
 var _ engine.Interface = (*Config)(nil)
@@ -73,14 +78,14 @@ func New(opts ...Option) (engine.Interface, error) {
 	}
 
 	cfg := &Config{
-		Tree:                  tomlConfig,
-		Logger:                b.logger,
-		RuntimeType:           b.runtimeType,
-		UseDefaultRuntimeName: b.useLegacyConfig,
-		ContainerAnnotations:  b.containerAnnotations,
+		Tree:                 tomlConfig,
+		Logger:               b.logger,
+		RuntimeType:          b.runtimeType,
+		ContainerAnnotations: b.containerAnnotations,
+		UseLegacyConfig:      b.useLegacyConfig,
 	}
 
-	version, err := cfg.parseVersion(b.useLegacyConfig)
+	version, err := cfg.parseVersion()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config version: %v", err)
 	}
@@ -95,9 +100,10 @@ func New(opts ...Option) (engine.Interface, error) {
 }
 
 // parseVersion returns the version of the config
-func (c *Config) parseVersion(useLegacyConfig bool) (int, error) {
+func (c *Config) parseVersion() (int, error) {
 	defaultVersion := 2
-	if useLegacyConfig {
+	// For legacy configs, we default to v1 configs.
+	if c.UseLegacyConfig {
 		defaultVersion = 1
 	}
 
