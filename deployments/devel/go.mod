@@ -6,7 +6,7 @@ toolchain go1.23.1
 
 require (
 	github.com/golangci/golangci-lint v1.61.0
-	github.com/matryer/moq v0.5.0
+	github.com/matryer/moq v0.5.1
 )
 
 require (
