@@ -187,11 +187,11 @@ create:
 			if !strings.HasPrefix(deviceNode, "nvidia") {
 				continue
 			}
-			if event.Op&fsnotify.Create == fsnotify.Create {
+			if event.Has(fsnotify.Create) {
 				m.logger.Infof("%s created, restarting.", event.Name)
 				goto create
 			}
-			if event.Op&fsnotify.Create == fsnotify.Remove {
+			if event.Has(fsnotify.Remove) {
 				m.logger.Infof("%s removed. Ignoring", event.Name)
 
 			}
