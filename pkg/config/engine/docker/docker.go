@@ -166,3 +166,13 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 	}
 	return &dockerRuntime{}, nil
 }
+
+// String returns the string representation of the JSON config.
+func (c Config) String() string {
+	output, err := json.MarshalIndent(c, "", "    ")
+	if err != nil {
+		return fmt.Sprintf("invalid JSON: %v", err)
+	}
+
+	return string(output)
+}
