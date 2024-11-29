@@ -52,8 +52,11 @@ type Options struct {
 func Flags(opts *Options) []cli.Flag {
 	flags := []cli.Flag{
 		&cli.BoolFlag{
-			Name:        "use-legacy-config",
-			Usage:       "Specify whether a legacy (pre v1.3) config should be used",
+			Name: "use-legacy-config",
+			Usage: "Specify whether a legacy (pre v1.3) config should be used. " +
+				"This ensures that a version 1 container config is created by default and that the " +
+				"containerd.runtimes.default_runtime config section is used to define the default " +
+				"runtime instead of container.default_runtime_name.",
 			Destination: &opts.useLegacyConfig,
 			EnvVars:     []string{"CONTAINERD_USE_LEGACY_CONFIG"},
 		},

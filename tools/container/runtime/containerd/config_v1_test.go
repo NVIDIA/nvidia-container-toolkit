@@ -92,10 +92,10 @@ func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {
 			require.NoError(t, err, "%d: %v", i, tc)
 
 			v1 := &containerd.ConfigV1{
-				Logger:                logger,
-				Tree:                  cfg,
-				UseDefaultRuntimeName: !tc.legacyConfig,
-				RuntimeType:           runtimeType,
+				Logger:          logger,
+				Tree:            cfg,
+				UseLegacyConfig: tc.legacyConfig,
+				RuntimeType:     runtimeType,
 			}
 
 			err = o.UpdateConfig(v1)
@@ -238,11 +238,11 @@ func TestUpdateV1Config(t *testing.T) {
 			require.NoError(t, err)
 
 			v1 := &containerd.ConfigV1{
-				Logger:                logger,
-				Tree:                  cfg,
-				UseDefaultRuntimeName: true,
-				RuntimeType:           runtimeType,
-				ContainerAnnotations:  []string{"cdi.k8s.io/*"},
+				Logger:               logger,
+				Tree:                 cfg,
+				UseLegacyConfig:      true,
+				RuntimeType:          runtimeType,
+				ContainerAnnotations: []string{"cdi.k8s.io/*"},
 			}
 
 			err = o.UpdateConfig(v1)
@@ -397,11 +397,11 @@ func TestUpdateV1ConfigWithRuncPresent(t *testing.T) {
 			require.NoError(t, err)
 
 			v1 := &containerd.ConfigV1{
-				Logger:                logger,
-				Tree:                  cfg,
-				UseDefaultRuntimeName: true,
-				RuntimeType:           runtimeType,
-				ContainerAnnotations:  []string{"cdi.k8s.io/*"},
+				Logger:               logger,
+				Tree:                 cfg,
+				UseLegacyConfig:      true,
+				RuntimeType:          runtimeType,
+				ContainerAnnotations: []string{"cdi.k8s.io/*"},
 			}
 
 			err = o.UpdateConfig(v1)
@@ -476,9 +476,9 @@ func TestRevertV1Config(t *testing.T) {
 			require.NoError(t, err, "%d: %v", i, tc)
 
 			v1 := &containerd.ConfigV1{
-				Tree:                  cfg,
-				UseDefaultRuntimeName: true,
-				RuntimeType:           runtimeType,
+				Tree:            cfg,
+				UseLegacyConfig: true,
+				RuntimeType:     runtimeType,
 			}
 
 			err = o.RevertConfig(v1)
