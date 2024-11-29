@@ -70,18 +70,20 @@ func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool) error
 	config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "options", "BinaryName"}, path)
 	config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "options", "Runtime"}, path)
 
-	if setAsDefault && c.UseDefaultRuntimeName {
-		config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"}, name)
-	} else if setAsDefault {
-		// Note: This is deprecated in containerd 1.4.0 and will be removed in 1.5.0
-		if config.GetPath([]string{"plugins", "cri", "containerd", "default_runtime"}) == nil {
-			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "runtime_type"}, c.RuntimeType)
-			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "runtime_root"}, "")
-			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "runtime_engine"}, "")
-			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "privileged_without_host_devices"}, false)
+	if setAsDefault {
+		if !c.UseLegacyConfig {
+			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"}, name)
+		} else {
+			// Note: This is deprecated in containerd 1.4.0 and will be removed in 1.5.0
+			if config.GetPath([]string{"plugins", "cri", "containerd", "default_runtime"}) == nil {
+				config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "runtime_type"}, c.RuntimeType)
+				config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "runtime_root"}, "")
+				config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "runtime_engine"}, "")
+				config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "privileged_without_host_devices"}, false)
+			}
+			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "options", "BinaryName"}, path)
+			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "options", "Runtime"}, path)
 		}
-		config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "options", "BinaryName"}, path)
-		config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "options", "Runtime"}, path)
 	}
 
 	*c.Tree = config
