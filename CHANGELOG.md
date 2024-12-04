@@ -2,6 +2,8 @@
 
 ## v1.17.3
 - Only allow host-relative LDConfig paths by default.
+### Changes in libnvidia-container
+- Create virtual copy of host ldconfig binary before calling fexecve()
 
 ## v1.17.2
 - Fixed a bug where legacy images would set imex channels as `all`.
