@@ -39,11 +39,14 @@ ARTIFACTORY_REPO=$1
 
 if [[ $# -eq 2 ]]; then
     REFERENCE=$2
-    SHA=$(git rev-parse --short=8 ${REFERENCE})
 elif [[ -z ${PACKAGE_IMAGE_TAG} ]]; then
     echo "Either PACKAGE_IMAGE_TAG or REFERENCE must be specified"
     assert_usage "$@"
+else
+    REFERENCE="HEAD"
 fi
+
+SHA=$(git rev-parse --short=8 ${REFERENCE})
 
 : ${CURL:=curl}
 
