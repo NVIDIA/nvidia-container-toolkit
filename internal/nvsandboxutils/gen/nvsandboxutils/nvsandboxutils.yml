@@ -49,6 +49,7 @@ TRANSLATOR:
     const:
       - {action: accept, from: "^NVSANDBOXUTILS_"}
       - {action: accept, from: "^nvSandboxUtils"}
+      - {action: replace, from: "^NVSANDBOXUTILS_255_MASK_", to: "MASK255_" }
       - {action: replace, from: "^NVSANDBOXUTILS_"}
       - {action: replace, from: "^nvSandboxUtils"}
       - {action: accept, from: "^NV"}
