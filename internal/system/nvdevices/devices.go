@@ -19,7 +19,6 @@ package nvdevices
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -66,7 +65,7 @@ func New(opts ...Option) (*Interface, error) {
 	if i.dryRun {
 		i.mknoder = &mknodLogger{i.logger}
 	} else {
-		i.mknoder = &mknodUnix{}
+		i.mknoder = &mknodUnix{i.logger}
 	}
 	return i, nil
 }
@@ -107,13 +106,6 @@ func (m *Interface) CreateNVIDIADevice(node string) error {
 // If a devRoot is configured, this is prepended to the path.
 func (m *Interface) createDeviceNode(path string, major int, minor int) error {
 	path = filepath.Join(m.devRoot, path)
-	if _, err := os.Stat(path); err == nil {
-		m.logger.Infof("Skipping: %s already exists", path)
-		return nil
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("failed to stat %s: %v", path, err)
-	}
-
 	return m.Mknode(path, major, minor)
 }
 
