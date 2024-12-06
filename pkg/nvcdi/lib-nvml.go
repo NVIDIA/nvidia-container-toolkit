@@ -83,7 +83,25 @@ func (l *nvmllib) GetAllDeviceSpecs() ([]specs.Device, error) {
 
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
 func (l *nvmllib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	common, err := l.newCommonNVMLDiscoverer()
+	if l.nvsandboxutilslib != nil {
+		if r := l.nvsandboxutilslib.Init(l.driverRoot); r != nvsandboxutils.SUCCESS {
+			l.logger.Warningf("Failed to init nvsandboxutils: %v; ignoring", r)
+			l.nvsandboxutilslib = nil
+		}
+		defer func() {
+			if l.nvsandboxutilslib == nil {
+				return
+			}
+			_ = l.nvsandboxutilslib.Shutdown()
+		}()
+	}
+
+	version, err := (*nvcdilib)(l).getDriverVersion()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get driver version: %v", err)
+	}
+
+	common, err := l.newCommonNVMLDiscoverer(version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for common entities: %v", err)
 	}

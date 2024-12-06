@@ -24,7 +24,7 @@ import (
 
 // newCommonNVMLDiscoverer returns a discoverer for entities that are not associated with a specific CDI device.
 // This includes driver libraries and meta devices, for example.
-func (l *nvmllib) newCommonNVMLDiscoverer() (discover.Discover, error) {
+func (l *nvmllib) newCommonNVMLDiscoverer(version string) (discover.Discover, error) {
 	metaDevices := discover.NewCharDeviceDiscoverer(
 		l.logger,
 		l.devRoot,
@@ -41,7 +41,7 @@ func (l *nvmllib) newCommonNVMLDiscoverer() (discover.Discover, error) {
 		l.logger.Warningf("failed to create discoverer for graphics mounts: %v", err)
 	}
 
-	driverFiles, err := NewDriverDiscoverer(l.logger, l.driver, l.nvidiaCDIHookPath, l.ldconfigPath, l.nvmllib)
+	driverFiles, err := NewDriverDiscoverer(l.logger, l.driver, l.nvidiaCDIHookPath, l.ldconfigPath, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for driver files: %v", err)
 	}
