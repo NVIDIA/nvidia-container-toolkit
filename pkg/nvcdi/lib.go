@@ -22,25 +22,13 @@ import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
-	"tags.cncf.io/container-device-interface/pkg/cdi"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
-
-type wrapper struct {
-	Interface
-
-	vendor string
-	class  string
-
-	mergedDeviceOptions []transform.MergedDeviceOption
-}
 
 type nvcdilib struct {
 	logger             logger.Interface
@@ -178,38 +166,6 @@ func New(opts ...Option) (Interface, error) {
 		mergedDeviceOptions: l.mergedDeviceOptions,
 	}
 	return &w, nil
-}
-
-// GetSpec combines the device specs and common edits from the wrapped Interface to a single spec.Interface.
-func (l *wrapper) GetSpec() (spec.Interface, error) {
-	deviceSpecs, err := l.GetAllDeviceSpecs()
-	if err != nil {
-		return nil, err
-	}
-
-	edits, err := l.GetCommonEdits()
-	if err != nil {
-		return nil, err
-	}
-
-	return spec.New(
-		spec.WithDeviceSpecs(deviceSpecs),
-		spec.WithEdits(*edits.ContainerEdits),
-		spec.WithVendor(l.vendor),
-		spec.WithClass(l.class),
-		spec.WithMergedDeviceOptions(l.mergedDeviceOptions...),
-	)
-}
-
-// GetCommonEdits returns the wrapped edits and adds additional edits on top.
-func (m *wrapper) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	edits, err := m.Interface.GetCommonEdits()
-	if err != nil {
-		return nil, err
-	}
-	edits.Env = append(edits.Env, image.EnvVarNvidiaVisibleDevices+"=void")
-
-	return edits, nil
 }
 
 // getCudaVersion returns the CUDA version of the current system.
