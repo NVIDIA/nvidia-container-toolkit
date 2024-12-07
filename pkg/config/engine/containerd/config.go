@@ -30,7 +30,7 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	}
 	config := *c.Tree
 
-	config.Set("version", int64(2))
+	config.Set("version", c.Version)
 
 	runtimeNamesForConfig := engine.GetLowLevelRuntimes(c)
 	for _, r := range runtimeNamesForConfig {
