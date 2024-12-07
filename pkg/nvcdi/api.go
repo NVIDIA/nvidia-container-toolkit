@@ -24,24 +24,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
 
-const (
-	// ModeAuto configures the CDI spec generator to automatically detect the system configuration
-	ModeAuto = "auto"
-	// ModeNvml configures the CDI spec generator to use the NVML library.
-	ModeNvml = "nvml"
-	// ModeWsl configures the CDI spec generator to generate a WSL spec.
-	ModeWsl = "wsl"
-	// ModeManagement configures the CDI spec generator to generate a management spec.
-	ModeManagement = "management"
-	// ModeGds configures the CDI spec generator to generate a GDS spec.
-	ModeGds = "gds"
-	// ModeMofed configures the CDI spec generator to generate a MOFED spec.
-	ModeMofed = "mofed"
-	// ModeCSV configures the CDI spec generator to generate a spec based on the contents of CSV
-	// mountspec files.
-	ModeCSV = "csv"
-)
-
 // Interface defines the API for the nvcdi package
 type Interface interface {
 	GetSpec() (spec.Interface, error)

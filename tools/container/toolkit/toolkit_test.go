@@ -100,6 +100,12 @@ devices:
       path: /dev/nvidia0
     - hostPath: /host/driver/root/dev/nvidiactl
       path: /dev/nvidiactl
+    - hostPath: /host/driver/root/dev/nvidia-caps-imex-channels/channel0
+      path: /dev/nvidia-caps-imex-channels/channel0
+    - hostPath: /host/driver/root/dev/nvidia-caps-imex-channels/channel1
+      path: /dev/nvidia-caps-imex-channels/channel1
+    - hostPath: /host/driver/root/dev/nvidia-caps-imex-channels/channel2047
+      path: /dev/nvidia-caps-imex-channels/channel2047
   name: all
 kind: example.com/class
 `,
