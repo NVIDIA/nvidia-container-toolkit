@@ -48,37 +48,22 @@ func installContainerRuntimes(sourceRoot string, toolkitDir string) error {
 // created to allow for the configuration of the runtime environment.
 func newNvidiaContainerRuntimeInstaller(source string) *executable {
 	wrapperName := filepath.Base(source)
-	dotfileName := wrapperName + ".real"
 	target := executableTarget{
-		dotfileName: dotfileName,
 		wrapperName: wrapperName,
 	}
 	return newRuntimeInstaller(source, target, nil)
 }
 
 func newRuntimeInstaller(source string, target executableTarget, env map[string]string) *executable {
-	preLines := []string{
-		"",
-		"cat /proc/modules | grep -e \"^nvidia \" >/dev/null 2>&1",
-		"if [ \"${?}\" != \"0\" ]; then",
-		"	echo \"nvidia driver modules are not yet loaded, invoking runc directly\"",
-		"	exec runc \"$@\"",
-		"fi",
-		"",
-	}
-
 	runtimeEnv := make(map[string]string)
 	runtimeEnv["XDG_CONFIG_HOME"] = filepath.Join(destDirPattern, ".config")
 	for k, v := range env {
 		runtimeEnv[k] = v
 	}
-
 	r := executable{
-		source:   source,
-		target:   target,
-		env:      runtimeEnv,
-		preLines: preLines,
+		source: source,
+		target: target,
+		envm:   runtimeEnv,
 	}
-
 	return &r
 }

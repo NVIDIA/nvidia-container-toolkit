@@ -17,102 +17,102 @@
 package toolkit
 
 import (
-	"bytes"
+	"bufio"
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestWrapper(t *testing.T) {
-	const shebang = "#! /bin/sh"
-	const destFolder = "/dest/folder"
-	const dotfileName = "source.real"
+	createTestWrapperProgram(t)
 
 	testCases := []struct {
-		e             executable
-		expectedLines []string
+		e            executable
+		expectedArgv []string
+		expectedEnvv []string
 	}{
 		{
-			e: executable{},
-			expectedLines: []string{
-				shebang,
-				"PATH=/dest/folder:$PATH \\",
-				"source.real \\",
-				"\t\"$@\"",
-				"",
+			e: executable{source: "source"},
+			expectedEnvv: []string{
+				fmt.Sprintf("<PATH=%s", destDirPattern),
 			},
 		},
 		{
 			e: executable{
-				env: map[string]string{
+				source: "source",
+				envm: map[string]string{
+					"FOO": "BAR",
+				},
+			},
+			expectedEnvv: []string{
+				fmt.Sprintf("<PATH=%s", destDirPattern),
+				"FOO=BAR",
+			},
+		},
+		{
+			e: executable{
+				source: "source",
+				envm: map[string]string{
 					"PATH": "some-path",
+					"FOO":  "BAR",
 				},
 			},
-			expectedLines: []string{
-				shebang,
-				"PATH=/dest/folder:some-path \\",
-				"source.real \\",
-				"\t\"$@\"",
-				"",
+			expectedEnvv: []string{
+				"FOO=BAR",
+				fmt.Sprintf("PATH=%s:some-path", destDirPattern),
 			},
 		},
 		{
 			e: executable{
-				preLines: []string{
-					"preline1",
-					"preline2",
+				source: "source",
+				argv: []string{
+					"argb",
+					"arga",
+					"argc",
 				},
 			},
-			expectedLines: []string{
-				shebang,
-				"preline1",
-				"preline2",
-				"PATH=/dest/folder:$PATH \\",
-				"source.real \\",
-				"\t\"$@\"",
-				"",
+			expectedArgv: []string{
+				"argb",
+				"arga",
+				"argc",
 			},
-		},
-		{
-			e: executable{
-				argLines: []string{
-					"argline1",
-					"argline2",
-				},
-			},
-			expectedLines: []string{
-				shebang,
-				"PATH=/dest/folder:$PATH \\",
-				"source.real \\",
-				"\targline1 \\",
-				"\targline2 \\",
-				"\t\"$@\"",
-				"",
+			expectedEnvv: []string{
+				fmt.Sprintf("<PATH=%s", destDirPattern),
 			},
 		},
 	}
 
-	for i, tc := range testCases {
-		buf := &bytes.Buffer{}
-
-		err := tc.e.writeWrapperTo(buf, destFolder, dotfileName)
+	for _, tc := range testCases {
+		destFolder := t.TempDir()
+		r := newReplacements(destDirPattern, destFolder)
+		for k, v := range tc.expectedEnvv {
+			tc.expectedEnvv[k] = r.apply(v)
+		}
+		path, err := tc.e.installWrapper(destFolder)
 		require.NoError(t, err)
+		require.FileExists(t, path)
+		envv, err := readAllLines(path + ".envv")
+		require.NoError(t, err)
+		require.Equal(t, tc.expectedEnvv, envv)
+		argv, err := readAllLines(path + ".argv")
+		if tc.expectedArgv == nil {
+			require.ErrorAs(t, err, &fs.ErrNotExist)
+		} else {
+			require.Equal(t, tc.expectedArgv, argv)
 
-		exepectedContents := strings.Join(tc.expectedLines, "\n")
-		require.Equal(t, exepectedContents, buf.String(), "%v: %v", i, tc)
+		}
 	}
 }
 
 func TestInstallExecutable(t *testing.T) {
-	inputFolder, err := os.MkdirTemp("", "")
-	require.NoError(t, err)
-	defer os.RemoveAll(inputFolder)
+	createTestWrapperProgram(t)
 
 	// Create the source file
-	source := filepath.Join(inputFolder, "input")
+	source := filepath.Join(t.TempDir(), "input")
 	sourceFile, err := os.Create(source)
 
 	base := filepath.Base(source)
@@ -123,7 +123,6 @@ func TestInstallExecutable(t *testing.T) {
 	e := executable{
 		source: source,
 		target: executableTarget{
-			dotfileName: "input.real",
 			wrapperName: "input",
 		},
 	}
@@ -149,4 +148,32 @@ func TestInstallExecutable(t *testing.T) {
 	wrapperInfo, err := os.Stat(installed)
 	require.NoError(t, err)
 	require.NotEqual(t, 0, wrapperInfo.Mode()&0111)
+}
+
+func createTestWrapperProgram(t *testing.T) {
+	t.Helper()
+	currentExe, err := os.Executable()
+	if err != nil {
+		t.Fatalf("error getting current executable: %v", err)
+	}
+	wrapperPath := filepath.Join(filepath.Dir(currentExe), "wrapper")
+	f, err := os.Create(wrapperPath)
+	if err != nil {
+		t.Fatalf("error creating test wrapper: %v", err)
+	}
+	f.Close()
+}
+
+func readAllLines(path string) (s []string, err error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		s = append(s, scanner.Text())
+	}
+	err = scanner.Err()
+	return
 }
