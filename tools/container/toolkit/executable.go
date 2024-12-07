@@ -23,8 +23,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type executableTarget struct {
@@ -33,6 +31,7 @@ type executableTarget struct {
 }
 
 type executable struct {
+	fileInstaller
 	source   string
 	target   executableTarget
 	env      map[string]string
@@ -43,21 +42,21 @@ type executable struct {
 // install installs an executable component of the NVIDIA container toolkit. The source executable
 // is copied to a `.real` file and a wapper is created to set up the environment as required.
 func (e executable) install(destFolder string) (string, error) {
-	log.Infof("Installing executable '%v' to %v", e.source, destFolder)
+	e.logger.Infof("Installing executable '%v' to %v", e.source, destFolder)
 
 	dotfileName := e.dotfileName()
 
-	installedDotfileName, err := installFileToFolderWithName(destFolder, dotfileName, e.source)
+	installedDotfileName, err := e.installFileToFolderWithName(destFolder, dotfileName, e.source)
 	if err != nil {
 		return "", fmt.Errorf("error installing file '%v' as '%v': %v", e.source, dotfileName, err)
 	}
-	log.Infof("Installed '%v'", installedDotfileName)
+	e.logger.Infof("Installed '%v'", installedDotfileName)
 
 	wrapperFilename, err := e.installWrapper(destFolder, installedDotfileName)
 	if err != nil {
 		return "", fmt.Errorf("error wrapping '%v': %v", installedDotfileName, err)
 	}
-	log.Infof("Installed wrapper '%v'", wrapperFilename)
+	e.logger.Infof("Installed wrapper '%v'", wrapperFilename)
 
 	return wrapperFilename, nil
 }
