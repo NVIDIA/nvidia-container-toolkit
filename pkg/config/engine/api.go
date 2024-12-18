@@ -24,6 +24,7 @@ type Interface interface {
 	RemoveRuntime(string) error
 	Save(string) (int64, error)
 	GetRuntimeConfig(string) (RuntimeConfig, error)
+	EnableCDI()
 }
 
 // RuntimeConfig defines the interface to query container runtime handler configuration

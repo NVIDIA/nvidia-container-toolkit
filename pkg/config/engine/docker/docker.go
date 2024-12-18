@@ -166,3 +166,7 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 	}
 	return &dockerRuntime{}, nil
 }
+
+func (c *Config) EnableCDI() {
+	c.Set("features", map[string]bool{"cdi": true})
+}
