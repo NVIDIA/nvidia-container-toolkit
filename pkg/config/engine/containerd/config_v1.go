@@ -165,3 +165,7 @@ func (c *ConfigV1) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 		tree: runtimeData,
 	}, nil
 }
+
+func (c *ConfigV1) EnableCDI() {
+	c.Set("enable_cdi", true)
+}

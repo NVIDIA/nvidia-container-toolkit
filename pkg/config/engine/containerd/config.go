@@ -111,6 +111,11 @@ func (c Config) DefaultRuntime() string {
 	return ""
 }
 
+// EnableCDI sets the enable_cdi field in the Containerd config to true.
+func (c *Config) EnableCDI() {
+	c.Set("enable_cdi", true)
+}
+
 // RemoveRuntime removes a runtime from the docker config
 func (c *Config) RemoveRuntime(name string) error {
 	if c == nil || c.Tree == nil {
