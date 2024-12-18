@@ -30,8 +30,9 @@ import (
 const (
 	defaultSetAsDefault = true
 	// defaultRuntimeName specifies the NVIDIA runtime to be use as the default runtime if setting the default runtime is enabled
-	defaultRuntimeName   = "nvidia"
-	defaultHostRootMount = "/host"
+	defaultRuntimeName      = "nvidia"
+	defaultHostRootMount    = "/host"
+	defaultRuntimeEnableCDI = false
 
 	runtimeSpecificDefault = "RUNTIME_SPECIFIC_DEFAULT"
 )
@@ -89,6 +90,13 @@ func Flags(opts *Options) []cli.Flag {
 			EnvVars:     []string{"NVIDIA_RUNTIME_SET_AS_DEFAULT", "CONTAINERD_SET_AS_DEFAULT", "DOCKER_SET_AS_DEFAULT"},
 			Hidden:      true,
 		},
+		&cli.BoolFlag{
+			Name:        "runtime-enable-cdi",
+			Usage:       "Enable CDI in the configured runtime",
+			Value:       defaultRuntimeEnableCDI,
+			Destination: &opts.RuntimeEnableCDI,
+			EnvVars:     []string{"RUNTIME_ENABLE_CDI"},
+		},
 	}
 
 	flags = append(flags, containerd.Flags(&opts.containerdOptions)...)
@@ -123,6 +131,9 @@ func ValidateOptions(opts *Options, runtime string, toolkitRoot string) error {
 		}
 		if opts.RestartMode == runtimeSpecificDefault {
 			opts.RestartMode = crio.DefaultRestartMode
+		}
+		if opts.RuntimeEnableCDI {
+			opts.RuntimeEnableCDI = false
 		}
 	case docker.Name:
 		if opts.Config == runtimeSpecificDefault {

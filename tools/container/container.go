@@ -36,13 +36,14 @@ const (
 
 // Options defines the shared options for the CLIs to configure containers runtimes.
 type Options struct {
-	Config        string
-	Socket        string
-	RuntimeName   string
-	RuntimeDir    string
-	SetAsDefault  bool
-	RestartMode   string
-	HostRootMount string
+	Config           string
+	Socket           string
+	RuntimeName      string
+	RuntimeDir       string
+	SetAsDefault     bool
+	RestartMode      string
+	HostRootMount    string
+	RuntimeEnableCDI bool
 }
 
 // ParseArgs parses the command line arguments to the CLI
@@ -109,6 +110,10 @@ func (o Options) UpdateConfig(cfg engine.Interface) error {
 		if err != nil {
 			return fmt.Errorf("failed to update runtime %q: %v", name, err)
 		}
+	}
+
+	if o.RuntimeEnableCDI {
+		cfg.EnableCDI()
 	}
 
 	return nil
