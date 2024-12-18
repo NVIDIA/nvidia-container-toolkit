@@ -369,6 +369,52 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 	}
 }
 
+func TestUpdateV2ConfigEnableCDI(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+	const runtimeDir = "/test/runtime/dir"
+
+	testCases := []struct {
+		runtimeEnableCDI       bool
+		expectedEnableCDIValue interface{}
+	}{
+		{},
+		{
+			runtimeEnableCDI:       false,
+			expectedEnableCDIValue: nil,
+		},
+		{
+			runtimeEnableCDI:       true,
+			expectedEnableCDIValue: true,
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			o := &container.Options{
+				RuntimeName:      "nvidia",
+				RuntimeDir:       runtimeDir,
+				SetAsDefault:     false,
+				RuntimeEnableCDI: tc.runtimeEnableCDI,
+			}
+
+			cfg, err := toml.LoadMap(map[string]interface{}{})
+			require.NoError(t, err)
+
+			v2 := &containerd.Config{
+				Logger:      logger,
+				Tree:        cfg,
+				RuntimeType: runtimeType,
+			}
+
+			err = o.UpdateConfig(v2)
+			require.NoError(t, err)
+
+			enableCDIValue := cfg.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "enable_cdi"})
+			require.EqualValues(t, tc.expectedEnableCDIValue, enableCDIValue)
+		})
+	}
+}
+
 func TestRevertV2Config(t *testing.T) {
 	testCases := []struct {
 		config map[string]interface {

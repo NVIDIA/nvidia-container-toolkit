@@ -55,6 +55,10 @@ func Setup(c *cli.Context, o *container.Options) error {
 		return fmt.Errorf("unable to configure docker: %v", err)
 	}
 
+	if o.RuntimeEnableCDI {
+		cfg.Set("features", map[string]bool{"cdi": true})
+	}
+
 	err = RestartDocker(o)
 	if err != nil {
 		return fmt.Errorf("unable to restart docker: %v", err)

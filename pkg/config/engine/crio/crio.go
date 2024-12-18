@@ -153,6 +153,9 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 	}, nil
 }
 
+// no-op since CDI is always enabled in versions where CDI is supported
+func (c *Config) EnableCDI() {}
+
 // CommandLineSource returns the CLI-based crio config loader
 func CommandLineSource(hostRoot string) toml.Loader {
 	return toml.LoadFirst(

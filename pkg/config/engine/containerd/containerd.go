@@ -126,6 +126,10 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 	}, nil
 }
 
+func (c *Config) EnableCDI() {
+	c.Set("enable_cdi", true)
+}
+
 // CommandLineSource returns the CLI-based containerd config loader
 func CommandLineSource(hostRoot string) toml.Loader {
 	return toml.FromCommandLine(chrootIfRequired(hostRoot, "containerd", "config", "dump")...)
