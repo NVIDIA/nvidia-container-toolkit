@@ -66,6 +66,12 @@ func Flags(opts *Options) []cli.Flag {
 			Destination: &opts.RestartMode,
 			EnvVars:     []string{"RUNTIME_RESTART_MODE"},
 		},
+		&cli.BoolFlag{
+			Name:        "enable-cdi-in-runtime",
+			Usage:       "Enable CDI in the configured runt	ime",
+			Destination: &opts.EnableCDI,
+			EnvVars:     []string{"RUNTIME_ENABLE_CDI"},
+		},
 		&cli.StringFlag{
 			Name:        "host-root",
 			Usage:       "Specify the path to the host root to be used when restarting the runtime using systemd",
