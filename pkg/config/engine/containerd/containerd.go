@@ -42,6 +42,10 @@ type Config struct {
 	// This was deprecated in v1.4 in favour of containerd.default_runtime_name.
 	// Support for this section has been removed in v2.0.
 	UseLegacyConfig bool
+	// CRIRuntimePluginName represents the fully qualified name of the containerd plugin
+	// for the CRI runtime service. The name of this plugin was changed in v3 of the
+	// containerd configuration file.
+	CRIRuntimePluginName string
 }
 
 var _ engine.Interface = (*Config)(nil)
@@ -101,7 +105,11 @@ func New(opts ...Option) (engine.Interface, error) {
 	switch configVersion {
 	case 1:
 		return (*ConfigV1)(cfg), nil
-	case 2, 3:
+	case 2:
+		cfg.CRIRuntimePluginName = "io.containerd.grpc.v1.cri"
+		return cfg, nil
+	case 3:
+		cfg.CRIRuntimePluginName = "io.containerd.cri.v1.runtime"
 		return cfg, nil
 	}
 	return nil, fmt.Errorf("unsupported config version: %v", configVersion)
@@ -133,7 +141,7 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 	if c == nil || c.Tree == nil {
 		return nil, fmt.Errorf("config is nil")
 	}
-	runtimeData := c.GetSubtreeByPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", name})
+	runtimeData := c.GetSubtreeByPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name})
 	return &containerdCfgRuntime{
 		tree: runtimeData,
 	}, nil

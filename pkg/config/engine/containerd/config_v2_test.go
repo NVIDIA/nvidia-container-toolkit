@@ -203,15 +203,15 @@ func TestAddRuntime(t *testing.T) {
 			expectedConfig: `
 			version = 3
 			[plugins]
-			[plugins."io.containerd.grpc.v1.cri"]
-				[plugins."io.containerd.grpc.v1.cri".containerd]
-				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
+			[plugins."io.containerd.cri.v1.runtime"]
+				[plugins."io.containerd.cri.v1.runtime".containerd]
+				[plugins."io.containerd.cri.v1.runtime".containerd.runtimes]
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.test]
 					privileged_without_host_devices = false
 					runtime_engine = ""
 					runtime_root = ""
 					runtime_type = "io.containerd.runc.v2"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test.options]
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
 			`,
 			expectedError: nil,
@@ -221,38 +221,38 @@ func TestAddRuntime(t *testing.T) {
 			config: `
 			version = 3
 			[plugins]
-			[plugins."io.containerd.grpc.v1.cri"]
-				[plugins."io.containerd.grpc.v1.cri".containerd]
-				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+			[plugins."io.containerd.cri.v1.runtime"]
+				[plugins."io.containerd.cri.v1.runtime".containerd]
+				[plugins."io.containerd.cri.v1.runtime".containerd.runtimes]
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
 					runtime_root = "root"
 					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
 						BinaryName = "/usr/bin/runc"
 						SystemdCgroup = true
 			`,
 			expectedConfig: `
 			version = 3
 			[plugins]
-			[plugins."io.containerd.grpc.v1.cri"]
-				[plugins."io.containerd.grpc.v1.cri".containerd]
-				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+			[plugins."io.containerd.cri.v1.runtime"]
+				[plugins."io.containerd.cri.v1.runtime".containerd]
+				[plugins."io.containerd.cri.v1.runtime".containerd.runtimes]
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
 					runtime_root = "root"
 					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
 						BinaryName = "/usr/bin/runc"
 						SystemdCgroup = true
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.test]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
 					runtime_root = "root"
 					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test.options]
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
 						SystemdCgroup = true
 				`,
