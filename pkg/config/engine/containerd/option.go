@@ -21,16 +21,13 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
-const (
-	defaultRuntimeType = "io.containerd.runc.v2"
-)
-
 type builder struct {
 	logger               logger.Interface
 	configSource         toml.Loader
+	configVersion        int
+	useLegacyConfig      bool
 	path                 string
 	runtimeType          string
-	useLegacyConfig      bool
 	containerAnnotations []string
 }
 
@@ -65,10 +62,17 @@ func WithRuntimeType(runtimeType string) Option {
 	}
 }
 
-// WithUseLegacyConfig sets the useLegacyConfig flag for the config builder
+// WithUseLegacyConfig sets the useLegacyConfig flag for the config builder.
 func WithUseLegacyConfig(useLegacyConfig bool) Option {
 	return func(b *builder) {
 		b.useLegacyConfig = useLegacyConfig
+	}
+}
+
+// WithConfigVersion sets the config version for the config builder
+func WithConfigVersion(configVersion int) Option {
+	return func(b *builder) {
+		b.configVersion = configVersion
 	}
 }
 

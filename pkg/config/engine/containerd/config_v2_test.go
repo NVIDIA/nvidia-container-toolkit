@@ -46,7 +46,7 @@ func TestAddRuntime(t *testing.T) {
 					privileged_without_host_devices = false
 					runtime_engine = ""
 					runtime_root = ""
-					runtime_type = ""
+					runtime_type = "io.containerd.runc.v2"
 					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
 			`,
@@ -195,24 +195,85 @@ func TestAddRuntime(t *testing.T) {
 						SystemdCgroup = false
 				`,
 		},
+		{
+			description: "empty v3 spec is supported",
+			config: `
+			version = 3
+			`,
+			expectedConfig: `
+			version = 3
+			[plugins]
+			[plugins."io.containerd.cri.v1.runtime"]
+				[plugins."io.containerd.cri.v1.runtime".containerd]
+				[plugins."io.containerd.cri.v1.runtime".containerd.runtimes]
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.test]
+					privileged_without_host_devices = false
+					runtime_engine = ""
+					runtime_root = ""
+					runtime_type = "io.containerd.runc.v2"
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.test.options]
+						BinaryName = "/usr/bin/test"
+			`,
+			expectedError: nil,
+		},
+		{
+			description: "v3 spec is supported",
+			config: `
+			version = 3
+			[plugins]
+			[plugins."io.containerd.cri.v1.runtime"]
+				[plugins."io.containerd.cri.v1.runtime".containerd]
+				[plugins."io.containerd.cri.v1.runtime".containerd.runtimes]
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc]
+					privileged_without_host_devices = true
+					runtime_engine = "engine"
+					runtime_root = "root"
+					runtime_type = "type"
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
+						BinaryName = "/usr/bin/runc"
+						SystemdCgroup = true
+			`,
+			expectedConfig: `
+			version = 3
+			[plugins]
+			[plugins."io.containerd.cri.v1.runtime"]
+				[plugins."io.containerd.cri.v1.runtime".containerd]
+				[plugins."io.containerd.cri.v1.runtime".containerd.runtimes]
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc]
+					privileged_without_host_devices = true
+					runtime_engine = "engine"
+					runtime_root = "root"
+					runtime_type = "type"
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
+						BinaryName = "/usr/bin/runc"
+						SystemdCgroup = true
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.test]
+					privileged_without_host_devices = true
+					runtime_engine = "engine"
+					runtime_root = "root"
+					runtime_type = "type"
+					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.test.options]
+						BinaryName = "/usr/bin/test"
+						SystemdCgroup = true
+				`,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			cfg, err := toml.Load(tc.config)
-			require.NoError(t, err)
 			expectedConfig, err := toml.Load(tc.expectedConfig)
 			require.NoError(t, err)
 
-			c := &Config{
-				Logger: logger,
-				Tree:   cfg,
-			}
+			c, err := New(
+				WithLogger(logger),
+				WithConfigSource(toml.FromString(tc.config)),
+			)
+			require.NoError(t, err)
 
 			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault)
 			require.NoError(t, err)
 
-			require.EqualValues(t, expectedConfig.String(), cfg.String())
+			require.EqualValues(t, expectedConfig.String(), c.String())
 		})
 	}
 }
@@ -299,13 +360,13 @@ func TestGetRuntimeConfig(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			cfg, err := toml.Load(config)
+
+			c, err := New(
+				WithLogger(logger),
+				WithConfigSource(toml.FromString(config)),
+			)
 			require.NoError(t, err)
 
-			c := &Config{
-				Logger: logger,
-				Tree:   cfg,
-			}
 			rc, err := c.GetRuntimeConfig(tc.runtime)
 			require.Equal(t, tc.expectedError, err)
 			require.Equal(t, tc.expected, rc.GetBinaryPath())
