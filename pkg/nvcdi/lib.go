@@ -97,6 +97,7 @@ func New(opts ...Option) (Interface, error) {
 		root.WithLogger(l.logger),
 		root.WithDriverRoot(l.driverRoot),
 		root.WithLibrarySearchPaths(l.librarySearchPaths...),
+		root.WithConfigSearchPaths(l.configSearchPaths...),
 	)
 	if l.nvmllib == nil {
 		var nvmlOpts []nvml.LibraryOption
