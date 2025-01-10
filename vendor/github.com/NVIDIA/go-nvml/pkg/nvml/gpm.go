@@ -122,7 +122,7 @@ func (device nvmlDevice) GpmQueryDeviceSupportV() GpmSupportV {
 
 func (gpmSupportV GpmSupportV) V1() (GpmSupport, Return) {
 	var gpmSupport GpmSupport
-	gpmSupport.Version = 1
+	gpmSupport.Version = STRUCT_VERSION(gpmSupport, 1)
 	ret := nvmlGpmQueryDeviceSupport(gpmSupportV.device, &gpmSupport)
 	return gpmSupport, ret
 }
@@ -133,7 +133,7 @@ func (l *library) GpmQueryDeviceSupport(device Device) (GpmSupport, Return) {
 
 func (device nvmlDevice) GpmQueryDeviceSupport() (GpmSupport, Return) {
 	var gpmSupport GpmSupport
-	gpmSupport.Version = GPM_SUPPORT_VERSION
+	gpmSupport.Version = STRUCT_VERSION(gpmSupport, GPM_SUPPORT_VERSION)
 	ret := nvmlGpmQueryDeviceSupport(device, &gpmSupport)
 	return gpmSupport, ret
 }
