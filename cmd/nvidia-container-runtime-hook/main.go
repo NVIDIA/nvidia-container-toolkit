@@ -114,8 +114,9 @@ func doPrestart() {
 	}
 	args = append(args, "configure")
 
-	args = append(args, "--no-cntlibs")
-
+	if !hook.Features.AllowCUDACompatLibsFromContainer.IsEnabled() {
+		args = append(args, "--no-cntlibs")
+	}
 	if ldconfigPath := cli.NormalizeLDConfigPath(); ldconfigPath != "" {
 		args = append(args, fmt.Sprintf("--ldconfig=%s", ldconfigPath))
 	}

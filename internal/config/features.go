@@ -18,6 +18,9 @@ package config
 
 // features specifies a set of named features.
 type features struct {
+	// AllowCUDACompatLibsFromContainer allows CUDA compat libs from a container
+	// to override certain driver library mounts from the host.
+	AllowCUDACompatLibsFromContainer *feature `toml:"allow-cuda-compat-libs-from-container,omitempty"`
 	// AllowLDConfigFromContainer allows non-host ldconfig paths to be used.
 	// If this feature flag is not set to 'true' only host-rooted config paths
 	// (i.e. paths starting with an '@' are considered valid)
