@@ -2808,6 +2808,7 @@ func (l *library) DeviceGetRunningProcessDetailList(device Device) (ProcessDetai
 
 func (device nvmlDevice) GetRunningProcessDetailList() (ProcessDetailList, Return) {
 	var plist ProcessDetailList
+	plist.Version = STRUCT_VERSION(plist, 1)
 	ret := nvmlDeviceGetRunningProcessDetailList(device, &plist)
 	return plist, ret
 }
@@ -2923,6 +2924,7 @@ func (l *library) DeviceGetPciInfoExt(device Device) (PciInfoExt, Return) {
 
 func (device nvmlDevice) GetPciInfoExt() (PciInfoExt, Return) {
 	var pciInfo PciInfoExt
+	pciInfo.Version = STRUCT_VERSION(pciInfo, 1)
 	ret := nvmlDeviceGetPciInfoExt(device, &pciInfo)
 	return pciInfo, ret
 }
@@ -2969,6 +2971,7 @@ func (l *library) DeviceGetVgpuHeterogeneousMode(device Device) (VgpuHeterogeneo
 
 func (device nvmlDevice) GetVgpuHeterogeneousMode() (VgpuHeterogeneousMode, Return) {
 	var heterogeneousMode VgpuHeterogeneousMode
+	heterogeneousMode.Version = STRUCT_VERSION(heterogeneousMode, 1)
 	ret := nvmlDeviceGetVgpuHeterogeneousMode(device, &heterogeneousMode)
 	return heterogeneousMode, ret
 }
@@ -2994,6 +2997,7 @@ func (device nvmlDevice) GetVgpuTypeSupportedPlacements(vgpuTypeId VgpuTypeId) (
 
 func (vgpuTypeId nvmlVgpuTypeId) GetSupportedPlacements(device Device) (VgpuPlacementList, Return) {
 	var placementList VgpuPlacementList
+	placementList.Version = STRUCT_VERSION(placementList, 1)
 	ret := nvmlDeviceGetVgpuTypeSupportedPlacements(nvmlDeviceHandle(device), vgpuTypeId, &placementList)
 	return placementList, ret
 }
@@ -3009,6 +3013,7 @@ func (device nvmlDevice) GetVgpuTypeCreatablePlacements(vgpuTypeId VgpuTypeId) (
 
 func (vgpuTypeId nvmlVgpuTypeId) GetCreatablePlacements(device Device) (VgpuPlacementList, Return) {
 	var placementList VgpuPlacementList
+	placementList.Version = STRUCT_VERSION(placementList, 1)
 	ret := nvmlDeviceGetVgpuTypeCreatablePlacements(nvmlDeviceHandle(device), vgpuTypeId, &placementList)
 	return placementList, ret
 }
@@ -3041,6 +3046,7 @@ func (l *library) DeviceGetVgpuProcessesUtilizationInfo(device Device) (VgpuProc
 
 func (device nvmlDevice) GetVgpuProcessesUtilizationInfo() (VgpuProcessesUtilizationInfo, Return) {
 	var vgpuProcUtilInfo VgpuProcessesUtilizationInfo
+	vgpuProcUtilInfo.Version = STRUCT_VERSION(vgpuProcUtilInfo, 1)
 	ret := nvmlDeviceGetVgpuProcessesUtilizationInfo(device, &vgpuProcUtilInfo)
 	return vgpuProcUtilInfo, ret
 }
@@ -3052,6 +3058,7 @@ func (l *library) DeviceGetSramEccErrorStatus(device Device) (EccSramErrorStatus
 
 func (device nvmlDevice) GetSramEccErrorStatus() (EccSramErrorStatus, Return) {
 	var status EccSramErrorStatus
+	status.Version = STRUCT_VERSION(status, 1)
 	ret := nvmlDeviceGetSramEccErrorStatus(device, &status)
 	return status, ret
 }
