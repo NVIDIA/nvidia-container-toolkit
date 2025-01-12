@@ -18,13 +18,16 @@ package dgpu
 
 import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 )
 
 type options struct {
 	logger            logger.Interface
+	driver            *root.Driver
 	devRoot           string
+	ldconfigPath      string
 	nvidiaCDIHookPath string
 
 	isMigDevice bool
@@ -32,6 +35,9 @@ type options struct {
 	// If MIG is not available, this is nil.
 	migCaps      nvcaps.MigCaps
 	migCapsError error
+
+	// version stores the driver version.
+	version string
 
 	nvsandboxutilslib nvsandboxutils.Interface
 }
@@ -42,6 +48,19 @@ type Option func(*options)
 func WithDevRoot(root string) Option {
 	return func(l *options) {
 		l.devRoot = root
+	}
+}
+
+func WithDriver(driver *root.Driver) Option {
+	return func(l *options) {
+		l.driver = driver
+	}
+}
+
+// WithLdconfigPath sets the path to the ldconfig program
+func WithLdconfigPath(path string) Option {
+	return func(l *options) {
+		l.ldconfigPath = path
 	}
 }
 
@@ -70,5 +89,11 @@ func WithMIGCaps(migCaps nvcaps.MigCaps) Option {
 func WithNvsandboxuitilsLib(nvsandboxutilslib nvsandboxutils.Interface) Option {
 	return func(l *options) {
 		l.nvsandboxutilslib = nvsandboxutilslib
+	}
+}
+
+func WithVersion(version string) Option {
+	return func(l *options) {
+		l.version = version
 	}
 }
