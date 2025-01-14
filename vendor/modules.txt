@@ -70,7 +70,7 @@ github.com/urfave/cli/v2
 ## explicit; go 1.15
 github.com/xrash/smetrics
 # golang.org/x/mod v0.22.0
-## explicit; go 1.22
+## explicit; go 1.22.0
 golang.org/x/mod/semver
 # golang.org/x/sys v0.29.0
 ## explicit; go 1.18
