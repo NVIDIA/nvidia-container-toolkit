@@ -37,7 +37,7 @@ var _ Interface = (*nvmllib)(nil)
 
 // GetSpec should not be called for nvmllib
 func (l *nvmllib) GetSpec() (spec.Interface, error) {
-	return nil, fmt.Errorf("Unexpected call to nvmllib.GetSpec()")
+	return nil, fmt.Errorf("unexpected call to nvmllib.GetSpec()")
 }
 
 // GetAllDeviceSpecs returns the device specs for all available devices.
