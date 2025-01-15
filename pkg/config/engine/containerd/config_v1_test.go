@@ -200,20 +200,21 @@ func TestAddRuntimeV1(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			cfg, err := toml.Load(tc.config)
-			require.NoError(t, err)
 			expectedConfig, err := toml.Load(tc.expectedConfig)
 			require.NoError(t, err)
 
-			c := &ConfigV1{
-				Logger: logger,
-				Tree:   cfg,
-			}
+			c, err := New(
+				WithLogger(logger),
+				WithConfigSource(toml.FromString(tc.config)),
+				WithUseLegacyConfig(true),
+				WithRuntimeType(""),
+			)
+			require.NoError(t, err)
 
 			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault)
 			require.NoError(t, err)
 
-			require.EqualValues(t, expectedConfig.String(), cfg.String())
+			require.EqualValues(t, expectedConfig.String(), c.String())
 		})
 	}
 }

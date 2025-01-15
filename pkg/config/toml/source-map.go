@@ -1,5 +1,5 @@
 /**
-# Copyright (c) NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2024 NVIDIA CORPORATION
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,20 +14,13 @@
 # limitations under the License.
 **/
 
-package engine
+package toml
 
-// Interface defines the API for a runtime config updater.
-type Interface interface {
-	AddRuntime(string, string, bool) error
-	DefaultRuntime() string
-	GetRuntimeConfig(string) (RuntimeConfig, error)
-	RemoveRuntime(string) error
-	Save(string) (int64, error)
-	Set(string, interface{})
-	String() string
-}
+type tomlMap map[string]interface{}
 
-// RuntimeConfig defines the interface to query container runtime handler configuration
-type RuntimeConfig interface {
-	GetBinaryPath() string
+var _ Loader = (*tomlFile)(nil)
+
+// Load loads the contents of the specified TOML file as a map.
+func (l tomlMap) Load() (*Tree, error) {
+	return LoadMap(l)
 }
