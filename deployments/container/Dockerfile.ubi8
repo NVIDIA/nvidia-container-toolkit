@@ -15,7 +15,7 @@
 ARG GOLANG_VERSION=x.x.x
 ARG VERSION="N/A"
 
-FROM nvidia/cuda:12.6.3-base-ubi8 as build
+FROM nvidia/cuda:12.6.3-base-ubi8 AS build
 
 RUN yum install -y \
     wget make git gcc \
@@ -36,8 +36,8 @@ RUN set -eux; \
     | tar -C /usr/local -xz
 
 
-ENV GOPATH /go
-ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+ENV GOPATH=/go
+ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
 
 WORKDIR /build
 COPY . .
@@ -62,7 +62,8 @@ WORKDIR /artifacts/packages
 
 ARG PACKAGE_VERSION
 ARG TARGETARCH
-ENV PACKAGE_ARCH ${TARGETARCH}
+ENV PACKAGE_ARCH=${TARGETARCH}
+
 RUN PACKAGE_ARCH=${PACKAGE_ARCH/amd64/x86_64} && PACKAGE_ARCH=${PACKAGE_ARCH/arm64/aarch64} && \
     yum localinstall -y \
     ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container1-1.*.rpm \
@@ -75,6 +76,7 @@ COPY --from=build /artifacts/bin /work
 
 ENV PATH=/work:$PATH
 
+ARG VERSION
 LABEL io.k8s.display-name="NVIDIA Container Runtime Config"
 LABEL name="NVIDIA Container Runtime Config"
 LABEL vendor="NVIDIA"
