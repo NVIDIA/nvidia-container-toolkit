@@ -11,7 +11,7 @@ github.com/NVIDIA/go-nvlib/pkg/pciids
 github.com/NVIDIA/go-nvml/pkg/dl
 github.com/NVIDIA/go-nvml/pkg/nvml
 github.com/NVIDIA/go-nvml/pkg/nvml/mock
-# github.com/cpuguy83/go-md2man/v2 v2.0.4
+# github.com/cpuguy83/go-md2man/v2 v2.0.5
 ## explicit; go 1.11
 github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/davecgh/go-spew v1.1.1
@@ -61,7 +61,7 @@ github.com/stretchr/testify/require
 # github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 ## explicit
 github.com/syndtr/gocapability/capability
-# github.com/urfave/cli/v2 v2.27.4
+# github.com/urfave/cli/v2 v2.27.5
 ## explicit; go 1.18
 github.com/urfave/cli/v2
 # github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
