@@ -42,11 +42,10 @@ ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
 WORKDIR /build
 COPY . .
 
-# NOTE: Until the config utilities are properly integrated into the
-# nvidia-container-toolkit repository, these are built from the `tools` folder
-# and not `cmd`.
-RUN GOPATH=/artifacts go install -ldflags="-s -w -X 'main.Version=${VERSION}'" ./tools/...
-
+RUN mkdir /artifacts
+ARG VERSION="N/A"
+ARG GIT_COMMIT="unknown"
+RUN make PREFIX=/artifacts cmd-nvidia-ctk-installer
 
 FROM nvidia/cuda:12.6.3-base-ubi8
 
@@ -72,7 +71,8 @@ RUN PACKAGE_ARCH=${PACKAGE_ARCH/amd64/x86_64} && PACKAGE_ARCH=${PACKAGE_ARCH/arm
 
 WORKDIR /work
 
-COPY --from=build /artifacts/bin /work
+COPY --from=build /artifacts/nvidia-ctk-installer /work/nvidia-ctk-installer
+RUN ln -s nvidia-ctk-installer nvidia-toolkit
 
 ENV PATH=/work:$PATH
 
@@ -87,4 +87,4 @@ LABEL description="See summary"
 
 RUN mkdir /licenses && mv /NGC-DL-CONTAINER-LICENSE /licenses/NGC-DL-CONTAINER-LICENSE
 
-ENTRYPOINT ["/work/nvidia-toolkit"]
+ENTRYPOINT ["/work/nvidia-ctk-installer"]
