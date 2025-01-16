@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/docker"
-	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
 )
 
 func TestUpdateConfigDefaultRuntime(t *testing.T) {
