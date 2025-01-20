@@ -15,7 +15,7 @@
 ARG GOLANG_VERSION=x.x.x
 ARG VERSION="N/A"
 
-FROM nvidia/cuda:12.6.3-base-ubuntu20.04 as build
+FROM nvidia/cuda:12.6.3-base-ubuntu20.04 AS build
 
 RUN apt-get update && \
     apt-get install -y wget make git gcc \
@@ -35,8 +35,8 @@ RUN set -eux; \
     wget -nv -O - https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz \
     | tar -C /usr/local -xz
 
-ENV GOPATH /go
-ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+ENV GOPATH=/go
+ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
 
 WORKDIR /build
 COPY . .
@@ -71,7 +71,7 @@ WORKDIR /artifacts/packages
 
 ARG PACKAGE_VERSION
 ARG TARGETARCH
-ENV PACKAGE_ARCH ${TARGETARCH}
+ENV PACKAGE_ARCH=${TARGETARCH}
 
 RUN dpkg -i \
     ${PACKAGE_DIST}/${PACKAGE_ARCH}/libnvidia-container1_1.*.deb \
@@ -84,6 +84,7 @@ COPY --from=build /artifacts/bin /work/
 
 ENV PATH=/work:$PATH
 
+ARG VERSION
 LABEL io.k8s.display-name="NVIDIA Container Runtime Config"
 LABEL name="NVIDIA Container Runtime Config"
 LABEL vendor="NVIDIA"
