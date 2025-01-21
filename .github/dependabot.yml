@@ -3,63 +3,43 @@
 
 version: 2
 updates:
+# main branch
   - package-ecosystem: "gomod"
     target-branch: main
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-    ignore:
-    - dependency-name: k8s.io/*
-    labels:
-    - dependencies
-
-  - package-ecosystem: "docker"
-    target-branch: main
-    directory: "/deployments/container"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "gomod"
-    # This defines a specific dependabot rule for the latest release-* branch.
-    target-branch: release-1.16
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-    ignore:
-    - dependency-name: k8s.io/*
-    labels:
-    - dependencies
-    - maintenance
-
-  - package-ecosystem: "docker"
-    target-branch: release-1.16
-    directory: "/deployments/container"
+    directories:
+    - "/"
+    - "deployments/devel"
+    - "tests"
     schedule:
       interval: "daily"
     labels:
     - dependencies
-    - maintenance
+    groups:
+      k8sio:
+        patterns:
+        - k8s.io/*
+        exclude-patterns:
+        - k8s.io/klog/*
 
-  - package-ecosystem: "gomod"
-    target-branch: main
-    directory: "deployments/devel"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-
-  # A dependabot rule to bump the golang version.
   - package-ecosystem: "docker"
     target-branch: main
-    directory: "/deployments/devel"
+    directories:
+    # CUDA image
+    - "/deployments/container"
+    # Golang version
+    - "/deployments/devel"
     schedule:
       interval: "daily"
+    labels:
+    - dependencies
 
   - package-ecosystem: "github-actions"
+    target-branch: main
     directory: "/"
     schedule:
       interval: "daily"
+    labels:
+    - dependencies
 
   # Allow dependabot to update the libnvidia-container submodule.
   - package-ecosystem: "gitsubmodule"
@@ -72,3 +52,69 @@ updates:
     labels:
     - dependencies
     - libnvidia-container
+
+# The release branch(es):
+  - package-ecosystem: "gomod"
+    target-branch: release-1.17
+    directories:
+    - "/"
+    # We don't update development or test dependencies on release branches
+    # - "deployments/devel"
+    # - "tests"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    labels:
+    - dependencies
+    - maintenance
+    ignore:
+    # For release branches we only consider patch updates.
+    - dependency-name: "*"
+      update-types:
+      - version-update:semver-major
+      - version-update:semver-minor
+    groups:
+      k8sio:
+        patterns:
+        - k8s.io/*
+        exclude-patterns:
+        - k8s.io/klog/*
+
+  - package-ecosystem: "docker"
+    target-branch: release-1.17
+    directories:
+    # CUDA image
+    - "/deployments/container"
+    # Golang version
+    - "/deployments/devel"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    ignore:
+    # For release branches we only apply patch updates to the golang version.
+    - dependency-name: "*golang*"
+      update-types:
+      - version-update:semver-major
+      - version-update:semver-minor
+    labels:
+    - dependencies
+    - maintenance
+
+  - package-ecosystem: "github-actions"
+    target-branch: release-1.17
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    labels:
+    - dependencies
+    - maintenance
+
+  # Github actions need to be gh-pages branches.
+  - package-ecosystem: "github-actions"
+    target-branch: gh-pages
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+    - dependencies
