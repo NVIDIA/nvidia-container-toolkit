@@ -9,6 +9,7 @@ updates:
     directories:
     - "/"
     - "deployments/devel"
+    - "tests"
     schedule:
       interval: "daily"
     labels:

@@ -3,7 +3,7 @@
 *.swp
 *.swo
 /coverage.out*
-/test/output/
+/tests/output/
 /nvidia-container-runtime
 /nvidia-container-runtime.*
 /nvidia-container-runtime-hook
