@@ -45,7 +45,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("error in test setup: could not get module root: %v", err)
 	}
-	testBinPath := filepath.Join(moduleRoot, "test", "bin")
+	testBinPath := filepath.Join(moduleRoot, "tests", "bin")
 
 	// Set the environment variables for the test
 	os.Setenv("PATH", test.PrependToPath(testBinPath, moduleRoot))

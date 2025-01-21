@@ -20,7 +20,7 @@ E2E_RUNTIME ?= docker
 
 .PHONY: test
 test:
-	cd $(CURDIR)/test/e2e && $(GO_CMD) test -v . -args \
+	cd $(CURDIR)/tests/e2e && $(GO_CMD) test -v . -args \
 		-ginkgo.focus="$(E2E_RUNTIME)" \
 		-test.timeout=1h \
 		-ginkgo.v

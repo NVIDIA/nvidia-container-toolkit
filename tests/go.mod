@@ -1,4 +1,4 @@
-module github.com/NVIDIA/nvidia-container-toolkit/test
+module github.com/NVIDIA/nvidia-container-toolkit/tests
 
 go 1.23.2
 
