@@ -79,26 +79,27 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 	if err != nil {
 		return nil, err
 	}
-	// For CDI mode we make no additional modifications.
-	if mode == "cdi" {
-		return modeModifier, nil
+
+	var modifiers modifier.List
+	for _, modifierType := range supportedModifierTypes(mode) {
+		switch modifierType {
+		case "mode":
+			modifiers = append(modifiers, modeModifier)
+		case "graphics":
+			graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, image, driver)
+			if err != nil {
+				return nil, err
+			}
+			modifiers = append(modifiers, graphicsModifier)
+		case "feature-gated":
+			featureGatedModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, image)
+			if err != nil {
+				return nil, err
+			}
+			modifiers = append(modifiers, featureGatedModifier)
+		}
 	}
 
-	graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, image, driver)
-	if err != nil {
-		return nil, err
-	}
-
-	featureModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, image)
-	if err != nil {
-		return nil, err
-	}
-
-	modifiers := modifier.Merge(
-		modeModifier,
-		graphicsModifier,
-		featureModifier,
-	)
 	return modifiers, nil
 }
 
@@ -113,4 +114,18 @@ func newModeModifier(logger logger.Interface, mode string, cfg *config.Config, o
 	}
 
 	return nil, fmt.Errorf("invalid runtime mode: %v", cfg.NVIDIAContainerRuntimeConfig.Mode)
+}
+
+// supportedModifierTypes returns the modifiers supported for a specific runtime mode.
+func supportedModifierTypes(mode string) []string {
+	switch mode {
+	case "cdi":
+		// For CDI mode we make no additional modifications.
+		return []string{"mode"}
+	case "csv":
+		// For CSV mode we support mode and feature-gated modification.
+		return []string{"mode", "feature-gated"}
+	default:
+		return []string{"mode", "graphics", "feature-gated"}
+	}
 }
