@@ -23,6 +23,7 @@ import (
 	"strings"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 
@@ -33,6 +34,7 @@ import (
 
 func TestInstall(t *testing.T) {
 	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
+	logger, _ := testlog.NewNullLogger()
 
 	moduleRoot, err := test.GetModuleRoot()
 	require.NoError(t, err)
@@ -127,9 +129,14 @@ kind: example.com/class
 				cdiKind:           "example.com/class",
 			}
 
-			require.NoError(t, ValidateOptions(&options, toolkitRoot))
+			ti := NewInstaller(
+				WithLogger(logger),
+				WithToolkitRoot(toolkitRoot),
+				WithSourceRoot(sourceRoot),
+			)
+			require.NoError(t, ti.ValidateOptions(&options))
 
-			err := Install(&cli.Context{}, &options, sourceRoot, toolkitRoot)
+			err := ti.Install(&cli.Context{}, &options)
 			if tc.expectedError == nil {
 				require.NoError(t, err)
 			} else {

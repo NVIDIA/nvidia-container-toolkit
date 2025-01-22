@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/operator"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/operator"
 )
 
 const (
@@ -29,10 +29,10 @@ const (
 
 // installContainerRuntimes sets up the NVIDIA container runtimes, copying the executables
 // and implementing the required wrapper
-func installContainerRuntimes(sourceRoot string, toolkitDir string) error {
+func (t *Installer) installContainerRuntimes(toolkitDir string) error {
 	runtimes := operator.GetRuntimes()
 	for _, runtime := range runtimes {
-		r := newNvidiaContainerRuntimeInstaller(filepath.Join(sourceRoot, runtime.Path))
+		r := t.newNvidiaContainerRuntimeInstaller(runtime.Path)
 
 		_, err := r.install(toolkitDir)
 		if err != nil {
@@ -46,17 +46,17 @@ func installContainerRuntimes(sourceRoot string, toolkitDir string) error {
 // This installer will copy the specified source executable to the toolkit directory.
 // The executable is copied to a file with the same name as the source, but with a ".real" suffix and a wrapper is
 // created to allow for the configuration of the runtime environment.
-func newNvidiaContainerRuntimeInstaller(source string) *executable {
+func (t *Installer) newNvidiaContainerRuntimeInstaller(source string) *executable {
 	wrapperName := filepath.Base(source)
 	dotfileName := wrapperName + ".real"
 	target := executableTarget{
 		dotfileName: dotfileName,
 		wrapperName: wrapperName,
 	}
-	return newRuntimeInstaller(source, target, nil)
+	return t.newRuntimeInstaller(source, target, nil)
 }
 
-func newRuntimeInstaller(source string, target executableTarget, env map[string]string) *executable {
+func (t *Installer) newRuntimeInstaller(source string, target executableTarget, env map[string]string) *executable {
 	preLines := []string{
 		"",
 		"cat /proc/modules | grep -e \"^nvidia \" >/dev/null 2>&1",
@@ -74,10 +74,11 @@ func newRuntimeInstaller(source string, target executableTarget, env map[string]
 	}
 
 	r := executable{
-		source:   source,
-		target:   target,
-		env:      runtimeEnv,
-		preLines: preLines,
+		fileInstaller: t.fileInstaller,
+		source:        source,
+		target:        target,
+		env:           runtimeEnv,
+		preLines:      preLines,
 	}
 
 	return &r

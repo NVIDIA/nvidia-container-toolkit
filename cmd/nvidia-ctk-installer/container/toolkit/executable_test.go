@@ -23,10 +23,13 @@ import (
 	"strings"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWrapper(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
 	const shebang = "#! /bin/sh"
 	const destFolder = "/dest/folder"
 	const dotfileName = "source.real"
@@ -98,6 +101,8 @@ func TestWrapper(t *testing.T) {
 	for i, tc := range testCases {
 		buf := &bytes.Buffer{}
 
+		tc.e.logger = logger
+
 		err := tc.e.writeWrapperTo(buf, destFolder, dotfileName)
 		require.NoError(t, err)
 
@@ -107,6 +112,8 @@ func TestWrapper(t *testing.T) {
 }
 
 func TestInstallExecutable(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
 	inputFolder, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
 	defer os.RemoveAll(inputFolder)
@@ -121,6 +128,9 @@ func TestInstallExecutable(t *testing.T) {
 	require.NoError(t, sourceFile.Close())
 
 	e := executable{
+		fileInstaller: fileInstaller{
+			logger: logger,
+		},
 		source: source,
 		target: executableTarget{
 			dotfileName: "input.real",
