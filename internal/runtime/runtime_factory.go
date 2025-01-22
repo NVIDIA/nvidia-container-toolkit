@@ -122,6 +122,9 @@ func supportedModifierTypes(mode string) []string {
 	case "cdi":
 		// For CDI mode we make no additional modifications.
 		return []string{"mode"}
+	case "csv":
+		// For CSV mode we support mode and feature-gated modification.
+		return []string{"mode", "feature-gated"}
 	default:
 		return []string{"mode", "graphics", "feature-gated"}
 	}
