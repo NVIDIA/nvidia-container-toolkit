@@ -17,10 +17,8 @@
 package e2e
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"os/exec"
+	"flag"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,7 +28,25 @@ import (
 // Test context
 var (
 	ctx context.Context
+
+	installCTK bool
+
+	image string
+
+	sshKey  string
+	sshUser string
+	host    string
+	sshPort string
 )
+
+func init() {
+	flag.BoolVar(&installCTK, "install-ctk", false, "Install the NVIDIA Container Toolkit")
+	flag.StringVar(&image, "toolkit-image", "", "Repository of the image to test")
+	flag.StringVar(&sshKey, "ssh-key", "", "SSH key to use for remote login")
+	flag.StringVar(&sshUser, "ssh-user", "", "SSH user to use for remote login")
+	flag.StringVar(&host, "remote-host", "", "Hostname of the remote machine")
+	flag.StringVar(&sshPort, "ssh-port", "22", "SSH port to use for remote login")
+}
 
 func TestMain(t *testing.T) {
 	suiteName := "NVIDIA Container Toolkit E2E"
@@ -45,25 +61,3 @@ func TestMain(t *testing.T) {
 var _ = BeforeSuite(func() {
 	ctx = context.Background()
 })
-
-func runScript(script string) (string, error) {
-	// Create a command to run the script using bash
-	cmd := exec.Command("bash", "-c", script)
-
-	// Buffer to capture standard output
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-
-	// Buffer to capture standard error
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	// Run the command
-	err := cmd.Run()
-	if err != nil {
-		return "", fmt.Errorf("script execution failed: %v\nSTDOUT: %s\nSTDERR: %s", err, stdout.String(), stderr.String())
-	}
-
-	// Return the captured stdout and nil error
-	return stdout.String(), nil
-}

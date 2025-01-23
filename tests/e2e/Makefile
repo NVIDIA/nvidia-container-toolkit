@@ -18,9 +18,28 @@ include $(CURDIR)/versions.mk
 
 E2E_RUNTIME ?= docker
 
+E2E_INSTALL_CTK ?= false
+
+ifeq ($($(DIST)),)
+DIST ?= ubuntu20.04
+endif
+IMAGE_TAG ?= $(VERSION)-$(DIST)
+IMAGE = $(IMAGE_NAME):$(IMAGE_TAG)
+
+E2E_SSH_KEY ?=
+E2E_SSH_USER ?=
+E2E_SSH_HOST ?=
+E2E_SSH_PORT ?= 22
+
 .PHONY: test
 test:
 	cd $(CURDIR)/tests/e2e && $(GO_CMD) test -v . -args \
 		-ginkgo.focus="$(E2E_RUNTIME)" \
 		-test.timeout=1h \
-		-ginkgo.v
+		-ginkgo.v \
+		-install-ctk=$(E2E_INSTALL_CTK) \
+		-toolkit-image=$(IMAGE) \
+		-ssh-key=$(E2E_SSH_KEY) \
+		-ssh-user=$(E2E_SSH_USER) \
+		-remote-host=$(E2E_SSH_HOST) \
+		-remote-port=$(E2E_SSH_PORT)

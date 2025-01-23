@@ -50,6 +50,15 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
+# golang.org/x/crypto v0.31.0
+## explicit; go 1.20
+golang.org/x/crypto/blowfish
+golang.org/x/crypto/chacha20
+golang.org/x/crypto/curve25519
+golang.org/x/crypto/internal/alias
+golang.org/x/crypto/internal/poly1305
+golang.org/x/crypto/ssh
+golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 # golang.org/x/net v0.33.0
 ## explicit; go 1.18
 golang.org/x/net/html
@@ -57,6 +66,7 @@ golang.org/x/net/html/atom
 golang.org/x/net/html/charset
 # golang.org/x/sys v0.28.0
 ## explicit; go 1.18
+golang.org/x/sys/cpu
 golang.org/x/sys/unix
 # golang.org/x/text v0.21.0
 ## explicit; go 1.18
