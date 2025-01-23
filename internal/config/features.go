@@ -18,13 +18,16 @@ package config
 
 // features specifies a set of named features.
 type features struct {
-	// DisableImexChannelCreation ensures that the implicit creation of
-	// requested IMEX channels is skipped when invoking the nvidia-container-cli.
-	DisableImexChannelCreation *feature `toml:"disable-imex-channel-creation,omitempty"`
+	// AllowCUDACompatLibsFromContainer allows CUDA compat libs from a container
+	// to override certain driver library mounts from the host.
+	AllowCUDACompatLibsFromContainer *feature `toml:"allow-cuda-compat-libs-from-container,omitempty"`
 	// AllowLDConfigFromContainer allows non-host ldconfig paths to be used.
 	// If this feature flag is not set to 'true' only host-rooted config paths
 	// (i.e. paths starting with an '@' are considered valid)
 	AllowLDConfigFromContainer *feature `toml:"allow-ldconfig-from-container,omitempty"`
+	// DisableImexChannelCreation ensures that the implicit creation of
+	// requested IMEX channels is skipped when invoking the nvidia-container-cli.
+	DisableImexChannelCreation *feature `toml:"disable-imex-channel-creation,omitempty"`
 }
 
 type feature bool
