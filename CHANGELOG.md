@@ -1,5 +1,19 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.17.4
+- Disable mounting of compat libs from container by default
+- Add allow-cuda-compat-libs-from-container feature flag
+- Skip graphics modifier in CSV mode
+- Properly pass configSearchPaths to a Driver constructor
+- Add support for containerd version 3 config
+- Add string TOML source
+
+### Changes in libnvidia-container
+- Add no-cntlibs CLI option to nvidia-container-cli
+
+### Changes in the Toolkit Container
+- Bump CUDA base image version to 12.6.3
+
 ## v1.17.3
 - Only allow host-relative LDConfig paths by default.
 ### Changes in libnvidia-container
