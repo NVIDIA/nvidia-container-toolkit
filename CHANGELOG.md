@@ -3,7 +3,7 @@
 ## v1.17.3
 - Only allow host-relative LDConfig paths by default.
 ### Changes in libnvidia-container
-- Create virtual copy of host ldconfig binary before calling fexecve()
+- Create virtual copy of host ldconfig binary before calling fexecve().
 
 ## v1.17.2
 - Fixed a bug where legacy images would set imex channels as `all`.
@@ -18,24 +18,24 @@
 
 ## v1.17.0
 - Promote v1.17.0-rc.2 to v1.17.0
-- Fix bug when using just-in-time CDI spec generation
-- Check for valid paths in create-symlinks hook
+- Fix bug when using just-in-time CDI spec generation.
+- Check for valid paths in create-symlinks hook.
 
 ## v1.17.0-rc.2
-- Fix bug in locating libcuda.so from ldcache
-- Fix bug in sorting of symlink chain
-- Remove unsupported print-ldcache command
-- Remove csv-filename support from create-symlinks
+- Fix bug in locating libcuda.so from ldcache.
+- Fix bug in sorting of symlink chain.
+- Remove unsupported print-ldcache command.
+- Remove csv-filename support from create-symlinks.
 
 ### Changes in the Toolkit Container
-- Fallback to `crio-status` if `crio status` does not work when configuring the crio runtime
+- Fallback to `crio-status` if `crio status` does not work when configuring the crio runtime.
 
 ## v1.17.0-rc.1
-- Allow IMEX channels to be requested as volume mounts
-- Fix typo in error message
-- Add disable-imex-channel-creation feature flag
-- Add -z,lazy to LDFLAGS
-- Add imex channels to management CDI spec
+- Allow IMEX channels to be requested as volume mounts.
+- Fix typo in error message.
+- Add disable-imex-channel-creation feature flag.
+- Add -z,lazy to LDFLAGS.
+- Add imex channels to management CDI spec.
 - Add support to fetch current container runtime config from the command line.
 - Add creation of select driver symlinks to CDI spec generation.
 - Remove support for config overrides when configuring runtimes.
@@ -61,13 +61,13 @@
 - Bump CUDA base image version to 12.6.0
 
 ### Changes in libnvidia-container
-- Add no-gsp-firmware command line option
-- Add no-fabricmanager command line option
-- Add no-persistenced command line option
+- Add no-gsp-firmware command line option.
+- Add no-fabricmanager command line option.
+- Add no-persistenced command line option.
 - Skip directories and symlinks when mounting libraries.
 
 ## v1.16.1
-- Fix bug with processing errors during CDI spec generation for MIG devices
+- Fix bug with processing errors during CDI spec generation for MIG devices.
 
 ## v1.16.0
 - Promote v1.16.0-rc.2 to v1.16.0
@@ -76,13 +76,13 @@
 - Bump CUDA base image version to 12.5.1
 
 ## v1.16.0-rc.2
-- Use relative path to locate driver libraries
-- Add RelativeToRoot function to Driver
-- Inject additional libraries for full X11 functionality
-- Extract options from default runtime if runc does not exist
-- Avoid using map pointers as maps are always passed by reference
-- Reduce logging for the NVIDIA Container runtime
-- Fix bug in argument parsing for logger creation
+- Use relative path to locate driver libraries.
+- Add RelativeToRoot function to Driver.
+- Inject additional libraries for full X11 functionality.
+- Extract options from default runtime if runc does not exist.
+- Avoid using map pointers as maps are always passed by reference.
+- Reduce logging for the NVIDIA Container runtime.
+- Fix bug in argument parsing for logger creation.
 
 ## v1.16.0-rc.1
 
@@ -134,13 +134,13 @@
 * Fix bug when specifying `--dev-root` for Tegra-based systems.
 * Log explicitly requested runtime mode.
 * Remove package dependency on libseccomp.
-* Added detection of libnvdxgdmal.so.1 on WSL2
+* Added detection of libnvdxgdmal.so.1 on WSL2.
 * Use devRoot to resolve MIG device nodes.
 * Fix bug in determining default nvidia-container-runtime.user config value on SUSE-based systems.
 * Add `crun` to the list of configured low-level runtimes.
 * Added support for `--ldconfig-path` to `nvidia-ctk cdi generate` command.
 * Fix `nvidia-ctk runtime configure --cdi.enabled` for Docker.
-* Add discovery of the GDRCopy device (`gdrdrv`) if the `NVIDIA_GDRCOPY` environment variable of the container is set to `enabled`
+* Add discovery of the GDRCopy device (`gdrdrv`) if the `NVIDIA_GDRCOPY` environment variable of the container is set to `enabled`.
 
 * [toolkit-container] Bump CUDA base image version to 12.3.1.
 
@@ -156,7 +156,7 @@
 * Add `--relative-to` option to `nvidia-ctk transform root` command. This controls whether the root transformation is applied to host or container paths.
 * Added automatic CDI spec generation when the `runtime.nvidia.com/gpu=all` device is requested by a container.
 
-* [libnvidia-container] Fix device permission check when using cgroupv2 (fixes #227)
+* [libnvidia-container] Fix device permission check when using cgroupv2 (fixes #227).
 
 ## v1.14.3
 * [toolkit-container] Bump CUDA base image version to 12.2.2.
@@ -188,7 +188,7 @@
 ## v1.14.0-rc.2
 * Fix bug causing incorrect nvidia-smi symlink to be created on WSL2 systems with multiple driver roots.
 * Remove dependency on coreutils when installing package on RPM-based systems.
-* Create output folders if required when running `nvidia-ctk runtime configure`
+* Create output folders if required when running `nvidia-ctk runtime configure`.
 * Generate default config as post-install step.
 * Added support for detecting GSP firmware at custom paths when generating CDI specifications.
 * Added logic to skip the extraction of image requirements if `NVIDIA_DISABLE_REQUIRES` is set to `true`.
@@ -210,19 +210,19 @@
 * Update go-nvlib to skip devices that are not MIG capable when generating CDI specifications.
 * Add `nvidia-container-runtime-hook.path` config option to specify NVIDIA Container Runtime Hook path explicitly.
 * Fix bug in creation of `/dev/char` symlinks by failing operation if kernel modules are not loaded.
-* Add option to load kernel modules when creating device nodes
-* Add option to create device nodes when creating `/dev/char` symlinks
+* Add option to load kernel modules when creating device nodes.
+* Add option to create device nodes when creating `/dev/char` symlinks.
 
-* [libnvidia-container] Support OpenSSL 3 with the Encrypt/Decrypt library
+* [libnvidia-container] Support OpenSSL 3 with the Encrypt/Decrypt library.
 
-* [toolkit-container] Allow same envars for all runtime configs
+* [toolkit-container] Allow same envars for all runtime configs.
 
 ## v1.13.1
 
 * Update `update-ldcache` hook to only update ldcache if it exists.
 * Update `update-ldcache` hook to create `/etc/ld.so.conf.d` folder if it doesn't exist.
 * Fix failure when libcuda cannot be located during XOrg library discovery.
-* Fix CDI spec generation on systems that use `/etc/alternatives` (e.g. Debian)
+* Fix CDI spec generation on systems that use `/etc/alternatives` (e.g. Debian).
 
 ## v1.13.0
 
@@ -239,7 +239,7 @@
 * Detect XOrg libraries for injection and CDI spec generation.
 * Add `nvidia-ctk system create-device-nodes` command to create control devices.
 * Add `nvidia-ctk cdi transform` command to apply transforms to CDI specifications.
-* Add `--vendor` and `--class` options to `nvidia-ctk cdi generate`
+* Add `--vendor` and `--class` options to `nvidia-ctk cdi generate`.
 
 * [libnvidia-container] Fix segmentation fault when RPC initialization fails.
 * [libnvidia-container] Build centos variants of the NVIDIA Container Library with static libtirpc v1.3.2.
@@ -247,53 +247,53 @@
 
 * [toolkit-container] Add `nvidia-container-runtime.modes.cdi.annotation-prefixes` config option that allows the CDI annotation prefixes that are read to be overridden.
 * [toolkit-container] Create device nodes when generating CDI specification for management containers.
-* [toolkit-container] Add `nvidia-container-runtime.runtimes` config option to set the low-level runtime for the NVIDIA Container Runtime
+* [toolkit-container] Add `nvidia-container-runtime.runtimes` config option to set the low-level runtime for the NVIDIA Container Runtime.
 
 ## v1.13.0-rc.2
 
-* Don't fail chmod hook if paths are not injected
+* Don't fail chmod hook if paths are not injected.
 * Only create `by-path` symlinks if CDI devices are actually requested.
-* Fix possible blank `nvidia-ctk` path in generated CDI specifications
-* Fix error in postun scriplet on RPM-based systems
+* Fix possible blank `nvidia-ctk` path in generated CDI specifications.
+* Fix error in postun scriplet on RPM-based systems.
 * Only check `NVIDIA_VISIBLE_DEVICES` for environment variables if no annotations are specified.
-* Add `cdi.default-kind` config option for constructing fully-qualified CDI device names in CDI mode
-* Add support for `accept-nvidia-visible-devices-envvar-unprivileged` config setting in CDI mode
+* Add `cdi.default-kind` config option for constructing fully-qualified CDI device names in CDI mode.
+* Add support for `accept-nvidia-visible-devices-envvar-unprivileged` config setting in CDI mode.
 * Add `nvidia-container-runtime-hook.skip-mode-detection` config option to bypass mode detection. This allows `legacy` and `cdi` mode, for example, to be used at the same time.
-* Add support for generating CDI specifications for GDS and MOFED devices
-* Ensure CDI specification is validated on save when generating a spec
+* Add support for generating CDI specifications for GDS and MOFED devices.
+* Ensure CDI specification is validated on save when generating a spec.
 * Rename `--discovery-mode` argument to `--mode` for `nvidia-ctk cdi generate`
-* [libnvidia-container] Fix segfault on WSL2 systems
-* [toolkit-container] Add `--cdi-enabled` flag to toolkit config
-* [toolkit-container] Install `nvidia-ctk` from toolkit container
-* [toolkit-container] Use installed `nvidia-ctk` path in NVIDIA Container Toolkit config
+* [libnvidia-container] Fix segfault on WSL2 systems.
+* [toolkit-container] Add `--cdi-enabled` flag to toolkit config.
+* [toolkit-container] Install `nvidia-ctk` from toolkit container.
+* [toolkit-container] Use installed `nvidia-ctk` path in NVIDIA Container Toolkit config.
 * [toolkit-container] Bump CUDA base images to 12.1.0
-* [toolkit-container] Set `nvidia-ctk` path in the
-* [toolkit-container] Add `cdi.k8s.io/*` to set of allowed annotations in containerd config
-* [toolkit-container] Generate CDI specification for use in management containers
-* [toolkit-container] Install experimental runtime as `nvidia-container-runtime.experimental` instead of `nvidia-container-runtime-experimental`
-* [toolkit-container] Install and configure mode-specific runtimes for `cdi` and `legacy` modes
+* [toolkit-container] Set `nvidia-ctk` path in the.
+* [toolkit-container] Add `cdi.k8s.io/*` to set of allowed annotations in containerd config.
+* [toolkit-container] Generate CDI specification for use in management containers.
+* [toolkit-container] Install experimental runtime as `nvidia-container-runtime.experimental` instead of `nvidia-container-runtime-experimental`.
+* [toolkit-container] Install and configure mode-specific runtimes for `cdi` and `legacy` modes.
 
 ## v1.13.0-rc.1
 
-* Include MIG-enabled devices as GPUs when generating CDI specification
-* Fix missing NVML symbols when running `nvidia-ctk` on some platforms [#49]
-* Add CDI spec generation for WSL2-based systems to `nvidia-ctk cdi generate` command
+* Include MIG-enabled devices as GPUs when generating CDI specification.
+* Fix missing NVML symbols when running `nvidia-ctk` on some platforms [#49].
+* Add CDI spec generation for WSL2-based systems to `nvidia-ctk cdi generate` command.
 * Add `auto` mode to `nvidia-ctk cdi generate` command to automatically detect a WSL2-based system over a standard NVML-based system.
-* Add mode-specific (`.cdi` and `.legacy`) NVIDIA Container Runtime binaries for use in the GPU Operator
+* Add mode-specific (`.cdi` and `.legacy`) NVIDIA Container Runtime binaries for use in the GPU Operator.
 * Discover all `gsb*.bin` GSP firmware files when generating CDI specification.
-* Align `.deb` and `.rpm` release candidate package versions
-* Remove `fedora35` packaging targets
-* [libnvidia-container] Include all `gsp*.bin` firmware files if present
-* [libnvidia-container] Align `.deb` and `.rpm` release candidate package versions
-* [libnvidia-container] Remove `fedora35` packaging targets
+* Align `.deb` and `.rpm` release candidate package versions.
+* Remove `fedora35` packaging targets.
+* [libnvidia-container] Include all `gsp*.bin` firmware files if present.
+* [libnvidia-container] Align `.deb` and `.rpm` release candidate package versions.
+* [libnvidia-container] Remove `fedora35` packaging targets.
 * [toolkit-container] Install `nvidia-container-toolkit-operator-extensions` package for mode-specific executables.
-* [toolkit-container] Allow `nvidia-container-runtime.mode` to be set when configuring the NVIDIA Container Toolkit
+* [toolkit-container] Allow `nvidia-container-runtime.mode` to be set when configuring the NVIDIA Container Toolkit.
 
 ## v1.12.0
 
-* Promote `v1.12.0-rc.5` to `v1.12.0`
-* Rename `nvidia cdi generate` `--root` flag to `--driver-root` to better indicate intent
-* [libnvidia-container] Add nvcubins.bin to DriverStore components under WSL2
+* Promote `v1.12.0-rc.5` to `v1.12.0`.
+* Rename `nvidia cdi generate` `--root` flag to `--driver-root` to better indicate intent.
+* [libnvidia-container] Add nvcubins.bin to DriverStore components under WSL2.
 * [toolkit-container] Bump CUDA base images to 12.0.1
 
 ## v1.12.0-rc.5
@@ -308,28 +308,28 @@
 
 ## v1.12.0-rc.3
 
-* Don't fail if by-path symlinks for DRM devices do not exist
-* Replace the --json flag with a --format [json|yaml] flag for the nvidia-ctk cdi generate command
-* Ensure that the CDI output folder is created if required
-* When generating a CDI specification use a blank host path for devices to ensure compatibility with the v0.4.0 CDI specification
-* Add injection of Wayland JSON files
-* Add GSP firmware paths to generated CDI specification
-* Add --root flag to nvidia-ctk cdi generate command
+* Don't fail if by-path symlinks for DRM devices do not exist.
+* Replace the --json flag with a --format [json|yaml] flag for the nvidia-ctk cdi generate command.
+* Ensure that the CDI output folder is created if required.
+* When generating a CDI specification use a blank host path for devices to ensure compatibility with the v0.4.0 CDI specification.
+* Add injection of Wayland JSON files.
+* Add GSP firmware paths to generated CDI specification.
+* Add --root flag to nvidia-ctk cdi generate command.
 
 ## v1.12.0-rc.2
 
-* Inject Direct Rendering Manager (DRM) devices into a container using the NVIDIA Container Runtime
-* Improve logging of errors from the NVIDIA Container Runtime
-* Improve CDI specification generation to support rootless podman
-* Use `nvidia-ctk cdi generate` to generate CDI specifications instead of `nvidia-ctk info generate-cdi`
-* [libnvidia-container] Skip creation of existing files when these are already mounted
+* Inject Direct Rendering Manager (DRM) devices into a container using the NVIDIA Container Runtime.
+* Improve logging of errors from the NVIDIA Container Runtime.
+* Improve CDI specification generation to support rootless podman.
+* Use `nvidia-ctk cdi generate` to generate CDI specifications instead of `nvidia-ctk info generate-cdi`.
+* [libnvidia-container] Skip creation of existing files when these are already mounted.
 
 ## v1.12.0-rc.1
 
-* Add support for multiple Docker Swarm resources
-* Improve injection of Vulkan configurations and libraries
-* Add `nvidia-ctk info generate-cdi` command to generated CDI specification for available devices
-* [libnvidia-container] Include NVVM compiler library in compute libs
+* Add support for multiple Docker Swarm resources.
+* Improve injection of Vulkan configurations and libraries.
+* Add `nvidia-ctk info generate-cdi` command to generated CDI specification for available devices.
+* [libnvidia-container] Include NVVM compiler library in compute libs.
 
 ## v1.11.0
 
@@ -337,22 +337,22 @@
 
 ## v1.11.0-rc.3
 
-* Build fedora35 packages
-* Introduce an `nvidia-container-toolkit-base` package for better dependency management
-* Fix removal of `nvidia-container-runtime-hook` on RPM-based systems
-* Inject platform files into container on Tegra-based systems
+* Build fedora35 packages.
+* Introduce an `nvidia-container-toolkit-base` package for better dependency management.
+* Fix removal of `nvidia-container-runtime-hook` on RPM-based systems.
+* Inject platform files into container on Tegra-based systems.
 * [toolkit container] Update CUDA base images to 11.7.1
-* [libnvidia-container] Preload libgcc_s.so.1 on arm64 systems
+* [libnvidia-container] Preload libgcc_s.so.1 on arm64 systems.
 
 ## v1.11.0-rc.2
 
-* Allow `accept-nvidia-visible-devices-*` config options to be set by toolkit container
+* Allow `accept-nvidia-visible-devices-*` config options to be set by toolkit container.
 * [libnvidia-container] Fix bug where LDCache was not updated when the `--no-pivot-root` option was specified
 
 ## v1.11.0-rc.1
 
-* Add discovery of GPUDirect Storage (`nvidia-fs*`) devices if the `NVIDIA_GDS` environment variable of the container is set to `enabled`
-* Add discovery of MOFED Infiniband devices if the `NVIDIA_MOFED` environment variable of the container is set to `enabled`
+* Add discovery of GPUDirect Storage (`nvidia-fs*`) devices if the `NVIDIA_GDS` environment variable of the container is set to `enabled`.
+* Add discovery of MOFED Infiniband devices if the `NVIDIA_MOFED` environment variable of the container is set to `enabled`.
 * Fix bug in CSV mode where libraries listed as `sym` entries in mount specification are not added to the LDCache.
 * Rename `nvidia-container-toolkit` executable to `nvidia-container-runtime-hook` and create `nvidia-container-toolkit` as a symlink to `nvidia-container-runtime-hook` instead.
 * Add `nvidia-ctk runtime configure` command to configure the Docker config file (e.g. `/etc/docker/daemon.json`) for use with the NVIDIA Container Runtime.
@@ -363,46 +363,46 @@
 
 ## v1.10.0-rc.3
 
-* Use default config instead of raising an error if config file cannot be found
-* Ignore NVIDIA_REQUIRE_JETPACK* environment variables for requirement checks
-* Fix bug in detection of Tegra systems where `/sys/devices/soc0/family` is ignored
-* Fix bug where links to devices were detected as devices
-* [libnvida-container] Fix bug introduced when adding libcudadebugger.so to list of libraries
+* Use default config instead of raising an error if config file cannot be found.
+* Ignore NVIDIA_REQUIRE_JETPACK* environment variables for requirement checks.
+* Fix bug in detection of Tegra systems where `/sys/devices/soc0/family` is ignored.
+* Fix bug where links to devices were detected as devices.
+* [libnvida-container] Fix bug introduced when adding libcudadebugger.so to list of libraries.
 
 ## v1.10.0-rc.2
 
-* Add support for NVIDIA_REQUIRE_* checks for cuda version and arch to csv mode
-* Switch to debug logging to reduce log verbosity
-* Support logging to logs requested in command line
-* Fix bug when launching containers with relative root path (e.g. using containerd)
-* Allow low-level runtime path to be set explicitly as nvidia-container-runtime.runtimes option
-* Fix failure to locate low-level runtime if PATH envvar is unset
-* Replace experimental option for NVIDIA Container Runtime with nvidia-container-runtime.mode = csv option
-* Use csv as default mode on Tegra systems without NVML
-* Add --version flag to all CLIs
+* Add support for NVIDIA_REQUIRE_* checks for cuda version and arch to csv mode.
+* Switch to debug logging to reduce log verbosity.
+* Support logging to logs requested in command line.
+* Fix bug when launching containers with relative root path (e.g. using containerd).
+* Allow low-level runtime path to be set explicitly as nvidia-container-runtime.runtimes option.
+* Fix failure to locate low-level runtime if PATH envvar is unset.
+* Replace experimental option for NVIDIA Container Runtime with nvidia-container-runtime.mode = csv option.
+* Use csv as default mode on Tegra systems without NVML.
+* Add --version flag to all CLIs.
 * [libnvidia-container] Bump libtirpc to 1.3.2
-* [libnvidia-container] Fix bug when running host ldconfig using glibc compiled with a non-standard prefix
-* [libnvidia-container] Add libcudadebugger.so to list of compute libraries
+* [libnvidia-container] Fix bug when running host ldconfig using glibc compiled with a non-standard prefix.
+* [libnvidia-container] Add libcudadebugger.so to list of compute libraries.
 
 ## v1.10.0-rc.1
 
-* Include nvidia-ctk CLI in installed binaries
-* Add experimental option to NVIDIA Container Runtime
+* Include nvidia-ctk CLI in installed binaries.
+* Add experimental option to NVIDIA Container Runtime.
 
 ## v1.9.0
 
-* [libnvidia-container] Add additional check for Tegra in /sys/.../family file in CLI
-* [libnvidia-container] Update jetpack-specific CLI option to only load Base CSV files by default
-* [libnvidia-container] Fix bug (from 1.8.0) when mounting GSP firmware into containers without /lib to /usr/lib symlinks
+* [libnvidia-container] Add additional check for Tegra in /sys/.../family file in CLI.
+* [libnvidia-container] Update jetpack-specific CLI option to only load Base CSV files by default.
+* [libnvidia-container] Fix bug (from 1.8.0) when mounting GSP firmware into containers without /lib to /usr/lib symlinks.
 * [libnvidia-container] Update nvml.h to CUDA 11.6.1 nvML_DEV 11.6.55
 * [libnvidia-container] Update switch statement to include new brands from latest nvml.h
-* [libnvidia-container] Process all --require flags on Jetson platforms
-* [libnvidia-container] Fix long-standing issue with running ldconfig on Debian systems
+* [libnvidia-container] Process all --require flags on Jetson platforms.
+* [libnvidia-container] Fix long-standing issue with running ldconfig on Debian systems.
 
 ## v1.8.1
 
-* [libnvidia-container] Fix bug in determining cgroup root when running in nested containers
-* [libnvidia-container] Fix permission issue when determining cgroup version
+* [libnvidia-container] Fix bug in determining cgroup root when running in nested containers.
+* [libnvidia-container] Fix permission issue when determining cgroup version.
 
 ## v1.8.0
 
@@ -410,12 +410,12 @@
 
 ## v1.8.0-rc.2
 
-* Remove support for building amazonlinux1 packages
+* Remove support for building amazonlinux1 packages.
 
 ## v1.8.0-rc.1
 
-* [libnvidia-container] Add support for cgroupv2
-* Release toolkit-container images from nvidia-container-toolkit repository
+* [libnvidia-container] Add support for cgroupv2.
+* Release toolkit-container images from nvidia-container-toolkit repository.
 
 ## v1.7.0
 
@@ -424,42 +424,42 @@
 
 ## v1.7.0-rc.1
 
-* Specify containerd runtime type as string in config tools to remove dependency on containerd package
-* Add supported-driver-capabilities config option to allow for a subset of all driver capabilities to be specified
+* Specify containerd runtime type as string in config tools to remove dependency on containerd package.
+* Add supported-driver-capabilities config option to allow for a subset of all driver capabilities to be specified.
 
 ## v1.6.0
 
 * Promote 1.6.0-rc.3-1 to 1.6.0
- * Fix unnecessary logging to stderr instead of configured nvidia-container-runtime log file
+ * Fix unnecessary logging to stderr instead of configured nvidia-container-runtime log file.
 
 ## v1.6.0-rc.3
 
-* Add supported-driver-capabilities config option to the nvidia-container-toolkit
-* Move OCI and command line checks for runtime to internal oci package
+* Add supported-driver-capabilities config option to the nvidia-container-toolkit.
+* Move OCI and command line checks for runtime to internal oci package.
 
 ## v1.6.0-rc.2
 
-* Use relative path to OCI specification file (config.json) if bundle path is not specified as an argument to the nvidia-container-runtime
+* Use relative path to OCI specification file (config.json) if bundle path is not specified as an argument to the nvidia-container-runtime.
 
 ## v1.6.0-rc.1
 
-* Add AARCH64 package for Amazon Linux 2
-* Include nvidia-container-runtime into nvidia-container-toolkit package
+* Add AARCH64 package for Amazon Linux 2.
+* Include nvidia-container-runtime into nvidia-container-toolkit package.
 
 ## v1.5.1
 
-* Fix bug where Docker Swarm device selection is ignored if NVIDIA_VISIBLE_DEVICES is also set
-* Improve unit testing by using require package and adding coverage reports
-* Remove unneeded go dependencies by running go mod tidy
-* Move contents of pkg directory to cmd for CLI tools
-* Ensure make binary target explicitly sets GOOS
+* Fix bug where Docker Swarm device selection is ignored if NVIDIA_VISIBLE_DEVICES is also set.
+* Improve unit testing by using require package and adding coverage reports.
+* Remove unneeded go dependencies by running go mod tidy.
+* Move contents of pkg directory to cmd for CLI tools.
+* Ensure make binary target explicitly sets GOOS.
 
 ## v1.5.0
 
 * Add dependence on libnvidia-container-tools >= 1.4.0
-* Add golang check targets to Makefile
-* Add Jenkinsfile definition for build targets
-* Move docker.mk to docker folder
+* Add golang check targets to Makefile.
+* Add Jenkinsfile definition for build targets.
+* Move docker.mk to docker folder.
 
 ## v1.4.2
 
@@ -467,12 +467,12 @@
 
 ## v1.4.1
 
-* Ignore NVIDIA_VISIBLE_DEVICES for containers with insufficent privileges
+* Ignore NVIDIA_VISIBLE_DEVICES for containers with insufficent privileges.
 * Add dependence on libnvidia-container-tools >= 1.3.2
 
 ## v1.4.0
 
-* Add 'compute' capability to list of defaults
+* Add 'compute' capability to list of defaults.
 * Add dependence on libnvidia-container-tools >= 1.3.1
 
 ## v1.3.0
@@ -482,34 +482,34 @@
 
 ## v1.3.0-rc.2
 
-* 2c180947 Add more tests for new semantics with device list from volume mounts
-* 7c003857 Refactor accepting device lists from volume mounts as a boolean
+* 2c180947 Add more tests for new semantics with device list from volume mounts.
+* 7c003857 Refactor accepting device lists from volume mounts as a boolean.
 
 ## v1.3.0-rc.1
 
 * b50d86c1 Update build system to accept a TAG variable for things like rc.x
 * fe65573b Add common CI tests for things like golint, gofmt, unit tests, etc.
-* da6fbb34 Revert "Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*"
-* a7fb3330 Flip build-all targets to run automatically on merge requests
-* 8b248b66 Rename github.com/NVIDIA/container-toolkit to nvidia-container-toolkit
-* da36874e Add new config options to pull device list from mounted files instead of ENVVAR
+* da6fbb34 Revert "Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*".
+* a7fb3330 Flip build-all targets to run automatically on merge requests.
+* 8b248b66 Rename github.com/NVIDIA/container-toolkit to nvidia-container-toolkit.
+* da36874e Add new config options to pull device list from mounted files instead of ENVVAR.
 
 ## v1.2.1
 
-* 4e6e0ed4 Add 'ngx' to list of*all* driver capabilities
-* 2f4af743 List config.toml as a config file in the RPM SPEC
+* 4e6e0ed4 Add 'ngx' to list of*all* driver capabilities.
+* 2f4af743 List config.toml as a config file in the RPM SPEC.
 
 ## v1.2.0
 
-*  8e0aab46 Fix repo listed in changelog for debian distributions
+*  8e0aab46 Fix repo listed in changelog for debian distributions.
 *  320bb6e4 Update dependence on libnvidia-container to 1.2.0
-*  6cfc8097 Update package license to match source license
-*  e7dc3cbb Fix debian copyright file
-*  d3aee3e0 Add the 'ngx' driver capability
+*  6cfc8097 Update package license to match source license.
+*  e7dc3cbb Fix debian copyright file.
+*  d3aee3e0 Add the 'ngx' driver capability.
 
 ## v1.1.2
 
-* c32237f3 Add support for parsing Linux Capabilities for older OCI specs
+* c32237f3 Add support for parsing Linux Capabilities for older OCI specs.
 
 ## v1.1.1
 
@@ -517,10 +517,10 @@
 
 ## v1.1.0
 
-* 4e4de762 Update build system to support multi-arch builds
-* fcc1d116 Add support for MIG (Multi-Instance GPUs)
+* 4e4de762 Update build system to support multi-arch builds.
+* fcc1d116 Add support for MIG (Multi-Instance GPUs).
 * d4ff0416 Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*
-* 60f165ad Add no-pivot option to toolkit
+* 60f165ad Add no-pivot option to toolkit.
 
 ## v1.0.5
 
