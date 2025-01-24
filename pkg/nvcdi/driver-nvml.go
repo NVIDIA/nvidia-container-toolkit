@@ -184,6 +184,8 @@ func NewDriverBinariesDiscoverer(logger logger.Interface, driverRoot string) dis
 			"nvidia-persistenced",     /* Persistence mode utility */
 			"nvidia-cuda-mps-control", /* Multi process service CLI */
 			"nvidia-cuda-mps-server",  /* Multi process service server */
+			"nvidia-imex",             /* NVIDIA IMEX Daemon */
+			"nvidia-imex-ctl",         /* NVIDIA IMEX control */
 		},
 	)
 }
