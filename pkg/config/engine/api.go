@@ -24,7 +24,6 @@ type Interface interface {
 	GetRuntimeConfig(string) (RuntimeConfig, error)
 	RemoveRuntime(string) error
 	Save(string) (int64, error)
-	Set(string, interface{})
 	String() string
 }
 
