@@ -105,7 +105,20 @@ func (c Config) DefaultRuntime() string {
 
 // EnableCDI sets features.cdi to true in the docker config.
 func (c *Config) EnableCDI() {
-	(*c)["features"] = map[string]bool{"cdi": true}
+	if c == nil {
+		return
+	}
+	config := *c
+
+	features, ok := config["features"].(map[string]bool)
+	if !ok {
+		features = make(map[string]bool)
+	}
+	features["cdi"] = true
+
+	config["features"] = features
+
+	*c = config
 }
 
 // RemoveRuntime removes a runtime from the docker config
