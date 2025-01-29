@@ -164,7 +164,7 @@ func (a *app) Before(c *cli.Context, o *options) error {
 	return a.validateFlags(c, o)
 }
 
-func (a *app) validateFlags(_ *cli.Context, o *options) error {
+func (a *app) validateFlags(c *cli.Context, o *options) error {
 	if o.root == "" {
 		return fmt.Errorf("the install root must be specified")
 	}
@@ -178,7 +178,7 @@ func (a *app) validateFlags(_ *cli.Context, o *options) error {
 	if err := a.toolkit.ValidateOptions(&o.toolkitOptions); err != nil {
 		return err
 	}
-	if err := runtime.ValidateOptions(&o.runtimeOptions, o.runtime, o.toolkitRoot()); err != nil {
+	if err := runtime.ValidateOptions(c, &o.runtimeOptions, o.runtime, o.toolkitRoot(), &o.toolkitOptions); err != nil {
 		return err
 	}
 	return nil
