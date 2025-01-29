@@ -124,9 +124,11 @@ kind: example.com/class
 			options := Options{
 				DriverRoot:        "/host/driver/root",
 				DriverRootCtrPath: filepath.Join(moduleRoot, "testdata", "lookup", tc.hostRoot),
-				cdiEnabled:        tc.cdiEnabled,
-				cdiOutputDir:      cdiOutputDir,
-				cdiKind:           "example.com/class",
+				CDI: cdiOptions{
+					Enabled:   tc.cdiEnabled,
+					outputDir: cdiOutputDir,
+					kind:      "example.com/class",
+				},
 			}
 
 			ti := NewInstaller(
