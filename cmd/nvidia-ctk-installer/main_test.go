@@ -98,6 +98,7 @@ func TestApp(t *testing.T) {
 	require.NoError(t, err)
 
 	artifactRoot := filepath.Join(moduleRoot, "testdata", "installer", "artifacts")
+	hostRoot := filepath.Join(moduleRoot, "testdata", "lookup", "rootfs-1")
 
 	testCases := []struct {
 		description           string
@@ -165,12 +166,303 @@ swarm-resource = ""
     }
 }`,
 		},
+		{
+			description: "CDI enabled enables CDI in docker",
+			args:        []string{"--cdi-enabled", "--create-device-nodes=none"},
+			expectedToolkitConfig: `accept-nvidia-visible-devices-as-volume-mounts = false
+accept-nvidia-visible-devices-envvar-when-unprivileged = true
+disable-require = false
+supported-driver-capabilities = "compat32,compute,display,graphics,ngx,utility,video"
+swarm-resource = ""
+
+[nvidia-container-cli]
+  debug = ""
+  environment = []
+  ldcache = ""
+  ldconfig = "@/run/nvidia/driver/sbin/ldconfig"
+  load-kmods = true
+  no-cgroups = false
+  path = "{{ .toolkitRoot }}/toolkit/nvidia-container-cli"
+  root = "/run/nvidia/driver"
+  user = ""
+
+[nvidia-container-runtime]
+  debug = "/dev/null"
+  log-level = "info"
+  mode = "auto"
+  runtimes = ["docker-runc", "runc", "crun"]
+
+  [nvidia-container-runtime.modes]
+
+    [nvidia-container-runtime.modes.cdi]
+      annotation-prefixes = ["cdi.k8s.io/"]
+      default-kind = "nvidia.com/gpu"
+      spec-dirs = ["/etc/cdi", "/var/run/cdi"]
+
+    [nvidia-container-runtime.modes.csv]
+      mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
+
+[nvidia-container-runtime-hook]
+  path = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime-hook"
+  skip-mode-detection = true
+
+[nvidia-ctk]
+  path = "{{ .toolkitRoot }}/toolkit/nvidia-ctk"
+`,
+			expectedRuntimeConfig: `{
+    "default-runtime": "nvidia",
+    "features": {
+        "cdi": true
+    },
+    "runtimes": {
+        "nvidia": {
+            "args": [],
+            "path": "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime"
+        },
+        "nvidia-cdi": {
+            "args": [],
+            "path": "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime.cdi"
+        },
+        "nvidia-legacy": {
+            "args": [],
+            "path": "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime.legacy"
+        }
+    }
+}`,
+		},
+		{
+			description: "--enable-cdi-in-runtime=false overrides --cdi-enabled in Docker",
+			args:        []string{"--cdi-enabled", "--create-device-nodes=none", "--enable-cdi-in-runtime=false"},
+			expectedToolkitConfig: `accept-nvidia-visible-devices-as-volume-mounts = false
+accept-nvidia-visible-devices-envvar-when-unprivileged = true
+disable-require = false
+supported-driver-capabilities = "compat32,compute,display,graphics,ngx,utility,video"
+swarm-resource = ""
+
+[nvidia-container-cli]
+  debug = ""
+  environment = []
+  ldcache = ""
+  ldconfig = "@/run/nvidia/driver/sbin/ldconfig"
+  load-kmods = true
+  no-cgroups = false
+  path = "{{ .toolkitRoot }}/toolkit/nvidia-container-cli"
+  root = "/run/nvidia/driver"
+  user = ""
+
+[nvidia-container-runtime]
+  debug = "/dev/null"
+  log-level = "info"
+  mode = "auto"
+  runtimes = ["docker-runc", "runc", "crun"]
+
+  [nvidia-container-runtime.modes]
+
+    [nvidia-container-runtime.modes.cdi]
+      annotation-prefixes = ["cdi.k8s.io/"]
+      default-kind = "nvidia.com/gpu"
+      spec-dirs = ["/etc/cdi", "/var/run/cdi"]
+
+    [nvidia-container-runtime.modes.csv]
+      mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
+
+[nvidia-container-runtime-hook]
+  path = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime-hook"
+  skip-mode-detection = true
+
+[nvidia-ctk]
+  path = "{{ .toolkitRoot }}/toolkit/nvidia-ctk"
+`,
+			expectedRuntimeConfig: `{
+    "default-runtime": "nvidia",
+    "runtimes": {
+        "nvidia": {
+            "args": [],
+            "path": "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime"
+        },
+        "nvidia-cdi": {
+            "args": [],
+            "path": "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime.cdi"
+        },
+        "nvidia-legacy": {
+            "args": [],
+            "path": "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime.legacy"
+        }
+    }
+}`,
+		},
+		{
+			description: "CDI enabled enables CDI in containerd",
+			args:        []string{"--cdi-enabled", "--runtime=containerd"},
+			expectedToolkitConfig: `accept-nvidia-visible-devices-as-volume-mounts = false
+accept-nvidia-visible-devices-envvar-when-unprivileged = true
+disable-require = false
+supported-driver-capabilities = "compat32,compute,display,graphics,ngx,utility,video"
+swarm-resource = ""
+
+[nvidia-container-cli]
+  debug = ""
+  environment = []
+  ldcache = ""
+  ldconfig = "@/run/nvidia/driver/sbin/ldconfig"
+  load-kmods = true
+  no-cgroups = false
+  path = "{{ .toolkitRoot }}/toolkit/nvidia-container-cli"
+  root = "/run/nvidia/driver"
+  user = ""
+
+[nvidia-container-runtime]
+  debug = "/dev/null"
+  log-level = "info"
+  mode = "auto"
+  runtimes = ["docker-runc", "runc", "crun"]
+
+  [nvidia-container-runtime.modes]
+
+    [nvidia-container-runtime.modes.cdi]
+      annotation-prefixes = ["cdi.k8s.io/"]
+      default-kind = "nvidia.com/gpu"
+      spec-dirs = ["/etc/cdi", "/var/run/cdi"]
+
+    [nvidia-container-runtime.modes.csv]
+      mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
+
+[nvidia-container-runtime-hook]
+  path = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime-hook"
+  skip-mode-detection = true
+
+[nvidia-ctk]
+  path = "{{ .toolkitRoot }}/toolkit/nvidia-ctk"
+`,
+			expectedRuntimeConfig: `version = 2
+
+[plugins]
+
+  [plugins."io.containerd.grpc.v1.cri"]
+    enable_cdi = true
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      default_runtime_name = "nvidia"
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
+          privileged_without_host_devices = false
+          runtime_engine = ""
+          runtime_root = ""
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
+            BinaryName = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-cdi]
+          privileged_without_host_devices = false
+          runtime_engine = ""
+          runtime_root = ""
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-cdi.options]
+            BinaryName = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime.cdi"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy]
+          privileged_without_host_devices = false
+          runtime_engine = ""
+          runtime_root = ""
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
+            BinaryName = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime.legacy"
+`,
+		},
+		{
+			description: "--enable-cdi-in-runtime=false overrides --cdi-enabled in containerd",
+			args:        []string{"--cdi-enabled", "--create-device-nodes=none", "--enable-cdi-in-runtime=false", "--runtime=containerd"},
+			expectedToolkitConfig: `accept-nvidia-visible-devices-as-volume-mounts = false
+accept-nvidia-visible-devices-envvar-when-unprivileged = true
+disable-require = false
+supported-driver-capabilities = "compat32,compute,display,graphics,ngx,utility,video"
+swarm-resource = ""
+
+[nvidia-container-cli]
+  debug = ""
+  environment = []
+  ldcache = ""
+  ldconfig = "@/run/nvidia/driver/sbin/ldconfig"
+  load-kmods = true
+  no-cgroups = false
+  path = "{{ .toolkitRoot }}/toolkit/nvidia-container-cli"
+  root = "/run/nvidia/driver"
+  user = ""
+
+[nvidia-container-runtime]
+  debug = "/dev/null"
+  log-level = "info"
+  mode = "auto"
+  runtimes = ["docker-runc", "runc", "crun"]
+
+  [nvidia-container-runtime.modes]
+
+    [nvidia-container-runtime.modes.cdi]
+      annotation-prefixes = ["cdi.k8s.io/"]
+      default-kind = "nvidia.com/gpu"
+      spec-dirs = ["/etc/cdi", "/var/run/cdi"]
+
+    [nvidia-container-runtime.modes.csv]
+      mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
+
+[nvidia-container-runtime-hook]
+  path = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime-hook"
+  skip-mode-detection = true
+
+[nvidia-ctk]
+  path = "{{ .toolkitRoot }}/toolkit/nvidia-ctk"
+`,
+			expectedRuntimeConfig: `version = 2
+
+[plugins]
+
+  [plugins."io.containerd.grpc.v1.cri"]
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      default_runtime_name = "nvidia"
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
+          privileged_without_host_devices = false
+          runtime_engine = ""
+          runtime_root = ""
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
+            BinaryName = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-cdi]
+          privileged_without_host_devices = false
+          runtime_engine = ""
+          runtime_root = ""
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-cdi.options]
+            BinaryName = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime.cdi"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy]
+          privileged_without_host_devices = false
+          runtime_engine = ""
+          runtime_root = ""
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
+            BinaryName = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime.legacy"
+`,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			testRoot := t.TempDir()
 
+			cdiOutputDir := filepath.Join(testRoot, "/var/run/cdi")
 			runtimeConfigFile := filepath.Join(testRoot, "config.file")
 
 			toolkitRoot := filepath.Join(testRoot, "toolkit-test")
@@ -181,10 +473,13 @@ swarm-resource = ""
 			testArgs := []string{
 				"nvidia-ctk-installer",
 				"--no-daemon",
-				"--pid-file=" + filepath.Join(testRoot, "toolkit.pid"),
-				"--source-root=" + filepath.Join(artifactRoot, "deb"),
+				"--cdi-output-dir=" + cdiOutputDir,
 				"--config=" + runtimeConfigFile,
+				"--create-device-nodes=none",
+				"--driver-root-ctr-path=" + hostRoot,
+				"--pid-file=" + filepath.Join(testRoot, "toolkit.pid"),
 				"--restart-mode=none",
+				"--source-root=" + filepath.Join(artifactRoot, "deb"),
 			}
 
 			err := app.Run(append(testArgs, tc.args...))
