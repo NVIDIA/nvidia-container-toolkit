@@ -48,6 +48,14 @@ const (
 	toolkitPidFilename = "toolkit.pid"
 )
 
+type cdiOptions struct {
+	Enabled   bool
+	outputDir string
+	kind      string
+	vendor    string
+	class     string
+}
+
 type Options struct {
 	DriverRoot        string
 	DevRoot           string
@@ -67,11 +75,8 @@ type Options struct {
 
 	ContainerCLIDebug string
 
-	cdiEnabled   bool
-	cdiOutputDir string
-	cdiKind      string
-	cdiVendor    string
-	cdiClass     string
+	// CDI stores the CDI options for the toolkit.
+	CDI cdiOptions
 
 	createDeviceNodes cli.StringSlice
 
@@ -174,21 +179,21 @@ func Flags(opts *Options) []cli.Flag {
 			Name:        "cdi-enabled",
 			Aliases:     []string{"enable-cdi"},
 			Usage:       "enable the generation of a CDI specification",
-			Destination: &opts.cdiEnabled,
+			Destination: &opts.CDI.Enabled,
 			EnvVars:     []string{"CDI_ENABLED", "ENABLE_CDI"},
 		},
 		&cli.StringFlag{
 			Name:        "cdi-output-dir",
 			Usage:       "the directory where the CDI output files are to be written. If this is set to '', no CDI specification is generated.",
 			Value:       "/var/run/cdi",
-			Destination: &opts.cdiOutputDir,
+			Destination: &opts.CDI.outputDir,
 			EnvVars:     []string{"CDI_OUTPUT_DIR"},
 		},
 		&cli.StringFlag{
 			Name:        "cdi-kind",
 			Usage:       "the vendor string to use for the generated CDI specification",
 			Value:       "management.nvidia.com/gpu",
-			Destination: &opts.cdiKind,
+			Destination: &opts.CDI.kind,
 			EnvVars:     []string{"CDI_KIND"},
 		},
 		&cli.BoolFlag{
@@ -221,19 +226,19 @@ func ValidateOptions(opts *Options, toolkitRoot string) error {
 		return fmt.Errorf("invalid --toolkit-root option: %v", toolkitRoot)
 	}
 
-	vendor, class := parser.ParseQualifier(opts.cdiKind)
+	vendor, class := parser.ParseQualifier(opts.CDI.kind)
 	if err := parser.ValidateVendorName(vendor); err != nil {
 		return fmt.Errorf("invalid CDI vendor name: %v", err)
 	}
 	if err := parser.ValidateClassName(class); err != nil {
 		return fmt.Errorf("invalid CDI class name: %v", err)
 	}
-	opts.cdiVendor = vendor
-	opts.cdiClass = class
+	opts.CDI.vendor = vendor
+	opts.CDI.class = class
 
-	if opts.cdiEnabled && opts.cdiOutputDir == "" {
+	if opts.CDI.Enabled && opts.CDI.outputDir == "" {
 		log.Warning("Skipping CDI spec generation (no output directory specified)")
-		opts.cdiEnabled = false
+		opts.CDI.Enabled = false
 	}
 
 	isDisabled := false
@@ -246,7 +251,7 @@ func ValidateOptions(opts *Options, toolkitRoot string) error {
 			break
 		}
 	}
-	if !opts.cdiEnabled && !isDisabled {
+	if !opts.CDI.Enabled && !isDisabled {
 		log.Info("disabling device node creation since --cdi-enabled=false")
 		isDisabled = true
 	}
@@ -761,7 +766,7 @@ func createDeviceNodes(opts *Options) error {
 
 // generateCDISpec generates a CDI spec for use in management containers
 func generateCDISpec(opts *Options, nvidiaCDIHookPath string) error {
-	if !opts.cdiEnabled {
+	if !opts.CDI.Enabled {
 		return nil
 	}
 	log.Info("Generating CDI spec for management containers")
@@ -770,8 +775,8 @@ func generateCDISpec(opts *Options, nvidiaCDIHookPath string) error {
 		nvcdi.WithDriverRoot(opts.DriverRootCtrPath),
 		nvcdi.WithDevRoot(opts.DevRootCtrPath),
 		nvcdi.WithNVIDIACDIHookPath(nvidiaCDIHookPath),
-		nvcdi.WithVendor(opts.cdiVendor),
-		nvcdi.WithClass(opts.cdiClass),
+		nvcdi.WithVendor(opts.CDI.vendor),
+		nvcdi.WithClass(opts.CDI.class),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create CDI library for management containers: %v", err)
@@ -796,7 +801,7 @@ func generateCDISpec(opts *Options, nvidiaCDIHookPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to generate CDI name for management containers: %v", err)
 	}
-	err = spec.Save(filepath.Join(opts.cdiOutputDir, name))
+	err = spec.Save(filepath.Join(opts.CDI.outputDir, name))
 	if err != nil {
 		return fmt.Errorf("failed to save CDI spec for management containers: %v", err)
 	}

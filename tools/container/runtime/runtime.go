@@ -25,6 +25,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/runtime/containerd"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/runtime/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/runtime/docker"
+	"github.com/NVIDIA/nvidia-container-toolkit/tools/container/toolkit"
 )
 
 const (
@@ -104,9 +105,13 @@ func Flags(opts *Options) []cli.Flag {
 }
 
 // ValidateOptions checks whether the specified options are valid
-func ValidateOptions(opts *Options, runtime string, toolkitRoot string) error {
+func ValidateOptions(c *cli.Context, opts *Options, runtime string, toolkitRoot string, to *toolkit.Options) error {
 	// We set this option here to ensure that it is available in future calls.
 	opts.RuntimeDir = toolkitRoot
+
+	if !c.IsSet("enable-cdi-in-runtime") {
+		opts.EnableCDI = to.CDI.Enabled
+	}
 
 	// Apply the runtime-specific config changes.
 	switch runtime {

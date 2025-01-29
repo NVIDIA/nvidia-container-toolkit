@@ -129,14 +129,14 @@ func main() {
 	log.Infof("Completed %v", c.Name)
 }
 
-func validateFlags(_ *cli.Context, o *options) error {
+func validateFlags(c *cli.Context, o *options) error {
 	if filepath.Base(o.pidFile) != toolkitPidFilename {
 		return fmt.Errorf("invalid toolkit.pid path %v", o.pidFile)
 	}
 	if err := toolkit.ValidateOptions(&o.toolkitOptions, o.toolkitRoot()); err != nil {
 		return err
 	}
-	if err := runtime.ValidateOptions(&o.runtimeOptions, o.runtime, o.toolkitRoot()); err != nil {
+	if err := runtime.ValidateOptions(c, &o.runtimeOptions, o.runtime, o.toolkitRoot(), &o.toolkitOptions); err != nil {
 		return err
 	}
 	return nil
