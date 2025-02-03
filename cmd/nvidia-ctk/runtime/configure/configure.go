@@ -163,7 +163,7 @@ func (m command) build() *cli.Command {
 		},
 		&cli.BoolFlag{
 			Name:        "cdi.enabled",
-			Aliases:     []string{"cdi.enable"},
+			Aliases:     []string{"cdi.enable", "enable-cdi"},
 			Usage:       "Enable CDI in the configured runtime",
 			Destination: &config.cdi.enabled,
 		},
@@ -292,9 +292,8 @@ func (m command) configureConfigFile(c *cli.Context, config *config) error {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
 
-	err = enableCDI(config, cfg)
-	if err != nil {
-		return fmt.Errorf("failed to enable CDI in %s: %w", config.runtime, err)
+	if config.cdi.enabled {
+		cfg.EnableCDI()
 	}
 
 	outputPath := config.getOutputConfigPath()
@@ -351,22 +350,6 @@ func (m *command) configureOCIHook(c *cli.Context, config *config) error {
 	err := ocihook.CreateHook(config.hookFilePath, config.nvidiaRuntime.hookPath)
 	if err != nil {
 		return fmt.Errorf("error creating OCI hook: %v", err)
-	}
-	return nil
-}
-
-// enableCDI enables the use of CDI in the corresponding container engine
-func enableCDI(config *config, cfg engine.Interface) error {
-	if !config.cdi.enabled {
-		return nil
-	}
-	switch config.runtime {
-	case "containerd":
-		cfg.Set("enable_cdi", true)
-	case "docker":
-		cfg.Set("features", map[string]bool{"cdi": true})
-	default:
-		return fmt.Errorf("enabling CDI in %s is not supported", config.runtime)
 	}
 	return nil
 }

@@ -38,6 +38,7 @@ type options struct {
 	runtimeArgs string
 	root        string
 	pidFile     string
+	sourceRoot  string
 
 	toolkitOptions toolkit.Options
 	runtimeOptions runtime.Options
@@ -142,6 +143,13 @@ func (a app) build() *cli.App {
 			EnvVars:     []string{"ROOT"},
 		},
 		&cli.StringFlag{
+			Name:        "source-root",
+			Value:       "/",
+			Usage:       "The folder where the required toolkit artifacts can be found",
+			Destination: &options.sourceRoot,
+			EnvVars:     []string{"SOURCE_ROOT"},
+		},
+		&cli.StringFlag{
 			Name:        "pid-file",
 			Value:       defaultPidFile,
 			Usage:       "the path to a toolkit.pid file to ensure that only a single configuration instance is running",
@@ -159,12 +167,13 @@ func (a app) build() *cli.App {
 func (a *app) Before(c *cli.Context, o *options) error {
 	a.toolkit = toolkit.NewInstaller(
 		toolkit.WithLogger(a.logger),
+		toolkit.WithSourceRoot(o.sourceRoot),
 		toolkit.WithToolkitRoot(o.toolkitRoot()),
 	)
 	return a.validateFlags(c, o)
 }
 
-func (a *app) validateFlags(_ *cli.Context, o *options) error {
+func (a *app) validateFlags(c *cli.Context, o *options) error {
 	if o.root == "" {
 		return fmt.Errorf("the install root must be specified")
 	}
@@ -178,7 +187,7 @@ func (a *app) validateFlags(_ *cli.Context, o *options) error {
 	if err := a.toolkit.ValidateOptions(&o.toolkitOptions); err != nil {
 		return err
 	}
-	if err := runtime.ValidateOptions(&o.runtimeOptions, o.runtime, o.toolkitRoot()); err != nil {
+	if err := runtime.ValidateOptions(c, &o.runtimeOptions, o.runtime, o.toolkitRoot(), &o.toolkitOptions); err != nil {
 		return err
 	}
 	return nil

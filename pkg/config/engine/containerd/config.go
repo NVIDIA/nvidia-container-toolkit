@@ -96,19 +96,19 @@ func (c *Config) getRuntimeAnnotations(path []string) ([]string, error) {
 	return annotations, nil
 }
 
-// Set sets the specified containerd option.
-func (c *Config) Set(key string, value interface{}) {
-	config := *c.Tree
-	config.SetPath([]string{"plugins", c.CRIRuntimePluginName, key}, value)
-	*c.Tree = config
-}
-
 // DefaultRuntime returns the default runtime for the cri-o config
 func (c Config) DefaultRuntime() string {
 	if runtime, ok := c.GetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"}).(string); ok {
 		return runtime
 	}
 	return ""
+}
+
+// EnableCDI sets the enable_cdi field in the Containerd config to true.
+func (c *Config) EnableCDI() {
+	config := *c.Tree
+	config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "enable_cdi"}, true)
+	*c.Tree = config
 }
 
 // RemoveRuntime removes a runtime from the docker config
