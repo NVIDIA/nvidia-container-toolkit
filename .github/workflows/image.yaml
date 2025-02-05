@@ -16,21 +16,15 @@
 name: image
 
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-    branches:
-      - main
-      - release-*
   push:
     branches:
+      - "pull-request/[0-9]+"
       - main
       - release-*
 
 jobs:
   packages:
-    runs-on: ubuntu-latest
+    runs-on: linux-amd64-cpu4
     strategy:
       matrix:
         target:
@@ -74,7 +68,7 @@ jobs:
           path: ${{ github.workspace }}/dist/*
 
   image:
-    runs-on: ubuntu-latest
+    runs-on: linux-amd64-cpu4
     strategy:
       matrix:
         dist:
