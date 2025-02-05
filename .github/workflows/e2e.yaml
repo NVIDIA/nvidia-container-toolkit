@@ -72,7 +72,7 @@ jobs:
           export E2E_SSH_KEY="$e2e_ssh_key"
           export E2E_SSH_HOST="${{ steps.get_public_dns_name.outputs.result }}"
 
-          make -f test/e2e/Makefile test
+          make -f tests/e2e/Makefile test
 
       - name: Send Slack alert notification
         id: slack
