@@ -41,7 +41,7 @@ jobs:
           - centos7-x86_64
           - centos8-ppc64le
         ispr:
-          - ${{github.event_name == 'pull_request'}}
+          - ${{ github.ref_name != 'main' && !startsWith( github.ref_name, 'release-' ) }}
         exclude:
           - ispr: true
             target: ubuntu18.04-arm64
@@ -82,7 +82,7 @@ jobs:
           - ubi8
           - packaging
         ispr:
-          - ${{github.event_name == 'pull_request'}}
+          - ${{ github.ref_name != 'main' && !startsWith( github.ref_name, 'release-' ) }}
         exclude:
           - ispr: true
             dist: ubi8
