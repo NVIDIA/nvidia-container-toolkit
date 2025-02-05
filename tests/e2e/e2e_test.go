@@ -45,7 +45,7 @@ func init() {
 	flag.StringVar(&sshKey, "ssh-key", "", "SSH key to use for remote login")
 	flag.StringVar(&sshUser, "ssh-user", "", "SSH user to use for remote login")
 	flag.StringVar(&host, "remote-host", "", "Hostname of the remote machine")
-	flag.StringVar(&sshPort, "ssh-port", "22", "SSH port to use for remote login")
+	flag.StringVar(&sshPort, "remote-port", "22", "SSH port to use for remote login")
 }
 
 func TestMain(t *testing.T) {
