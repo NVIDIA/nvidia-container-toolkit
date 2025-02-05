@@ -25,6 +25,46 @@ on:
       - release-*
 
 jobs:
+  dru-run-tests:
+    runs-on: linux-amd64-gpu-l4-latest-1
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Calculate build vars
+        id: vars
+        run: |
+          echo "COMMIT_SHORT_SHA=${GITHUB_SHA:0:8}" >> $GITHUB_ENV
+          echo "LOWERCASE_REPO_OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | awk '{print tolower($0)}')" >> $GITHUB_ENV
+          GOLANG_VERSION=$(./hack/golang-version.sh)
+          echo "GOLANG_VERSION=${GOLANG_VERSION##GOLANG_VERSION := }" >> $GITHUB_ENV
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+
+      - name: Run e2e tests
+        env:
+          IMAGE_NAME: ghcr.io/${LOWERCASE_REPO_OWNER}/container-toolkit
+          VERSION: ${COMMIT_SHORT_SHA}
+        run: |
+          make -f tests/e2e/Makefile test
+
+      - name: Send Slack alert notification
+        id: slack
+        if: ${{ failure() }}
+        uses: slackapi/slack-github-action@v1.27.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          slack-message: |
+            :x: On repository ${{ github.repository }} the Workflow *${{ github.workflow }}* has failed.
+
+            Details: ${{ env.SUMMARY_URL }}
+            
   e2e-tests:
     runs-on: linux-amd64-cpu4
     if: ${{ github.event.workflow_run.conclusion == 'success' }} && ${{ github.event.workflow_run.event == 'push' }}
