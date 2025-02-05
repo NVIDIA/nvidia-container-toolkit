@@ -30,3 +30,10 @@ GIT_COMMIT ?= $(shell git describe --match="" --dirty --long --always --abbrev=4
 GIT_COMMIT_SHORT ?= $(shell git rev-parse --short HEAD 2> /dev/null || echo "")
 GIT_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD 2> /dev/null || echo "${GIT_COMMIT}")
 SOURCE_DATE_EPOCH ?= $(shell git log -1 --format=%ct  2> /dev/null || echo "")
+
+ifeq ($(IMAGE_NAME),)
+REGISTRY ?= nvidia
+IMAGE_NAME := $(REGISTRY)/container-toolkit
+endif
+
+VERSION ?= $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))

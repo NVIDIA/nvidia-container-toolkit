@@ -1,0 +1,30 @@
+apiVersion: holodeck.nvidia.com/v1alpha1
+kind: Environment
+metadata:
+  name: HOLODECK_NAME
+  description: "end-to-end test infrastructure"
+spec:
+  provider: aws
+  auth:
+    keyName: cnt-ci
+    privateKey: HOLODECK_PRIVATE_KEY
+  instance:
+    type: g4dn.xlarge
+    region: us-west-1
+    ingressIpRanges:
+    - 18.190.12.32/32
+    - 3.143.46.93/32
+    - 44.230.241.223/32
+    - 44.235.4.62/32
+    - 52.15.119.136/32
+    - 52.24.205.48/32
+    image:
+      architecture: amd64
+      imageId: ami-0ce2cb35386fc22e9
+  containerRuntime:
+    install: true
+    name: docker
+  nvidiaContainerToolkit:
+    install: false
+  nvidiaDriver:
+    install: true

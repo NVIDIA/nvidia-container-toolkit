@@ -27,12 +27,6 @@ DIST_DIR ?= $(CURDIR)/dist
 ##### Global variables #####
 include $(CURDIR)/versions.mk
 
-ifeq ($(IMAGE_NAME),)
-REGISTRY ?= nvidia
-IMAGE_NAME := $(REGISTRY)/container-toolkit
-endif
-
-VERSION ?= $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))
 IMAGE_VERSION := $(VERSION)
 
 IMAGE_TAG ?= $(VERSION)-$(DIST)
