@@ -85,6 +85,8 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		switch modifierType {
 		case "mode":
 			modifiers = append(modifiers, modeModifier)
+		case "nvidia-hook-remover":
+			modifiers = append(modifiers, modifier.NewNvidiaContainerRuntimeHookRemover(logger))
 		case "graphics":
 			graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, image, driver)
 			if err != nil {
@@ -121,10 +123,10 @@ func supportedModifierTypes(mode string) []string {
 	switch mode {
 	case "cdi":
 		// For CDI mode we make no additional modifications.
-		return []string{"mode"}
+		return []string{"nvidia-hook-remover", "mode"}
 	case "csv":
 		// For CSV mode we support mode and feature-gated modification.
-		return []string{"mode", "feature-gated"}
+		return []string{"nvidia-hook-remover", "mode", "feature-gated"}
 	default:
 		return []string{"mode", "graphics", "feature-gated"}
 	}
