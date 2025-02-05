@@ -16,7 +16,7 @@ name: End-to-end Tests
 
 on:
   workflow_run:
-    workflows: [Image]
+    workflows: [image]
     types:
       - completed
     branches:
