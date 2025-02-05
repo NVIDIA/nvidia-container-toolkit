@@ -90,21 +90,12 @@ jobs:
           echo "COMMIT_SHORT_SHA=${GITHUB_SHA:0:8}" >> $GITHUB_ENV
           echo "LOWERCASE_REPO_OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | awk '{print tolower($0)}')" >> $GITHUB_ENV
 
-          PUSH_ON_BUILD="false"
-          BUILD_MULTI_ARCH_IMAGES="false"
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            if [[ "${{ github.actor }}" != "dependabot[bot]" && "${{ github.event.pull_request.head.repo.full_name }}" == "${{ github.repository }}" ]]; then
-              # For non-fork PRs that are not created by dependabot we do push images
-              PUSH_ON_BUILD="true"
-            fi
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
-            # On push events we do generate images and enable muilti-arch builds
-            PUSH_ON_BUILD="true"
-            BUILD_MULTI_ARCH_IMAGES="true"
+          BUILD_MULTI_ARCH_IMAGES="true"
+          if [[ "${{ matrix.ispr }}" == "true" ]]; then
+            BUILD_MULTI_ARCH_IMAGES="false"
           fi
-          echo "PUSH_ON_BUILD=${PUSH_ON_BUILD}" >> $GITHUB_ENV
+          echo "PUSH_ON_BUILD=\"true\"" >> $GITHUB_ENV
           echo "BUILD_MULTI_ARCH_IMAGES=${BUILD_MULTI_ARCH_IMAGES}" >> $GITHUB_ENV
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
