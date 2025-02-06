@@ -11,6 +11,7 @@ github.com/NVIDIA/go-nvlib/pkg/pciids
 github.com/NVIDIA/go-nvml/pkg/dl
 github.com/NVIDIA/go-nvml/pkg/nvml
 github.com/NVIDIA/go-nvml/pkg/nvml/mock
+github.com/NVIDIA/go-nvml/pkg/nvml/mock/dgxa100
 # github.com/cpuguy83/go-md2man/v2 v2.0.5
 ## explicit; go 1.11
 github.com/cpuguy83/go-md2man/v2/md2man
