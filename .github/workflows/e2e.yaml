@@ -65,6 +65,7 @@ jobs:
           VERSION: ${COMMIT_SHORT_SHA}
           SSH_KEY: ${{ secrets.AWS_SSH_KEY }}
           E2E_SSH_USER: ${{ secrets.E2E_SSH_USER }}
+          E2E_INSTALL_CTK: "true"
         run: |
           e2e_ssh_key=$(mktemp)
           echo "$SSH_KEY" > "$e2e_ssh_key"
