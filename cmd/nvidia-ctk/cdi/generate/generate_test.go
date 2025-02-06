@@ -81,6 +81,12 @@ containerEdits:
     path: /usr/bin/nvidia-cdi-hook
   - args:
     - nvidia-cdi-hook
+    - enable-cuda-compat
+    - --host-driver-version=999.88.77
+    hookName: createContainer
+    path: /usr/bin/nvidia-cdi-hook
+  - args:
+    - nvidia-cdi-hook
     - update-ldcache
     - --folder
     - /lib/x86_64-linux-gnu
