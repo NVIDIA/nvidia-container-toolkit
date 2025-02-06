@@ -49,7 +49,7 @@ jobs:
         args: -v --timeout 5m
         skip-cache: true
     - name: Check golang modules
-      run: | 
+      run: |
         make check-vendor
         make -C deployments/devel check-modules
   test:
@@ -67,7 +67,29 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GOLANG_VERSION }}
-      - run: make test
+      - run: make coverage
+
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          path: coverage.out.no-mocks
+
+  code_coverage:
+    name: "Code coverage report"
+    if: github.event_name == 'pull_request' # Do not run when workflow is triggered by push to main branch
+    runs-on: ubuntu-latest
+    needs: tests # Depends on the artifact uploaded by the "unit_tests" job
+    permissions:
+      contents:      read
+      actions:       read  # to download code coverage results from "test" job
+      pull-requests: write # write permission needed to comment on PR
+    steps:
+    - uses: fgrosse/go-coverage-report@v1.2.0 # Consider using a Git revision for maximum security
+      with:
+        coverage-artifact-name: "code-coverage" # can be omitted if you used this default value
+        coverage-file-name: "coverage.out.no-mocks" # can be omitted if you used this default value
+
   build:
     name: Build
     runs-on: ubuntu-latest
