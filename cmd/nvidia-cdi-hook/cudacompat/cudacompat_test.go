@@ -74,6 +74,15 @@ func TestCompatLibs(t *testing.T) {
 			expectedContainerForwardCompatDir: "",
 		},
 		{
+			description: "numeric comparison is used; ldcache",
+			contents: map[string]string{
+				"/etc/ld.so.cache": "",
+				"/usr/local/cuda/compat/libcuda.so.222.88.99": "",
+			},
+			hostDriverVersion:                 "99.55.66",
+			expectedContainerForwardCompatDir: "/usr/local/cuda/compat",
+		},
+		{
 			description: "driver version empty; ldcache",
 			contents: map[string]string{
 				"/etc/ld.so.cache": "",
