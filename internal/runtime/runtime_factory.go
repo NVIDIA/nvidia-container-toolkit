@@ -94,7 +94,7 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 			}
 			modifiers = append(modifiers, graphicsModifier)
 		case "feature-gated":
-			featureGatedModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, image)
+			featureGatedModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, image, driver)
 			if err != nil {
 				return nil, err
 			}
