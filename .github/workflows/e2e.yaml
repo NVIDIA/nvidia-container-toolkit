@@ -65,13 +65,13 @@ jobs:
           VERSION: ${COMMIT_SHORT_SHA}
           SSH_KEY: ${{ secrets.AWS_SSH_KEY }}
           E2E_SSH_USER: ${{ secrets.E2E_SSH_USER }}
+          E2E_SSH_HOST: ${{ steps.holodeck_public_dns_name.outputs.result }}
           E2E_INSTALL_CTK: "true"
         run: |
           e2e_ssh_key=$(mktemp)
           echo "$SSH_KEY" > "$e2e_ssh_key"
           chmod 600 "$e2e_ssh_key"
           export E2E_SSH_KEY="$e2e_ssh_key"
-          export E2E_SSH_HOST="${{ steps.get_public_dns_name.outputs.result }}"
 
           make -f tests/e2e/Makefile test
 
