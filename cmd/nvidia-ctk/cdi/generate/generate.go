@@ -25,6 +25,8 @@ import (
 	"github.com/urfave/cli/v2"
 	cdi "tags.cncf.io/container-device-interface/pkg/parser"
 
+	"github.com/NVIDIA/go-nvml/pkg/nvml"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
@@ -60,6 +62,9 @@ type options struct {
 		files          cli.StringSlice
 		ignorePatterns cli.StringSlice
 	}
+
+	// the following are used for dependency injection during spec generation.
+	nvmllib nvml.Interface
 }
 
 // NewCommand constructs a generate-cdi command with the specified logger
@@ -269,6 +274,8 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths.Value()),
 		nvcdi.WithCSVFiles(opts.csv.files.Value()),
 		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns.Value()),
+		// We set the following to allow for dependency injection:
+		nvcdi.WithNvmlLib(opts.nvmllib),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)
