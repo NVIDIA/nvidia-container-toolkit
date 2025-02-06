@@ -27,7 +27,7 @@ on:
 jobs:
   e2e-tests:
     runs-on: linux-amd64-cpu4
-    if: ${{ github.event.workflow_run.conclusion == 'success' }} && ${{ github.event.workflow_run.event == 'push' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
