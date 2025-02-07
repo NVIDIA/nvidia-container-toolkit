@@ -30,6 +30,7 @@ const (
 	RuntimeModeLegacy = RuntimeMode("legacy")
 	RuntimeModeCSV    = RuntimeMode("csv")
 	RuntimeModeCDI    = RuntimeMode("cdi")
+	RuntimeModeJitCDI = RuntimeMode("jit-cdi")
 )
 
 type RuntimeModeResolver interface {
@@ -105,9 +106,9 @@ func (m *modeResolver) ResolveRuntimeMode(mode string) (rmode RuntimeMode) {
 
 	switch nvinfo.ResolvePlatform() {
 	case info.PlatformNVML, info.PlatformWSL:
-		return RuntimeModeLegacy
+		return RuntimeModeJitCDI
 	case info.PlatformTegra:
 		return RuntimeModeCSV
 	}
-	return RuntimeModeLegacy
+	return RuntimeModeJitCDI
 }
