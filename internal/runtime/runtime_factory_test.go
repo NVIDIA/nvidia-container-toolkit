@@ -30,6 +30,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -162,6 +163,184 @@ func TestFactoryMethod(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestNewSpecModifier(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+	driver := root.New(
+		root.WithDriverRoot("/nvidia/driver/root"),
+	)
+	testCases := []struct {
+		description  string
+		config       *config.Config
+		spec         *specs.Spec
+		expectedSpec *specs.Spec
+	}{
+		{
+			description: "csv mode removes nvidia-container-runtime-hook",
+			config: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Mode: "csv",
+				},
+			},
+			spec: &specs.Spec{
+				Hooks: &specs.Hooks{
+					Prestart: []specs.Hook{
+						{
+							Path: "/path/to/nvidia-container-runtime-hook",
+							Args: []string{"/path/to/nvidia-container-runtime-hook", "prestart"},
+						},
+					},
+				},
+			},
+			expectedSpec: &specs.Spec{
+				Hooks: &specs.Hooks{
+					Prestart: nil,
+				},
+			},
+		},
+		{
+			description: "csv mode removes nvidia-container-toolkit",
+			config: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Mode: "csv",
+				},
+			},
+			spec: &specs.Spec{
+				Hooks: &specs.Hooks{
+					Prestart: []specs.Hook{
+						{
+							Path: "/path/to/nvidia-container-toolkit",
+							Args: []string{"/path/to/nvidia-container-toolkit", "prestart"},
+						},
+					},
+				},
+			},
+			expectedSpec: &specs.Spec{
+				Hooks: &specs.Hooks{
+					Prestart: nil,
+				},
+			},
+		},
+		{
+			description: "cdi mode removes nvidia-container-runtime-hook",
+			config: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Mode: "cdi",
+				},
+			},
+			spec: &specs.Spec{
+				Hooks: &specs.Hooks{
+					Prestart: []specs.Hook{
+						{
+							Path: "/path/to/nvidia-container-runtime-hook",
+							Args: []string{"/path/to/nvidia-container-runtime-hook", "prestart"},
+						},
+					},
+				},
+			},
+			expectedSpec: &specs.Spec{
+				Hooks: &specs.Hooks{
+					Prestart: nil,
+				},
+			},
+		},
+		{
+			description: "cdi mode removes nvidia-container-toolkit",
+			config: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Mode: "cdi",
+				},
+			},
+			spec: &specs.Spec{
+				Hooks: &specs.Hooks{
+					Prestart: []specs.Hook{
+						{
+							Path: "/path/to/nvidia-container-toolkit",
+							Args: []string{"/path/to/nvidia-container-toolkit", "prestart"},
+						},
+					},
+				},
+			},
+			expectedSpec: &specs.Spec{
+				Hooks: &specs.Hooks{
+					Prestart: nil,
+				},
+			},
+		},
+		{
+			description: "legacy mode keeps nvidia-container-runtime-hook",
+			config: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Mode: "legacy",
+				},
+			},
+			spec: &specs.Spec{
+				Hooks: &specs.Hooks{
+					Prestart: []specs.Hook{
+						{
+							Path: "/path/to/nvidia-container-runtime-hook",
+							Args: []string{"/path/to/nvidia-container-runtime-hook", "prestart"},
+						},
+					},
+				},
+			},
+			expectedSpec: &specs.Spec{
+				Hooks: &specs.Hooks{
+					Prestart: []specs.Hook{
+						{
+							Path: "/path/to/nvidia-container-runtime-hook",
+							Args: []string{"/path/to/nvidia-container-runtime-hook", "prestart"},
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "legacy mode keeps nvidia-container-toolkit",
+			config: &config.Config{
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Mode: "legacy",
+				},
+			},
+			spec: &specs.Spec{
+				Hooks: &specs.Hooks{
+					Prestart: []specs.Hook{
+						{
+							Path: "/path/to/nvidia-container-toolkit",
+							Args: []string{"/path/to/nvidia-container-toolkit", "prestart"},
+						},
+					},
+				},
+			},
+			expectedSpec: &specs.Spec{
+				Hooks: &specs.Hooks{
+					Prestart: []specs.Hook{
+						{
+							Path: "/path/to/nvidia-container-toolkit",
+							Args: []string{"/path/to/nvidia-container-toolkit", "prestart"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			spec := &oci.SpecMock{
+				LoadFunc: func() (*specs.Spec, error) {
+					return tc.spec, nil
+				},
+			}
+			m, err := newSpecModifier(logger, tc.config, spec, driver)
+			require.NoError(t, err)
+
+			err = m.Modify(tc.spec)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.expectedSpec, tc.spec)
 		})
 	}
 }

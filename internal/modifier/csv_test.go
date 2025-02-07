@@ -19,7 +19,6 @@ package modifier
 import (
 	"testing"
 
-	"github.com/opencontainers/runtime-spec/specs-go"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
@@ -71,69 +70,6 @@ func TestNewCSVModifier(t *testing.T) {
 			} else {
 				require.NotNil(t, m)
 			}
-		})
-	}
-}
-
-func TestCSVModifierRemovesHook(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
-
-	testCases := []struct {
-		description   string
-		spec          *specs.Spec
-		expectedError error
-		expectedSpec  *specs.Spec
-	}{
-		{
-			description: "modification removes existing nvidia-container-runtime-hook",
-			spec: &specs.Spec{
-				Hooks: &specs.Hooks{
-					Prestart: []specs.Hook{
-						{
-							Path: "/path/to/nvidia-container-runtime-hook",
-							Args: []string{"/path/to/nvidia-container-runtime-hook", "prestart"},
-						},
-					},
-				},
-			},
-			expectedSpec: &specs.Spec{
-				Hooks: &specs.Hooks{
-					Prestart: []specs.Hook{},
-				},
-			},
-		},
-		{
-			description: "modification removes existing nvidia-container-toolkit",
-			spec: &specs.Spec{
-				Hooks: &specs.Hooks{
-					Prestart: []specs.Hook{
-						{
-							Path: "/path/to/nvidia-container-toolkit",
-							Args: []string{"/path/to/nvidia-container-toolkit", "prestart"},
-						},
-					},
-				},
-			},
-			expectedSpec: &specs.Spec{
-				Hooks: &specs.Hooks{
-					Prestart: []specs.Hook{},
-				},
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			m := nvidiaContainerRuntimeHookRemover{logger: logger}
-
-			err := m.Modify(tc.spec)
-			if tc.expectedError != nil {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-			}
-
-			require.Empty(t, tc.spec.Hooks.Prestart)
 		})
 	}
 }
