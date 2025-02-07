@@ -71,6 +71,18 @@ func TestDeviceRequests(t *testing.T) {
 			expectedDevices: []string{"nvidia.com/gpu=0", "example.com/class=device"},
 		},
 		{
+			description: "cdi devices from envvar with default kind",
+			input: cdiDeviceRequestor{
+				defaultKind: "runtime.nvidia.com/gpu",
+			},
+			spec: &specs.Spec{
+				Process: &specs.Process{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=all"},
+				},
+			},
+			expectedDevices: []string{"runtime.nvidia.com/gpu=all"},
+		},
+		{
 			description: "no matching annotations",
 			prefixes:    []string{"not-prefix/"},
 			spec: &specs.Spec{

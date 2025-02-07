@@ -122,11 +122,10 @@ func TestGoodInput(t *testing.T) {
 	err = cmdCreate.Run()
 	require.NoError(t, err, "runtime should not return an error")
 
-	// Check config.json for NVIDIA prestart hook
+	// Check config.json to ensure that the NVIDIA prestart was not inserted.
 	spec, err = cfg.getRuntimeSpec()
 	require.NoError(t, err, "should be no errors when reading and parsing spec from config.json")
-	require.NotEmpty(t, spec.Hooks, "there should be hooks in config.json")
-	require.Equal(t, 1, nvidiaHookCount(spec.Hooks), "exactly one nvidia prestart hook should be inserted correctly into config.json")
+	require.Empty(t, spec.Hooks, "there should be no hooks in config.json")
 }
 
 // NVIDIA prestart hook already present in config file
@@ -168,11 +167,10 @@ func TestDuplicateHook(t *testing.T) {
 	output, err := cmdCreate.CombinedOutput()
 	require.NoErrorf(t, err, "runtime should not return an error", "output=%v", string(output))
 
-	// Check config.json for NVIDIA prestart hook
+	// Check config.json to ensure that the NVIDIA prestart hook was removed.
 	spec, err = cfg.getRuntimeSpec()
 	require.NoError(t, err, "should be no errors when reading and parsing spec from config.json")
-	require.NotEmpty(t, spec.Hooks, "there should be hooks in config.json")
-	require.Equal(t, 1, nvidiaHookCount(spec.Hooks), "exactly one nvidia prestart hook should be inserted correctly into config.json")
+	require.Empty(t, spec.Hooks, "there should be no hooks in config.json")
 }
 
 // addNVIDIAHook is a basic wrapper for an addHookModifier that is used for
@@ -239,19 +237,4 @@ func (c testConfig) generateNewRuntimeSpec() error {
 		return err
 	}
 	return nil
-}
-
-// Return number of valid NVIDIA prestart hooks in runtime spec
-func nvidiaHookCount(hooks *specs.Hooks) int {
-	if hooks == nil {
-		return 0
-	}
-
-	count := 0
-	for _, hook := range hooks.Prestart {
-		if strings.Contains(hook.Path, nvidiaHook) {
-			count++
-		}
-	}
-	return count
 }
