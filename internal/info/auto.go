@@ -41,6 +41,9 @@ const (
 	// to the container config required for the requested CDI devices in the
 	// same way that other CDI clients would.
 	CDIRuntimeMode = RuntimeMode("cdi")
+	// In JitCDIRuntimeMode the nvidia-container-runtime generates in-memory CDI
+	// specifications for requested NVIDIA devices.
+	JitCDIRuntimeMode = RuntimeMode("jit-cdi")
 )
 
 type RuntimeModeResolver interface {
@@ -116,9 +119,9 @@ func (m *modeResolver) ResolveRuntimeMode(mode string) (rmode RuntimeMode) {
 
 	switch nvinfo.ResolvePlatform() {
 	case info.PlatformNVML, info.PlatformWSL:
-		return LegacyRuntimeMode
+		return JitCDIRuntimeMode
 	case info.PlatformTegra:
 		return CSVRuntimeMode
 	}
-	return LegacyRuntimeMode
+	return JitCDIRuntimeMode
 }

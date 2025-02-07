@@ -107,8 +107,8 @@ func newModeModifier(logger logger.Interface, mode info.RuntimeMode, cfg *config
 		return modifier.NewStableRuntimeModifier(logger, cfg.NVIDIAContainerRuntimeHookConfig.Path), nil
 	case info.CSVRuntimeMode:
 		return modifier.NewCSVModifier(logger, cfg, image)
-	case info.CDIRuntimeMode:
-		return modifier.NewCDIModifier(logger, cfg, image)
+	case info.CDIRuntimeMode, info.JitCDIRuntimeMode:
+		return modifier.NewCDIModifier(logger, cfg, image, mode == info.JitCDIRuntimeMode)
 	}
 
 	return nil, fmt.Errorf("invalid runtime mode: %v", cfg.NVIDIAContainerRuntimeConfig.Mode)
@@ -160,7 +160,7 @@ func initRuntimeModeAndImage(logger logger.Interface, cfg *config.Config, ociSpe
 // supportedModifierTypes returns the modifiers supported for a specific runtime mode.
 func supportedModifierTypes(mode info.RuntimeMode) []string {
 	switch mode {
-	case info.CDIRuntimeMode:
+	case info.CDIRuntimeMode, info.JitCDIRuntimeMode:
 		// For CDI mode we make no additional modifications.
 		return []string{"nvidia-hook-remover", "mode"}
 	case info.CSVRuntimeMode:
