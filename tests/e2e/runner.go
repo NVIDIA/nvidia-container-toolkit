@@ -153,7 +153,7 @@ func connectOrDie(sshKey, sshUser, host, port string) (*ssh.Client, error) {
 
 	connectionFailed := false
 	for i := 0; i < 20; i++ {
-		client, err = ssh.Dial("tcp", host+port, sshConfig)
+		client, err = ssh.Dial("tcp", host+":"+port, sshConfig)
 		if err == nil {
 			return client, nil // Connection succeeded, return the client.
 		}
