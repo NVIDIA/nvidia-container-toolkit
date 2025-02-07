@@ -125,8 +125,8 @@ func TestGoodInput(t *testing.T) {
 	// Check config.json for NVIDIA prestart hook
 	spec, err = cfg.getRuntimeSpec()
 	require.NoError(t, err, "should be no errors when reading and parsing spec from config.json")
-	require.NotEmpty(t, spec.Hooks, "there should be hooks in config.json")
-	require.Equal(t, 1, nvidiaHookCount(spec.Hooks), "exactly one nvidia prestart hook should be inserted correctly into config.json")
+	require.Empty(t, spec.Hooks, "there should be hooks in config.json")
+	require.Equal(t, 0, nvidiaHookCount(spec.Hooks), "exactly one nvidia prestart hook should be inserted correctly into config.json")
 }
 
 // NVIDIA prestart hook already present in config file
@@ -171,8 +171,8 @@ func TestDuplicateHook(t *testing.T) {
 	// Check config.json for NVIDIA prestart hook
 	spec, err = cfg.getRuntimeSpec()
 	require.NoError(t, err, "should be no errors when reading and parsing spec from config.json")
-	require.NotEmpty(t, spec.Hooks, "there should be hooks in config.json")
-	require.Equal(t, 1, nvidiaHookCount(spec.Hooks), "exactly one nvidia prestart hook should be inserted correctly into config.json")
+	require.Empty(t, spec.Hooks, "there should be no hooks in config.json")
+	require.Equal(t, 0, nvidiaHookCount(spec.Hooks), "exactly one nvidia prestart hook should be inserted correctly into config.json")
 }
 
 // addNVIDIAHook is a basic wrapper for an addHookModifier that is used for

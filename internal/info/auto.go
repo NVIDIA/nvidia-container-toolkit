@@ -48,9 +48,9 @@ func resolveMode(logger logger.Interface, mode string, image image.CUDA, propert
 
 	switch nvinfo.ResolvePlatform() {
 	case info.PlatformNVML, info.PlatformWSL:
-		return "legacy"
+		return "jit-cdi"
 	case info.PlatformTegra:
 		return "csv"
 	}
-	return "legacy"
+	return "jit-cdi"
 }
