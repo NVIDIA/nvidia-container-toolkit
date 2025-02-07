@@ -14,6 +14,7 @@ require (
 	golang.org/x/mod v0.22.0
 	golang.org/x/sys v0.29.0
 	tags.cncf.io/container-device-interface v0.8.0
+	tags.cncf.io/container-device-interface/api/producer v0.0.0
 	tags.cncf.io/container-device-interface/specs-go v0.8.0
 )
 
@@ -35,4 +36,10 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
+)
+
+replace (
+	tags.cncf.io/container-device-interface => ../container-device-interface
+	tags.cncf.io/container-device-interface/api/producer => ../container-device-interface/api/producer
+	tags.cncf.io/container-device-interface/specs-go => ../container-device-interface/specs-go
 )
