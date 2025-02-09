@@ -75,6 +75,8 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 	}
 
 	mode := info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode, image)
+	// We update the mode here so that we can continue passing just the config to other functions.
+	cfg.NVIDIAContainerRuntimeConfig.Mode = mode
 	modeModifier, err := newModeModifier(logger, mode, cfg, ociSpec, image)
 	if err != nil {
 		return nil, err
