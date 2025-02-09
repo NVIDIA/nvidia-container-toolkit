@@ -128,8 +128,8 @@ func supportedModifierTypes(mode string) []string {
 		return []string{"nvidia-hook-remover", "mode"}
 	case "csv":
 		// For CSV mode we support mode and feature-gated modification.
-		return []string{"nvidia-hook-remover", "mode", "feature-gated"}
+		return []string{"nvidia-hook-remover", "feature-gated", "mode"}
 	default:
-		return []string{"mode", "graphics", "feature-gated"}
+		return []string{"feature-gated", "graphics", "mode"}
 	}
 }
