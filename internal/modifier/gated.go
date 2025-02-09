@@ -82,6 +82,18 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 	if !cfg.Features.AllowCUDACompatLibsFromContainer.IsEnabled() {
 		compatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(logger, cfg.NVIDIACTKConfig.Path, driver)
 		discoverers = append(discoverers, compatLibHookDiscoverer)
+		if cfg.NVIDIAContainerRuntimeConfig.Mode == "legacy" {
+			ldcacheUpdateHookDiscoverer, err := discover.NewLDCacheUpdateHook(
+				logger,
+				discover.None{},
+				cfg.NVIDIACTKConfig.Path,
+				"",
+			)
+			if err != nil {
+				return nil, fmt.Errorf("failed to construct ldcache update discoverer: %w", err)
+			}
+			discoverers = append(discoverers, ldcacheUpdateHookDiscoverer)
+		}
 	}
 
 	return NewModifierFromDiscoverer(logger, discover.Merge(discoverers...))
