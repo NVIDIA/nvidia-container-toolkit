@@ -18,13 +18,15 @@ package e2e
 
 import (
 	"context"
+	"path/filepath"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 // Integration tests for Docker runtime
-var _ = Describe("docker", Ordered, func() {
+var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 	var r Runner
 
 	// Install the NVIDIA Container Toolkit
@@ -164,6 +166,53 @@ var _ = Describe("docker", Ordered, func() {
 			out4, _, err := r.Run("docker run --rm -i --gpus all nvcr.io/nvidia/k8s/cuda-sample:devicequery-cuda12.5.0")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(referenceOutput).To(Equal(out4))
+		})
+	})
+
+	Describe("CUDA Forward compatibility", Ordered, func() {
+		BeforeAll(func(ctx context.Context) {
+			_, _, err := r.Run("docker pull nvcr.io/nvidia/cuda:12.8.0-base-ubi8")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		BeforeAll(func(ctx context.Context) {
+			compatOutput, _, err := r.Run("docker run --rm -i -e NVIDIA_VISIBLE_DEVICES=void nvcr.io/nvidia/cuda:12.8.0-base-ubi8 bash -c \"ls /usr/local/cuda/compat/libcuda.*.*\"")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(compatOutput).ToNot(BeEmpty())
+			compatDriverVersion := strings.TrimPrefix(filepath.Base(compatOutput), "libcuda.so.")
+			compatMajor := strings.SplitN(compatDriverVersion, ".", 2)[0]
+
+			driverOutput, _, err := r.Run("nvidia-smi -q | grep \"Driver Version\"")
+			Expect(err).ToNot(HaveOccurred())
+			parts := strings.SplitN(driverOutput, ":", 2)
+			Expect(parts).To(HaveLen(2))
+
+			hostDriverVersion := strings.TrimSpace(parts[1])
+			Expect(hostDriverVersion).ToNot(BeEmpty())
+			driverMajor := strings.SplitN(hostDriverVersion, ".", 2)[0]
+
+			if driverMajor >= compatMajor {
+				GinkgoLogr.Info("CUDA Forward Compatibility tests require an older driver version", "hostDriverVersion", hostDriverVersion, "compatDriverVersion", compatDriverVersion)
+				Skip("CUDA Forward Compatibility tests require an older driver version")
+			}
+		})
+
+		It("should work with the nvidia runtime in legacy mode", func(ctx context.Context) {
+			ldconfigOut, _, err := r.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true --runtime=nvidia --gpus all nvcr.io/nvidia/cuda:12.8.0-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ldconfigOut).To(ContainSubstring("/usr/local/cuda/compat"))
+		})
+
+		It("should work with the nvidia runtime in CDI mode", func(ctx context.Context) {
+			ldconfigOut, _, err := r.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true  --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all nvcr.io/nvidia/cuda:12.8.0-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ldconfigOut).To(ContainSubstring("/usr/local/cuda/compat"))
+		})
+
+		It("should NOT work with nvidia-container-runtime-hook", func(ctx context.Context) {
+			ldconfigOut, _, err := r.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true --runtime=runc --gpus all nvcr.io/nvidia/cuda:12.8.0-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ldconfigOut).To(ContainSubstring("/usr/lib64"))
 		})
 	})
 })
