@@ -94,7 +94,7 @@ jobs:
           if [[ "${{ matrix.ispr }}" == "true" ]]; then
             BUILD_MULTI_ARCH_IMAGES="false"
           fi
-          echo "PUSH_ON_BUILD=\"true\"" >> $GITHUB_ENV
+          echo "PUSH_ON_BUILD=true" >> $GITHUB_ENV
           echo "BUILD_MULTI_ARCH_IMAGES=${BUILD_MULTI_ARCH_IMAGES}" >> $GITHUB_ENV
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -122,3 +122,9 @@ jobs:
         run: |
           echo "${VERSION}"
           make -f deployments/container/Makefile build-${{ matrix.dist }}
+
+  test:
+    name: End-to-end Tests
+    uses: ./.github/workflows/e2e.yaml
+    secrets: inherit
+    needs: image

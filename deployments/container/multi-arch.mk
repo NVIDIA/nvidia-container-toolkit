@@ -16,8 +16,7 @@ PUSH_ON_BUILD ?= false
 DOCKER_BUILD_OPTIONS = --output=type=image,push=$(PUSH_ON_BUILD)
 DOCKER_BUILD_PLATFORM_OPTIONS = --platform=linux/amd64,linux/arm64
 
-# We only generate amd64 image for ubuntu18.04
-build-ubuntu18.04: DOCKER_BUILD_PLATFORM_OPTIONS = --platform=linux/amd64
+$(BUILD_TARGETS): build-%: image-%
 
 # We only generate a single image for packaging targets
 build-packaging: DOCKER_BUILD_PLATFORM_OPTIONS = --platform=linux/amd64
