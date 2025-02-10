@@ -16,11 +16,14 @@
 name: image
 
 on:
-  push:
-    branches:
-      - "pull-request/[0-9]+"
-      - main
-      - release-*
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      build_multi_arch_images:
+        required: true
+        type: string
 
 jobs:
   packages:
@@ -46,20 +49,25 @@ jobs:
           - ispr: true
             target: centos8-ppc64le
       fail-fast: false
+      
     steps:
       - uses: actions/checkout@v4
         name: Check out code
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
           image: tonistiigi/binfmt:master
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: build ${{ matrix.target }} packages
         run: |
           sudo apt-get install -y coreutils build-essential sed git bash make
           echo "Building packages"
           ./scripts/build-packages.sh ${{ matrix.target }}
+
       - name: 'Upload Artifacts'
         uses: actions/upload-artifact@v4
         with:
@@ -84,24 +92,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         name: Check out code
-      - name: Calculate build vars
-        id: vars
-        run: |
-          echo "COMMIT_SHORT_SHA=${GITHUB_SHA:0:8}" >> $GITHUB_ENV
-          echo "LOWERCASE_REPO_OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | awk '{print tolower($0)}')" >> $GITHUB_ENV
 
-          BUILD_MULTI_ARCH_IMAGES="true"
-          if [[ "${{ matrix.ispr }}" == "true" ]]; then
-            BUILD_MULTI_ARCH_IMAGES="false"
-          fi
-          echo "PUSH_ON_BUILD=true" >> $GITHUB_ENV
-          echo "BUILD_MULTI_ARCH_IMAGES=${BUILD_MULTI_ARCH_IMAGES}" >> $GITHUB_ENV
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
           image: tonistiigi/binfmt:master
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: Get built packages
         uses: actions/download-artifact@v4
         with:
@@ -115,16 +114,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build image
         env:
-          IMAGE_NAME: ghcr.io/${LOWERCASE_REPO_OWNER}/container-toolkit
-          VERSION: ${COMMIT_SHORT_SHA}
+          IMAGE_NAME: ghcr.io/nvidia/container-toolkit
+          VERSION: ${{ inputs.version }}
+          PUSH_ON_BUILD: "true"
+          BUILD_MULTI_ARCH_IMAGES: ${{ inputs.build_multi_arch_images }}
         run: |
           echo "${VERSION}"
           make -f deployments/container/Makefile build-${{ matrix.dist }}
-
-  test:
-    name: End-to-end Tests
-    uses: ./.github/workflows/e2e.yaml
-    secrets: inherit
-    needs: image

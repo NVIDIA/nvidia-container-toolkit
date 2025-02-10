@@ -16,7 +16,10 @@ name: End-to-end Tests
 
 on:
   workflow_call:
-    inputs: {}
+    inputs:
+      version:
+        required: true
+        type: string
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -67,8 +70,8 @@ jobs:
 
       - name: Run e2e tests
         env:
-          IMAGE_NAME: ghcr.io/${LOWERCASE_REPO_OWNER}/container-toolkit
-          VERSION: ${COMMIT_SHORT_SHA}
+          IMAGE_NAME: ghcr.io/nvidia/container-toolkit
+          VERSION: ${{ inputs.version }}
           SSH_KEY: ${{ secrets.AWS_SSH_KEY }}
           E2E_SSH_USER: ${{ secrets.E2E_SSH_USER }}
           E2E_SSH_HOST: ${{ steps.holodeck_public_dns_name.outputs.result }}
