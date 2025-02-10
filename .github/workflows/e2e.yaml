@@ -15,19 +15,25 @@
 name: End-to-end Tests
 
 on:
-  workflow_run:
-    workflows: [image]
-    types:
-      - completed
-    branches:
-      - "pull-request/[0-9]+"
-      - main
-      - release-*
+  workflow_call:
+    inputs: {}
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      AWS_SSH_KEY:
+        required: true
+      E2E_SSH_USER:
+        required: true
+      SLACK_BOT_TOKEN:
+        required: true
+      SLACK_CHANNEL_ID:
+        required: true
 
 jobs:
   e2e-tests:
     runs-on: linux-amd64-cpu4
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4

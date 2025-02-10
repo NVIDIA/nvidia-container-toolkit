@@ -43,6 +43,7 @@ DISTRIBUTIONS := ubuntu20.04 ubi8
 
 META_TARGETS := packaging
 
+IMAGE_TARGETS := $(patsubst %,image-%,$(DISTRIBUTIONS) $(META_TARGETS))
 BUILD_TARGETS := $(patsubst %,build-%,$(DISTRIBUTIONS) $(META_TARGETS))
 PUSH_TARGETS := $(patsubst %,push-%,$(DISTRIBUTIONS) $(META_TARGETS))
 TEST_TARGETS := $(patsubst %,test-%,$(DISTRIBUTIONS))
@@ -83,7 +84,7 @@ build-%: DOCKERFILE = $(CURDIR)/deployments/container/Dockerfile.$(DOCKERFILE_SU
 ARTIFACTS_ROOT ?= $(shell realpath --relative-to=$(CURDIR) $(DIST_DIR))
 
 # Use a generic build target to build the relevant images
-$(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
+$(IMAGE_TARGETS): image-%: $(ARTIFACTS_ROOT)
 	DOCKER_BUILDKIT=1 \
 		$(DOCKER) $(BUILDX) build --pull \
 		--provenance=false --sbom=false \
@@ -102,7 +103,6 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 		-f $(DOCKERFILE) \
 		$(CURDIR)
 
-
 build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
 build-ubuntu%: PACKAGE_DIST = ubuntu18.04
 
@@ -115,6 +115,12 @@ build-packaging: PACKAGE_DIST = all
 
 # Test targets
 test-%: DIST = $(*)
+
+# Handle the default build target.
+.PHONY: build
+build: $(DEFAULT_PUSH_TARGET)
+$(DEFAULT_PUSH_TARGET): build-$(DEFAULT_PUSH_TARGET)
+$(DEFAULT_PUSH_TARGET): DIST = $(DEFAULT_PUSH_TARGET)
 
 TEST_CASES ?= docker crio containerd
 $(TEST_TARGETS): test-%:
