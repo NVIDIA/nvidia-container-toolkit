@@ -74,6 +74,12 @@ var _ = Describe("docker", Ordered, func() {
 			Expect(containerOutput).To(Equal(hostOutput))
 		})
 
+		It("should support automatic CDI spec generation with the --gpus flag", func(ctx context.Context) {
+			containerOutput, _, err := r.Run("docker run --rm -i --gpus=all --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all ubuntu nvidia-smi -L")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(containerOutput).To(Equal(hostOutput))
+		})
+
 		It("should support the --gpus flag using the nvidia-container-runtime", func(ctx context.Context) {
 			containerOutput, _, err := r.Run("docker run --rm -i --runtime=nvidia --gpus all ubuntu nvidia-smi -L")
 			Expect(err).ToNot(HaveOccurred())
