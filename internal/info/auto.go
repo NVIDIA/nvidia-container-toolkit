@@ -23,8 +23,28 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
+// A RuntimeMode is used to select a specific mode of operation for the NVIDIA Container Runtime.
+type RuntimeMode string
+
+const (
+	// In LegacyRuntimeMode the nvidia-container-runtime injects the
+	// nvidia-container-runtime-hook as a prestart hook into the incoming
+	// container config. This hook invokes the nvidia-container-cli to perform
+	// the required modifications to the container.
+	LegacyRuntimeMode = RuntimeMode("legacy")
+	// In CSVRuntimeMode the nvidia-container-runtime processes a set of CSV
+	// files to determine which container modification are required. The
+	// contents of these CSV files are used to generate an in-memory CDI
+	// specification which is used to modify the container config.
+	CSVRuntimeMode = RuntimeMode("csv")
+	// In CDIRuntimeMode the nvidia-container-runtime applies the modifications
+	// to the container config required for the requested CDI devices in the
+	// same way that other CDI clients would.
+	CDIRuntimeMode = RuntimeMode("cdi")
+)
+
 type RuntimeModeResolver interface {
-	ResolveRuntimeMode(string) string
+	ResolveRuntimeMode(string) RuntimeMode
 }
 
 type modeResolver struct {
@@ -67,7 +87,7 @@ func NewRuntimeModeResolver(opts ...Option) RuntimeModeResolver {
 }
 
 // ResolveAutoMode determines the correct mode for the platform if set to "auto"
-func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rmode string) {
+func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rmode RuntimeMode) {
 	r := modeResolver{
 		logger:            logger,
 		image:             &image,
@@ -76,17 +96,17 @@ func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rm
 	return r.ResolveRuntimeMode(mode)
 }
 
-func (m *modeResolver) ResolveRuntimeMode(mode string) (rmode string) {
+func (m *modeResolver) ResolveRuntimeMode(mode string) (rmode RuntimeMode) {
 	if mode != "auto" {
 		m.logger.Infof("Using requested mode '%s'", mode)
-		return mode
+		return RuntimeMode(mode)
 	}
 	defer func() {
 		m.logger.Infof("Auto-detected mode as '%v'", rmode)
 	}()
 
 	if m.image.OnlyFullyQualifiedCDIDevices() {
-		return "cdi"
+		return CDIRuntimeMode
 	}
 
 	nvinfo := info.New(
@@ -96,9 +116,9 @@ func (m *modeResolver) ResolveRuntimeMode(mode string) (rmode string) {
 
 	switch nvinfo.ResolvePlatform() {
 	case info.PlatformNVML, info.PlatformWSL:
-		return "legacy"
+		return LegacyRuntimeMode
 	case info.PlatformTegra:
-		return "csv"
+		return CSVRuntimeMode
 	}
-	return "legacy"
+	return LegacyRuntimeMode
 }

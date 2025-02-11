@@ -101,13 +101,13 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 	return modifiers, nil
 }
 
-func newModeModifier(logger logger.Interface, mode string, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
+func newModeModifier(logger logger.Interface, mode info.RuntimeMode, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
 	switch mode {
-	case "legacy":
+	case info.LegacyRuntimeMode:
 		return modifier.NewStableRuntimeModifier(logger, cfg.NVIDIAContainerRuntimeHookConfig.Path), nil
-	case "csv":
+	case info.CSVRuntimeMode:
 		return modifier.NewCSVModifier(logger, cfg, image)
-	case "cdi":
+	case info.CDIRuntimeMode:
 		return modifier.NewCDIModifier(logger, cfg, image)
 	}
 
@@ -119,7 +119,7 @@ func newModeModifier(logger logger.Interface, mode string, cfg *config.Config, i
 // The image is also used to determine the runtime mode to apply.
 // If a non-CDI mode is detected we ensure that the image does not process
 // annotation devices.
-func initRuntimeModeAndImage(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (string, *image.CUDA, error) {
+func initRuntimeModeAndImage(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (info.RuntimeMode, *image.CUDA, error) {
 	rawSpec, err := ociSpec.Load()
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to load OCI spec: %v", err)
@@ -142,7 +142,7 @@ func initRuntimeModeAndImage(logger logger.Interface, cfg *config.Config, ociSpe
 	)
 	mode := modeResolver.ResolveRuntimeMode(cfg.NVIDIAContainerRuntimeConfig.Mode)
 	// We update the mode here so that we can continue passing just the config to other functions.
-	cfg.NVIDIAContainerRuntimeConfig.Mode = mode
+	cfg.NVIDIAContainerRuntimeConfig.Mode = string(mode)
 
 	if mode == "cdi" || len(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes) == 0 {
 		return mode, &image, nil
@@ -158,12 +158,12 @@ func initRuntimeModeAndImage(logger logger.Interface, cfg *config.Config, ociSpe
 }
 
 // supportedModifierTypes returns the modifiers supported for a specific runtime mode.
-func supportedModifierTypes(mode string) []string {
+func supportedModifierTypes(mode info.RuntimeMode) []string {
 	switch mode {
-	case "cdi":
+	case info.CDIRuntimeMode:
 		// For CDI mode we make no additional modifications.
 		return []string{"nvidia-hook-remover", "mode"}
-	case "csv":
+	case info.CSVRuntimeMode:
 		// For CSV mode we support mode and feature-gated modification.
 		return []string{"nvidia-hook-remover", "feature-gated", "mode"}
 	default:
