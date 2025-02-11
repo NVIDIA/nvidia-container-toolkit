@@ -23,8 +23,17 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
+// A RuntimeMode is used to select a specific mode of operation for the NVIDIA Container Runtime.
+type RuntimeMode string
+
+const (
+	RuntimeModeLegacy = RuntimeMode("legacy")
+	RuntimeModeCSV    = RuntimeMode("csv")
+	RuntimeModeCDI    = RuntimeMode("cdi")
+)
+
 type RuntimeModeResolver interface {
-	ResolveRuntimeMode(string) string
+	ResolveRuntimeMode(string) RuntimeMode
 }
 
 type modeResolver struct {
@@ -67,7 +76,7 @@ func NewRuntimeModeResolver(opts ...Option) RuntimeModeResolver {
 }
 
 // ResolveAutoMode determines the correct mode for the platform if set to "auto"
-func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rmode string) {
+func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rmode RuntimeMode) {
 	r := modeResolver{
 		logger:            logger,
 		image:             &image,
@@ -76,17 +85,17 @@ func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rm
 	return r.ResolveRuntimeMode(mode)
 }
 
-func (m *modeResolver) ResolveRuntimeMode(mode string) (rmode string) {
+func (m *modeResolver) ResolveRuntimeMode(mode string) (rmode RuntimeMode) {
 	if mode != "auto" {
 		m.logger.Infof("Using requested mode '%s'", mode)
-		return mode
+		return RuntimeMode(mode)
 	}
 	defer func() {
 		m.logger.Infof("Auto-detected mode as '%v'", rmode)
 	}()
 
 	if m.image.OnlyFullyQualifiedCDIDevices() {
-		return "cdi"
+		return RuntimeModeCDI
 	}
 
 	nvinfo := info.New(
@@ -96,9 +105,9 @@ func (m *modeResolver) ResolveRuntimeMode(mode string) (rmode string) {
 
 	switch nvinfo.ResolvePlatform() {
 	case info.PlatformNVML, info.PlatformWSL:
-		return "legacy"
+		return RuntimeModeLegacy
 	case info.PlatformTegra:
-		return "csv"
+		return RuntimeModeCSV
 	}
-	return "legacy"
+	return RuntimeModeLegacy
 }
