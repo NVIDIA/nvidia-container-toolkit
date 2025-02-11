@@ -68,20 +68,10 @@ func NewCSVModifier(logger logger.Interface, cfg *config.Config, container image
 		return nil, fmt.Errorf("failed to get CDI spec: %v", err)
 	}
 
-	cdiModifier, err := cdi.New(
+	return cdi.New(
 		cdi.WithLogger(logger),
 		cdi.WithSpec(spec.Raw()),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct CDI modifier: %v", err)
-	}
-
-	modifiers := Merge(
-		nvidiaContainerRuntimeHookRemover{logger},
-		cdiModifier,
-	)
-
-	return modifiers, nil
 }
 
 func checkRequirements(logger logger.Interface, image image.CUDA) error {
