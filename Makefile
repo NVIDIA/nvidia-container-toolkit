@@ -90,10 +90,29 @@ goimports:
 lint:
 	golangci-lint run ./...
 
-vendor:
-	go mod tidy
-	go mod vendor
-	go mod verify
+vendor:  | mod-tidy mod-vendor mod-verify
+
+mod-tidy:
+	@for mod in $$(find . -name go.mod -not -path "./testdata/*" -not -path "./third_party/*"); do \
+	    echo "Tidying $$mod..."; ( \
+	        cd $$(dirname $$mod) && go mod tidy \
+            ) || exit 1; \
+	done
+
+mod-vendor:
+	@for mod in $$(find . -name go.mod -not -path "./testdata/*" -not -path "./third_party/*" -not -path "./deployments/*"); do \
+		echo "Vendoring $$mod..."; ( \
+			cd $$(dirname $$mod) && go mod vendor \
+			) || exit 1; \
+	done
+
+mod-verify:
+	@for mod in $$(find . -name go.mod -not -path "./testdata/*" -not -path "./third_party/*"); do \
+	    echo "Verifying $$mod..."; ( \
+	        cd $$(dirname $$mod) && go mod verify | sed 's/^/  /g' \
+	    ) || exit 1; \
+	done
+
 
 check-vendor: vendor
 	git diff --quiet HEAD -- go.mod go.sum vendor
