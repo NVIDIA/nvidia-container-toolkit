@@ -1,7 +1,6 @@
 module github.com/NVIDIA/k8s-device-plugin/deployments/devel
 
-go 1.23
-toolchain go1.23.1
+go 1.23.0
 
 require (
 	github.com/golangci/golangci-lint v1.64.2
