@@ -87,7 +87,7 @@ jobs:
       - name: Send Slack alert notification
         id: slack
         if: ${{ failure() }}
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v2.0.0
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
