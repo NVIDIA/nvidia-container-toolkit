@@ -23,6 +23,7 @@ import (
 	symlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/create-symlinks"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/cudacompat"
 	ldcache "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/update-ldcache"
+	nvidiaparams "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/update-nvidia-params"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
@@ -34,5 +35,6 @@ func New(logger logger.Interface) []*cli.Command {
 		symlinks.NewCommand(logger),
 		chmod.NewCommand(logger),
 		cudacompat.NewCommand(logger),
+		nvidiaparams.NewCommand(logger),
 	}
 }
