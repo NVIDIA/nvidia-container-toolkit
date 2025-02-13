@@ -86,7 +86,7 @@ func (d *device) GetArchitectureAsString() (string, error) {
 	case nvml.DEVICE_ARCH_AMPERE:
 		return "Ampere", nil
 	case nvml.DEVICE_ARCH_ADA:
-		return "Ada", nil
+		return "Ada Lovelace", nil
 	case nvml.DEVICE_ARCH_HOPPER:
 		return "Hopper", nil
 	case nvml.DEVICE_ARCH_UNKNOWN:
@@ -125,7 +125,7 @@ func (d *device) GetBrandAsString() (string, error) {
 	case nvml.BRAND_NVIDIA_VWS:
 		return "NvidiaVWS", nil
 	// Deprecated in favor of nvml.BRAND_NVIDIA_CLOUD_GAMING
-	//case nvml.BRAND_NVIDIA_VGAMING:
+	// case nvml.BRAND_NVIDIA_VGAMING:
 	//	return "VGaming", nil
 	case nvml.BRAND_NVIDIA_CLOUD_GAMING:
 		return "NvidiaCloudGaming", nil
@@ -222,6 +222,9 @@ func (d *device) IsFabricAttached() (bool, error) {
 		if info.State != nvml.GPU_FABRIC_STATE_COMPLETED {
 			return false, nil
 		}
+		if info.ClusterUuid == [16]uint8{} {
+			return false, nil
+		}
 		if nvml.Return(info.Status) != nvml.SUCCESS {
 			return false, nil
 		}
@@ -238,6 +241,9 @@ func (d *device) IsFabricAttached() (bool, error) {
 			return false, fmt.Errorf("error getting GPU Fabric Info: %v", ret)
 		}
 		if info.State != nvml.GPU_FABRIC_STATE_COMPLETED {
+			return false, nil
+		}
+		if info.ClusterUuid == [16]uint8{} {
 			return false, nil
 		}
 		if nvml.Return(info.Status) != nvml.SUCCESS {
