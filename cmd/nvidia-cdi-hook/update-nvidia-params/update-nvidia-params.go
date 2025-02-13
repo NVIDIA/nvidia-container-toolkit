@@ -115,6 +115,7 @@ func (m command) updateNvidiaParamsFromReader(r io.Reader, containerRoot string)
 	var newLines []string
 	scanner := bufio.NewScanner(r)
 	var requiresModification bool
+	var requiredSize uint64
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, "ModifyDeviceFiles: ") {
@@ -128,6 +129,7 @@ func (m command) updateNvidiaParamsFromReader(r io.Reader, containerRoot string)
 			}
 		}
 		newLines = append(newLines, line)
+		requiredSize += uint64(len(line) + 5)
 	}
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("failed to read params file: %w", err)
@@ -137,7 +139,15 @@ func (m command) updateNvidiaParamsFromReader(r io.Reader, containerRoot string)
 		return nil
 	}
 
-	containerParamsFile, err := os.CreateTemp("", "nvct-params-*")
+	tmpRoot, err := os.MkdirTemp("", "nvct-empty-dir*")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary folder: %w", err)
+	}
+	if err := createTmpFs(tmpRoot, requiredSize); err != nil {
+		return fmt.Errorf("failed to create tmpfs mount for params file: %w", err)
+	}
+
+	containerParamsFile, err := os.Create(filepath.Join(tmpRoot, "nvct-params"))
 	if err != nil {
 		return fmt.Errorf("failed to create temporary params file: %w", err)
 	}
@@ -147,7 +157,7 @@ func (m command) updateNvidiaParamsFromReader(r io.Reader, containerRoot string)
 		return fmt.Errorf("failed to write temporary params file: %w", err)
 	}
 
-	if err := containerParamsFile.Chmod(0o644); err != nil {
+	if err := containerParamsFile.Chmod(0o444); err != nil {
 		return fmt.Errorf("failed to set permissions on temporary params file: %w", err)
 	}
 

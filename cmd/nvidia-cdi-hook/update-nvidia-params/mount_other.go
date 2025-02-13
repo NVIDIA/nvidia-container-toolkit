@@ -23,6 +23,10 @@ import (
 	"fmt"
 )
 
+func createTmpFs(target string, size uint64) error {
+	return fmt.Errorf("not supported")
+}
+
 func bindMountReadonly(source string, target string) error {
 	return fmt.Errorf("not supported")
 }

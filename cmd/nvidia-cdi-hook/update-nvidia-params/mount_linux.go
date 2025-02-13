@@ -20,10 +20,16 @@
 package nvidiaparams
 
 import (
+	"fmt"
+
 	"golang.org/x/sys/unix"
 )
 
+func createTmpFs(target string, size uint64) error {
+	// return unix.Mount("tmpfs", target, "tmpfs", 0, fmt.Sprintf("ro,nosuid,nodev,noexec,size=%d", size))
+	return unix.Mount("tmpfs", target, "tmpfs", 0, fmt.Sprintf("size=%d", size))
+}
+
 func bindMountReadonly(source string, target string) error {
 	return unix.Mount(source, target, "", unix.MS_BIND|unix.MS_RDONLY|unix.MS_NOSYMFOLLOW, "")
-
 }
