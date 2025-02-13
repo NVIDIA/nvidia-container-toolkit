@@ -85,15 +85,14 @@ jobs:
           make -f tests/e2e/Makefile test
 
       - name: Send Slack alert notification
-        id: slack
         if: ${{ failure() }}
         uses: slackapi/slack-github-action@v2.0.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
         with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-          slack-message: |
-            :x: On repository ${{ github.repository }} the Workflow *${{ github.workflow }}* has failed.
-
-            Details: ${{ env.SUMMARY_URL }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: |
+              :x: On repository ${{ github.repository }}, the Workflow *${{ github.workflow }}* has failed.
+      
+              Details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
