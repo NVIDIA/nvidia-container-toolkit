@@ -23,6 +23,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
@@ -35,7 +36,7 @@ import (
 //	NVIDIA_GDRCOPY=enabled
 //
 // If not devices are selected, no changes are made.
-func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
+func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, driver *root.Driver) (oci.SpecModifier, error) {
 	if devices := image.VisibleDevicesFromEnvVar(); len(devices) == 0 {
 		logger.Infof("No modification required; no devices requested")
 		return nil, nil
@@ -76,6 +77,23 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 			return nil, fmt.Errorf("failed to construct discoverer for GDRCopy devices: %w", err)
 		}
 		discoverers = append(discoverers, d)
+	}
+
+	if !cfg.Features.AllowCUDACompatLibsFromContainer.IsEnabled() {
+		compatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(logger, cfg.NVIDIACTKConfig.Path, driver)
+		discoverers = append(discoverers, compatLibHookDiscoverer)
+		if cfg.NVIDIAContainerRuntimeConfig.Mode == "legacy" {
+			ldcacheUpdateHookDiscoverer, err := discover.NewLDCacheUpdateHook(
+				logger,
+				discover.None{},
+				cfg.NVIDIACTKConfig.Path,
+				"",
+			)
+			if err != nil {
+				return nil, fmt.Errorf("failed to construct ldcache update discoverer: %w", err)
+			}
+			discoverers = append(discoverers, ldcacheUpdateHookDiscoverer)
+		}
 	}
 
 	return NewModifierFromDiscoverer(logger, discover.Merge(discoverers...))
