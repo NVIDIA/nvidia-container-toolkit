@@ -35,6 +35,11 @@ const (
 	ChmodHook = HookName("chmod")
 	// A CreateSymlinksHook is used to create symlinks in the container.
 	CreateSymlinksHook = HookName("create-symlinks")
+	// DisableDeviceNodeModificationHook refers to the hook used to ensure that
+	// device nodes are not created by libnvidia-ml.so or nvidia-smi in a
+	// container.
+	// Added in v1.17.8
+	DisableDeviceNodeModificationHook = HookName("disable-device-node-modification")
 	// An EnableCudaCompatHook is used to enabled CUDA Forward Compatibility.
 	// Added in v1.17.5
 	EnableCudaCompatHook = HookName("enable-cuda-compat")
