@@ -79,9 +79,11 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 		discoverers = append(discoverers, d)
 	}
 
-	if !cfg.Features.AllowCUDACompatLibsFromContainer.IsEnabled() {
+	if !cfg.Features.AllowCUDACompatLibsFromContainer.IsEnabled() && !cfg.Features.DisableCUDACompatLibHook.IsEnabled() {
 		compatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(logger, cfg.NVIDIACTKConfig.Path, driver)
 		discoverers = append(discoverers, compatLibHookDiscoverer)
+		// For legacy mode, we also need to inject a hook to update the LDCache
+		// after we have modifed the configuration.
 		if cfg.NVIDIAContainerRuntimeConfig.Mode == "legacy" {
 			ldcacheUpdateHookDiscoverer, err := discover.NewLDCacheUpdateHook(
 				logger,
