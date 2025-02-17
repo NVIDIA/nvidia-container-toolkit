@@ -25,6 +25,12 @@ type features struct {
 	// If this feature flag is not set to 'true' only host-rooted config paths
 	// (i.e. paths starting with an '@' are considered valid)
 	AllowLDConfigFromContainer *feature `toml:"allow-ldconfig-from-container,omitempty"`
+	// DisableCUDACompatLibHook, when enabled skips the injection of a specific
+	// hook to process CUDA compatibility libraries.
+	//
+	// Note: Since this mechanism replaces the logic in the `nvidia-container-cli`,
+	// toggling this feature has no effect if `allow-cuda-compat-libs-from-container` is enabled.
+	DisableCUDACompatLibHook *feature `toml:"disable-cuda-compat-lib-hook,omitempty"`
 	// DisableImexChannelCreation ensures that the implicit creation of
 	// requested IMEX channels is skipped when invoking the nvidia-container-cli.
 	DisableImexChannelCreation *feature `toml:"disable-imex-channel-creation,omitempty"`
