@@ -106,6 +106,10 @@ func NewDriverLibraryDiscoverer(logger logger.Interface, driver *root.Driver, nv
 			nvidiaCDIHookPath,
 		),
 		updateLDCache,
+		discover.CreateNvidiaCDIHook(
+			nvidiaCDIHookPath,
+			"update-nvidia-params",
+		),
 	)
 
 	return d, nil
