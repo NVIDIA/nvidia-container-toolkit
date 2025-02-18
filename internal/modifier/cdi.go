@@ -31,11 +31,22 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
 
+const (
+	automaticDeviceVendor = "runtime.nvidia.com"
+	automaticDeviceClass  = "gpu"
+	automaticDeviceKind   = automaticDeviceVendor + "/" + automaticDeviceClass
+)
+
 // NewCDIModifier creates an OCI spec modifier that determines the modifications to make based on the
 // CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES environment variable is
 // used to select the devices to include.
-func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
-	devices, err := getDevicesFromSpec(logger, ociSpec, cfg)
+func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec, isJitCDI bool) (oci.SpecModifier, error) {
+	defaultKind := cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind
+	if isJitCDI {
+		defaultKind = automaticDeviceKind
+	}
+
+	devices, err := getDevicesFromSpec(logger, ociSpec, cfg, defaultKind)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get required devices from OCI specification: %v", err)
 	}
@@ -65,7 +76,7 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spe
 	)
 }
 
-func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.Config) ([]string, error) {
+func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.Config, defaultKind string) ([]string, error) {
 	rawSpec, err := ociSpec.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
@@ -83,26 +94,16 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 	if err != nil {
 		return nil, err
 	}
-	if cfg.AcceptDeviceListAsVolumeMounts {
-		mountDevices := container.CDIDevicesFromMounts()
-		if len(mountDevices) > 0 {
-			return mountDevices, nil
-		}
-	}
 
 	var devices []string
-	seen := make(map[string]bool)
-	for _, name := range container.VisibleDevicesFromEnvVar() {
-		if !parser.IsQualifiedName(name) {
-			name = fmt.Sprintf("%s=%s", cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind, name)
+	if cfg.AcceptDeviceListAsVolumeMounts {
+		devices = normalizeDeviceList(logger, defaultKind, append(container.DevicesFromMounts(), container.CDIDevicesFromMounts()...)...)
+		if len(devices) > 0 {
+			return devices, nil
 		}
-		if seen[name] {
-			logger.Debugf("Ignoring duplicate device %q", name)
-			continue
-		}
-		devices = append(devices, name)
 	}
 
+	devices = normalizeDeviceList(logger, defaultKind, container.VisibleDevicesFromEnvVar()...)
 	if len(devices) == 0 {
 		return nil, nil
 	}
@@ -114,6 +115,24 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 	logger.Warningf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES: %v", devices)
 
 	return nil, nil
+}
+
+func normalizeDeviceList(logger logger.Interface, defaultKind string, devices ...string) []string {
+	seen := make(map[string]bool)
+	var normalized []string
+	for _, name := range devices {
+		if !parser.IsQualifiedName(name) {
+			name = fmt.Sprintf("%s=%s", defaultKind, name)
+		}
+		if seen[name] {
+			logger.Debugf("Ignoring duplicate device %q", name)
+			continue
+		}
+		normalized = append(normalized, name)
+		seen[name] = true
+	}
+
+	return normalized
 }
 
 // getAnnotationDevices returns a list of devices specified in the annotations.
@@ -156,7 +175,7 @@ func filterAutomaticDevices(devices []string) []string {
 	var automatic []string
 	for _, device := range devices {
 		vendor, class, _ := parser.ParseDevice(device)
-		if vendor == "runtime.nvidia.com" && class == "gpu" {
+		if vendor == automaticDeviceVendor && class == automaticDeviceClass {
 			automatic = append(automatic, device)
 		}
 	}
@@ -165,6 +184,8 @@ func filterAutomaticDevices(devices []string) []string {
 
 func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, devices []string) (oci.SpecModifier, error) {
 	logger.Debugf("Generating in-memory CDI specs for devices %v", devices)
+	// TODO: We should try to load the kernel modules and create the device nodes here.
+	// Failures should raise a warning and not error out.
 	spec, err := generateAutomaticCDISpec(logger, cfg, devices)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate CDI spec: %w", err)
