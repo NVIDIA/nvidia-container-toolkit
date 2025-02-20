@@ -20,11 +20,12 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/dgpu"
 )
 
 // newCommonNVMLDiscoverer returns a discoverer for entities that are not associated with a specific CDI device.
 // This includes driver libraries and meta devices, for example.
-func (l *nvmllib) newCommonNVMLDiscoverer() (discover.Discover, error) {
+func (l *nvmllib) newCommonNVMLDiscoverer(version string) (discover.Discover, error) {
 	metaDevices := discover.NewCharDeviceDiscoverer(
 		l.logger,
 		l.devRoot,
@@ -41,7 +42,15 @@ func (l *nvmllib) newCommonNVMLDiscoverer() (discover.Discover, error) {
 		l.logger.Warningf("failed to create discoverer for graphics mounts: %v", err)
 	}
 
-	driverFiles, err := NewDriverDiscoverer(l.logger, l.driver, l.nvidiaCDIHookPath, l.ldconfigPath, l.nvmllib)
+	driverFiles, err := dgpu.NewDriverDiscoverer(
+		dgpu.WithDevRoot(l.devRoot),
+		dgpu.WithDriver(l.driver),
+		dgpu.WithLdconfigPath(l.ldconfigPath),
+		dgpu.WithLogger(l.logger),
+		dgpu.WithNVIDIACDIHookPath(l.nvidiaCDIHookPath),
+		dgpu.WithNvsandboxuitilsLib(l.nvsandboxutilslib),
+		dgpu.WithVersion(version),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for driver files: %v", err)
 	}

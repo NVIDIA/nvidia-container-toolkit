@@ -18,29 +18,20 @@ package nvcdi
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
-	"tags.cncf.io/container-device-interface/pkg/cdi"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
-
-type wrapper struct {
-	Interface
-
-	vendor string
-	class  string
-
-	mergedDeviceOptions []transform.MergedDeviceOption
-}
 
 type nvcdilib struct {
 	logger             logger.Interface
@@ -180,50 +171,36 @@ func New(opts ...Option) (Interface, error) {
 	return &w, nil
 }
 
-// GetSpec combines the device specs and common edits from the wrapped Interface to a single spec.Interface.
-func (l *wrapper) GetSpec() (spec.Interface, error) {
-	deviceSpecs, err := l.GetAllDeviceSpecs()
-	if err != nil {
-		return nil, err
-	}
-
-	edits, err := l.GetCommonEdits()
-	if err != nil {
-		return nil, err
-	}
-
-	return spec.New(
-		spec.WithDeviceSpecs(deviceSpecs),
-		spec.WithEdits(*edits.ContainerEdits),
-		spec.WithVendor(l.vendor),
-		spec.WithClass(l.class),
-		spec.WithMergedDeviceOptions(l.mergedDeviceOptions...),
-	)
-}
-
-// GetCommonEdits returns the wrapped edits and adds additional edits on top.
-func (m *wrapper) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	edits, err := m.Interface.GetCommonEdits()
-	if err != nil {
-		return nil, err
-	}
-	edits.Env = append(edits.Env, image.EnvVarNvidiaVisibleDevices+"=void")
-
-	return edits, nil
-}
-
-// getCudaVersion returns the CUDA version of the current system.
-func (l *nvcdilib) getCudaVersion() (string, error) {
-	version, err := l.getCudaVersionNvsandboxutils()
-	if err == nil {
+// getDriverVersion returns the driver version of the current system.
+func (l *nvcdilib) getDriverVersion() (string, error) {
+	if version, err := l.getDriverVersionNvsandboxutils(); err == nil && version != "" {
 		return version, err
 	}
 
 	// Fallback to NVML
-	return l.getCudaVersionNvml()
+	if version, err := l.getDriverVersionNvml(); err == nil && version != "" {
+		return version, err
+	}
+
+	// Fallback to getting the version from the libcuda.so suffix.
+	return l.getDriverVersionLibcudaSo()
 }
 
-func (l *nvcdilib) getCudaVersionNvml() (string, error) {
+func (l *nvcdilib) getDriverVersionLibcudaSo() (string, error) {
+	libCudaPaths, err := cuda.New(
+		l.driver.Libraries(),
+	).Locate(".*.*")
+	if err != nil {
+		return "", fmt.Errorf("failed to locate libcuda.so: %v", err)
+	}
+	libCudaPath := libCudaPaths[0]
+
+	version := strings.TrimPrefix(filepath.Base(libCudaPath), "libcuda.so.")
+
+	return version, nil
+}
+
+func (l *nvcdilib) getDriverVersionNvml() (string, error) {
 	if hasNVML, reason := l.infolib.HasNvml(); !hasNVML {
 		return "", fmt.Errorf("nvml not detected: %v", reason)
 	}
@@ -247,7 +224,7 @@ func (l *nvcdilib) getCudaVersionNvml() (string, error) {
 	return version, nil
 }
 
-func (l *nvcdilib) getCudaVersionNvsandboxutils() (string, error) {
+func (l *nvcdilib) getDriverVersionNvsandboxutils() (string, error) {
 	if l.nvsandboxutilslib == nil {
 		return "", fmt.Errorf("libnvsandboxutils is not available")
 	}

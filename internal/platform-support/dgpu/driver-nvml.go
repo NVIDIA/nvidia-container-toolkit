@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package nvcdi
+package dgpu
 
 import (
 	"fmt"
@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"golang.org/x/sys/unix"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
@@ -32,47 +31,22 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 )
 
-// NewDriverDiscoverer creates a discoverer for the libraries and binaries associated with a driver installation.
-// The supplied NVML Library is used to query the expected driver version.
-func NewDriverDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath string, ldconfigPath string, nvmllib nvml.Interface) (discover.Discover, error) {
-	if r := nvmllib.Init(); r != nvml.SUCCESS {
-		return nil, fmt.Errorf("failed to initialize NVML: %v", r)
-	}
-	defer func() {
-		if r := nvmllib.Shutdown(); r != nvml.SUCCESS {
-			logger.Warningf("failed to shutdown NVML: %v", r)
-		}
-	}()
-
-	version, r := nvmllib.SystemGetDriverVersion()
-	if r != nvml.SUCCESS {
-		return nil, fmt.Errorf("failed to determine driver version: %v", r)
-	}
-
-	return newDriverVersionDiscoverer(logger, driver, nvidiaCDIHookPath, ldconfigPath, version)
-}
-
-func newDriverVersionDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath, ldconfigPath, version string) (discover.Discover, error) {
-	libraries, err := NewDriverLibraryDiscoverer(logger, driver, nvidiaCDIHookPath, ldconfigPath, version)
+// newNvmlDriverDiscoverer constructs a discoverer from the specified NVML library.
+func (o *options) newNvmlDriverDiscoverer() (discover.Discover, error) {
+	libraries, err := o.newNvmlDriverLibraryDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for driver libraries: %v", err)
 	}
 
-	ipcs, err := discover.NewIPCDiscoverer(logger, driver.Root)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create discoverer for IPC sockets: %v", err)
-	}
-
-	firmwares, err := NewDriverFirmwareDiscoverer(logger, driver.Root, version)
+	firmwares, err := o.newNvmlDriverFirmwareDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for GSP firmware: %v", err)
 	}
 
-	binaries := NewDriverBinariesDiscoverer(logger, driver.Root)
+	binaries := o.newNvmlDriverBinariesDiscoverer()
 
 	d := discover.Merge(
 		libraries,
-		ipcs,
 		firmwares,
 		binaries,
 	)
@@ -80,32 +54,27 @@ func newDriverVersionDiscoverer(logger logger.Interface, driver *root.Driver, nv
 	return d, nil
 }
 
-// NewDriverLibraryDiscoverer creates a discoverer for the libraries associated with the specified driver version.
-func NewDriverLibraryDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath, ldconfigPath, version string) (discover.Discover, error) {
-	libraryPaths, err := getVersionLibs(logger, driver, version)
+// newNvmlDriverLibraryDiscoverer creates a discoverer for the libraries associated with the specified driver version.
+func (o *options) newNvmlDriverLibraryDiscoverer() (discover.Discover, error) {
+	libraryPaths, err := getVersionLibs(o.logger, o.driver, o.version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get libraries for driver version: %v", err)
 	}
 
 	libraries := discover.NewMounts(
-		logger,
+		o.logger,
 		lookup.NewFileLocator(
-			lookup.WithLogger(logger),
-			lookup.WithRoot(driver.Root),
+			lookup.WithLogger(o.logger),
+			lookup.WithRoot(o.driver.Root),
 		),
-		driver.Root,
+		o.driver.Root,
 		libraryPaths,
 	)
 
-	updateLDCache, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCDIHookPath, ldconfigPath)
-
-	d := discover.Merge(
-		discover.WithDriverDotSoSymlinks(
-			libraries,
-			version,
-			nvidiaCDIHookPath,
-		),
-		updateLDCache,
+	d := discover.WithDriverDotSoSymlinks(
+		libraries,
+		o.version,
+		o.nvidiaCDIHookPath,
 	)
 
 	return d, nil
@@ -153,31 +122,31 @@ func getCustomFirmwareClassPath(logger logger.Interface) string {
 	return strings.TrimSpace(string(customFirmwareClassPath))
 }
 
-// NewDriverFirmwareDiscoverer creates a discoverer for GSP firmware associated with the specified driver version.
-func NewDriverFirmwareDiscoverer(logger logger.Interface, driverRoot string, version string) (discover.Discover, error) {
-	gspFirmwareSearchPaths, err := getFirmwareSearchPaths(logger)
+// newNvmlDriverFirmwareDiscoverer creates a discoverer for GSP firmware associated with the specified driver version.
+func (o *options) newNvmlDriverFirmwareDiscoverer() (discover.Discover, error) {
+	gspFirmwareSearchPaths, err := getFirmwareSearchPaths(o.logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get firmware search paths: %v", err)
 	}
-	gspFirmwarePaths := filepath.Join("nvidia", version, "gsp*.bin")
+	gspFirmwarePaths := filepath.Join("nvidia", o.version, "gsp*.bin")
 	return discover.NewMounts(
-		logger,
+		o.logger,
 		lookup.NewFileLocator(
-			lookup.WithLogger(logger),
-			lookup.WithRoot(driverRoot),
+			lookup.WithLogger(o.logger),
+			lookup.WithRoot(o.driver.Root),
 			lookup.WithSearchPaths(gspFirmwareSearchPaths...),
 		),
-		driverRoot,
+		o.driver.Root,
 		[]string{gspFirmwarePaths},
 	), nil
 }
 
-// NewDriverBinariesDiscoverer creates a discoverer for GSP firmware associated with the GPU driver.
-func NewDriverBinariesDiscoverer(logger logger.Interface, driverRoot string) discover.Discover {
+// newNvmlDriverBinariesDiscoverer creates a discoverer for binaries associated with the specified driver version.
+func (o *options) newNvmlDriverBinariesDiscoverer() discover.Discover {
 	return discover.NewMounts(
-		logger,
-		lookup.NewExecutableLocator(logger, driverRoot),
-		driverRoot,
+		o.logger,
+		lookup.NewExecutableLocator(o.logger, o.driver.Root),
+		o.driver.Root,
 		[]string{
 			"nvidia-smi",              /* System management interface */
 			"nvidia-debugdump",        /* GPU coredump utility */
