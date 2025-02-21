@@ -99,19 +99,22 @@ func New(opts ...Option) (Interface, error) {
 		}
 		l.nvmllib = nvml.New(nvmlOpts...)
 	}
-	if l.nvsandboxutilslib == nil {
-		var nvsandboxutilsOpts []nvsandboxutils.LibraryOption
-		// Set the library path for libnvidia-sandboxutils
-		candidates, err := l.driver.Libraries().Locate("libnvidia-sandboxutils.so.1")
-		if err != nil {
-			l.logger.Warningf("Ignoring error in locating libnvidia-sandboxutils.so.1: %v", err)
-		} else {
-			libNvidiaSandboxutilsPath := candidates[0]
-			l.logger.Infof("Using %v", libNvidiaSandboxutilsPath)
-			nvsandboxutilsOpts = append(nvsandboxutilsOpts, nvsandboxutils.WithLibraryPath(libNvidiaSandboxutilsPath))
-		}
-		l.nvsandboxutilslib = nvsandboxutils.New(nvsandboxutilsOpts...)
-	}
+	// TODO: Repeated calls to nvsandboxutils.Init and Shutdown are causing
+	// segmentation violations. Here we disabled nvsandbox utils unless explicitly
+	// specified.
+	// if l.nvsandboxutilslib == nil {
+	// 	var nvsandboxutilsOpts []nvsandboxutils.LibraryOption
+	// 	// Set the library path for libnvidia-sandboxutils
+	// 	candidates, err := l.driver.Libraries().Locate("libnvidia-sandboxutils.so.1")
+	// 	if err != nil {
+	// 		l.logger.Warningf("Ignoring error in locating libnvidia-sandboxutils.so.1: %v", err)
+	// 	} else {
+	// 		libNvidiaSandboxutilsPath := candidates[0]
+	// 		l.logger.Infof("Using %v", libNvidiaSandboxutilsPath)
+	// 		nvsandboxutilsOpts = append(nvsandboxutilsOpts, nvsandboxutils.WithLibraryPath(libNvidiaSandboxutilsPath))
+	// 	}
+	// 	l.nvsandboxutilslib = nvsandboxutils.New(nvsandboxutilsOpts...)
+	// }
 	if l.devicelib == nil {
 		l.devicelib = device.New(l.nvmllib)
 	}
