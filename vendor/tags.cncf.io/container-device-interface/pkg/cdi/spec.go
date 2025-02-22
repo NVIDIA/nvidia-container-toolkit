@@ -17,7 +17,6 @@
 package cdi
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,6 +27,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"tags.cncf.io/container-device-interface/internal/validation"
+	"tags.cncf.io/container-device-interface/pkg/parser"
 	cdi "tags.cncf.io/container-device-interface/specs-go"
 )
 
@@ -105,64 +105,13 @@ func newSpec(raw *cdi.Spec, path string, priority int) (*Spec, error) {
 		spec.path += defaultSpecExt
 	}
 
-	spec.vendor, spec.class = ParseQualifier(spec.Kind)
+	spec.vendor, spec.class = parser.ParseQualifier(spec.Kind)
 
 	if spec.devices, err = spec.validate(); err != nil {
 		return nil, fmt.Errorf("invalid CDI Spec: %w", err)
 	}
 
 	return spec, nil
-}
-
-// Write the CDI Spec to the file associated with it during instantiation
-// by newSpec() or ReadSpec().
-func (s *Spec) write(overwrite bool) error {
-	var (
-		data []byte
-		dir  string
-		tmp  *os.File
-		err  error
-	)
-
-	err = validateSpec(s.Spec)
-	if err != nil {
-		return err
-	}
-
-	if filepath.Ext(s.path) == ".yaml" {
-		data, err = yaml.Marshal(s.Spec)
-		data = append([]byte("---\n"), data...)
-	} else {
-		data, err = json.Marshal(s.Spec)
-	}
-	if err != nil {
-		return fmt.Errorf("failed to marshal Spec file: %w", err)
-	}
-
-	dir = filepath.Dir(s.path)
-	err = os.MkdirAll(dir, 0o755)
-	if err != nil {
-		return fmt.Errorf("failed to create Spec dir: %w", err)
-	}
-
-	tmp, err = os.CreateTemp(dir, "spec.*.tmp")
-	if err != nil {
-		return fmt.Errorf("failed to create Spec file: %w", err)
-	}
-	_, err = tmp.Write(data)
-	tmp.Close()
-	if err != nil {
-		return fmt.Errorf("failed to write Spec file: %w", err)
-	}
-
-	err = renameIn(dir, filepath.Base(tmp.Name()), filepath.Base(s.path), overwrite)
-
-	if err != nil {
-		os.Remove(tmp.Name())
-		err = fmt.Errorf("failed to write Spec file: %w", err)
-	}
-
-	return err
 }
 
 // GetVendor returns the vendor of this Spec.
@@ -200,24 +149,21 @@ func (s *Spec) edits() *ContainerEdits {
 	return &ContainerEdits{&s.ContainerEdits}
 }
 
+// MinimumRequiredVersion determines the minimum spec version for the input spec.
+// Deprecated: use cdi.MinimumRequiredVersion instead
+func MinimumRequiredVersion(spec *cdi.Spec) (string, error) {
+	return cdi.MinimumRequiredVersion(spec)
+}
+
 // Validate the Spec.
 func (s *Spec) validate() (map[string]*Device, error) {
-	if err := validateVersion(s.Version); err != nil {
+	if err := cdi.ValidateVersion(s.Spec); err != nil {
 		return nil, err
 	}
-
-	minVersion, err := MinimumRequiredVersion(s.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("could not determine minimum required version: %v", err)
-	}
-	if newVersion(minVersion).IsGreaterThan(newVersion(s.Version)) {
-		return nil, fmt.Errorf("the spec version must be at least v%v", minVersion)
-	}
-
-	if err := ValidateVendorName(s.vendor); err != nil {
+	if err := parser.ValidateVendorName(s.vendor); err != nil {
 		return nil, err
 	}
-	if err := ValidateClassName(s.class); err != nil {
+	if err := parser.ValidateClassName(s.class); err != nil {
 		return nil, err
 	}
 	if err := validation.ValidateSpecAnnotations(s.Kind, s.Annotations); err != nil {
@@ -242,15 +188,6 @@ func (s *Spec) validate() (map[string]*Device, error) {
 	return devices, nil
 }
 
-// validateVersion checks whether the specified spec version is supported.
-func validateVersion(version string) error {
-	if !validSpecVersions.isValidVersion(version) {
-		return fmt.Errorf("invalid version %q", version)
-	}
-
-	return nil
-}
-
 // ParseSpec parses CDI Spec data into a raw CDI Spec.
 func ParseSpec(data []byte) (*cdi.Spec, error) {
 	var raw *cdi.Spec
@@ -270,7 +207,7 @@ func SetSpecValidator(fn func(*cdi.Spec) error) {
 	specValidator = fn
 }
 
-// validateSpec validates the Spec using the extneral validator.
+// validateSpec validates the Spec using the extneral validation.
 func validateSpec(raw *cdi.Spec) error {
 	validatorLock.RLock()
 	defer validatorLock.RUnlock()
@@ -328,7 +265,7 @@ func GenerateTransientSpecName(vendor, class, transientID string) string {
 // the Spec does not contain a valid vendor or class, it returns
 // an empty name and a non-nil error.
 func GenerateNameForSpec(raw *cdi.Spec) (string, error) {
-	vendor, class := ParseQualifier(raw.Kind)
+	vendor, class := parser.ParseQualifier(raw.Kind)
 	if vendor == "" {
 		return "", fmt.Errorf("invalid vendor/class %q in Spec", raw.Kind)
 	}
@@ -342,7 +279,7 @@ func GenerateNameForSpec(raw *cdi.Spec) (string, error) {
 // If the Spec does not contain a valid vendor or class, it returns an
 // an empty name and a non-nil error.
 func GenerateNameForTransientSpec(raw *cdi.Spec, transientID string) (string, error) {
-	vendor, class := ParseQualifier(raw.Kind)
+	vendor, class := parser.ParseQualifier(raw.Kind)
 	if vendor == "" {
 		return "", fmt.Errorf("invalid vendor/class %q in Spec", raw.Kind)
 	}

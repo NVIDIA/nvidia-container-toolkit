@@ -20,27 +20,28 @@ import (
 	"fmt"
 	"os"
 
-	"tags.cncf.io/container-device-interface/pkg/cdi"
+	"tags.cncf.io/container-device-interface/api/producer"
 	"tags.cncf.io/container-device-interface/pkg/parser"
-	"tags.cncf.io/container-device-interface/specs-go"
+	cdi "tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
 
 type builder struct {
-	raw         *specs.Spec
+	raw         *cdi.Spec
 	version     string
 	vendor      string
 	class       string
-	deviceSpecs []specs.Device
-	edits       specs.ContainerEdits
+	deviceSpecs []cdi.Device
+	edits       cdi.ContainerEdits
 	format      string
 
 	mergedDeviceOptions []transform.MergedDeviceOption
 	noSimplify          bool
 	permissions         os.FileMode
 
-	transformOnSave transform.Transformer
+	detectMinimumVersion bool
+	transformOnSave      transform.Transformer
 }
 
 // newBuilder creates a new spec builder with the supplied options
@@ -64,7 +65,7 @@ func newBuilder(opts ...Option) *builder {
 		}
 	}
 	if s.version == "" || s.version == DetectMinimumVersion {
-		s.transformOnSave = &setMinimumRequiredVersion{}
+		s.detectMinimumVersion = true
 		s.version = cdi.CurrentVersion
 	}
 	if s.vendor == "" {
@@ -86,7 +87,7 @@ func newBuilder(opts ...Option) *builder {
 func (o *builder) Build() (*spec, error) {
 	raw := o.raw
 	if raw == nil {
-		raw = &specs.Spec{
+		raw = &cdi.Spec{
 			Version:        o.version,
 			Kind:           fmt.Sprintf("%s/%s", o.vendor, o.class),
 			Devices:        o.deviceSpecs,
@@ -114,11 +115,26 @@ func (o *builder) Build() (*spec, error) {
 		}
 	}
 
+	options := []producer.Option{
+		producer.WithDetectMinimumVersion(o.detectMinimumVersion),
+		producer.WithPermissions(o.permissions),
+	}
+	switch o.format {
+	case FormatJSON:
+		options = append(options, producer.WithSpecFormat(producer.SpecFormatJSON))
+	case FormatYAML:
+		options = append(options, producer.WithSpecFormat(producer.SpecFormatYAML))
+	}
+
+	producer, err := producer.NewSpecWriter(options...)
+	if err != nil {
+		return nil, err
+	}
+
 	s := spec{
-		Spec:            raw,
-		format:          o.format,
-		permissions:     o.permissions,
+		raw:             raw,
 		transformOnSave: o.transformOnSave,
+		SpecWriter:      producer,
 	}
 	return &s, nil
 }
@@ -127,14 +143,14 @@ func (o *builder) Build() (*spec, error) {
 type Option func(*builder)
 
 // WithDeviceSpecs sets the device specs for the spec builder
-func WithDeviceSpecs(deviceSpecs []specs.Device) Option {
+func WithDeviceSpecs(deviceSpecs []cdi.Device) Option {
 	return func(o *builder) {
 		o.deviceSpecs = deviceSpecs
 	}
 }
 
 // WithEdits sets the container edits for the spec builder
-func WithEdits(edits specs.ContainerEdits) Option {
+func WithEdits(edits cdi.ContainerEdits) Option {
 	return func(o *builder) {
 		o.edits = edits
 	}
@@ -176,7 +192,7 @@ func WithNoSimplify(noSimplify bool) Option {
 }
 
 // WithRawSpec sets the raw spec for the spec builder
-func WithRawSpec(raw *specs.Spec) Option {
+func WithRawSpec(raw *cdi.Spec) Option {
 	return func(o *builder) {
 		o.raw = raw
 	}
