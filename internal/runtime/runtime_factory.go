@@ -75,6 +75,8 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 	}
 
 	mode := info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode, image)
+	// We update the mode here so that we can continue passing just the config to other functions.
+	cfg.NVIDIAContainerRuntimeConfig.Mode = mode
 	modeModifier, err := newModeModifier(logger, mode, cfg, ociSpec, image)
 	if err != nil {
 		return nil, err
@@ -94,7 +96,7 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 			}
 			modifiers = append(modifiers, graphicsModifier)
 		case "feature-gated":
-			featureGatedModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, image)
+			featureGatedModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, image, driver)
 			if err != nil {
 				return nil, err
 			}
@@ -126,8 +128,8 @@ func supportedModifierTypes(mode string) []string {
 		return []string{"nvidia-hook-remover", "mode"}
 	case "csv":
 		// For CSV mode we support mode and feature-gated modification.
-		return []string{"nvidia-hook-remover", "mode", "feature-gated"}
+		return []string{"nvidia-hook-remover", "feature-gated", "mode"}
 	default:
-		return []string{"mode", "graphics", "feature-gated"}
+		return []string{"feature-gated", "graphics", "mode"}
 	}
 }
