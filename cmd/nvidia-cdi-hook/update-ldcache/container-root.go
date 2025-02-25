@@ -38,36 +38,6 @@ func (r containerRoot) hasPath(path string) bool {
 	return true
 }
 
-// globFiles matches the specified pattern in the root.
-// The files that match must be regular files.
-func (r containerRoot) globFiles(pattern string) ([]string, error) {
-	patternPath, err := r.resolve(pattern)
-	if err != nil {
-		return nil, err
-	}
-	matches, err := filepath.Glob(patternPath)
-	if err != nil {
-		return nil, err
-	}
-	var files []string
-	for _, match := range matches {
-		info, err := os.Lstat(match)
-		if err != nil {
-			return nil, err
-		}
-		// Ignore symlinks.
-		if info.Mode()&os.ModeSymlink != 0 {
-			continue
-		}
-		// Ignore directories.
-		if info.IsDir() {
-			continue
-		}
-		files = append(files, match)
-	}
-	return files, nil
-}
-
 // resolve returns the absolute path including root path.
 // Symlinks are resolved, but are guaranteed to resolve in the root.
 func (r containerRoot) resolve(path string) (string, error) {
