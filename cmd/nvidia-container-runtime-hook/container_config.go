@@ -198,6 +198,10 @@ func getMigDevices(image image.CUDA, envvar string) *string {
 }
 
 func (hookConfig *hookConfig) getImexChannels(image image.CUDA, privileged bool) []string {
+	if hookConfig.Features.IgnoreImexChannelRequests.IsEnabled() {
+		return nil
+	}
+
 	// If enabled, try and get the device list from volume mounts first
 	if hookConfig.AcceptDeviceListAsVolumeMounts {
 		devices := image.ImexChannelsFromMounts()
