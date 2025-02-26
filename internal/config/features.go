@@ -28,6 +28,14 @@ type features struct {
 	// DisableImexChannelCreation ensures that the implicit creation of
 	// requested IMEX channels is skipped when invoking the nvidia-container-cli.
 	DisableImexChannelCreation *feature `toml:"disable-imex-channel-creation,omitempty"`
+	// IgnoreImexChannelRequests configures the NVIDIA Container Toolkit to
+	// ignore IMEX channel requests through the NVIDIA_IMEX_CHANNELS envvar or
+	// volume mounts.
+	// This ensures that the NVIDIA Container Toolkit cannot be used to provide
+	// access to an IMEX channel by simply specifying an environment variable,
+	// possibly bypassing other checks by an orchestration system such as
+	// kubernetes.
+	IgnoreImexChannelRequests *feature `toml:"ignore-imex-channel-requests,omitempty"`
 }
 
 type feature bool
