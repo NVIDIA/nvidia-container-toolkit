@@ -39,11 +39,24 @@ func TestLDCacheUpdateHook(t *testing.T) {
 		mounts        []Mount
 		mountError    error
 		expectedError error
-		expectedArgs  []string
+		expectedHooks []Hook
 	}{
 		{
-			description:  "empty mounts",
-			expectedArgs: []string{"nvidia-cdi-hook", "update-ldcache"},
+			description: "empty mounts",
+			expectedHooks: []Hook{
+				{
+					Lifecycle: "createContainer",
+					Path:      testNvidiaCDIHookPath,
+					Args:      []string{"nvidia-cdi-hook", "create-soname-symlinks"},
+					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
+				},
+				{
+					Lifecycle: "createContainer",
+					Path:      testNvidiaCDIHookPath,
+					Args:      []string{"nvidia-cdi-hook", "update-ldcache"},
+					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
+				},
+			},
 		},
 		{
 			description:   "mount error",
@@ -66,7 +79,20 @@ func TestLDCacheUpdateHook(t *testing.T) {
 					Path: "/usr/local/lib/libbar.so",
 				},
 			},
-			expectedArgs: []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/usr/local/lib", "--folder", "/usr/local/libother"},
+			expectedHooks: []Hook{
+				{
+					Lifecycle: "createContainer",
+					Path:      testNvidiaCDIHookPath,
+					Args:      []string{"nvidia-cdi-hook", "create-soname-symlinks", "--folder", "/usr/local/lib", "--folder", "/usr/local/libother"},
+					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
+				},
+				{
+					Lifecycle: "createContainer",
+					Path:      testNvidiaCDIHookPath,
+					Args:      []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/usr/local/lib", "--folder", "/usr/local/libother"},
+					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
+				},
+			},
 		},
 		{
 			description: "host paths are ignored",
@@ -76,12 +102,38 @@ func TestLDCacheUpdateHook(t *testing.T) {
 					Path:     "/usr/local/lib/libfoo.so",
 				},
 			},
-			expectedArgs: []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/usr/local/lib"},
+			expectedHooks: []Hook{
+				{
+					Lifecycle: "createContainer",
+					Path:      testNvidiaCDIHookPath,
+					Args:      []string{"nvidia-cdi-hook", "create-soname-symlinks", "--folder", "/usr/local/lib"},
+					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
+				},
+				{
+					Lifecycle: "createContainer",
+					Path:      testNvidiaCDIHookPath,
+					Args:      []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/usr/local/lib"},
+					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
+				},
+			},
 		},
 		{
 			description:  "explicit ldconfig path is passed",
 			ldconfigPath: testLdconfigPath,
-			expectedArgs: []string{"nvidia-cdi-hook", "update-ldcache", "--ldconfig-path", testLdconfigPath},
+			expectedHooks: []Hook{
+				{
+					Lifecycle: "createContainer",
+					Path:      testNvidiaCDIHookPath,
+					Args:      []string{"nvidia-cdi-hook", "create-soname-symlinks", "--ldconfig-path", testLdconfigPath},
+					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
+				},
+				{
+					Lifecycle: "createContainer",
+					Path:      testNvidiaCDIHookPath,
+					Args:      []string{"nvidia-cdi-hook", "update-ldcache", "--ldconfig-path", testLdconfigPath},
+					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
+				},
+			},
 		},
 	}
 
@@ -92,13 +144,6 @@ func TestLDCacheUpdateHook(t *testing.T) {
 					return tc.mounts, tc.mountError
 				},
 			}
-			expectedHook := Hook{
-				Path:      testNvidiaCDIHookPath,
-				Args:      tc.expectedArgs,
-				Lifecycle: "createContainer",
-				Env:       []string{"NVIDIA_CTK_DEBUG=false"},
-			}
-
 			d, err := NewLDCacheUpdateHook(logger, mountMock, hookCreator, tc.ldconfigPath)
 			require.NoError(t, err)
 
@@ -112,9 +157,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			require.Len(t, hooks, 1)
-
-			require.EqualValues(t, hooks[0], expectedHook)
+			require.EqualValues(t, tc.expectedHooks, hooks)
 
 			devices, err := d.Devices()
 			require.NoError(t, err)
