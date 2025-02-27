@@ -215,4 +215,26 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			Expect(ldconfigOut).To(ContainSubstring("/usr/lib64"))
 		})
 	})
+
+	When("A container is run using CDI", Ordered, func() {
+		BeforeAll(func(ctx context.Context) {
+			_, _, err := r.Run("docker pull ubuntu")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should include libcuda.so in the ldcache", func(ctx context.Context) {
+			ldcacheOutput, _, err := r.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all ubuntu bash -c \"ldconfig -p | grep 'libcuda.so'\"")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ldcacheOutput).ToNot(BeEmpty())
+
+			ldcacheLines := strings.Split(ldcacheOutput, "\n")
+			var libs []string
+			for _, line := range ldcacheLines {
+				parts := strings.SplitN(line, " (", 2)
+				libs = append(libs, strings.TrimSpace(parts[0]))
+			}
+
+			Expect(libs).To(ContainElements([]string{"libcuda.so", "libcuda.so.1"}))
+		})
+	})
 })
