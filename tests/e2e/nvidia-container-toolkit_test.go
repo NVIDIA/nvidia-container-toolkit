@@ -24,7 +24,7 @@ import (
 )
 
 // Integration tests for Docker runtime
-var _ = Describe("docker", Ordered, func() {
+var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 	var r Runner
 
 	// Install the NVIDIA Container Toolkit
@@ -164,6 +164,25 @@ var _ = Describe("docker", Ordered, func() {
 			out4, _, err := r.Run("docker run --rm -i --gpus all nvcr.io/nvidia/k8s/cuda-sample:devicequery-cuda12.5.0")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(referenceOutput).To(Equal(out4))
+		})
+	})
+
+	Describe("Disabling device node creation", Ordered, func() {
+		BeforeAll(func(ctx context.Context) {
+			_, _, err := r.Run("docker pull ubuntu")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should work with nvidia-container-runtime-hook", func(ctx context.Context) {
+			output, _, err := r.Run("docker run --rm -i --runtime=runc --gpus=all ubuntu bash -c \"grep ModifyDeviceFiles: /proc/driver/nvidia/params\"")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output).To(Equal("ModifyDeviceFiles: 0\n"))
+		})
+
+		It("should work with automatic CDI spec generation", func(ctx context.Context) {
+			output, _, err := r.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all ubuntu bash -c \"grep ModifyDeviceFiles: /proc/driver/nvidia/params\"")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output).To(Equal("ModifyDeviceFiles: 0\n"))
 		})
 	})
 })

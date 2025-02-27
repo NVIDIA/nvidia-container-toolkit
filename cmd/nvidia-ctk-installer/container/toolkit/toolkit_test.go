@@ -87,6 +87,11 @@ containerEdits:
     - /lib/x86_64-linux-gnu
     hookName: createContainer
     path: {{ .toolkitRoot }}/nvidia-cdi-hook
+  - args:
+    - nvidia-cdi-hook
+    - update-nvidia-params
+    hookName: createContainer
+    path: {{ .toolkitRoot }}/nvidia-cdi-hook
   mounts:
   - containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
     hostPath: /host/driver/root/lib/x86_64-linux-gnu/libcuda.so.999.88.77
