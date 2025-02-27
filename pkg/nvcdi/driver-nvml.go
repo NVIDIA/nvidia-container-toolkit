@@ -97,6 +97,8 @@ func NewDriverLibraryDiscoverer(logger logger.Interface, driver *root.Driver, nv
 		libraryPaths,
 	)
 
+	// TODO: The following should use the version directly.
+	cudaCompatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(logger, nvidiaCDIHookPath, driver)
 	updateLDCache, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCDIHookPath, ldconfigPath)
 
 	d := discover.Merge(
@@ -105,6 +107,7 @@ func NewDriverLibraryDiscoverer(logger logger.Interface, driver *root.Driver, nv
 			version,
 			nvidiaCDIHookPath,
 		),
+		cudaCompatLibHookDiscoverer,
 		updateLDCache,
 	)
 
