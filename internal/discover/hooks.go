@@ -46,6 +46,9 @@ const (
 	// An UpdateLDCacheHook is the hook used to update the ldcache in the
 	// container. This allows injected libraries to be discoverable.
 	UpdateLDCacheHook = HookName("update-ldcache")
+	// A CreateSonameSymlinksHook is the hook used to ensure that soname symlinks
+	// for injected libraries exist in the container.
+	CreateSonameSymlinksHook = HookName("create-soname-symlinks")
 
 	defaultNvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
 )
