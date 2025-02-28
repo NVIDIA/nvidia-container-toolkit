@@ -22,13 +22,21 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+)
+
+const (
+	// ldsoconfdFilenamePattern specifies the pattern for the filename
+	// in ld.so.conf.d that includes references to the specified directories.
+	// The 00-nvcr prefix is chosen to ensure that these libraries have a
+	// higher precedence than other libraries on the system, but lower than
+	// the 00-cuda-compat that is included in some containers.
+	ldsoconfdFilenamePattern = "00-nvcr-*.conf"
 )
 
 type command struct {
@@ -100,18 +108,20 @@ func (m command) run(c *cli.Context, cfg *options) error {
 		return fmt.Errorf("failed to load container state: %v", err)
 	}
 
-	containerRoot, err := s.GetContainerRoot()
+	containerRootDir, err := s.GetContainerRoot()
 	if err != nil {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
 	ldconfigPath := m.resolveLDConfigPath(cfg.ldconfigPath)
 	args := []string{filepath.Base(ldconfigPath)}
-	if containerRoot != "" {
-		args = append(args, "-r", containerRoot)
+	if containerRootDir != "" {
+		args = append(args, "-r", containerRootDir)
 	}
 
-	if root(containerRoot).hasPath("/etc/ld.so.cache") {
+	containerRoot := containerRoot(containerRootDir)
+
+	if containerRoot.hasPath("/etc/ld.so.cache") {
 		args = append(args, "-C", "/etc/ld.so.cache")
 	} else {
 		m.logger.Debugf("No ld.so.cache found, skipping update")
@@ -119,8 +129,8 @@ func (m command) run(c *cli.Context, cfg *options) error {
 	}
 
 	folders := cfg.folders.Value()
-	if root(containerRoot).hasPath("/etc/ld.so.conf.d") {
-		err := m.createConfig(containerRoot, folders)
+	if containerRoot.hasPath("/etc/ld.so.conf.d") {
+		err := m.createLdsoconfdFile(containerRoot, ldsoconfdFilenamePattern, folders...)
 		if err != nil {
 			return fmt.Errorf("failed to update ld.so.conf.d: %v", err)
 		}
@@ -132,18 +142,7 @@ func (m command) run(c *cli.Context, cfg *options) error {
 	// be configured to use a different config file by default.
 	args = append(args, "-f", "/etc/ld.so.conf")
 
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	return syscall.Exec(ldconfigPath, args, nil)
-}
-
-type root string
-
-func (r root) hasPath(path string) bool {
-	_, err := os.Stat(filepath.Join(string(r), path))
-	if err != nil && os.IsNotExist(err) {
-		return false
-	}
-	return true
+	return m.SafeExec(ldconfigPath, args, nil)
 }
 
 // resolveLDConfigPath determines the LDConfig path to use for the system.
@@ -153,44 +152,46 @@ func (m command) resolveLDConfigPath(path string) string {
 	return strings.TrimPrefix(config.NormalizeLDConfigPath("@"+path), "@")
 }
 
-// createConfig creates (or updates) /etc/ld.so.conf.d/00-nvcr-<RANDOM_STRING>.conf in the container
-// to include the required paths.
-// Note that the 00-nvcr prefix is chosen to ensure that these libraries have
-// a higher precedence than other libraries on the system but are applied AFTER
-// 00-cuda-compat.conf.
-func (m command) createConfig(root string, folders []string) error {
-	if len(folders) == 0 {
-		m.logger.Debugf("No folders to add to /etc/ld.so.conf")
+// createLdsoconfdFile creates a file at /etc/ld.so.conf.d/ in the specified root.
+// The file is created at /etc/ld.so.conf.d/{{ .pattern }} using `CreateTemp` and
+// contains the specified directories on each line.
+func (m command) createLdsoconfdFile(in containerRoot, pattern string, dirs ...string) error {
+	if len(dirs) == 0 {
+		m.logger.Debugf("No directories to add to /etc/ld.so.conf")
 		return nil
 	}
 
-	if err := os.MkdirAll(filepath.Join(root, "/etc/ld.so.conf.d"), 0755); err != nil {
-		return fmt.Errorf("failed to create ld.so.conf.d: %v", err)
+	ldsoconfdDir, err := in.resolve("/etc/ld.so.conf.d")
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(ldsoconfdDir, 0755); err != nil {
+		return fmt.Errorf("failed to create ld.so.conf.d: %w", err)
 	}
 
-	configFile, err := os.CreateTemp(filepath.Join(root, "/etc/ld.so.conf.d"), "00-nvcr-*.conf")
+	configFile, err := os.CreateTemp(ldsoconfdDir, pattern)
 	if err != nil {
-		return fmt.Errorf("failed to create config file: %v", err)
+		return fmt.Errorf("failed to create config file: %w", err)
 	}
 	defer configFile.Close()
 
-	m.logger.Debugf("Adding folders %v to %v", folders, configFile.Name())
+	m.logger.Debugf("Adding directories %v to %v", dirs, configFile.Name())
 
-	configured := make(map[string]bool)
-	for _, folder := range folders {
-		if configured[folder] {
+	added := make(map[string]bool)
+	for _, dir := range dirs {
+		if added[dir] {
 			continue
 		}
-		_, err = configFile.WriteString(fmt.Sprintf("%s\n", folder))
+		_, err = configFile.WriteString(fmt.Sprintf("%s\n", dir))
 		if err != nil {
-			return fmt.Errorf("failed to update ld.so.conf.d: %v", err)
+			return fmt.Errorf("failed to update config file: %w", err)
 		}
-		configured[folder] = true
+		added[dir] = true
 	}
 
 	// The created file needs to be world readable for the cases where the container is run as a non-root user.
-	if err := os.Chmod(configFile.Name(), 0644); err != nil {
-		return fmt.Errorf("failed to chmod config file: %v", err)
+	if err := configFile.Chmod(0644); err != nil {
+		return fmt.Errorf("failed to chmod config file: %w", err)
 	}
 
 	return nil
