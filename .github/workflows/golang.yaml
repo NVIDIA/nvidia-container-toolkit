@@ -15,14 +15,11 @@
 name: Golang
 
 on:
+  workflow_call: {}
   pull_request:
     types:
       - opened
       - synchronize
-    branches:
-      - main
-      - release-*
-  push:
     branches:
       - main
       - release-*
