@@ -39,7 +39,7 @@ github.com/moby/sys/symlink
 github.com/opencontainers/runc/libcontainer/dmz
 github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/utils
-# github.com/opencontainers/runtime-spec v1.2.0
+# github.com/opencontainers/runtime-spec v1.2.1
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
 # github.com/opencontainers/runtime-tools v0.9.1-0.20221107090550-2e043c6bd626
