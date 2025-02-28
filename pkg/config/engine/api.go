@@ -20,10 +20,10 @@ package engine
 type Interface interface {
 	AddRuntime(string, string, bool) error
 	DefaultRuntime() string
+	EnableCDI()
 	GetRuntimeConfig(string) (RuntimeConfig, error)
 	RemoveRuntime(string) error
 	Save(string) (int64, error)
-	Set(string, interface{})
 	String() string
 }
 
