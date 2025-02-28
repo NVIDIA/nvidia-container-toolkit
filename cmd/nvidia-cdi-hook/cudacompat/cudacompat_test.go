@@ -24,6 +24,8 @@ import (
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/utils"
 )
 
 func TestCompatLibs(t *testing.T) {
@@ -130,53 +132,9 @@ func TestCompatLibs(t *testing.T) {
 			c := command{
 				logger: logger,
 			}
-			containerForwardCompatDir, err := c.getContainerForwardCompatDir(containerRoot(containerRootDir), tc.hostDriverVersion)
+			containerForwardCompatDir, err := c.getContainerForwardCompatDir(utils.ContainerRoot(containerRootDir), tc.hostDriverVersion)
 			require.NoError(t, err)
 			require.EqualValues(t, tc.expectedContainerForwardCompatDir, containerForwardCompatDir)
 		})
 	}
-}
-
-func TestUpdateLdconfig(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
-	testCases := []struct {
-		description      string
-		folders          []string
-		expectedContents string
-	}{
-		{
-			description: "no folders; have no contents",
-		},
-		{
-			description:      "single folder is added",
-			folders:          []string{"/usr/local/cuda/compat"},
-			expectedContents: "/usr/local/cuda/compat\n",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			containerRootDir := t.TempDir()
-			c := command{
-				logger: logger,
-			}
-			err := c.createLdsoconfdFile(containerRoot(containerRootDir), cudaCompatLdsoconfdFilenamePattern, tc.folders...)
-			require.NoError(t, err)
-
-			matches, err := filepath.Glob(filepath.Join(containerRootDir, "/etc/ld.so.conf.d/00-compat-*.conf"))
-			require.NoError(t, err)
-
-			if tc.expectedContents == "" {
-				require.Empty(t, matches)
-				return
-			}
-
-			require.Len(t, matches, 1)
-			contents, err := os.ReadFile(matches[0])
-			require.NoError(t, err)
-
-			require.EqualValues(t, tc.expectedContents, string(contents))
-		})
-	}
-
 }
