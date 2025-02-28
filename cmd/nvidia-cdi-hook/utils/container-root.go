@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package ldcache
+package utils
 
 import (
 	"os"
@@ -23,12 +23,12 @@ import (
 	"github.com/moby/sys/symlink"
 )
 
-// A containerRoot represents the root filesystem of a container.
-type containerRoot string
+// A ContainerRoot represents the root filesystem of a container.
+type ContainerRoot string
 
-// hasPath checks whether the specified path exists in the root.
-func (r containerRoot) hasPath(path string) bool {
-	resolved, err := r.resolve(path)
+// HasPath checks whether the specified path exists in the root.
+func (r ContainerRoot) HasPath(path string) bool {
+	resolved, err := r.Resolve(path)
 	if err != nil {
 		return false
 	}
@@ -38,9 +38,9 @@ func (r containerRoot) hasPath(path string) bool {
 	return true
 }
 
-// resolve returns the absolute path including root path.
+// Resolve returns the absolute path including root path.
 // Symlinks are resolved, but are guaranteed to resolve in the root.
-func (r containerRoot) resolve(path string) (string, error) {
+func (r ContainerRoot) Resolve(path string) (string, error) {
 	absolute := filepath.Clean(filepath.Join(string(r), path))
 	return symlink.FollowSymlinkInScope(absolute, string(r))
 }
