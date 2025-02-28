@@ -19,7 +19,6 @@ package ldcache
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -131,7 +130,7 @@ func (m command) run(c *cli.Context, cfg *options) error {
 
 	folders := cfg.folders.Value()
 	if containerRoot.HasPath("/etc/ld.so.conf.d") {
-		err := m.createLdsoconfdFile(containerRoot, ldsoconfdFilenamePattern, folders...)
+		err := containerRoot.CreateLdsoconfdFile(ldsoconfdFilenamePattern, folders...)
 		if err != nil {
 			return fmt.Errorf("failed to update ld.so.conf.d: %v", err)
 		}
@@ -151,49 +150,4 @@ func (m command) run(c *cli.Context, cfg *options) error {
 // /sbin/ldconfig.real, the latter is returned.
 func (m command) resolveLDConfigPath(path string) string {
 	return strings.TrimPrefix(config.NormalizeLDConfigPath("@"+path), "@")
-}
-
-// createLdsoconfdFile creates a file at /etc/ld.so.conf.d/ in the specified root.
-// The file is created at /etc/ld.so.conf.d/{{ .pattern }} using `CreateTemp` and
-// contains the specified directories on each line.
-func (m command) createLdsoconfdFile(in utils.ContainerRoot, pattern string, dirs ...string) error {
-	if len(dirs) == 0 {
-		m.logger.Debugf("No directories to add to /etc/ld.so.conf")
-		return nil
-	}
-
-	ldsoconfdDir, err := in.Resolve("/etc/ld.so.conf.d")
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(ldsoconfdDir, 0755); err != nil {
-		return fmt.Errorf("failed to create ld.so.conf.d: %w", err)
-	}
-
-	configFile, err := os.CreateTemp(ldsoconfdDir, pattern)
-	if err != nil {
-		return fmt.Errorf("failed to create config file: %w", err)
-	}
-	defer configFile.Close()
-
-	m.logger.Debugf("Adding directories %v to %v", dirs, configFile.Name())
-
-	added := make(map[string]bool)
-	for _, dir := range dirs {
-		if added[dir] {
-			continue
-		}
-		_, err = configFile.WriteString(fmt.Sprintf("%s\n", dir))
-		if err != nil {
-			return fmt.Errorf("failed to update config file: %w", err)
-		}
-		added[dir] = true
-	}
-
-	// The created file needs to be world readable for the cases where the container is run as a non-root user.
-	if err := configFile.Chmod(0644); err != nil {
-		return fmt.Errorf("failed to chmod config file: %w", err)
-	}
-
-	return nil
 }
