@@ -20,12 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/utils"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
@@ -115,7 +113,7 @@ func (m command) run(c *cli.Context, cfg *options) error {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
-	ldconfigPath := m.resolveLDConfigPath(cfg.ldconfigPath)
+	ldconfigPath := utils.ResolveHostLDConfigPath(cfg.ldconfigPath)
 	args := []string{filepath.Base(ldconfigPath)}
 	if containerRootDir != "" {
 		args = append(args, "-r", containerRootDir)
@@ -145,11 +143,4 @@ func (m command) run(c *cli.Context, cfg *options) error {
 	args = append(args, "-f", "/etc/ld.so.conf")
 
 	return m.Exec(ldconfigPath, args, nil)
-}
-
-// resolveLDConfigPath determines the LDConfig path to use for the system.
-// On systems such as Ubuntu where `/sbin/ldconfig` is a wrapper around
-// /sbin/ldconfig.real, the latter is returned.
-func (m command) resolveLDConfigPath(path string) string {
-	return strings.TrimPrefix(config.NormalizeLDConfigPath("@"+path), "@")
 }
