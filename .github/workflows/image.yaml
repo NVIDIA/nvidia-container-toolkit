@@ -16,21 +16,18 @@
 name: image
 
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-    branches:
-      - main
-      - release-*
-  push:
-    branches:
-      - main
-      - release-*
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      build_multi_arch_images:
+        required: true
+        type: string
 
 jobs:
   packages:
-    runs-on: ubuntu-latest
+    runs-on: linux-amd64-cpu4
     strategy:
       matrix:
         target:
@@ -41,7 +38,7 @@ jobs:
           - centos7-x86_64
           - centos8-ppc64le
         ispr:
-          - ${{github.event_name == 'pull_request'}}
+          - ${{ github.ref_name != 'main' && !startsWith( github.ref_name, 'release-' ) }}
         exclude:
           - ispr: true
             target: ubuntu18.04-arm64
@@ -52,20 +49,25 @@ jobs:
           - ispr: true
             target: centos8-ppc64le
       fail-fast: false
+      
     steps:
       - uses: actions/checkout@v4
         name: Check out code
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
           image: tonistiigi/binfmt:master
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: build ${{ matrix.target }} packages
         run: |
           sudo apt-get install -y coreutils build-essential sed git bash make
           echo "Building packages"
           ./scripts/build-packages.sh ${{ matrix.target }}
+
       - name: 'Upload Artifacts'
         uses: actions/upload-artifact@v4
         with:
@@ -74,7 +76,7 @@ jobs:
           path: ${{ github.workspace }}/dist/*
 
   image:
-    runs-on: ubuntu-latest
+    runs-on: linux-amd64-cpu4
     strategy:
       matrix:
         dist:
@@ -82,7 +84,7 @@ jobs:
           - ubi8
           - packaging
         ispr:
-          - ${{github.event_name == 'pull_request'}}
+          - ${{ github.ref_name != 'main' && !startsWith( github.ref_name, 'release-' ) }}
         exclude:
           - ispr: true
             dist: ubi8
@@ -90,36 +92,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         name: Check out code
-      - name: Calculate build vars
-        id: vars
-        run: |
-          echo "COMMIT_SHORT_SHA=${GITHUB_SHA:0:8}" >> $GITHUB_ENV
-          echo "LOWERCASE_REPO_OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | awk '{print tolower($0)}')" >> $GITHUB_ENV
-          REPO_FULL_NAME="${{ github.event.pull_request.head.repo.full_name }}"
-          echo "${REPO_FULL_NAME}"
-          echo "LABEL_IMAGE_SOURCE=https://github.com/${REPO_FULL_NAME}" >> $GITHUB_ENV
-
-          PUSH_ON_BUILD="false"
-          BUILD_MULTI_ARCH_IMAGES="false"
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            if [[ "${{ github.actor }}" != "dependabot[bot]" && "${{ github.event.pull_request.head.repo.full_name }}" == "${{ github.repository }}" ]]; then
-              # For non-fork PRs that are not created by dependabot we do push images
-              PUSH_ON_BUILD="true"
-            fi
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
-            # On push events we do generate images and enable muilti-arch builds
-            PUSH_ON_BUILD="true"
-            BUILD_MULTI_ARCH_IMAGES="true"
-          fi
-          echo "PUSH_ON_BUILD=${PUSH_ON_BUILD}" >> $GITHUB_ENV
-          echo "BUILD_MULTI_ARCH_IMAGES=${BUILD_MULTI_ARCH_IMAGES}" >> $GITHUB_ENV
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
           image: tonistiigi/binfmt:master
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: Get built packages
         uses: actions/download-artifact@v4
         with:
@@ -133,10 +114,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build image
         env:
-          IMAGE_NAME: ghcr.io/${LOWERCASE_REPO_OWNER}/container-toolkit
-          VERSION: ${COMMIT_SHORT_SHA}
+          IMAGE_NAME: ghcr.io/nvidia/container-toolkit
+          VERSION: ${{ inputs.version }}
+          PUSH_ON_BUILD: "true"
+          BUILD_MULTI_ARCH_IMAGES: ${{ inputs.build_multi_arch_images }}
         run: |
           echo "${VERSION}"
           make -f deployments/container/Makefile build-${{ matrix.dist }}

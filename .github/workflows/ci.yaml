@@ -1,0 +1,53 @@
+# Copyright 2025 NVIDIA CORPORATION
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - "pull-request/[0-9]+"
+      - main
+      - release-*
+
+jobs:
+  code-scanning:
+    uses: ./.github/workflows/code_scanning.yaml
+
+  variables:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Generate Commit Short SHA
+        id: version
+        run: echo "version=$(echo $GITHUB_SHA | cut -c1-8)" >> "$GITHUB_OUTPUT"
+
+  golang:
+    uses: ./.github/workflows/golang.yaml
+
+  image:
+    uses: ./.github/workflows/image.yaml
+    needs: [variables, golang, code-scanning]
+    secrets: inherit
+    with:
+      version: ${{ needs.variables.outputs.version }}
+      build_multi_arch_images: ${{ github.ref_name == 'main' || startsWith(github.ref_name, 'release-') }}
+
+  e2e-test:
+    needs: [image, variables]
+    secrets: inherit
+    uses: ./.github/workflows/e2e.yaml
+    with:
+      version: ${{ needs.variables.outputs.version }}

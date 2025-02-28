@@ -36,7 +36,7 @@ func TestGetFileList(t *testing.T) {
 	}{
 		{
 			description: "returns list of CSV files",
-			root:        "test/input/csv_samples/",
+			root:        "tests/input/csv_samples/",
 			files: []string{
 				"jetson.csv",
 				"simple_wrong.csv",
@@ -46,15 +46,15 @@ func TestGetFileList(t *testing.T) {
 		},
 		{
 			description: "handles empty folder",
-			root:        "test/input/csv_samples/empty",
+			root:        "tests/input/csv_samples/empty",
 		},
 		{
 			description: "handles non-existent folder",
-			root:        "test/input/csv_samples/NONEXISTENT",
+			root:        "tests/input/csv_samples/NONEXISTENT",
 		},
 		{
 			description: "handles non-existent folder root",
-			root:        "/NONEXISTENT/test/input/csv_samples/",
+			root:        "/NONEXISTENT/tests/input/csv_samples/",
 		},
 	}
 

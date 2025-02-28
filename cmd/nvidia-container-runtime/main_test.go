@@ -22,9 +22,9 @@ import (
 const (
 	nvidiaRuntime            = "nvidia-container-runtime"
 	nvidiaHook               = "nvidia-container-runtime-hook"
-	bundlePathSuffix         = "test/output/bundle/"
+	bundlePathSuffix         = "tests/output/bundle/"
 	specFile                 = "config.json"
-	unmodifiedSpecFileSuffix = "test/input/test_spec.json"
+	unmodifiedSpecFileSuffix = "tests/input/test_spec.json"
 )
 
 const (
@@ -46,8 +46,8 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("error in test setup: could not get module root: %v", err)
 	}
-	testBinPath := filepath.Join(moduleRoot, "test", "bin")
-	testInputPath := filepath.Join(moduleRoot, "test", "input")
+	testBinPath := filepath.Join(moduleRoot, "tests", "bin")
+	testInputPath := filepath.Join(moduleRoot, "tests", "input")
 
 	// Set the environment variables for the test
 	os.Setenv("PATH", test.PrependToPath(testBinPath, moduleRoot))
