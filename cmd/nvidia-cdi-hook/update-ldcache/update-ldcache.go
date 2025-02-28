@@ -25,6 +25,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/utils"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
@@ -119,9 +120,9 @@ func (m command) run(c *cli.Context, cfg *options) error {
 		args = append(args, "-r", containerRootDir)
 	}
 
-	containerRoot := containerRoot(containerRootDir)
+	containerRoot := utils.ContainerRoot(containerRootDir)
 
-	if containerRoot.hasPath("/etc/ld.so.cache") {
+	if containerRoot.HasPath("/etc/ld.so.cache") {
 		args = append(args, "-C", "/etc/ld.so.cache")
 	} else {
 		m.logger.Debugf("No ld.so.cache found, skipping update")
@@ -129,7 +130,7 @@ func (m command) run(c *cli.Context, cfg *options) error {
 	}
 
 	folders := cfg.folders.Value()
-	if containerRoot.hasPath("/etc/ld.so.conf.d") {
+	if containerRoot.HasPath("/etc/ld.so.conf.d") {
 		err := m.createLdsoconfdFile(containerRoot, ldsoconfdFilenamePattern, folders...)
 		if err != nil {
 			return fmt.Errorf("failed to update ld.so.conf.d: %v", err)
@@ -155,13 +156,13 @@ func (m command) resolveLDConfigPath(path string) string {
 // createLdsoconfdFile creates a file at /etc/ld.so.conf.d/ in the specified root.
 // The file is created at /etc/ld.so.conf.d/{{ .pattern }} using `CreateTemp` and
 // contains the specified directories on each line.
-func (m command) createLdsoconfdFile(in containerRoot, pattern string, dirs ...string) error {
+func (m command) createLdsoconfdFile(in utils.ContainerRoot, pattern string, dirs ...string) error {
 	if len(dirs) == 0 {
 		m.logger.Debugf("No directories to add to /etc/ld.so.conf")
 		return nil
 	}
 
-	ldsoconfdDir, err := in.resolve("/etc/ld.so.conf.d")
+	ldsoconfdDir, err := in.Resolve("/etc/ld.so.conf.d")
 	if err != nil {
 		return err
 	}
