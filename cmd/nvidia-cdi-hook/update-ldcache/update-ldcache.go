@@ -40,6 +40,7 @@ const (
 )
 
 type command struct {
+	utils.SafeExecer
 	logger logger.Interface
 }
 
@@ -52,7 +53,8 @@ type options struct {
 // NewCommand constructs an update-ldcache command with the specified logger
 func NewCommand(logger logger.Interface) *cli.Command {
 	c := command{
-		logger: logger,
+		logger:     logger,
+		SafeExecer: utils.NewSafeExecer(logger),
 	}
 	return c.build()
 }
@@ -142,7 +144,7 @@ func (m command) run(c *cli.Context, cfg *options) error {
 	// be configured to use a different config file by default.
 	args = append(args, "-f", "/etc/ld.so.conf")
 
-	return m.SafeExec(ldconfigPath, args, nil)
+	return m.Exec(ldconfigPath, args, nil)
 }
 
 // resolveLDConfigPath determines the LDConfig path to use for the system.
