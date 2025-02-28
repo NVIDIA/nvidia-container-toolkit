@@ -26,6 +26,36 @@ import (
 // A ContainerRoot represents the root filesystem of a container.
 type ContainerRoot string
 
+// GlobFiles matches the specified pattern in the container root.
+// The files that match must be regular files.
+func (r ContainerRoot) GlobFiles(pattern string) ([]string, error) {
+	patternPath, err := r.Resolve(pattern)
+	if err != nil {
+		return nil, err
+	}
+	matches, err := filepath.Glob(patternPath)
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for _, match := range matches {
+		info, err := os.Lstat(match)
+		if err != nil {
+			return nil, err
+		}
+		// Ignore symlinks.
+		if info.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+		// Ignore directories.
+		if info.IsDir() {
+			continue
+		}
+		files = append(files, match)
+	}
+	return files, nil
+}
+
 // HasPath checks whether the specified path exists in the root.
 func (r ContainerRoot) HasPath(path string) bool {
 	resolved, err := r.Resolve(path)

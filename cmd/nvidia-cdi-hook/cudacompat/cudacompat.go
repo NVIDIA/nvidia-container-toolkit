@@ -25,6 +25,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/utils"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
@@ -107,8 +108,9 @@ func (m command) run(_ *cli.Context, cfg *options) error {
 	if err != nil {
 		return fmt.Errorf("failed to determined container root: %w", err)
 	}
+	containerRoot := utils.ContainerRoot(containerRootDir)
 
-	containerForwardCompatDir, err := m.getContainerForwardCompatDir(containerRoot(containerRootDir), cfg.hostDriverVersion)
+	containerForwardCompatDir, err := m.getContainerForwardCompatDir(containerRoot, cfg.hostDriverVersion)
 	if err != nil {
 		return fmt.Errorf("failed to get container forward compat directory: %w", err)
 	}
@@ -116,24 +118,24 @@ func (m command) run(_ *cli.Context, cfg *options) error {
 		return nil
 	}
 
-	return m.createLdsoconfdFile(containerRoot(containerRootDir), cudaCompatLdsoconfdFilenamePattern, containerForwardCompatDir)
+	return m.createLdsoconfdFile(containerRoot, cudaCompatLdsoconfdFilenamePattern, containerForwardCompatDir)
 }
 
-func (m command) getContainerForwardCompatDir(containerRoot containerRoot, hostDriverVersion string) (string, error) {
+func (m command) getContainerForwardCompatDir(containerRoot utils.ContainerRoot, hostDriverVersion string) (string, error) {
 	if hostDriverVersion == "" {
 		m.logger.Debugf("Host driver version not specified")
 		return "", nil
 	}
-	if !containerRoot.hasPath(cudaCompatPath) {
+	if !containerRoot.HasPath(cudaCompatPath) {
 		m.logger.Debugf("No CUDA forward compatibility libraries directory in container")
 		return "", nil
 	}
-	if !containerRoot.hasPath("/etc/ld.so.cache") {
+	if !containerRoot.HasPath("/etc/ld.so.cache") {
 		m.logger.Debugf("The container does not have an LDCache")
 		return "", nil
 	}
 
-	libs, err := containerRoot.globFiles(filepath.Join(cudaCompatPath, "libcuda.so.*.*"))
+	libs, err := containerRoot.GlobFiles(filepath.Join(cudaCompatPath, "libcuda.so.*.*"))
 	if err != nil {
 		m.logger.Warningf("Failed to find CUDA compat library: %w", err)
 		return "", nil
@@ -172,13 +174,13 @@ func (m command) getContainerForwardCompatDir(containerRoot containerRoot, hostD
 // createLdsoconfdFile creates a file at /etc/ld.so.conf.d/ in the specified root.
 // The file is created at /etc/ld.so.conf.d/{{ .pattern }} using `CreateTemp` and
 // contains the specified directories on each line.
-func (m command) createLdsoconfdFile(in containerRoot, pattern string, dirs ...string) error {
+func (m command) createLdsoconfdFile(in utils.ContainerRoot, pattern string, dirs ...string) error {
 	if len(dirs) == 0 {
 		m.logger.Debugf("No directories to add to /etc/ld.so.conf")
 		return nil
 	}
 
-	ldsoconfdDir, err := in.resolve("/etc/ld.so.conf.d")
+	ldsoconfdDir, err := in.Resolve("/etc/ld.so.conf.d")
 	if err != nil {
 		return err
 	}
