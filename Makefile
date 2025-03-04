@@ -122,11 +122,11 @@ licenses:
 
 COVERAGE_FILE := coverage.out
 test: build cmds
-	go test -coverprofile=$(COVERAGE_FILE) $(MODULE)/...
+	go test -coverprofile=$(COVERAGE_FILE).with-mocks $(MODULE)/...
 
 coverage: test
-	cat $(COVERAGE_FILE) | grep -v "_mock.go" > $(COVERAGE_FILE).no-mocks
-	go tool cover -func=$(COVERAGE_FILE).no-mocks
+	cat $(COVERAGE_FILE).with-mocks | grep -v "_mock.go" > $(COVERAGE_FILE)
+	go tool cover -func=$(COVERAGE_FILE)
 
 generate:
 	go generate $(MODULE)/...
