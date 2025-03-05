@@ -17,8 +17,12 @@
 package edits
 
 import (
+	"os"
+
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
+
+	"github.com/opencontainers/runc/libcontainer/devices"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
@@ -49,13 +53,31 @@ func (d device) toSpec() (*specs.DeviceNode, error) {
 	// Since the behaviour for HostPath == "" and HostPath == Path are equivalent, we clear HostPath
 	// if it is equal to Path to ensure compatibility with the widest range of specs.
 	hostPath := d.HostPath
+
 	if hostPath == d.Path {
 		hostPath = ""
 	}
 	s := specs.DeviceNode{
 		HostPath: hostPath,
 		Path:     d.Path,
+		FileMode: d.getFileMode(),
 	}
 
 	return &s, nil
+}
+
+// getFileMode returns the filemode of the host device node associated with the discovered device.
+// If this fails, a nil filemode is returned.
+func (d device) getFileMode() *os.FileMode {
+	path := d.HostPath
+	if path == "" {
+		path = d.Path
+	}
+	dn, err := devices.DeviceFromPath(path, "rwm")
+	if err != nil {
+		// return nil, fmt.Errorf("failed to get device information for %q: %w", path, err)
+		return nil
+	}
+
+	return &dn.FileMode
 }
