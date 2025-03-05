@@ -36,8 +36,10 @@ const (
 
 // Options defines the shared options for the CLIs to configure containers runtimes.
 type Options struct {
-	Config        string
-	Socket        string
+	Config string
+	Socket string
+	// EnabledCDI indicates whether CDI should be enabled.
+	EnableCDI     bool
 	RuntimeName   string
 	RuntimeDir    string
 	SetAsDefault  bool
@@ -109,6 +111,10 @@ func (o Options) UpdateConfig(cfg engine.Interface) error {
 		if err != nil {
 			return fmt.Errorf("failed to update runtime %q: %v", name, err)
 		}
+	}
+
+	if o.EnableCDI {
+		cfg.EnableCDI()
 	}
 
 	return nil

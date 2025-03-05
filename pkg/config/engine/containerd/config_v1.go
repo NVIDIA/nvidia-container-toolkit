@@ -143,13 +143,6 @@ func (c *ConfigV1) RemoveRuntime(name string) error {
 	return nil
 }
 
-// Set sets the specified containerd option.
-func (c *ConfigV1) Set(key string, value interface{}) {
-	config := *c.Tree
-	config.SetPath([]string{"plugins", "cri", "containerd", key}, value)
-	*c.Tree = config
-}
-
 // Save writes the config to a file
 func (c ConfigV1) Save(path string) (int64, error) {
 	return (Config)(c).Save(path)
@@ -164,4 +157,10 @@ func (c *ConfigV1) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 	return &containerdCfgRuntime{
 		tree: runtimeData,
 	}, nil
+}
+
+func (c *ConfigV1) EnableCDI() {
+	config := *c.Tree
+	config.SetPath([]string{"plugins", "cri", "containerd", "enable_cdi"}, true)
+	*c.Tree = config
 }
