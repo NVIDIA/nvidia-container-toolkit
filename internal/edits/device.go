@@ -20,6 +20,8 @@ import (
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
+	"github.com/opencontainers/runc/libcontainer/devices"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
 
@@ -43,19 +45,37 @@ func (d device) toEdits() (*cdi.ContainerEdits, error) {
 // toSpec converts a discovered Device to a CDI Spec Device. Note
 // that missing info is filled in when edits are applied by querying the Device node.
 func (d device) toSpec() (*specs.DeviceNode, error) {
+	s := d.fromPathOrDefault()
 	// The HostPath field was added in the v0.5.0 CDI specification.
 	// The cdi package uses strict unmarshalling when loading specs from file causing failures for
 	// unexpected fields.
 	// Since the behaviour for HostPath == "" and HostPath == Path are equivalent, we clear HostPath
 	// if it is equal to Path to ensure compatibility with the widest range of specs.
-	hostPath := d.HostPath
-	if hostPath == d.Path {
-		hostPath = ""
-	}
-	s := specs.DeviceNode{
-		HostPath: hostPath,
-		Path:     d.Path,
+	if s.HostPath == d.Path {
+		s.HostPath = ""
 	}
 
-	return &s, nil
+	return s, nil
+}
+
+// fromPathOrDefault attempts to return the returns the information about the
+// CDI device from the specified host path.
+// If this fails a minimal device is returned so that this information can be
+// queried by the container runtime such as containerd.
+func (d device) fromPathOrDefault() *specs.DeviceNode {
+	dn, err := devices.DeviceFromPath(d.HostPath, "rwm")
+	if err != nil {
+		return &specs.DeviceNode{
+			HostPath: d.HostPath,
+			Path:     d.Path,
+		}
+	}
+
+	return &specs.DeviceNode{
+		HostPath: d.HostPath,
+		Path:     d.Path,
+		Major:    dn.Major,
+		Minor:    dn.Minor,
+		FileMode: &dn.FileMode,
+	}
 }
