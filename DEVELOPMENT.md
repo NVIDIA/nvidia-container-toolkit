@@ -34,7 +34,7 @@ environment variables.
 
 ## Testing packages locally
 
-The [test/release](./test/release/) folder contains documentation on how the installation of local or staged packages can be tested.
+The [tests/release](./tests/release/) folder contains documentation on how the installation of local or staged packages can be tested.
 
 
 ## Releasing
