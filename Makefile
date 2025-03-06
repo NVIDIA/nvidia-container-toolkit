@@ -115,7 +115,7 @@ mod-verify:
 
 
 check-vendor: vendor
-	git diff --quiet HEAD -- go.mod go.sum vendor
+	git diff --exit-code HEAD -- go.mod go.sum vendor
 
 licenses:
 	go-licenses csv $(MODULE)/...
