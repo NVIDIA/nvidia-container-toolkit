@@ -1,5 +1,21 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.17.5
+
+- Fix bug that may overwrite docker feature flags when configuring CDI from the `nvidia-ctk runtime configure` command.
+- Remove the unused `Set()` function from engine config API.
+- Add an `EnableCDI()` method to engine config API.
+- Add an `ignore-imex-channel-requests` feature flag. This ensures that the NVIDIA Container Runtime can be configured to ignore IMEX channel requests when these should be managed by another component.
+- Update the `update-ldcache` hook to run the host `ldconfig` from a MEMFD.
+- Add support for CUDA Forward Compatibility (removed by default in v1.17.4) using a dedicated `enable-cuda-compat` hook.  This can be disabled using a `disable-cuda-compat-lib-hook` feature flag.
+- Disable nvsandboxutils in the `nvcdi` API. This prevents a segmentation violation with NVIDIA GPU Drivers from the 565 branch.
+- Fix a bug where `cdi` mode would not work with the `--gpus` flag even if the NVIDIA Container Runtime was used.
+
+### Changes in the Toolkit Container
+
+- Enable CDI in container engine (Containerd, Cri-o, Docker) if CDI_ENABLED is set.
+- Bump CUDA base image version to 12.8.0
+
 ## v1.17.4
 - Disable mounting of compat libs from container by default
 - Add allow-cuda-compat-libs-from-container feature flag
