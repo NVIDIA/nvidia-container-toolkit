@@ -2,6 +2,8 @@
 
 ## v1.17.5
 
+- Allow the `enabled-cuda-compat` hook to be skipped when generating CDI specifications. This improves compatibility with older NVIDIA Container Toolkit installations. The hook is explicitly ignored for management CDI specifications.
+- Add IMEX binaries to CDI discovery. This includes the IMEX Daemon and IMEX Control binaries in containers.
 - Fix bug that may overwrite docker feature flags when configuring CDI from the `nvidia-ctk runtime configure` command.
 - Remove the unused `Set()` function from engine config API.
 - Add an `EnableCDI()` method to engine config API.
