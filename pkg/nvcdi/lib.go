@@ -156,6 +156,8 @@ func New(opts ...Option) (Interface, error) {
 		if l.vendor == "" {
 			l.vendor = "management.nvidia.com"
 		}
+		// Management containers in general do not require CUDA Forward compatibility.
+		l.disabledHooks[HookEnableCudaCompat] = true
 		lib = (*managementlib)(l)
 	case ModeNvml:
 		lib = (*nvmllib)(l)
