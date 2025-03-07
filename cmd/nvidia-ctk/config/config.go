@@ -194,7 +194,14 @@ func setFlagToKeyValue(setFlag string, setListSeparator string) (string, interfa
 	case reflect.String:
 		return key, value, nil
 	case reflect.Slice:
-		valueParts := strings.Split(value, setListSeparator)
+		valueParts := []string{value}
+		for _, sep := range []string{setListSeparator, ","} {
+			if !strings.Contains(value, sep) {
+				continue
+			}
+			valueParts = strings.Split(value, sep)
+			break
+		}
 		switch field.Elem().Kind() {
 		case reflect.String:
 			return key, valueParts, nil
