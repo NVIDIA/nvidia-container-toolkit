@@ -34,41 +34,41 @@ import (
 
 // NewDriverDiscoverer creates a discoverer for the libraries and binaries associated with a driver installation.
 // The supplied NVML Library is used to query the expected driver version.
-func NewDriverDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath string, ldconfigPath string, nvmllib nvml.Interface) (discover.Discover, error) {
-	if r := nvmllib.Init(); r != nvml.SUCCESS {
+func (l *nvmllib) NewDriverDiscoverer() (discover.Discover, error) {
+	if r := l.nvmllib.Init(); r != nvml.SUCCESS {
 		return nil, fmt.Errorf("failed to initialize NVML: %v", r)
 	}
 	defer func() {
-		if r := nvmllib.Shutdown(); r != nvml.SUCCESS {
-			logger.Warningf("failed to shutdown NVML: %v", r)
+		if r := l.nvmllib.Shutdown(); r != nvml.SUCCESS {
+			l.logger.Warningf("failed to shutdown NVML: %v", r)
 		}
 	}()
 
-	version, r := nvmllib.SystemGetDriverVersion()
+	version, r := l.nvmllib.SystemGetDriverVersion()
 	if r != nvml.SUCCESS {
 		return nil, fmt.Errorf("failed to determine driver version: %v", r)
 	}
 
-	return newDriverVersionDiscoverer(logger, driver, nvidiaCDIHookPath, ldconfigPath, version)
+	return (*nvcdilib)(l).newDriverVersionDiscoverer(version)
 }
 
-func newDriverVersionDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath, ldconfigPath, version string) (discover.Discover, error) {
-	libraries, err := NewDriverLibraryDiscoverer(logger, driver, nvidiaCDIHookPath, ldconfigPath, version)
+func (l *nvcdilib) newDriverVersionDiscoverer(version string) (discover.Discover, error) {
+	libraries, err := l.NewDriverLibraryDiscoverer(version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for driver libraries: %v", err)
 	}
 
-	ipcs, err := discover.NewIPCDiscoverer(logger, driver.Root)
+	ipcs, err := discover.NewIPCDiscoverer(l.logger, l.driver.Root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for IPC sockets: %v", err)
 	}
 
-	firmwares, err := NewDriverFirmwareDiscoverer(logger, driver.Root, version)
+	firmwares, err := NewDriverFirmwareDiscoverer(l.logger, l.driver.Root, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for GSP firmware: %v", err)
 	}
 
-	binaries := NewDriverBinariesDiscoverer(logger, driver.Root)
+	binaries := NewDriverBinariesDiscoverer(l.logger, l.driver.Root)
 
 	d := discover.Merge(
 		libraries,
@@ -81,35 +81,41 @@ func newDriverVersionDiscoverer(logger logger.Interface, driver *root.Driver, nv
 }
 
 // NewDriverLibraryDiscoverer creates a discoverer for the libraries associated with the specified driver version.
-func NewDriverLibraryDiscoverer(logger logger.Interface, driver *root.Driver, nvidiaCDIHookPath, ldconfigPath, version string) (discover.Discover, error) {
-	libraryPaths, err := getVersionLibs(logger, driver, version)
+func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover, error) {
+	libraryPaths, err := getVersionLibs(l.logger, l.driver, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get libraries for driver version: %v", err)
 	}
 
 	libraries := discover.NewMounts(
-		logger,
+		l.logger,
 		lookup.NewFileLocator(
-			lookup.WithLogger(logger),
-			lookup.WithRoot(driver.Root),
+			lookup.WithLogger(l.logger),
+			lookup.WithRoot(l.driver.Root),
 		),
-		driver.Root,
+		l.driver.Root,
 		libraryPaths,
 	)
 
-	// TODO: The following should use the version directly.
-	cudaCompatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(logger, nvidiaCDIHookPath, driver)
-	updateLDCache, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCDIHookPath, ldconfigPath)
+	var discoverers []discover.Discover
 
-	d := discover.Merge(
-		discover.WithDriverDotSoSymlinks(
-			libraries,
-			version,
-			nvidiaCDIHookPath,
-		),
-		cudaCompatLibHookDiscoverer,
-		updateLDCache,
+	driverDotSoSymlinksDiscoverer := discover.WithDriverDotSoSymlinks(
+		libraries,
+		version,
+		l.nvidiaCDIHookPath,
 	)
+	discoverers = append(discoverers, driverDotSoSymlinksDiscoverer)
+
+	if l.HookIsSupported(HookEnableCudaCompat) {
+		// TODO: The following should use the version directly.
+		cudaCompatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(l.logger, l.nvidiaCDIHookPath, l.driver)
+		discoverers = append(discoverers, cudaCompatLibHookDiscoverer)
+	}
+
+	updateLDCache, _ := discover.NewLDCacheUpdateHook(l.logger, libraries, l.nvidiaCDIHookPath, l.ldconfigPath)
+	discoverers = append(discoverers, updateLDCache)
+
+	d := discover.Merge(discoverers...)
 
 	return d, nil
 }
