@@ -53,3 +53,13 @@ type Interface interface {
 	GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) ([]specs.Device, error)
 	GetDeviceSpecsByID(...string) ([]specs.Device, error)
 }
+
+// A HookName refers to one of the predefined set of CDI hooks that may be
+// included in the generated CDI specification.
+type HookName string
+
+const (
+	// HookEnableCudaCompat refers to the hook used to enable CUDA Forward Compatibility.
+	// This was added with v1.17.5 of the NVIDIA Container Toolkit.
+	HookEnableCudaCompat = HookName("enable-cuda-compat")
+)

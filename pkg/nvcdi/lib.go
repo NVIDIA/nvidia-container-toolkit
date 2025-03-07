@@ -66,11 +66,15 @@ type nvcdilib struct {
 	infolib info.Interface
 
 	mergedDeviceOptions []transform.MergedDeviceOption
+
+	disabledHooks disabledHooks
 }
 
 // New creates a new nvcdi library
 func New(opts ...Option) (Interface, error) {
-	l := &nvcdilib{}
+	l := &nvcdilib{
+		disabledHooks: make(disabledHooks),
+	}
 	for _, opt := range opts {
 		opt(l)
 	}
@@ -152,6 +156,8 @@ func New(opts ...Option) (Interface, error) {
 		if l.vendor == "" {
 			l.vendor = "management.nvidia.com"
 		}
+		// Management containers in general do not require CUDA Forward compatibility.
+		l.disabledHooks[HookEnableCudaCompat] = true
 		lib = (*managementlib)(l)
 	case ModeNvml:
 		lib = (*nvmllib)(l)
