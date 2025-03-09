@@ -29,8 +29,9 @@ type RuntimeConfig struct {
 
 // modesConfig defines (optional) per-mode configs
 type modesConfig struct {
-	CSV csvModeConfig `toml:"csv"`
-	CDI cdiModeConfig `toml:"cdi"`
+	CSV    csvModeConfig    `toml:"csv"`
+	CDI    cdiModeConfig    `toml:"cdi"`
+	JitCDI jitCDIModeConfig `toml:"jit-cdi"`
 }
 
 type cdiModeConfig struct {
@@ -44,4 +45,12 @@ type cdiModeConfig struct {
 
 type csvModeConfig struct {
 	MountSpecPath string `toml:"mount-spec-path"`
+}
+
+type jitCDIModeConfig struct {
+	// LoadKernelModules defines the names of the kernel modules that should be
+	// loaded before generating a just-in-time CDI specification.
+	// The module names must start with `nvidia` and if no modules are specified
+	// no kernel modules are loaded.
+	LoadKernelModules []string `toml:"load-kernel-modules"`
 }
