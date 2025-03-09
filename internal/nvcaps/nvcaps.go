@@ -37,7 +37,7 @@ const (
 )
 
 // MigMinor represents the minor number of a MIG device
-type MigMinor int
+type MigMinor uint32
 
 // MigCap represents the path to a MIG cap file.
 // These are listed in /proc/driver/nvidia-caps/mig-minors and have one of the
@@ -144,7 +144,7 @@ func processMigMinorsLine(line string) (MigCap, MigMinor, error) {
 		return "", 0, fmt.Errorf("invalid MIG minors line: '%v'", line)
 	}
 
-	minor, err := strconv.Atoi(parts[1])
+	minor, err := strconv.ParseUint(parts[1], 10, 32)
 	if err != nil {
 		return "", 0, fmt.Errorf("error reading MIG minor from '%v': %v", line, err)
 	}

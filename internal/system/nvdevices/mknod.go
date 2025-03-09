@@ -25,16 +25,18 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
-//go:generate moq -stub -out mknod_mock.go . mknoder
+type mint uint32
+
+//go:generate moq -fmt=goimports -rm -stub -out mknod_mock.go . mknoder
 type mknoder interface {
-	Mknode(string, int, int) error
+	Mknode(string, uint32, uint32) error
 }
 
 type mknodLogger struct {
 	logger.Interface
 }
 
-func (m *mknodLogger) Mknode(path string, major, minor int) error {
+func (m *mknodLogger) Mknode(path string, major uint32, minor uint32) error {
 	m.Infof("Running: mknod --mode=0666 %s c %d %d", path, major, minor)
 	return nil
 }
@@ -43,7 +45,7 @@ type mknodUnix struct {
 	logger logger.Interface
 }
 
-func (m *mknodUnix) Mknode(path string, major, minor int) error {
+func (m *mknodUnix) Mknode(path string, major uint32, minor uint32) error {
 	// TODO: Ensure that the existing device node has the correct properties.
 	if _, err := os.Stat(path); err == nil {
 		m.logger.Infof("Skipping: %s already exists", path)
@@ -52,7 +54,7 @@ func (m *mknodUnix) Mknode(path string, major, minor int) error {
 		return fmt.Errorf("failed to stat %s: %v", path, err)
 	}
 
-	err := unix.Mknod(path, unix.S_IFCHR, int(unix.Mkdev(uint32(major), uint32(minor))))
+	err := unix.Mknod(path, unix.S_IFCHR, int(unix.Mkdev(major, minor)))
 	if err != nil {
 		return err
 	}

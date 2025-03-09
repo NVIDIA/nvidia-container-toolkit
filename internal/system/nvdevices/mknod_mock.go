@@ -17,7 +17,7 @@ var _ mknoder = &mknoderMock{}
 //
 //		// make and configure a mocked mknoder
 //		mockedmknoder := &mknoderMock{
-//			MknodeFunc: func(s string, n1 int, n2 int) error {
+//			MknodeFunc: func(s string, v1 uint32, v2 uint32) error {
 //				panic("mock out the Mknode method")
 //			},
 //		}
@@ -28,7 +28,7 @@ var _ mknoder = &mknoderMock{}
 //	}
 type mknoderMock struct {
 	// MknodeFunc mocks the Mknode method.
-	MknodeFunc func(s string, n1 int, n2 int) error
+	MknodeFunc func(s string, v1 uint32, v2 uint32) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -36,25 +36,25 @@ type mknoderMock struct {
 		Mknode []struct {
 			// S is the s argument value.
 			S string
-			// N1 is the n1 argument value.
-			N1 int
-			// N2 is the n2 argument value.
-			N2 int
+			// V1 is the v1 argument value.
+			V1 uint32
+			// V2 is the v2 argument value.
+			V2 uint32
 		}
 	}
 	lockMknode sync.RWMutex
 }
 
 // Mknode calls MknodeFunc.
-func (mock *mknoderMock) Mknode(s string, n1 int, n2 int) error {
+func (mock *mknoderMock) Mknode(s string, v1 uint32, v2 uint32) error {
 	callInfo := struct {
 		S  string
-		N1 int
-		N2 int
+		V1 uint32
+		V2 uint32
 	}{
 		S:  s,
-		N1: n1,
-		N2: n2,
+		V1: v1,
+		V2: v2,
 	}
 	mock.lockMknode.Lock()
 	mock.calls.Mknode = append(mock.calls.Mknode, callInfo)
@@ -65,7 +65,7 @@ func (mock *mknoderMock) Mknode(s string, n1 int, n2 int) error {
 		)
 		return errOut
 	}
-	return mock.MknodeFunc(s, n1, n2)
+	return mock.MknodeFunc(s, v1, v2)
 }
 
 // MknodeCalls gets all the calls that were made to Mknode.
@@ -74,13 +74,13 @@ func (mock *mknoderMock) Mknode(s string, n1 int, n2 int) error {
 //	len(mockedmknoder.MknodeCalls())
 func (mock *mknoderMock) MknodeCalls() []struct {
 	S  string
-	N1 int
-	N2 int
+	V1 uint32
+	V2 uint32
 } {
 	var calls []struct {
 		S  string
-		N1 int
-		N2 int
+		V1 uint32
+		V2 uint32
 	}
 	mock.lockMknode.RLock()
 	calls = mock.calls.Mknode

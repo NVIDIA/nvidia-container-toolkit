@@ -26,28 +26,28 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
 )
 
-func (m *Interface) createGPUDeviceNode(gpuIndex int) error {
+func (m *Interface) createGPUDeviceNode(gpuIndex uint32) error {
 	major, exists := m.Get(devices.NVIDIAGPU)
 	if !exists {
 		return fmt.Errorf("failed to determine device major; nvidia kernel module may not be loaded")
 	}
 
 	deviceNodePath := fmt.Sprintf("/dev/nvidia%d", gpuIndex)
-	if err := m.createDeviceNode(deviceNodePath, int(major), gpuIndex); err != nil {
+	if err := m.createDeviceNode(deviceNodePath, major, uint32(gpuIndex)); err != nil {
 		return fmt.Errorf("failed to create device node %v: %w", deviceNodePath, err)
 	}
 	return nil
 }
 
-func (m *Interface) createMigDeviceNodes(gpuIndex int) error {
+func (m *Interface) createMigDeviceNodes(gpuIndex uint32) error {
 	capsMajor, exists := m.Get("nvidia-caps")
 	if !exists {
 		return nil
 	}
 	var errs error
-	for _, capsDeviceMinor := range m.migCaps.FilterForGPU(gpuIndex) {
+	for _, capsDeviceMinor := range m.migCaps.FilterForGPU(int(gpuIndex)) {
 		capDevicePath := capsDeviceMinor.DevicePath()
-		err := m.createDeviceNode(capDevicePath, int(capsMajor), int(capsDeviceMinor))
+		err := m.createDeviceNode(capDevicePath, capsMajor, uint32(capsDeviceMinor))
 		errs = errors.Join(errs, fmt.Errorf("failed to create %v: %w", capDevicePath, err))
 	}
 	return errs
@@ -62,13 +62,13 @@ func (m *Interface) createAllGPUDeviceNodes() error {
 		return fmt.Errorf("failed to get GPU information from PCI: %w", err)
 	}
 
-	count := len(gpus)
+	count := uint32(len(gpus))
 	if count == 0 {
 		return nil
 	}
 
 	var errs error
-	for gpuIndex := 0; gpuIndex < count; gpuIndex++ {
+	for gpuIndex := uint32(0); gpuIndex < count; gpuIndex++ {
 		errs = errors.Join(errs, m.createGPUDeviceNode(gpuIndex))
 		errs = errors.Join(errs, m.createMigDeviceNodes(gpuIndex))
 	}

@@ -45,7 +45,7 @@ func New(opts ...Option) Devices {
 type Option func(*builder)
 
 // WithDeviceToMajor specifies an explicit device name to major number map.
-func WithDeviceToMajor(deviceToMajor map[string]int) Option {
+func WithDeviceToMajor(deviceToMajor map[string]uint32) Option {
 	return func(b *builder) {
 		b.asMap = make(devices)
 		for name, major := range deviceToMajor {

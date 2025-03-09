@@ -22,12 +22,15 @@ import (
 
 	"tags.cncf.io/container-device-interface/pkg/parser"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
@@ -198,11 +201,13 @@ func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, drive
 		logger.Warningf("Ignoring error(s) loading kernel modules: %v", err)
 	}
 
-	identifiers := []string{}
+	var identifiers []string
 	for _, device := range devices {
 		_, _, id := parser.ParseDevice(device)
 		identifiers = append(identifiers, id)
 	}
+
+	tryCreateDeviceNodes(logger, driver, identifiers...)
 
 	deviceSpecs, err := cdilib.GetDeviceSpecsByID(identifiers...)
 	if err != nil {
@@ -220,4 +225,28 @@ func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, drive
 		spec.WithVendor("runtime.nvidia.com"),
 		spec.WithClass("gpu"),
 	)
+}
+
+func tryCreateDeviceNodes(logger logger.Interface, driver *root.Driver, identifiers ...string) {
+	devices, err := nvdevices.New(
+		nvdevices.WithLogger(logger),
+		nvdevices.WithDevRoot(driver.Root),
+	)
+	if err != nil {
+		logger.Warningf("Failed to create devices library: %v", err)
+		return
+	}
+	if err := devices.CreateNVIDIAControlDevices(); err != nil {
+		logger.Warningf("Failed to create control devices: %v", err)
+	}
+	if err := devices.CreateNVIDIACapsControlDeviceNodes(); err != nil {
+		logger.Warningf("Failed to create nvidia-caps control devices: %v", err)
+	}
+
+	for _, id := range identifiers {
+		identifier := device.Identifier(id)
+		if err := devices.CreateDeviceNodes(identifier); err != nil {
+			logger.Warningf("Error creating device nodes for %v: %v", identifier, err)
+		}
+	}
 }

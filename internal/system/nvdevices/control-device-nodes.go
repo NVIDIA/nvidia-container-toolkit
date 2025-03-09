@@ -59,7 +59,7 @@ func (m *Interface) CreateNVIDIACapsControlDeviceNodes() error {
 			continue
 		}
 		deviceNodePath := migMinor.DevicePath()
-		if err := m.createDeviceNode(deviceNodePath, int(capsMajor), int(migMinor)); err != nil {
+		if err := m.createDeviceNode(deviceNodePath, capsMajor, uint32(migMinor)); err != nil {
 			errs = errors.Join(errs, fmt.Errorf("failed to create nvidia-caps device node %v: %w", deviceNodePath, err))
 		}
 	}
@@ -82,12 +82,12 @@ func (m *Interface) createControlDeviceNode(node controlDeviceNode) error {
 		return fmt.Errorf("failed to determine minor: %w", err)
 	}
 
-	return m.createDeviceNode(node.path(), int(major), int(minor))
+	return m.createDeviceNode(node.path(), major, minor)
 }
 
 // controlDeviceNodeMajor returns the major number for the specified NVIDIA control device node.
 // If the device node is not supported, an error is returned.
-func (m *Interface) controlDeviceNodeMajor(node controlDeviceNode) (int64, error) {
+func (m *Interface) controlDeviceNodeMajor(node controlDeviceNode) (devices.Major, error) {
 	var valid bool
 	var major devices.Major
 	switch node {
@@ -98,7 +98,7 @@ func (m *Interface) controlDeviceNodeMajor(node controlDeviceNode) (int64, error
 	}
 
 	if valid {
-		return int64(major), nil
+		return major, nil
 	}
 
 	return 0, errInvalidDeviceNode
@@ -106,7 +106,7 @@ func (m *Interface) controlDeviceNodeMajor(node controlDeviceNode) (int64, error
 
 // controlDeviceNodeMinor returns the minor number for the specified NVIDIA control device node.
 // If the device node is not supported, an error is returned.
-func (m *Interface) controlDeviceNodeMinor(node controlDeviceNode) (int64, error) {
+func (m *Interface) controlDeviceNodeMinor(node controlDeviceNode) (uint32, error) {
 	switch node {
 	case "nvidia-modeset":
 		return devices.NVIDIAModesetMinor, nil

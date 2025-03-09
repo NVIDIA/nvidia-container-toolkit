@@ -89,25 +89,25 @@ func New(opts ...Option) (*Interface, error) {
 func (m *Interface) CreateDeviceNodes(id device.Identifier) error {
 	switch {
 	case id.IsGpuIndex():
-		index, err := strconv.Atoi(string(id))
+		index, err := strconv.ParseUint(string(id), 10, 32)
 		if err != nil {
 			return fmt.Errorf("invalid GPU index: %v", id)
 		}
-		return m.createGPUDeviceNode(index)
+		return m.createGPUDeviceNode(uint32(index))
 	case id.IsMigIndex():
 		indices := strings.Split(string(id), ":")
 		if len(indices) != 2 {
 			return fmt.Errorf("invalid MIG index %v", id)
 		}
-		gpuIndex, err := strconv.Atoi(indices[0])
+		gpuIndex, err := strconv.ParseUint(indices[0], 10, 32)
 		if err != nil {
 			return fmt.Errorf("invalid parent index %v: %w", indices[0], err)
 		}
-		if err := m.createGPUDeviceNode(gpuIndex); err != nil {
+		if err := m.createGPUDeviceNode(uint32(gpuIndex)); err != nil {
 			return fmt.Errorf("failed to create parent device node: %w", err)
 		}
 
-		return m.createMigDeviceNodes(gpuIndex)
+		return m.createMigDeviceNodes(uint32(gpuIndex))
 	case id.IsGpuUUID(), id.IsMigUUID(), id == "all":
 		return m.createAllGPUDeviceNodes()
 	default:
@@ -117,7 +117,7 @@ func (m *Interface) CreateDeviceNodes(id device.Identifier) error {
 
 // createDeviceNode creates the specified device node with the require major and minor numbers.
 // If a devRoot is configured, this is prepended to the path.
-func (m *Interface) createDeviceNode(path string, major int, minor int) error {
+func (m *Interface) createDeviceNode(path string, major devices.Major, minor uint32) error {
 	path = filepath.Join(m.devRoot, path)
-	return m.Mknode(path, major, minor)
+	return m.Mknode(path, uint32(major), minor)
 }

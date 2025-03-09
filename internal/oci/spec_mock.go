@@ -4,9 +4,8 @@
 package oci
 
 import (
-	"sync"
-
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"sync"
 )
 
 // Ensure, that SpecMock does implement Spec.
