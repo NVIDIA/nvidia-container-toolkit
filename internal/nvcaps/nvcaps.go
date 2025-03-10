@@ -39,7 +39,13 @@ const (
 // MigMinor represents the minor number of a MIG device
 type MigMinor int
 
-// MigCap represents the path to a MIG cap file
+// MigCap represents the path to a MIG cap file.
+// These are listed in /proc/driver/nvidia-caps/mig-minors and have one of the
+// follown forms:
+//   - config
+//   - monitor
+//   - gpu{{ .gpuIndex }}/gi{{ .gi }}/access
+//   - gpu{{ .gpuIndex }}/gi{{ .gi }}/ci {{ .ci }}/access
 type MigCap string
 
 // MigCaps stores a map of MIG cap file paths to MIG minors
@@ -55,6 +61,31 @@ func NewGPUInstanceCap(gpu, gi int) MigCap {
 // A GPU instance is uniquely defined by the GPU minor number, GI instance ID, and CI instance ID.
 func NewComputeInstanceCap(gpu, gi, ci int) MigCap {
 	return MigCap(fmt.Sprintf("gpu%d/gi%d/ci%d/access", gpu, gi, ci))
+}
+
+// FilterForGPU limits the MIG Caps to those associated with a particular GPU.
+func (m MigCaps) FilterForGPU(gpu int) MigCaps {
+	if m == nil {
+		return nil
+	}
+	filtered := make(MigCaps)
+	for gi := 0; ; gi++ {
+		giCap := NewGPUInstanceCap(gpu, gi)
+		giMinor, exist := m[giCap]
+		if !exist {
+			break
+		}
+		filtered[giCap] = giMinor
+		for ci := 0; ; ci++ {
+			ciCap := NewComputeInstanceCap(gpu, gi, ci)
+			ciMinor, exist := m[ciCap]
+			if !exist {
+				break
+			}
+			filtered[ciCap] = ciMinor
+		}
+	}
+	return filtered
 }
 
 // GetCapDevicePath returns the path to the cap device for the specified cap.
