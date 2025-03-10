@@ -39,26 +39,26 @@ func TestImexMode(t *testing.T) {
 
 	expectedSpec := `---
 cdiVersion: 0.5.0
+kind: nvidia.com/imex-channel
+devices:
+- name: "0"
+  containerEdits:
+    deviceNodes:
+    - path: /dev/nvidia-caps-imex-channels/channel0
+      hostPath: {{ .hostRoot }}/dev/nvidia-caps-imex-channels/channel0
+- name: "1"
+  containerEdits:
+    deviceNodes:
+    - path: /dev/nvidia-caps-imex-channels/channel1
+      hostPath: {{ .hostRoot }}/dev/nvidia-caps-imex-channels/channel1
+- name: "2047"
+  containerEdits:
+    deviceNodes:
+    - path: /dev/nvidia-caps-imex-channels/channel2047
+      hostPath: {{ .hostRoot }}/dev/nvidia-caps-imex-channels/channel2047
 containerEdits:
   env:
   - NVIDIA_VISIBLE_DEVICES=void
-devices:
-- containerEdits:
-    deviceNodes:
-    - hostPath: {{ .hostRoot }}/dev/nvidia-caps-imex-channels/channel0
-      path: /dev/nvidia-caps-imex-channels/channel0
-  name: "0"
-- containerEdits:
-    deviceNodes:
-    - hostPath: {{ .hostRoot }}/dev/nvidia-caps-imex-channels/channel1
-      path: /dev/nvidia-caps-imex-channels/channel1
-  name: "1"
-- containerEdits:
-    deviceNodes:
-    - hostPath: {{ .hostRoot }}/dev/nvidia-caps-imex-channels/channel2047
-      path: /dev/nvidia-caps-imex-channels/channel2047
-  name: "2047"
-kind: nvidia.com/imex-channel
 `
 	expectedSpec = strings.ReplaceAll(expectedSpec, "{{ .hostRoot }}", hostRoot)
 
