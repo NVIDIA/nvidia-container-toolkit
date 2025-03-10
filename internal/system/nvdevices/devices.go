@@ -20,9 +20,14 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 )
 
 var errInvalidDeviceNode = errors.New("invalid device node")
@@ -36,6 +41,8 @@ type Interface struct {
 	dryRun bool
 	// devRoot is the root directory where device nodes are expected to exist.
 	devRoot string
+
+	migCaps nvcaps.MigCaps
 
 	mknoder
 }
@@ -61,12 +68,51 @@ func New(opts ...Option) (*Interface, error) {
 		i.Devices = devices
 	}
 
+	if i.migCaps == nil {
+		migCaps, err := nvcaps.NewMigCaps()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load MIG caps: %w", err)
+		}
+		i.migCaps = migCaps
+	}
+
 	if i.dryRun {
 		i.mknoder = &mknodLogger{i.logger}
 	} else {
 		i.mknoder = &mknodUnix{i.logger}
 	}
 	return i, nil
+}
+
+// CreateDeviceNodes creates the device nodes for a device with the specified identifier.
+// A list of created device nodes are returned and an error.
+func (m *Interface) CreateDeviceNodes(id device.Identifier) error {
+	switch {
+	case id.IsGpuIndex():
+		index, err := strconv.Atoi(string(id))
+		if err != nil {
+			return fmt.Errorf("invalid GPU index: %v", id)
+		}
+		return m.createGPUDeviceNode(index)
+	case id.IsMigIndex():
+		indices := strings.Split(string(id), ":")
+		if len(indices) != 2 {
+			return fmt.Errorf("invalid MIG index %v", id)
+		}
+		gpuIndex, err := strconv.Atoi(indices[0])
+		if err != nil {
+			return fmt.Errorf("invalid parent index %v: %w", indices[0], err)
+		}
+		if err := m.createGPUDeviceNode(gpuIndex); err != nil {
+			return fmt.Errorf("failed to create parent device node: %w", err)
+		}
+
+		return m.createMigDeviceNodes(gpuIndex)
+	case id.IsGpuUUID(), id.IsMigUUID(), id == "all":
+		return m.createAllGPUDeviceNodes()
+	default:
+		return fmt.Errorf("invalid device identifier: %v", id)
+	}
 }
 
 // createDeviceNode creates the specified device node with the require major and minor numbers.

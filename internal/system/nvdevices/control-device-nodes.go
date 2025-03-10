@@ -17,11 +17,13 @@
 package nvdevices
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 )
 
 // A controlDeviceNode represents an NVIDIA devices node for control or meta devices.
@@ -41,6 +43,27 @@ func (m *Interface) CreateNVIDIAControlDevices() error {
 		}
 	}
 	return nil
+}
+
+// CreateNVIDIACapsControlDeviceNodes creates the nvidia-caps control device nodes at the configured devRoot.
+func (m *Interface) CreateNVIDIACapsControlDeviceNodes() error {
+	capsMajor, exists := m.Get("nvidia-caps")
+	if !exists {
+		return nil
+	}
+
+	var errs error
+	for _, migCap := range []nvcaps.MigCap{"config", "monitor"} {
+		migMinor, exists := m.migCaps[migCap]
+		if !exists {
+			continue
+		}
+		deviceNodePath := migMinor.DevicePath()
+		if err := m.createDeviceNode(deviceNodePath, int(capsMajor), int(migMinor)); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("failed to create nvidia-caps device node %v: %w", deviceNodePath, err))
+		}
+	}
+	return errs
 }
 
 // createControlDeviceNode creates the specified NVIDIA device node at the configured devRoot.
