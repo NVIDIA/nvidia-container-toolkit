@@ -28,6 +28,18 @@ import (
 )
 
 func TestSpec(t *testing.T) {
+	minimalSpec := &specs.Spec{
+		Kind: "nvidia.com/gpu",
+		Devices: []specs.Device{
+			{
+				Name: "one",
+				ContainerEdits: specs.ContainerEdits{
+					Env: []string{"DEVICE_FOO=bar"},
+				},
+			},
+		},
+	}
+
 	testCases := []struct {
 		description      string
 		options          []Option
@@ -36,22 +48,16 @@ func TestSpec(t *testing.T) {
 		expectedSpec     string
 	}{
 		{
-			description: "default options return empty spec",
-			expectedSpec: `---
-cdiVersion: 0.3.0
-containerEdits: {}
-devices: null
-kind: nvidia.com/gpu
-`,
-		},
-		{
 			description: "version is overridden",
-			options:     []Option{WithVersion("0.5.0")},
+			options:     []Option{WithVersion("0.8.0"), WithRawSpec(minimalSpec)},
 			expectedSpec: `---
-cdiVersion: 0.5.0
-containerEdits: {}
-devices: null
+cdiVersion: 0.8.0
 kind: nvidia.com/gpu
+devices:
+- name: one
+  containerEdits:
+    env:
+    - DEVICE_FOO=bar
 `,
 		},
 		{
@@ -60,18 +66,24 @@ kind: nvidia.com/gpu
 				&specs.Spec{
 					Version: "0.5.0",
 					Kind:    "nvidia.com/gpu",
-					ContainerEdits: specs.ContainerEdits{
-						Env: []string{"FOO=bar"},
+					Devices: []specs.Device{
+						{
+							Name: "one",
+							ContainerEdits: specs.ContainerEdits{
+								Env: []string{"DEVICE_FOO=bar"},
+							},
+						},
 					},
 				},
 			)},
 			expectedSpec: `---
 cdiVersion: 0.5.0
-containerEdits:
-  env:
-  - FOO=bar
-devices: null
 kind: nvidia.com/gpu
+devices:
+- name: one
+  containerEdits:
+    env:
+    - DEVICE_FOO=bar
 `,
 		},
 		{
@@ -79,18 +91,24 @@ kind: nvidia.com/gpu
 			options: []Option{WithRawSpec(
 				&specs.Spec{
 					Kind: "nvidia.com/gpu",
-					ContainerEdits: specs.ContainerEdits{
-						Env: []string{"FOO=bar"},
+					Devices: []specs.Device{
+						{
+							Name: "one",
+							ContainerEdits: specs.ContainerEdits{
+								Env: []string{"DEVICE_FOO=bar"},
+							},
+						},
 					},
 				},
 			)},
 			expectedSpec: `---
 cdiVersion: 0.3.0
-containerEdits:
-  env:
-  - FOO=bar
-devices: null
 kind: nvidia.com/gpu
+devices:
+- name: one
+  containerEdits:
+    env:
+    - DEVICE_FOO=bar
 `,
 		},
 		{
@@ -98,8 +116,15 @@ kind: nvidia.com/gpu
 			options: []Option{WithRawSpec(
 				&specs.Spec{
 					Kind: "nvidia.com/gpu",
+					Devices: []specs.Device{
+						{
+							Name: "one",
+							ContainerEdits: specs.ContainerEdits{
+								Env: []string{"DEVICE_FOO=bar"},
+							},
+						},
+					},
 					ContainerEdits: specs.ContainerEdits{
-						Env: []string{"FOO=bar"},
 						DeviceNodes: []*specs.DeviceNode{
 							{
 								HostPath: "/some/dev/dev0",
@@ -111,14 +136,16 @@ kind: nvidia.com/gpu
 			)},
 			expectedSpec: `---
 cdiVersion: 0.5.0
+kind: nvidia.com/gpu
+devices:
+- name: one
+  containerEdits:
+    env:
+    - DEVICE_FOO=bar
 containerEdits:
   deviceNodes:
-  - hostPath: /some/dev/dev0
-    path: /dev/dev0
-  env:
-  - FOO=bar
-devices: null
-kind: nvidia.com/gpu
+  - path: /dev/dev0
+    hostPath: /some/dev/dev0
 `,
 		},
 		{
@@ -126,8 +153,15 @@ kind: nvidia.com/gpu
 			options: []Option{WithRawSpec(
 				&specs.Spec{
 					Kind: "nvidia.com/gpu",
+					Devices: []specs.Device{
+						{
+							Name: "one",
+							ContainerEdits: specs.ContainerEdits{
+								Env: []string{"DEVICE_FOO=bar"},
+							},
+						},
+					},
 					ContainerEdits: specs.ContainerEdits{
-						Env: []string{"FOO=bar"},
 						DeviceNodes: []*specs.DeviceNode{
 							{
 								HostPath: "/some/dev/dev0",
@@ -147,14 +181,16 @@ kind: nvidia.com/gpu
 			),
 			expectedSpec: `---
 cdiVersion: 0.5.0
+kind: nvidia.com/gpu
+devices:
+- name: one
+  containerEdits:
+    env:
+    - DEVICE_FOO=bar
 containerEdits:
   deviceNodes:
-  - hostPath: /dev/dev0
-    path: /dev/dev0
-  env:
-  - FOO=bar
-devices: null
-kind: nvidia.com/gpu
+  - path: /dev/dev0
+    hostPath: /dev/dev0
 `,
 		},
 	}
