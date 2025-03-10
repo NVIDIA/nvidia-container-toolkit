@@ -32,7 +32,8 @@ func TestMountsToContainerPath(t *testing.T) {
 		"ro",
 		"nosuid",
 		"nodev",
-		"bind",
+		"rbind",
+		"rprivate",
 	}
 
 	testCases := []struct {
