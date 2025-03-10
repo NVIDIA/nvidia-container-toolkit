@@ -71,7 +71,8 @@ func (d *mountsToContainerPath) Mounts() ([]Mount, error) {
 				"ro",
 				"nosuid",
 				"nodev",
-				"bind",
+				"rbind",
+				"rprivate",
 			},
 		}
 		mounts = append(mounts, mount)
