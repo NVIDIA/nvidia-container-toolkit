@@ -1,7 +1,3 @@
-FROM quay.io/centos/centos:stream8
-
-RUN sed -i -e "s|mirrorlist=|#mirrorlist=|g" \
-               -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" \
-                  /etc/yum.repos.d/CentOS-Stream-*
+FROM quay.io/centos/centos:stream9
 
 RUN yum install -y createrepo rpm-sign pinentry
