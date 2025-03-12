@@ -36,8 +36,12 @@ const (
 	nvcapsDevicePath     = "/dev/nvidia-caps"
 )
 
+// An Index represents a gpu, ci, or gi index.
+// We use uint32 as this typically maps to a device minor number.
+type Index uint32
+
 // MigMinor represents the minor number of a MIG device
-type MigMinor uint32
+type MigMinor Index
 
 // MigCap represents the path to a MIG cap file.
 // These are listed in /proc/driver/nvidia-caps/mig-minors and have one of the
@@ -53,30 +57,30 @@ type MigCaps map[MigCap]MigMinor
 
 // NewGPUInstanceCap creates a MigCap for the specified MIG GPU instance.
 // A GPU instance is uniquely defined by the GPU minor number and GI instance ID.
-func NewGPUInstanceCap(gpu, gi int) MigCap {
+func NewGPUInstanceCap[T uint32 | int | Index](gpu, gi T) MigCap {
 	return MigCap(fmt.Sprintf("gpu%d/gi%d/access", gpu, gi))
 }
 
 // NewComputeInstanceCap creates a MigCap for the specified MIG Compute instance.
 // A GPU instance is uniquely defined by the GPU minor number, GI instance ID, and CI instance ID.
-func NewComputeInstanceCap(gpu, gi, ci int) MigCap {
+func NewComputeInstanceCap[T uint32 | int | Index](gpu, gi, ci T) MigCap {
 	return MigCap(fmt.Sprintf("gpu%d/gi%d/ci%d/access", gpu, gi, ci))
 }
 
 // FilterForGPU limits the MIG Caps to those associated with a particular GPU.
-func (m MigCaps) FilterForGPU(gpu int) MigCaps {
+func (m MigCaps) FilterForGPU(gpu Index) MigCaps {
 	if m == nil {
 		return nil
 	}
 	filtered := make(MigCaps)
-	for gi := 0; ; gi++ {
+	for gi := Index(0); ; gi++ {
 		giCap := NewGPUInstanceCap(gpu, gi)
 		giMinor, exist := m[giCap]
 		if !exist {
 			break
 		}
 		filtered[giCap] = giMinor
-		for ci := 0; ; ci++ {
+		for ci := Index(0); ; ci++ {
 			ciCap := NewComputeInstanceCap(gpu, gi, ci)
 			ciMinor, exist := m[ciCap]
 			if !exist {
