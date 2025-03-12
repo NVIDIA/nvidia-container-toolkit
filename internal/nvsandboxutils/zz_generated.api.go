@@ -31,7 +31,7 @@ var (
 
 // Interface represents the interface for the library type.
 //
-//go:generate moq -out mock/interface.go -pkg mock . Interface:Interface
+//go:generate moq -rm -fmt=goimports -out mock/interface.go -pkg mock . Interface:Interface
 type Interface interface {
 	ErrorString(Ret) string
 	GetDriverVersion() (string, Ret)

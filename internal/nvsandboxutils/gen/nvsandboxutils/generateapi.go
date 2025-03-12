@@ -167,7 +167,7 @@ func generateInterfaceComment(input GeneratableInterfacePoperties) (string, erro
 	commentFmt := []string{
 		"// %s represents the interface for the %s type.",
 		"//",
-		"//go:generate moq -out mock/%s.go -pkg mock . %s:%s",
+		"//go:generate moq -rm -fmt=goimports -out mock/%s.go -pkg mock . %s:%s",
 	}
 
 	var signature strings.Builder

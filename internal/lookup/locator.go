@@ -18,7 +18,7 @@ package lookup
 
 import "errors"
 
-//go:generate moq -stub -out locator_mock.go . Locator
+//go:generate moq -rm -fmt=goimports -stub -out locator_mock.go . Locator
 
 // Locator defines the interface for locating files on a system.
 type Locator interface {

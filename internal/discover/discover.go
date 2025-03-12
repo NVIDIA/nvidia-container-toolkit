@@ -38,7 +38,7 @@ type Hook struct {
 
 // Discover defines an interface for discovering the devices, mounts, and hooks available on a system
 //
-//go:generate moq -stub -out discover_mock.go . Discover
+//go:generate moq -rm -fmt=goimports -stub -out discover_mock.go . Discover
 type Discover interface {
 	Devices() ([]Device, error)
 	Mounts() ([]Mount, error)

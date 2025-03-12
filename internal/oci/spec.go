@@ -33,7 +33,7 @@ type SpecModifier interface {
 
 // Spec defines the operations to be performed on an OCI specification
 //
-//go:generate moq -stub -out spec_mock.go . Spec
+//go:generate moq -rm -fmt=goimports -stub -out spec_mock.go . Spec
 type Spec interface {
 	Load() (*specs.Spec, error)
 	Flush() error
