@@ -25,7 +25,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
-//go:generate moq -stub -out mknod_mock.go . mknoder
+//go:generate moq -rm -fmt=goimports -stub -out mknod_mock.go . mknoder
 type mknoder interface {
 	Mknode(string, int, int) error
 }

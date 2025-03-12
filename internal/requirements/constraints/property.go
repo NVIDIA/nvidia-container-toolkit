@@ -25,7 +25,7 @@ import (
 
 // Property represents a property that is used to check requirements
 //
-//go:generate moq -stub -out property_mock.go . Property
+//go:generate moq -rm -fmt=goimports -stub -out property_mock.go . Property
 type Property interface {
 	Name() string
 	Value() (string, error)

@@ -35,7 +35,7 @@ var errLibraryAlreadyLoaded = errors.New("library already loaded")
 // dynamicLibrary is an interface for abstacting the underlying library.
 // This also allows for mocking and testing.
 
-//go:generate moq -rm -stub -out dynamicLibrary_mock.go . dynamicLibrary
+//go:generate moq -rm -fmt=goimports -stub -out dynamicLibrary_mock.go . dynamicLibrary
 type dynamicLibrary interface {
 	Lookup(string) error
 	Open() error

@@ -4,8 +4,9 @@
 package mock
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 	"sync"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 )
 
 // Ensure, that Interface does implement nvsandboxutils.Interface.
