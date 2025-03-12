@@ -36,10 +36,20 @@ const (
 	nvcapsDevicePath     = "/dev/nvidia-caps"
 )
 
-// MigMinor represents the minor number of a MIG device
-type MigMinor int
+// An Index represents a gpu, ci, or gi index.
+// We use uint32 as this typically maps to a device minor number.
+type Index uint32
 
-// MigCap represents the path to a MIG cap file
+// MigMinor represents the minor number of a MIG device
+type MigMinor Index
+
+// MigCap represents the path to a MIG cap file.
+// These are listed in /proc/driver/nvidia-caps/mig-minors and have one of the
+// follown forms:
+//   - config
+//   - monitor
+//   - gpu{{ .gpuIndex }}/gi{{ .gi }}/access
+//   - gpu{{ .gpuIndex }}/gi{{ .gi }}/ci {{ .ci }}/access
 type MigCap string
 
 // MigCaps stores a map of MIG cap file paths to MIG minors
@@ -47,14 +57,39 @@ type MigCaps map[MigCap]MigMinor
 
 // NewGPUInstanceCap creates a MigCap for the specified MIG GPU instance.
 // A GPU instance is uniquely defined by the GPU minor number and GI instance ID.
-func NewGPUInstanceCap(gpu, gi int) MigCap {
+func NewGPUInstanceCap[T uint32 | int | Index](gpu, gi T) MigCap {
 	return MigCap(fmt.Sprintf("gpu%d/gi%d/access", gpu, gi))
 }
 
 // NewComputeInstanceCap creates a MigCap for the specified MIG Compute instance.
 // A GPU instance is uniquely defined by the GPU minor number, GI instance ID, and CI instance ID.
-func NewComputeInstanceCap(gpu, gi, ci int) MigCap {
+func NewComputeInstanceCap[T uint32 | int | Index](gpu, gi, ci T) MigCap {
 	return MigCap(fmt.Sprintf("gpu%d/gi%d/ci%d/access", gpu, gi, ci))
+}
+
+// FilterForGPU limits the MIG Caps to those associated with a particular GPU.
+func (m MigCaps) FilterForGPU(gpu Index) MigCaps {
+	if m == nil {
+		return nil
+	}
+	filtered := make(MigCaps)
+	for gi := Index(0); ; gi++ {
+		giCap := NewGPUInstanceCap(gpu, gi)
+		giMinor, exist := m[giCap]
+		if !exist {
+			break
+		}
+		filtered[giCap] = giMinor
+		for ci := Index(0); ; ci++ {
+			ciCap := NewComputeInstanceCap(gpu, gi, ci)
+			ciMinor, exist := m[ciCap]
+			if !exist {
+				break
+			}
+			filtered[ciCap] = ciMinor
+		}
+	}
+	return filtered
 }
 
 // GetCapDevicePath returns the path to the cap device for the specified cap.
@@ -113,7 +148,7 @@ func processMigMinorsLine(line string) (MigCap, MigMinor, error) {
 		return "", 0, fmt.Errorf("invalid MIG minors line: '%v'", line)
 	}
 
-	minor, err := strconv.Atoi(parts[1])
+	minor, err := strconv.ParseUint(parts[1], 10, 32)
 	if err != nil {
 		return "", 0, fmt.Errorf("error reading MIG minor from '%v': %v", line, err)
 	}

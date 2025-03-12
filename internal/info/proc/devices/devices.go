@@ -45,7 +45,7 @@ const (
 type Name string
 
 // Major represents a device major as specified under /proc/devices
-type Major int
+type Major uint32
 
 // Devices represents the set of devices under /proc/devices
 //
@@ -130,8 +130,8 @@ func nvidiaDeviceFrom(reader io.Reader) (Devices, error) {
 	return nvidiaDevices, nil
 }
 
-func devicesFrom(reader io.Reader) map[string]int {
-	allDevices := make(map[string]int)
+func devicesFrom(reader io.Reader) map[string]uint32 {
+	allDevices := make(map[string]uint32)
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		device, major, err := processProcDeviceLine(scanner.Text())
@@ -143,11 +143,11 @@ func devicesFrom(reader io.Reader) map[string]int {
 	return allDevices
 }
 
-func processProcDeviceLine(line string) (string, int, error) {
+func processProcDeviceLine(line string) (string, uint32, error) {
 	trimmed := strings.TrimSpace(line)
 
 	var name string
-	var major int
+	var major uint32
 
 	n, _ := fmt.Sscanf(trimmed, "%d %s", &major, &name)
 	if n == 2 {

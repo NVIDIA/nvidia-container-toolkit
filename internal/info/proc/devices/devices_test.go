@@ -25,7 +25,7 @@ import (
 )
 
 func TestNvidiaDevices(t *testing.T) {
-	perDriverDeviceMaps := map[string]map[string]int{
+	perDriverDeviceMaps := map[string]map[string]uint32{
 		"pre550": {
 			"nvidia-frontend": 195,
 			"nvidia-nvlink":   234,
@@ -100,7 +100,7 @@ func TestProcessDeviceFileLine(t *testing.T) {
 	testCases := []struct {
 		line  string
 		name  string
-		major int
+		major uint32
 		err   bool
 	}{
 		{"", "", 0, true},

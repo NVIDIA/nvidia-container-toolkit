@@ -145,21 +145,9 @@ func (m allPossible) getGPUDeviceNodes(gpu int) []deviceNode {
 // getNVCapDeviceNodes generates a list of cap device nodes for a given GPU.
 func (m allPossible) getNVCapDeviceNodes(gpu int) []deviceNode {
 	var selectedCapMinors []nvcaps.MigMinor
-	for gi := 0; ; gi++ {
-		giCap := nvcaps.NewGPUInstanceCap(gpu, gi)
-		giMinor, exist := m.migCaps[giCap]
-		if !exist {
-			break
-		}
-		selectedCapMinors = append(selectedCapMinors, giMinor)
-		for ci := 0; ; ci++ {
-			ciCap := nvcaps.NewComputeInstanceCap(gpu, gi, ci)
-			ciMinor, exist := m.migCaps[ciCap]
-			if !exist {
-				break
-			}
-			selectedCapMinors = append(selectedCapMinors, ciMinor)
-		}
+
+	for _, capMinors := range m.migCaps.FilterForGPU(nvcaps.Index(gpu)) {
+		selectedCapMinors = append(selectedCapMinors, capMinors)
 	}
 
 	var deviceNodes []deviceNode

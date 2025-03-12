@@ -22,8 +22,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 )
 
 var errInvalidDeviceNode = errors.New("invalid device node")
@@ -37,6 +40,8 @@ type Interface struct {
 	dryRun bool
 	// devRoot is the root directory where device nodes are expected to exist.
 	devRoot string
+
+	migCaps nvcaps.MigCaps
 
 	mknoder
 }
@@ -62,6 +67,14 @@ func New(opts ...Option) (*Interface, error) {
 		i.Devices = devices
 	}
 
+	if i.migCaps == nil {
+		migCaps, err := nvcaps.NewMigCaps()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load MIG caps: %w", err)
+		}
+		i.migCaps = migCaps
+	}
+
 	if i.dryRun {
 		i.mknoder = &mknodLogger{i.logger}
 	} else {
@@ -70,77 +83,40 @@ func New(opts ...Option) (*Interface, error) {
 	return i, nil
 }
 
-// CreateNVIDIAControlDevices creates the NVIDIA control device nodes at the configured devRoot.
-func (m *Interface) CreateNVIDIAControlDevices() error {
-	controlNodes := []string{"nvidiactl", "nvidia-modeset", "nvidia-uvm", "nvidia-uvm-tools"}
-	for _, node := range controlNodes {
-		err := m.CreateNVIDIADevice(node)
+// CreateDeviceNodes creates the device nodes for a device with the specified identifier.
+// A list of created device nodes are returned and an error.
+func (m *Interface) CreateDeviceNodes(id device.Identifier) error {
+	switch {
+	case id.IsGpuIndex():
+		gpuIndex, err := toIndex(string(id))
 		if err != nil {
-			return fmt.Errorf("failed to create device node %s: %w", node, err)
+			return fmt.Errorf("invalid GPU index: %v", id)
 		}
-	}
-	return nil
-}
+		return m.createGPUDeviceNode(gpuIndex)
+	case id.IsMigIndex():
+		indices := strings.Split(string(id), ":")
+		if len(indices) != 2 {
+			return fmt.Errorf("invalid MIG index %v", id)
+		}
+		gpuIndex, err := toIndex(indices[0])
+		if err != nil {
+			return fmt.Errorf("invalid parent index %v: %w", indices[0], err)
+		}
+		if err := m.createGPUDeviceNode(gpuIndex); err != nil {
+			return fmt.Errorf("failed to create parent device node: %w", err)
+		}
 
-// CreateNVIDIADevice creates the specified NVIDIA device node at the configured devRoot.
-func (m *Interface) CreateNVIDIADevice(node string) error {
-	node = filepath.Base(node)
-	if !strings.HasPrefix(node, "nvidia") {
-		return fmt.Errorf("invalid device node %q: %w", node, errInvalidDeviceNode)
+		return m.createMigDeviceNodes(gpuIndex)
+	case id.IsGpuUUID(), id.IsMigUUID(), id == "all":
+		return m.createAllGPUDeviceNodes()
+	default:
+		return fmt.Errorf("invalid device identifier: %v", id)
 	}
-
-	major, err := m.Major(node)
-	if err != nil {
-		return fmt.Errorf("failed to determine major: %w", err)
-	}
-
-	minor, err := m.Minor(node)
-	if err != nil {
-		return fmt.Errorf("failed to determine minor: %w", err)
-	}
-
-	return m.createDeviceNode(filepath.Join("dev", node), int(major), int(minor))
 }
 
 // createDeviceNode creates the specified device node with the require major and minor numbers.
 // If a devRoot is configured, this is prepended to the path.
-func (m *Interface) createDeviceNode(path string, major int, minor int) error {
+func (m *Interface) createDeviceNode(path string, major devices.Major, minor uint32) error {
 	path = filepath.Join(m.devRoot, path)
-	return m.Mknode(path, major, minor)
-}
-
-// Major returns the major number for the specified NVIDIA device node.
-// If the device node is not supported, an error is returned.
-func (m *Interface) Major(node string) (int64, error) {
-	var valid bool
-	var major devices.Major
-	switch node {
-	case "nvidia-uvm", "nvidia-uvm-tools":
-		major, valid = m.Get(devices.NVIDIAUVM)
-	case "nvidia-modeset", "nvidiactl":
-		major, valid = m.Get(devices.NVIDIAGPU)
-	}
-
-	if valid {
-		return int64(major), nil
-	}
-
-	return 0, errInvalidDeviceNode
-}
-
-// Minor returns the minor number for the specified NVIDIA device node.
-// If the device node is not supported, an error is returned.
-func (m *Interface) Minor(node string) (int64, error) {
-	switch node {
-	case "nvidia-modeset":
-		return devices.NVIDIAModesetMinor, nil
-	case "nvidia-uvm-tools":
-		return devices.NVIDIAUVMToolsMinor, nil
-	case "nvidia-uvm":
-		return devices.NVIDIAUVMMinor, nil
-	case "nvidiactl":
-		return devices.NVIDIACTLMinor, nil
-	}
-
-	return 0, errInvalidDeviceNode
+	return m.Mknode(path, uint32(major), minor)
 }

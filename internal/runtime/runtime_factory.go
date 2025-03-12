@@ -77,7 +77,7 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 	mode := info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode, image)
 	// We update the mode here so that we can continue passing just the config to other functions.
 	cfg.NVIDIAContainerRuntimeConfig.Mode = mode
-	modeModifier, err := newModeModifier(logger, mode, cfg, ociSpec, image)
+	modeModifier, err := newModeModifier(logger, mode, cfg, driver, ociSpec, image)
 	if err != nil {
 		return nil, err
 	}
@@ -107,14 +107,14 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 	return modifiers, nil
 }
 
-func newModeModifier(logger logger.Interface, mode string, cfg *config.Config, ociSpec oci.Spec, image image.CUDA) (oci.SpecModifier, error) {
+func newModeModifier(logger logger.Interface, mode string, cfg *config.Config, driver *root.Driver, ociSpec oci.Spec, image image.CUDA) (oci.SpecModifier, error) {
 	switch mode {
 	case "legacy":
 		return modifier.NewStableRuntimeModifier(logger, cfg.NVIDIAContainerRuntimeHookConfig.Path), nil
 	case "csv":
 		return modifier.NewCSVModifier(logger, cfg, image)
 	case "cdi":
-		return modifier.NewCDIModifier(logger, cfg, ociSpec)
+		return modifier.NewCDIModifier(logger, cfg, driver, ociSpec)
 	}
 
 	return nil, fmt.Errorf("invalid runtime mode: %v", cfg.NVIDIAContainerRuntimeConfig.Mode)

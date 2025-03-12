@@ -22,11 +22,15 @@ import (
 
 	"tags.cncf.io/container-device-interface/pkg/parser"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
@@ -34,7 +38,7 @@ import (
 // NewCDIModifier creates an OCI spec modifier that determines the modifications to make based on the
 // CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES environment variable is
 // used to select the devices to include.
-func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
+func NewCDIModifier(logger logger.Interface, cfg *config.Config, driver *root.Driver, ociSpec oci.Spec) (oci.SpecModifier, error) {
 	devices, err := getDevicesFromSpec(logger, ociSpec, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get required devices from OCI specification: %v", err)
@@ -50,7 +54,7 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spe
 		return nil, fmt.Errorf("requesting a CDI device with vendor 'runtime.nvidia.com' is not supported when requesting other CDI devices")
 	}
 	if len(automaticDevices) > 0 {
-		automaticModifier, err := newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
+		automaticModifier, err := newAutomaticCDISpecModifier(logger, cfg, driver, automaticDevices)
 		if err == nil {
 			return automaticModifier, nil
 		}
@@ -163,9 +167,9 @@ func filterAutomaticDevices(devices []string) []string {
 	return automatic
 }
 
-func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, devices []string) (oci.SpecModifier, error) {
+func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, driver *root.Driver, devices []string) (oci.SpecModifier, error) {
 	logger.Debugf("Generating in-memory CDI specs for devices %v", devices)
-	spec, err := generateAutomaticCDISpec(logger, cfg, devices)
+	spec, err := generateAutomaticCDISpec(logger, cfg, driver, devices)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate CDI spec: %w", err)
 	}
@@ -180,7 +184,7 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 	return cdiModifier, nil
 }
 
-func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devices []string) (spec.Interface, error) {
+func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, driver *root.Driver, devices []string) (spec.Interface, error) {
 	cdilib, err := nvcdi.New(
 		nvcdi.WithLogger(logger),
 		nvcdi.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path),
@@ -192,11 +196,18 @@ func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devic
 		return nil, fmt.Errorf("failed to construct CDI library: %w", err)
 	}
 
-	identifiers := []string{}
+	// TODO: Consider moving this into the nvcdi API.
+	if err := driver.LoadKernelModules(cfg.NVIDIAContainerRuntimeConfig.Modes.JitCDI.LoadKernelModules...); err != nil {
+		logger.Warningf("Ignoring error(s) loading kernel modules: %v", err)
+	}
+
+	var identifiers []string
 	for _, device := range devices {
 		_, _, id := parser.ParseDevice(device)
 		identifiers = append(identifiers, id)
 	}
+
+	tryCreateDeviceNodes(logger, driver, identifiers...)
 
 	deviceSpecs, err := cdilib.GetDeviceSpecsByID(identifiers...)
 	if err != nil {
@@ -214,4 +225,28 @@ func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devic
 		spec.WithVendor("runtime.nvidia.com"),
 		spec.WithClass("gpu"),
 	)
+}
+
+func tryCreateDeviceNodes(logger logger.Interface, driver *root.Driver, identifiers ...string) {
+	devices, err := nvdevices.New(
+		nvdevices.WithLogger(logger),
+		nvdevices.WithDevRoot(driver.Root),
+	)
+	if err != nil {
+		logger.Warningf("Failed to create devices library: %v", err)
+		return
+	}
+	if err := devices.CreateNVIDIAControlDevices(); err != nil {
+		logger.Warningf("Failed to create control devices: %v", err)
+	}
+	if err := devices.CreateNVIDIACapsControlDeviceNodes(); err != nil {
+		logger.Warningf("Failed to create nvidia-caps control devices: %v", err)
+	}
+
+	for _, id := range identifiers {
+		identifier := device.Identifier(id)
+		if err := devices.CreateDeviceNodes(identifier); err != nil {
+			logger.Warningf("Error creating device nodes for %v: %v", identifier, err)
+		}
+	}
 }
