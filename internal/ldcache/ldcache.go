@@ -79,7 +79,7 @@ type entry2 struct {
 
 // LDCache represents the interface for performing lookups into the LDCache
 //
-//go:generate moq -rm -out ldcache_mock.go . LDCache
+//go:generate moq -rm -fmt=goimports -out ldcache_mock.go . LDCache
 type LDCache interface {
 	List() ([]string, []string)
 }

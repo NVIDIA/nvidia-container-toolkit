@@ -19,7 +19,7 @@ package oci
 // Runtime is an interface for a runtime shim. The Exec method accepts a list
 // of command line arguments, and returns an error / nil.
 //
-//go:generate moq -rm -stub -out runtime_mock.go . Runtime
+//go:generate moq -rm -fmt=goimports -stub -out runtime_mock.go . Runtime
 type Runtime interface {
 	Exec([]string) error
 	String() string

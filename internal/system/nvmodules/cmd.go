@@ -24,7 +24,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
-//go:generate moq -stub -out cmd_mock.go . cmder
+//go:generate moq -rm -fmt=goimports -stub -out cmd_mock.go . cmder
 type cmder interface {
 	// Run executes the command and returns the stdout, stderr, and an error if any
 	Run(string, ...string) error
