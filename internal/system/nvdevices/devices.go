@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
@@ -89,25 +88,25 @@ func New(opts ...Option) (*Interface, error) {
 func (m *Interface) CreateDeviceNodes(id device.Identifier) error {
 	switch {
 	case id.IsGpuIndex():
-		index, err := strconv.ParseUint(string(id), 10, 32)
+		gpuIndex, err := toIndex(string(id))
 		if err != nil {
 			return fmt.Errorf("invalid GPU index: %v", id)
 		}
-		return m.createGPUDeviceNode(uint32(index))
+		return m.createGPUDeviceNode(gpuIndex)
 	case id.IsMigIndex():
 		indices := strings.Split(string(id), ":")
 		if len(indices) != 2 {
 			return fmt.Errorf("invalid MIG index %v", id)
 		}
-		gpuIndex, err := strconv.ParseUint(indices[0], 10, 32)
+		gpuIndex, err := toIndex(indices[0])
 		if err != nil {
 			return fmt.Errorf("invalid parent index %v: %w", indices[0], err)
 		}
-		if err := m.createGPUDeviceNode(uint32(gpuIndex)); err != nil {
+		if err := m.createGPUDeviceNode(gpuIndex); err != nil {
 			return fmt.Errorf("failed to create parent device node: %w", err)
 		}
 
-		return m.createMigDeviceNodes(uint32(gpuIndex))
+		return m.createMigDeviceNodes(gpuIndex)
 	case id.IsGpuUUID(), id.IsMigUUID(), id == "all":
 		return m.createAllGPUDeviceNodes()
 	default:

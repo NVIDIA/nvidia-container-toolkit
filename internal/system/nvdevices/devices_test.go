@@ -30,13 +30,13 @@ func TestCreateControlDevices(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
 	nvidiaDevices := devices.New(
-		devices.WithDeviceToMajor(map[string]int{
+		devices.WithDeviceToMajor(map[string]uint32{
 			"nvidia-frontend": 195,
 			"nvidia-uvm":      243,
 		}),
 	)
 	nvidia550Devices := devices.New(
-		devices.WithDeviceToMajor(map[string]int{
+		devices.WithDeviceToMajor(map[string]uint32{
 			"nvidia":     195,
 			"nvidia-uvm": 243,
 		}),
@@ -52,8 +52,8 @@ func TestCreateControlDevices(t *testing.T) {
 		expectedError error
 		expectedCalls []struct {
 			S  string
-			N1 int
-			N2 int
+			V1 uint32
+			V2 uint32
 		}
 	}{
 		{
@@ -63,8 +63,8 @@ func TestCreateControlDevices(t *testing.T) {
 			mknodeError: nil,
 			expectedCalls: []struct {
 				S  string
-				N1 int
-				N2 int
+				V1 uint32
+				V2 uint32
 			}{
 				{"/dev/nvidiactl", 195, 255},
 				{"/dev/nvidia-modeset", 195, 254},
@@ -79,8 +79,8 @@ func TestCreateControlDevices(t *testing.T) {
 			mknodeError: nil,
 			expectedCalls: []struct {
 				S  string
-				N1 int
-				N2 int
+				V1 uint32
+				V2 uint32
 			}{
 				{"/dev/nvidiactl", 195, 255},
 				{"/dev/nvidia-modeset", 195, 254},
@@ -95,8 +95,8 @@ func TestCreateControlDevices(t *testing.T) {
 			mknodeError: nil,
 			expectedCalls: []struct {
 				S  string
-				N1 int
-				N2 int
+				V1 uint32
+				V2 uint32
 			}{
 				{"/some/root/dev/nvidiactl", 195, 255},
 				{"/some/root/dev/nvidia-modeset", 195, 254},
@@ -112,8 +112,8 @@ func TestCreateControlDevices(t *testing.T) {
 			// We expect the first call to this to fail, and the rest to be skipped
 			expectedCalls: []struct {
 				S  string
-				N1 int
-				N2 int
+				V1 uint32
+				V2 uint32
 			}{
 				{"/dev/nvidiactl", 195, 255},
 			},
@@ -132,7 +132,7 @@ func TestCreateControlDevices(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			mknode := &mknoderMock{
-				MknodeFunc: func(string, int, int) error {
+				MknodeFunc: func(string, uint32, uint32) error {
 					return tc.mknodeError
 				},
 			}

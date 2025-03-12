@@ -20,32 +20,44 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strconv"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvpci"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 )
 
-func (m *Interface) createGPUDeviceNode(gpuIndex uint32) error {
+type gpuIndex nvcaps.Index
+
+func toIndex(index string) (gpuIndex, error) {
+	i, err := strconv.ParseUint(index, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return gpuIndex(i), nil
+}
+
+func (m *Interface) createGPUDeviceNode(gpu gpuIndex) error {
 	major, exists := m.Get(devices.NVIDIAGPU)
 	if !exists {
 		return fmt.Errorf("failed to determine device major; nvidia kernel module may not be loaded")
 	}
 
-	deviceNodePath := fmt.Sprintf("/dev/nvidia%d", gpuIndex)
-	if err := m.createDeviceNode(deviceNodePath, major, uint32(gpuIndex)); err != nil {
+	deviceNodePath := fmt.Sprintf("/dev/nvidia%d", gpu)
+	if err := m.createDeviceNode(deviceNodePath, major, uint32(gpu)); err != nil {
 		return fmt.Errorf("failed to create device node %v: %w", deviceNodePath, err)
 	}
 	return nil
 }
 
-func (m *Interface) createMigDeviceNodes(gpuIndex uint32) error {
+func (m *Interface) createMigDeviceNodes(gpu gpuIndex) error {
 	capsMajor, exists := m.Get("nvidia-caps")
 	if !exists {
 		return nil
 	}
 	var errs error
-	for _, capsDeviceMinor := range m.migCaps.FilterForGPU(int(gpuIndex)) {
+	for _, capsDeviceMinor := range m.migCaps.FilterForGPU(nvcaps.Index(gpu)) {
 		capDevicePath := capsDeviceMinor.DevicePath()
 		err := m.createDeviceNode(capDevicePath, capsMajor, uint32(capsDeviceMinor))
 		errs = errors.Join(errs, fmt.Errorf("failed to create %v: %w", capDevicePath, err))
@@ -62,13 +74,13 @@ func (m *Interface) createAllGPUDeviceNodes() error {
 		return fmt.Errorf("failed to get GPU information from PCI: %w", err)
 	}
 
-	count := uint32(len(gpus))
+	count := gpuIndex(len(gpus))
 	if count == 0 {
 		return nil
 	}
 
 	var errs error
-	for gpuIndex := uint32(0); gpuIndex < count; gpuIndex++ {
+	for gpuIndex := gpuIndex(0); gpuIndex < count; gpuIndex++ {
 		errs = errors.Join(errs, m.createGPUDeviceNode(gpuIndex))
 		errs = errors.Join(errs, m.createMigDeviceNodes(gpuIndex))
 	}

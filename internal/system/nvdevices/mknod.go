@@ -25,8 +25,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
-type mint uint32
-
 //go:generate moq -fmt=goimports -rm -stub -out mknod_mock.go . mknoder
 type mknoder interface {
 	Mknode(string, uint32, uint32) error
