@@ -49,6 +49,7 @@ func main() {
 
 	// Create the top-level CLI
 	c := cli.NewApp()
+	c.DisableSliceFlagSeparator = true
 	c.Name = "NVIDIA Container Toolkit CLI"
 	c.UseShortOptionHandling = true
 	c.EnableBashCompletion = true
