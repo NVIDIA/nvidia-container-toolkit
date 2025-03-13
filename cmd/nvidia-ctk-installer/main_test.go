@@ -17,7 +17,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,67 +27,6 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
-
-func TestParseArgs(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
-	testCases := []struct {
-		args              []string
-		expectedRemaining []string
-		expectedRoot      string
-		expectedError     error
-	}{
-		{
-			args:              []string{},
-			expectedRemaining: []string{},
-			expectedRoot:      "",
-			expectedError:     nil,
-		},
-		{
-			args:              []string{"app"},
-			expectedRemaining: []string{"app"},
-		},
-		{
-			args:              []string{"app", "root"},
-			expectedRemaining: []string{"app"},
-			expectedRoot:      "root",
-		},
-		{
-			args:              []string{"app", "--flag"},
-			expectedRemaining: []string{"app", "--flag"},
-		},
-		{
-			args:              []string{"app", "root", "--flag"},
-			expectedRemaining: []string{"app", "--flag"},
-			expectedRoot:      "root",
-		},
-		{
-			args:          []string{"app", "root", "not-root", "--flag"},
-			expectedError: fmt.Errorf("unexpected positional argument(s) [not-root]"),
-		},
-		{
-			args:          []string{"app", "root", "not-root"},
-			expectedError: fmt.Errorf("unexpected positional argument(s) [not-root]"),
-		},
-		{
-			args:          []string{"app", "root", "not-root", "also"},
-			expectedError: fmt.Errorf("unexpected positional argument(s) [not-root also]"),
-		},
-	}
-
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			remaining, root, err := ParseArgs(logger, tc.args)
-			if tc.expectedError != nil {
-				require.EqualError(t, err, tc.expectedError.Error())
-			} else {
-				require.NoError(t, err)
-			}
-
-			require.ElementsMatch(t, tc.expectedRemaining, remaining)
-			require.Equal(t, tc.expectedRoot, root)
-		})
-	}
-}
 
 func TestApp(t *testing.T) {
 	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
@@ -468,10 +406,11 @@ swarm-resource = ""
 			toolkitRoot := filepath.Join(testRoot, "toolkit-test")
 			toolkitConfigFile := filepath.Join(toolkitRoot, "toolkit/.config/nvidia-container-runtime/config.toml")
 
-			app := NewApp(logger, toolkitRoot)
+			app := NewApp(logger)
 
 			testArgs := []string{
 				"nvidia-ctk-installer",
+				"--toolkit-install-dir=" + toolkitRoot,
 				"--no-daemon",
 				"--cdi-output-dir=" + cdiOutputDir,
 				"--config=" + runtimeConfigFile,
