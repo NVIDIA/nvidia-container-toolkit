@@ -20,14 +20,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/urfave/cli/v2"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/pkg/parser"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit/installer"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
@@ -37,11 +35,6 @@ import (
 const (
 	// DefaultNvidiaDriverRoot specifies the default NVIDIA driver run directory
 	DefaultNvidiaDriverRoot = "/run/nvidia/driver"
-
-	nvidiaContainerCliSource         = "/usr/bin/nvidia-container-cli"
-	nvidiaContainerRuntimeHookSource = "/usr/bin/nvidia-container-runtime-hook"
-
-	configFilename = "config.toml"
 )
 
 type cdiOptions struct {
@@ -318,20 +311,7 @@ func (t *Installer) Install(cli *cli.Context, opts *Options) error {
 		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("could not install toolkit components: %w", err))
 	}
 
-	toolkitConfigDir := filepath.Join(t.toolkitRoot, ".config", "nvidia-container-runtime")
-	toolkitConfigPath := filepath.Join(toolkitConfigDir, configFilename)
-
-	err = t.createDirectories(toolkitConfigDir)
-	if err != nil && !opts.ignoreErrors {
-		return fmt.Errorf("could not create required directories: %v", err)
-	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("could not create required directories: %v", err))
-	}
-	nvidiaContainerCliExecutable := filepath.Join(t.toolkitRoot, "nvidia-container-cli")
-	nvidiaCTKPath := filepath.Join(t.toolkitRoot, "nvidia-ctk")
-	nvidiaCDIHookPath := filepath.Join(t.toolkitRoot, "nvidia-cdi-hook")
-	nvidiaContainerRuntimeHookPath := filepath.Join(t.toolkitRoot, "nvidia-container-runtime-hook")
-	err = t.installToolkitConfig(cli, toolkitConfigPath, nvidiaContainerCliExecutable, nvidiaCTKPath, nvidiaContainerRuntimeHookPath, opts)
+	err = t.installToolkitConfig(cli, opts)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
 	} else if err != nil {
@@ -345,111 +325,12 @@ func (t *Installer) Install(cli *cli.Context, opts *Options) error {
 		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error creating device nodes: %v", err))
 	}
 
+	nvidiaCDIHookPath := filepath.Join(t.toolkitRoot, "nvidia-cdi-hook")
 	err = t.generateCDISpec(opts, nvidiaCDIHookPath)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error generating CDI specification: %v", err)
 	} else if err != nil {
 		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error generating CDI specification: %v", err))
-	}
-
-	return nil
-}
-
-// installToolkitConfig installs the config file for the NVIDIA container toolkit ensuring
-// that the settings are updated to match the desired install and nvidia driver directories.
-func (t *Installer) installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, nvidaContainerRuntimeHookPath string, opts *Options) error {
-	t.logger.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
-
-	cfg, err := config.New()
-	if err != nil {
-		return fmt.Errorf("could not open source config file: %v", err)
-	}
-
-	targetConfig, err := os.Create(toolkitConfigPath)
-	if err != nil {
-		return fmt.Errorf("could not create target config file: %v", err)
-	}
-	defer targetConfig.Close()
-
-	// Read the ldconfig path from the config as this may differ per platform
-	// On ubuntu-based systems this ends in `.real`
-	ldconfigPath := fmt.Sprintf("%s", cfg.GetDefault("nvidia-container-cli.ldconfig", "/sbin/ldconfig"))
-	// Use the driver run root as the root:
-	driverLdconfigPath := config.NormalizeLDConfigPath("@" + filepath.Join(opts.DriverRoot, strings.TrimPrefix(ldconfigPath, "@/")))
-
-	configValues := map[string]interface{}{
-		// Set the options in the root toml table
-		"accept-nvidia-visible-devices-envvar-when-unprivileged": opts.acceptNVIDIAVisibleDevicesWhenUnprivileged,
-		"accept-nvidia-visible-devices-as-volume-mounts":         opts.acceptNVIDIAVisibleDevicesAsVolumeMounts,
-		// Set the nvidia-container-cli options
-		"nvidia-container-cli.root":     opts.DriverRoot,
-		"nvidia-container-cli.path":     nvidiaContainerCliExecutablePath,
-		"nvidia-container-cli.ldconfig": driverLdconfigPath,
-		// Set nvidia-ctk options
-		"nvidia-ctk.path": nvidiaCTKPath,
-		// Set the nvidia-container-runtime-hook options
-		"nvidia-container-runtime-hook.path":                nvidaContainerRuntimeHookPath,
-		"nvidia-container-runtime-hook.skip-mode-detection": opts.ContainerRuntimeHookSkipModeDetection,
-	}
-
-	toolkitRuntimeList := opts.ContainerRuntimeRuntimes.Value()
-	if len(toolkitRuntimeList) > 0 {
-		configValues["nvidia-container-runtime.runtimes"] = toolkitRuntimeList
-	}
-
-	for _, optInFeature := range opts.optInFeatures.Value() {
-		configValues["features."+optInFeature] = true
-	}
-
-	for key, value := range configValues {
-		cfg.Set(key, value)
-	}
-
-	// Set the optional config options
-	optionalConfigValues := map[string]interface{}{
-		"nvidia-container-runtime.debug":                         opts.ContainerRuntimeDebug,
-		"nvidia-container-runtime.log-level":                     opts.ContainerRuntimeLogLevel,
-		"nvidia-container-runtime.mode":                          opts.ContainerRuntimeMode,
-		"nvidia-container-runtime.modes.cdi.annotation-prefixes": opts.ContainerRuntimeModesCDIAnnotationPrefixes,
-		"nvidia-container-runtime.modes.cdi.default-kind":        opts.ContainerRuntimeModesCdiDefaultKind,
-		"nvidia-container-runtime.runtimes":                      opts.ContainerRuntimeRuntimes,
-		"nvidia-container-cli.debug":                             opts.ContainerCLIDebug,
-	}
-
-	for key, value := range optionalConfigValues {
-		if !c.IsSet(key) {
-			t.logger.Infof("Skipping unset option: %v", key)
-			continue
-		}
-		if value == nil {
-			t.logger.Infof("Skipping option with nil value: %v", key)
-			continue
-		}
-
-		switch v := value.(type) {
-		case string:
-			if v == "" {
-				continue
-			}
-		case cli.StringSlice:
-			if len(v.Value()) == 0 {
-				continue
-			}
-			value = v.Value()
-		default:
-			t.logger.Warningf("Unexpected type for option %v=%v: %T", key, value, v)
-		}
-
-		cfg.Set(key, value)
-	}
-
-	if _, err := cfg.WriteTo(targetConfig); err != nil {
-		return fmt.Errorf("error writing config: %v", err)
-	}
-
-	os.Stdout.WriteString("Using config:\n")
-	if _, err = cfg.WriteTo(os.Stdout); err != nil {
-		t.logger.Warningf("Failed to output config to STDOUT: %v", err)
 	}
 
 	return nil
