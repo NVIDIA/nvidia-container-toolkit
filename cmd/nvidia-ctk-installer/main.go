@@ -97,7 +97,7 @@ func (a app) build() *cli.App {
 	}
 	// Create the top-level CLI
 	c := cli.NewApp()
-	c.Name = "nvidia-toolkit"
+	c.Name = "nvidia-ctk-installer"
 	c.Usage = "Install the nvidia-container-toolkit for use by a given runtime"
 	c.UsageText = "[DESTINATION] [-n | --no-daemon] [-r | --runtime] [-u | --runtime-args]"
 	c.Description = "DESTINATION points to the host path underneath which the nvidia-container-toolkit should be installed.\nIt will be installed at ${DESTINATION}/toolkit"
