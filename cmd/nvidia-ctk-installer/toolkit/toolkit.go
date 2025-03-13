@@ -40,8 +40,7 @@ const (
 	nvidiaContainerCliSource         = "/usr/bin/nvidia-container-cli"
 	nvidiaContainerRuntimeHookSource = "/usr/bin/nvidia-container-runtime-hook"
 
-	nvidiaContainerToolkitConfigSource = "/etc/nvidia-container-runtime/config.toml"
-	configFilename                     = "config.toml"
+	configFilename = "config.toml"
 )
 
 type cdiOptions struct {
@@ -426,9 +425,7 @@ func (t *Installer) installLibrary(libName string, toolkitRoot string) error {
 func (t *Installer) installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, nvidaContainerRuntimeHookPath string, opts *Options) error {
 	t.logger.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
 
-	cfg, err := config.New(
-		config.WithConfigFile(nvidiaContainerToolkitConfigSource),
-	)
+	cfg, err := config.New()
 	if err != nil {
 		return fmt.Errorf("could not open source config file: %v", err)
 	}
