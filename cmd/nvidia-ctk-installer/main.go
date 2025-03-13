@@ -13,6 +13,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/toolkit"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
@@ -47,9 +48,6 @@ type options struct {
 func (o options) toolkitRoot() string {
 	return filepath.Join(o.root, toolkitSubDir)
 }
-
-// Version defines the CLI version. This is set at build time using LD FLAGS
-var Version = "development"
 
 func main() {
 	logger := logger.New()
@@ -101,7 +99,7 @@ func (a app) build() *cli.App {
 	c.Usage = "Install the nvidia-container-toolkit for use by a given runtime"
 	c.UsageText = "[DESTINATION] [-n | --no-daemon] [-r | --runtime] [-u | --runtime-args]"
 	c.Description = "DESTINATION points to the host path underneath which the nvidia-container-toolkit should be installed.\nIt will be installed at ${DESTINATION}/toolkit"
-	c.Version = Version
+	c.Version = info.GetVersionString()
 	c.Before = func(ctx *cli.Context) error {
 		return a.Before(ctx, &options)
 	}
