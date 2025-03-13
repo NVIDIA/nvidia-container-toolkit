@@ -20,8 +20,6 @@ import "path/filepath"
 
 const (
 	defaultRuntimeName = "nvidia"
-
-	defaultRoot = "/usr/bin"
 )
 
 // Runtime defines a runtime to be configured.
@@ -48,9 +46,6 @@ func GetRuntimes(opts ...Option) Runtimes {
 		opt(c)
 	}
 
-	if c.root == "" {
-		c.root = defaultRoot
-	}
 	if c.nvidiaRuntimeName == "" {
 		c.nvidiaRuntimeName = defaultRuntimeName
 	}
