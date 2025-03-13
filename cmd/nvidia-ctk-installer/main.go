@@ -22,8 +22,7 @@ const (
 	defaultPidFile     = "/run/nvidia/toolkit/" + toolkitPidFilename
 	toolkitSubDir      = "toolkit"
 
-	defaultRuntime     = "docker"
-	defaultRuntimeArgs = ""
+	defaultRuntime = "docker"
 )
 
 var availableRuntimes = map[string]struct{}{"docker": {}, "crio": {}, "containerd": {}}
@@ -34,12 +33,11 @@ var signalReceived = make(chan bool, 1)
 
 // options stores the command line arguments
 type options struct {
-	noDaemon    bool
-	runtime     string
-	runtimeArgs string
-	root        string
-	pidFile     string
-	sourceRoot  string
+	noDaemon   bool
+	runtime    string
+	root       string
+	pidFile    string
+	sourceRoot string
 
 	toolkitOptions toolkit.Options
 	runtimeOptions runtime.Options
@@ -123,15 +121,6 @@ func (a app) build() *cli.App {
 			Value:       defaultRuntime,
 			Destination: &options.runtime,
 			EnvVars:     []string{"RUNTIME"},
-		},
-		// TODO: Remove runtime-args
-		&cli.StringFlag{
-			Name:        "runtime-args",
-			Aliases:     []string{"u"},
-			Usage:       "arguments to pass to 'docker', 'crio', or 'containerd' setup command",
-			Value:       defaultRuntimeArgs,
-			Destination: &options.runtimeArgs,
-			EnvVars:     []string{"RUNTIME_ARGS"},
 		},
 		&cli.StringFlag{
 			Name:        "root",
