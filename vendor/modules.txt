@@ -36,6 +36,7 @@ github.com/google/uuid
 github.com/moby/sys/symlink
 # github.com/opencontainers/runc v1.2.5
 ## explicit; go 1.22
+github.com/opencontainers/runc/libcontainer/devices
 github.com/opencontainers/runc/libcontainer/dmz
 github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/utils
