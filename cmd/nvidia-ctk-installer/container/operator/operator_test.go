@@ -27,7 +27,6 @@ func TestOptions(t *testing.T) {
 	testCases := []struct {
 		setAsDefault           bool
 		nvidiaRuntimeName      string
-		root                   string
 		expectedDefaultRuntime string
 		expectedRuntimes       Runtimes
 	}{
@@ -131,7 +130,7 @@ func TestOptions(t *testing.T) {
 			runtimes := GetRuntimes(
 				WithNvidiaRuntimeName(tc.nvidiaRuntimeName),
 				WithSetAsDefault(tc.setAsDefault),
-				WithRoot(tc.root),
+				WithRoot("/usr/bin"),
 			)
 
 			require.EqualValues(t, tc.expectedRuntimes, runtimes)
