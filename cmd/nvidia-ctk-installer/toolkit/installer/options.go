@@ -45,3 +45,15 @@ func WithSourceRoot(sourceRoot string) Option {
 		ti.sourceRoot = sourceRoot
 	}
 }
+
+func WithPackageType(packageType string) Option {
+	return func(ti *toolkitInstaller) {
+		ti.packageType = packageType
+	}
+}
+
+func WithHostRoot(hostRoot string) Option {
+	return func(ti *toolkitInstaller) {
+		ti.hostRoot = hostRoot
+	}
+}

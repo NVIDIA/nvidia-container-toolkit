@@ -38,6 +38,8 @@ type toolkitInstaller struct {
 	ignoreErrors bool
 	sourceRoot   string
 
+	hostRoot     string
+	packageType  string
 	artifactRoot *artifactRoot
 
 	ensureTargetDirectory Installer
@@ -47,7 +49,10 @@ var _ Installer = (*toolkitInstaller)(nil)
 
 // New creates a toolkit installer with the specified options.
 func New(opts ...Option) (Installer, error) {
-	t := &toolkitInstaller{}
+	t := &toolkitInstaller{
+		hostRoot:    "/",
+		packageType: "auto",
+	}
 	for _, opt := range opts {
 		opt(t)
 	}
@@ -56,7 +61,11 @@ func New(opts ...Option) (Installer, error) {
 		t.logger = logger.New()
 	}
 	if t.sourceRoot == "" {
-		t.sourceRoot = "/"
+		sourceRoot, err := defaultSourceRoot(t.hostRoot, t.packageType)
+		if err != nil {
+			return nil, err
+		}
+		t.sourceRoot = sourceRoot
 	}
 	if t.artifactRoot == nil {
 		artifactRoot, err := newArtifactRoot(t.logger, t.sourceRoot)
