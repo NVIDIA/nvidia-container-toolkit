@@ -20,6 +20,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/chmod"
+	soname "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/create-soname-symlinks"
 	symlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/create-symlinks"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/cudacompat"
 	ldcache "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/update-ldcache"
@@ -34,5 +35,6 @@ func New(logger logger.Interface) []*cli.Command {
 		symlinks.NewCommand(logger),
 		chmod.NewCommand(logger),
 		cudacompat.NewCommand(logger),
+		soname.NewCommand(logger),
 	}
 }

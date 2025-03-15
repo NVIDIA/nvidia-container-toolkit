@@ -1,6 +1,3 @@
-//go:build !linux
-// +build !linux
-
 /**
 # Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
 #
@@ -17,13 +14,17 @@
 # limitations under the License.
 **/
 
-package ldcache
+package utils
 
-import "syscall"
+import (
+	"strings"
 
-// SafeExec is not implemented on non-linux systems and forwards directly to the
-// Exec syscall.
-func (m *command) SafeExec(path string, args []string, envv []string) error {
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	return syscall.Exec(path, args, envv)
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+)
+
+// ResolveHostLDConfigPath determines the LDConfig path to use for the system.
+// On systems such as Ubuntu where `/sbin/ldconfig` is a wrapper around
+// /sbin/ldconfig.real, the latter is returned.
+func ResolveHostLDConfigPath(path string) string {
+	return strings.TrimPrefix(config.NormalizeLDConfigPath("@"+path), "@")
 }
