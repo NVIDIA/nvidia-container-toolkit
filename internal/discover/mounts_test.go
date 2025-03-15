@@ -41,7 +41,8 @@ func TestMounts(t *testing.T) {
 		"ro",
 		"nosuid",
 		"nodev",
-		"bind",
+		"rbind",
+		"rprivate",
 	}
 
 	logger, logHook := testlog.NewNullLogger()
