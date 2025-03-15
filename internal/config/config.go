@@ -121,6 +121,9 @@ func GetDefault() (*Config, error) {
 					AnnotationPrefixes: []string{cdi.AnnotationPrefix},
 					SpecDirs:           cdi.DefaultSpecDirs,
 				},
+				JitCDI: jitCDIModeConfig{
+					LoadKernelModules: []string{"nvidia", "nvidia-uvm", "nvidia-modeset"},
+				},
 			},
 		},
 		NVIDIAContainerRuntimeHookConfig: RuntimeHookConfig{
