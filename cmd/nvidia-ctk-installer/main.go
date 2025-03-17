@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 
 	"github.com/urfave/cli/v2"
@@ -20,10 +19,11 @@ import (
 const (
 	toolkitPidFilename = "toolkit.pid"
 	defaultPidFile     = "/run/nvidia/toolkit/" + toolkitPidFilename
-	toolkitSubDir      = "toolkit"
 
-	defaultRuntime     = "docker"
-	defaultRuntimeArgs = ""
+	defaultToolkitInstallDir = "/usr/local/nvidia"
+	toolkitSubDir            = "toolkit"
+
+	defaultRuntime = "docker"
 )
 
 var availableRuntimes = map[string]struct{}{"docker": {}, "crio": {}, "containerd": {}}
@@ -34,36 +34,29 @@ var signalReceived = make(chan bool, 1)
 
 // options stores the command line arguments
 type options struct {
-	noDaemon    bool
-	runtime     string
-	runtimeArgs string
-	root        string
-	pidFile     string
-	sourceRoot  string
+	toolkitInstallDir string
+
+	noDaemon   bool
+	runtime    string
+	pidFile    string
+	sourceRoot string
 
 	toolkitOptions toolkit.Options
 	runtimeOptions runtime.Options
 }
 
 func (o options) toolkitRoot() string {
-	return filepath.Join(o.root, toolkitSubDir)
+	return filepath.Join(o.toolkitInstallDir, toolkitSubDir)
 }
 
 func main() {
 	logger := logger.New()
-
-	remainingArgs, root, err := ParseArgs(logger, os.Args)
-	if err != nil {
-		logger.Errorf("Error: unable to parse arguments: %v", err)
-		os.Exit(1)
-	}
-
-	c := NewApp(logger, root)
+	c := NewApp(logger)
 
 	// Run the CLI
 	logger.Infof("Starting %v", c.Name)
-	if err := c.Run(remainingArgs); err != nil {
-		logger.Errorf("error running nvidia-toolkit: %v", err)
+	if err := c.Run(os.Args); err != nil {
+		logger.Errorf("error running %v: %v", c.Name, err)
 		os.Exit(1)
 	}
 
@@ -73,18 +66,14 @@ func main() {
 // An app represents the nvidia-ctk-installer.
 type app struct {
 	logger logger.Interface
-	// defaultRoot stores the root to use if the --root flag is not specified.
-	defaultRoot string
 
 	toolkit *toolkit.Installer
 }
 
 // NewApp creates the CLI app fro the specified options.
-// defaultRoot is used as the root if not specified via the --root flag.
-func NewApp(logger logger.Interface, defaultRoot string) *cli.App {
+func NewApp(logger logger.Interface) *cli.App {
 	a := app{
-		logger:      logger,
-		defaultRoot: defaultRoot,
+		logger: logger,
 	}
 	return a.build()
 }
@@ -96,9 +85,7 @@ func (a app) build() *cli.App {
 	// Create the top-level CLI
 	c := cli.NewApp()
 	c.Name = "nvidia-ctk-installer"
-	c.Usage = "Install the nvidia-container-toolkit for use by a given runtime"
-	c.UsageText = "[DESTINATION] [-n | --no-daemon] [-r | --runtime] [-u | --runtime-args]"
-	c.Description = "DESTINATION points to the host path underneath which the nvidia-container-toolkit should be installed.\nIt will be installed at ${DESTINATION}/toolkit"
+	c.Usage = "Install the NVIDIA Container Toolkit and configure the specified runtime to use the `nvidia` runtime."
 	c.Version = info.GetVersionString()
 	c.Before = func(ctx *cli.Context) error {
 		return a.Before(ctx, &options)
@@ -124,21 +111,16 @@ func (a app) build() *cli.App {
 			Destination: &options.runtime,
 			EnvVars:     []string{"RUNTIME"},
 		},
-		// TODO: Remove runtime-args
 		&cli.StringFlag{
-			Name:        "runtime-args",
-			Aliases:     []string{"u"},
-			Usage:       "arguments to pass to 'docker', 'crio', or 'containerd' setup command",
-			Value:       defaultRuntimeArgs,
-			Destination: &options.runtimeArgs,
-			EnvVars:     []string{"RUNTIME_ARGS"},
-		},
-		&cli.StringFlag{
-			Name:        "root",
-			Value:       a.defaultRoot,
-			Usage:       "the folder where the NVIDIA Container Toolkit is to be installed. It will be installed to `ROOT`/toolkit",
-			Destination: &options.root,
-			EnvVars:     []string{"ROOT"},
+			Name:    "toolkit-install-dir",
+			Aliases: []string{"root"},
+			Usage: "The directory where the NVIDIA Container Toolkit is to be installed. " +
+				"The components of the toolkit will be installed to `ROOT`/toolkit. " +
+				"Note that in the case of a containerized installer, this is the path in the container and it is " +
+				"recommended that this match the path on the host.",
+			Value:       defaultToolkitInstallDir,
+			Destination: &options.toolkitInstallDir,
+			EnvVars:     []string{"TOOLKIT_INSTALL_DIR", "ROOT"},
 		},
 		&cli.StringFlag{
 			Name:        "source-root",
@@ -172,7 +154,7 @@ func (a *app) Before(c *cli.Context, o *options) error {
 }
 
 func (a *app) validateFlags(c *cli.Context, o *options) error {
-	if o.root == "" {
+	if o.toolkitInstallDir == "" {
 		return fmt.Errorf("the install root must be specified")
 	}
 	if _, exists := availableRuntimes[o.runtime]; !exists {
@@ -234,34 +216,6 @@ func (a *app) Run(c *cli.Context, o *options) error {
 	}
 
 	return nil
-}
-
-// ParseArgs checks if a single positional argument was defined and extracts this the root.
-// If no positional arguments are defined, it is assumed that the root is specified as a flag.
-func ParseArgs(logger logger.Interface, args []string) ([]string, string, error) {
-	logger.Infof("Parsing arguments")
-
-	if len(args) < 2 {
-		return args, "", nil
-	}
-
-	var lastPositionalArg int
-	for i, arg := range args {
-		if strings.HasPrefix(arg, "-") {
-			break
-		}
-		lastPositionalArg = i
-	}
-
-	if lastPositionalArg == 0 {
-		return args, "", nil
-	}
-
-	if lastPositionalArg == 1 {
-		return append([]string{args[0]}, args[2:]...), args[1], nil
-	}
-
-	return nil, "", fmt.Errorf("unexpected positional argument(s) %v", args[2:lastPositionalArg+1])
 }
 
 func (a *app) initialize(pidFile string) error {
