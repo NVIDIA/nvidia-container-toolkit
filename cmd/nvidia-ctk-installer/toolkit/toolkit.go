@@ -20,13 +20,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/urfave/cli/v2"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/pkg/parser"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit/installer"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
@@ -36,12 +35,6 @@ import (
 const (
 	// DefaultNvidiaDriverRoot specifies the default NVIDIA driver run directory
 	DefaultNvidiaDriverRoot = "/run/nvidia/driver"
-
-	nvidiaContainerCliSource         = "/usr/bin/nvidia-container-cli"
-	nvidiaContainerRuntimeHookSource = "/usr/bin/nvidia-container-runtime-hook"
-
-	nvidiaContainerToolkitConfigSource = "/etc/nvidia-container-runtime/config.toml"
-	configFilename                     = "config.toml"
 )
 
 type cdiOptions struct {
@@ -218,7 +211,9 @@ func Flags(opts *Options) []cli.Flag {
 
 // An Installer is used to install the NVIDIA Container Toolkit from the toolkit container.
 type Installer struct {
-	fileInstaller
+	logger logger.Interface
+
+	sourceRoot string
 	// toolkitRoot specifies the destination path at which the toolkit is installed.
 	toolkitRoot string
 }
@@ -233,6 +228,7 @@ func NewInstaller(opts ...Option) *Installer {
 	if i.logger == nil {
 		i.logger = logger.New()
 	}
+
 	return i
 }
 
@@ -297,59 +293,26 @@ func (t *Installer) Install(cli *cli.Context, opts *Options) error {
 		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error removing toolkit directory: %v", err))
 	}
 
-	toolkitConfigDir := filepath.Join(t.toolkitRoot, ".config", "nvidia-container-runtime")
-	toolkitConfigPath := filepath.Join(toolkitConfigDir, configFilename)
-
-	err = t.createDirectories(t.toolkitRoot, toolkitConfigDir)
-	if err != nil && !opts.ignoreErrors {
-		return fmt.Errorf("could not create required directories: %v", err)
-	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("could not create required directories: %v", err))
+	// Create a toolkit installer to actually install the toolkit components.
+	toolkit, err := installer.New(
+		installer.WithLogger(t.logger),
+		installer.WithSourceRoot(t.sourceRoot),
+		installer.WithIgnoreErrors(opts.ignoreErrors),
+	)
+	if err != nil {
+		if !opts.ignoreErrors {
+			return fmt.Errorf("could not create toolkit installer: %w", err)
+		}
+		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("could not create toolkit installer: %w", err))
+	}
+	if err := toolkit.Install(t.toolkitRoot); err != nil {
+		if !opts.ignoreErrors {
+			return fmt.Errorf("could not install toolkit components: %w", err)
+		}
+		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("could not install toolkit components: %w", err))
 	}
 
-	err = t.installContainerLibraries(t.toolkitRoot)
-	if err != nil && !opts.ignoreErrors {
-		return fmt.Errorf("error installing NVIDIA container library: %v", err)
-	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container library: %v", err))
-	}
-
-	err = t.installContainerRuntimes(t.toolkitRoot)
-	if err != nil && !opts.ignoreErrors {
-		return fmt.Errorf("error installing NVIDIA container runtime: %v", err)
-	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container runtime: %v", err))
-	}
-
-	nvidiaContainerCliExecutable, err := t.installContainerCLI(t.toolkitRoot)
-	if err != nil && !opts.ignoreErrors {
-		return fmt.Errorf("error installing NVIDIA container CLI: %v", err)
-	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container CLI: %v", err))
-	}
-
-	nvidiaContainerRuntimeHookPath, err := t.installRuntimeHook(t.toolkitRoot, toolkitConfigPath)
-	if err != nil && !opts.ignoreErrors {
-		return fmt.Errorf("error installing NVIDIA container runtime hook: %v", err)
-	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container runtime hook: %v", err))
-	}
-
-	nvidiaCTKPath, err := t.installContainerToolkitCLI(t.toolkitRoot)
-	if err != nil && !opts.ignoreErrors {
-		return fmt.Errorf("error installing NVIDIA Container Toolkit CLI: %v", err)
-	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA Container Toolkit CLI: %v", err))
-	}
-
-	nvidiaCDIHookPath, err := t.installContainerCDIHookCLI(t.toolkitRoot)
-	if err != nil && !opts.ignoreErrors {
-		return fmt.Errorf("error installing NVIDIA Container CDI Hook CLI: %v", err)
-	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA Container CDI Hook CLI: %v", err))
-	}
-
-	err = t.installToolkitConfig(cli, toolkitConfigPath, nvidiaContainerCliExecutable, nvidiaCTKPath, nvidiaContainerRuntimeHookPath, opts)
+	err = t.installToolkitConfig(cli, opts)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
 	} else if err != nil {
@@ -363,6 +326,7 @@ func (t *Installer) Install(cli *cli.Context, opts *Options) error {
 		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error creating device nodes: %v", err))
 	}
 
+	nvidiaCDIHookPath := filepath.Join(t.toolkitRoot, "nvidia-cdi-hook")
 	err = t.generateCDISpec(opts, nvidiaCDIHookPath)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error generating CDI specification: %v", err)
@@ -371,297 +335,6 @@ func (t *Installer) Install(cli *cli.Context, opts *Options) error {
 	}
 
 	return nil
-}
-
-// installContainerLibraries locates and installs the libraries that are part of
-// the nvidia-container-toolkit.
-// A predefined set of library candidates are considered, with the first one
-// resulting in success being installed to the toolkit folder. The install process
-// resolves the symlink for the library and copies the versioned library itself.
-func (t *Installer) installContainerLibraries(toolkitRoot string) error {
-	t.logger.Infof("Installing NVIDIA container library to '%v'", toolkitRoot)
-
-	libs := []string{
-		"libnvidia-container.so.1",
-		"libnvidia-container-go.so.1",
-	}
-
-	for _, l := range libs {
-		err := t.installLibrary(l, toolkitRoot)
-		if err != nil {
-			return fmt.Errorf("failed to install %s: %v", l, err)
-		}
-	}
-
-	return nil
-}
-
-// installLibrary installs the specified library to the toolkit directory.
-func (t *Installer) installLibrary(libName string, toolkitRoot string) error {
-	libraryPath, err := t.findLibrary(libName)
-	if err != nil {
-		return fmt.Errorf("error locating NVIDIA container library: %v", err)
-	}
-
-	installedLibPath, err := t.installFileToFolder(toolkitRoot, libraryPath)
-	if err != nil {
-		return fmt.Errorf("error installing %v to %v: %v", libraryPath, toolkitRoot, err)
-	}
-	t.logger.Infof("Installed '%v' to '%v'", libraryPath, installedLibPath)
-
-	if filepath.Base(installedLibPath) == libName {
-		return nil
-	}
-
-	err = t.installSymlink(toolkitRoot, libName, installedLibPath)
-	if err != nil {
-		return fmt.Errorf("error installing symlink for NVIDIA container library: %v", err)
-	}
-
-	return nil
-}
-
-// installToolkitConfig installs the config file for the NVIDIA container toolkit ensuring
-// that the settings are updated to match the desired install and nvidia driver directories.
-func (t *Installer) installToolkitConfig(c *cli.Context, toolkitConfigPath string, nvidiaContainerCliExecutablePath string, nvidiaCTKPath string, nvidaContainerRuntimeHookPath string, opts *Options) error {
-	t.logger.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
-
-	cfg, err := config.New(
-		config.WithConfigFile(nvidiaContainerToolkitConfigSource),
-	)
-	if err != nil {
-		return fmt.Errorf("could not open source config file: %v", err)
-	}
-
-	targetConfig, err := os.Create(toolkitConfigPath)
-	if err != nil {
-		return fmt.Errorf("could not create target config file: %v", err)
-	}
-	defer targetConfig.Close()
-
-	// Read the ldconfig path from the config as this may differ per platform
-	// On ubuntu-based systems this ends in `.real`
-	ldconfigPath := fmt.Sprintf("%s", cfg.GetDefault("nvidia-container-cli.ldconfig", "/sbin/ldconfig"))
-	// Use the driver run root as the root:
-	driverLdconfigPath := config.NormalizeLDConfigPath("@" + filepath.Join(opts.DriverRoot, strings.TrimPrefix(ldconfigPath, "@/")))
-
-	configValues := map[string]interface{}{
-		// Set the options in the root toml table
-		"accept-nvidia-visible-devices-envvar-when-unprivileged": opts.acceptNVIDIAVisibleDevicesWhenUnprivileged,
-		"accept-nvidia-visible-devices-as-volume-mounts":         opts.acceptNVIDIAVisibleDevicesAsVolumeMounts,
-		// Set the nvidia-container-cli options
-		"nvidia-container-cli.root":     opts.DriverRoot,
-		"nvidia-container-cli.path":     nvidiaContainerCliExecutablePath,
-		"nvidia-container-cli.ldconfig": driverLdconfigPath,
-		// Set nvidia-ctk options
-		"nvidia-ctk.path": nvidiaCTKPath,
-		// Set the nvidia-container-runtime-hook options
-		"nvidia-container-runtime-hook.path":                nvidaContainerRuntimeHookPath,
-		"nvidia-container-runtime-hook.skip-mode-detection": opts.ContainerRuntimeHookSkipModeDetection,
-	}
-
-	toolkitRuntimeList := opts.ContainerRuntimeRuntimes.Value()
-	if len(toolkitRuntimeList) > 0 {
-		configValues["nvidia-container-runtime.runtimes"] = toolkitRuntimeList
-	}
-
-	for _, optInFeature := range opts.optInFeatures.Value() {
-		configValues["features."+optInFeature] = true
-	}
-
-	for key, value := range configValues {
-		cfg.Set(key, value)
-	}
-
-	// Set the optional config options
-	optionalConfigValues := map[string]interface{}{
-		"nvidia-container-runtime.debug":                         opts.ContainerRuntimeDebug,
-		"nvidia-container-runtime.log-level":                     opts.ContainerRuntimeLogLevel,
-		"nvidia-container-runtime.mode":                          opts.ContainerRuntimeMode,
-		"nvidia-container-runtime.modes.cdi.annotation-prefixes": opts.ContainerRuntimeModesCDIAnnotationPrefixes,
-		"nvidia-container-runtime.modes.cdi.default-kind":        opts.ContainerRuntimeModesCdiDefaultKind,
-		"nvidia-container-runtime.runtimes":                      opts.ContainerRuntimeRuntimes,
-		"nvidia-container-cli.debug":                             opts.ContainerCLIDebug,
-	}
-
-	for key, value := range optionalConfigValues {
-		if !c.IsSet(key) {
-			t.logger.Infof("Skipping unset option: %v", key)
-			continue
-		}
-		if value == nil {
-			t.logger.Infof("Skipping option with nil value: %v", key)
-			continue
-		}
-
-		switch v := value.(type) {
-		case string:
-			if v == "" {
-				continue
-			}
-		case cli.StringSlice:
-			if len(v.Value()) == 0 {
-				continue
-			}
-			value = v.Value()
-		default:
-			t.logger.Warningf("Unexpected type for option %v=%v: %T", key, value, v)
-		}
-
-		cfg.Set(key, value)
-	}
-
-	if _, err := cfg.WriteTo(targetConfig); err != nil {
-		return fmt.Errorf("error writing config: %v", err)
-	}
-
-	os.Stdout.WriteString("Using config:\n")
-	if _, err = cfg.WriteTo(os.Stdout); err != nil {
-		t.logger.Warningf("Failed to output config to STDOUT: %v", err)
-	}
-
-	return nil
-}
-
-// installContainerToolkitCLI installs the nvidia-ctk CLI executable and wrapper.
-func (t *Installer) installContainerToolkitCLI(toolkitDir string) (string, error) {
-	e := executable{
-		fileInstaller: t.fileInstaller,
-		source:        "/usr/bin/nvidia-ctk",
-		target: executableTarget{
-			dotfileName: "nvidia-ctk.real",
-			wrapperName: "nvidia-ctk",
-		},
-	}
-
-	return e.install(toolkitDir)
-}
-
-// installContainerCDIHookCLI installs the nvidia-cdi-hook CLI executable and wrapper.
-func (t *Installer) installContainerCDIHookCLI(toolkitDir string) (string, error) {
-	e := executable{
-		fileInstaller: t.fileInstaller,
-		source:        "/usr/bin/nvidia-cdi-hook",
-		target: executableTarget{
-			dotfileName: "nvidia-cdi-hook.real",
-			wrapperName: "nvidia-cdi-hook",
-		},
-	}
-
-	return e.install(toolkitDir)
-}
-
-// installContainerCLI sets up the NVIDIA container CLI executable, copying the executable
-// and implementing the required wrapper
-func (t *Installer) installContainerCLI(toolkitRoot string) (string, error) {
-	t.logger.Infof("Installing NVIDIA container CLI from '%v'", nvidiaContainerCliSource)
-
-	env := map[string]string{
-		"LD_LIBRARY_PATH": toolkitRoot,
-	}
-
-	e := executable{
-		fileInstaller: t.fileInstaller,
-		source:        nvidiaContainerCliSource,
-		target: executableTarget{
-			dotfileName: "nvidia-container-cli.real",
-			wrapperName: "nvidia-container-cli",
-		},
-		env: env,
-	}
-
-	installedPath, err := e.install(toolkitRoot)
-	if err != nil {
-		return "", fmt.Errorf("error installing NVIDIA container CLI: %v", err)
-	}
-	return installedPath, nil
-}
-
-// installRuntimeHook sets up the NVIDIA runtime hook, copying the executable
-// and implementing the required wrapper
-func (t *Installer) installRuntimeHook(toolkitRoot string, configFilePath string) (string, error) {
-	t.logger.Infof("Installing NVIDIA container runtime hook from '%v'", nvidiaContainerRuntimeHookSource)
-
-	argLines := []string{
-		fmt.Sprintf("-config \"%s\"", configFilePath),
-	}
-
-	e := executable{
-		fileInstaller: t.fileInstaller,
-		source:        nvidiaContainerRuntimeHookSource,
-		target: executableTarget{
-			dotfileName: "nvidia-container-runtime-hook.real",
-			wrapperName: "nvidia-container-runtime-hook",
-		},
-		argLines: argLines,
-	}
-
-	installedPath, err := e.install(toolkitRoot)
-	if err != nil {
-		return "", fmt.Errorf("error installing NVIDIA container runtime hook: %v", err)
-	}
-
-	err = t.installSymlink(toolkitRoot, "nvidia-container-toolkit", installedPath)
-	if err != nil {
-		return "", fmt.Errorf("error installing symlink to NVIDIA container runtime hook: %v", err)
-	}
-
-	return installedPath, nil
-}
-
-// installSymlink creates a symlink in the toolkitDirectory that points to the specified target.
-// Note: The target is assumed to be local to the toolkit directory
-func (t *Installer) installSymlink(toolkitRoot string, link string, target string) error {
-	symlinkPath := filepath.Join(toolkitRoot, link)
-	targetPath := filepath.Base(target)
-	t.logger.Infof("Creating symlink '%v' -> '%v'", symlinkPath, targetPath)
-
-	err := os.Symlink(targetPath, symlinkPath)
-	if err != nil {
-		return fmt.Errorf("error creating symlink '%v' => '%v': %v", symlinkPath, targetPath, err)
-	}
-	return nil
-}
-
-// findLibrary searches a set of candidate libraries in the specified root for
-// a given library name
-func (t *Installer) findLibrary(libName string) (string, error) {
-	t.logger.Infof("Finding library %v (root=%v)", libName)
-
-	candidateDirs := []string{
-		"/usr/lib64",
-		"/usr/lib/x86_64-linux-gnu",
-		"/usr/lib/aarch64-linux-gnu",
-	}
-
-	for _, d := range candidateDirs {
-		l := filepath.Join(t.sourceRoot, d, libName)
-		t.logger.Infof("Checking library candidate '%v'", l)
-
-		libraryCandidate, err := t.resolveLink(l)
-		if err != nil {
-			t.logger.Infof("Skipping library candidate '%v': %v", l, err)
-			continue
-		}
-
-		return strings.TrimPrefix(libraryCandidate, t.sourceRoot), nil
-	}
-
-	return "", fmt.Errorf("error locating library '%v'", libName)
-}
-
-// resolveLink finds the target of a symlink or the file itself in the
-// case of a regular file.
-// This is equivalent to running `readlink -f ${l}`
-func (t *Installer) resolveLink(l string) (string, error) {
-	resolved, err := filepath.EvalSymlinks(l)
-	if err != nil {
-		return "", fmt.Errorf("error resolving link '%v': %v", l, err)
-	}
-	if l != resolved {
-		t.logger.Infof("Resolved link: '%v' => '%v'", l, resolved)
-	}
-	return resolved, nil
 }
 
 func (t *Installer) createDirectories(dir ...string) error {

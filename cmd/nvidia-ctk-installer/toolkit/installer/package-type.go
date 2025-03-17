@@ -1,5 +1,7 @@
-/**
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
+/*
+*
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,34 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*
 */
-
-package toolkit
-
-import "strings"
-
-const (
-	destDirPattern = "@destDir@"
-)
-
-type replacements map[string]string
-
-func newReplacements(rules ...string) replacements {
-	r := make(replacements)
-	for i := 0; i < len(rules)-1; i += 2 {
-		old := rules[i]
-		new := rules[i+1]
-
-		r[old] = new
-	}
-
-	return r
-}
-
-func (r replacements) apply(input string) string {
-	output := input
-	for old, new := range r {
-		output = strings.ReplaceAll(output, old, new)
-	}
-	return output
-}
+package installer
