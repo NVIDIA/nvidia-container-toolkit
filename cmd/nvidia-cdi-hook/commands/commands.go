@@ -36,3 +36,8 @@ func New(logger logger.Interface) []*cli.Command {
 		cudacompat.NewCommand(logger),
 	}
 }
+
+func WarnOnUnsupportedSubcommand(logger logger.Interface, c *cli.Context) error {
+	logger.Warningf("Unsupported hook or arguments %v", c.Args())
+	return nil
+}

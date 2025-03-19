@@ -41,6 +41,9 @@ func (m hookCommand) build() *cli.Command {
 	hook := cli.Command{
 		Name:  "hook",
 		Usage: "A collection of hooks that may be injected into an OCI spec",
+		Action: func(ctx *cli.Context) error {
+			return commands.WarnOnUnsupportedSubcommand(m.logger, ctx)
+		},
 	}
 
 	hook.Subcommands = commands.New(m.logger)

@@ -51,6 +51,11 @@ func main() {
 	c.Usage = "Command to structure files for usage inside a container, called as hooks from a container runtime, defined in a CDI yaml file"
 	c.Version = info.GetVersionString()
 
+	// We add an action to the hook
+	c.Action = func(ctx *cli.Context) error {
+		return commands.WarnOnUnsupportedSubcommand(logger, ctx)
+	}
+
 	// Setup the flags for this command
 	c.Flags = []cli.Flag{
 		&cli.BoolFlag{
