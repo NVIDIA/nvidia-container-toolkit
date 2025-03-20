@@ -99,6 +99,13 @@ containerEdits:
     path: {{ .toolkitRoot }}/nvidia-cdi-hook
     args:
     - nvidia-cdi-hook
+    - create-soname-symlinks
+    - --folder
+    - /lib/x86_64-linux-gnu
+  - hookName: createContainer
+    path: {{ .toolkitRoot }}/nvidia-cdi-hook
+    args:
+    - nvidia-cdi-hook
     - update-ldcache
     - --folder
     - /lib/x86_64-linux-gnu

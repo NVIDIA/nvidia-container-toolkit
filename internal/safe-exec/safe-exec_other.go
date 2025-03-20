@@ -17,13 +17,14 @@
 # limitations under the License.
 **/
 
-package ldcache
+package safeexec
 
 import "syscall"
 
-// SafeExec is not implemented on non-linux systems and forwards directly to the
+// Exec is not implemented on non-linux systems and forwards directly to the
 // Exec syscall.
-func (m *command) SafeExec(path string, args []string, envv []string) error {
+func (s *safeExecer) Exec(path string, args []string, envv []string) error {
+	s.logger.Warningf("Cloning binary not implemented for binary %q; falling back to Exec", path)
 	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	return syscall.Exec(path, args, envv)
 }

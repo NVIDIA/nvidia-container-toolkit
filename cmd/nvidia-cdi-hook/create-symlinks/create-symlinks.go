@@ -84,7 +84,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("failed to load container state: %v", err)
 	}
 
-	containerRoot, err := s.GetContainerRoot()
+	containerRoot, err := s.GetContainerRootDirPath()
 	if err != nil {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
@@ -100,7 +100,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 			return fmt.Errorf("invalid symlink specification %v", l)
 		}
 
-		err := m.createLink(containerRoot, parts[0], parts[1])
+		err := m.createLink(string(containerRoot), parts[0], parts[1])
 		if err != nil {
 			return fmt.Errorf("failed to create link %v: %w", parts, err)
 		}

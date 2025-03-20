@@ -94,3 +94,10 @@ func (p ldconfigPath) normalize() ldconfigPath {
 func NormalizeLDConfigPath(path string) string {
 	return string(ldconfigPath(path).normalize())
 }
+
+// ResolveLDConfigPathOnHost determines the LDConfig path to use for the system.
+// The ldconfig path is normalized (i.e. /sbin/ldconfig or /sbin/ldconfig.real is used as required)
+// and is guaranteed to resolve on the host.
+func ResolveLDConfigPathOnHost(path string) string {
+	return strings.TrimPrefix(NormalizeLDConfigPath("@"+path), "@")
+}

@@ -113,7 +113,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("failed to load container state: %v", err)
 	}
 
-	containerRoot, err := s.GetContainerRoot()
+	containerRoot, err := s.GetContainerRootDirPath()
 	if err != nil {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
@@ -121,7 +121,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("empty container root detected")
 	}
 
-	paths := m.getPaths(containerRoot, cfg.paths.Value(), cfg.mode)
+	paths := m.getPaths(string(containerRoot), cfg.paths.Value(), cfg.mode)
 	if len(paths) == 0 {
 		m.logger.Debugf("No paths specified; exiting")
 		return nil
@@ -140,6 +140,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 }
 
 // getPaths updates the specified paths relative to the root.
+// TODO(elezar): This function should be updated to make use of the oci.ContainerRoot type.
 func (m command) getPaths(root string, paths []string, desiredMode fs.FileMode) []string {
 	var pathsInRoot []string
 	for _, f := range paths {

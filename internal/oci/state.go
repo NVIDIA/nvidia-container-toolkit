@@ -72,9 +72,11 @@ func (s *State) LoadSpec() (*specs.Spec, error) {
 	return spec, nil
 }
 
-// GetContainerRoot returns the root for the container from the associated spec. If the spec is not yet loaded, it is
-// loaded and cached.
-func (s *State) GetContainerRoot() (string, error) {
+// GetContainerRootDirPath returns the root for the container from the associated spec.
+// If the spec is not yet loaded, it is loaded and cached.
+// The container root directory is the absolute path to the directory containing the root
+// of the container filesystem on the host.
+func (s *State) GetContainerRootDirPath() (ContainerRoot, error) {
 	spec, err := s.LoadSpec()
 	if err != nil {
 		return "", err
@@ -85,9 +87,9 @@ func (s *State) GetContainerRoot() (string, error) {
 		containerRoot = spec.Root.Path
 	}
 
-	if filepath.IsAbs(containerRoot) {
-		return containerRoot, nil
+	if !filepath.IsAbs(containerRoot) {
+		containerRoot = filepath.Join(s.Bundle, containerRoot)
 	}
 
-	return filepath.Join(s.Bundle, containerRoot), nil
+	return ContainerRoot(containerRoot), nil
 }

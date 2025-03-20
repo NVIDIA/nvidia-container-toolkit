@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package ldcache
+package safeexec
 
 import (
 	"fmt"
@@ -25,11 +25,11 @@ import (
 	"github.com/opencontainers/runc/libcontainer/dmz"
 )
 
-// SafeExec attempts to clone the specified binary (as an memfd, for example) before executing it.
-func (m command) SafeExec(path string, args []string, envv []string) error {
+// Exec attempts to clone the specified binary (as an memfd, for example) before executing it.
+func (s *safeExecer) Exec(path string, args []string, envv []string) error {
 	safeExe, err := cloneBinary(path)
 	if err != nil {
-		m.logger.Warningf("Failed to clone binary %q: %v; falling back to Exec", path, err)
+		s.logger.Warningf("Failed to clone binary %q: %v; falling back to Exec", path, err)
 		//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 		return syscall.Exec(path, args, envv)
 	}

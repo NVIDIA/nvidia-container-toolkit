@@ -1,5 +1,5 @@
 /**
-# Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package ldcache
+package soname
 
 import (
 	"errors"
@@ -29,18 +29,9 @@ import (
 	safeexec "github.com/NVIDIA/nvidia-container-toolkit/internal/safe-exec"
 )
 
-const (
-	// ldsoconfdFilenamePattern specifies the pattern for the filename
-	// in ld.so.conf.d that includes references to the specified directories.
-	// The 00-nvcr prefix is chosen to ensure that these libraries have a
-	// higher precedence than other libraries on the system, but lower than
-	// the 00-cuda-compat that is included in some containers.
-	ldsoconfdFilenamePattern = "00-nvcr-*.conf"
-)
-
 type command struct {
-	safeexec.Execer
 	logger logger.Interface
+	safeexec.Execer
 }
 
 type options struct {
@@ -49,7 +40,7 @@ type options struct {
 	containerSpec string
 }
 
-// NewCommand constructs an update-ldcache command with the specified logger
+// NewCommand constructs an create-soname-symlinks command with the specified logger
 func NewCommand(logger logger.Interface) *cli.Command {
 	c := command{
 		logger: logger,
@@ -58,14 +49,14 @@ func NewCommand(logger logger.Interface) *cli.Command {
 	return c.build()
 }
 
-// build the update-ldcache command
+// build the create-soname-symlinks command
 func (m command) build() *cli.Command {
 	cfg := options{}
 
-	// Create the 'update-ldcache' command
+	// Create the 'create-soname-symlinks' command
 	c := cli.Command{
-		Name:  "update-ldcache",
-		Usage: "Update ldcache in a container by running ldconfig",
+		Name:  "create-soname-symlinks",
+		Usage: "Create soname symlinks for the specified folders using ldconfig -n -N",
 		Before: func(c *cli.Context) error {
 			return m.validateFlags(c, &cfg)
 		},
@@ -77,7 +68,7 @@ func (m command) build() *cli.Command {
 	c.Flags = []cli.Flag{
 		&cli.StringSliceFlag{
 			Name:        "folder",
-			Usage:       "Specify a folder to add to /etc/ld.so.conf before updating the ld cache",
+			Usage:       "Specify a folder to search for shared libraries for which soname symlinks need to be created",
 			Destination: &cfg.folders,
 		},
 		&cli.StringFlag{
@@ -109,39 +100,33 @@ func (m command) run(c *cli.Context, cfg *options) error {
 		return fmt.Errorf("failed to load container state: %v", err)
 	}
 
-	containerRootDirPath, err := s.GetContainerRootDirPath()
-	if err != nil || containerRootDirPath == "" || containerRootDirPath == "/" {
+	containerRoot, err := s.GetContainerRootDirPath()
+	if err != nil {
 		return fmt.Errorf("failed to determined container root: %v", err)
+	}
+	if containerRoot == "" {
+		m.logger.Warningf("No container root detected")
+		return nil
+	}
+
+	dirs := cfg.folders.Value()
+	if len(dirs) == 0 {
+		return nil
 	}
 
 	ldconfigPath := config.ResolveLDConfigPathOnHost(cfg.ldconfigPath)
-	args := []string{
-		filepath.Base(ldconfigPath),
-		// Run ldconfig in the container root directory on the host.
-		"-r", string(containerRootDirPath),
-		// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
-		// be configured to use a different config file by default.
-		// Note that since we apply the `-r {{ .containerRootDir }}` argument, /etc/ld.so.conf is
-		// in the container.
-		"-f", "/etc/ld.so.conf",
-	}
+	args := []string{filepath.Base(ldconfigPath)}
 
-	if containerRootDirPath.HasPath("/etc/ld.so.cache") {
-		args = append(args, "-C", "/etc/ld.so.cache")
-	} else {
-		m.logger.Debugf("No ld.so.cache found, skipping update")
-		args = append(args, "-N")
-	}
-
-	folders := cfg.folders.Value()
-	if containerRootDirPath.HasPath("/etc/ld.so.conf.d") {
-		err := containerRootDirPath.CreateLdsoconfdFile(ldsoconfdFilenamePattern, folders...)
-		if err != nil {
-			return fmt.Errorf("failed to update ld.so.conf.d: %v", err)
-		}
-	} else {
-		args = append(args, folders...)
-	}
+	args = append(args,
+		// Specify the containerRoot to use.
+		"-r", string(containerRoot),
+		// Specify -n to only process the specified folders.
+		"-n",
+		// Explicitly disable updating the LDCache.
+		"-N",
+	)
+	// Explicitly specific the directories to add.
+	args = append(args, dirs...)
 
 	return m.Exec(ldconfigPath, args, nil)
 }
