@@ -30,54 +30,74 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       name: Checkout code
+
     - name: Get Golang version
       id: vars
       run: |
         GOLANG_VERSION=$(./hack/golang-version.sh)
         echo "GOLANG_VERSION=${GOLANG_VERSION##GOLANG_VERSION := }" >> $GITHUB_ENV
+
     - name: Install Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GOLANG_VERSION }}
+
     - name: Lint
       uses: golangci/golangci-lint-action@v6
       with:
         version: latest
         args: -v --timeout 5m
         skip-cache: true
+
     - name: Check golang modules
       run: | 
         make check-vendor
         make -C deployments/devel check-modules
+
   test:
     name: Unit test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Get Golang version
         id: vars
         run: |
           GOLANG_VERSION=$(./hack/golang-version.sh)
           echo "GOLANG_VERSION=${GOLANG_VERSION##GOLANG_VERSION := }" >> $GITHUB_ENV
+
       - name: Install Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GOLANG_VERSION }}
+
       - run: make test
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.out
+          fail_ci_if_error: false
+          verbose: true
+
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Get Golang version
         id: vars
         run: |
           GOLANG_VERSION=$(./hack/golang-version.sh)
           echo "GOLANG_VERSION=${GOLANG_VERSION##GOLANG_VERSION ?= }" >> $GITHUB_ENV
+
       - name: Install Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GOLANG_VERSION }}
+
       - run: make build
