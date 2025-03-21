@@ -102,7 +102,8 @@ func (d *mounts) Mounts() ([]Mount, error) {
 					"ro",
 					"nosuid",
 					"nodev",
-					"bind",
+					"rbind",
+					"rprivate",
 				},
 			}
 		}

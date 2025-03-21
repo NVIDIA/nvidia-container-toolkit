@@ -79,12 +79,12 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 				{
 					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
 					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
-					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+					Options:  []string{"ro", "nosuid", "nodev", "rbind", "rprivate"},
 				},
 				{
 					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
 					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
-					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+					Options:  []string{"ro", "nosuid", "nodev", "rbind", "rprivate"},
 				},
 			},
 			expectedHooks: []discover.Hook{
@@ -135,12 +135,12 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 				{
 					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
 					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
-					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+					Options:  []string{"ro", "nosuid", "nodev", "rbind", "rprivate"},
 				},
 				{
 					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
 					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
-					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+					Options:  []string{"ro", "nosuid", "nodev", "rbind", "rprivate"},
 				},
 			},
 			expectedHooks: []discover.Hook{
@@ -175,7 +175,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 				{
 					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
 					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
-					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+					Options:  []string{"ro", "nosuid", "nodev", "rbind", "rprivate"},
 				},
 			},
 		},
