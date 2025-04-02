@@ -1,43 +1,72 @@
-run:
-  timeout: 10m
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+version: "2"
 linters:
   enable:
     - contextcheck
     - gocritic
+    - gosec
+    - misspell
+    - unconvert
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      # Exclude the gocritic dupSubExpr issue for cgo files.
+      - linters:
+          - gocritic
+        path: internal/dxcore/dxcore.go
+        text: dupSubExpr
+      # Exclude the checks for usage of returns to config.Delete(Path) in the
+      # crio and containerd config packages.
+      - linters:
+          - errcheck
+        path: pkg/config/engine/
+        text: config.Delete
+      # RENDERD refers to the Render Device and not the past tense of render.
+      - linters:
+          - misspell
+        path: .*.go
+        text: '`RENDERD` is a misspelling of `RENDERED`'
+      # The legacy hook relies on spec.Hooks.Prestart, which is deprecated as of
+      # the v1.2.0 OCI runtime spec.
+      - path: (.+)\.go$
+        text: SA1019:(.+).Prestart is deprecated(.+)
+      # TODO: We should address each of the following integer overflows.
+      - path: (.+)\.go$
+        text: 'G115: integer overflow conversion(.+)'
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
     - gofmt
     - goimports
-    - gosec
-    - gosimple
-    - govet
-    - ineffassign
-    - misspell
-    - staticcheck
-    - unconvert
-
-linters-settings:
-  goimports:
-    local-prefixes: github.com/NVIDIA/nvidia-container-toolkit
-
-issues:
-  exclude:
-  # The legacy hook relies on spec.Hooks.Prestart, which is deprecated as of the v1.2.0 OCI runtime spec.
-  - "SA1019:(.+).Prestart is deprecated(.+)"
-  # TODO: We should address each of the following integer overflows.
-  - "G115: integer overflow conversion(.+)"
-  exclude-rules:
-  # Exclude the gocritic dupSubExpr issue for cgo files.
-  - path: internal/dxcore/dxcore.go
-    linters:
-    - gocritic
-    text: dupSubExpr
-  # Exclude the checks for usage of returns to config.Delete(Path) in the crio and containerd config packages.
-  - path: pkg/config/engine/
-    linters:
-    - errcheck
-    text: config.Delete
-  # RENDERD refers to the Render Device and not the past tense of render.
-  - path: .*.go
-    linters:
-    - misspell
-    text: "`RENDERD` is a misspelling of `RENDERED`"
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/NVIDIA/nvidia-container-toolkit
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
