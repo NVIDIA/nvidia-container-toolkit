@@ -71,13 +71,13 @@ func (d *nvsandboxutilsDGPU) Devices() ([]discover.Device, error) {
 
 	var devices []discover.Device
 	for _, info := range gpuFileInfos {
-		switch {
-		case info.SubType == nvsandboxutils.NV_DEV_DRI_CARD, info.SubType == nvsandboxutils.NV_DEV_DRI_RENDERD:
+		switch info.SubType {
+		case nvsandboxutils.NV_DEV_DRI_CARD, nvsandboxutils.NV_DEV_DRI_RENDERD:
 			if d.isMig {
 				continue
 			}
 			fallthrough
-		case info.SubType == nvsandboxutils.NV_DEV_NVIDIA, info.SubType == nvsandboxutils.NV_DEV_NVIDIA_CAPS_NVIDIA_CAP:
+		case nvsandboxutils.NV_DEV_NVIDIA, nvsandboxutils.NV_DEV_NVIDIA_CAPS_NVIDIA_CAP:
 			containerPath := info.Path
 			if d.devRoot != "/" {
 				containerPath = strings.TrimPrefix(containerPath, d.devRoot)
@@ -89,7 +89,7 @@ func (d *nvsandboxutilsDGPU) Devices() ([]discover.Device, error) {
 				Path:     containerPath,
 			}
 			devices = append(devices, device)
-		case info.SubType == nvsandboxutils.NV_DEV_DRI_CARD_SYMLINK, info.SubType == nvsandboxutils.NV_DEV_DRI_RENDERD_SYMLINK:
+		case nvsandboxutils.NV_DEV_DRI_CARD_SYMLINK, nvsandboxutils.NV_DEV_DRI_RENDERD_SYMLINK:
 			if d.isMig {
 				continue
 			}
