@@ -67,51 +67,51 @@ func TestGenerateSpec(t *testing.T) {
 cdiVersion: 0.5.0
 kind: example.com/device
 devices:
-- name: "0"
-  containerEdits:
-    deviceNodes:
-    - path: /dev/nvidia0
-      hostPath: {{ .driverRoot }}/dev/nvidia0
-- name: all
-  containerEdits:
-    deviceNodes:
-    - path: /dev/nvidia0
-      hostPath: {{ .driverRoot }}/dev/nvidia0
+    - name: "0"
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
+    - name: all
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
 containerEdits:
-  env:
-  - NVIDIA_VISIBLE_DEVICES=void
-  deviceNodes:
-  - path: /dev/nvidiactl
-    hostPath: {{ .driverRoot }}/dev/nvidiactl
-  hooks:
-  - hookName: createContainer
-    path: /usr/bin/nvidia-cdi-hook
-    args:
-    - nvidia-cdi-hook
-    - create-symlinks
-    - --link
-    - libcuda.so.1::/lib/x86_64-linux-gnu/libcuda.so
-  - hookName: createContainer
-    path: /usr/bin/nvidia-cdi-hook
-    args:
-    - nvidia-cdi-hook
-    - enable-cuda-compat
-    - --host-driver-version=999.88.77
-  - hookName: createContainer
-    path: /usr/bin/nvidia-cdi-hook
-    args:
-    - nvidia-cdi-hook
-    - update-ldcache
-    - --folder
-    - /lib/x86_64-linux-gnu
-  mounts:
-  - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
-    containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
-    options:
-    - ro
-    - nosuid
-    - nodev
-    - bind
+    env:
+        - NVIDIA_VISIBLE_DEVICES=void
+    deviceNodes:
+        - path: /dev/nvidiactl
+          hostPath: {{ .driverRoot }}/dev/nvidiactl
+    hooks:
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - create-symlinks
+            - --link
+            - libcuda.so.1::/lib/x86_64-linux-gnu/libcuda.so
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - enable-cuda-compat
+            - --host-driver-version=999.88.77
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - update-ldcache
+            - --folder
+            - /lib/x86_64-linux-gnu
+    mounts:
+        - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - bind
 `,
 		},
 	}
