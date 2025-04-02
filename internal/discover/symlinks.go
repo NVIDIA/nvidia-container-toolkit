@@ -42,7 +42,7 @@ func WithDriverDotSoSymlinks(mounts Discover, version string, nvidiaCDIHookPath 
 
 // Hooks returns a hook to create the additional symlinks based on the mounts.
 func (d *additionalSymlinks) Hooks() ([]Hook, error) {
-	mounts, err := d.Discover.Mounts()
+	mounts, err := d.Mounts()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get library mounts: %v", err)
 	}

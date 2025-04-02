@@ -160,7 +160,7 @@ func TestModify(t *testing.T) {
 			require.EqualValues(t, &specs.Spec{}, spec.Spec, "%d: %v", i, tc)
 		default:
 			require.NoError(t, err, "%d: %v", i, tc)
-			require.Equal(t, "updated", spec.Spec.Version, "%d: %v", i, tc)
+			require.Equal(t, "updated", spec.Version, "%d: %v", i, tc)
 		}
 	}
 }

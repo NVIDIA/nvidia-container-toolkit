@@ -85,7 +85,7 @@ func TestGetHookConfig(t *testing.T) {
 				configflag = &filename
 
 				for _, line := range tc.lines {
-					_, err := configFile.WriteString(fmt.Sprintf("%s\n", line))
+					_, err := fmt.Fprintf(configFile, "%s\n", line)
 					require.NoError(t, err)
 				}
 			}
