@@ -71,45 +71,45 @@ func TestInstall(t *testing.T) {
 cdiVersion: 0.5.0
 kind: example.com/class
 devices:
-- name: all
-  containerEdits:
-    deviceNodes:
-    - path: /dev/nvidia0
-      hostPath: /host/driver/root/dev/nvidia0
-    - path: /dev/nvidiactl
-      hostPath: /host/driver/root/dev/nvidiactl
-    - path: /dev/nvidia-caps-imex-channels/channel0
-      hostPath: /host/driver/root/dev/nvidia-caps-imex-channels/channel0
-    - path: /dev/nvidia-caps-imex-channels/channel1
-      hostPath: /host/driver/root/dev/nvidia-caps-imex-channels/channel1
-    - path: /dev/nvidia-caps-imex-channels/channel2047
-      hostPath: /host/driver/root/dev/nvidia-caps-imex-channels/channel2047
+    - name: all
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: /host/driver/root/dev/nvidia0
+            - path: /dev/nvidiactl
+              hostPath: /host/driver/root/dev/nvidiactl
+            - path: /dev/nvidia-caps-imex-channels/channel0
+              hostPath: /host/driver/root/dev/nvidia-caps-imex-channels/channel0
+            - path: /dev/nvidia-caps-imex-channels/channel1
+              hostPath: /host/driver/root/dev/nvidia-caps-imex-channels/channel1
+            - path: /dev/nvidia-caps-imex-channels/channel2047
+              hostPath: /host/driver/root/dev/nvidia-caps-imex-channels/channel2047
 containerEdits:
-  env:
-  - NVIDIA_VISIBLE_DEVICES=void
-  hooks:
-  - hookName: createContainer
-    path: {{ .toolkitRoot }}/nvidia-cdi-hook
-    args:
-    - nvidia-cdi-hook
-    - create-symlinks
-    - --link
-    - libcuda.so.1::/lib/x86_64-linux-gnu/libcuda.so
-  - hookName: createContainer
-    path: {{ .toolkitRoot }}/nvidia-cdi-hook
-    args:
-    - nvidia-cdi-hook
-    - update-ldcache
-    - --folder
-    - /lib/x86_64-linux-gnu
-  mounts:
-  - hostPath: /host/driver/root/lib/x86_64-linux-gnu/libcuda.so.999.88.77
-    containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
-    options:
-    - ro
-    - nosuid
-    - nodev
-    - bind
+    env:
+        - NVIDIA_VISIBLE_DEVICES=void
+    hooks:
+        - hookName: createContainer
+          path: {{ .toolkitRoot }}/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - create-symlinks
+            - --link
+            - libcuda.so.1::/lib/x86_64-linux-gnu/libcuda.so
+        - hookName: createContainer
+          path: {{ .toolkitRoot }}/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - update-ldcache
+            - --folder
+            - /lib/x86_64-linux-gnu
+    mounts:
+        - hostPath: /host/driver/root/lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - bind
 `,
 		},
 	}

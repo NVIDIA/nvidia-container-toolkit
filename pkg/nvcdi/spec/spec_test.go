@@ -54,10 +54,10 @@ func TestSpec(t *testing.T) {
 cdiVersion: 0.8.0
 kind: nvidia.com/gpu
 devices:
-- name: one
-  containerEdits:
-    env:
-    - DEVICE_FOO=bar
+    - name: one
+      containerEdits:
+        env:
+            - DEVICE_FOO=bar
 `,
 		},
 		{
@@ -80,10 +80,10 @@ devices:
 cdiVersion: 0.5.0
 kind: nvidia.com/gpu
 devices:
-- name: one
-  containerEdits:
-    env:
-    - DEVICE_FOO=bar
+    - name: one
+      containerEdits:
+        env:
+            - DEVICE_FOO=bar
 `,
 		},
 		{
@@ -105,10 +105,10 @@ devices:
 cdiVersion: 0.3.0
 kind: nvidia.com/gpu
 devices:
-- name: one
-  containerEdits:
-    env:
-    - DEVICE_FOO=bar
+    - name: one
+      containerEdits:
+        env:
+            - DEVICE_FOO=bar
 `,
 		},
 		{
@@ -138,14 +138,14 @@ devices:
 cdiVersion: 0.5.0
 kind: nvidia.com/gpu
 devices:
-- name: one
-  containerEdits:
-    env:
-    - DEVICE_FOO=bar
+    - name: one
+      containerEdits:
+        env:
+            - DEVICE_FOO=bar
 containerEdits:
-  deviceNodes:
-  - path: /dev/dev0
-    hostPath: /some/dev/dev0
+    deviceNodes:
+        - path: /dev/dev0
+          hostPath: /some/dev/dev0
 `,
 		},
 		{
@@ -183,14 +183,14 @@ containerEdits:
 cdiVersion: 0.5.0
 kind: nvidia.com/gpu
 devices:
-- name: one
-  containerEdits:
-    env:
-    - DEVICE_FOO=bar
+    - name: one
+      containerEdits:
+        env:
+            - DEVICE_FOO=bar
 containerEdits:
-  deviceNodes:
-  - path: /dev/dev0
-    hostPath: /dev/dev0
+    deviceNodes:
+        - path: /dev/dev0
+          hostPath: /dev/dev0
 `,
 		},
 	}
