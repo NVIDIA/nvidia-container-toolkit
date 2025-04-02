@@ -19,6 +19,7 @@ package runtime
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/tools/container"
@@ -52,6 +53,12 @@ func Flags(opts *Options) []cli.Flag {
 			Value:       runtimeSpecificDefault,
 			Destination: &opts.Config,
 			EnvVars:     []string{"RUNTIME_CONFIG", "CONTAINERD_CONFIG", "DOCKER_CONFIG"},
+		},
+		&cli.StringFlag{
+			Name:        "executable-path",
+			Usage:       "The path to the runtime executable. This is used to extract the current config",
+			Destination: &opts.ExecutablePath,
+			EnvVars:     []string{"RUNTIME_EXECUTABLE_PATH"},
 		},
 		&cli.StringFlag{
 			Name:        "socket",
@@ -104,13 +111,18 @@ func Flags(opts *Options) []cli.Flag {
 	return flags
 }
 
-// ValidateOptions checks whether the specified options are valid
-func ValidateOptions(c *cli.Context, opts *Options, runtime string, toolkitRoot string, to *toolkit.Options) error {
+// Validate checks whether the specified options are valid
+func (opts *Options) Validate(c *cli.Context, runtime string, toolkitRoot string, to *toolkit.Options) error {
 	// We set this option here to ensure that it is available in future calls.
 	opts.RuntimeDir = toolkitRoot
 
 	if !c.IsSet("enable-cdi-in-runtime") {
 		opts.EnableCDI = to.CDI.Enabled
+	}
+
+	if opts.ExecutablePath != "" && opts.RuntimeName == docker.Name {
+		log.Warningf("Ignoring executable-path=%q flag for %v", opts.ExecutablePath, opts.RuntimeName)
+		opts.ExecutablePath = ""
 	}
 
 	// Apply the runtime-specific config changes.
