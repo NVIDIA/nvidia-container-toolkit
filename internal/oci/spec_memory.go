@@ -61,11 +61,11 @@ func (s *memorySpec) Modify(m SpecModifier) error {
 // Otherwise the returned value will be empty and the boolean will
 // be false.
 func (s memorySpec) LookupEnv(key string) (string, bool) {
-	if s.Spec == nil || s.Spec.Process == nil {
+	if s.Spec == nil || s.Process == nil {
 		return "", false
 	}
 
-	for _, env := range s.Spec.Process.Env {
+	for _, env := range s.Process.Env {
 		if !strings.HasPrefix(env, key) {
 			continue
 		}
