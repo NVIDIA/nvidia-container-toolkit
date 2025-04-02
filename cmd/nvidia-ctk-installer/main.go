@@ -240,7 +240,7 @@ func (a *app) initialize(pidFile string) error {
 		return fmt.Errorf("unable to get flock on pidfile: %v", err)
 	}
 
-	_, err = f.WriteString(fmt.Sprintf("%v\n", os.Getpid()))
+	_, err = fmt.Fprintf(f, "%v\n", os.Getpid())
 	if err != nil {
 		return fmt.Errorf("unable to write PID to pidfile: %v", err)
 	}
