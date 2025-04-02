@@ -35,7 +35,7 @@ var _ Interface = (*csvlib)(nil)
 
 // GetSpec should not be called for wsllib
 func (l *csvlib) GetSpec() (spec.Interface, error) {
-	return nil, fmt.Errorf("Unexpected call to csvlib.GetSpec()")
+	return nil, fmt.Errorf("unexpected call to csvlib.GetSpec()")
 }
 
 // GetAllDeviceSpecs returns the device specs for all available devices.

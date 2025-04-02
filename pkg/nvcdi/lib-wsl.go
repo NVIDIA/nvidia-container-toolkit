@@ -33,7 +33,7 @@ var _ Interface = (*wsllib)(nil)
 
 // GetSpec should not be called for wsllib
 func (l *wsllib) GetSpec() (spec.Interface, error) {
-	return nil, fmt.Errorf("Unexpected call to wsllib.GetSpec()")
+	return nil, fmt.Errorf("unexpected call to wsllib.GetSpec()")
 }
 
 // GetAllDeviceSpecs returns the device specs for all available devices.
