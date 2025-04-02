@@ -167,7 +167,7 @@ func (a *app) validateFlags(c *cli.Context, o *options) error {
 	if err := a.toolkit.ValidateOptions(&o.toolkitOptions); err != nil {
 		return err
 	}
-	if err := runtime.ValidateOptions(c, &o.runtimeOptions, o.runtime, o.toolkitRoot(), &o.toolkitOptions); err != nil {
+	if err := o.runtimeOptions.Validate(a.logger, c, o.runtime, o.toolkitRoot(), &o.toolkitOptions); err != nil {
 		return err
 	}
 	return nil
