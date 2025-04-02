@@ -184,7 +184,7 @@ func (m command) createLdsoconfdFile(in containerRoot, pattern string, dirs ...s
 		if added[dir] {
 			continue
 		}
-		_, err = configFile.WriteString(fmt.Sprintf("%s\n", dir))
+		_, err = fmt.Fprintf(configFile, "%s\n", dir)
 		if err != nil {
 			return fmt.Errorf("failed to update config file: %w", err)
 		}
