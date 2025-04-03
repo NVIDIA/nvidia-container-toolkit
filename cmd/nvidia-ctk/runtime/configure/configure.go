@@ -72,8 +72,6 @@ type config struct {
 	mode           string
 	hookFilePath   string
 
-	runtimeConfigOverrideJSON string
-
 	nvidiaRuntime struct {
 		name         string
 		path         string
@@ -206,11 +204,6 @@ func (m command) validateFlags(c *cli.Context, config *config) error {
 			m.logger.Warningf("Ignoring cdi.enabled flag for %v", config.runtime)
 		}
 		config.cdi.enabled = false
-	}
-
-	if config.runtimeConfigOverrideJSON != "" && config.runtime != "containerd" {
-		m.logger.Warningf("Ignoring runtime-config-override flag for %v", config.runtime)
-		config.runtimeConfigOverrideJSON = ""
 	}
 
 	switch config.configSource {
