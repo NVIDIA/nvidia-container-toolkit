@@ -44,4 +44,7 @@ const (
 	// HookEnableCudaCompat refers to the hook used to enable CUDA Forward Compatibility.
 	// This was added with v1.17.5 of the NVIDIA Container Toolkit.
 	HookEnableCudaCompat = HookName("enable-cuda-compat")
+	// HookDisableDeviceNodeModification refers to the hook used to ensure that device nodes
+	// are not created by nvidia-smi in a container.
+	HookDisableDeviceNodeModification = HookName("disable-device-node-modification")
 )
