@@ -17,12 +17,15 @@
 package root
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvmodules"
 )
 
 // Driver represents a filesystem in which a set of drivers or devices is defined.
@@ -124,4 +127,21 @@ func xdgDataDirs() []string {
 	}
 
 	return []string{"/usr/local/share", "/usr/share"}
+}
+
+// LoadKmods loads the specified kernel modules in the driver root.
+// Errors in loading a module do not prevent other modules from being attempted.
+func (r *Driver) LoadKernelModules(moduleNames ...string) error {
+	modules := nvmodules.New(
+		nvmodules.WithLogger(r.logger),
+		nvmodules.WithRoot(r.Root),
+	)
+
+	var errs error
+	for _, moduleName := range moduleNames {
+		if err := modules.Load(moduleName); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("failed to load kernel module %q: %w", moduleName, err))
+		}
+	}
+	return errs
 }

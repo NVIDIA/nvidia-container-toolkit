@@ -74,6 +74,9 @@ func TestGetConfig(t *testing.T) {
 							AnnotationPrefixes: []string{"cdi.k8s.io/"},
 							SpecDirs:           []string{"/etc/cdi", "/var/run/cdi"},
 						},
+						JitCDI: jitCDIModeConfig{
+							LoadKernelModules: []string{"nvidia", "nvidia-uvm", "nvidia-modeset"},
+						},
 					},
 				},
 				NVIDIAContainerRuntimeHookConfig: RuntimeHookConfig{
@@ -102,6 +105,7 @@ func TestGetConfig(t *testing.T) {
 				"nvidia-container-runtime.modes.cdi.annotation-prefixes = [\"cdi.k8s.io/\", \"example.vendor.com/\",]",
 				"nvidia-container-runtime.modes.cdi.spec-dirs = [\"/except/etc/cdi\", \"/not/var/run/cdi\",]",
 				"nvidia-container-runtime.modes.csv.mount-spec-path = \"/not/etc/nvidia-container-runtime/host-files-for-container.d\"",
+				"nvidia-container-runtime.modes.jit-cdi.load-kernel-modules = [\"foo\"]",
 				"nvidia-container-runtime-hook.path = \"/foo/bar/nvidia-container-runtime-hook\"",
 				"nvidia-ctk.path = \"/foo/bar/nvidia-ctk\"",
 			},
@@ -133,6 +137,9 @@ func TestGetConfig(t *testing.T) {
 								"/except/etc/cdi",
 								"/not/var/run/cdi",
 							},
+						},
+						JitCDI: jitCDIModeConfig{
+							LoadKernelModules: []string{"foo"},
 						},
 					},
 				},
@@ -178,6 +185,9 @@ func TestGetConfig(t *testing.T) {
 								"/var/run/cdi",
 							},
 						},
+						JitCDI: jitCDIModeConfig{
+							LoadKernelModules: []string{"nvidia", "nvidia-uvm", "nvidia-modeset"},
+						},
 					},
 				},
 				NVIDIAContainerRuntimeHookConfig: RuntimeHookConfig{
@@ -213,6 +223,8 @@ func TestGetConfig(t *testing.T) {
 				"spec-dirs = [\"/except/etc/cdi\", \"/not/var/run/cdi\",]",
 				"[nvidia-container-runtime.modes.csv]",
 				"mount-spec-path = \"/not/etc/nvidia-container-runtime/host-files-for-container.d\"",
+				"[nvidia-container-runtime.modes.jit-cdi]",
+				"load-kernel-modules = [\"foo\"]",
 				"[nvidia-container-runtime-hook]",
 				"path = \"/foo/bar/nvidia-container-runtime-hook\"",
 				"[nvidia-ctk]",
@@ -246,6 +258,9 @@ func TestGetConfig(t *testing.T) {
 								"/except/etc/cdi",
 								"/not/var/run/cdi",
 							},
+						},
+						JitCDI: jitCDIModeConfig{
+							LoadKernelModules: []string{"foo"},
 						},
 					},
 				},
@@ -282,6 +297,9 @@ func TestGetConfig(t *testing.T) {
 							DefaultKind:        "nvidia.com/gpu",
 							AnnotationPrefixes: []string{"cdi.k8s.io/"},
 							SpecDirs:           []string{"/etc/cdi", "/var/run/cdi"},
+						},
+						JitCDI: jitCDIModeConfig{
+							LoadKernelModules: []string{"nvidia", "nvidia-uvm", "nvidia-modeset"},
 						},
 					},
 				},
@@ -321,6 +339,9 @@ func TestGetConfig(t *testing.T) {
 							DefaultKind:        "nvidia.com/gpu",
 							AnnotationPrefixes: []string{"cdi.k8s.io/"},
 							SpecDirs:           []string{"/etc/cdi", "/var/run/cdi"},
+						},
+						JitCDI: jitCDIModeConfig{
+							LoadKernelModules: []string{"nvidia", "nvidia-uvm", "nvidia-modeset"},
 						},
 					},
 				},

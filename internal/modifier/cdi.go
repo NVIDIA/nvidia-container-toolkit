@@ -25,6 +25,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
@@ -34,7 +35,7 @@ import (
 // NewCDIModifier creates an OCI spec modifier that determines the modifications to make based on the
 // CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES environment variable is
 // used to select the devices to include.
-func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
+func NewCDIModifier(logger logger.Interface, cfg *config.Config, driver *root.Driver, ociSpec oci.Spec) (oci.SpecModifier, error) {
 	devices, err := getDevicesFromSpec(logger, ociSpec, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get required devices from OCI specification: %v", err)
@@ -50,7 +51,7 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spe
 		return nil, fmt.Errorf("requesting a CDI device with vendor 'runtime.nvidia.com' is not supported when requesting other CDI devices")
 	}
 	if len(automaticDevices) > 0 {
-		automaticModifier, err := newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
+		automaticModifier, err := newAutomaticCDISpecModifier(logger, cfg, driver, automaticDevices)
 		if err == nil {
 			return automaticModifier, nil
 		}
@@ -163,9 +164,9 @@ func filterAutomaticDevices(devices []string) []string {
 	return automatic
 }
 
-func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, devices []string) (oci.SpecModifier, error) {
+func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, driver *root.Driver, devices []string) (oci.SpecModifier, error) {
 	logger.Debugf("Generating in-memory CDI specs for devices %v", devices)
-	spec, err := generateAutomaticCDISpec(logger, cfg, devices)
+	spec, err := generateAutomaticCDISpec(logger, cfg, driver, devices)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate CDI spec: %w", err)
 	}
@@ -180,7 +181,7 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 	return cdiModifier, nil
 }
 
-func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devices []string) (spec.Interface, error) {
+func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, driver *root.Driver, devices []string) (spec.Interface, error) {
 	cdilib, err := nvcdi.New(
 		nvcdi.WithLogger(logger),
 		nvcdi.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path),
@@ -190,6 +191,11 @@ func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devic
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct CDI library: %w", err)
+	}
+
+	// TODO: Consider moving this into the nvcdi API.
+	if err := driver.LoadKernelModules(cfg.NVIDIAContainerRuntimeConfig.Modes.JitCDI.LoadKernelModules...); err != nil {
+		logger.Warningf("Ignoring error(s) loading kernel modules: %v", err)
 	}
 
 	identifiers := []string{}
