@@ -157,9 +157,12 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 func (c *Config) EnableCDI() {}
 
 // CommandLineSource returns the CLI-based crio config loader
-func CommandLineSource(hostRoot string) toml.Loader {
+func CommandLineSource(hostRoot string, executablePath string) toml.Loader {
+	if executablePath == "" {
+		executablePath = "crio"
+	}
 	return toml.LoadFirst(
-		toml.FromCommandLine(chrootIfRequired(hostRoot, "crio", "status", "config")...),
+		toml.FromCommandLine(chrootIfRequired(hostRoot, executablePath, "status", "config")...),
 		toml.FromCommandLine(chrootIfRequired(hostRoot, "crio-status", "config")...),
 	)
 }
