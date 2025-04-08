@@ -26,6 +26,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime/docker"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/toolkit"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 const (
@@ -52,6 +53,12 @@ func Flags(opts *Options) []cli.Flag {
 			Value:       runtimeSpecificDefault,
 			Destination: &opts.Config,
 			EnvVars:     []string{"RUNTIME_CONFIG", "CONTAINERD_CONFIG", "DOCKER_CONFIG"},
+		},
+		&cli.StringFlag{
+			Name:        "executable-path",
+			Usage:       "The path to the runtime executable. This is used to extract the current config",
+			Destination: &opts.ExecutablePath,
+			EnvVars:     []string{"RUNTIME_EXECUTABLE_PATH"},
 		},
 		&cli.StringFlag{
 			Name:        "socket",
@@ -104,13 +111,18 @@ func Flags(opts *Options) []cli.Flag {
 	return flags
 }
 
-// ValidateOptions checks whether the specified options are valid
-func ValidateOptions(c *cli.Context, opts *Options, runtime string, toolkitRoot string, to *toolkit.Options) error {
+// Validate checks whether the specified options are valid
+func (opts *Options) Validate(logger logger.Interface, c *cli.Context, runtime string, toolkitRoot string, to *toolkit.Options) error {
 	// We set this option here to ensure that it is available in future calls.
 	opts.RuntimeDir = toolkitRoot
 
 	if !c.IsSet("enable-cdi-in-runtime") {
 		opts.EnableCDI = to.CDI.Enabled
+	}
+
+	if opts.ExecutablePath != "" && opts.RuntimeName == docker.Name {
+		logger.Warningf("Ignoring executable-path=%q flag for %v", opts.ExecutablePath, opts.RuntimeName)
+		opts.ExecutablePath = ""
 	}
 
 	// Apply the runtime-specific config changes.

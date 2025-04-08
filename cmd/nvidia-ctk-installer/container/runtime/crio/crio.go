@@ -202,7 +202,7 @@ func getRuntimeConfig(o *container.Options) (engine.Interface, error) {
 		crio.WithPath(o.Config),
 		crio.WithConfigSource(
 			toml.LoadFirst(
-				crio.CommandLineSource(o.HostRootMount),
+				crio.CommandLineSource(o.HostRootMount, o.ExecutablePath),
 				toml.FromFile(o.Config),
 			),
 		),
