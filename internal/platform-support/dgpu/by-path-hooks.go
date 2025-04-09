@@ -41,6 +41,11 @@ func (d *byPathHookDiscoverer) Devices() ([]discover.Device, error) {
 	return nil, nil
 }
 
+// EnvVars returns the empty list for the by-path hook discoverer
+func (d *byPathHookDiscoverer) EnvVars() ([]discover.EnvVar, error) {
+	return nil, nil
+}
+
 // Hooks returns the hooks for the GPU device.
 // The following hooks are detected:
 //  1. A hook to create /dev/dri/by-path symlinks

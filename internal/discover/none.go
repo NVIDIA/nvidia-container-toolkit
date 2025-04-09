@@ -27,6 +27,11 @@ func (e None) Devices() ([]Device, error) {
 	return nil, nil
 }
 
+// EnvVars returns an empty list of devices
+func (e None) EnvVars() ([]EnvVar, error) {
+	return nil, nil
+}
+
 // Mounts returns an empty list of mounts
 func (e None) Mounts() ([]Mount, error) {
 	return nil, nil
