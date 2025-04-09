@@ -80,6 +80,7 @@ devices:
               hostPath: {{ .driverRoot }}/dev/nvidia0
 containerEdits:
     env:
+        - NVIDIA_CTK_LIBCUDA_DIR=/lib/x86_64-linux-gnu
         - NVIDIA_VISIBLE_DEVICES=void
     deviceNodes:
         - path: /dev/nvidiactl
@@ -164,6 +165,7 @@ devices:
               hostPath: {{ .driverRoot }}/dev/nvidia0
 containerEdits:
     env:
+        - NVIDIA_CTK_LIBCUDA_DIR=/lib/x86_64-linux-gnu
         - NVIDIA_VISIBLE_DEVICES=void
     deviceNodes:
         - path: /dev/nvidiactl
@@ -240,6 +242,7 @@ devices:
               hostPath: {{ .driverRoot }}/dev/nvidia0
 containerEdits:
     env:
+        - NVIDIA_CTK_LIBCUDA_DIR=/lib/x86_64-linux-gnu
         - NVIDIA_VISIBLE_DEVICES=void
     deviceNodes:
         - path: /dev/nvidiactl
@@ -307,6 +310,7 @@ devices:
               hostPath: {{ .driverRoot }}/dev/nvidia0
 containerEdits:
     env:
+        - NVIDIA_CTK_LIBCUDA_DIR=/lib/x86_64-linux-gnu
         - NVIDIA_VISIBLE_DEVICES=void
     deviceNodes:
         - path: /dev/nvidiactl
