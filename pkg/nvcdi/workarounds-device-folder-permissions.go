@@ -55,6 +55,11 @@ func (d *deviceFolderPermissions) Devices() ([]discover.Device, error) {
 	return nil, nil
 }
 
+// EnvVars are empty for this discoverer
+func (d *deviceFolderPermissions) EnvVars() ([]discover.EnvVar, error) {
+	return nil, nil
+}
+
 // Hooks returns a set of hooks that sets the file mode to 755 of parent folders for nested device nodes.
 func (d *deviceFolderPermissions) Hooks() ([]discover.Hook, error) {
 	folders, err := d.getDeviceSubfolders()

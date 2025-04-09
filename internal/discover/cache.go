@@ -23,6 +23,7 @@ type cache struct {
 
 	sync.Mutex
 	devices []Device
+	envVars []EnvVar
 	hooks   []Hook
 	mounts  []Mount
 }
@@ -49,6 +50,20 @@ func (c *cache) Devices() ([]Device, error) {
 		c.devices = devices
 	}
 	return c.devices, nil
+}
+
+func (c *cache) EnvVars() ([]EnvVar, error) {
+	c.Lock()
+	defer c.Unlock()
+
+	if c.envVars == nil {
+		envVars, err := c.d.EnvVars()
+		if err != nil {
+			return nil, err
+		}
+		c.envVars = envVars
+	}
+	return c.envVars, nil
 }
 
 func (c *cache) Hooks() ([]Hook, error) {

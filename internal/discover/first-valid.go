@@ -45,6 +45,19 @@ func (f firstOf) Devices() ([]Device, error) {
 	return nil, errs
 }
 
+func (f firstOf) EnvVars() ([]EnvVar, error) {
+	var errs error
+	for _, d := range f {
+		envs, err := d.EnvVars()
+		if err != nil {
+			errs = errors.Join(errs, err)
+			continue
+		}
+		return envs, nil
+	}
+	return nil, errs
+}
+
 func (f firstOf) Hooks() ([]Hook, error) {
 	var errs error
 	for _, d := range f {
