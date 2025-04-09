@@ -68,11 +68,10 @@ type config struct {
 	dryRun         bool
 	runtime        string
 	configFilePath string
+	executablePath string
 	configSource   string
 	mode           string
 	hookFilePath   string
-
-	runtimeConfigOverrideJSON string
 
 	nvidiaRuntime struct {
 		name         string
@@ -119,6 +118,11 @@ func (m command) build() *cli.Command {
 			Name:        "config",
 			Usage:       "path to the config file for the target runtime",
 			Destination: &config.configFilePath,
+		},
+		&cli.StringFlag{
+			Name:        "executable-path",
+			Usage:       "The path to the runtime executable. This is used to extract the current config",
+			Destination: &config.executablePath,
 		},
 		&cli.StringFlag{
 			Name:        "config-mode",
@@ -208,9 +212,9 @@ func (m command) validateFlags(c *cli.Context, config *config) error {
 		config.cdi.enabled = false
 	}
 
-	if config.runtimeConfigOverrideJSON != "" && config.runtime != "containerd" {
-		m.logger.Warningf("Ignoring runtime-config-override flag for %v", config.runtime)
-		config.runtimeConfigOverrideJSON = ""
+	if config.executablePath != "" && config.runtime == "docker" {
+		m.logger.Warningf("Ignoring executable-path=%q flag for %v", config.executablePath, config.runtime)
+		config.executablePath = ""
 	}
 
 	switch config.configSource {
@@ -330,9 +334,9 @@ func (c *config) resolveConfigSource() (toml.Loader, error) {
 func (c *config) getCommandConfigSource() toml.Loader {
 	switch c.runtime {
 	case "containerd":
-		return containerd.CommandLineSource("")
+		return containerd.CommandLineSource("", c.executablePath)
 	case "crio":
-		return crio.CommandLineSource("")
+		return crio.CommandLineSource("", c.executablePath)
 	}
 	return toml.Empty
 }
