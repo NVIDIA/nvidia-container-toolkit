@@ -5,6 +5,8 @@ go 1.23.0
 require (
 	github.com/NVIDIA/go-nvlib v0.7.2
 	github.com/NVIDIA/go-nvml v0.12.4-1
+	github.com/cyphar/filepath-securejoin v0.4.1
+	github.com/moby/sys/reexec v0.1.0
 	github.com/moby/sys/symlink v0.3.0
 	github.com/opencontainers/runc v1.3.0
 	github.com/opencontainers/runtime-spec v1.2.1
@@ -20,7 +22,6 @@ require (
 
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
-	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect

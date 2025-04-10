@@ -31,6 +31,9 @@ github.com/google/uuid
 ## explicit
 # github.com/kr/pretty v0.3.1
 ## explicit; go 1.12
+# github.com/moby/sys/reexec v0.1.0
+## explicit; go 1.18
+github.com/moby/sys/reexec
 # github.com/moby/sys/symlink v0.3.0
 ## explicit; go 1.17
 github.com/moby/sys/symlink
