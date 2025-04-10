@@ -86,6 +86,7 @@ devices:
               hostPath: /host/driver/root/dev/nvidia-caps-imex-channels/channel2047
 containerEdits:
     env:
+        - LIBCUDA_SO_PARENT_DIRECTORY_CONTAINER_PATH=/lib/x86_64-linux-gnu
         - NVIDIA_VISIBLE_DEVICES=void
     hooks:
         - hookName: createContainer

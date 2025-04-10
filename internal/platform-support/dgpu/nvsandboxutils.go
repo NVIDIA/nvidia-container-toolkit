@@ -106,6 +106,10 @@ func (d *nvsandboxutilsDGPU) Devices() ([]discover.Device, error) {
 	return devices, nil
 }
 
+func (d *nvsandboxutilsDGPU) EnvVars() ([]discover.EnvVar, error) {
+	return nil, nil
+}
+
 // Hooks returns a hook to create the by-path symlinks for the discovered devices.
 func (d *nvsandboxutilsDGPU) Hooks() ([]discover.Hook, error) {
 	if len(d.deviceLinks) == 0 {

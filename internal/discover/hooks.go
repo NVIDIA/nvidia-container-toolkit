@@ -29,6 +29,11 @@ func (h Hook) Devices() ([]Device, error) {
 	return nil, nil
 }
 
+// EnvVars returns an empty list of envs for a Hook discoverer.
+func (h Hook) EnvVars() ([]EnvVar, error) {
+	return nil, nil
+}
+
 // Mounts returns an empty list of mounts for a Hook discoverer.
 func (h Hook) Mounts() ([]Mount, error) {
 	return nil, nil

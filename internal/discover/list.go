@@ -51,6 +51,21 @@ func (d list) Devices() ([]Device, error) {
 	return allDevices, nil
 }
 
+// EnvVars returns all environment variables from the included discoverers.
+func (d list) EnvVars() ([]EnvVar, error) {
+	var allEnvs []EnvVar
+
+	for i, di := range d.discoverers {
+		envs, err := di.EnvVars()
+		if err != nil {
+			return nil, fmt.Errorf("error discovering envs for discoverer %v: %w", i, err)
+		}
+		allEnvs = append(allEnvs, envs...)
+	}
+
+	return allEnvs, nil
+}
+
 // Mounts returns all mounts from the included discoverers
 func (d list) Mounts() ([]Mount, error) {
 	var allMounts []Mount

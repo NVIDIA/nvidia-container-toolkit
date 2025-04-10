@@ -82,7 +82,7 @@ func (l *nvcdilib) newDriverVersionDiscoverer(version string) (discover.Discover
 
 // NewDriverLibraryDiscoverer creates a discoverer for the libraries associated with the specified driver version.
 func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover, error) {
-	libraryPaths, err := getVersionLibs(l.logger, l.driver, version)
+	libraryPaths, libCudaDirectoryPath, err := getVersionLibs(l.logger, l.driver, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get libraries for driver version: %v", err)
 	}
@@ -114,6 +114,12 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover
 
 	updateLDCache, _ := discover.NewLDCacheUpdateHook(l.logger, libraries, l.nvidiaCDIHookPath, l.ldconfigPath)
 	discoverers = append(discoverers, updateLDCache)
+
+	environmentVariable := &discover.EnvVar{
+		Name:  "LIBCUDA_SO_PARENT_DIRECTORY_CONTAINER_PATH",
+		Value: libCudaDirectoryPath,
+	}
+	discoverers = append(discoverers, environmentVariable)
 
 	d := discover.Merge(discoverers...)
 
@@ -202,39 +208,41 @@ func NewDriverBinariesDiscoverer(logger logger.Interface, driverRoot string) dis
 // getVersionLibs checks the LDCache for libraries ending in the specified driver version.
 // Although the ldcache at the specified driverRoot is queried, the paths are returned relative to this driverRoot.
 // This allows the standard mount location logic to be used for resolving the mounts.
-func getVersionLibs(logger logger.Interface, driver *root.Driver, version string) ([]string, error) {
+func getVersionLibs(logger logger.Interface, driver *root.Driver, version string) ([]string, string, error) {
 	logger.Infof("Using driver version %v", version)
 
 	libCudaPaths, err := cuda.New(
 		driver.Libraries(),
 	).Locate("." + version)
 	if err != nil {
-		return nil, fmt.Errorf("failed to locate libcuda.so.%v: %v", version, err)
+		return nil, "", fmt.Errorf("failed to locate libcuda.so.%v: %v", version, err)
 	}
-	libRoot := filepath.Dir(libCudaPaths[0])
+	libCudaDirectoryPath := filepath.Dir(libCudaPaths[0])
 
 	libraries := lookup.NewFileLocator(
 		lookup.WithLogger(logger),
 		lookup.WithSearchPaths(
-			libRoot,
-			filepath.Join(libRoot, "vdpau"),
+			libCudaDirectoryPath,
+			filepath.Join(libCudaDirectoryPath, "vdpau"),
 		),
 		lookup.WithOptional(true),
 	)
 
 	libs, err := libraries.Locate("*.so." + version)
 	if err != nil {
-		return nil, fmt.Errorf("failed to locate libraries for driver version %v: %v", version, err)
+		return nil, "", fmt.Errorf("failed to locate libraries for driver version %v: %v", version, err)
 	}
 
 	if driver.Root == "/" || driver.Root == "" {
-		return libs, nil
+		return libs, libCudaDirectoryPath, nil
 	}
+
+	libCudaDirectoryPath = driver.RelativeToRoot(libCudaDirectoryPath)
 
 	var relative []string
 	for _, l := range libs {
 		relative = append(relative, strings.TrimPrefix(l, driver.Root))
 	}
 
-	return relative, nil
+	return relative, libCudaDirectoryPath, nil
 }
