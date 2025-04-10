@@ -1,5 +1,4 @@
 //go:build !linux
-// +build !linux
 
 /**
 # Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
@@ -23,7 +22,7 @@ import "syscall"
 
 // SafeExec is not implemented on non-linux systems and forwards directly to the
 // Exec syscall.
-func (m *command) SafeExec(path string, args []string, envv []string) error {
+func SafeExec(path string, args []string, envv []string) error {
 	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
 	return syscall.Exec(path, args, envv)
 }
