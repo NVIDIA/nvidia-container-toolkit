@@ -178,13 +178,10 @@ test-packaging:
     OUT_IMAGE_VERSION: "${CI_COMMIT_SHORT_SHA}"
   before_script:
     - !reference [.regctl-setup, before_script]
-
-    # We ensure that the OUT_IMAGE_VERSION is set
+    # We ensure that the components of the output image are set:
+    - 'echo Image Name: ${OUT_IMAGE_NAME} ; [[ -n "${OUT_IMAGE_NAME}" ]] || exit 1'
     - 'echo Version: ${OUT_IMAGE_VERSION} ; [[ -n "${OUT_IMAGE_VERSION}" ]] || exit 1'
 
-    # In the case where we are deploying a different version to the CI_COMMIT_SHA, we
-    # need to tag the image.
-    # Note: a leading 'v' is stripped from the version if present
     - apk add --no-cache make bash
   script:
     # Log in to the "output" registry, tag the image and push the image
@@ -204,10 +201,10 @@ test-packaging:
   extends:
     - .release
   variables:
-    OUT_REGISTRY_USER: "${CI_REGISTRY_USER}"
-    OUT_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
-    OUT_REGISTRY: "${CI_REGISTRY}"
-    OUT_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/staging/container-toolkit"
+    OUT_REGISTRY_USER: "${NGC_REGISTRY_USER}"
+    OUT_REGISTRY_TOKEN: "${NGC_REGISTRY_TOKEN}"
+    OUT_REGISTRY: "${NGC_REGISTRY}"
+    OUT_IMAGE_NAME: "${NGC_REGISTRY_STAGING_IMAGE_NAME}"
 
 # Define an external release step that pushes an image to an external repository.
 # This includes a devlopment image off main.
