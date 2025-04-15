@@ -22,6 +22,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/chmod"
 	symlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/create-symlinks"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/cudacompat"
+	disabledevicenodemodification "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/disable-device-node-modification"
 	ldcache "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/update-ldcache"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
@@ -34,5 +35,6 @@ func New(logger logger.Interface) []*cli.Command {
 		symlinks.NewCommand(logger),
 		chmod.NewCommand(logger),
 		cudacompat.NewCommand(logger),
+		disabledevicenodemodification.NewCommand(logger),
 	}
 }
