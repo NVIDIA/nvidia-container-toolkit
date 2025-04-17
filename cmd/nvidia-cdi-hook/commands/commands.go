@@ -36,3 +36,16 @@ func New(logger logger.Interface) []*cli.Command {
 		cudacompat.NewCommand(logger),
 	}
 }
+
+// IssueUnsupportedHookWarning logs a warning that no hook or an unsupported
+// hook has been specified.
+// This happens if a subcommand is provided that does not match one of the
+// subcommands that has been explicitly specified.
+func IssueUnsupportedHookWarning(logger logger.Interface, c *cli.Context) {
+	args := c.Args().Slice()
+	if len(args) == 0 {
+		logger.Warningf("No CDI hook specified")
+	} else {
+		logger.Warningf("Unsupported CDI hook: %v", c.Args().Slice()[0])
+	}
+}
