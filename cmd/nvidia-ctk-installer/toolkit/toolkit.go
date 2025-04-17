@@ -215,7 +215,8 @@ func Flags(opts *Options) []cli.Flag {
 
 // An Installer is used to install the NVIDIA Container Toolkit from the toolkit container.
 type Installer struct {
-	logger     logger.Interface
+	logger logger.Interface
+
 	sourceRoot string
 	// toolkitRoot specifies the destination path at which the toolkit is installed.
 	toolkitRoot string

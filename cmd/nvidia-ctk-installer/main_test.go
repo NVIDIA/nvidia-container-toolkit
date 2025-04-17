@@ -418,7 +418,7 @@ swarm-resource = ""
 				"--driver-root-ctr-path=" + hostRoot,
 				"--pid-file=" + filepath.Join(testRoot, "toolkit.pid"),
 				"--restart-mode=none",
-				"--source-root=" + filepath.Join(artifactRoot, "deb"),
+				"--toolkit-source-root=" + filepath.Join(artifactRoot, "deb"),
 			}
 
 			err := app.Run(append(testArgs, tc.args...))
