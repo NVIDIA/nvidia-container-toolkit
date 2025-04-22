@@ -1,5 +1,18 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.17.6
+
+### Changes in the Toolkit Container
+
+- Allow container runtime executable path to be specified when configuring containerd.
+- Bump CUDA base image version to 12.8.1
+
+### Changes in libnvidia-container
+
+- Skip files when user has insufficient permissions. This prevents errors when discovering IPC sockets when the `nvidia-container-cli` is run as a non-root user.
+- Fix building with Go 1.24
+- Fix some typos in text.
+
 ## v1.17.5
 
 - Allow the `enabled-cuda-compat` hook to be skipped when generating CDI specifications. This improves compatibility with older NVIDIA Container Toolkit installations. The hook is explicitly ignored for management CDI specifications.
