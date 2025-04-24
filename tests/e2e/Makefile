@@ -1,4 +1,5 @@
-# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved. 
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,34 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GO_CMD ?= go
+.PHONY: test $(GINKGO_BIN)
 
-include $(CURDIR)/versions.mk
+GINKGO_ARGS ?=
+LOG_ARTIFACTS_DIR ?= $(CURDIR)/e2e_logs
 
-E2E_RUNTIME ?= docker
+GINKGO_BIN := $(CURDIR)/bin/ginkgo
 
-E2E_INSTALL_CTK ?= false
+test: $(GINKGO_BIN)
+	$(GINKGO_BIN) $(GINKGO_ARGS) -v --json-report ginkgo.json ./tests/e2e/...
 
-ifeq ($($(DIST)),)
-DIST ?= ubuntu20.04
-endif
-IMAGE_TAG ?= $(VERSION)-$(DIST)
-IMAGE = $(IMAGE_NAME):$(IMAGE_TAG)
-
-E2E_SSH_KEY ?=
-E2E_SSH_USER ?=
-E2E_SSH_HOST ?=
-E2E_SSH_PORT ?= 22
-
-.PHONY: test
-test:
-	cd $(CURDIR)/tests/e2e && $(GO_CMD) test -v . -args \
-		-ginkgo.focus="$(E2E_RUNTIME)" \
-		-test.timeout=1h \
-		-ginkgo.v \
-		-install-ctk=$(E2E_INSTALL_CTK) \
-		-toolkit-image=$(IMAGE) \
-		-ssh-key=$(E2E_SSH_KEY) \
-		-ssh-user=$(E2E_SSH_USER) \
-		-remote-host=$(E2E_SSH_HOST) \
-		-remote-port=$(E2E_SSH_PORT)
+$(GINKGO_BIN):
+	mkdir -p $(CURDIR)/bin
+	GOBIN=$(CURDIR)/bin go install github.com/onsi/ginkgo/v2/ginkgo@latest
