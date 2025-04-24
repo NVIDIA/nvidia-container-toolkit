@@ -20,7 +20,7 @@ limitations under the License.
 ---
 
 ## 1  Scope & Goals
-This repository contains a **Ginkgo v2 / Gomega** test harness that exercises an
+This folder contains a **Ginkgo v2 / Gomega** test harness that exercises an
 NVIDIA Container Toolkit (CTK) installation on a **remote GPU‑enabled host** via
 SSH.  The suite validates that:
 
@@ -58,12 +58,13 @@ compatibility runs, and pre‑release validation of new CTK builds.
 
 | Variable | Required | Example | Description |
 |----------|----------|---------|-------------|
-| `INSTALL_CTK` | ✖ | `true` | When `true` the test installs CTK on the remote host before running the image. When `false` it assumes CTK is already present. |
-| `TOOLKIT_IMAGE` | ✔ | `nvcr.io/nvidia/cuda:12.4.0-runtime-ubi9` | Image that will be pulled & executed. |
-| `SSH_KEY` | ✔ | `/home/ci/.ssh/id_rsa` | Private key used for authentication. |
-| `SSH_USER` | ✔ | `ubuntu` | Username on the remote host. |
-| `REMOTE_HOST` | ✔ | `gpurunner01.corp.local` | Hostname or IP address of the target node. |
-| `REMOTE_PORT` | ✔ | `22` | SSH port of the target node. |
+| `E2E_INSTALL_CTK` | ✖ | `true` | When `true` the test installs CTK on the remote host before running the image. When `false` it assumes CTK is already present. |
+| `E2E_IMAGE_REPO` | ✔ | `ghcr.io/nvidia/container-toolkit` | Container Toolkit Image  |
+| `E2E_IMAGE_TAG` | ✔ | `latest` | Image tag |
+| `E2E_SSH_KEY` | ✔ | `/home/ci/.ssh/id_rsa` | Private key used for authentication. |
+| `E2E_SSH_USER` | ✔ | `ubuntu` | Username on the remote host. |
+| `E2E_SSH_HOST` | ✔ | `10.0.0.0` | Hostname or IP address of the target node. |
+| `E2E_SSH_PORT` | ✔ | `22` | SSH port of the target node. |
 
 > All variables are validated at start‑up; the suite aborts early with a clear
 > message if any are missing or ill‑formed.
@@ -92,12 +93,13 @@ bin/ginkgo:
 ### 6.1  Basic invocation
 ```bash
 INSTALL_CTK=true \
-TOOLKIT_IMAGE=nvcr.io/nvidia/cuda:12.4.0-runtime-ubi9 \
+E2E_IMAGE_REPO=ghcr.io/nvidia/container-toolkit \
+E2E_IMAGE_TAG=<image-tag> \
 SSH_KEY=$HOME/.ssh/id_rsa \
 SSH_USER=ubuntu \
 REMOTE_HOST=10.0.0.15 \
 REMOTE_PORT=22 \
-make test-e2e
+make test
 ```
 This downloads the image on the remote host, installs CTK (if requested), and
 executes a minimal CUDA‑based workload.

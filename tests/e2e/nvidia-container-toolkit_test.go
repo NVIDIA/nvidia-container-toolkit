@@ -1,6 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,38 +38,36 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 		BeforeAll(func(ctx context.Context) {
 			hostOutput, _, err = runner.Run("nvidia-smi -L")
 			Expect(err).ToNot(HaveOccurred())
+
+			_, _, err := runner.Run("docker pull ubuntu")
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should support NVIDIA_VISIBLE_DEVICES", func(ctx context.Context) {
-			By("Running docker run with --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all")
 			containerOutput, _, err := runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all ubuntu nvidia-smi -L")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(containerOutput).To(Equal(hostOutput))
 		})
 
 		It("should support automatic CDI spec generation", func(ctx context.Context) {
-			By("Running docker run with --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all")
 			containerOutput, _, err := runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all ubuntu nvidia-smi -L")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(containerOutput).To(Equal(hostOutput))
 		})
 
 		It("should support automatic CDI spec generation with the --gpus flag", func(ctx context.Context) {
-			By("Running docker run with --gpus=all --runtime=nvidia --gpus all")
 			containerOutput, _, err := runner.Run("docker run --rm -i --gpus=all --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all ubuntu nvidia-smi -L")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(containerOutput).To(Equal(hostOutput))
 		})
 
 		It("should support the --gpus flag using the nvidia-container-runtime", func(ctx context.Context) {
-			By("Running docker run with --runtime=nvidia --gpus all")
 			containerOutput, _, err := runner.Run("docker run --rm -i --runtime=nvidia --gpus all ubuntu nvidia-smi -L")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(containerOutput).To(Equal(hostOutput))
 		})
 
 		It("should support the --gpus flag using the nvidia-container-runtime-hook", func(ctx context.Context) {
-			By("Running docker run with --gpus all")
 			containerOutput, _, err := runner.Run("docker run --rm -i --gpus all ubuntu nvidia-smi -L")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(containerOutput).To(Equal(hostOutput))
@@ -82,8 +79,12 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 	When("Running the cuda-vectorAdd sample", Ordered, func() {
 		var referenceOutput string
 
+		BeforeAll(func(ctx context.Context) {
+			_, _, err := runner.Run("docker pull nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("should support NVIDIA_VISIBLE_DEVICES", func(ctx context.Context) {
-			By("Running docker run with --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all")
 			var err error
 			referenceOutput, _, err = runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0")
 			Expect(err).ToNot(HaveOccurred())
@@ -92,21 +93,18 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 		})
 
 		It("should support automatic CDI spec generation", func(ctx context.Context) {
-			By("Running docker run with --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all")
 			out2, _, err := runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(referenceOutput).To(Equal(out2))
 		})
 
 		It("should support the --gpus flag using the nvidia-container-runtime", func(ctx context.Context) {
-			By("Running docker run with --runtime=nvidia --gpus all")
 			out3, _, err := runner.Run("docker run --rm -i --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(referenceOutput).To(Equal(out3))
 		})
 
 		It("should support the --gpus flag using the nvidia-container-runtime-hook", func(ctx context.Context) {
-			By("Running docker run with --gpus all")
 			out4, _, err := runner.Run("docker run --rm -i --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(referenceOutput).To(Equal(out4))
@@ -116,15 +114,14 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 	// A deviceQuery sample runs in a container with access to all GPUs
 	// The following should all produce the same result.
 	When("Running the cuda-deviceQuery sample", Ordered, func() {
+		var referenceOutput string
+
 		BeforeAll(func(ctx context.Context) {
 			_, _, err := runner.Run("docker pull nvcr.io/nvidia/k8s/cuda-sample:devicequery-cuda12.5.0")
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		var referenceOutput string
-
 		It("should support NVIDIA_VISIBLE_DEVICES", func(ctx context.Context) {
-			By("Running docker run with --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all")
 			var err error
 			referenceOutput, _, err = runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all nvcr.io/nvidia/k8s/cuda-sample:devicequery-cuda12.5.0")
 			Expect(err).ToNot(HaveOccurred())
@@ -132,21 +129,18 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 		})
 
 		It("should support automatic CDI spec generation", func(ctx context.Context) {
-			By("Running docker run with --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all")
 			out2, _, err := runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all nvcr.io/nvidia/k8s/cuda-sample:devicequery-cuda12.5.0")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(referenceOutput).To(Equal(out2))
 		})
 
 		It("should support the --gpus flag using the nvidia-container-runtime", func(ctx context.Context) {
-			By("Running docker run with --runtime=nvidia --gpus all")
 			out3, _, err := runner.Run("docker run --rm -i --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:devicequery-cuda12.5.0")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(referenceOutput).To(Equal(out3))
 		})
 
 		It("should support the --gpus flag using the nvidia-container-runtime-hook", func(ctx context.Context) {
-			By("Running docker run with --gpus all")
 			out4, _, err := runner.Run("docker run --rm -i --gpus all nvcr.io/nvidia/k8s/cuda-sample:devicequery-cuda12.5.0")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(referenceOutput).To(Equal(out4))
@@ -155,6 +149,9 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 
 	When("Testing CUDA Forward compatibility", Ordered, func() {
 		BeforeAll(func(ctx context.Context) {
+			_, _, err := runner.Run("docker pull nvcr.io/nvidia/cuda:12.8.0-base-ubi8")
+			Expect(err).ToNot(HaveOccurred())
+
 			compatOutput, _, err := runner.Run("docker run --rm -i -e NVIDIA_VISIBLE_DEVICES=void nvcr.io/nvidia/cuda:12.8.0-base-ubi8 bash -c \"ls /usr/local/cuda/compat/libcuda.*.*\"")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(compatOutput).ToNot(BeEmpty())
@@ -178,21 +175,18 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 		})
 
 		It("should work with the nvidia runtime in legacy mode", func(ctx context.Context) {
-			By("Running docker run with -e NVIDIA_DISABLE_REQUIRE=true --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all")
 			ldconfigOut, _, err := runner.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true --runtime=nvidia --gpus all nvcr.io/nvidia/cuda:12.8.0-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ldconfigOut).To(ContainSubstring("/usr/local/cuda/compat"))
 		})
 
 		It("should work with the nvidia runtime in CDI mode", func(ctx context.Context) {
-			By("Running docker run with -e NVIDIA_DISABLE_REQUIRE=true --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all")
 			ldconfigOut, _, err := runner.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true  --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all nvcr.io/nvidia/cuda:12.8.0-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ldconfigOut).To(ContainSubstring("/usr/local/cuda/compat"))
 		})
 
 		It("should NOT work with nvidia-container-runtime-hook", func(ctx context.Context) {
-			By("Running docker run with -e NVIDIA_DISABLE_REQUIRE=true --gpus all")
 			ldconfigOut, _, err := runner.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true --runtime=runc --gpus all nvcr.io/nvidia/cuda:12.8.0-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ldconfigOut).To(ContainSubstring("/usr/lib64"))

@@ -1,6 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +18,7 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -81,15 +81,6 @@ var _ = BeforeSuite(func() {
 		err = installer.Install()
 		Expect(err).ToNot(HaveOccurred())
 	}
-
-	_, _, err := runner.Run("docker pull ubuntu")
-	Expect(err).ToNot(HaveOccurred())
-
-	_, _, err = runner.Run("docker pull nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0")
-	Expect(err).ToNot(HaveOccurred())
-
-	_, _, err = runner.Run("docker pull nvcr.io/nvidia/cuda:12.8.0-base-ubi8")
-	Expect(err).ToNot(HaveOccurred())
 })
 
 // getTestEnv gets the test environment variables
@@ -100,40 +91,63 @@ func getTestEnv() {
 	_, thisFile, _, _ := runtime.Caller(0)
 	packagePath = filepath.Dir(thisFile)
 
-	installCTK = getBoolEnvVar("INSTALL_CTK", false)
+	installCTK = getEnvVarOrDefault("E2E_INSTALL_CTK", true)
 
-	ImageRepo = os.Getenv("E2E_IMAGE_REPO")
-	Expect(ImageRepo).NotTo(BeEmpty(), "E2E_IMAGE_REPO environment variable must be set")
+	if installCTK {
+		ImageRepo = os.Getenv("E2E_IMAGE_REPO")
+		Expect(ImageRepo).NotTo(BeEmpty(), "E2E_IMAGE_REPO environment variable must be set")
 
-	ImageTag = os.Getenv("E2E_IMAGE_TAG")
-	Expect(ImageTag).NotTo(BeEmpty(), "E2E_IMAGE_TAG environment variable must be set")
+		ImageTag = os.Getenv("E2E_IMAGE_TAG")
+		Expect(ImageTag).NotTo(BeEmpty(), "E2E_IMAGE_TAG environment variable must be set")
+	}
 
-	sshKey = os.Getenv("SSH_KEY")
-	Expect(sshKey).NotTo(BeEmpty(), "SSH_KEY environment variable must be set")
+	sshKey = os.Getenv("E2E_SSH_KEY")
+	Expect(sshKey).NotTo(BeEmpty(), "E2E_SSH_KEY environment variable must be set")
 
-	sshUser = os.Getenv("SSH_USER")
-	Expect(sshUser).NotTo(BeEmpty(), "SSH_USER environment variable must be set")
+	sshUser = os.Getenv("E2E_SSH_USER")
+	Expect(sshUser).NotTo(BeEmpty(), "E2E_SSH_USER environment variable must be set")
 
-	host = os.Getenv("REMOTE_HOST")
-	Expect(host).NotTo(BeEmpty(), "REMOTE_HOST environment variable must be set")
+	host = os.Getenv("E2E_SSH_HOST")
+	Expect(host).NotTo(BeEmpty(), "E2E_SSH_HOST environment variable must be set")
 
-	sshPort = os.Getenv("REMOTE_PORT")
-	Expect(sshPort).NotTo(BeEmpty(), "REMOTE_PORT environment variable must be set")
+	sshPort = getEnvVarOrDefault("E2E_SSH_PORT", "22")
 
 	// Get current working directory
 	cwd, err = os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 }
 
-// getBoolEnvVar returns the boolean value of the environment variable or the default value if not set.
-func getBoolEnvVar(key string, defaultValue bool) bool {
+func getEnvVarAs[T any](key string) (T, error) {
+	var zero T
 	value := os.Getenv(key)
 	if value == "" {
-		return defaultValue
+		return zero, errors.New("env var not set")
 	}
-	boolValue, err := strconv.ParseBool(value)
+
+	switch any(zero).(type) {
+	case bool:
+		v, err := strconv.ParseBool(value)
+		if err != nil {
+			return zero, err
+		}
+		return any(v).(T), nil
+	case int:
+		v, err := strconv.Atoi(value)
+		if err != nil {
+			return zero, err
+		}
+		return any(v).(T), nil
+	case string:
+		return any(value).(T), nil
+	default:
+		return zero, errors.New("unsupported type")
+	}
+}
+
+func getEnvVarOrDefault[T any](key string, defaultValue T) T {
+	val, err := getEnvVarAs[T](key)
 	if err != nil {
 		return defaultValue
 	}
-	return boolValue
+	return val
 }
