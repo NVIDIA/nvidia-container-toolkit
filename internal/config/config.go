@@ -121,6 +121,9 @@ func GetDefault() (*Config, error) {
 					AnnotationPrefixes: []string{cdi.AnnotationPrefix},
 					SpecDirs:           cdi.DefaultSpecDirs,
 				},
+				Legacy: legacyModeConfig{
+					CUDACompatMode: defaultCUDACompatMode,
+				},
 			},
 		},
 		NVIDIAContainerRuntimeHookConfig: RuntimeHookConfig{
