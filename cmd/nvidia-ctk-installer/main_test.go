@@ -79,6 +79,9 @@ swarm-resource = ""
     [nvidia-container-runtime.modes.csv]
       mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
 
+    [nvidia-container-runtime.modes.legacy]
+      cuda-compat-mode = "ldconfig"
+
 [nvidia-container-runtime-hook]
   path = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime-hook"
   skip-mode-detection = true
@@ -139,6 +142,9 @@ swarm-resource = ""
 
     [nvidia-container-runtime.modes.csv]
       mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
+
+    [nvidia-container-runtime.modes.legacy]
+      cuda-compat-mode = "ldconfig"
 
 [nvidia-container-runtime-hook]
   path = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime-hook"
@@ -204,6 +210,9 @@ swarm-resource = ""
     [nvidia-container-runtime.modes.csv]
       mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
 
+    [nvidia-container-runtime.modes.legacy]
+      cuda-compat-mode = "ldconfig"
+
 [nvidia-container-runtime-hook]
   path = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime-hook"
   skip-mode-detection = true
@@ -264,6 +273,9 @@ swarm-resource = ""
 
     [nvidia-container-runtime.modes.csv]
       mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
+
+    [nvidia-container-runtime.modes.legacy]
+      cuda-compat-mode = "ldconfig"
 
 [nvidia-container-runtime-hook]
   path = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime-hook"
@@ -347,6 +359,9 @@ swarm-resource = ""
 
     [nvidia-container-runtime.modes.csv]
       mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
+
+    [nvidia-container-runtime.modes.legacy]
+      cuda-compat-mode = "ldconfig"
 
 [nvidia-container-runtime-hook]
   path = "{{ .toolkitRoot }}/toolkit/nvidia-container-runtime-hook"

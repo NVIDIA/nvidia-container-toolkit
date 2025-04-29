@@ -114,9 +114,19 @@ func doPrestart() {
 	}
 	args = append(args, "configure")
 
-	if !hook.Features.AllowCUDACompatLibsFromContainer.IsEnabled() {
-		args = append(args, "--no-cntlibs")
+	switch hook.NVIDIAContainerRuntimeConfig.Modes.Legacy.CUDACompatMode {
+	case config.CUDACompatModeLdconfig:
+		args = append(args, "--cuda-compat-mode=ldconfig")
+	case config.CUDACompatModeMount:
+		args = append(args, "--cuda-compat-mode=mount")
+	case config.CUDACompatModeDisabled, config.CUDACompatModeHook:
+		args = append(args, "--cuda-compat-mode=disabled")
+	default:
+		if !hook.Features.AllowCUDACompatLibsFromContainer.IsEnabled() {
+			args = append(args, "--cuda-compat-mode=disabled")
+		}
 	}
+
 	if ldconfigPath := cli.NormalizeLDConfigPath(); ldconfigPath != "" {
 		args = append(args, fmt.Sprintf("--ldconfig=%s", ldconfigPath))
 	}
