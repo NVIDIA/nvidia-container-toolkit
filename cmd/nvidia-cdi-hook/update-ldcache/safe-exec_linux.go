@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/opencontainers/runc/libcontainer/dmz"
+	"github.com/opencontainers/runc/libcontainer/exeseal"
 )
 
 // SafeExec attempts to clone the specified binary (as an memfd, for example) before executing it.
@@ -53,5 +53,5 @@ func cloneBinary(path string) (*os.File, error) {
 	}
 	size := stat.Size()
 
-	return dmz.CloneBinary(exe, size, path, os.TempDir())
+	return exeseal.CloneBinary(exe, size, path, os.TempDir())
 }
