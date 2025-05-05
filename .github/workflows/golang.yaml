@@ -40,7 +40,7 @@ jobs:
       with:
         go-version: ${{ env.GOLANG_VERSION }}
     - name: Lint
-      uses: golangci/golangci-lint-action@v7
+      uses: golangci/golangci-lint-action@v8
       with:
         version: latest
         args: -v --timeout 5m
