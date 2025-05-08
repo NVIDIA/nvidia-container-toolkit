@@ -15,7 +15,7 @@
 ARG GOLANG_VERSION=x.x.x
 ARG VERSION="N/A"
 
-FROM nvcr.io/nvidia/cuda:12.8.1-base-ubuntu20.04 AS build
+FROM nvcr.io/nvidia/cuda:12.9.0-base-ubuntu20.04 AS build
 
 RUN apt-get update && \
     apt-get install -y wget make git gcc \
@@ -46,7 +46,7 @@ ARG VERSION="N/A"
 ARG GIT_COMMIT="unknown"
 RUN make PREFIX=/artifacts cmd-nvidia-ctk-installer
 
-FROM nvcr.io/nvidia/cuda:12.8.1-base-ubuntu20.04
+FROM nvcr.io/nvidia/cuda:12.9.0-base-ubuntu20.04
 
 # Remove the CUDA repository configurations to avoid issues with rotated GPG keys
 RUN rm -f /etc/apt/sources.list.d/cuda.list

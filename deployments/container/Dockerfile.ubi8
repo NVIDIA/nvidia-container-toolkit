@@ -15,7 +15,7 @@
 ARG GOLANG_VERSION=x.x.x
 ARG VERSION="N/A"
 
-FROM nvcr.io/nvidia/cuda:12.8.1-base-ubi8 AS build
+FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi8 AS build
 
 RUN yum install -y \
     wget make git gcc \
@@ -47,7 +47,7 @@ ARG VERSION="N/A"
 ARG GIT_COMMIT="unknown"
 RUN make PREFIX=/artifacts cmd-nvidia-ctk-installer
 
-FROM nvcr.io/nvidia/cuda:12.8.1-base-ubi8
+FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi8
 
 ENV NVIDIA_DISABLE_REQUIRE="true"
 ENV NVIDIA_VISIBLE_DEVICES=void
