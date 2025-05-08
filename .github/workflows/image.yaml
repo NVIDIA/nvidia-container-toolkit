@@ -49,7 +49,7 @@ jobs:
           - ispr: true
             target: centos8-ppc64le
       fail-fast: false
-      
+
     steps:
       - uses: actions/checkout@v4
         name: Check out code
@@ -80,14 +80,8 @@ jobs:
     strategy:
       matrix:
         dist:
-          - ubuntu20.04
           - ubi8
           - packaging
-        ispr:
-          - ${{ github.ref_name != 'main' && !startsWith( github.ref_name, 'release-' ) }}
-        exclude:
-          - ispr: true
-            dist: ubi8
     needs: packages
     steps:
       - uses: actions/checkout@v4

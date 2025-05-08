@@ -21,7 +21,7 @@ E2E_RUNTIME ?= docker
 E2E_INSTALL_CTK ?= false
 
 ifeq ($($(DIST)),)
-DIST ?= ubuntu20.04
+DIST ?= ubi8
 endif
 IMAGE_TAG ?= $(VERSION)-$(DIST)
 IMAGE = $(IMAGE_NAME):$(IMAGE_TAG)
