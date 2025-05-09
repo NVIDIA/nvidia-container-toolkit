@@ -20,8 +20,48 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/opencontainers/runtime-spec/specs-go"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
+
+func TestGetDevicesFromSpec(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+	testCases := []struct {
+		description     string
+		spec            *specs.Spec
+		config          *config.Config
+		defaultKind     string
+		expectedDevices []string
+	}{
+		{
+			description: "NVIDIA_VISIBLE_DEVICES=all",
+			spec: &specs.Spec{
+				Process: &specs.Process{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=all"},
+				},
+			},
+			config: func() *config.Config {
+				c, _ := config.GetDefault()
+				return c
+			}(),
+			defaultKind:     "runtime.nvidia.com/gpu",
+			expectedDevices: []string{"runtime.nvidia.com/gpu=all"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			devices, err := getDevicesFromSpec(logger, oci.NewMemorySpec(tc.spec), tc.config, tc.defaultKind)
+			require.NoError(t, err)
+
+			require.EqualValues(t, tc.expectedDevices, devices)
+		})
+	}
+}
 
 func TestGetAnnotationDevices(t *testing.T) {
 	testCases := []struct {
