@@ -14,7 +14,7 @@
 
 ARG GOLANG_VERSION=x.x.x
 
-FROM nvcr.io/nvidia/cuda:12.8.1-base-ubuntu20.04
+FROM nvcr.io/nvidia/cuda:12.9.0-base-ubuntu20.04
 
 ARG ARTIFACTS_ROOT
 COPY ${ARTIFACTS_ROOT} /artifacts/packages/
