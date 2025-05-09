@@ -47,6 +47,11 @@ const (
 	flagArchX8664   = 0x0300
 	flagArchX32     = 0x0800
 	flagArchPpc64le = 0x0500
+
+	// flagArch_ARM_LIBHF is the flag value for 32-bit ARM libs using hard-float.
+	flagArch_ARM_LIBHF = 0x0900
+	// flagArch_AARCH64_LIB64 is the flag value for 64-bit ARM libs.
+	flagArch_AARCH64_LIB64 = 0x0a00
 )
 
 var errInvalidCache = errors.New("invalid ld.so.cache file")
@@ -195,9 +200,13 @@ func (c *ldcache) getEntries() []entry {
 		switch e.Flags & flagArchMask {
 		case flagArchX8664:
 			fallthrough
+		case flagArch_AARCH64_LIB64:
+			fallthrough
 		case flagArchPpc64le:
 			bits = 64
 		case flagArchX32:
+			fallthrough
+		case flagArch_ARM_LIBHF:
 			fallthrough
 		case flagArchI386:
 			bits = 32
