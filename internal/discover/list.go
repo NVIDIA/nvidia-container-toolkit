@@ -21,26 +21,28 @@ import "fmt"
 // list is a discoverer that contains a list of Discoverers. The output of the
 // Mounts functions is the concatenation of the output for each of the
 // elements in the list.
-type list struct {
-	discoverers []Discover
-}
+type list []Discover
 
 var _ Discover = (*list)(nil)
 
 // Merge creates a discoverer that is the composite of a list of discoverers.
-func Merge(d ...Discover) Discover {
-	l := list{
-		discoverers: d,
+func Merge(discoverers ...Discover) Discover {
+	var l list
+	for _, d := range discoverers {
+		if d == nil {
+			continue
+		}
+		l = append(l, d)
 	}
 
-	return &l
+	return l
 }
 
 // Devices returns all devices from the included discoverers
 func (d list) Devices() ([]Device, error) {
 	var allDevices []Device
 
-	for i, di := range d.discoverers {
+	for i, di := range d {
 		devices, err := di.Devices()
 		if err != nil {
 			return nil, fmt.Errorf("error discovering devices for discoverer %v: %v", i, err)
@@ -55,7 +57,7 @@ func (d list) Devices() ([]Device, error) {
 func (d list) Mounts() ([]Mount, error) {
 	var allMounts []Mount
 
-	for i, di := range d.discoverers {
+	for i, di := range d {
 		mounts, err := di.Mounts()
 		if err != nil {
 			return nil, fmt.Errorf("error discovering mounts for discoverer %v: %v", i, err)
@@ -70,7 +72,7 @@ func (d list) Mounts() ([]Mount, error) {
 func (d list) Hooks() ([]Hook, error) {
 	var allHooks []Hook
 
-	for i, di := range d.discoverers {
+	for i, di := range d {
 		hooks, err := di.Hooks()
 		if err != nil {
 			return nil, fmt.Errorf("error discovering hooks for discoverer %v: %v", i, err)
