@@ -104,6 +104,11 @@ containerEdits:
             - update-ldcache
             - --folder
             - /lib/x86_64-linux-gnu
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - disable-device-node-modification
     mounts:
         - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
           containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77

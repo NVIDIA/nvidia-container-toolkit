@@ -115,6 +115,14 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover
 	updateLDCache, _ := discover.NewLDCacheUpdateHook(l.logger, libraries, l.nvidiaCDIHookPath, l.ldconfigPath)
 	discoverers = append(discoverers, updateLDCache)
 
+	if l.HookIsSupported(HookDisableDeviceNodeModification) {
+		updateNvidiaParams := discover.CreateNvidiaCDIHook(
+			l.nvidiaCDIHookPath,
+			"disable-device-node-modification",
+		)
+		discoverers = append(discoverers, updateNvidiaParams)
+	}
+
 	d := discover.Merge(discoverers...)
 
 	return d, nil
