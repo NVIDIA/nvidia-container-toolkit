@@ -111,7 +111,8 @@ containerEdits:
             - ro
             - nosuid
             - nodev
-            - bind
+            - rbind
+            - rprivate
 `,
 		},
 	}
