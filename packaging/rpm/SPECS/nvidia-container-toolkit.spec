@@ -17,6 +17,9 @@ Source3: nvidia-container-runtime
 Source4: nvidia-container-runtime.cdi
 Source5: nvidia-container-runtime.legacy
 Source6: nvidia-cdi-hook
+Source7: nvidia-cdi-refresh.service
+Source8: nvidia-cdi-refresh.path
+Source9: 60-nvidia-cdi-refresh.rules
 
 Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook <= 1.4.0-2
 Provides: nvidia-container-runtime
@@ -28,21 +31,38 @@ Requires: nvidia-container-toolkit-base == %{version}-%{release}
 Provides tools and utilities to enable GPU support in containers.
 
 %prep
-cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} .
+cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} %{SOURCE7} %{SOURCE8} %{SOURCE9} .
 
 %install
 mkdir -p %{buildroot}%{_bindir}
+mkdir -p %{buildroot}/etc/systemd/system/
+mkdir -p %{buildroot}/etc/udev/rules.d
+
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime-hook
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime.cdi
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime.legacy
 install -m 755 -t %{buildroot}%{_bindir} nvidia-ctk
 install -m 755 -t %{buildroot}%{_bindir} nvidia-cdi-hook
+install -m 644 -t %{buildroot}/etc/systemd/system %{SOURCE7}
+install -m 644 -t %{buildroot}/etc/systemd/system %{SOURCE8}
+install -m 644 -t %{buildroot}/etc/udev/rules.d %{SOURCE9}
 
 %post
 if [ $1 -gt 1 ]; then  # only on package upgrade
   mkdir -p %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
   cp -af %{_bindir}/nvidia-container-runtime-hook %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
+fi
+
+# Reload udev so the new rule is active immediately
+/usr/bin/udevadm control --reload || :
+
+# Reload systemd unit cache
+/bin/systemctl daemon-reload || :
+
+# On fresh install ($1 == 1) enable the path unit so it starts at boot
+if [ "$1" -eq 1 ]; then
+    /bin/systemctl enable --now nvidia-cdi-refresh.path || :
 fi
 
 %posttrans
@@ -64,6 +84,11 @@ fi
 %files
 %license LICENSE
 %{_bindir}/nvidia-container-runtime-hook
+%config /etc/systemd/system/nvidia-cdi-refresh.service
+%config /etc/systemd/system/nvidia-cdi-refresh.path
+%dir /etc/systemd/system
+%config /etc/udev/rules.d/60-nvidia-cdi-refresh.rules
+%dir /etc/udev/rules.d
 
 %changelog
 # As of 1.10.0-1 we generate the release information automatically

@@ -29,3 +29,9 @@ Architecture: any
 Depends: ${misc:Depends}, nvidia-container-toolkit-base (= @VERSION@)
 Description: NVIDIA Container Toolkit Operator Extensions
  Provides tools for using the NVIDIA Container Toolkit with the GPU Operator
+
+Package: nvidia-container-toolkit-cdi-refresh
+Architecture: any
+Depends: ${misc:Depends}, nvidia-container-toolkit-base (= @VERSION@)
+Description: NVIDIA CDI Refresh Service
+ Provides a service to refresh the NVIDIA CDI specification
