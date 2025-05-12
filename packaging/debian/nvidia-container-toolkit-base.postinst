@@ -5,6 +5,16 @@ set -e
 case "$1" in
     configure)
         /usr/bin/nvidia-ctk --quiet config --config-file=/etc/nvidia-container-runtime/config.toml --in-place
+
+        if command -v systemctl >/dev/null 2>&1 \
+           && systemctl --quiet is-system-running 2>/dev/null; then
+
+          systemctl daemon-reload || true
+
+          if [ -z "$2" ]; then            # $2 empty → first install
+            systemctl enable --now nvidia-cdi-refresh.path || true
+          fi
+        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
