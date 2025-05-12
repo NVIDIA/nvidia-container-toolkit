@@ -109,14 +109,20 @@ func (m command) run(c *cli.Context, cfg *options) error {
 	}
 
 	containerRootDir, err := s.GetContainerRoot()
-	if err != nil {
+	if err != nil || containerRootDir == "" || containerRootDir == "/" {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
 	ldconfigPath := m.resolveLDConfigPath(cfg.ldconfigPath)
-	args := []string{filepath.Base(ldconfigPath)}
-	if containerRootDir != "" {
-		args = append(args, "-r", containerRootDir)
+	args := []string{
+		filepath.Base(ldconfigPath),
+		// Run ldconfig in the container root directory on the host.
+		"-r", containerRootDir,
+		// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
+		// be configured to use a different config file by default.
+		// Note that since we apply the `-r {{ .containerRootDir }}` argument, /etc/ld.so.conf is
+		// in the container.
+		"-f", "/etc/ld.so.conf",
 	}
 
 	containerRoot := containerRoot(containerRootDir)
@@ -137,10 +143,6 @@ func (m command) run(c *cli.Context, cfg *options) error {
 	} else {
 		args = append(args, folders...)
 	}
-
-	// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
-	// be configured to use a different config file by default.
-	args = append(args, "-f", "/etc/ld.so.conf")
 
 	return m.SafeExec(ldconfigPath, args, nil)
 }
@@ -182,7 +184,7 @@ func (m command) createLdsoconfdFile(in containerRoot, pattern string, dirs ...s
 		if added[dir] {
 			continue
 		}
-		_, err = configFile.WriteString(fmt.Sprintf("%s\n", dir))
+		_, err = fmt.Fprintf(configFile, "%s\n", dir)
 		if err != nil {
 			return fmt.Errorf("failed to update config file: %w", err)
 		}
