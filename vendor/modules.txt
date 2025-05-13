@@ -1,4 +1,4 @@
-# github.com/NVIDIA/go-nvlib v0.6.1
+# github.com/NVIDIA/go-nvlib v0.7.2
 ## explicit; go 1.20
 github.com/NVIDIA/go-nvlib/pkg/nvlib/device
 github.com/NVIDIA/go-nvlib/pkg/nvlib/info
@@ -61,9 +61,10 @@ github.com/russross/blackfriday/v2
 ## explicit; go 1.13
 github.com/sirupsen/logrus
 github.com/sirupsen/logrus/hooks/test
-# github.com/stretchr/testify v1.9.0
+# github.com/stretchr/testify v1.10.0
 ## explicit; go 1.17
 github.com/stretchr/testify/assert
+github.com/stretchr/testify/assert/yaml
 github.com/stretchr/testify/require
 # github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 ## explicit
