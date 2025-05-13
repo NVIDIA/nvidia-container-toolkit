@@ -74,6 +74,9 @@ spec-dirs = ["/etc/cdi", "/var/run/cdi"]
 [nvidia-container-runtime.modes.csv]
 mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
 
+[nvidia-container-runtime.modes.legacy]
+cuda-compat-mode = "ldconfig"
+
 [nvidia-container-runtime-hook]
 path = "nvidia-container-runtime-hook"
 skip-mode-detection = false

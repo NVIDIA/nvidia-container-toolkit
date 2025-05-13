@@ -104,3 +104,26 @@ func (c *hookConfig) getSwarmResourceEnvvars() []string {
 
 	return envvars
 }
+
+// nvidiaContainerCliCUDACompatModeFlags returns required --cuda-compat-mode
+// flag(s) depending on the hook and runtime configurations.
+func (c *hookConfig) nvidiaContainerCliCUDACompatModeFlags() []string {
+	var flag string
+	switch c.NVIDIAContainerRuntimeConfig.Modes.Legacy.CUDACompatMode {
+	case config.CUDACompatModeLdconfig:
+		flag = "--cuda-compat-mode=ldconfig"
+	case config.CUDACompatModeMount:
+		flag = "--cuda-compat-mode=mount"
+	case config.CUDACompatModeDisabled, config.CUDACompatModeHook:
+		flag = "--cuda-compat-mode=disabled"
+	default:
+		if !c.Features.AllowCUDACompatLibsFromContainer.IsEnabled() {
+			flag = "--cuda-compat-mode=disabled"
+		}
+	}
+
+	if flag == "" {
+		return nil
+	}
+	return []string{flag}
+}
