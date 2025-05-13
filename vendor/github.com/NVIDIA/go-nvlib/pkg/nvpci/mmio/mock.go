@@ -70,8 +70,8 @@ func (m *mockMmio) Sync() error {
 	if !m.rw {
 		return fmt.Errorf("opened read-only")
 	}
-	for i := range *m.Bytes.Raw() {
-		(*m.source)[m.offset+i] = (*m.Bytes.Raw())[i]
+	for i := range *m.Raw() {
+		(*m.source)[m.offset+i] = (*m.Raw())[i]
 	}
 	return nil
 }
