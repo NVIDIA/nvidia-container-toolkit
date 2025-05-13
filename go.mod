@@ -3,7 +3,7 @@ module github.com/NVIDIA/nvidia-container-toolkit
 go 1.22
 
 require (
-	github.com/NVIDIA/go-nvlib v0.6.1
+	github.com/NVIDIA/go-nvlib v0.7.2
 	github.com/NVIDIA/go-nvml v0.12.4-1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/moby/sys/symlink v0.3.0
@@ -11,7 +11,7 @@ require (
 	github.com/opencontainers/runtime-spec v1.2.1
 	github.com/pelletier/go-toml v1.9.5
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.5
 	golang.org/x/mod v0.20.0
 	golang.org/x/sys v0.28.0

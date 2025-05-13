@@ -98,7 +98,7 @@ func (m *MockNvpci) AddMockA100(address string, numaNode int, sriov *SriovInfo) 
 	if err != nil {
 		return err
 	}
-	_, err = numa.WriteString(fmt.Sprintf("%v", numaNode))
+	_, err = fmt.Fprintf(numa, "%v", numaNode)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func createNVIDIAgpuFiles(deviceDir string) error {
 	if err != nil {
 		return err
 	}
-	_, err = vendor.WriteString(fmt.Sprintf("0x%x", PCINvidiaVendorID))
+	_, err = fmt.Fprintf(vendor, "0x%x", PCINvidiaVendorID)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func createNVIDIAgpuFiles(deviceDir string) error {
 	if err != nil {
 		return err
 	}
-	_, err = class.WriteString(fmt.Sprintf("0x%x", PCI3dControllerClass))
+	_, err = fmt.Fprintf(class, "0x%x", PCI3dControllerClass)
 	if err != nil {
 		return err
 	}
@@ -188,7 +188,7 @@ func createNVIDIAgpuFiles(deviceDir string) error {
 	if err != nil {
 		return err
 	}
-	_, err = resource.WriteString(fmt.Sprintf("0x%x 0x%x 0x%x", bar0[0], bar0[1], bar0[2]))
+	_, err = fmt.Fprintf(resource, "0x%x 0x%x 0x%x", bar0[0], bar0[1], bar0[2])
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func (m *MockNvpci) createVf(pfAddress string, id, iommu_group, numaNode int) er
 	if err != nil {
 		return err
 	}
-	_, err = numa.WriteString(fmt.Sprintf("%v", numaNode))
+	_, err = fmt.Fprintf(numa, "%v", numaNode)
 	if err != nil {
 		return err
 	}

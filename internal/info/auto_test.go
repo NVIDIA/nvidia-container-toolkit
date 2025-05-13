@@ -216,7 +216,7 @@ func TestResolveAutoMode(t *testing.T) {
 				HasTegraFilesFunc: func() (bool, string) {
 					return tc.info["tegra"], "tegra"
 				},
-				UsesOnlyNVGPUModuleFunc: func() (bool, string) {
+				HasOnlyIntegratedGPUsFunc: func() (bool, string) {
 					return tc.info["nvgpu"], "nvgpu"
 				},
 			}
