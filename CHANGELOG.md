@@ -1,5 +1,18 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.17.7
+
+- Fix mode detection on Thor-based systems. This correctly resolves `auto` mode to `csv`.
+- Fix resolution of libs in LDCache on ARM. This fixes CDI spec generation on ARM-based systems using NVML.
+
+### Changes in the Toolkit Container
+
+- Bump CUDA base image version to 12.9.0
+
+### Changes in libnvidia-container
+
+- Add `--cuda-compat-mode` flag to the `nvidia-container-cli configure` command.
+
 ## v1.17.6
 
 ### Changes in the Toolkit Container
