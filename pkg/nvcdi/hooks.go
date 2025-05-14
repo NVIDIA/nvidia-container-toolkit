@@ -28,3 +28,14 @@ func (l *nvcdilib) HookIsSupported(h HookName) bool {
 	}
 	return !l.disabledHooks[h]
 }
+
+func (d disabledHooks) Set(value HookName) {
+	if value == "all" {
+		for _, hook := range AllHooks {
+			d[hook] = true
+		}
+		return
+	}
+
+	d[value] = true
+}

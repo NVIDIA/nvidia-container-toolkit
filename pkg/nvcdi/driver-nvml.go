@@ -99,7 +99,7 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover
 
 	var discoverers []discover.Discover
 
-	if l.HookIsSupported("create-symlinks") {
+	if l.HookIsSupported(HookCreateSymlinks) {
 		driverDotSoSymlinksDiscoverer := discover.WithDriverDotSoSymlinks(
 			libraries,
 			version,
@@ -118,7 +118,7 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover
 		discoverers = append(discoverers, cudaCompatLibHookDiscoverer)
 	}
 
-	if l.HookIsSupported("update-ldcache") {
+	if l.HookIsSupported(HookUpdateLDCache) {
 		updateLDCache, _ := discover.NewLDCacheUpdateHook(
 			l.logger,
 			libraries,

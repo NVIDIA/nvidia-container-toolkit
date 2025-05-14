@@ -57,7 +57,7 @@ type options struct {
 
 	configSearchPaths  cli.StringSlice
 	librarySearchPaths cli.StringSlice
-	disableHooks       cli.StringSlice
+	disabledHooks      cli.StringSlice
 
 	csv struct {
 		files          cli.StringSlice
@@ -179,9 +179,10 @@ func (m command) build() *cli.Command {
 		},
 		&cli.StringSliceFlag{
 			Name:        "disable-hook",
-			Usage:       "Comma-separated list of hooks to skip when generating the CDI specification.",
+			Aliases:     []string{"disable-hooks"},
+			Usage:       "Hook to skip when generating the CDI specification. Can be specified multiple times. Can be a comma-separated list of hooks or a single hook name.",
 			Value:       cli.NewStringSlice(),
-			Destination: &opts.disableHooks,
+			Destination: &opts.disabledHooks,
 		},
 	}
 
@@ -285,10 +286,8 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithNvmlLib(opts.nvmllib),
 	}
 
-	if len(opts.disableHooks.Value()) > 0 {
-		for _, hook := range opts.disableHooks.Value() {
-			initOpts = append(initOpts, nvcdi.WithDisabledHook(nvcdi.HookName(hook)))
-		}
+	for _, hook := range opts.disabledHooks.Value() {
+		initOpts = append(initOpts, nvcdi.WithDisabledHook(hook))
 	}
 
 	cdilib, err := nvcdi.New(initOpts...)
