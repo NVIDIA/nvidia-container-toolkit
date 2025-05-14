@@ -171,12 +171,12 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 
 	Describe("CUDA Forward compatibility", Ordered, func() {
 		BeforeAll(func(ctx context.Context) {
-			_, _, err := r.Run("docker pull nvcr.io/nvidia/cuda:12.8.0-base-ubi8")
+			_, _, err := r.Run("docker pull nvcr.io/nvidia/cuda:12.9.0-base-ubi8")
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		BeforeAll(func(ctx context.Context) {
-			compatOutput, _, err := r.Run("docker run --rm -i -e NVIDIA_VISIBLE_DEVICES=void nvcr.io/nvidia/cuda:12.8.0-base-ubi8 bash -c \"ls /usr/local/cuda/compat/libcuda.*.*\"")
+			compatOutput, _, err := r.Run("docker run --rm -i -e NVIDIA_VISIBLE_DEVICES=void nvcr.io/nvidia/cuda:12.9.0-base-ubi8 bash -c \"ls /usr/local/cuda/compat/libcuda.*.*\"")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(compatOutput).ToNot(BeEmpty())
 			compatDriverVersion := strings.TrimPrefix(filepath.Base(compatOutput), "libcuda.so.")
@@ -198,19 +198,19 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 		})
 
 		It("should work with the nvidia runtime in legacy mode", func(ctx context.Context) {
-			ldconfigOut, _, err := r.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true --runtime=nvidia --gpus all nvcr.io/nvidia/cuda:12.8.0-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
+			ldconfigOut, _, err := r.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true --runtime=nvidia --gpus all nvcr.io/nvidia/cuda:12.9.0-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ldconfigOut).To(ContainSubstring("/usr/local/cuda/compat"))
 		})
 
 		It("should work with the nvidia runtime in CDI mode", func(ctx context.Context) {
-			ldconfigOut, _, err := r.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true  --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all nvcr.io/nvidia/cuda:12.8.0-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
+			ldconfigOut, _, err := r.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true  --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all nvcr.io/nvidia/cuda:12.9.0-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ldconfigOut).To(ContainSubstring("/usr/local/cuda/compat"))
 		})
 
 		It("should NOT work with nvidia-container-runtime-hook", func(ctx context.Context) {
-			ldconfigOut, _, err := r.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true --runtime=runc --gpus all nvcr.io/nvidia/cuda:12.8.0-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
+			ldconfigOut, _, err := r.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true --runtime=runc --gpus all nvcr.io/nvidia/cuda:12.9.0-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ldconfigOut).To(ContainSubstring("/usr/lib64"))
 		})

@@ -28,3 +28,4 @@ spec:
     install: false
   nvidiaDriver:
     install: true
+    version: 550.90.12-0ubuntu1
