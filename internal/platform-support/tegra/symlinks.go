@@ -26,9 +26,9 @@ import (
 
 type symlinkHook struct {
 	discover.None
-	logger            logger.Interface
-	nvidiaCDIHookPath string
-	targets           []string
+	logger      logger.Interface
+	hookCreator discover.HookCreator
+	targets     []string
 
 	// The following can be overridden for testing
 	symlinkChainLocator lookup.Locator
@@ -39,7 +39,7 @@ type symlinkHook struct {
 func (o tegraOptions) createCSVSymlinkHooks(targets []string) discover.Discover {
 	return symlinkHook{
 		logger:              o.logger,
-		nvidiaCDIHookPath:   o.nvidiaCDIHookPath,
+		hookCreator:         o.hookCreator,
 		targets:             targets,
 		symlinkChainLocator: o.symlinkChainLocator,
 		resolveSymlink:      o.resolveSymlink,
@@ -48,10 +48,7 @@ func (o tegraOptions) createCSVSymlinkHooks(targets []string) discover.Discover 
 
 // Hooks returns a hook to create the symlinks from the required CSV files
 func (d symlinkHook) Hooks() ([]discover.Hook, error) {
-	return discover.CreateCreateSymlinkHook(
-		d.nvidiaCDIHookPath,
-		d.getCSVFileSymlinks(),
-	).Hooks()
+	return d.hookCreator.Create("create-symlinks", d.getCSVFileSymlinks()...).Hooks()
 }
 
 // getSymlinkCandidates returns a list of symlinks that are candidates for being created.

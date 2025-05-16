@@ -25,54 +25,66 @@ import (
 var _ Discover = (*Hook)(nil)
 
 // Devices returns an empty list of devices for a Hook discoverer.
-func (h Hook) Devices() ([]Device, error) {
+func (h *Hook) Devices() ([]Device, error) {
 	return nil, nil
 }
 
 // Mounts returns an empty list of mounts for a Hook discoverer.
-func (h Hook) Mounts() ([]Mount, error) {
+func (h *Hook) Mounts() ([]Mount, error) {
 	return nil, nil
 }
 
 // Hooks allows the Hook type to also implement the Discoverer interface.
 // It returns a single hook
-func (h Hook) Hooks() ([]Hook, error) {
-	return []Hook{h}, nil
-}
-
-// CreateCreateSymlinkHook creates a hook which creates a symlink from link -> target.
-func CreateCreateSymlinkHook(nvidiaCDIHookPath string, links []string) Discover {
-	if len(links) == 0 {
-		return None{}
+func (h *Hook) Hooks() ([]Hook, error) {
+	if h == nil {
+		return nil, nil
 	}
 
-	var args []string
-	for _, link := range links {
-		args = append(args, "--link", link)
+	return []Hook{*h}, nil
+}
+
+// Option is a function that configures the nvcdilib
+type Option func(*CDIHook)
+
+type CDIHook struct {
+	nvidiaCDIHookPath string
+}
+
+type HookCreator interface {
+	Create(string, ...string) *Hook
+}
+
+func NewHookCreator(nvidiaCDIHookPath string) HookCreator {
+	CDIHook := &CDIHook{
+		nvidiaCDIHookPath: nvidiaCDIHookPath,
 	}
-	return CreateNvidiaCDIHook(
-		nvidiaCDIHookPath,
-		"create-symlinks",
-		args...,
-	)
+
+	return CDIHook
 }
 
-// CreateNvidiaCDIHook creates a hook which invokes the NVIDIA Container CLI hook subcommand.
-func CreateNvidiaCDIHook(nvidiaCDIHookPath string, hookName string, additionalArgs ...string) Hook {
-	return cdiHook(nvidiaCDIHookPath).Create(hookName, additionalArgs...)
-}
+func (c CDIHook) Create(name string, args ...string) *Hook {
+	if name == "create-symlinks" {
+		if len(args) == 0 {
+			return nil
+		}
 
-type cdiHook string
+		links := []string{}
+		for _, arg := range args {
+			links = append(links, "--link", arg)
+		}
+		args = links
+	}
 
-func (c cdiHook) Create(name string, args ...string) Hook {
-	return Hook{
+	return &Hook{
 		Lifecycle: cdi.CreateContainerHook,
-		Path:      string(c),
+		Path:      c.nvidiaCDIHookPath,
 		Args:      append(c.requiredArgs(name), args...),
 	}
 }
-func (c cdiHook) requiredArgs(name string) []string {
-	base := filepath.Base(string(c))
+
+func (c CDIHook) requiredArgs(name string) []string {
+	base := filepath.Base(c.nvidiaCDIHookPath)
 	if base == "nvidia-ctk" {
 		return []string{base, "hook", name}
 	}

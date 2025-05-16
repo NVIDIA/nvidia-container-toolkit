@@ -29,18 +29,16 @@ import (
 
 // NewGraphicsModifier constructs a modifier that injects graphics-related modifications into an OCI runtime specification.
 // The value of the NVIDIA_DRIVER_CAPABILITIES environment variable is checked to determine if this modification should be made.
-func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, containerImage image.CUDA, driver *root.Driver) (oci.SpecModifier, error) {
+func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, containerImage image.CUDA, driver *root.Driver, hookCreator discover.HookCreator) (oci.SpecModifier, error) {
 	if required, reason := requiresGraphicsModifier(containerImage); !required {
 		logger.Infof("No graphics modifier required: %v", reason)
 		return nil, nil
 	}
 
-	nvidiaCDIHookPath := cfg.NVIDIACTKConfig.Path
-
 	mounts, err := discover.NewGraphicsMountsDiscoverer(
 		logger,
 		driver,
-		nvidiaCDIHookPath,
+		hookCreator,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mounts discoverer: %v", err)
@@ -52,7 +50,7 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, containerI
 		logger,
 		containerImage.DevicesFromEnvvars(image.EnvVarNvidiaVisibleDevices),
 		devRoot,
-		nvidiaCDIHookPath,
+		hookCreator,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct discoverer: %v", err)

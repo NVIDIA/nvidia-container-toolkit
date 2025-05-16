@@ -25,12 +25,12 @@ import (
 )
 
 // NewLDCacheUpdateHook creates a discoverer that updates the ldcache for the specified mounts. A logger can also be specified
-func NewLDCacheUpdateHook(logger logger.Interface, mounts Discover, nvidiaCDIHookPath, ldconfigPath string) (Discover, error) {
+func NewLDCacheUpdateHook(logger logger.Interface, mounts Discover, hookCreator HookCreator, ldconfigPath string) (Discover, error) {
 	d := ldconfig{
-		logger:            logger,
-		nvidiaCDIHookPath: nvidiaCDIHookPath,
-		ldconfigPath:      ldconfigPath,
-		mountsFrom:        mounts,
+		logger:       logger,
+		hookCreator:  hookCreator,
+		ldconfigPath: ldconfigPath,
+		mountsFrom:   mounts,
 	}
 
 	return &d, nil
@@ -38,10 +38,10 @@ func NewLDCacheUpdateHook(logger logger.Interface, mounts Discover, nvidiaCDIHoo
 
 type ldconfig struct {
 	None
-	logger            logger.Interface
-	nvidiaCDIHookPath string
-	ldconfigPath      string
-	mountsFrom        Discover
+	logger       logger.Interface
+	hookCreator  HookCreator
+	ldconfigPath string
+	mountsFrom   Discover
 }
 
 // Hooks checks the required mounts for libraries and returns a hook to update the LDcache for the discovered paths.
@@ -50,16 +50,18 @@ func (d ldconfig) Hooks() ([]Hook, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover mounts for ldcache update: %v", err)
 	}
-	h := CreateLDCacheUpdateHook(
-		d.nvidiaCDIHookPath,
+
+	h := createLDCacheUpdateHook(
+		d.hookCreator,
 		d.ldconfigPath,
 		getLibraryPaths(mounts),
 	)
-	return []Hook{h}, nil
+
+	return h.Hooks()
 }
 
-// CreateLDCacheUpdateHook locates the NVIDIA Container Toolkit CLI and creates a hook for updating the LD Cache
-func CreateLDCacheUpdateHook(executable string, ldconfig string, libraries []string) Hook {
+// createLDCacheUpdateHook locates the NVIDIA Container Toolkit CLI and creates a hook for updating the LD Cache
+func createLDCacheUpdateHook(hookCreator HookCreator, ldconfig string, libraries []string) *Hook {
 	var args []string
 
 	if ldconfig != "" {
@@ -70,13 +72,7 @@ func CreateLDCacheUpdateHook(executable string, ldconfig string, libraries []str
 		args = append(args, "--folder", f)
 	}
 
-	hook := CreateNvidiaCDIHook(
-		executable,
-		"update-ldcache",
-		args...,
-	)
-
-	return hook
+	return hookCreator.Create("update-ldcache", args...)
 }
 
 // getLibraryPaths extracts the library dirs from the specified mounts

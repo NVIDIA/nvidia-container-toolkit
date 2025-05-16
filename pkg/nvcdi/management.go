@@ -138,7 +138,7 @@ func (m *managementlib) newManagementDeviceDiscoverer() (discover.Discover, erro
 	deviceFolderPermissionHooks := newDeviceFolderPermissionHookDiscoverer(
 		m.logger,
 		m.devRoot,
-		m.nvidiaCDIHookPath,
+		m.hookCreator,
 		deviceNodes,
 	)
 
