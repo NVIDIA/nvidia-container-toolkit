@@ -4,6 +4,7 @@
 
 - Fix mode detection on Thor-based systems. This correctly resolves `auto` mode to `csv`.
 - Fix resolution of libs in LDCache on ARM. This fixes CDI spec generation on ARM-based systems using NVML.
+- Run update-ldcache hook in isolated namespaces.
 
 ### Changes in the Toolkit Container
 
