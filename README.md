@@ -14,8 +14,8 @@ Product documentation including an architecture overview, platform support, and 
 
 ## Getting Started
 
-**Make sure you have installed the [NVIDIA driver](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#nvidia-drivers) for your Linux Distribution**
-**Note that you do not need to install the CUDA Toolkit on the host system, but the NVIDIA driver needs to be installed**
+**Make sure you have installed the [NVIDIA driver](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#nvidia-drivers) for your Linux Distribution**.
+**Note that you do not need to install the CUDA Toolkit on the host system, but the NVIDIA driver needs to be installed**.
 
 For instructions on getting started with the NVIDIA Container Toolkit, refer to the [installation guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installation-guide).
 
@@ -27,5 +27,5 @@ The [user guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolk
 
 [Checkout the Contributing document!](CONTRIBUTING.md)
 
-* Please let us know by [filing a new issue](https://github.com/NVIDIA/nvidia-container-toolkit/issues/new)
-* You can contribute by creating a [merge request](https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/merge_requests/new) to our public GitLab repository
+* Please let us know by [filing a new issue](https://github.com/NVIDIA/nvidia-container-toolkit/issues/new).
+* You can contribute by creating a [merge request](https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/merge_requests/new) to our public GitLab repository.
