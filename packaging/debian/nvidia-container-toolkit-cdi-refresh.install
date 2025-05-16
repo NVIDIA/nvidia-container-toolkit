@@ -1,0 +1,3 @@
+60-nvidia-cdi-refresh.rules /etc/udev/rules.d/
+nvidia-cdi-refresh.service /etc/systemd/system/
+nvidia-cdi-refresh.path /etc/systemd/system/

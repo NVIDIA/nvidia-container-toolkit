@@ -1,0 +1,32 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+  configure)
+    if command -v udevadm >/dev/null 2>&1; then
+      udevadm control --reload || true
+    fi
+
+    if command -v systemctl >/dev/null 2>&1 \
+       && systemctl --quiet is-system-running 2>/dev/null; then
+
+      systemctl daemon-reload || true
+
+      if [ -z "$2" ]; then            # $2 empty → first install
+        systemctl enable --now nvidia-cdi-refresh.path || true
+      fi
+    fi
+    ;;
+
+  abort-upgrade|abort-remove|abort-deconfigure)
+    # Nothing to do for these dpkg abort cases
+    ;;
+
+  *)
+    echo "postinst called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
