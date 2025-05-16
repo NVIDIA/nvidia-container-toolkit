@@ -4,11 +4,8 @@
 *.swo
 /coverage.out*
 /tests/output/
-/nvidia-container-runtime
-/nvidia-container-runtime.*
-/nvidia-container-runtime-hook
-/nvidia-container-toolkit
-/nvidia-ctk
+/nvidia-*
 /shared-*
 /release-*
 /bin
+/toolkit-test
