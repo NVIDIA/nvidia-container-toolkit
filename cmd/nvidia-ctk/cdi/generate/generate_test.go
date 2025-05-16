@@ -26,6 +26,7 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml/mock/dgxa100"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
@@ -36,6 +37,9 @@ func TestGenerateSpec(t *testing.T) {
 	require.NoError(t, err)
 
 	driverRoot := filepath.Join(moduleRoot, "testdata", "lookup", "rootfs-1")
+	disableHook1 := cli.NewStringSlice("enable-cuda-compat")
+	disableHook2 := cli.NewStringSlice("enable-cuda-compat", "update-ldcache")
+	disableHook3 := cli.NewStringSlice("all")
 
 	logger, _ := testlog.NewNullLogger()
 	testCases := []struct {
@@ -113,6 +117,168 @@ containerEdits:
             - nodev
             - rbind
             - rprivate
+`,
+		},
+		{
+			description: "disableHooks1",
+			options: options{
+				format:        "yaml",
+				mode:          "nvml",
+				vendor:        "example.com",
+				class:         "device",
+				driverRoot:    driverRoot,
+				disabledHooks: *disableHook1,
+			},
+			expectedOptions: options{
+				format:            "yaml",
+				mode:              "nvml",
+				vendor:            "example.com",
+				class:             "device",
+				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
+				driverRoot:        driverRoot,
+				disabledHooks:     *disableHook1,
+			},
+			expectedSpec: `---
+cdiVersion: 0.5.0
+kind: example.com/device
+devices:
+    - name: "0"
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
+    - name: all
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
+containerEdits:
+    env:
+        - NVIDIA_VISIBLE_DEVICES=void
+    deviceNodes:
+        - path: /dev/nvidiactl
+          hostPath: {{ .driverRoot }}/dev/nvidiactl
+    hooks:
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - create-symlinks
+            - --link
+            - libcuda.so.1::/lib/x86_64-linux-gnu/libcuda.so
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - update-ldcache
+            - --folder
+            - /lib/x86_64-linux-gnu
+    mounts:
+        - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - bind
+`,
+		},
+		{
+			description: "disableHooks2",
+			options: options{
+				format:        "yaml",
+				mode:          "nvml",
+				vendor:        "example.com",
+				class:         "device",
+				driverRoot:    driverRoot,
+				disabledHooks: *disableHook2,
+			},
+			expectedOptions: options{
+				format:            "yaml",
+				mode:              "nvml",
+				vendor:            "example.com",
+				class:             "device",
+				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
+				driverRoot:        driverRoot,
+				disabledHooks:     *disableHook2,
+			},
+			expectedSpec: `---
+cdiVersion: 0.5.0
+kind: example.com/device
+devices:
+    - name: "0"
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
+    - name: all
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
+containerEdits:
+    env:
+        - NVIDIA_VISIBLE_DEVICES=void
+    deviceNodes:
+        - path: /dev/nvidiactl
+          hostPath: {{ .driverRoot }}/dev/nvidiactl
+    hooks:
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - create-symlinks
+            - --link
+            - libcuda.so.1::/lib/x86_64-linux-gnu/libcuda.so
+    mounts:
+        - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - bind
+`,
+		},
+		{
+			description: "disableHooksAll",
+			options: options{
+				format:        "yaml",
+				mode:          "nvml",
+				vendor:        "example.com",
+				class:         "device",
+				driverRoot:    driverRoot,
+				disabledHooks: *disableHook3,
+			},
+			expectedOptions: options{
+				format:            "yaml",
+				mode:              "nvml",
+				vendor:            "example.com",
+				class:             "device",
+				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
+				driverRoot:        driverRoot,
+				disabledHooks:     *disableHook3,
+			},
+			expectedSpec: `---
+cdiVersion: 0.5.0
+kind: example.com/device
+devices:
+    - name: "0"
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
+    - name: all
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
+containerEdits:
+    env:
+        - NVIDIA_VISIBLE_DEVICES=void
+    deviceNodes:
+        - path: /dev/nvidiactl
+          hostPath: {{ .driverRoot }}/dev/nvidiactl
 `,
 		},
 	}

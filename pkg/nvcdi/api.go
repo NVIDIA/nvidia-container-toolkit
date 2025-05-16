@@ -44,4 +44,17 @@ const (
 	// HookEnableCudaCompat refers to the hook used to enable CUDA Forward Compatibility.
 	// This was added with v1.17.5 of the NVIDIA Container Toolkit.
 	HookEnableCudaCompat = HookName("enable-cuda-compat")
+	// HookCreateSymlinks refers to the hook used create symlinks inside the
+	// directory path to be mounted into a container.
+	HookCreateSymlinks = HookName("create-symlinks")
+	// HookUpdateLDCache refers to the hook used to  Update the dynamic linker
+	// cache inside the directory path to be mounted into a container.
+	HookUpdateLDCache = HookName("update-ldcache")
 )
+
+// AllHooks maintains a future-proof list of all defined hooks.
+var AllHooks = []HookName{
+	HookEnableCudaCompat,
+	HookCreateSymlinks,
+	HookUpdateLDCache,
+}

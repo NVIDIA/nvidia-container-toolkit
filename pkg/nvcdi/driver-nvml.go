@@ -99,21 +99,34 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover
 
 	var discoverers []discover.Discover
 
-	driverDotSoSymlinksDiscoverer := discover.WithDriverDotSoSymlinks(
-		libraries,
-		version,
-		l.nvidiaCDIHookPath,
-	)
-	discoverers = append(discoverers, driverDotSoSymlinksDiscoverer)
+	if l.HookIsSupported(HookCreateSymlinks) {
+		driverDotSoSymlinksDiscoverer := discover.WithDriverDotSoSymlinks(
+			libraries,
+			version,
+			l.nvidiaCDIHookPath,
+		)
+		discoverers = append(discoverers, driverDotSoSymlinksDiscoverer)
+	}
 
 	if l.HookIsSupported(HookEnableCudaCompat) {
 		// TODO: The following should use the version directly.
-		cudaCompatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(l.logger, l.nvidiaCDIHookPath, l.driver)
+		cudaCompatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(
+			l.logger,
+			l.nvidiaCDIHookPath,
+			l.driver,
+		)
 		discoverers = append(discoverers, cudaCompatLibHookDiscoverer)
 	}
 
-	updateLDCache, _ := discover.NewLDCacheUpdateHook(l.logger, libraries, l.nvidiaCDIHookPath, l.ldconfigPath)
-	discoverers = append(discoverers, updateLDCache)
+	if l.HookIsSupported(HookUpdateLDCache) {
+		updateLDCache, _ := discover.NewLDCacheUpdateHook(
+			l.logger,
+			libraries,
+			l.nvidiaCDIHookPath,
+			l.ldconfigPath,
+		)
+		discoverers = append(discoverers, updateLDCache)
+	}
 
 	d := discover.Merge(discoverers...)
 

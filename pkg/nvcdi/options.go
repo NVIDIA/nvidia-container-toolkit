@@ -158,11 +158,11 @@ func WithLibrarySearchPaths(paths []string) Option {
 
 // WithDisabledHook allows specific hooks to the disabled.
 // This option can be specified multiple times for each hook.
-func WithDisabledHook(hook HookName) Option {
+func WithDisabledHook[T string | HookName](hook T) Option {
 	return func(o *nvcdilib) {
 		if o.disabledHooks == nil {
 			o.disabledHooks = make(map[HookName]bool)
 		}
-		o.disabledHooks[hook] = true
+		o.disabledHooks.Set(HookName(hook))
 	}
 }
