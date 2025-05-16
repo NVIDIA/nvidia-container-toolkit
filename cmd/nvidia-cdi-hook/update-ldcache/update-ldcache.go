@@ -19,10 +19,11 @@ package ldcache
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
+	"github.com/moby/sys/reexec"
 	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
@@ -37,6 +38,8 @@ const (
 	// higher precedence than other libraries on the system, but lower than
 	// the 00-cuda-compat that is included in some containers.
 	ldsoconfdFilenamePattern = "00-nvcr-*.conf"
+
+	reexecUpdateLdCacheCommandName = "reexec-update-ldcache"
 )
 
 type command struct {
@@ -47,6 +50,13 @@ type options struct {
 	folders       cli.StringSlice
 	ldconfigPath  string
 	containerSpec string
+}
+
+func init() {
+	reexec.Register(reexecUpdateLdCacheCommandName, updateLdCacheHandler)
+	if reexec.Init() {
+		os.Exit(0)
+	}
 }
 
 // NewCommand constructs an update-ldcache command with the specified logger
@@ -109,62 +119,109 @@ func (m command) run(c *cli.Context, cfg *options) error {
 	}
 
 	containerRootDir, err := s.GetContainerRoot()
-	if err != nil {
+	if err != nil || containerRootDir == "" || containerRootDir == "/" {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
-	ldconfigPath := m.resolveLDConfigPath(cfg.ldconfigPath)
-	args := []string{filepath.Base(ldconfigPath)}
-	if containerRootDir != "" {
-		args = append(args, "-r", containerRootDir)
+	args := []string{
+		reexecUpdateLdCacheCommandName,
+		strings.TrimPrefix(config.NormalizeLDConfigPath("@"+cfg.ldconfigPath), "@"),
+		containerRootDir,
+	}
+	args = append(args, cfg.folders.Value()...)
+
+	cmd := createReexecCommand(args)
+
+	return cmd.Run()
+}
+
+// updateLdCacheHandler wraps updateLdCache with error handling.
+func updateLdCacheHandler() {
+	if err := updateLdCache(os.Args); err != nil {
+		log.Printf("Error updating ldcache: %v", err)
+		os.Exit(1)
+	}
+}
+
+// updateLdCache is invoked from a reexec'd handler and provides namespace
+// isolation for the operations performed by this hook.
+// At the point where this is invoked, we are in a new mount namespace that is
+// cloned from the parent.
+//
+// args[0] is the reexec initializer function name
+// args[1] is the path of the ldconfig binary on the host
+// args[2] is the container root directory
+// The remaining args are folders that need to be added to the ldcache.
+func updateLdCache(args []string) error {
+	if len(args) < 3 {
+		return fmt.Errorf("incorrect arguments: %v", args)
+	}
+	hostLdconfigPath := args[1]
+	containerRootDirPath := args[2]
+
+	// To prevent leaking the parent proc filesystem, we create a new proc mount
+	// in the container root.
+	if err := mountProc(containerRootDirPath); err != nil {
+		return fmt.Errorf("error mounting /proc: %w", err)
 	}
 
-	containerRoot := containerRoot(containerRootDir)
+	// We mount the host ldconfig before we pivot root since host paths are not
+	// visible after the pivot root operation.
+	ldconfigPath, err := mountLdConfig(hostLdconfigPath, containerRootDirPath)
+	if err != nil {
+		return fmt.Errorf("error mounting host ldconfig: %w", err)
+	}
+
+	// We pivot to the container root for the new process, this further limits
+	// access to the host.
+	if err := pivotRoot(containerRootDirPath); err != nil {
+		return fmt.Errorf("error running pivot_root: %w", err)
+	}
+
+	return runLdconfig(ldconfigPath, args[3:]...)
+}
+
+// runLdconfig runs the ldconfig binary and ensures that the specified directories
+// are processed for the ldcache.
+func runLdconfig(ldconfigPath string, directories ...string) error {
+	args := []string{
+		"ldconfig",
+		// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
+		// be configured to use a different config file by default.
+		// Note that since we apply the `-r {{ .containerRootDir }}` argument, /etc/ld.so.conf is
+		// in the container.
+		"-f", "/etc/ld.so.conf",
+	}
+
+	containerRoot := containerRoot("/")
 
 	if containerRoot.hasPath("/etc/ld.so.cache") {
 		args = append(args, "-C", "/etc/ld.so.cache")
 	} else {
-		m.logger.Debugf("No ld.so.cache found, skipping update")
 		args = append(args, "-N")
 	}
 
-	folders := cfg.folders.Value()
 	if containerRoot.hasPath("/etc/ld.so.conf.d") {
-		err := m.createLdsoconfdFile(containerRoot, ldsoconfdFilenamePattern, folders...)
+		err := createLdsoconfdFile(ldsoconfdFilenamePattern, directories...)
 		if err != nil {
-			return fmt.Errorf("failed to update ld.so.conf.d: %v", err)
+			return fmt.Errorf("failed to update ld.so.conf.d: %w", err)
 		}
 	} else {
-		args = append(args, folders...)
+		args = append(args, directories...)
 	}
 
-	// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
-	// be configured to use a different config file by default.
-	args = append(args, "-f", "/etc/ld.so.conf")
-
-	return m.SafeExec(ldconfigPath, args, nil)
+	return SafeExec(ldconfigPath, args, nil)
 }
 
-// resolveLDConfigPath determines the LDConfig path to use for the system.
-// On systems such as Ubuntu where `/sbin/ldconfig` is a wrapper around
-// /sbin/ldconfig.real, the latter is returned.
-func (m command) resolveLDConfigPath(path string) string {
-	return strings.TrimPrefix(config.NormalizeLDConfigPath("@"+path), "@")
-}
-
-// createLdsoconfdFile creates a file at /etc/ld.so.conf.d/ in the specified root.
+// createLdsoconfdFile creates a file at /etc/ld.so.conf.d/.
 // The file is created at /etc/ld.so.conf.d/{{ .pattern }} using `CreateTemp` and
 // contains the specified directories on each line.
-func (m command) createLdsoconfdFile(in containerRoot, pattern string, dirs ...string) error {
+func createLdsoconfdFile(pattern string, dirs ...string) error {
 	if len(dirs) == 0 {
-		m.logger.Debugf("No directories to add to /etc/ld.so.conf")
 		return nil
 	}
 
-	ldsoconfdDir, err := in.resolve("/etc/ld.so.conf.d")
-	if err != nil {
-		return err
-	}
+	ldsoconfdDir := "/etc/ld.so.conf.d"
 	if err := os.MkdirAll(ldsoconfdDir, 0755); err != nil {
 		return fmt.Errorf("failed to create ld.so.conf.d: %w", err)
 	}
@@ -173,16 +230,16 @@ func (m command) createLdsoconfdFile(in containerRoot, pattern string, dirs ...s
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %w", err)
 	}
-	defer configFile.Close()
-
-	m.logger.Debugf("Adding directories %v to %v", dirs, configFile.Name())
+	defer func() {
+		_ = configFile.Close()
+	}()
 
 	added := make(map[string]bool)
 	for _, dir := range dirs {
 		if added[dir] {
 			continue
 		}
-		_, err = configFile.WriteString(fmt.Sprintf("%s\n", dir))
+		_, err = fmt.Fprintf(configFile, "%s\n", dir)
 		if err != nil {
 			return fmt.Errorf("failed to update config file: %w", err)
 		}
