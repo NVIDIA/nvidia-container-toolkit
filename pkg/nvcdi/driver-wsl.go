@@ -39,7 +39,7 @@ var requiredDriverStoreFiles = []string{
 }
 
 // newWSLDriverDiscoverer returns a Discoverer for WSL2 drivers.
-func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, nvidiaCDIHookPath, ldconfigPath string) (discover.Discover, error) {
+func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, hookCreator discover.HookCreator, ldconfigPath string) (discover.Discover, error) {
 	err := dxcore.Init()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize dxcore: %v", err)
@@ -56,11 +56,11 @@ func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, nvidiaCD
 	}
 	logger.Infof("Using WSL driver store paths: %v", driverStorePaths)
 
-	return newWSLDriverStoreDiscoverer(logger, driverRoot, nvidiaCDIHookPath, ldconfigPath, driverStorePaths)
+	return newWSLDriverStoreDiscoverer(logger, driverRoot, hookCreator, ldconfigPath, driverStorePaths)
 }
 
 // newWSLDriverStoreDiscoverer returns a Discoverer for WSL2 drivers in the driver store associated with a dxcore adapter.
-func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, nvidiaCDIHookPath string, ldconfigPath string, driverStorePaths []string) (discover.Discover, error) {
+func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, hookCreator discover.HookCreator, ldconfigPath string, driverStorePaths []string) (discover.Discover, error) {
 	var searchPaths []string
 	seen := make(map[string]bool)
 	for _, path := range driverStorePaths {
@@ -88,12 +88,12 @@ func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, nvi
 	)
 
 	symlinkHook := nvidiaSMISimlinkHook{
-		logger:            logger,
-		mountsFrom:        libraries,
-		nvidiaCDIHookPath: nvidiaCDIHookPath,
+		logger:      logger,
+		mountsFrom:  libraries,
+		hookCreator: hookCreator,
 	}
 
-	ldcacheHook, _ := discover.NewLDCacheUpdateHook(logger, libraries, nvidiaCDIHookPath, ldconfigPath)
+	ldcacheHook, _ := discover.NewLDCacheUpdateHook(logger, libraries, hookCreator, ldconfigPath)
 
 	d := discover.Merge(
 		libraries,
@@ -106,9 +106,9 @@ func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, nvi
 
 type nvidiaSMISimlinkHook struct {
 	discover.None
-	logger            logger.Interface
-	mountsFrom        discover.Discover
-	nvidiaCDIHookPath string
+	logger      logger.Interface
+	mountsFrom  discover.Discover
+	hookCreator discover.HookCreator
 }
 
 // Hooks returns a hook that creates a symlink to nvidia-smi in the driver store.
@@ -135,7 +135,7 @@ func (m nvidiaSMISimlinkHook) Hooks() ([]discover.Hook, error) {
 	}
 	link := "/usr/bin/nvidia-smi"
 	links := []string{fmt.Sprintf("%s::%s", target, link)}
-	symlinkHook := discover.CreateCreateSymlinkHook(m.nvidiaCDIHookPath, links)
+	symlinkHook := m.hookCreator.Create("create-symlinks", links...)
 
 	return symlinkHook.Hooks()
 }

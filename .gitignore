@@ -12,3 +12,6 @@
 /shared-*
 /release-*
 /bin
+/nvidia-cdi-hook
+/nvidia-ctk-installer
+/toolkit-test

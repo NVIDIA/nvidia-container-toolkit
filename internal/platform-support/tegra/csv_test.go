@@ -184,10 +184,11 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			defer setGetTargetsFromCSVFiles(tc.moutSpecs)()
+			hookCreator := discover.NewHookCreator("/usr/bin/nvidia-cdi-hook")
 
 			o := tegraOptions{
 				logger:              logger,
-				nvidiaCDIHookPath:   "/usr/bin/nvidia-cdi-hook",
+				hookCreator:         hookCreator,
 				csvFiles:            []string{"dummy"},
 				ignorePatterns:      tc.ignorePatterns,
 				symlinkLocator:      tc.symlinkLocator,

@@ -23,6 +23,7 @@ import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
@@ -56,12 +57,13 @@ type nvcdilib struct {
 	mergedDeviceOptions []transform.MergedDeviceOption
 
 	disabledHooks disabledHooks
+	hookCreator   discover.HookCreator
 }
 
 // New creates a new nvcdi library
 func New(opts ...Option) (Interface, error) {
 	l := &nvcdilib{
-		disabledHooks: make(disabledHooks),
+		disabledHooks: make(map[HookName]bool),
 	}
 	for _, opt := range opts {
 		opt(l)
@@ -79,6 +81,9 @@ func New(opts ...Option) (Interface, error) {
 	if l.nvidiaCDIHookPath == "" {
 		l.nvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
 	}
+	// create hookCreator
+	l.hookCreator = discover.NewHookCreator(l.nvidiaCDIHookPath)
+
 	if l.driverRoot == "" {
 		l.driverRoot = "/"
 	}
@@ -145,7 +150,7 @@ func New(opts ...Option) (Interface, error) {
 			l.vendor = "management.nvidia.com"
 		}
 		// Management containers in general do not require CUDA Forward compatibility.
-		l.disabledHooks[HookEnableCudaCompat] = true
+		l.hookCreator.DisableHook(string(HookEnableCudaCompat))
 		lib = (*managementlib)(l)
 	case ModeNvml:
 		lib = (*nvmllib)(l)

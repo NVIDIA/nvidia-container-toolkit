@@ -31,6 +31,7 @@ const (
 
 func TestLDCacheUpdateHook(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
+	hookCreator := NewHookCreator(testNvidiaCDIHookPath)
 
 	testCases := []struct {
 		description   string
@@ -97,7 +98,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 				Lifecycle: "createContainer",
 			}
 
-			d, err := NewLDCacheUpdateHook(logger, mountMock, testNvidiaCDIHookPath, tc.ldconfigPath)
+			d, err := NewLDCacheUpdateHook(logger, mountMock, hookCreator, tc.ldconfigPath)
 			require.NoError(t, err)
 
 			hooks, err := d.Hooks()

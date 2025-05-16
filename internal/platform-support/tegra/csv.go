@@ -59,7 +59,7 @@ func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
 			targetsByType[csv.MountSpecLib],
 		),
 		"",
-		o.nvidiaCDIHookPath,
+		o.hookCreator,
 	)
 
 	// We process the explicitly requested symlinks.
