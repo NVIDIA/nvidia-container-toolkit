@@ -308,10 +308,12 @@ func TestWithWithDriverDotSoSymlinks(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
+			hookCreator := NewHookCreator("/path/to/nvidia-cdi-hook")
+
 			d := WithDriverDotSoSymlinks(
 				tc.discover,
 				tc.version,
-				"/path/to/nvidia-cdi-hook",
+				hookCreator,
 			)
 
 			devices, err := d.Devices()

@@ -25,54 +25,88 @@ import (
 var _ Discover = (*Hook)(nil)
 
 // Devices returns an empty list of devices for a Hook discoverer.
-func (h Hook) Devices() ([]Device, error) {
+func (h *Hook) Devices() ([]Device, error) {
 	return nil, nil
 }
 
 // Mounts returns an empty list of mounts for a Hook discoverer.
-func (h Hook) Mounts() ([]Mount, error) {
+func (h *Hook) Mounts() ([]Mount, error) {
 	return nil, nil
 }
 
 // Hooks allows the Hook type to also implement the Discoverer interface.
 // It returns a single hook
-func (h Hook) Hooks() ([]Hook, error) {
-	return []Hook{h}, nil
-}
-
-// CreateCreateSymlinkHook creates a hook which creates a symlink from link -> target.
-func CreateCreateSymlinkHook(nvidiaCDIHookPath string, links []string) Discover {
-	if len(links) == 0 {
-		return None{}
+func (h *Hook) Hooks() ([]Hook, error) {
+	if h == nil {
+		return nil, nil
 	}
 
+	return []Hook{*h}, nil
+}
+
+// createLDCacheUpdateHook locates the NVIDIA Container Toolkit CLI and creates a hook for updating the LD Cache
+func createLDCacheUpdateHook(hookCreator HookCreator, ldconfig string, libraries []string) *Hook {
 	var args []string
-	for _, link := range links {
-		args = append(args, "--link", link)
+
+	if ldconfig != "" {
+		args = append(args, "--ldconfig-path", ldconfig)
 	}
-	return CreateNvidiaCDIHook(
-		nvidiaCDIHookPath,
-		"create-symlinks",
-		args...,
-	)
+
+	for _, f := range uniqueFolders(libraries) {
+		args = append(args, "--folder", f)
+	}
+
+	return hookCreator.Create("update-ldcache", args...)
 }
 
-// CreateNvidiaCDIHook creates a hook which invokes the NVIDIA Container CLI hook subcommand.
-func CreateNvidiaCDIHook(nvidiaCDIHookPath string, hookName string, additionalArgs ...string) Hook {
-	return cdiHook(nvidiaCDIHookPath).Create(hookName, additionalArgs...)
+type CDIHook struct {
+	nvidiaCDIHookPath string
+	disabledHooks     map[string]bool
 }
 
-type cdiHook string
+type HookCreator interface {
+	Create(string, ...string) *Hook
+	DisableHook(string)
+}
 
-func (c cdiHook) Create(name string, args ...string) Hook {
-	return Hook{
+func NewHookCreator(nvidiaCDIHookPath string) HookCreator {
+	return &CDIHook{
+		nvidiaCDIHookPath: nvidiaCDIHookPath,
+		disabledHooks:     make(map[string]bool),
+	}
+}
+
+func (c CDIHook) Create(name string, args ...string) *Hook {
+	if c.disabledHooks[name] {
+		return nil
+	}
+
+	if name == "create-symlinks" {
+		if len(args) == 0 {
+			return nil
+		}
+
+		links := make([]string, 0, len(args))
+		for _, arg := range args {
+			links = append(links, "--link", arg)
+		}
+		args = links
+	}
+
+	return &Hook{
 		Lifecycle: cdi.CreateContainerHook,
-		Path:      string(c),
+		Path:      c.nvidiaCDIHookPath,
 		Args:      append(c.requiredArgs(name), args...),
 	}
 }
-func (c cdiHook) requiredArgs(name string) []string {
-	base := filepath.Base(string(c))
+
+// DisableHook disables a hook by adding it to the disabled hooks map
+func (c *CDIHook) DisableHook(name string) {
+	c.disabledHooks[name] = true
+}
+
+func (c CDIHook) requiredArgs(name string) []string {
+	base := filepath.Base(c.nvidiaCDIHookPath)
 	if base == "nvidia-ctk" {
 		return []string{base, "hook", name}
 	}

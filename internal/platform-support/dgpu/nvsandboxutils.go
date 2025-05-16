@@ -28,12 +28,12 @@ import (
 )
 
 type nvsandboxutilsDGPU struct {
-	lib               nvsandboxutils.Interface
-	uuid              string
-	devRoot           string
-	isMig             bool
-	nvidiaCDIHookPath string
-	deviceLinks       []string
+	lib         nvsandboxutils.Interface
+	uuid        string
+	devRoot     string
+	isMig       bool
+	hookCreator discover.HookCreator
+	deviceLinks []string
 }
 
 var _ discover.Discover = (*nvsandboxutilsDGPU)(nil)
@@ -53,11 +53,11 @@ func (o *options) newNvsandboxutilsDGPUDiscoverer(d UUIDer) (discover.Discover, 
 	}
 
 	nvd := nvsandboxutilsDGPU{
-		lib:               o.nvsandboxutilslib,
-		uuid:              uuid,
-		devRoot:           strings.TrimSuffix(filepath.Clean(o.devRoot), "/dev"),
-		isMig:             o.isMigDevice,
-		nvidiaCDIHookPath: o.nvidiaCDIHookPath,
+		lib:         o.nvsandboxutilslib,
+		uuid:        uuid,
+		devRoot:     strings.TrimSuffix(filepath.Clean(o.devRoot), "/dev"),
+		isMig:       o.isMigDevice,
+		hookCreator: o.hookCreator,
 	}
 
 	return &nvd, nil
@@ -112,18 +112,9 @@ func (d *nvsandboxutilsDGPU) Hooks() ([]discover.Hook, error) {
 		return nil, nil
 	}
 
-	var args []string
-	for _, l := range d.deviceLinks {
-		args = append(args, "--link", l)
-	}
+	hook := d.hookCreator.Create("create-symlinks", d.deviceLinks...)
 
-	hook := discover.CreateNvidiaCDIHook(
-		d.nvidiaCDIHookPath,
-		"create-symlinks",
-		args...,
-	)
-
-	return []discover.Hook{hook}, nil
+	return hook.Hooks()
 }
 
 func (d *nvsandboxutilsDGPU) Mounts() ([]discover.Mount, error) {

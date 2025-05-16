@@ -25,10 +25,10 @@ import (
 )
 
 type deviceFolderPermissions struct {
-	logger            logger.Interface
-	devRoot           string
-	nvidiaCDIHookPath string
-	devices           discover.Discover
+	logger      logger.Interface
+	devRoot     string
+	devices     discover.Discover
+	hookCreator discover.HookCreator
 }
 
 var _ discover.Discover = (*deviceFolderPermissions)(nil)
@@ -39,12 +39,12 @@ var _ discover.Discover = (*deviceFolderPermissions)(nil)
 // The nested devices that are applicable to the NVIDIA GPU devices are:
 //   - DRM devices at /dev/dri/*
 //   - NVIDIA Caps devices at /dev/nvidia-caps/*
-func newDeviceFolderPermissionHookDiscoverer(logger logger.Interface, devRoot string, nvidiaCDIHookPath string, devices discover.Discover) discover.Discover {
+func newDeviceFolderPermissionHookDiscoverer(logger logger.Interface, devRoot string, hookCreator discover.HookCreator, devices discover.Discover) discover.Discover {
 	d := &deviceFolderPermissions{
-		logger:            logger,
-		devRoot:           devRoot,
-		nvidiaCDIHookPath: nvidiaCDIHookPath,
-		devices:           devices,
+		logger:      logger,
+		devRoot:     devRoot,
+		hookCreator: hookCreator,
+		devices:     devices,
 	}
 
 	return d
@@ -70,13 +70,9 @@ func (d *deviceFolderPermissions) Hooks() ([]discover.Hook, error) {
 		args = append(args, "--path", folder)
 	}
 
-	hook := discover.CreateNvidiaCDIHook(
-		d.nvidiaCDIHookPath,
-		"chmod",
-		args...,
-	)
+	hook := d.hookCreator.Create("chmod", args...)
 
-	return []discover.Hook{hook}, nil
+	return []discover.Hook{*hook}, nil
 }
 
 func (d *deviceFolderPermissions) getDeviceSubfolders() ([]string, error) {

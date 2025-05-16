@@ -27,11 +27,11 @@ import (
 
 // byPathHookDiscoverer discovers the entities required for injecting by-path DRM device links
 type byPathHookDiscoverer struct {
-	logger            logger.Interface
-	devRoot           string
-	nvidiaCDIHookPath string
-	pciBusID          string
-	deviceNodes       discover.Discover
+	logger      logger.Interface
+	devRoot     string
+	hookCreator discover.HookCreator
+	pciBusID    string
+	deviceNodes discover.Discover
 }
 
 var _ discover.Discover = (*byPathHookDiscoverer)(nil)
@@ -53,18 +53,9 @@ func (d *byPathHookDiscoverer) Hooks() ([]discover.Hook, error) {
 		return nil, nil
 	}
 
-	var args []string
-	for _, l := range links {
-		args = append(args, "--link", l)
-	}
+	hook := d.hookCreator.Create("create-symlinks", links...)
 
-	hook := discover.CreateNvidiaCDIHook(
-		d.nvidiaCDIHookPath,
-		"create-symlinks",
-		args...,
-	)
-
-	return []discover.Hook{hook}, nil
+	return hook.Hooks()
 }
 
 // Mounts returns an empty slice for a full GPU

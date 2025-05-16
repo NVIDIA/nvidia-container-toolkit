@@ -29,6 +29,7 @@ import (
 
 func TestNvidiaSMISymlinkHook(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
+	hookCreator := discover.NewHookCreator("nvidia-cdi-hook")
 
 	errMounts := errors.New("mounts error")
 
@@ -143,9 +144,9 @@ func TestNvidiaSMISymlinkHook(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			m := nvidiaSMISimlinkHook{
-				logger:            logger,
-				mountsFrom:        tc.mounts,
-				nvidiaCDIHookPath: "nvidia-cdi-hook",
+				logger:      logger,
+				mountsFrom:  tc.mounts,
+				hookCreator: hookCreator,
 			}
 
 			devices, err := m.Devices()
