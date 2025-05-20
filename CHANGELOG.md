@@ -1,5 +1,9 @@
 # NVIDIA Container Toolkit Changelog
 
+### Changes in libnvidia-container
+
+- Fixed bug in setting default for `--cuda-compat-mode` flag. This caused failures in use cases invoking the `nvidia-container-cli` directly.
+
 ## v1.17.7
 
 - Fix mode detection on Thor-based systems. This correctly resolves `auto` mode to `csv`.
