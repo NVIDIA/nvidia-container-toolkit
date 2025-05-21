@@ -31,7 +31,7 @@ const (
 
 func TestLDCacheUpdateHook(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
-	hookCreator := NewHookCreator(testNvidiaCDIHookPath)
+	hookCreator := NewHookCreator(testNvidiaCDIHookPath, false)
 
 	testCases := []struct {
 		description   string
@@ -96,6 +96,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 				Path:      testNvidiaCDIHookPath,
 				Args:      tc.expectedArgs,
 				Lifecycle: "createContainer",
+				Env:       []string{"NVIDIA_CTK_DEBUG=false"},
 			}
 
 			d, err := NewLDCacheUpdateHook(logger, mountMock, hookCreator, tc.ldconfigPath)
