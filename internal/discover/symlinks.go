@@ -19,17 +19,19 @@ package discover
 import (
 	"fmt"
 	"path/filepath"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 )
 
 type additionalSymlinks struct {
 	Discover
 	version     string
-	hookCreator HookCreator
+	hookCreator hooks.HookCreator
 }
 
 // WithDriverDotSoSymlinks decorates the provided discoverer.
 // A hook is added that checks for specific driver symlinks that need to be created.
-func WithDriverDotSoSymlinks(mounts Discover, version string, hookCreator HookCreator) Discover {
+func WithDriverDotSoSymlinks(mounts Discover, version string, hookCreator hooks.HookCreator) Discover {
 	if version == "" {
 		version = "*.*"
 	}
@@ -46,7 +48,7 @@ func (d *additionalSymlinks) Hooks() ([]Hook, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get library mounts: %v", err)
 	}
-	hooks, err := d.Discover.Hooks()
+	h, err := d.Discover.Hooks()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get hooks: %v", err)
 	}
@@ -70,15 +72,16 @@ func (d *additionalSymlinks) Hooks() ([]Hook, error) {
 	}
 
 	if len(links) == 0 {
-		return hooks, nil
+		return h, nil
 	}
 
-	createSymlinkHooks, err := d.hookCreator.Create("create-symlinks", links...).Hooks()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create symlink hook: %v", err)
-	}
+	createSymlinkHook := d.hookCreator.Create(hooks.CreateSymlinks, links...)
 
-	return append(hooks, createSymlinkHooks...), nil
+	return append(h, Hook{
+		Lifecycle: createSymlinkHook.Lifecycle,
+		Path:      createSymlinkHook.Path,
+		Args:      createSymlinkHook.Args,
+	}), nil
 }
 
 // getLinksForMount maps the path to created links if any.

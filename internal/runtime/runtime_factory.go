@@ -21,7 +21,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
@@ -75,7 +75,7 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		return nil, err
 	}
 
-	hookCreator := discover.NewHookCreator(cfg.NVIDIACTKConfig.Path)
+	hookCreator := hooks.NewHookCreator(cfg.NVIDIACTKConfig.Path, nil)
 
 	mode := info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode, image)
 	// We update the mode here so that we can continue passing just the config to other functions.

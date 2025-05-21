@@ -21,6 +21,7 @@ import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
@@ -158,10 +159,10 @@ func WithLibrarySearchPaths(paths []string) Option {
 
 // WithDisabledHook allows specific hooks to the disabled.
 // This option can be specified multiple times for each hook.
-func WithDisabledHook(hook HookName) Option {
+func WithDisabledHook(hook hooks.HookName) Option {
 	return func(o *nvcdilib) {
 		if o.disabledHooks == nil {
-			o.disabledHooks = make(map[HookName]bool)
+			o.disabledHooks = make(hooks.DisabledHooks)
 		}
 		o.disabledHooks[hook] = true
 	}

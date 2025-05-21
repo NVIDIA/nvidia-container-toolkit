@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
@@ -28,7 +29,7 @@ type deviceFolderPermissions struct {
 	logger      logger.Interface
 	devRoot     string
 	devices     discover.Discover
-	hookCreator discover.HookCreator
+	hookCreator hooks.HookCreator
 }
 
 var _ discover.Discover = (*deviceFolderPermissions)(nil)
@@ -39,7 +40,7 @@ var _ discover.Discover = (*deviceFolderPermissions)(nil)
 // The nested devices that are applicable to the NVIDIA GPU devices are:
 //   - DRM devices at /dev/dri/*
 //   - NVIDIA Caps devices at /dev/nvidia-caps/*
-func newDeviceFolderPermissionHookDiscoverer(logger logger.Interface, devRoot string, hookCreator discover.HookCreator, devices discover.Discover) discover.Discover {
+func newDeviceFolderPermissionHookDiscoverer(logger logger.Interface, devRoot string, hookCreator hooks.HookCreator, devices discover.Discover) discover.Discover {
 	d := &deviceFolderPermissions{
 		logger:      logger,
 		devRoot:     devRoot,
@@ -72,7 +73,13 @@ func (d *deviceFolderPermissions) Hooks() ([]discover.Hook, error) {
 
 	hook := d.hookCreator.Create("chmod", args...)
 
-	return []discover.Hook{*hook}, nil
+	return []discover.Hook{
+		{
+			Lifecycle: hook.Lifecycle,
+			Path:      hook.Path,
+			Args:      hook.Args,
+		},
+	}, nil
 }
 
 func (d *deviceFolderPermissions) getDeviceSubfolders() ([]string, error) {

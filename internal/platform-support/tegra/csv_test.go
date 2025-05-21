@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 
@@ -181,7 +182,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 		},
 	}
 
-	hookCreator := discover.NewHookCreator("/usr/bin/nvidia-cdi-hook")
+	hookCreator := hooks.NewHookCreator("/usr/bin/nvidia-cdi-hook", nil)
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			defer setGetTargetsFromCSVFiles(tc.moutSpecs)()

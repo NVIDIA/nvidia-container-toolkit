@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
@@ -27,7 +28,7 @@ import (
 type symlinkHook struct {
 	discover.None
 	logger      logger.Interface
-	hookCreator discover.HookCreator
+	hookCreator hooks.HookCreator
 	targets     []string
 
 	// The following can be overridden for testing
@@ -48,7 +49,17 @@ func (o tegraOptions) createCSVSymlinkHooks(targets []string) discover.Discover 
 
 // Hooks returns a hook to create the symlinks from the required CSV files
 func (d symlinkHook) Hooks() ([]discover.Hook, error) {
-	return d.hookCreator.Create("create-symlinks", d.getCSVFileSymlinks()...).Hooks()
+	hook := d.hookCreator.Create(hooks.CreateSymlinks, d.getCSVFileSymlinks()...)
+	if hook == nil {
+		return nil, nil
+	}
+
+	return []discover.Hook{
+		{
+			Lifecycle: hook.Lifecycle,
+			Path:      hook.Path,
+			Args:      hook.Args,
+		}}, nil
 }
 
 // getSymlinkCandidates returns a list of symlinks that are candidates for being created.

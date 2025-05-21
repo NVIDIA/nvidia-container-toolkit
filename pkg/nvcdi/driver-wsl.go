@@ -22,6 +22,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/dxcore"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
@@ -39,7 +40,7 @@ var requiredDriverStoreFiles = []string{
 }
 
 // newWSLDriverDiscoverer returns a Discoverer for WSL2 drivers.
-func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, hookCreator discover.HookCreator, ldconfigPath string) (discover.Discover, error) {
+func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, hookCreator hooks.HookCreator, ldconfigPath string) (discover.Discover, error) {
 	err := dxcore.Init()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize dxcore: %v", err)
@@ -60,7 +61,7 @@ func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, hookCrea
 }
 
 // newWSLDriverStoreDiscoverer returns a Discoverer for WSL2 drivers in the driver store associated with a dxcore adapter.
-func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, hookCreator discover.HookCreator, ldconfigPath string, driverStorePaths []string) (discover.Discover, error) {
+func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, hookCreator hooks.HookCreator, ldconfigPath string, driverStorePaths []string) (discover.Discover, error) {
 	var searchPaths []string
 	seen := make(map[string]bool)
 	for _, path := range driverStorePaths {
@@ -108,7 +109,7 @@ type nvidiaSMISimlinkHook struct {
 	discover.None
 	logger      logger.Interface
 	mountsFrom  discover.Discover
-	hookCreator discover.HookCreator
+	hookCreator hooks.HookCreator
 }
 
 // Hooks returns a hook that creates a symlink to nvidia-smi in the driver store.
@@ -135,7 +136,13 @@ func (m nvidiaSMISimlinkHook) Hooks() ([]discover.Hook, error) {
 	}
 	link := "/usr/bin/nvidia-smi"
 	links := []string{fmt.Sprintf("%s::%s", target, link)}
-	symlinkHook := m.hookCreator.Create("create-symlinks", links...)
+	symlinkHook := m.hookCreator.Create(hooks.CreateSymlinks, links...)
 
-	return symlinkHook.Hooks()
+	return []discover.Hook{
+		{
+			Lifecycle: symlinkHook.Lifecycle,
+			Path:      symlinkHook.Path,
+			Args:      symlinkHook.Args,
+		},
+	}, nil
 }

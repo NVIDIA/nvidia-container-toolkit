@@ -19,13 +19,15 @@ package discover
 import (
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
+
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
-	hookCreator := NewHookCreator("/usr/bin/nvidia-cdi-hook")
+	hookCreator := hooks.NewHookCreator("/usr/bin/nvidia-cdi-hook", nil)
 
 	testCases := []struct {
 		description    string

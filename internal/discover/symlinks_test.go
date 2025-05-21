@@ -19,6 +19,8 @@ package discover
 import (
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -306,7 +308,7 @@ func TestWithWithDriverDotSoSymlinks(t *testing.T) {
 		},
 	}
 
-	hookCreator := NewHookCreator("/path/to/nvidia-cdi-hook")
+	hookCreator := hooks.NewHookCreator("/path/to/nvidia-cdi-hook", nil)
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			d := WithDriverDotSoSymlinks(

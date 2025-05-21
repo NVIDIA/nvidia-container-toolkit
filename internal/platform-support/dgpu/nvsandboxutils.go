@@ -24,6 +24,7 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 )
 
@@ -32,7 +33,7 @@ type nvsandboxutilsDGPU struct {
 	uuid        string
 	devRoot     string
 	isMig       bool
-	hookCreator discover.HookCreator
+	hookCreator hooks.HookCreator
 	deviceLinks []string
 }
 
@@ -112,9 +113,14 @@ func (d *nvsandboxutilsDGPU) Hooks() ([]discover.Hook, error) {
 		return nil, nil
 	}
 
-	hook := d.hookCreator.Create("create-symlinks", d.deviceLinks...)
+	hook := d.hookCreator.Create(hooks.CreateSymlinks, d.deviceLinks...)
 
-	return hook.Hooks()
+	return []discover.Hook{
+		{
+			Lifecycle: hook.Lifecycle,
+			Path:      hook.Path,
+			Args:      hook.Args,
+		}}, nil
 }
 
 func (d *nvsandboxutilsDGPU) Mounts() ([]discover.Mount, error) {

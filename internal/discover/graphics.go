@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/drm"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -36,7 +37,7 @@ import (
 // TODO: The logic for creating DRM devices should be consolidated between this
 // and the logic for generating CDI specs for a single device. This is only used
 // when applying OCI spec modifications to an incoming spec in "legacy" mode.
-func NewDRMNodesDiscoverer(logger logger.Interface, devices image.VisibleDevices, devRoot string, hookCreator HookCreator) (Discover, error) {
+func NewDRMNodesDiscoverer(logger logger.Interface, devices image.VisibleDevices, devRoot string, hookCreator hooks.HookCreator) (Discover, error) {
 	drmDeviceNodes, err := newDRMDeviceDiscoverer(logger, devices, devRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create DRM device discoverer: %v", err)
@@ -49,7 +50,7 @@ func NewDRMNodesDiscoverer(logger logger.Interface, devices image.VisibleDevices
 }
 
 // NewGraphicsMountsDiscoverer creates a discoverer for the mounts required by graphics tools such as vulkan.
-func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, hookCreator HookCreator) (Discover, error) {
+func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, hookCreator hooks.HookCreator) (Discover, error) {
 	libraries := newGraphicsLibrariesDiscoverer(logger, driver, hookCreator)
 
 	configs := NewMounts(
@@ -96,12 +97,12 @@ func newVulkanConfigsDiscover(logger logger.Interface, driver *root.Driver) Disc
 type graphicsDriverLibraries struct {
 	Discover
 	logger      logger.Interface
-	hookCreator HookCreator
+	hookCreator hooks.HookCreator
 }
 
 var _ Discover = (*graphicsDriverLibraries)(nil)
 
-func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver, hookCreator HookCreator) Discover {
+func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver, hookCreator hooks.HookCreator) Discover {
 	cudaLibRoot, cudaVersionPattern := getCUDALibRootAndVersionPattern(logger, driver)
 
 	libraries := NewMounts(
@@ -203,9 +204,15 @@ func (d graphicsDriverLibraries) Hooks() ([]Hook, error) {
 		return nil, nil
 	}
 
-	hook := d.hookCreator.Create("create-symlinks", links...)
+	hook := d.hookCreator.Create(hooks.CreateSymlinks, links...)
 
-	return hook.Hooks()
+	return []Hook{
+		{
+			Lifecycle: hook.Lifecycle,
+			Path:      hook.Path,
+			Args:      hook.Args,
+		},
+	}, nil
 }
 
 // isDriverLibrary checks whether the specified filename is a specific driver library.
@@ -276,13 +283,13 @@ func buildXOrgSearchPaths(libRoot string) []string {
 type drmDevicesByPath struct {
 	None
 	logger      logger.Interface
-	hookCreator HookCreator
+	hookCreator hooks.HookCreator
 	devRoot     string
 	devicesFrom Discover
 }
 
 // newCreateDRMByPathSymlinks creates a discoverer for a hook to create the by-path symlinks for DRM devices discovered by the specified devices discoverer
-func newCreateDRMByPathSymlinks(logger logger.Interface, devices Discover, devRoot string, hookCreator HookCreator) Discover {
+func newCreateDRMByPathSymlinks(logger logger.Interface, devices Discover, devRoot string, hookCreator hooks.HookCreator) Discover {
 	d := drmDevicesByPath{
 		logger:      logger,
 		hookCreator: hookCreator,
@@ -315,9 +322,15 @@ func (d drmDevicesByPath) Hooks() ([]Hook, error) {
 		args = append(args, "--link", l)
 	}
 
-	hook := d.hookCreator.Create("create-symlinks", args...)
+	hook := d.hookCreator.Create(hooks.CreateSymlinks, args...)
 
-	return hook.Hooks()
+	return []Hook{
+		{
+			Lifecycle: hook.Lifecycle,
+			Path:      hook.Path,
+			Args:      hook.Args,
+		},
+	}, nil
 }
 
 // getSpecificLinkArgs returns the required specific links that need to be created

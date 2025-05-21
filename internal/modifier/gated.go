@@ -22,6 +22,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
@@ -36,7 +37,7 @@ import (
 //	NVIDIA_GDRCOPY=enabled
 //
 // If not devices are selected, no changes are made.
-func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, driver *root.Driver, hookCreator discover.HookCreator) (oci.SpecModifier, error) {
+func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, driver *root.Driver, hookCreator hooks.HookCreator) (oci.SpecModifier, error) {
 	if devices := image.VisibleDevicesFromEnvVar(); len(devices) == 0 {
 		logger.Infof("No modification required; no devices requested")
 		return nil, nil
@@ -91,7 +92,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 	return NewModifierFromDiscoverer(logger, discover.Merge(discoverers...))
 }
 
-func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, driver *root.Driver, hookCreator discover.HookCreator) (discover.Discover, error) {
+func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, driver *root.Driver, hookCreator hooks.HookCreator) (discover.Discover, error) {
 	// For legacy mode, we only include the enable-cuda-compat hook if cuda-compat-mode is set to hook.
 	if cfg.NVIDIAContainerRuntimeConfig.Mode == "legacy" && cfg.NVIDIAContainerRuntimeConfig.Modes.Legacy.CUDACompatMode != config.CUDACompatModeHook {
 		return nil, nil

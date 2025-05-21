@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
@@ -29,7 +30,7 @@ import (
 type byPathHookDiscoverer struct {
 	logger      logger.Interface
 	devRoot     string
-	hookCreator discover.HookCreator
+	hookCreator hooks.HookCreator
 	pciBusID    string
 	deviceNodes discover.Discover
 }
@@ -53,9 +54,14 @@ func (d *byPathHookDiscoverer) Hooks() ([]discover.Hook, error) {
 		return nil, nil
 	}
 
-	hook := d.hookCreator.Create("create-symlinks", links...)
+	hook := d.hookCreator.Create(hooks.CreateSymlinks, links...)
 
-	return hook.Hooks()
+	return []discover.Hook{
+		{
+			Lifecycle: hook.Lifecycle,
+			Path:      hook.Path,
+			Args:      hook.Args,
+		}}, nil
 }
 
 // Mounts returns an empty slice for a full GPU

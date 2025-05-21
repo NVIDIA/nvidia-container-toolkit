@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
@@ -30,7 +31,7 @@ type tegraOptions struct {
 	csvFiles           []string
 	driverRoot         string
 	devRoot            string
-	hookCreator        discover.HookCreator
+	hookCreator        hooks.HookCreator
 	ldconfigPath       string
 	librarySearchPaths []string
 	ignorePatterns     ignoreMountSpecPatterns
@@ -134,7 +135,7 @@ func WithCSVFiles(csvFiles []string) Option {
 }
 
 // WithHookCreator sets the hook creator for the discoverer.
-func WithHookCreator(hookCreator discover.HookCreator) Option {
+func WithHookCreator(hookCreator hooks.HookCreator) Option {
 	return func(o *tegraOptions) {
 		o.hookCreator = hookCreator
 	}

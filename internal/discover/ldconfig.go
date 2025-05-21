@@ -21,11 +21,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 // NewLDCacheUpdateHook creates a discoverer that updates the ldcache for the specified mounts. A logger can also be specified
-func NewLDCacheUpdateHook(logger logger.Interface, mounts Discover, hookCreator HookCreator, ldconfigPath string) (Discover, error) {
+func NewLDCacheUpdateHook(logger logger.Interface, mounts Discover, hookCreator hooks.HookCreator, ldconfigPath string) (Discover, error) {
 	d := ldconfig{
 		logger:       logger,
 		hookCreator:  hookCreator,
@@ -39,7 +40,7 @@ func NewLDCacheUpdateHook(logger logger.Interface, mounts Discover, hookCreator 
 type ldconfig struct {
 	None
 	logger       logger.Interface
-	hookCreator  HookCreator
+	hookCreator  hooks.HookCreator
 	ldconfigPath string
 	mountsFrom   Discover
 }
@@ -57,11 +58,17 @@ func (d ldconfig) Hooks() ([]Hook, error) {
 		getLibraryPaths(mounts),
 	)
 
-	return h.Hooks()
+	return []Hook{
+		{
+			Lifecycle: h.Lifecycle,
+			Path:      h.Path,
+			Args:      h.Args,
+		},
+	}, nil
 }
 
 // createLDCacheUpdateHook locates the NVIDIA Container Toolkit CLI and creates a hook for updating the LD Cache
-func createLDCacheUpdateHook(hookCreator HookCreator, ldconfig string, libraries []string) *Hook {
+func createLDCacheUpdateHook(hookCreator hooks.HookCreator, ldconfig string, libraries []string) *Hook {
 	var args []string
 
 	if ldconfig != "" {
@@ -72,7 +79,12 @@ func createLDCacheUpdateHook(hookCreator HookCreator, ldconfig string, libraries
 		args = append(args, "--folder", f)
 	}
 
-	return hookCreator.Create("update-ldcache", args...)
+	h := hookCreator.Create(hooks.UpdateLDCache, args...)
+	return &Hook{
+		Lifecycle: h.Lifecycle,
+		Path:      h.Path,
+		Args:      h.Args,
+	}
 }
 
 // getLibraryPaths extracts the library dirs from the specified mounts

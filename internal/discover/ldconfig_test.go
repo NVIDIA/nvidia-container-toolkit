@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
+
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +33,7 @@ const (
 
 func TestLDCacheUpdateHook(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
-	hookCreator := NewHookCreator(testNvidiaCDIHookPath)
+	hookCreator := hooks.NewHookCreator(testNvidiaCDIHookPath, nil)
 
 	testCases := []struct {
 		description   string

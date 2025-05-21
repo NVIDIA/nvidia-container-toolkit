@@ -23,13 +23,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func TestNvidiaSMISymlinkHook(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
-	hookCreator := discover.NewHookCreator("nvidia-cdi-hook")
+	hookCreator := hooks.NewHookCreator("nvidia-cdi-hook", nil)
 
 	errMounts := errors.New("mounts error")
 

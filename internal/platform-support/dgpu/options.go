@@ -17,7 +17,7 @@
 package dgpu
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/hooks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
@@ -26,7 +26,7 @@ import (
 type options struct {
 	logger      logger.Interface
 	devRoot     string
-	hookCreator discover.HookCreator
+	hookCreator hooks.HookCreator
 
 	isMigDevice bool
 	// migCaps stores the MIG capabilities for the system.
@@ -54,7 +54,7 @@ func WithLogger(logger logger.Interface) Option {
 }
 
 // WithHookCreator sets the hook creator for the library
-func WithHookCreator(hookCreator discover.HookCreator) Option {
+func WithHookCreator(hookCreator hooks.HookCreator) Option {
 	return func(l *options) {
 		l.hookCreator = hookCreator
 	}
