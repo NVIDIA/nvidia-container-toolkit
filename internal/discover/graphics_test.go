@@ -25,6 +25,7 @@ import (
 
 func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
+	hookCreator := NewHookCreator("/usr/bin/nvidia-cdi-hook")
 
 	testCases := []struct {
 		description    string
@@ -136,9 +137,9 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			d := &graphicsDriverLibraries{
-				Discover:          tc.libraries,
-				logger:            logger,
-				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
+				Discover:    tc.libraries,
+				logger:      logger,
+				hookCreator: hookCreator,
 			}
 
 			devices, err := d.Devices()

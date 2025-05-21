@@ -54,7 +54,7 @@ func (l *nvmllib) GetMIGDeviceEdits(parent device.Device, mig device.MigDevice) 
 	deviceNodes, err := dgpu.NewForMigDevice(parent, mig,
 		dgpu.WithDevRoot(l.devRoot),
 		dgpu.WithLogger(l.logger),
-		dgpu.WithNVIDIACDIHookPath(l.nvidiaCDIHookPath),
+		dgpu.WithHookCreator(l.hookCreator),
 		dgpu.WithNvsandboxuitilsLib(l.nvsandboxutilslib),
 	)
 	if err != nil {

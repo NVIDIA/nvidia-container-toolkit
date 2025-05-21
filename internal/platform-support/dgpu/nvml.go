@@ -58,11 +58,11 @@ func (o *options) newNvmlDGPUDiscoverer(d requiredInfo) (discover.Discover, erro
 	)
 
 	byPathHooks := &byPathHookDiscoverer{
-		logger:            o.logger,
-		devRoot:           o.devRoot,
-		nvidiaCDIHookPath: o.nvidiaCDIHookPath,
-		pciBusID:          pciBusID,
-		deviceNodes:       deviceNodes,
+		logger:      o.logger,
+		devRoot:     o.devRoot,
+		hookCreator: o.hookCreator,
+		pciBusID:    pciBusID,
+		deviceNodes: deviceNodes,
 	}
 
 	dd := discover.Merge(

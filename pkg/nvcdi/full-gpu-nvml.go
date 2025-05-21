@@ -71,7 +71,7 @@ func (l *nvmllib) newFullGPUDiscoverer(d device.Device) (discover.Discover, erro
 	deviceNodes, err := dgpu.NewForDevice(d,
 		dgpu.WithDevRoot(l.devRoot),
 		dgpu.WithLogger(l.logger),
-		dgpu.WithNVIDIACDIHookPath(l.nvidiaCDIHookPath),
+		dgpu.WithHookCreator(l.hookCreator),
 		dgpu.WithNvsandboxuitilsLib(l.nvsandboxutilslib),
 	)
 	if err != nil {
@@ -81,7 +81,7 @@ func (l *nvmllib) newFullGPUDiscoverer(d device.Device) (discover.Discover, erro
 	deviceFolderPermissionHooks := newDeviceFolderPermissionHookDiscoverer(
 		l.logger,
 		l.devRoot,
-		l.nvidiaCDIHookPath,
+		l.hookCreator,
 		deviceNodes,
 	)
 
