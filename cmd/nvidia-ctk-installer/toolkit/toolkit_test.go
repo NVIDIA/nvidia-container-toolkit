@@ -95,6 +95,8 @@ containerEdits:
             - create-symlinks
             - --link
             - libcuda.so.1::/lib/x86_64-linux-gnu/libcuda.so
+          env:
+            - NVIDIA_CTK_DEBUG=false
         - hookName: createContainer
           path: {{ .toolkitRoot }}/nvidia-cdi-hook
           args:
@@ -102,6 +104,8 @@ containerEdits:
             - update-ldcache
             - --folder
             - /lib/x86_64-linux-gnu
+          env:
+            - NVIDIA_CTK_DEBUG=false
     mounts:
         - hostPath: /host/driver/root/lib/x86_64-linux-gnu/libcuda.so.999.88.77
           containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77

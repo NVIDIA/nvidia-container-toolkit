@@ -17,6 +17,7 @@
 package discover
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"tags.cncf.io/container-device-interface/pkg/cdi"
@@ -49,15 +50,17 @@ type Option func(*CDIHook)
 
 type CDIHook struct {
 	nvidiaCDIHookPath string
+	debugLogging      bool
 }
 
 type HookCreator interface {
 	Create(string, ...string) *Hook
 }
 
-func NewHookCreator(nvidiaCDIHookPath string) HookCreator {
+func NewHookCreator(nvidiaCDIHookPath string, debugLogging bool) HookCreator {
 	CDIHook := &CDIHook{
 		nvidiaCDIHookPath: nvidiaCDIHookPath,
+		debugLogging:      debugLogging,
 	}
 
 	return CDIHook
@@ -80,6 +83,7 @@ func (c CDIHook) Create(name string, args ...string) *Hook {
 		Lifecycle: cdi.CreateContainerHook,
 		Path:      c.nvidiaCDIHookPath,
 		Args:      append(c.requiredArgs(name), args...),
+		Env:       []string{fmt.Sprintf("NVIDIA_CTK_DEBUG=%v", c.debugLogging)},
 	}
 }
 

@@ -115,6 +115,7 @@ func TestWithWithDriverDotSoSymlinks(t *testing.T) {
 					Lifecycle: "createContainer",
 					Path:      "/path/to/nvidia-cdi-hook",
 					Args:      []string{"nvidia-cdi-hook", "create-symlinks", "--link", "libcuda.so.1::/usr/lib/libcuda.so"},
+					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -147,6 +148,7 @@ func TestWithWithDriverDotSoSymlinks(t *testing.T) {
 					Lifecycle: "createContainer",
 					Path:      "/path/to/nvidia-cdi-hook",
 					Args:      []string{"nvidia-cdi-hook", "create-symlinks", "--link", "libcuda.so.1::/usr/lib/libcuda.so"},
+					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -178,6 +180,7 @@ func TestWithWithDriverDotSoSymlinks(t *testing.T) {
 					Lifecycle: "createContainer",
 					Path:      "/path/to/nvidia-cdi-hook",
 					Args:      []string{"nvidia-cdi-hook", "create-symlinks", "--link", "libcuda.so.1::/usr/lib/libcuda.so"},
+					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -247,6 +250,7 @@ func TestWithWithDriverDotSoSymlinks(t *testing.T) {
 					Lifecycle: "createContainer",
 					Path:      "/path/to/nvidia-cdi-hook",
 					Args:      []string{"nvidia-cdi-hook", "create-symlinks", "--link", "libcuda.so.1::/usr/lib/libcuda.so"},
+					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -301,12 +305,13 @@ func TestWithWithDriverDotSoSymlinks(t *testing.T) {
 						"--link", "libGLX_nvidia.so.1.2.3::/usr/lib/libGLX_indirect.so.0",
 						"--link", "libnvidia-opticalflow.so.1::/usr/lib/libnvidia-opticalflow.so",
 					},
+					Env: []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
 	}
 
-	hookCreator := NewHookCreator("/path/to/nvidia-cdi-hook")
+	hookCreator := NewHookCreator("/path/to/nvidia-cdi-hook", false)
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			d := WithDriverDotSoSymlinks(

@@ -42,6 +42,7 @@ func (d hook) toSpec() *specs.Hook {
 		HookName: d.Lifecycle,
 		Path:     d.Path,
 		Args:     d.Args,
+		Env:      d.Env,
 	}
 
 	return &s

@@ -85,7 +85,7 @@ func New(opts ...Option) (Interface, error) {
 		l.nvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
 	}
 	// create hookCreator
-	l.hookCreator = discover.NewHookCreator(l.nvidiaCDIHookPath)
+	l.hookCreator = discover.NewHookCreator(l.nvidiaCDIHookPath, false)
 
 	if l.driverRoot == "" {
 		l.driverRoot = "/"

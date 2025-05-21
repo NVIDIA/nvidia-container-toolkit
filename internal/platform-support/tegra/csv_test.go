@@ -97,6 +97,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 						"--link",
 						"/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so::/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so",
 					},
+					Env: []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -153,6 +154,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 						"--link",
 						"/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so::/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so",
 					},
+					Env: []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -181,7 +183,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 		},
 	}
 
-	hookCreator := discover.NewHookCreator("/usr/bin/nvidia-cdi-hook")
+	hookCreator := discover.NewHookCreator("/usr/bin/nvidia-cdi-hook", false)
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			defer setGetTargetsFromCSVFiles(tc.moutSpecs)()

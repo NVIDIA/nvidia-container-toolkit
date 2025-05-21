@@ -25,7 +25,7 @@ import (
 
 func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
-	hookCreator := NewHookCreator("/usr/bin/nvidia-cdi-hook")
+	hookCreator := NewHookCreator("/usr/bin/nvidia-cdi-hook", false)
 
 	testCases := []struct {
 		description    string
@@ -71,6 +71,7 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 					Args: []string{"nvidia-cdi-hook", "create-symlinks",
 						"--link", "../libnvidia-allocator.so.1::/usr/lib64/gbm/nvidia-drm_gbm.so",
 					},
+					Env: []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -98,6 +99,7 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 					Args: []string{"nvidia-cdi-hook", "create-symlinks",
 						"--link", "libnvidia-vulkan-producer.so.123.45.67::/usr/lib64/libnvidia-vulkan-producer.so",
 					},
+					Env: []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -129,6 +131,7 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 						"--link", "../libnvidia-allocator.so.1::/usr/lib64/gbm/nvidia-drm_gbm.so",
 						"--link", "libnvidia-vulkan-producer.so.123.45.67::/usr/lib64/libnvidia-vulkan-producer.so",
 					},
+					Env: []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
