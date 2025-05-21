@@ -3,6 +3,7 @@
 ## v1.17.8
 
 - Updated the ordering of Mounts in CDI to have a deterministic output. This makes testing more consistent.
+- Added NVIDIA_CTK_DEBUG envvar to hooks.
 
 ### Changes in libnvidia-container
 

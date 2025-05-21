@@ -17,6 +17,7 @@
 package discover
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"tags.cncf.io/container-device-interface/pkg/cdi"
@@ -69,6 +70,7 @@ func (c cdiHook) Create(name string, args ...string) Hook {
 		Lifecycle: cdi.CreateContainerHook,
 		Path:      string(c),
 		Args:      append(c.requiredArgs(name), args...),
+		Env:       []string{fmt.Sprintf("NVIDIA_CTK_DEBUG=%v", false)},
 	}
 }
 func (c cdiHook) requiredArgs(name string) []string {

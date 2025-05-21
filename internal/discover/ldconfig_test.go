@@ -95,6 +95,7 @@ func TestLDCacheUpdateHook(t *testing.T) {
 				Path:      testNvidiaCDIHookPath,
 				Args:      tc.expectedArgs,
 				Lifecycle: "createContainer",
+				Env:       []string{"NVIDIA_CTK_DEBUG=false"},
 			}
 
 			d, err := NewLDCacheUpdateHook(logger, mountMock, testNvidiaCDIHookPath, tc.ldconfigPath)
