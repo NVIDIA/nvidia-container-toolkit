@@ -48,16 +48,12 @@ WORKDIR $DIST_DIR/..
 COPY packaging/rpm .
 COPY deployments/systemd/ .
 
-ARG LIBNVIDIA_CONTAINER_TOOLS_VERSION
-ENV LIBNVIDIA_CONTAINER_TOOLS_VERSION ${LIBNVIDIA_CONTAINER_TOOLS_VERSION}
-
 CMD arch=$(uname -m) && \
     rpmbuild --clean --target=$arch -bb \
              -D "_topdir $PWD" \
              -D "release_date $(date +'%a %b %d %Y')" \
              -D "git_commit ${GIT_COMMIT}" \
              -D "version ${PKG_VERS}" \
-             -D "libnvidia_container_tools_version ${LIBNVIDIA_CONTAINER_TOOLS_VERSION}" \
              -D "release ${PKG_REV}" \
              SPECS/nvidia-container-toolkit.spec && \
     mv RPMS/$arch/*.rpm /dist
