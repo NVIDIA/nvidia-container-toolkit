@@ -21,6 +21,7 @@ import (
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
 
@@ -36,14 +37,14 @@ type Interface interface {
 	GetDeviceSpecsByID(...string) ([]specs.Device, error)
 }
 
-// A HookName refers to one of the predefined set of CDI hooks that may be
-// included in the generated CDI specification.
-type HookName string
+// HookName is an alias for the discover.HookName type.
+type HookName = discover.HookName
 
+// Aliases for the discover.HookName constants.
 const (
-	// HookEnableCudaCompat refers to the hook used to enable CUDA Forward Compatibility.
-	// This was added with v1.17.5 of the NVIDIA Container Toolkit.
-	HookEnableCudaCompat = HookName("enable-cuda-compat")
+	HookEnableCudaCompat = discover.HookEnableCudaCompat
+	HookCreateSymlinks   = discover.HookCreateSymlinks
+	HookUpdateLDCache    = discover.HookUpdateLDCache
 )
 
 // A FeatureFlag refers to a specific feature that can be toggled in the CDI api.

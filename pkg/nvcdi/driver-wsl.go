@@ -135,7 +135,7 @@ func (m nvidiaSMISimlinkHook) Hooks() ([]discover.Hook, error) {
 	}
 	link := "/usr/bin/nvidia-smi"
 	links := []string{fmt.Sprintf("%s::%s", target, link)}
-	symlinkHook := m.hookCreator.Create("create-symlinks", links...)
+	symlinkHook := m.hookCreator.Create(HookCreateSymlinks, links...)
 
 	return symlinkHook.Hooks()
 }
