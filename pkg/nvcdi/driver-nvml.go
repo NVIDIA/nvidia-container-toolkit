@@ -106,11 +106,9 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover
 	)
 	discoverers = append(discoverers, driverDotSoSymlinksDiscoverer)
 
-	if l.HookIsSupported(HookEnableCudaCompat) {
-		// TODO: The following should use the version directly.
-		cudaCompatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(l.logger, l.hookCreator, l.driver)
-		discoverers = append(discoverers, cudaCompatLibHookDiscoverer)
-	}
+	// TODO: The following should use the version directly.
+	cudaCompatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(l.logger, l.hookCreator, l.driver)
+	discoverers = append(discoverers, cudaCompatLibHookDiscoverer)
 
 	updateLDCache, _ := discover.NewLDCacheUpdateHook(l.logger, libraries, l.hookCreator, l.ldconfigPath)
 	discoverers = append(discoverers, updateLDCache)

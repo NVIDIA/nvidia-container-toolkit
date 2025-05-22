@@ -46,8 +46,8 @@ func (h *Hook) Hooks() ([]Hook, error) {
 
 type HookName string
 
-// DisabledHooks allows individual hooks to be disabled.
-type DisabledHooks map[HookName]bool
+// disabledHooks allows individual hooks to be disabled.
+type disabledHooks map[HookName]bool
 
 const (
 	// HookEnableCudaCompat refers to the hook used to enable CUDA Forward Compatibility.
@@ -67,26 +67,43 @@ var AllHooks = []HookName{
 	HookUpdateLDCache,
 }
 
-// Option is a function that configures the nvcdilib
 type Option func(*CDIHook)
 
 type CDIHook struct {
 	nvidiaCDIHookPath string
+	disabledHooks     disabledHooks
 }
 
 type HookCreator interface {
 	Create(HookName, ...string) *Hook
 }
 
-func NewHookCreator(nvidiaCDIHookPath string) HookCreator {
+func WithDisabledHooks(hooks ...HookName) Option {
+	return func(c *CDIHook) {
+		for _, hook := range hooks {
+			c.disabledHooks[hook] = true
+		}
+	}
+}
+
+func NewHookCreator(nvidiaCDIHookPath string, opts ...Option) HookCreator {
 	CDIHook := &CDIHook{
 		nvidiaCDIHookPath: nvidiaCDIHookPath,
+		disabledHooks:     disabledHooks{},
+	}
+
+	for _, opt := range opts {
+		opt(CDIHook)
 	}
 
 	return CDIHook
 }
 
 func (c CDIHook) Create(name HookName, args ...string) *Hook {
+	if c.disabledHooks[name] {
+		return nil
+	}
+
 	if name == "create-symlinks" {
 		if len(args) == 0 {
 			return nil

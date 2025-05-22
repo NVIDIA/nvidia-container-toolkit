@@ -57,6 +57,7 @@ type options struct {
 
 	configSearchPaths  cli.StringSlice
 	librarySearchPaths cli.StringSlice
+	disabledHooks      cli.StringSlice
 
 	csv struct {
 		files          cli.StringSlice
@@ -176,6 +177,13 @@ func (m command) build() *cli.Command {
 			Usage:       "Specify a pattern the CSV mount specifications.",
 			Destination: &opts.csv.ignorePatterns,
 		},
+		&cli.StringSliceFlag{
+			Name:        "disable-hook",
+			Aliases:     []string{"disable-hooks"},
+			Usage:       "Hook to skip when generating the CDI specification. Can be specified multiple times. Can be a comma-separated list of hooks or a single hook name.",
+			Value:       cli.NewStringSlice(),
+			Destination: &opts.disabledHooks,
+		},
 	}
 
 	return &c
@@ -262,7 +270,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		deviceNamers = append(deviceNamers, deviceNamer)
 	}
 
-	cdilib, err := nvcdi.New(
+	initOpts := []nvcdi.Option{
 		nvcdi.WithLogger(m.logger),
 		nvcdi.WithDriverRoot(opts.driverRoot),
 		nvcdi.WithDevRoot(opts.devRoot),
@@ -276,7 +284,13 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns.Value()),
 		// We set the following to allow for dependency injection:
 		nvcdi.WithNvmlLib(opts.nvmllib),
-	)
+	}
+
+	for _, hook := range opts.disabledHooks.Value() {
+		initOpts = append(initOpts, nvcdi.WithDisabledHook(hook))
+	}
+
+	cdilib, err := nvcdi.New(initOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)
 	}
