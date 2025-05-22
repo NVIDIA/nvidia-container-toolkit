@@ -183,7 +183,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 		},
 	}
 
-	hookCreator := discover.NewHookCreator("/usr/bin/nvidia-cdi-hook", false)
+	hookCreator := discover.NewHookCreator()
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			defer setGetTargetsFromCSVFiles(tc.moutSpecs)()

@@ -25,7 +25,7 @@ import (
 
 func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
-	hookCreator := NewHookCreator("/usr/bin/nvidia-cdi-hook", false)
+	hookCreator := NewHookCreator()
 
 	testCases := []struct {
 		description    string

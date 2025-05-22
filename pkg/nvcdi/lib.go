@@ -81,9 +81,6 @@ func New(opts ...Option) (Interface, error) {
 	if l.nvidiaCDIHookPath == "" {
 		l.nvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
 	}
-	// create hookCreator
-	l.hookCreator = discover.NewHookCreator(l.nvidiaCDIHookPath, false)
-
 	if l.driverRoot == "" {
 		l.driverRoot = "/"
 	}
@@ -133,7 +130,7 @@ func New(opts ...Option) (Interface, error) {
 			l.vendor = "management.nvidia.com"
 		}
 		// Management containers in general do not require CUDA Forward compatibility.
-		l.disabledHooks = append(l.disabledHooks, discover.HookEnableCudaCompat)
+		l.disabledHooks = append(l.disabledHooks, HookEnableCudaCompat)
 		lib = (*managementlib)(l)
 	case ModeNvml:
 		lib = (*nvmllib)(l)
@@ -157,6 +154,12 @@ func New(opts ...Option) (Interface, error) {
 	default:
 		return nil, fmt.Errorf("unknown mode %q", l.mode)
 	}
+
+	// create hookCreator
+	l.hookCreator = discover.NewHookCreator(
+		discover.WithNVIDIACDIHookPath(l.nvidiaCDIHookPath),
+		discover.WithDisabledHooks(l.disabledHooks...),
+	)
 
 	w := wrapper{
 		Interface:           lib,

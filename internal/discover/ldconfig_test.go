@@ -31,7 +31,7 @@ const (
 
 func TestLDCacheUpdateHook(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
-	hookCreator := NewHookCreator(testNvidiaCDIHookPath, false)
+	hookCreator := NewHookCreator(WithNVIDIACDIHookPath(testNvidiaCDIHookPath))
 
 	testCases := []struct {
 		description   string
