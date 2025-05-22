@@ -166,3 +166,14 @@ func WithDisabledHook(hook HookName) Option {
 		o.disabledHooks[hook] = true
 	}
 }
+
+// WithFeatureFlag allows specified features to be toggled on.
+// This option can be specified multiple times for each feature flag.
+func WithFeatureFlag(featureFlag FeatureFlag) Option {
+	return func(o *nvcdilib) {
+		if o.featureFlags == nil {
+			o.featureFlags = make(map[FeatureFlag]bool)
+		}
+		o.featureFlags[featureFlag] = true
+	}
+}

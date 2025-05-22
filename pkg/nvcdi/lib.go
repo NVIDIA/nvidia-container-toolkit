@@ -56,6 +56,8 @@ type nvcdilib struct {
 
 	mergedDeviceOptions []transform.MergedDeviceOption
 
+	featureFlags map[FeatureFlag]bool
+
 	disabledHooks disabledHooks
 	hookCreator   discover.HookCreator
 }
@@ -64,6 +66,7 @@ type nvcdilib struct {
 func New(opts ...Option) (Interface, error) {
 	l := &nvcdilib{
 		disabledHooks: make(disabledHooks),
+		featureFlags:  make(map[FeatureFlag]bool),
 	}
 	for _, opt := range opts {
 		opt(l)
@@ -218,6 +221,9 @@ func (l *nvcdilib) getCudaVersionNvsandboxutils() (string, error) {
 // getNvsandboxUtilsLib returns the nvsandboxutilslib to use for CDI spec
 // generation.
 func (l *nvcdilib) getNvsandboxUtilsLib() nvsandboxutils.Interface {
+	if l.featureFlags[FeatureDisableNvsandboxUtils] {
+		return nil
+	}
 	if l.nvsandboxutilslib != nil {
 		return l.nvsandboxutilslib
 	}
