@@ -69,8 +69,8 @@ func (d *mounts) Mounts() ([]Mount, error) {
 	d.Lock()
 	defer d.Unlock()
 
-	uniqueMounts := make(map[string]Mount)
-
+	var mounts []Mount
+	seen := make(map[string]bool)
 	for _, candidate := range d.required {
 		d.logger.Debugf("Locating %v", candidate)
 		located, err := d.lookup.Locate(candidate)
@@ -84,7 +84,7 @@ func (d *mounts) Mounts() ([]Mount, error) {
 		}
 		d.logger.Debugf("Located %v as %v", candidate, located)
 		for _, p := range located {
-			if _, ok := uniqueMounts[p]; ok {
+			if seen[p] {
 				d.logger.Debugf("Skipping duplicate mount %v", p)
 				continue
 			}
@@ -95,7 +95,7 @@ func (d *mounts) Mounts() ([]Mount, error) {
 			}
 
 			d.logger.Infof("Selecting %v as %v", p, r)
-			uniqueMounts[p] = Mount{
+			mount := Mount{
 				HostPath: p,
 				Path:     r,
 				Options: []string{
@@ -105,12 +105,9 @@ func (d *mounts) Mounts() ([]Mount, error) {
 					"bind",
 				},
 			}
+			mounts = append(mounts, mount)
+			seen[p] = true
 		}
-	}
-
-	var mounts []Mount
-	for _, m := range uniqueMounts {
-		mounts = append(mounts, m)
 	}
 
 	d.cache = mounts
