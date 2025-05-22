@@ -44,6 +44,29 @@ func (h *Hook) Hooks() ([]Hook, error) {
 	return []Hook{*h}, nil
 }
 
+type HookName string
+
+// DisabledHooks allows individual hooks to be disabled.
+type DisabledHooks map[HookName]bool
+
+const (
+	// HookEnableCudaCompat refers to the hook used to enable CUDA Forward Compatibility.
+	// This was added with v1.17.5 of the NVIDIA Container Toolkit.
+	HookEnableCudaCompat = HookName("enable-cuda-compat")
+	// directory path to be mounted into a container.
+	HookCreateSymlinks = HookName("create-symlinks")
+	// HookUpdateLDCache refers to the hook used to  Update the dynamic linker
+	// cache inside the directory path to be mounted into a container.
+	HookUpdateLDCache = HookName("update-ldcache")
+)
+
+// AllHooks maintains a future-proof list of all defined hooks.
+var AllHooks = []HookName{
+	HookEnableCudaCompat,
+	HookCreateSymlinks,
+	HookUpdateLDCache,
+}
+
 // Option is a function that configures the nvcdilib
 type Option func(*CDIHook)
 
@@ -52,7 +75,7 @@ type CDIHook struct {
 }
 
 type HookCreator interface {
-	Create(string, ...string) *Hook
+	Create(HookName, ...string) *Hook
 }
 
 func NewHookCreator(nvidiaCDIHookPath string) HookCreator {
@@ -63,7 +86,7 @@ func NewHookCreator(nvidiaCDIHookPath string) HookCreator {
 	return CDIHook
 }
 
-func (c CDIHook) Create(name string, args ...string) *Hook {
+func (c CDIHook) Create(name HookName, args ...string) *Hook {
 	if name == "create-symlinks" {
 		if len(args) == 0 {
 			return nil
@@ -79,7 +102,7 @@ func (c CDIHook) Create(name string, args ...string) *Hook {
 	return &Hook{
 		Lifecycle: cdi.CreateContainerHook,
 		Path:      c.nvidiaCDIHookPath,
-		Args:      append(c.requiredArgs(name), args...),
+		Args:      append(c.requiredArgs(string(name)), args...),
 	}
 }
 

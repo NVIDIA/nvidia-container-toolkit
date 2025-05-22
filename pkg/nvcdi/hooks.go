@@ -16,9 +16,6 @@
 
 package nvcdi
 
-// disabledHooks allows individual hooks to be disabled.
-type disabledHooks map[HookName]bool
-
 // HookIsSupported checks whether a hook of the specified name is supported.
 // Hooks must be explicitly disabled, meaning that if no disabled hooks are
 // all hooks are supported.

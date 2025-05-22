@@ -56,14 +56,14 @@ type nvcdilib struct {
 
 	mergedDeviceOptions []transform.MergedDeviceOption
 
-	disabledHooks disabledHooks
+	disabledHooks discover.DisabledHooks
 	hookCreator   discover.HookCreator
 }
 
 // New creates a new nvcdi library
 func New(opts ...Option) (Interface, error) {
 	l := &nvcdilib{
-		disabledHooks: make(disabledHooks),
+		disabledHooks: make(discover.DisabledHooks),
 	}
 	for _, opt := range opts {
 		opt(l)
