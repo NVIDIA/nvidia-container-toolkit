@@ -108,24 +108,7 @@ func New(opts ...Option) (Interface, error) {
 		}
 		l.nvmllib = nvml.New(nvmlOpts...)
 	}
-	// TODO: Repeated calls to nvsandboxutils.Init and Shutdown are causing
-	// segmentation violations. Here we disabled nvsandbox utils unless explicitly
-	// specified.
-	// This will be reenabled as soon as we have more visibility into why this is
-	// happening and a mechanism to detect and disable this if required.
-	// if l.nvsandboxutilslib == nil {
-	// 	var nvsandboxutilsOpts []nvsandboxutils.LibraryOption
-	// 	// Set the library path for libnvidia-sandboxutils
-	// 	candidates, err := l.driver.Libraries().Locate("libnvidia-sandboxutils.so.1")
-	// 	if err != nil {
-	// 		l.logger.Warningf("Ignoring error in locating libnvidia-sandboxutils.so.1: %v", err)
-	// 	} else {
-	// 		libNvidiaSandboxutilsPath := candidates[0]
-	// 		l.logger.Infof("Using %v", libNvidiaSandboxutilsPath)
-	// 		nvsandboxutilsOpts = append(nvsandboxutilsOpts, nvsandboxutils.WithLibraryPath(libNvidiaSandboxutilsPath))
-	// 	}
-	// 	l.nvsandboxutilslib = nvsandboxutils.New(nvsandboxutilsOpts...)
-	// }
+	l.nvsandboxutilslib = l.getNvsandboxUtilsLib()
 	if l.devicelib == nil {
 		l.devicelib = device.New(l.nvmllib)
 	}
@@ -230,4 +213,24 @@ func (l *nvcdilib) getCudaVersionNvsandboxutils() (string, error) {
 		return "", fmt.Errorf("%v", ret)
 	}
 	return version, nil
+}
+
+// getNvsandboxUtilsLib returns the nvsandboxutilslib to use for CDI spec
+// generation.
+func (l *nvcdilib) getNvsandboxUtilsLib() nvsandboxutils.Interface {
+	if l.nvsandboxutilslib != nil {
+		return l.nvsandboxutilslib
+	}
+
+	var nvsandboxutilsOpts []nvsandboxutils.LibraryOption
+	// Set the library path for libnvidia-sandboxutils
+	candidates, err := l.driver.Libraries().Locate("libnvidia-sandboxutils.so.1")
+	if err != nil {
+		l.logger.Warningf("Ignoring error in locating libnvidia-sandboxutils.so.1: %v", err)
+	} else {
+		libNvidiaSandboxutilsPath := candidates[0]
+		l.logger.Infof("Using %v", libNvidiaSandboxutilsPath)
+		nvsandboxutilsOpts = append(nvsandboxutilsOpts, nvsandboxutils.WithLibraryPath(libNvidiaSandboxutilsPath))
+	}
+	return nvsandboxutils.New(nvsandboxutilsOpts...)
 }
