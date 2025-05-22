@@ -45,3 +45,13 @@ const (
 	// This was added with v1.17.5 of the NVIDIA Container Toolkit.
 	HookEnableCudaCompat = HookName("enable-cuda-compat")
 )
+
+// A FeatureFlag refers to a specific feature that can be toggled in the CDI api.
+// All features are off by default.
+type FeatureFlag string
+
+const (
+	// FeatureDisableNvsandboxUtils disables the use of nvsandboxutils when
+	// querying devices.
+	FeatureDisableNvsandboxUtils = FeatureFlag("disable-nvsandbox-utils")
+)
