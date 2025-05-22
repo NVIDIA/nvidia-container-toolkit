@@ -45,13 +45,14 @@ func TestMounts(t *testing.T) {
 		"rprivate",
 	}
 
-	logger, logHook := testlog.NewNullLogger()
+	logger, _ := testlog.NewNullLogger()
 
 	testCases := []struct {
 		description    string
 		expectedError  error
 		expectedMounts []Mount
 		input          *mounts
+		repeat         int
 	}{
 		{
 			description:   "nill lookup returns error",
@@ -160,31 +161,68 @@ func TestMounts(t *testing.T) {
 				{Path: "/located", HostPath: "/some/root/located", Options: mountOptions},
 			},
 		},
+		{
+			description: "multiple mounts ordering",
+			input: &mounts{
+				lookup: &lookup.LocatorMock{
+					LocateFunc: func(s string) ([]string, error) {
+						return []string{
+							"first",
+							"second",
+							"third",
+							"fourth",
+							"second",
+							"second",
+							"second",
+							"fifth",
+							"sixth"}, nil
+					},
+				},
+				required: []string{""},
+			},
+			expectedMounts: []Mount{
+				{Path: "first", HostPath: "first", Options: mountOptions},
+				{Path: "second", HostPath: "second", Options: mountOptions},
+				{Path: "third", HostPath: "third", Options: mountOptions},
+				{Path: "fourth", HostPath: "fourth", Options: mountOptions},
+				{Path: "fifth", HostPath: "fifth", Options: mountOptions},
+				{Path: "sixth", HostPath: "sixth", Options: mountOptions},
+			},
+			repeat: 10,
+		},
 	}
 
 	for _, tc := range testCases {
-		logHook.Reset()
-		t.Run(tc.description, func(t *testing.T) {
-			tc.input.logger = logger
-			mounts, err := tc.input.Mounts()
-
-			if tc.expectedError != nil {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
+		for i := 1; ; i++ {
+			test_name := tc.description
+			if tc.repeat > 1 {
+				test_name += fmt.Sprintf("/%d", i)
 			}
-			require.ElementsMatch(t, tc.expectedMounts, mounts)
+			success := t.Run(test_name, func(t *testing.T) {
+				tc.input.logger = logger
+				mounts, err := tc.input.Mounts()
 
-			// We check that the mock is called for each element of required
-			if tc.input.lookup != nil {
-				mock := tc.input.lookup.(*lookup.LocatorMock)
-				require.Len(t, mock.LocateCalls(), len(tc.input.required))
-				var args []string
-				for _, c := range mock.LocateCalls() {
-					args = append(args, c.S)
+				if tc.expectedError != nil {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
 				}
-				require.EqualValues(t, args, tc.input.required)
+				require.EqualValues(t, tc.expectedMounts, mounts)
+
+				// We check that the mock is called for each element of required
+				if i == 1 && tc.input.lookup != nil {
+					mock := tc.input.lookup.(*lookup.LocatorMock)
+					require.Len(t, mock.LocateCalls(), len(tc.input.required))
+					var args []string
+					for _, c := range mock.LocateCalls() {
+						args = append(args, c.S)
+					}
+					require.EqualValues(t, args, tc.input.required)
+				}
+			})
+			if !success || i >= tc.repeat {
+				break
 			}
-		})
+		}
 	}
 }
