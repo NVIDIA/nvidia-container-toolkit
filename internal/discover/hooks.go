@@ -23,6 +23,28 @@ import (
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 )
 
+// A HookName represents a supported CDI hooks.
+type HookName string
+
+const (
+	// AllHooks is a special hook name that allows all hooks to be matched.
+	AllHooks = HookName("all")
+
+	// A ChmodHook is used to set the file mode of the specified paths.
+	// Deprecated: The chmod hook is deprecated and will be removed in a future release.
+	ChmodHook = HookName("chmod")
+	// A CreateSymlinksHook is used to create symlinks in the container.
+	CreateSymlinksHook = HookName("create-symlinks")
+	// An EnableCudaCompatHook is used to enabled CUDA Forward Compatibility.
+	// Added in v1.17.5
+	EnableCudaCompatHook = HookName("enable-cuda-compat")
+	// An UpdateLDCacheHook is the hook used to update the ldcache in the
+	// container. This allows injected libraries to be discoverable.
+	UpdateLDCacheHook = HookName("update-ldcache")
+
+	defaultNvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
+)
+
 var _ Discover = (*Hook)(nil)
 
 // Devices returns an empty list of devices for a Hook discoverer.
@@ -45,75 +67,130 @@ func (h *Hook) Hooks() ([]Hook, error) {
 	return []Hook{*h}, nil
 }
 
-type HookName string
+type Option func(*cdiHookCreator)
 
-// DisabledHooks allows individual hooks to be disabled.
-type DisabledHooks map[HookName]bool
-
-const (
-	// HookEnableCudaCompat refers to the hook used to enable CUDA Forward Compatibility.
-	// This was added with v1.17.5 of the NVIDIA Container Toolkit.
-	HookEnableCudaCompat = HookName("enable-cuda-compat")
-	// directory path to be mounted into a container.
-	HookCreateSymlinks = HookName("create-symlinks")
-	// HookUpdateLDCache refers to the hook used to  Update the dynamic linker
-	// cache inside the directory path to be mounted into a container.
-	HookUpdateLDCache = HookName("update-ldcache")
-)
-
-// AllHooks maintains a future-proof list of all defined hooks.
-var AllHooks = []HookName{
-	HookEnableCudaCompat,
-	HookCreateSymlinks,
-	HookUpdateLDCache,
-}
-
-// Option is a function that configures the nvcdilib
-type Option func(*CDIHook)
-
-type CDIHook struct {
+type cdiHookCreator struct {
 	nvidiaCDIHookPath string
-	debugLogging      bool
+	disabledHooks     map[HookName]bool
+
+	fixedArgs    []string
+	debugLogging bool
 }
 
+// An allDisabledHookCreator is a HookCreator that does not create any hooks.
+type allDisabledHookCreator struct{}
+
+// Create returns nil for all hooks for an allDisabledHookCreator.
+func (a *allDisabledHookCreator) Create(name HookName, args ...string) *Hook {
+	return nil
+}
+
+// A HookCreator defines an interface for creating discover hooks.
 type HookCreator interface {
 	Create(HookName, ...string) *Hook
 }
 
-func NewHookCreator(nvidiaCDIHookPath string, debugLogging bool) HookCreator {
-	CDIHook := &CDIHook{
-		nvidiaCDIHookPath: nvidiaCDIHookPath,
-		debugLogging:      debugLogging,
+// WithDisabledHooks sets the set of hooks that are disabled for the CDI hook creator.
+// This can be specified multiple times.
+func WithDisabledHooks(hooks ...HookName) Option {
+	return func(c *cdiHookCreator) {
+		for _, hook := range hooks {
+			c.disabledHooks[hook] = true
+		}
 	}
-
-	return CDIHook
 }
 
-func (c CDIHook) Create(name HookName, args ...string) *Hook {
-	if name == "create-symlinks" {
-		if len(args) == 0 {
-			return nil
-		}
+// WithNVIDIACDIHookPath sets the path to the nvidia-cdi-hook binary.
+func WithNVIDIACDIHookPath(nvidiaCDIHookPath string) Option {
+	return func(c *cdiHookCreator) {
+		c.nvidiaCDIHookPath = nvidiaCDIHookPath
+	}
+}
 
-		links := []string{}
-		for _, arg := range args {
-			links = append(links, "--link", arg)
-		}
-		args = links
+func NewHookCreator(opts ...Option) HookCreator {
+	cdiHookCreator := &cdiHookCreator{
+		nvidiaCDIHookPath: defaultNvidiaCDIHookPath,
+		disabledHooks:     make(map[HookName]bool),
+	}
+	for _, opt := range opts {
+		opt(cdiHookCreator)
+	}
+
+	if cdiHookCreator.disabledHooks[AllHooks] {
+		return &allDisabledHookCreator{}
+	}
+
+	cdiHookCreator.fixedArgs = getFixedArgsForCDIHookCLI(cdiHookCreator.nvidiaCDIHookPath)
+
+	return cdiHookCreator
+}
+
+// Create creates a new hook with the given name and arguments.
+// If a hook is disabled, a nil hook is returned.
+func (c cdiHookCreator) Create(name HookName, args ...string) *Hook {
+	if c.isDisabled(name, args...) {
+		return nil
 	}
 
 	return &Hook{
 		Lifecycle: cdi.CreateContainerHook,
 		Path:      c.nvidiaCDIHookPath,
-		Args:      append(c.requiredArgs(name), args...),
+		Args:      append(c.requiredArgs(name), c.transformArgs(name, args...)...),
 		Env:       []string{fmt.Sprintf("NVIDIA_CTK_DEBUG=%v", c.debugLogging)},
 	}
 }
 
-func (c CDIHook) requiredArgs(name string) []string {
-	base := filepath.Base(c.nvidiaCDIHookPath)
-	if base == "nvidia-ctk" {
-		return []string{base, "hook", name}
+// isDisabled checks if the specified hook name is disabled.
+func (c cdiHookCreator) isDisabled(name HookName, args ...string) bool {
+	if c.disabledHooks[name] {
+		return true
 	}
-	return []string{base, name}
+
+	switch name {
+	case CreateSymlinksHook:
+		if len(args) == 0 {
+			return true
+		}
+	case ChmodHook:
+		if len(args) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (c cdiHookCreator) requiredArgs(name HookName) []string {
+	return append(c.fixedArgs, string(name))
+}
+
+func (c cdiHookCreator) transformArgs(name HookName, args ...string) []string {
+	switch name {
+	case CreateSymlinksHook:
+		var transformedArgs []string
+		for _, arg := range args {
+			transformedArgs = append(transformedArgs, "--link", arg)
+		}
+		return transformedArgs
+	case ChmodHook:
+		var transformedArgs = []string{"--mode", "755"}
+		for _, arg := range args {
+			transformedArgs = append(transformedArgs, "--path", arg)
+		}
+		return transformedArgs
+	default:
+		return args
+	}
+}
+
+// getFixedArgsForCDIHookCLI returns the fixed arguments for the hook CLI.
+// If the nvidia-ctk binary is used, hooks are implemented under the hook
+// subcommand.
+// For the nvidia-cdi-hook binary, the hooks are implemented as subcommands of
+// the top-level CLI.
+func getFixedArgsForCDIHookCLI(nvidiaCDIHookPath string) []string {
+	base := filepath.Base(nvidiaCDIHookPath)
+	if base == "nvidia-ctk" {
+		return []string{base, "hook"}
+	}
+	return []string{base}
 }

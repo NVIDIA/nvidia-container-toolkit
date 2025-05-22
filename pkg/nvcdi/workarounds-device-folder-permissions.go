@@ -61,18 +61,9 @@ func (d *deviceFolderPermissions) Hooks() ([]discover.Hook, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device subfolders: %v", err)
 	}
-	if len(folders) == 0 {
-		return nil, nil
-	}
 
-	args := []string{"--mode", "755"}
-	for _, folder := range folders {
-		args = append(args, "--path", folder)
-	}
-
-	hook := d.hookCreator.Create("chmod", args...)
-
-	return []discover.Hook{*hook}, nil
+	//nolint:staticcheck // The ChmodHook is deprecated and will be removed in a future release.
+	return d.hookCreator.Create(discover.ChmodHook, folders...).Hooks()
 }
 
 func (d *deviceFolderPermissions) getDeviceSubfolders() ([]string, error) {

@@ -29,7 +29,7 @@ import (
 
 func TestNvidiaSMISymlinkHook(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
-	hookCreator := discover.NewHookCreator("nvidia-cdi-hook", false)
+	hookCreator := discover.NewHookCreator()
 
 	errMounts := errors.New("mounts error")
 
@@ -93,7 +93,7 @@ func TestNvidiaSMISymlinkHook(t *testing.T) {
 			expectedHooks: []discover.Hook{
 				{
 					Lifecycle: "createContainer",
-					Path:      "nvidia-cdi-hook",
+					Path:      "/usr/bin/nvidia-cdi-hook",
 					Args: []string{"nvidia-cdi-hook", "create-symlinks",
 						"--link", "nvidia-smi::/usr/bin/nvidia-smi"},
 					Env: []string{"NVIDIA_CTK_DEBUG=false"},
@@ -114,7 +114,7 @@ func TestNvidiaSMISymlinkHook(t *testing.T) {
 			expectedHooks: []discover.Hook{
 				{
 					Lifecycle: "createContainer",
-					Path:      "nvidia-cdi-hook",
+					Path:      "/usr/bin/nvidia-cdi-hook",
 					Args: []string{"nvidia-cdi-hook", "create-symlinks",
 						"--link", "/some/path/nvidia-smi::/usr/bin/nvidia-smi"},
 					Env: []string{"NVIDIA_CTK_DEBUG=false"},
@@ -135,7 +135,7 @@ func TestNvidiaSMISymlinkHook(t *testing.T) {
 			expectedHooks: []discover.Hook{
 				{
 					Lifecycle: "createContainer",
-					Path:      "nvidia-cdi-hook",
+					Path:      "/usr/bin/nvidia-cdi-hook",
 					Args: []string{"nvidia-cdi-hook", "create-symlinks",
 						"--link", "/some/path/nvidia-smi::/usr/bin/nvidia-smi"},
 					Env: []string{"NVIDIA_CTK_DEBUG=false"},
