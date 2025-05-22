@@ -23,7 +23,7 @@ Source8: nvidia-cdi-refresh.path
 Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook <= 1.4.0-2
 Provides: nvidia-container-runtime
 Provides: nvidia-container-runtime-hook
-Requires: libnvidia-container-tools >= %{libnvidia_container_tools_version}, libnvidia-container-tools < 2.0.0
+Requires: libnvidia-container-tools == %{version}-%{release}, libnvidia-container-tools < 2.0.0
 Requires: nvidia-container-toolkit-base == %{version}-%{release}
 
 %description
@@ -86,7 +86,7 @@ fi
 # As of 1.10.0-1 we generate the release information automatically
 * %{release_date} NVIDIA CORPORATION <cudatools@nvidia.com> %{version}-%{release}
 - See https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/blob/%{git_commit}/CHANGELOG.md
-- Bump libnvidia-container dependency to libnvidia-container-tools >= %{libnvidia_container_tools_version}
+- Bump libnvidia-container dependency to libnvidia-container-tools == %{version}-%{release}
 
 # The BASE package consists of the NVIDIA Container Runtime and the NVIDIA Container Toolkit CLI.
 # This allows the package to be installed on systems where no NVIDIA Container CLI is available.
