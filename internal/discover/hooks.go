@@ -44,26 +44,66 @@ func (h *Hook) Hooks() ([]Hook, error) {
 	return []Hook{*h}, nil
 }
 
-// Option is a function that configures the nvcdilib
+type HookName string
+
+// disabledHooks allows individual hooks to be disabled.
+type disabledHooks map[HookName]bool
+
+const (
+	// HookEnableCudaCompat refers to the hook used to enable CUDA Forward Compatibility.
+	// This was added with v1.17.5 of the NVIDIA Container Toolkit.
+	HookEnableCudaCompat = HookName("enable-cuda-compat")
+	// directory path to be mounted into a container.
+	HookCreateSymlinks = HookName("create-symlinks")
+	// HookUpdateLDCache refers to the hook used to  Update the dynamic linker
+	// cache inside the directory path to be mounted into a container.
+	HookUpdateLDCache = HookName("update-ldcache")
+)
+
+// AllHooks maintains a future-proof list of all defined hooks.
+var AllHooks = []HookName{
+	HookEnableCudaCompat,
+	HookCreateSymlinks,
+	HookUpdateLDCache,
+}
+
 type Option func(*CDIHook)
 
 type CDIHook struct {
 	nvidiaCDIHookPath string
+	disabledHooks     disabledHooks
 }
 
 type HookCreator interface {
-	Create(string, ...string) *Hook
+	Create(HookName, ...string) *Hook
 }
 
-func NewHookCreator(nvidiaCDIHookPath string) HookCreator {
+func WithDisabledHooks(hooks ...HookName) Option {
+	return func(c *CDIHook) {
+		for _, hook := range hooks {
+			c.disabledHooks[hook] = true
+		}
+	}
+}
+
+func NewHookCreator(nvidiaCDIHookPath string, opts ...Option) HookCreator {
 	CDIHook := &CDIHook{
 		nvidiaCDIHookPath: nvidiaCDIHookPath,
+		disabledHooks:     disabledHooks{},
+	}
+
+	for _, opt := range opts {
+		opt(CDIHook)
 	}
 
 	return CDIHook
 }
 
-func (c CDIHook) Create(name string, args ...string) *Hook {
+func (c CDIHook) Create(name HookName, args ...string) *Hook {
+	if c.disabledHooks[name] {
+		return nil
+	}
+
 	if name == "create-symlinks" {
 		if len(args) == 0 {
 			return nil
@@ -79,7 +119,7 @@ func (c CDIHook) Create(name string, args ...string) *Hook {
 	return &Hook{
 		Lifecycle: cdi.CreateContainerHook,
 		Path:      c.nvidiaCDIHookPath,
-		Args:      append(c.requiredArgs(name), args...),
+		Args:      append(c.requiredArgs(string(name)), args...),
 	}
 }
 
