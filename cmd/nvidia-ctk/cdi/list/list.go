@@ -23,6 +23,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 
+	ctkconfig "github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
@@ -64,6 +65,7 @@ func (m command) build() *cli.Command {
 			Usage:       "specify the directories to scan for CDI specifications",
 			Value:       cli.NewStringSlice(cdi.DefaultSpecDirs...),
 			Destination: &cfg.cdiSpecDirs,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_SPEC_DIRS"},
 		},
 	}
 
@@ -71,9 +73,22 @@ func (m command) build() *cli.Command {
 }
 
 func (m command) validateFlags(c *cli.Context, cfg *config) error {
+	// Load config file as base configuration
+	config, err := ctkconfig.GetConfig()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %v", err)
+	}
+
+	// Apply config file values if command line or environment variables are not set.
+	// order (1) command line, (2) environment variable, (3) config file
+	if !c.IsSet("spec-dir") && len(config.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs) > 0 {
+		cfg.cdiSpecDirs = *cli.NewStringSlice(config.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs...)
+	}
+
 	if len(cfg.cdiSpecDirs.Value()) == 0 {
 		return errors.New("at least one CDI specification directory must be specified")
 	}
+
 	return nil
 }
 
