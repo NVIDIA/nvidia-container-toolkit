@@ -21,8 +21,90 @@ import (
 	"testing"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNewCUDAImageFromSpec(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	testCases := []struct {
+		description string
+		spec        *specs.Spec
+		options     []Option
+		expected    CUDA
+	}{
+		{
+			description: "no env vars",
+			spec: &specs.Spec{
+				Process: &specs.Process{
+					Env: []string{},
+				},
+			},
+			expected: CUDA{
+				logger:                   logger,
+				env:                      map[string]string{},
+				acceptEnvvarUnprivileged: true,
+			},
+		},
+		{
+			description: "NVIDIA_VISIBLE_DEVICES=all",
+			spec: &specs.Spec{
+				Process: &specs.Process{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=all"},
+				},
+			},
+			expected: CUDA{
+				logger:                   logger,
+				env:                      map[string]string{"NVIDIA_VISIBLE_DEVICES": "all"},
+				acceptEnvvarUnprivileged: true,
+			},
+		},
+		{
+			description: "Spec overrides options",
+			spec: &specs.Spec{
+				Process: &specs.Process{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=all"},
+				},
+				Mounts: []specs.Mount{
+					{
+						Source:      "/spec-source",
+						Destination: "/spec-destination",
+					},
+				},
+			},
+			options: []Option{
+				WithEnvMap(map[string]string{"OTHER": "value"}),
+				WithMounts([]specs.Mount{
+					{
+						Source:      "/option-source",
+						Destination: "/option-destination",
+					},
+				}),
+			},
+			expected: CUDA{
+				logger: logger,
+				env:    map[string]string{"NVIDIA_VISIBLE_DEVICES": "all"},
+				mounts: []specs.Mount{
+					{
+						Source:      "/spec-source",
+						Destination: "/spec-destination",
+					},
+				},
+				acceptEnvvarUnprivileged: true,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			options := append([]Option{WithLogger(logger)}, tc.options...)
+			image, err := NewCUDAImageFromSpec(tc.spec, options...)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.expected, image)
+		})
+	}
+}
 
 func TestParseMajorMinorVersionValid(t *testing.T) {
 	var tests = []struct {
@@ -122,7 +204,7 @@ func TestGetRequirements(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			image, err := NewCUDAImageFromEnv(tc.env)
+			image, err := newCUDAImageFromEnv(tc.env)
 			require.NoError(t, err)
 
 			requirements, err := image.GetRequirements()
@@ -130,6 +212,226 @@ func TestGetRequirements(t *testing.T) {
 			require.ElementsMatch(t, tc.requirements, requirements)
 		})
 
+	}
+}
+
+func TestGetDevicesFromEnvvar(t *testing.T) {
+	envDockerResourceGPUs := "DOCKER_RESOURCE_GPUS"
+	gpuID := "GPU-12345"
+	anotherGPUID := "GPU-67890"
+	thirdGPUID := "MIG-12345"
+
+	var tests = []struct {
+		description                   string
+		preferredVisibleDeviceEnvVars []string
+		env                           map[string]string
+		expectedDevices               []string
+	}{
+		{
+			description: "empty env returns nil for non-legacy image",
+		},
+		{
+			description: "blank NVIDIA_VISIBLE_DEVICES returns nil for non-legacy image",
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: "",
+			},
+		},
+		{
+			description: "'void' NVIDIA_VISIBLE_DEVICES returns nil for non-legacy image",
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: "void",
+			},
+		},
+		{
+			description: "'none' NVIDIA_VISIBLE_DEVICES returns empty for non-legacy image",
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: "none",
+			},
+			expectedDevices: []string{""},
+		},
+		{
+			description: "NVIDIA_VISIBLE_DEVICES set returns value for non-legacy image",
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: gpuID,
+			},
+			expectedDevices: []string{gpuID},
+		},
+		{
+			description: "NVIDIA_VISIBLE_DEVICES set returns value for legacy image",
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: gpuID,
+				EnvVarCudaVersion:          "legacy",
+			},
+			expectedDevices: []string{gpuID},
+		},
+		{
+			description: "empty env returns all for legacy image",
+			env: map[string]string{
+				EnvVarCudaVersion: "legacy",
+			},
+			expectedDevices: []string{"all"},
+		},
+		// Add the `DOCKER_RESOURCE_GPUS` envvar and ensure that this is ignored when
+		// not enabled
+		{
+			description: "missing NVIDIA_VISIBLE_DEVICES returns nil for non-legacy image",
+			env: map[string]string{
+				envDockerResourceGPUs: anotherGPUID,
+			},
+		},
+		{
+			description: "blank NVIDIA_VISIBLE_DEVICES returns nil for non-legacy image",
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: "",
+				envDockerResourceGPUs:      anotherGPUID,
+			},
+		},
+		{
+			description: "'void' NVIDIA_VISIBLE_DEVICES returns nil for non-legacy image",
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: "void",
+				envDockerResourceGPUs:      anotherGPUID,
+			},
+		},
+		{
+			description: "'none' NVIDIA_VISIBLE_DEVICES returns empty for non-legacy image",
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: "none",
+				envDockerResourceGPUs:      anotherGPUID,
+			},
+			expectedDevices: []string{""},
+		},
+		{
+			description: "NVIDIA_VISIBLE_DEVICES set returns value for non-legacy image",
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: gpuID,
+				envDockerResourceGPUs:      anotherGPUID,
+			},
+			expectedDevices: []string{gpuID},
+		},
+		{
+			description: "NVIDIA_VISIBLE_DEVICES set returns value for legacy image",
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: gpuID,
+				envDockerResourceGPUs:      anotherGPUID,
+				EnvVarCudaVersion:          "legacy",
+			},
+			expectedDevices: []string{gpuID},
+		},
+		{
+			description: "empty env returns all for legacy image",
+			env: map[string]string{
+				envDockerResourceGPUs: anotherGPUID,
+				EnvVarCudaVersion:     "legacy",
+			},
+			expectedDevices: []string{"all"},
+		},
+		// Add the `DOCKER_RESOURCE_GPUS` envvar and ensure that this is selected when
+		// enabled
+		{
+			description:                   "empty env returns nil for non-legacy image",
+			preferredVisibleDeviceEnvVars: []string{envDockerResourceGPUs},
+		},
+		{
+			description:                   "blank DOCKER_RESOURCE_GPUS returns nil for non-legacy image",
+			preferredVisibleDeviceEnvVars: []string{envDockerResourceGPUs},
+			env: map[string]string{
+				envDockerResourceGPUs: "",
+			},
+		},
+		{
+			description:                   "'void' DOCKER_RESOURCE_GPUS returns nil for non-legacy image",
+			preferredVisibleDeviceEnvVars: []string{envDockerResourceGPUs},
+			env: map[string]string{
+				envDockerResourceGPUs: "void",
+			},
+		},
+		{
+			description:                   "'none' DOCKER_RESOURCE_GPUS returns empty for non-legacy image",
+			preferredVisibleDeviceEnvVars: []string{envDockerResourceGPUs},
+			env: map[string]string{
+				envDockerResourceGPUs: "none",
+			},
+			expectedDevices: []string{""},
+		},
+		{
+			description:                   "DOCKER_RESOURCE_GPUS set returns value for non-legacy image",
+			preferredVisibleDeviceEnvVars: []string{envDockerResourceGPUs},
+			env: map[string]string{
+				envDockerResourceGPUs: gpuID,
+			},
+			expectedDevices: []string{gpuID},
+		},
+		{
+			description:                   "DOCKER_RESOURCE_GPUS set returns value for legacy image",
+			preferredVisibleDeviceEnvVars: []string{envDockerResourceGPUs},
+			env: map[string]string{
+				envDockerResourceGPUs: gpuID,
+				EnvVarCudaVersion:     "legacy",
+			},
+			expectedDevices: []string{gpuID},
+		},
+		{
+			description:                   "DOCKER_RESOURCE_GPUS is selected if present",
+			preferredVisibleDeviceEnvVars: []string{envDockerResourceGPUs},
+			env: map[string]string{
+				envDockerResourceGPUs: anotherGPUID,
+			},
+			expectedDevices: []string{anotherGPUID},
+		},
+		{
+			description:                   "DOCKER_RESOURCE_GPUS overrides NVIDIA_VISIBLE_DEVICES if present",
+			preferredVisibleDeviceEnvVars: []string{envDockerResourceGPUs},
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: gpuID,
+				envDockerResourceGPUs:      anotherGPUID,
+			},
+			expectedDevices: []string{anotherGPUID},
+		},
+		{
+			description:                   "DOCKER_RESOURCE_GPUS_ADDITIONAL overrides NVIDIA_VISIBLE_DEVICES if present",
+			preferredVisibleDeviceEnvVars: []string{"DOCKER_RESOURCE_GPUS_ADDITIONAL"},
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices:        gpuID,
+				"DOCKER_RESOURCE_GPUS_ADDITIONAL": anotherGPUID,
+			},
+			expectedDevices: []string{anotherGPUID},
+		},
+		{
+			description:                   "All available swarm resource envvars are selected and override NVIDIA_VISIBLE_DEVICES if present",
+			preferredVisibleDeviceEnvVars: []string{"DOCKER_RESOURCE_GPUS", "DOCKER_RESOURCE_GPUS_ADDITIONAL"},
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices:        gpuID,
+				"DOCKER_RESOURCE_GPUS":            thirdGPUID,
+				"DOCKER_RESOURCE_GPUS_ADDITIONAL": anotherGPUID,
+			},
+			expectedDevices: []string{thirdGPUID, anotherGPUID},
+		},
+		{
+			description:                   "DOCKER_RESOURCE_GPUS_ADDITIONAL or DOCKER_RESOURCE_GPUS override NVIDIA_VISIBLE_DEVICES if present",
+			preferredVisibleDeviceEnvVars: []string{"DOCKER_RESOURCE_GPUS", "DOCKER_RESOURCE_GPUS_ADDITIONAL"},
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices:        gpuID,
+				"DOCKER_RESOURCE_GPUS_ADDITIONAL": anotherGPUID,
+			},
+			expectedDevices: []string{anotherGPUID},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			image, err := New(
+				WithEnvMap(tc.env),
+				WithPrivileged(true),
+				WithAcceptDeviceListAsVolumeMounts(false),
+				WithAcceptEnvvarUnprivileged(false),
+				WithPreferredVisibleDevicesEnvVars(tc.preferredVisibleDeviceEnvVars...),
+			)
+
+			require.NoError(t, err)
+			devices := image.VisibleDevicesFromEnvVar()
+			require.EqualValues(t, tc.expectedDevices, devices)
+		})
 	}
 }
 
@@ -197,8 +499,121 @@ func TestGetVisibleDevicesFromMounts(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			image, _ := New(WithMounts(tc.mounts))
-			require.Equal(t, tc.expectedDevices, image.VisibleDevicesFromMounts())
+			image, err := New(WithMounts(tc.mounts))
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedDevices, image.visibleDevicesFromMounts())
+		})
+	}
+}
+
+func TestVisibleDevices(t *testing.T) {
+	var tests = []struct {
+		description        string
+		mountDevices       []specs.Mount
+		envvarDevices      string
+		privileged         bool
+		acceptUnprivileged bool
+		acceptMounts       bool
+		expectedDevices    []string
+	}{
+		{
+			description: "Mount devices, unprivileged, no accept unprivileged",
+			mountDevices: []specs.Mount{
+				{
+					Source:      "/dev/null",
+					Destination: filepath.Join(DeviceListAsVolumeMountsRoot, "GPU0"),
+				},
+				{
+					Source:      "/dev/null",
+					Destination: filepath.Join(DeviceListAsVolumeMountsRoot, "GPU1"),
+				},
+			},
+			envvarDevices:      "GPU2,GPU3",
+			privileged:         false,
+			acceptUnprivileged: false,
+			acceptMounts:       true,
+			expectedDevices:    []string{"GPU0", "GPU1"},
+		},
+		{
+			description:        "No mount devices, unprivileged, no accept unprivileged",
+			mountDevices:       nil,
+			envvarDevices:      "GPU0,GPU1",
+			privileged:         false,
+			acceptUnprivileged: false,
+			acceptMounts:       true,
+			expectedDevices:    nil,
+		},
+		{
+			description:        "No mount devices, privileged, no accept unprivileged",
+			mountDevices:       nil,
+			envvarDevices:      "GPU0,GPU1",
+			privileged:         true,
+			acceptUnprivileged: false,
+			acceptMounts:       true,
+			expectedDevices:    []string{"GPU0", "GPU1"},
+		},
+		{
+			description:        "No mount devices, unprivileged, accept unprivileged",
+			mountDevices:       nil,
+			envvarDevices:      "GPU0,GPU1",
+			privileged:         false,
+			acceptUnprivileged: true,
+			acceptMounts:       true,
+			expectedDevices:    []string{"GPU0", "GPU1"},
+		},
+		{
+			description: "Mount devices, unprivileged, accept unprivileged, no accept mounts",
+			mountDevices: []specs.Mount{
+				{
+					Source:      "/dev/null",
+					Destination: filepath.Join(DeviceListAsVolumeMountsRoot, "GPU0"),
+				},
+				{
+					Source:      "/dev/null",
+					Destination: filepath.Join(DeviceListAsVolumeMountsRoot, "GPU1"),
+				},
+			},
+			envvarDevices:      "GPU2,GPU3",
+			privileged:         false,
+			acceptUnprivileged: true,
+			acceptMounts:       false,
+			expectedDevices:    []string{"GPU2", "GPU3"},
+		},
+		{
+			description: "Mount devices, unprivileged, no accept unprivileged, no accept mounts",
+			mountDevices: []specs.Mount{
+				{
+					Source:      "/dev/null",
+					Destination: filepath.Join(DeviceListAsVolumeMountsRoot, "GPU0"),
+				},
+				{
+					Source:      "/dev/null",
+					Destination: filepath.Join(DeviceListAsVolumeMountsRoot, "GPU1"),
+				},
+			},
+			envvarDevices:      "GPU2,GPU3",
+			privileged:         false,
+			acceptUnprivileged: false,
+			acceptMounts:       false,
+			expectedDevices:    nil,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			// Wrap the call to getDevices() in a closure.
+			image, err := New(
+				WithEnvMap(
+					map[string]string{
+						EnvVarNvidiaVisibleDevices: tc.envvarDevices,
+					},
+				),
+				WithMounts(tc.mountDevices),
+				WithPrivileged(tc.privileged),
+				WithAcceptDeviceListAsVolumeMounts(tc.acceptMounts),
+				WithAcceptEnvvarUnprivileged(tc.acceptUnprivileged),
+			)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedDevices, image.VisibleDevices())
 		})
 	}
 }
@@ -224,7 +639,7 @@ func TestImexChannelsFromEnvVar(t *testing.T) {
 	for _, tc := range testCases {
 		for id, baseEnvvars := range map[string][]string{"": nil, "legacy": {"CUDA_VERSION=1.2.3"}} {
 			t.Run(tc.description+id, func(t *testing.T) {
-				i, err := NewCUDAImageFromEnv(append(baseEnvvars, tc.env...))
+				i, err := newCUDAImageFromEnv(append(baseEnvvars, tc.env...))
 				require.NoError(t, err)
 
 				channels := i.ImexChannelsFromEnvVar()

@@ -70,7 +70,10 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
 	}
 
-	image, err := image.NewCUDAImageFromSpec(rawSpec)
+	image, err := image.NewCUDAImageFromSpec(
+		rawSpec,
+		image.WithLogger(logger),
+	)
 	if err != nil {
 		return nil, err
 	}

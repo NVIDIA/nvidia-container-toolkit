@@ -88,7 +88,7 @@ func (c hookConfig) getConfigOption(fieldName string) string {
 
 // getSwarmResourceEnvvars returns the swarm resource envvars for the config.
 func (c *hookConfig) getSwarmResourceEnvvars() []string {
-	if c.SwarmResource == "" {
+	if c == nil || c.SwarmResource == "" {
 		return nil
 	}
 
