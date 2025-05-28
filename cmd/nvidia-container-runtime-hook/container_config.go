@@ -13,10 +13,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
 
-const (
-	capSysAdmin = "CAP_SYS_ADMIN"
-)
-
 type nvidiaConfig struct {
 	Devices            []string
 	MigConfigDevices   string
@@ -103,9 +99,9 @@ func loadSpec(path string) (spec *Spec) {
 	return
 }
 
-func isPrivileged(s *Spec) bool {
-	if s.Process.Capabilities == nil {
-		return false
+func (s *Spec) GetCapabilities() []string {
+	if s == nil || s.Process == nil || s.Process.Capabilities == nil {
+		return nil
 	}
 
 	var caps []string
@@ -118,67 +114,22 @@ func isPrivileged(s *Spec) bool {
 		if err != nil {
 			log.Panicln("could not decode Process.Capabilities in OCI spec:", err)
 		}
-		for _, c := range caps {
-			if c == capSysAdmin {
-				return true
-			}
-		}
-		return false
+		return caps
 	}
 
 	// Otherwise, parse s.Process.Capabilities as:
 	// github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L30-L54
-	process := specs.Process{
-		Env: s.Process.Env,
-	}
-
-	err := json.Unmarshal(*s.Process.Capabilities, &process.Capabilities)
+	capabilities := specs.LinuxCapabilities{}
+	err := json.Unmarshal(*s.Process.Capabilities, &capabilities)
 	if err != nil {
 		log.Panicln("could not decode Process.Capabilities in OCI spec:", err)
 	}
 
-	fullSpec := specs.Spec{
-		Version: *s.Version,
-		Process: &process,
-	}
-
-	return image.IsPrivileged(&fullSpec)
+	return image.OCISpecCapabilities(capabilities).GetCapabilities()
 }
 
-func getDevicesFromEnvvar(containerImage image.CUDA, swarmResourceEnvvars []string) []string {
-	// We check if the image has at least one of the Swarm resource envvars defined and use this
-	// if specified.
-	for _, envvar := range swarmResourceEnvvars {
-		if containerImage.HasEnvvar(envvar) {
-			return containerImage.DevicesFromEnvvars(swarmResourceEnvvars...).List()
-		}
-	}
-
-	return containerImage.VisibleDevicesFromEnvVar()
-}
-
-func (hookConfig *hookConfig) getDevices(image image.CUDA, privileged bool) []string {
-	// If enabled, try and get the device list from volume mounts first
-	if hookConfig.AcceptDeviceListAsVolumeMounts {
-		devices := image.VisibleDevicesFromMounts()
-		if len(devices) > 0 {
-			return devices
-		}
-	}
-
-	// Fallback to reading from the environment variable if privileges are correct
-	devices := getDevicesFromEnvvar(image, hookConfig.getSwarmResourceEnvvars())
-	if len(devices) == 0 {
-		return nil
-	}
-	if privileged || hookConfig.AcceptEnvvarUnprivileged {
-		return devices
-	}
-
-	configName := hookConfig.getConfigOption("AcceptEnvvarUnprivileged")
-	log.Printf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES (privileged=%v, %v=%v) ", privileged, configName, hookConfig.AcceptEnvvarUnprivileged)
-
-	return nil
+func isPrivileged(s *Spec) bool {
+	return image.IsPrivileged(s)
 }
 
 func getMigConfigDevices(i image.CUDA) *string {
@@ -225,7 +176,6 @@ func (hookConfig *hookConfig) getDriverCapabilities(cudaImage image.CUDA, legacy
 	// We use the default driver capabilities by default. This is filtered to only include the
 	// supported capabilities
 	supportedDriverCapabilities := image.NewDriverCapabilities(hookConfig.SupportedDriverCapabilities)
-
 	capabilities := supportedDriverCapabilities.Intersection(image.DefaultDriverCapabilities)
 
 	capsEnvSpecified := cudaImage.HasEnvvar(image.EnvVarNvidiaDriverCapabilities)
@@ -251,7 +201,7 @@ func (hookConfig *hookConfig) getDriverCapabilities(cudaImage image.CUDA, legacy
 func (hookConfig *hookConfig) getNvidiaConfig(image image.CUDA, privileged bool) *nvidiaConfig {
 	legacyImage := image.IsLegacy()
 
-	devices := hookConfig.getDevices(image, privileged)
+	devices := image.VisibleDevices()
 	if len(devices) == 0 {
 		// empty devices means this is not a GPU container.
 		return nil
@@ -306,20 +256,25 @@ func (hookConfig *hookConfig) getContainerConfig() (config containerConfig) {
 
 	s := loadSpec(path.Join(b, "config.json"))
 
-	image, err := image.New(
+	privileged := isPrivileged(s)
+
+	i, err := image.New(
 		image.WithEnv(s.Process.Env),
 		image.WithMounts(s.Mounts),
+		image.WithPrivileged(privileged),
 		image.WithDisableRequire(hookConfig.DisableRequire),
+		image.WithAcceptDeviceListAsVolumeMounts(hookConfig.AcceptDeviceListAsVolumeMounts),
+		image.WithAcceptEnvvarUnprivileged(hookConfig.AcceptEnvvarUnprivileged),
+		image.WithPreferredVisibleDevicesEnvVars(hookConfig.getSwarmResourceEnvvars()...),
 	)
 	if err != nil {
 		log.Panicln(err)
 	}
 
-	privileged := isPrivileged(s)
 	return containerConfig{
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,
-		Image:  image,
-		Nvidia: hookConfig.getNvidiaConfig(image, privileged),
+		Image:  i,
+		Nvidia: hookConfig.getNvidiaConfig(i, privileged),
 	}
 }

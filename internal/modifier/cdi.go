@@ -79,7 +79,10 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 		return annotationDevices, nil
 	}
 
-	container, err := image.NewCUDAImageFromSpec(rawSpec)
+	container, err := image.NewCUDAImageFromSpec(
+		rawSpec,
+		image.WithLogger(logger),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +110,7 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 		return nil, nil
 	}
 
-	if cfg.AcceptEnvvarUnprivileged || image.IsPrivileged(rawSpec) {
+	if cfg.AcceptEnvvarUnprivileged || image.IsPrivileged((*image.OCISpec)(rawSpec)) {
 		return devices, nil
 	}
 
