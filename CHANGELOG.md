@@ -3,6 +3,8 @@
 ### Changes in libnvidia-container
 
 - Fixed bug in setting default for `--cuda-compat-mode` flag. This caused failures in use cases invoking the `nvidia-container-cli` directly.
+- Added additional logging to the `nvidia-container-cli`.
+- Fixed variable initialisation when updating the ldcache. This caused failures on Arch linux or other platforms where the `nvidia-container-cli` was built from source.
 
 ## v1.17.7
 
