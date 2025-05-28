@@ -477,9 +477,18 @@ func TestGetNvidiaConfig(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			image, _ := image.New(
+			opts := []image.Option{
 				image.WithEnvMap(tc.env),
-			)
+				image.WithPrivileged(tc.privileged),
+			}
+
+			if tc.hookConfig != nil {
+				if tc.hookConfig.SwarmResource != "" {
+					opts = append(opts, image.WithSwarmResource(tc.hookConfig.SwarmResource))
+				}
+			}
+			image, _ := image.New(opts...)
+
 			// Wrap the call to getNvidiaConfig() in a closure.
 			var cfg *nvidiaConfig
 			getConfig := func() {
@@ -622,12 +631,13 @@ func TestDeviceListSourcePriority(t *testing.T) {
 						},
 					),
 					image.WithMounts(tc.mountDevices),
+					image.WithPrivileged(tc.privileged),
 				)
 				defaultConfig, _ := config.GetDefault()
 				cfg := &hookConfig{defaultConfig}
 				cfg.AcceptEnvvarUnprivileged = tc.acceptUnprivileged
 				cfg.AcceptDeviceListAsVolumeMounts = tc.acceptMounts
-				devices = cfg.getDevices(image, tc.privileged)
+				devices = image.GetDevices(tc.acceptMounts, tc.acceptUnprivileged)
 			}
 
 			// For all other tests, just grab the devices and check the results
@@ -843,10 +853,18 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			image, _ := image.New(
+			opts := []image.Option{
 				image.WithEnvMap(tc.env),
-			)
-			devices := getDevicesFromEnvvar(image, tc.swarmResourceEnvvars)
+				image.WithPrivileged(true),
+			}
+
+			if len(tc.swarmResourceEnvvars) > 0 {
+				opts = append(opts, image.WithSwarmResource(tc.swarmResourceEnvvars...))
+			}
+
+			image, _ := image.New(opts...)
+
+			devices := image.GetDevices(false, false)
 			require.EqualValues(t, tc.expectedDevices, devices)
 		})
 	}

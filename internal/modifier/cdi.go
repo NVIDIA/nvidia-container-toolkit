@@ -107,7 +107,7 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 		return nil, nil
 	}
 
-	if cfg.AcceptEnvvarUnprivileged || image.IsPrivileged(rawSpec) {
+	if cfg.AcceptEnvvarUnprivileged || container.IsPrivileged() {
 		return devices, nil
 	}
 

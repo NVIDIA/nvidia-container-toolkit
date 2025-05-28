@@ -16,17 +16,13 @@
 
 package image
 
-import (
-	"github.com/opencontainers/runtime-spec/specs-go"
-)
-
 const (
 	capSysAdmin = "CAP_SYS_ADMIN"
 )
 
 // IsPrivileged returns true if the container is a privileged container.
-func IsPrivileged(s *specs.Spec) bool {
-	if s.Process.Capabilities == nil {
+func (i CUDA) IsPrivileged() bool {
+	if i.spec.Process.Capabilities == nil {
 		return false
 	}
 
@@ -34,7 +30,7 @@ func IsPrivileged(s *specs.Spec) bool {
 	// CAP_SYS_ADMIN. This allows us to make sure that the container was
 	// actually started as '--privileged', but also allow non-root users to
 	// access the privileged NVIDIA capabilities.
-	for _, c := range s.Process.Capabilities.Bounding {
+	for _, c := range i.spec.Process.Capabilities.Bounding {
 		if c == capSysAdmin {
 			return true
 		}

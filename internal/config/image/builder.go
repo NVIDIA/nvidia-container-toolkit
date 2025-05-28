@@ -24,9 +24,12 @@ import (
 )
 
 type builder struct {
+	spec           *specs.Spec
 	env            map[string]string
 	mounts         []specs.Mount
 	disableRequire bool
+
+	swarmResourceEnvvars []string
 }
 
 // New creates a new CUDA image from the input options.
@@ -51,8 +54,10 @@ func (b builder) build() (CUDA, error) {
 	}
 
 	c := CUDA{
-		env:    b.env,
-		mounts: b.mounts,
+		env:                  b.env,
+		mounts:               b.mounts,
+		spec:                 b.spec,
+		swarmResourceEnvvars: b.swarmResourceEnvvars,
 	}
 	return c, nil
 }
@@ -97,6 +102,60 @@ func WithEnvMap(env map[string]string) Option {
 func WithMounts(mounts []specs.Mount) Option {
 	return func(b *builder) error {
 		b.mounts = mounts
+		return nil
+	}
+}
+
+// WithSpec sets the OCI spec to use when creating the CUDA image.
+func WithSpec(s *specs.Spec) Option {
+	return func(b *builder) error {
+		b.spec = s
+		return nil
+	}
+}
+
+// WithSwarmResource sets the swarm resource for the CUDA image.
+func WithSwarmResource(resource ...string) Option {
+	return func(b *builder) error {
+		if len(resource) == 0 {
+			return fmt.Errorf("swarm resource cannot be empty")
+		}
+		b.swarmResourceEnvvars = []string{}
+		// if resource is a single string, split it by comma
+		if len(resource) == 1 && strings.Contains(resource[0], ",") {
+			candidates := strings.Split(resource[0], ",")
+			for _, c := range candidates {
+				trimmed := strings.TrimSpace(c)
+				if len(trimmed) > 0 {
+					b.swarmResourceEnvvars = append(b.swarmResourceEnvvars, trimmed)
+				}
+			}
+			return nil
+		}
+
+		b.swarmResourceEnvvars = append(b.swarmResourceEnvvars, resource...)
+		return nil
+	}
+}
+
+// WithPrivileged sets the privileged option for the CUDA image.
+// This is to allow testing the privileged mode of the container.
+// DO NOT USE THIS IN PRODUCTION CODE. FOR TESTING PURPOSES ONLY.
+func WithPrivileged(privileged bool) Option {
+	return func(b *builder) error {
+		b.spec = &specs.Spec{
+			Process: &specs.Process{
+				Capabilities: &specs.LinuxCapabilities{
+					Bounding: []string{"CAP_SYS_FOO"},
+				},
+			},
+		}
+		if privileged {
+			if b.spec.Process.Capabilities == nil {
+				b.spec.Process.Capabilities = &specs.LinuxCapabilities{}
+			}
+			b.spec.Process.Capabilities.Bounding = append(b.spec.Process.Capabilities.Bounding, "CAP_SYS_ADMIN")
+		}
 		return nil
 	}
 }

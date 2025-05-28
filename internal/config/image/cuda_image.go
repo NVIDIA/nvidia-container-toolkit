@@ -38,8 +38,11 @@ const (
 // a map of environment variable to values that can be used to perform lookups
 // such as requirements.
 type CUDA struct {
+	spec   *specs.Spec
 	env    map[string]string
 	mounts []specs.Mount
+
+	swarmResourceEnvvars []string
 }
 
 // NewCUDAImageFromSpec creates a CUDA image from the input OCI runtime spec.
@@ -53,6 +56,7 @@ func NewCUDAImageFromSpec(spec *specs.Spec) (CUDA, error) {
 	return New(
 		WithEnv(env),
 		WithMounts(spec.Mounts),
+		WithSpec(spec),
 	)
 }
 
@@ -81,6 +85,11 @@ func (i CUDA) IsLegacy() bool {
 	legacyCudaVersion := i.env[EnvVarCudaVersion]
 	cudaRequire := i.env[EnvVarNvidiaRequireCuda]
 	return len(legacyCudaVersion) > 0 && len(cudaRequire) == 0
+}
+
+// IsSwarm returns whether the image is a Docker Swarm image.
+func (i CUDA) IsSwarmResource() bool {
+	return len(i.swarmResourceEnvvars) > 0
 }
 
 // GetRequirements returns the requirements from all NVIDIA_REQUIRE_ environment
@@ -219,6 +228,9 @@ func (i CUDA) OnlyFullyQualifiedCDIDevices() bool {
 // VisibleDevicesFromEnvVar returns the set of visible devices requested through
 // the NVIDIA_VISIBLE_DEVICES environment variable.
 func (i CUDA) VisibleDevicesFromEnvVar() []string {
+	if i.IsSwarmResource() {
+		return i.DevicesFromEnvvars(i.swarmResourceEnvvars...).List()
+	}
 	return i.DevicesFromEnvvars(EnvVarNvidiaVisibleDevices).List()
 }
 
@@ -238,7 +250,6 @@ func (i CUDA) VisibleDevicesFromMounts() []string {
 }
 
 // DevicesFromMounts returns a list of device specified as mounts.
-// TODO: This should be merged with getDevicesFromMounts used in the NVIDIA Container Runtime
 func (i CUDA) DevicesFromMounts() []string {
 	root := filepath.Clean(DeviceListAsVolumeMountsRoot)
 	seen := make(map[string]bool)
@@ -269,6 +280,28 @@ func (i CUDA) DevicesFromMounts() []string {
 		devices = append(devices, device)
 	}
 	return devices
+}
+
+func (i CUDA) GetDevices(acceptDeviceListAsVolumeMounts, acceptEnvvarUnprivileged bool) []string {
+	// If enabled, try and get the device list from volume mounts first
+	if acceptDeviceListAsVolumeMounts {
+		devices := i.VisibleDevicesFromMounts()
+		if len(devices) > 0 {
+			return devices
+		}
+	}
+
+	// Fallback to reading from the environment variable if privileges are correct
+	devices := i.VisibleDevicesFromEnvVar()
+	if len(devices) == 0 {
+		return nil
+	}
+
+	if i.IsPrivileged() || acceptEnvvarUnprivileged {
+		return devices
+	}
+
+	return nil
 }
 
 // CDIDevicesFromMounts returns a list of CDI devices specified as mounts on the image.
