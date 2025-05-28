@@ -1,5 +1,9 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.17.8
+
+- Updated the ordering of Mounts in CDI to have a deterministic output. This makes testing more consistent.
+
 ### Changes in libnvidia-container
 
 - Fixed bug in setting default for `--cuda-compat-mode` flag. This caused failures in use cases invoking the `nvidia-container-cli` directly.
