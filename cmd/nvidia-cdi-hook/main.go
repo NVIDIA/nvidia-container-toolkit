@@ -58,13 +58,15 @@ func main() {
 			Aliases:     []string{"d"},
 			Usage:       "Enable debug-level logging",
 			Destination: &opts.Debug,
-			EnvVars:     []string{"NVIDIA_CDI_DEBUG"},
+			// TODO: Support for NVIDIA_CDI_DEBUG is deprecated and NVIDIA_CTK_DEBUG should be used instead.
+			EnvVars: []string{"NVIDIA_CTK_DEBUG", "NVIDIA_CDI_DEBUG"},
 		},
 		&cli.BoolFlag{
 			Name:        "quiet",
 			Usage:       "Suppress all output except for errors; overrides --debug",
 			Destination: &opts.Quiet,
-			EnvVars:     []string{"NVIDIA_CDI_QUIET"},
+			// TODO: Support for NVIDIA_CDI_QUIET is deprecated and NVIDIA_CTK_QUIET should be used instead.
+			EnvVars: []string{"NVDIA_CTK_QUIET", "NVIDIA_CDI_QUIET"},
 		},
 	}
 

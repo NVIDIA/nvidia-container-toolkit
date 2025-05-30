@@ -38,10 +38,15 @@ func (d hook) toEdits() *cdi.ContainerEdits {
 // toSpec converts a discovered Hook to a CDI Spec Hook. Note
 // that missing info is filled in when edits are applied by querying the Hook node.
 func (d hook) toSpec() *specs.Hook {
+	env := d.Env
+	if env == nil {
+		env = []string{"NVIDIA_CTK_DEBUG=false"}
+	}
 	s := specs.Hook{
 		HookName: d.Lifecycle,
 		Path:     d.Path,
 		Args:     d.Args,
+		Env:      env,
 	}
 
 	return &s
