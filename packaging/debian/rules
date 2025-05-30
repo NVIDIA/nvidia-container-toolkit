@@ -5,3 +5,14 @@
 
 %:
 	dh $@
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 755 debian/$(shell dh_listpackages)/usr/bin/nvidia-container-runtime-hook || true
+	chmod 755 debian/$(shell dh_listpackages)/usr/bin/nvidia-container-runtime || true
+	chmod 755 debian/$(shell dh_listpackages)/usr/bin/nvidia-container-runtime.cdi || true
+	chmod 755 debian/$(shell dh_listpackages)/usr/bin/nvidia-container-runtime.legacy || true
+	chmod 755 debian/$(shell dh_listpackages)/usr/bin/nvidia-ctk || true
+	chmod 755 debian/$(shell dh_listpackages)/usr/bin/nvidia-cdi-hook || true
+	chmod 644 debian/$(shell dh_listpackages)/etc/systemd/system/nvidia-cdi-refresh.service || true
+	chmod 644 debian/$(shell dh_listpackages)/etc/systemd/system/nvidia-cdi-refresh.path || true
