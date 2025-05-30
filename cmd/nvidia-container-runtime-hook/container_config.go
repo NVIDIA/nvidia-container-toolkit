@@ -81,7 +81,9 @@ type HookState struct {
 	BundlePath string `json:"bundlePath"`
 }
 
-func loadSpec(path string) (spec *Spec) {
+func loadSpec(path string) *specs.Spec {
+	var spec Spec
+
 	f, err := os.Open(path)
 	if err != nil {
 		log.Panicln("could not open OCI spec:", err)
@@ -100,85 +102,57 @@ func loadSpec(path string) (spec *Spec) {
 	if spec.Root == nil {
 		log.Panicln("Root is empty in OCI spec")
 	}
-	return
-}
 
-func isPrivileged(s *Spec) bool {
-	if s.Process.Capabilities == nil {
-		return false
+	process := specs.Process{
+		Env: spec.Process.Env,
 	}
-
 	var caps []string
 	// If v1.0.0-rc1 <= OCI version < v1.0.0-rc5 parse s.Process.Capabilities as:
 	// github.com/opencontainers/runtime-spec/blob/v1.0.0-rc1/specs-go/config.go#L30-L54
-	rc1cmp := semver.Compare("v"+*s.Version, "v1.0.0-rc1")
-	rc5cmp := semver.Compare("v"+*s.Version, "v1.0.0-rc5")
+	rc1cmp := semver.Compare("v"+*spec.Version, "v1.0.0-rc1")
+	rc5cmp := semver.Compare("v"+*spec.Version, "v1.0.0-rc5")
 	if (rc1cmp == 1 || rc1cmp == 0) && (rc5cmp == -1) {
-		err := json.Unmarshal(*s.Process.Capabilities, &caps)
+		err := json.Unmarshal(*spec.Process.Capabilities, &caps)
 		if err != nil {
 			log.Panicln("could not decode Process.Capabilities in OCI spec:", err)
 		}
 		for _, c := range caps {
 			if c == capSysAdmin {
-				return true
+				process.Capabilities = &specs.LinuxCapabilities{
+					Bounding: caps,
+				}
+				break
 			}
 		}
-		return false
+	} else {
+		// Otherwise, parse s.Process.Capabilities as:
+		// github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L30-L54
+		err := json.Unmarshal(*spec.Process.Capabilities, &process.Capabilities)
+		if err != nil {
+			log.Panicln("could not decode Process.Capabilities in OCI spec:", err)
+		}
 	}
 
-	// Otherwise, parse s.Process.Capabilities as:
-	// github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L30-L54
-	process := specs.Process{
-		Env: s.Process.Env,
+	root := specs.Root{
+		Path: spec.Root.Path,
 	}
 
-	err := json.Unmarshal(*s.Process.Capabilities, &process.Capabilities)
-	if err != nil {
-		log.Panicln("could not decode Process.Capabilities in OCI spec:", err)
+	mounts := make([]specs.Mount, len(spec.Mounts))
+	for i, m := range spec.Mounts {
+		mounts[i] = specs.Mount{
+			Source:      m.Source,
+			Destination: m.Destination,
+			Type:        m.Type,
+			Options:     m.Options,
+		}
 	}
 
-	fullSpec := specs.Spec{
-		Version: *s.Version,
+	return &specs.Spec{
+		Version: *spec.Version,
 		Process: &process,
+		Root:    &root,
+		Mounts:  mounts,
 	}
-
-	return image.IsPrivileged(&fullSpec)
-}
-
-func getDevicesFromEnvvar(containerImage image.CUDA, swarmResourceEnvvars []string) []string {
-	// We check if the image has at least one of the Swarm resource envvars defined and use this
-	// if specified.
-	for _, envvar := range swarmResourceEnvvars {
-		if containerImage.HasEnvvar(envvar) {
-			return containerImage.DevicesFromEnvvars(swarmResourceEnvvars...).List()
-		}
-	}
-
-	return containerImage.VisibleDevicesFromEnvVar()
-}
-
-func (hookConfig *hookConfig) getDevices(image image.CUDA, privileged bool) []string {
-	// If enabled, try and get the device list from volume mounts first
-	if hookConfig.AcceptDeviceListAsVolumeMounts {
-		devices := image.VisibleDevicesFromMounts()
-		if len(devices) > 0 {
-			return devices
-		}
-	}
-
-	// Fallback to reading from the environment variable if privileges are correct
-	devices := getDevicesFromEnvvar(image, hookConfig.getSwarmResourceEnvvars())
-	if len(devices) == 0 {
-		return nil
-	}
-	if privileged || hookConfig.AcceptEnvvarUnprivileged {
-		return devices
-	}
-
-	configName := hookConfig.getConfigOption("AcceptEnvvarUnprivileged")
-	log.Printf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES (privileged=%v, %v=%v) ", privileged, configName, hookConfig.AcceptEnvvarUnprivileged)
-
-	return nil
 }
 
 func getMigConfigDevices(i image.CUDA) *string {
@@ -225,7 +199,6 @@ func (hookConfig *hookConfig) getDriverCapabilities(cudaImage image.CUDA, legacy
 	// We use the default driver capabilities by default. This is filtered to only include the
 	// supported capabilities
 	supportedDriverCapabilities := image.NewDriverCapabilities(hookConfig.SupportedDriverCapabilities)
-
 	capabilities := supportedDriverCapabilities.Intersection(image.DefaultDriverCapabilities)
 
 	capsEnvSpecified := cudaImage.HasEnvvar(image.EnvVarNvidiaDriverCapabilities)
@@ -251,7 +224,7 @@ func (hookConfig *hookConfig) getDriverCapabilities(cudaImage image.CUDA, legacy
 func (hookConfig *hookConfig) getNvidiaConfig(image image.CUDA, privileged bool) *nvidiaConfig {
 	legacyImage := image.IsLegacy()
 
-	devices := hookConfig.getDevices(image, privileged)
+	devices := image.GetDevices(hookConfig.AcceptDeviceListAsVolumeMounts, hookConfig.AcceptEnvvarUnprivileged)
 	if len(devices) == 0 {
 		// empty devices means this is not a GPU container.
 		return nil
@@ -305,21 +278,26 @@ func (hookConfig *hookConfig) getContainerConfig() (config containerConfig) {
 	}
 
 	s := loadSpec(path.Join(b, "config.json"))
-
-	image, err := image.New(
+	opts := []image.Option{
 		image.WithEnv(s.Process.Env),
 		image.WithMounts(s.Mounts),
+		image.WithSpec(s),
 		image.WithDisableRequire(hookConfig.DisableRequire),
-	)
+	}
+
+	if len(hookConfig.getSwarmResourceEnvvars()) > 0 {
+		opts = append(opts, image.WithSwarmResource(hookConfig.getSwarmResourceEnvvars()...))
+	}
+
+	i, err := image.New(opts...)
 	if err != nil {
 		log.Panicln(err)
 	}
 
-	privileged := isPrivileged(s)
 	return containerConfig{
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,
-		Image:  image,
-		Nvidia: hookConfig.getNvidiaConfig(image, privileged),
+		Image:  i,
+		Nvidia: hookConfig.getNvidiaConfig(i, i.IsPrivileged()),
 	}
 }
