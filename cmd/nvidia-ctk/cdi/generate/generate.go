@@ -182,6 +182,31 @@ func (m command) build() *cli.Command {
 }
 
 func (m command) validateFlags(c *cli.Context, opts *options) error {
+	// Load config file as base configuration
+	cfg, err := config.GetConfig()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %v", err)
+	}
+
+	// Apply config file values if command line or environment variables are not set.
+	// order (1) command line, (2) environment variable, (3) config file
+	if opts.nvidiaCDIHookPath == "" && cfg.NVIDIAContainerRuntimeHookConfig.Path != "" {
+		opts.nvidiaCDIHookPath = cfg.NVIDIAContainerRuntimeHookConfig.Path
+	}
+
+	if opts.ldconfigPath == "" && string(cfg.NVIDIAContainerCLIConfig.Ldconfig) != "" {
+		opts.ldconfigPath = string(cfg.NVIDIAContainerCLIConfig.Ldconfig)
+	}
+
+	if opts.mode == "" && cfg.NVIDIAContainerRuntimeConfig.Mode != "" {
+		opts.mode = cfg.NVIDIAContainerRuntimeConfig.Mode
+	}
+
+	if opts.csv.files.Value() == nil && len(cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.MountSpecPath) > 0 {
+		opts.csv.files = *cli.NewStringSlice(cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.MountSpecPath)
+	}
+
+	// Continue with existing validation
 	opts.format = strings.ToLower(opts.format)
 	switch opts.format {
 	case spec.FormatJSON:
