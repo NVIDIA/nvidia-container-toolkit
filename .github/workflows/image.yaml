@@ -27,7 +27,7 @@ on:
 
 jobs:
   packages:
-    runs-on: linux-amd64-cpu4
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         target:
@@ -49,7 +49,7 @@ jobs:
           - ispr: true
             target: centos8-ppc64le
       fail-fast: false
-      
+
     steps:
       - uses: actions/checkout@v4
         name: Check out code
@@ -76,7 +76,7 @@ jobs:
           path: ${{ github.workspace }}/dist/*
 
   image:
-    runs-on: linux-amd64-cpu4
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         dist:
