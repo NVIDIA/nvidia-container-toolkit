@@ -1,0 +1,811 @@
+[
+  {
+    "SuitePath": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e",
+    "SuiteDescription": "E2E NVIDIA Container Toolkit",
+    "SuiteLabels": [],
+    "SuiteSucceeded": true,
+    "SuiteHasProgrammaticFocus": false,
+    "SpecialSuiteFailureReasons": null,
+    "PreRunStats": {
+      "TotalSpecs": 17,
+      "SpecsThatWillRun": 1
+    },
+    "StartTime": "2025-05-30T17:30:37.919847+02:00",
+    "EndTime": "2025-05-30T17:31:22.573392+02:00",
+    "RunTime": 44653713916,
+    "SuiteConfig": {
+      "RandomSeed": 1748619036,
+      "RandomizeAllSpecs": false,
+      "FocusStrings": [
+        "nvidia-container-cli"
+      ],
+      "SkipStrings": null,
+      "FocusFiles": null,
+      "SkipFiles": null,
+      "LabelFilter": "",
+      "FailOnPending": false,
+      "FailOnEmpty": false,
+      "FailFast": false,
+      "FlakeAttempts": 0,
+      "MustPassRepeatedly": 0,
+      "DryRun": false,
+      "PollProgressAfter": 0,
+      "PollProgressInterval": 0,
+      "Timeout": 3598886492000,
+      "EmitSpecProgress": false,
+      "OutputInterceptorMode": "",
+      "SourceRoots": null,
+      "GracePeriod": 30000000000,
+      "ParallelProcess": 1,
+      "ParallelTotal": 1,
+      "ParallelHost": ""
+    },
+    "SpecReports": [
+      {
+        "ContainerHierarchyTexts": [
+          "nvidia-container-cli",
+          "when running nvidia-smi -L"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+            "LineNumber": 104
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+            "LineNumber": 129
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+          "LineNumber": 146
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support NVIDIA_VISIBLE_DEVICES and NVIDIA_DRIVER_CAPABILITIES",
+        "State": "passed",
+        "StartTime": "2025-05-30T17:30:37.91994+02:00",
+        "EndTime": "2025-05-30T17:31:22.572335+02:00",
+        "RunTime": 44652563291,
+        "ParallelProcess": 1,
+        "NumAttempts": 1,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0,
+        "SpecEvents": [
+          {
+            "SpecEventType": "Node",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 108
+            },
+            "TimelineLocation": {
+              "Order": 1,
+              "Time": "2025-05-30T17:30:37.919945+02:00"
+            },
+            "Message": "nvidia-container-cli",
+            "NodeType": "BeforeAll"
+          },
+          {
+            "SpecEventType": "Node (End)",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 108
+            },
+            "TimelineLocation": {
+              "Order": 3,
+              "Time": "2025-05-30T17:30:37.920072+02:00"
+            },
+            "Message": "nvidia-container-cli",
+            "Duration": 127500,
+            "NodeType": "BeforeAll"
+          },
+          {
+            "SpecEventType": "Node",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 133
+            },
+            "TimelineLocation": {
+              "Order": 4,
+              "Time": "2025-05-30T17:30:37.920073+02:00"
+            },
+            "Message": "when running nvidia-smi -L",
+            "NodeType": "BeforeAll"
+          },
+          {
+            "SpecEventType": "Node (End)",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 133
+            },
+            "TimelineLocation": {
+              "Order": 6,
+              "Time": "2025-05-30T17:30:44.382334+02:00"
+            },
+            "Message": "when running nvidia-smi -L",
+            "Duration": 6462285125,
+            "NodeType": "BeforeAll"
+          },
+          {
+            "SpecEventType": "Node",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 146
+            },
+            "TimelineLocation": {
+              "Order": 7,
+              "Time": "2025-05-30T17:30:44.382669+02:00"
+            },
+            "Message": "should support NVIDIA_VISIBLE_DEVICES and NVIDIA_DRIVER_CAPABILITIES",
+            "NodeType": "It"
+          },
+          {
+            "SpecEventType": "By",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 147
+            },
+            "TimelineLocation": {
+              "Order": 8,
+              "Time": "2025-05-30T17:30:44.382829+02:00"
+            },
+            "Message": "creating the test script on the remote host"
+          },
+          {
+            "SpecEventType": "By",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 154
+            },
+            "TimelineLocation": {
+              "Order": 9,
+              "Time": "2025-05-30T17:30:46.268934+02:00"
+            },
+            "Message": "discovering the symlink targets for the libraries on the remote host"
+          },
+          {
+            "SpecEventType": "By",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 168
+            },
+            "TimelineLocation": {
+              "Order": 10,
+              "Time": "2025-05-30T17:30:50.005511+02:00"
+            },
+            "Message": "rendering the docker run template with the discovered targets"
+          },
+          {
+            "SpecEventType": "By",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 179
+            },
+            "TimelineLocation": {
+              "Order": 11,
+              "Time": "2025-05-30T17:30:50.005651+02:00"
+            },
+            "Message": "starting the container using the rendered docker run command"
+          },
+          {
+            "SpecEventType": "By",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 183
+            },
+            "TimelineLocation": {
+              "Order": 12,
+              "Time": "2025-05-30T17:30:57.455115+02:00"
+            },
+            "Message": "checking the container logs for the expected output"
+          },
+          {
+            "SpecEventType": "Node (End)",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 146
+            },
+            "TimelineLocation": {
+              "Order": 14,
+              "Time": "2025-05-30T17:31:20.561359+02:00"
+            },
+            "Message": "should support NVIDIA_VISIBLE_DEVICES and NVIDIA_DRIVER_CAPABILITIES",
+            "Duration": 36178826958,
+            "NodeType": "It"
+          },
+          {
+            "SpecEventType": "Node",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 141
+            },
+            "TimelineLocation": {
+              "Order": 15,
+              "Time": "2025-05-30T17:31:20.561375+02:00"
+            },
+            "Message": "when running nvidia-smi -L",
+            "NodeType": "AfterAll"
+          },
+          {
+            "SpecEventType": "Node (End)",
+            "CodeLocation": {
+              "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-cli_test.go",
+              "LineNumber": 141
+            },
+            "TimelineLocation": {
+              "Order": 17,
+              "Time": "2025-05-30T17:31:22.57233+02:00"
+            },
+            "Message": "when running nvidia-smi -L",
+            "Duration": 2010962791,
+            "NodeType": "AfterAll"
+          }
+        ]
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when running nvidia-smi -L"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 58
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 70
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support NVIDIA_VISIBLE_DEVICES",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.572477+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when running nvidia-smi -L"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 58
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 76
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support automatic CDI spec generation",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.572728+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when running nvidia-smi -L"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 58
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 82
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support automatic CDI spec generation with the --gpus flag",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.572841+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when running nvidia-smi -L"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 58
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 88
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support the --gpus flag using the nvidia-container-runtime",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.572851+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when running nvidia-smi -L"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 58
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 94
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support the --gpus flag using the nvidia-container-runtime-hook",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.572866+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when Running the cuda-vectorAdd sample"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 103
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 111
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support NVIDIA_VISIBLE_DEVICES",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.572875+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when Running the cuda-vectorAdd sample"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 103
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 119
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support automatic CDI spec generation",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.572884+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when Running the cuda-vectorAdd sample"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 103
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 125
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support the --gpus flag using the nvidia-container-runtime",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.572893+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when Running the cuda-vectorAdd sample"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 103
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 131
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support the --gpus flag using the nvidia-container-runtime-hook",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.572985+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when Running the cuda-deviceQuery sample"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 140
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 148
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support NVIDIA_VISIBLE_DEVICES",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.573025+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when Running the cuda-deviceQuery sample"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 140
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 155
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support automatic CDI spec generation",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.573034+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when Running the cuda-deviceQuery sample"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 140
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 161
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support the --gpus flag using the nvidia-container-runtime",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.573046+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when Running the cuda-deviceQuery sample"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 140
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 167
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should support the --gpus flag using the nvidia-container-runtime-hook",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.573322+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when Testing CUDA Forward compatibility"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 174
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 201
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should work with the nvidia runtime in legacy mode",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.573332+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when Testing CUDA Forward compatibility"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 174
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 207
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should work with the nvidia runtime in CDI mode",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.573337+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      },
+      {
+        "ContainerHierarchyTexts": [
+          "docker",
+          "when Testing CUDA Forward compatibility"
+        ],
+        "ContainerHierarchyLocations": [
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 29
+          },
+          {
+            "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+            "LineNumber": 174
+          }
+        ],
+        "ContainerHierarchyLabels": [
+          [],
+          []
+        ],
+        "LeafNodeType": "It",
+        "LeafNodeLocation": {
+          "FileName": "/Users/eduardoa/src/github/nvidia/nvidia-container-toolkit/tests/e2e/nvidia-container-toolkit_test.go",
+          "LineNumber": 213
+        },
+        "LeafNodeLabels": [],
+        "LeafNodeText": "should NOT work with nvidia-container-runtime-hook",
+        "State": "skipped",
+        "StartTime": "2025-05-30T17:31:22.573361+02:00",
+        "EndTime": "0001-01-01T00:00:00Z",
+        "RunTime": 0,
+        "ParallelProcess": 1,
+        "NumAttempts": 0,
+        "MaxFlakeAttempts": 0,
+        "MaxMustPassRepeatedly": 0
+      }
+    ]
+  }
+]
