@@ -78,12 +78,14 @@ func TestDiscoverModifier(t *testing.T) {
 						{
 							Path: "/hook/a",
 							Args: []string{"/hook/a", "arga"},
+							Env:  []string{"NVIDIA_CTK_DEBUG=false"},
 						},
 					},
 					CreateContainer: []specs.Hook{
 						{
 							Path: "/hook/b",
 							Args: []string{"/hook/b", "argb"},
+							Env:  []string{"NVIDIA_CTK_DEBUG=false"},
 						},
 					},
 				},
@@ -123,6 +125,7 @@ func TestDiscoverModifier(t *testing.T) {
 						{
 							Path: "/hook/b",
 							Args: []string{"/hook/b", "argb"},
+							Env:  []string{"NVIDIA_CTK_DEBUG=false"},
 						},
 					},
 				},
