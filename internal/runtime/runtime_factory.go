@@ -18,6 +18,7 @@ package runtime
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
@@ -75,7 +76,10 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		return nil, err
 	}
 
-	hookCreator := discover.NewHookCreator(cfg.NVIDIACTKConfig.Path)
+	hookCreator := discover.NewHookCreator(
+		cfg.NVIDIACTKConfig.Path,
+		cfg.NVIDIAContainerRuntimeConfig.DebugFilePath == "" || cfg.NVIDIAContainerRuntimeConfig.DebugFilePath == os.DevNull,
+	)
 
 	mode := info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode, image)
 	// We update the mode here so that we can continue passing just the config to other functions.

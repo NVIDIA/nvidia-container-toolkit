@@ -34,6 +34,7 @@ type Hook struct {
 	Lifecycle string
 	Path      string
 	Args      []string
+	Env       []string
 }
 
 // Discover defines an interface for discovering the devices, mounts, and hooks available on a system
