@@ -97,17 +97,20 @@ func (m command) build() *cli.Command {
 			Name:        "config-search-path",
 			Usage:       "Specify the path to search for config files when discovering the entities that should be included in the CDI specification.",
 			Destination: &opts.configSearchPaths,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_CONFIG_SEARCH_PATHS"},
 		},
 		&cli.StringFlag{
 			Name:        "output",
 			Usage:       "Specify the file to output the generated CDI specification to. If this is '' the specification is output to STDOUT",
 			Destination: &opts.output,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_OUTPUT_FILE_PATH"},
 		},
 		&cli.StringFlag{
 			Name:        "format",
 			Usage:       "The output format for the generated spec [json | yaml]. This overrides the format defined by the output file extension (if specified).",
 			Value:       spec.FormatYAML,
 			Destination: &opts.format,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_OUTPUT_FORMAT"},
 		},
 		&cli.StringFlag{
 			Name:    "mode",
@@ -117,27 +120,32 @@ func (m command) build() *cli.Command {
 				"If mode is set to 'auto' the mode will be determined based on the system configuration.",
 			Value:       string(nvcdi.ModeAuto),
 			Destination: &opts.mode,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_MODE"},
 		},
 		&cli.StringFlag{
 			Name:        "dev-root",
 			Usage:       "Specify the root where `/dev` is located. If this is not specified, the driver-root is assumed.",
 			Destination: &opts.devRoot,
+			EnvVars:     []string{"NVIDIA_CTK_DEV_ROOT"},
 		},
 		&cli.StringSliceFlag{
 			Name:        "device-name-strategy",
 			Usage:       "Specify the strategy for generating device names. If this is specified multiple times, the devices will be duplicated for each strategy. One of [index | uuid | type-index]",
 			Value:       cli.NewStringSlice(nvcdi.DeviceNameStrategyIndex, nvcdi.DeviceNameStrategyUUID),
 			Destination: &opts.deviceNameStrategies,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_DEVICE_NAME_STRATEGIES"},
 		},
 		&cli.StringFlag{
 			Name:        "driver-root",
 			Usage:       "Specify the NVIDIA GPU driver root to use when discovering the entities that should be included in the CDI specification.",
 			Destination: &opts.driverRoot,
+			EnvVars:     []string{"NVIDIA_CTK_DRIVER_ROOT"},
 		},
 		&cli.StringSliceFlag{
 			Name:        "library-search-path",
 			Usage:       "Specify the path to search for libraries when discovering the entities that should be included in the CDI specification.\n\tNote: This option only applies to CSV mode.",
 			Destination: &opts.librarySearchPaths,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_LIBRARY_SEARCH_PATHS"},
 		},
 		&cli.StringFlag{
 			Name:    "nvidia-cdi-hook-path",
@@ -146,11 +154,13 @@ func (m command) build() *cli.Command {
 				"If not specified, the PATH will be searched for `nvidia-cdi-hook`. " +
 				"NOTE: That if this is specified as `nvidia-ctk`, the PATH will be searched for `nvidia-ctk` instead.",
 			Destination: &opts.nvidiaCDIHookPath,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_HOOK_PATH"},
 		},
 		&cli.StringFlag{
 			Name:        "ldconfig-path",
 			Usage:       "Specify the path to use for ldconfig in the generated CDI specification",
 			Destination: &opts.ldconfigPath,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_LDCONFIG_PATH"},
 		},
 		&cli.StringFlag{
 			Name:        "vendor",
@@ -158,6 +168,7 @@ func (m command) build() *cli.Command {
 			Usage:       "the vendor string to use for the generated CDI specification.",
 			Value:       "nvidia.com",
 			Destination: &opts.vendor,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_VENDOR"},
 		},
 		&cli.StringFlag{
 			Name:        "class",
@@ -165,17 +176,20 @@ func (m command) build() *cli.Command {
 			Usage:       "the class string to use for the generated CDI specification.",
 			Value:       "gpu",
 			Destination: &opts.class,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_CLASS"},
 		},
 		&cli.StringSliceFlag{
 			Name:        "csv.file",
 			Usage:       "The path to the list of CSV files to use when generating the CDI specification in CSV mode.",
 			Value:       cli.NewStringSlice(csv.DefaultFileList()...),
 			Destination: &opts.csv.files,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_CSV_FILES"},
 		},
 		&cli.StringSliceFlag{
 			Name:        "csv.ignore-pattern",
 			Usage:       "specify a pattern the CSV mount specifications.",
 			Destination: &opts.csv.ignorePatterns,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_CSV_IGNORE_PATTERNS"},
 		},
 		&cli.StringSliceFlag{
 			Name:    "disable-hook",
@@ -185,6 +199,7 @@ func (m command) build() *cli.Command {
 				"special hook name 'all' can be used ensure that the generated " +
 				"CDI specification does not include any hooks.",
 			Destination: &opts.disabledHooks,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_DISABLED_HOOKS"},
 		},
 	}
 

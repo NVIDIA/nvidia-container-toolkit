@@ -64,6 +64,7 @@ func (m command) build() *cli.Command {
 			Usage:       "specify the directories to scan for CDI specifications",
 			Value:       cli.NewStringSlice(cdi.DefaultSpecDirs...),
 			Destination: &cfg.cdiSpecDirs,
+			EnvVars:     []string{"NVIDIA_CTK_CDI_SPEC_DIRS"},
 		},
 	}
 
