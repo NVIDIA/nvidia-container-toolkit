@@ -72,7 +72,7 @@ func createLDCacheUpdateHook(hookCreator HookCreator, ldconfig string, libraries
 		args = append(args, "--folder", f)
 	}
 
-	return hookCreator.Create("update-ldcache", args...)
+	return hookCreator.Create(UpdateLDCacheHook, args...)
 }
 
 // getLibraryPaths extracts the library dirs from the specified mounts

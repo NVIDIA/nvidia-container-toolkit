@@ -21,6 +21,7 @@ import (
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
 
@@ -36,14 +37,27 @@ type Interface interface {
 	GetDeviceSpecsByID(...string) ([]specs.Device, error)
 }
 
-// A HookName refers to one of the predefined set of CDI hooks that may be
-// included in the generated CDI specification.
-type HookName string
+// A HookName represents one of the predefined NVIDIA CDI hooks.
+type HookName = discover.HookName
 
 const (
-	// HookEnableCudaCompat refers to the hook used to enable CUDA Forward Compatibility.
-	// This was added with v1.17.5 of the NVIDIA Container Toolkit.
-	HookEnableCudaCompat = HookName("enable-cuda-compat")
+	// AllHooks is a special hook name that allows all hooks to be matched.
+	AllHooks = discover.AllHooks
+
+	// A CreateSymlinksHook is used to create symlinks in the container.
+	CreateSymlinksHook = discover.CreateSymlinksHook
+	// An EnableCudaCompatHook is used to enabled CUDA Forward Compatibility.
+	// Added in v1.17.5
+	EnableCudaCompatHook = discover.EnableCudaCompatHook
+	// An UpdateLDCacheHook is used to update the ldcache in the container.
+	UpdateLDCacheHook = discover.UpdateLDCacheHook
+
+	// Deprecated: Use CreateSymlinksHook instead.
+	HookCreateSymlinks = CreateSymlinksHook
+	// Deprecated: Use EnableCudaCompatHook instead.
+	HookEnableCudaCompat = EnableCudaCompatHook
+	// Deprecated: Use UpdateLDCacheHook instead.
+	HookUpdateLDCache = UpdateLDCacheHook
 )
 
 // A FeatureFlag refers to a specific feature that can be toggled in the CDI api.
