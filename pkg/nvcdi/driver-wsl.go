@@ -59,19 +59,14 @@ func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, hookCrea
 	}
 	logger.Infof("Using WSL driver store paths: %v", driverStorePaths)
 
-	return newWSLDriverStoreDiscoverer(logger, driverRoot, hookCreator, ldconfigPath, driverStorePaths)
-}
-
-// newWSLDriverStoreDiscoverer returns a Discoverer for WSL2 drivers in the driver store associated with a dxcore adapter.
-func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, hookCreator discover.HookCreator, ldconfigPath string, searchPaths []string) (discover.Discover, error) {
-	searchPaths = append(searchPaths, "/usr/lib/wsl/lib")
+	driverStorePaths = append(driverStorePaths, "/usr/lib/wsl/lib")
 
 	libraries := discover.NewMounts(
 		logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
 			lookup.WithSearchPaths(
-				searchPaths...,
+				driverStorePaths...,
 			),
 			lookup.WithCount(1),
 		),
