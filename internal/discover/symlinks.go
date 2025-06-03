@@ -19,6 +19,7 @@ package discover
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
 )
 
 type additionalSymlinks struct {
@@ -72,6 +73,9 @@ func (d *additionalSymlinks) Hooks() ([]Hook, error) {
 	if len(links) == 0 {
 		return hooks, nil
 	}
+
+	// Sort the links to ensure consistent output
+	sort.Strings(links)
 
 	createSymlinkHooks, err := d.hookCreator.Create("create-symlinks", links...).Hooks()
 	if err != nil {

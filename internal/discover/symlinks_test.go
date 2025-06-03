@@ -301,8 +301,8 @@ func TestWithWithDriverDotSoSymlinks(t *testing.T) {
 					Path:      "/path/to/nvidia-cdi-hook",
 					Args: []string{
 						"nvidia-cdi-hook", "create-symlinks",
-						"--link", "libcuda.so.1::/usr/lib/libcuda.so",
 						"--link", "libGLX_nvidia.so.1.2.3::/usr/lib/libGLX_indirect.so.0",
+						"--link", "libcuda.so.1::/usr/lib/libcuda.so",
 						"--link", "libnvidia-opticalflow.so.1::/usr/lib/libnvidia-opticalflow.so",
 					},
 					Env: []string{"NVIDIA_CTK_DEBUG=false"},
