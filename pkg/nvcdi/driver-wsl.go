@@ -40,13 +40,12 @@ var requiredDriverStoreFiles = []string{
 
 // newWSLDriverDiscoverer returns a Discoverer for WSL2 drivers.
 func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, hookCreator discover.HookCreator, ldconfigPath string) (discover.Discover, error) {
-	err := dxcore.Init()
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize dxcore: %v", err)
+	if err := dxcore.Init(); err != nil {
+		return nil, fmt.Errorf("failed to initialize dxcore: %w", err)
 	}
 	defer func() {
 		if err := dxcore.Shutdown(); err != nil {
-			logger.Warningf("failed to shutdown dxcore: %v", err)
+			logger.Warningf("failed to shutdown dxcore: %w", err)
 		}
 	}()
 
@@ -54,32 +53,19 @@ func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, hookCrea
 	if len(driverStorePaths) == 0 {
 		return nil, fmt.Errorf("no driver store paths found")
 	}
+	if len(driverStorePaths) > 1 {
+		logger.Warningf("Found multiple driver store paths: %v", driverStorePaths)
+	}
 	logger.Infof("Using WSL driver store paths: %v", driverStorePaths)
 
-	return newWSLDriverStoreDiscoverer(logger, driverRoot, hookCreator, ldconfigPath, driverStorePaths)
-}
+	driverStorePaths = append(driverStorePaths, "/usr/lib/wsl/lib")
 
-// newWSLDriverStoreDiscoverer returns a Discoverer for WSL2 drivers in the driver store associated with a dxcore adapter.
-func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, hookCreator discover.HookCreator, ldconfigPath string, driverStorePaths []string) (discover.Discover, error) {
-	var searchPaths []string
-	seen := make(map[string]bool)
-	for _, path := range driverStorePaths {
-		if seen[path] {
-			continue
-		}
-		searchPaths = append(searchPaths, path)
-	}
-	if len(searchPaths) > 1 {
-		logger.Warningf("Found multiple driver store paths: %v", searchPaths)
-	}
-	searchPaths = append(searchPaths, "/usr/lib/wsl/lib")
-
-	libraries := discover.NewMounts(
+	driverStoreMounts := discover.NewMounts(
 		logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
 			lookup.WithSearchPaths(
-				searchPaths...,
+				driverStorePaths...,
 			),
 			lookup.WithCount(1),
 		),
@@ -89,14 +75,14 @@ func newWSLDriverStoreDiscoverer(logger logger.Interface, driverRoot string, hoo
 
 	symlinkHook := nvidiaSMISimlinkHook{
 		logger:      logger,
-		mountsFrom:  libraries,
+		mountsFrom:  driverStoreMounts,
 		hookCreator: hookCreator,
 	}
 
-	ldcacheHook, _ := discover.NewLDCacheUpdateHook(logger, libraries, hookCreator, ldconfigPath)
+	ldcacheHook, _ := discover.NewLDCacheUpdateHook(logger, driverStoreMounts, hookCreator, ldconfigPath)
 
 	d := discover.Merge(
-		libraries,
+		driverStoreMounts,
 		symlinkHook,
 		ldcacheHook,
 	)
