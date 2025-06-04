@@ -445,11 +445,6 @@ func setGetDistIDLikeForTest(ids []string) func() {
 	}
 }
 
-// prt returns a reference to whatever type is passed into it
-func ptr[T any](x T) *T {
-	return &x
-}
-
 func setGetLdConfigPathForTest() func() {
 	previous := getLdConfigPath
 	getLdConfigPath = func() ldconfigPath {
