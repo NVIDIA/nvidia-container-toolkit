@@ -56,8 +56,12 @@ type CUDA struct {
 // NewCUDAImageFromSpec creates a CUDA image from the input OCI runtime spec.
 // The process environment is read (if present) to construc the CUDA Image.
 func NewCUDAImageFromSpec(spec *specs.Spec, opts ...Option) (CUDA, error) {
+	if spec == nil {
+		return New(opts...)
+	}
+
 	var env []string
-	if spec != nil && spec.Process != nil {
+	if spec.Process != nil {
 		env = spec.Process.Env
 	}
 
@@ -219,15 +223,8 @@ func parseMajorMinorVersion(version string) (string, error) {
 // OnlyFullyQualifiedCDIDevices returns true if all devices requested in the image are requested as CDI devices/
 func (i CUDA) OnlyFullyQualifiedCDIDevices() bool {
 	var hasCDIdevice bool
-	for _, device := range i.VisibleDevicesFromEnvVar() {
+	for _, device := range i.VisibleDevices() {
 		if !parser.IsQualifiedName(device) {
-			return false
-		}
-		hasCDIdevice = true
-	}
-
-	for _, device := range i.DevicesFromMounts() {
-		if !strings.HasPrefix(device, "cdi/") {
 			return false
 		}
 		hasCDIdevice = true
@@ -309,20 +306,27 @@ func (i CUDA) VisibleDevicesFromEnvVar() []string {
 // visibleDevicesFromMounts returns the set of visible devices requested as mounts.
 func (i CUDA) visibleDevicesFromMounts() []string {
 	var devices []string
-	for _, device := range i.DevicesFromMounts() {
+	for _, device := range i.requestsFromMounts() {
 		switch {
-		case strings.HasPrefix(device, volumeMountDevicePrefixCDI):
-			continue
 		case strings.HasPrefix(device, volumeMountDevicePrefixImex):
 			continue
+		case strings.HasPrefix(device, volumeMountDevicePrefixCDI):
+			name, err := cdiDeviceMountRequest(device).qualifiedName()
+			if err != nil {
+				i.logger.Warningf("Ignoring invalid mount request for CDI device %v: %v", device, err)
+				continue
+			}
+			devices = append(devices, name)
+		default:
+			devices = append(devices, device)
 		}
-		devices = append(devices, device)
+
 	}
 	return devices
 }
 
-// DevicesFromMounts returns a list of device specified as mounts.
-func (i CUDA) DevicesFromMounts() []string {
+// requestsFromMounts returns a list of device specified as mounts.
+func (i CUDA) requestsFromMounts() []string {
 	root := filepath.Clean(DeviceListAsVolumeMountsRoot)
 	seen := make(map[string]bool)
 	var devices []string
@@ -354,23 +358,30 @@ func (i CUDA) DevicesFromMounts() []string {
 	return devices
 }
 
-// CDIDevicesFromMounts returns a list of CDI devices specified as mounts on the image.
-func (i CUDA) CDIDevicesFromMounts() []string {
-	var devices []string
-	for _, mountDevice := range i.DevicesFromMounts() {
-		if !strings.HasPrefix(mountDevice, volumeMountDevicePrefixCDI) {
-			continue
-		}
-		parts := strings.SplitN(strings.TrimPrefix(mountDevice, volumeMountDevicePrefixCDI), "/", 3)
-		if len(parts) != 3 {
-			continue
-		}
-		vendor := parts[0]
-		class := parts[1]
-		device := parts[2]
-		devices = append(devices, fmt.Sprintf("%s/%s=%s", vendor, class, device))
+// a cdiDeviceMountRequest represents a CDI device requests as a mount.
+// Here the host path /dev/null is mounted to a particular path in the container.
+// The container path has the form:
+// /var/run/nvidia-container-devices/cdi/<vendor>/<class>/<device>
+// or
+// /var/run/nvidia-container-devices/cdi/<vendor>/<class>=<device>
+type cdiDeviceMountRequest string
+
+// qualifiedName returns the fully-qualified name of the CDI device.
+func (m cdiDeviceMountRequest) qualifiedName() (string, error) {
+	if !strings.HasPrefix(string(m), volumeMountDevicePrefixCDI) {
+		return "", fmt.Errorf("invalid mount CDI device request: %s", m)
 	}
-	return devices
+
+	requestedDevice := strings.TrimPrefix(string(m), volumeMountDevicePrefixCDI)
+	if parser.IsQualifiedName(requestedDevice) {
+		return requestedDevice, nil
+	}
+
+	parts := strings.SplitN(requestedDevice, "/", 3)
+	if len(parts) != 3 {
+		return "", fmt.Errorf("invalid mount CDI device request: %s", m)
+	}
+	return fmt.Sprintf("%s/%s=%s", parts[0], parts[1], parts[2]), nil
 }
 
 // ImexChannelsFromEnvVar returns the list of IMEX channels requested for the image.
@@ -385,7 +396,7 @@ func (i CUDA) ImexChannelsFromEnvVar() []string {
 // ImexChannelsFromMounts returns the list of IMEX channels requested for the image.
 func (i CUDA) ImexChannelsFromMounts() []string {
 	var channels []string
-	for _, mountDevice := range i.DevicesFromMounts() {
+	for _, mountDevice := range i.requestsFromMounts() {
 		if !strings.HasPrefix(mountDevice, volumeMountDevicePrefixImex) {
 			continue
 		}
