@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
@@ -81,14 +82,25 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, h
 // vulkan ICD files are at {{ .driverRoot }}/vulkan instead of in /etc/vulkan.
 func newVulkanConfigsDiscover(logger logger.Interface, driver *root.Driver) Discover {
 	locator := lookup.First(driver.Configs(), driver.Files())
+
+	required := []string{
+		"vulkan/icd.d/nvidia_icd.json",
+		"vulkan/icd.d/nvidia_layers.json",
+		"vulkan/implicit_layer.d/nvidia_layers.json",
+	}
+	// For some RPM-based driver packages, the vulkan ICD files are installed to
+	// /usr/share/vulkan/icd.d/nvidia_icd.%{_target_cpu}.json
+	// We also include this in the list of candidates for the ICD file.
+	switch runtime.GOARCH {
+	case "amd64":
+		required = append(required, "vulkan/icd.d/nvidia_icd.x86_64.json")
+	case "arm64":
+		required = append(required, "vulkan/icd.d/nvidia_icd.aarch64.json")
+	}
 	return &mountsToContainerPath{
-		logger:  logger,
-		locator: locator,
-		required: []string{
-			"vulkan/icd.d/nvidia_icd.json",
-			"vulkan/icd.d/nvidia_layers.json",
-			"vulkan/implicit_layer.d/nvidia_layers.json",
-		},
+		logger:        logger,
+		locator:       locator,
+		required:      required,
 		containerRoot: "/etc",
 	}
 }
