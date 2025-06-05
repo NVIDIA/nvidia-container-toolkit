@@ -20,7 +20,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/opencontainers/runtime-spec/specs-go"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
 func TestGetAnnotationDevices(t *testing.T) {
@@ -87,6 +91,72 @@ func TestGetAnnotationDevices(t *testing.T) {
 
 			require.NoError(t, err)
 			require.ElementsMatch(t, tc.expectedDevices, devices)
+		})
+	}
+}
+
+func TestGetDevicesFromSpec(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	testCases := []struct {
+		description     string
+		input           cdiModifier
+		spec            *specs.Spec
+		expectedDevices []string
+	}{
+		{
+			description: "empty spec yields no devices",
+		},
+		{
+			description: "cdi devices from mounts",
+			input: cdiModifier{
+				defaultKind:                    "nvidia.com/gpu",
+				acceptEnvvarUnprivileged:       true,
+				acceptDeviceListAsVolumeMounts: true,
+			},
+			spec: &specs.Spec{
+				Mounts: []specs.Mount{
+					{
+						Destination: "/var/run/nvidia-container-devices/cdi/nvidia.com/gpu/0",
+						Source:      "/dev/null",
+					},
+					{
+						Destination: "/var/run/nvidia-container-devices/cdi/nvidia.com/gpu/1",
+						Source:      "/dev/null",
+					},
+				},
+			},
+			expectedDevices: []string{"nvidia.com/gpu=0", "nvidia.com/gpu=1"},
+		},
+		{
+			description: "cdi devices from envvar",
+			input: cdiModifier{
+				defaultKind:                    "nvidia.com/gpu",
+				acceptEnvvarUnprivileged:       true,
+				acceptDeviceListAsVolumeMounts: true,
+			},
+			spec: &specs.Spec{
+				Process: &specs.Process{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=0,example.com/class=device"},
+				},
+			},
+			expectedDevices: []string{"nvidia.com/gpu=0", "example.com/class=device"},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc.input.logger = logger
+
+		spec := &oci.SpecMock{
+			LoadFunc: func() (*specs.Spec, error) {
+				return tc.spec, nil
+			},
+		}
+
+		t.Run(tc.description, func(t *testing.T) {
+			devices, err := tc.input.getDevicesFromSpec(spec)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.expectedDevices, devices)
 		})
 	}
 }

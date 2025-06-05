@@ -184,13 +184,29 @@ func TestResolveAutoMode(t *testing.T) {
 			expectedMode: "legacy",
 		},
 		{
-			description: "cdi mount and non-CDI envvar resolves to legacy",
+			description: "cdi mount and non-CDI envvar resolves to cdi",
 			mode:        "auto",
 			envmap: map[string]string{
 				"NVIDIA_VISIBLE_DEVICES": "0",
 			},
 			mounts: []string{
 				"/var/run/nvidia-container-devices/cdi/nvidia.com/gpu/0",
+			},
+			info: map[string]bool{
+				"nvml":  true,
+				"tegra": false,
+				"nvgpu": false,
+			},
+			expectedMode: "cdi",
+		},
+		{
+			description: "non-cdi mount and CDI envvar resolves to legacy",
+			mode:        "auto",
+			envmap: map[string]string{
+				"NVIDIA_VISIBLE_DEVICES": "nvidia.com/gpu=0",
+			},
+			mounts: []string{
+				"/var/run/nvidia-container-devices/0",
 			},
 			info: map[string]bool{
 				"nvml":  true,
@@ -232,6 +248,8 @@ func TestResolveAutoMode(t *testing.T) {
 			image, _ := image.New(
 				image.WithEnvMap(tc.envmap),
 				image.WithMounts(mounts),
+				image.WithAcceptDeviceListAsVolumeMounts(true),
+				image.WithAcceptEnvvarUnprivileged(true),
 			)
 			mode := resolveMode(logger, tc.mode, image, properties)
 			require.EqualValues(t, tc.expectedMode, mode)

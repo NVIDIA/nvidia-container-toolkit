@@ -66,57 +66,66 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spe
 }
 
 func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.Config) ([]string, error) {
+	cdiModifier := &cdiModifier{
+		logger:                         logger,
+		acceptDeviceListAsVolumeMounts: cfg.AcceptDeviceListAsVolumeMounts,
+		acceptEnvvarUnprivileged:       cfg.AcceptEnvvarUnprivileged,
+		annotationPrefixes:             cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes,
+		defaultKind:                    cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind,
+	}
+	return cdiModifier.getDevicesFromSpec(ociSpec)
+}
+
+// TODO: We should rename this type.
+type cdiModifier struct {
+	logger                         logger.Interface
+	acceptDeviceListAsVolumeMounts bool
+	acceptEnvvarUnprivileged       bool
+	annotationPrefixes             []string
+	defaultKind                    string
+}
+
+func (c *cdiModifier) getDevicesFromSpec(ociSpec oci.Spec) ([]string, error) {
 	rawSpec, err := ociSpec.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
 	}
 
-	annotationDevices, err := getAnnotationDevices(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes, rawSpec.Annotations)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse container annotations: %v", err)
-	}
-	if len(annotationDevices) > 0 {
-		return annotationDevices, nil
+	if rawSpec != nil {
+		annotationDevices, err := getAnnotationDevices(c.annotationPrefixes, rawSpec.Annotations)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse container annotations: %v", err)
+		}
+		if len(annotationDevices) > 0 {
+			return annotationDevices, nil
+		}
 	}
 
 	container, err := image.NewCUDAImageFromSpec(
 		rawSpec,
-		image.WithLogger(logger),
+		image.WithLogger(c.logger),
+		image.WithAcceptDeviceListAsVolumeMounts(c.acceptDeviceListAsVolumeMounts),
+		image.WithAcceptEnvvarUnprivileged(c.acceptEnvvarUnprivileged),
 	)
 	if err != nil {
 		return nil, err
 	}
-	if cfg.AcceptDeviceListAsVolumeMounts {
-		mountDevices := container.CDIDevicesFromMounts()
-		if len(mountDevices) > 0 {
-			return mountDevices, nil
-		}
-	}
 
 	var devices []string
 	seen := make(map[string]bool)
-	for _, name := range container.VisibleDevicesFromEnvVar() {
+	for _, name := range container.VisibleDevices() {
 		if !parser.IsQualifiedName(name) {
-			name = fmt.Sprintf("%s=%s", cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind, name)
+			name = fmt.Sprintf("%s=%s", c.defaultKind, name)
 		}
 		if seen[name] {
-			logger.Debugf("Ignoring duplicate device %q", name)
+			c.logger.Debugf("Ignoring duplicate device %q", name)
 			continue
 		}
+		seen[name] = true
 		devices = append(devices, name)
 	}
 
-	if len(devices) == 0 {
-		return nil, nil
-	}
-
-	if cfg.AcceptEnvvarUnprivileged || image.IsPrivileged((*image.OCISpec)(rawSpec)) {
-		return devices, nil
-	}
-
-	logger.Warningf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES: %v", devices)
-
-	return nil, nil
+	return devices, nil
 }
 
 // getAnnotationDevices returns a list of devices specified in the annotations.
