@@ -65,7 +65,7 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, containerI
 
 // requiresGraphicsModifier determines whether a graphics modifier is required.
 func requiresGraphicsModifier(cudaImage image.CUDA) (bool, string) {
-	if devices := cudaImage.VisibleDevicesFromEnvVar(); len(devices) == 0 {
+	if devices := cudaImage.VisibleDevices(); len(devices) == 0 {
 		return false, "no devices requested"
 	}
 

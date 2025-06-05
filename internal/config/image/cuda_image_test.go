@@ -429,7 +429,7 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 			)
 
 			require.NoError(t, err)
-			devices := image.VisibleDevicesFromEnvVar()
+			devices := image.visibleDevicesFromEnvVar()
 			require.EqualValues(t, tc.expectedDevices, devices)
 		})
 	}
@@ -508,13 +508,15 @@ func TestGetVisibleDevicesFromMounts(t *testing.T) {
 
 func TestVisibleDevices(t *testing.T) {
 	var tests = []struct {
-		description        string
-		mountDevices       []specs.Mount
-		envvarDevices      string
-		privileged         bool
-		acceptUnprivileged bool
-		acceptMounts       bool
-		expectedDevices    []string
+		description                   string
+		mountDevices                  []specs.Mount
+		envvarDevices                 string
+		privileged                    bool
+		acceptUnprivileged            bool
+		acceptMounts                  bool
+		preferredVisibleDeviceEnvVars []string
+		env                           map[string]string
+		expectedDevices               []string
 	}{
 		{
 			description: "Mount devices, unprivileged, no accept unprivileged",
@@ -597,20 +599,92 @@ func TestVisibleDevices(t *testing.T) {
 			acceptMounts:       false,
 			expectedDevices:    nil,
 		},
+		// New test cases for visibleEnvVars functionality
+		{
+			description:                   "preferred env var set and present in env, privileged",
+			mountDevices:                  nil,
+			envvarDevices:                 "",
+			privileged:                    true,
+			acceptUnprivileged:            false,
+			acceptMounts:                  true,
+			preferredVisibleDeviceEnvVars: []string{"DOCKER_RESOURCE_GPUS"},
+			env: map[string]string{
+				"DOCKER_RESOURCE_GPUS": "GPU-12345",
+			},
+			expectedDevices: []string{"GPU-12345"},
+		},
+		{
+			description:                   "preferred env var set and present in env, unprivileged but accepted",
+			mountDevices:                  nil,
+			envvarDevices:                 "",
+			privileged:                    false,
+			acceptUnprivileged:            true,
+			acceptMounts:                  true,
+			preferredVisibleDeviceEnvVars: []string{"DOCKER_RESOURCE_GPUS"},
+			env: map[string]string{
+				"DOCKER_RESOURCE_GPUS": "GPU-12345",
+			},
+			expectedDevices: []string{"GPU-12345"},
+		},
+		{
+			description:                   "preferred env var set and present in env, unprivileged and not accepted",
+			mountDevices:                  nil,
+			envvarDevices:                 "",
+			privileged:                    false,
+			acceptUnprivileged:            false,
+			acceptMounts:                  true,
+			preferredVisibleDeviceEnvVars: []string{"DOCKER_RESOURCE_GPUS"},
+			env: map[string]string{
+				"DOCKER_RESOURCE_GPUS": "GPU-12345",
+			},
+			expectedDevices: nil,
+		},
+		{
+			description:                   "multiple preferred env vars, both present, privileged",
+			mountDevices:                  nil,
+			envvarDevices:                 "",
+			privileged:                    true,
+			acceptUnprivileged:            false,
+			acceptMounts:                  true,
+			preferredVisibleDeviceEnvVars: []string{"DOCKER_RESOURCE_GPUS", "DOCKER_RESOURCE_GPUS_ADDITIONAL"},
+			env: map[string]string{
+				"DOCKER_RESOURCE_GPUS":            "GPU-12345",
+				"DOCKER_RESOURCE_GPUS_ADDITIONAL": "GPU-67890",
+			},
+			expectedDevices: []string{"GPU-12345", "GPU-67890"},
+		},
+		{
+			description:                   "preferred env var not present, fallback to NVIDIA_VISIBLE_DEVICES, privileged",
+			mountDevices:                  nil,
+			envvarDevices:                 "GPU-12345",
+			privileged:                    true,
+			acceptUnprivileged:            false,
+			acceptMounts:                  true,
+			preferredVisibleDeviceEnvVars: []string{"DOCKER_RESOURCE_GPUS"},
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: "GPU-12345",
+			},
+			expectedDevices: []string{"GPU-12345"},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			// Wrap the call to getDevices() in a closure.
+			// Create env map with both NVIDIA_VISIBLE_DEVICES and any additional env vars
+			env := make(map[string]string)
+			if tc.envvarDevices != "" {
+				env[EnvVarNvidiaVisibleDevices] = tc.envvarDevices
+			}
+			for k, v := range tc.env {
+				env[k] = v
+			}
+
 			image, err := New(
-				WithEnvMap(
-					map[string]string{
-						EnvVarNvidiaVisibleDevices: tc.envvarDevices,
-					},
-				),
+				WithEnvMap(env),
 				WithMounts(tc.mountDevices),
 				WithPrivileged(tc.privileged),
 				WithAcceptDeviceListAsVolumeMounts(tc.acceptMounts),
 				WithAcceptEnvvarUnprivileged(tc.acceptUnprivileged),
+				WithPreferredVisibleDevicesEnvVars(tc.preferredVisibleDeviceEnvVars...),
 			)
 			require.NoError(t, err)
 			require.Equal(t, tc.expectedDevices, image.VisibleDevices())

@@ -37,7 +37,7 @@ import (
 //
 // If not devices are selected, no changes are made.
 func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, driver *root.Driver, hookCreator discover.HookCreator) (oci.SpecModifier, error) {
-	if devices := image.VisibleDevicesFromEnvVar(); len(devices) == 0 {
+	if devices := image.VisibleDevices(); len(devices) == 0 {
 		logger.Infof("No modification required; no devices requested")
 		return nil, nil
 	}

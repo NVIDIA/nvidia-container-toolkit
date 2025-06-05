@@ -212,7 +212,7 @@ func parseMajorMinorVersion(version string) (string, error) {
 // OnlyFullyQualifiedCDIDevices returns true if all devices requested in the image are requested as CDI devices/
 func (i CUDA) OnlyFullyQualifiedCDIDevices() bool {
 	var hasCDIdevice bool
-	for _, device := range i.VisibleDevicesFromEnvVar() {
+	for _, device := range i.visibleDevicesFromEnvVar() {
 		if !parser.IsQualifiedName(device) {
 			return false
 		}
@@ -258,7 +258,7 @@ func (i CUDA) VisibleDevices() []string {
 	}
 
 	// Get the Fallback to reading from the environment variable if privileges are correct
-	envVarDeviceRequests := i.VisibleDevicesFromEnvVar()
+	envVarDeviceRequests := i.visibleDevicesFromEnvVar()
 	if len(envVarDeviceRequests) == 0 {
 		return nil
 	}
@@ -278,11 +278,11 @@ func (i CUDA) VisibleDevices() []string {
 	return nil
 }
 
-// VisibleDevicesFromEnvVar returns the set of visible devices requested through environment variables.
+// visibleDevicesFromEnvVar returns the set of visible devices requested through environment variables.
 // If any of the preferredVisibleDeviceEnvVars are present in the image, they
 // are used to determine the visible devices. If this is not the case, the
 // NVIDIA_VISIBLE_DEVICES environment variable is used.
-func (i CUDA) VisibleDevicesFromEnvVar() []string {
+func (i CUDA) visibleDevicesFromEnvVar() []string {
 	envVars := i.visibleEnvVars()
 	return i.DevicesFromEnvvars(envVars...).List()
 }
