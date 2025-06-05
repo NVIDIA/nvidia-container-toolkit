@@ -487,9 +487,9 @@ func TestGetVisibleDevicesFromMounts(t *testing.T) {
 			expectedDevices: []string{"GPU0-MIG0/0/1", "GPU1-MIG0/0/1"},
 		},
 		{
-			description:     "cdi devices are ignored",
-			mounts:          makeTestMounts("GPU0", "cdi/nvidia.com/gpu=all", "GPU1"),
-			expectedDevices: []string{"GPU0", "GPU1"},
+			description:     "cdi devices are included",
+			mounts:          makeTestMounts("GPU0", "nvidia.com/gpu=all", "GPU1"),
+			expectedDevices: []string{"GPU0", "nvidia.com/gpu=all", "GPU1"},
 		},
 		{
 			description:     "imex devices are ignored",

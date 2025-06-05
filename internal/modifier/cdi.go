@@ -34,10 +34,12 @@ import (
 // CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES environment variable is
 // used to select the devices to include.
 func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
-	devices, err := getDevicesFromImage(logger, cfg, image)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get required devices from OCI specification: %v", err)
-	}
+	deviceRequestor := newCDIDeviceRequestor(
+		logger,
+		image,
+		cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind,
+	)
+	devices := deviceRequestor.DeviceRequests()
 	if len(devices) == 0 {
 		logger.Debugf("No devices requested; no modification required.")
 		return nil, nil
@@ -64,46 +66,47 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 	)
 }
 
-func getDevicesFromImage(logger logger.Interface, cfg *config.Config, container image.CUDA) ([]string, error) {
-	annotationDevices, err := getAnnotationDevices(container)
+type deviceRequestor interface {
+	DeviceRequests() []string
+}
+
+type cdiDeviceRequestor struct {
+	image       image.CUDA
+	logger      logger.Interface
+	defaultKind string
+}
+
+func newCDIDeviceRequestor(logger logger.Interface, image image.CUDA, defaultKind string) deviceRequestor {
+	c := &cdiDeviceRequestor{
+		logger:      logger,
+		image:       image,
+		defaultKind: defaultKind,
+	}
+	return withUniqueDevices(c)
+}
+
+func (c *cdiDeviceRequestor) DeviceRequests() []string {
+	if c == nil {
+		return nil
+	}
+	annotationDevices, err := getAnnotationDevices(c.image)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse container annotations: %v", err)
+		c.logger.Warningf("failed to get device requests from container annotations: %v; ignoring.", err)
+		annotationDevices = nil
 	}
 	if len(annotationDevices) > 0 {
-		return annotationDevices, nil
-	}
-
-	if cfg.AcceptDeviceListAsVolumeMounts {
-		mountDevices := container.CDIDevicesFromMounts()
-		if len(mountDevices) > 0 {
-			return mountDevices, nil
-		}
+		return annotationDevices
 	}
 
 	var devices []string
-	seen := make(map[string]bool)
-	for _, name := range container.VisibleDevicesFromEnvVar() {
+	for _, name := range c.image.VisibleDevices() {
 		if !parser.IsQualifiedName(name) {
-			name = fmt.Sprintf("%s=%s", cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind, name)
-		}
-		if seen[name] {
-			logger.Debugf("Ignoring duplicate device %q", name)
-			continue
+			name = fmt.Sprintf("%s=%s", c.defaultKind, name)
 		}
 		devices = append(devices, name)
 	}
 
-	if len(devices) == 0 {
-		return nil, nil
-	}
-
-	if cfg.AcceptEnvvarUnprivileged || container.IsPrivileged() {
-		return devices, nil
-	}
-
-	logger.Warningf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES: %v", devices)
-
-	return nil, nil
+	return devices
 }
 
 // getAnnotationDevices returns a list of devices specified in the annotations.
@@ -111,16 +114,11 @@ func getDevicesFromImage(logger logger.Interface, cfg *config.Config, container 
 // fully-qualified CDI devices names. If any device name is not fully-quality an error is returned.
 // The list of returned devices is deduplicated.
 func getAnnotationDevices(image image.CUDA) ([]string, error) {
-	seen := make(map[string]bool)
 	var annotationDevices []string
 	for _, device := range image.CDIDeviceRequestsFromAnnotations() {
 		if !parser.IsQualifiedName(device) {
 			return nil, fmt.Errorf("invalid device name %q in annotations", device)
 		}
-		if seen[device] {
-			continue
-		}
-		seen[device] = true
 		annotationDevices = append(annotationDevices, device)
 	}
 	return annotationDevices, nil
@@ -147,7 +145,7 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate CDI spec: %w", err)
 	}
-	cdiModifier, err := cdi.New(
+	cdiDeviceRequestor, err := cdi.New(
 		cdi.WithLogger(logger),
 		cdi.WithSpec(spec.Raw()),
 	)
@@ -155,7 +153,7 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 		return nil, fmt.Errorf("failed to construct CDI modifier: %w", err)
 	}
 
-	return cdiModifier, nil
+	return cdiDeviceRequestor, nil
 }
 
 func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devices []string) (spec.Interface, error) {
@@ -192,4 +190,43 @@ func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devic
 		spec.WithVendor("runtime.nvidia.com"),
 		spec.WithClass("gpu"),
 	)
+}
+
+func deviceRequestorFromImage(image image.CUDA) deviceRequestor {
+	return &fromImage{image}
+}
+
+type fromImage struct {
+	image.CUDA
+}
+
+func (f *fromImage) DeviceRequests() []string {
+	if f == nil {
+		return nil
+	}
+	return f.CUDA.VisibleDevices()
+}
+
+type deduplicatedDeviceRequestor struct {
+	deviceRequestor
+}
+
+func withUniqueDevices(deviceRequestor deviceRequestor) deviceRequestor {
+	return &deduplicatedDeviceRequestor{deviceRequestor: deviceRequestor}
+}
+
+func (d *deduplicatedDeviceRequestor) DeviceRequests() []string {
+	if d == nil {
+		return nil
+	}
+	seen := make(map[string]bool)
+	var devices []string
+	for _, device := range d.deviceRequestor.DeviceRequests() {
+		if seen[device] {
+			continue
+		}
+		seen[device] = true
+		devices = append(devices, device)
+	}
+	return devices
 }
