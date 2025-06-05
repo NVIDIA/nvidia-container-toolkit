@@ -1,34 +1,139 @@
 # NVIDIA Container Toolkit Changelog
 
-## v1.17.4
-- Disable mounting of compat libs from container by default
+## v1.18.0-rc.1
+
+- Add create-soname-symlinks hook
+- Require matching version of libnvidia-container-tools
+- Add envvar for libcuda.so parent dir to CDI spec
+- Add EnvVar to Discover interface
+- Resolve to legacy by default in nvidia-container-runtime-hook
+- Default to jit-cdi mode in the nvidia runtime
+- Use functional options to construct runtime mode resolver
+- Add NVIDIA_CTK_CONFIG_FILE_PATH envvar
+- Switch to cuda ubi9 base image
+- Use single version tag for image
+- BUGFIX: modifier: respect GPU volume-mount device requests
+- Ensure consistent sorting of annotation devices
+- Extract deb and rpm packages to single image
+- Remove docker-run as default runtime candidate
+- Return annotation devices from VisibleDevices
+- Make CDI device requests consistent with other methods
+- Construct container info once
+- Add logic to extract annotation device requests to image type
+- Add IsPrivileged function to CUDA container type
+- Add device IDs to nvcdi.GetSpec API
+- Refactor extracting requested devices from the container image
+- Add EnvVars option for all nvidia-ctk cdi commands
+- Add nvidia-cdi-refresh service
+- Add discovery of arch-specific vulkan ICD
+- Add disabled-device-node-modification hook to CDI spec
+- Add a hook to disable device node creation in a container
+- Remove redundant deduplication of search paths for WSL
+- Added ability to disable specific (or all) CDI hooks
+- Consolidate HookName functionality on internal/discover pkg
+- Add envvar to control debug logging in CDI hooks
+- Add FeatureFlags to the nvcdi API
+- Reenable nvsandboxutils for driver discovery
+- Edit discover.mounts to have a deterministic output
+- Refactor the way we create CDI Hooks
+- Issue warning on unsupported CDI hook
+- Run update-ldcache in isolated namespaces
+- Add cuda-compat-mode config option
+- Fix mode detection on Thor-based systems
+- Add rprivate to CDI mount options
+- Skip nil discoverers in merge
+- bump runc go dep to v1.3.0
+- Fix resolution of libs in LDCache on ARM
+- Updated .release:staging to stage images in nvstaging
+- Refactor toolkit installer
+- Allow container runtime executable path to be specified
+- Add support for building ubuntu22.04 on arm64
+- Fix race condition in mounts cache
+- Add support for building ubuntu22.04 on amd64
+- Fix update-ldcache arguments
+- Remove positional arguments from nvidia-ctk-installer
+- Remove deprecated --runtime-args from nvidia-ctk-installer
+- Add version info to nvidia-ctk-installer
+- Update nvidia-ctk-installer app name to match binary name
+- Allow nvidia-ctk config --set to accept comma-separated lists
+- Disable enable-cuda-compat hook for management containers
+- Allow enable-cuda-compat hook to be disabled in CDI spec generation
+- Add disable-cuda-compat-lib-hook feature flag
+- Add basic integration tests for forward compat
+- Ensure that mode hook is executed last
+- Add enable-cuda-compat hook to CDI spec generation
+- Add ldconfig hook in legacy mode
+- Add enable-cuda-compat hook if required
+- Add enable-cuda-compat hook to allow compat libs to be discovered
+- Use libcontainer execseal to run ldconfig
+- Add ignore-imex-channel-requests feature flag
+- Disable nvsandboxutils in nvcdi API
+- Allow cdi mode to work with --gpus flag
+- Add E2E GitHub Action for Container Toolkit
+- Add remote-test option for E2E
+- Enable CDI in runtime if CDI_ENABLED is set
+- Fix overwriting docker feature flags
+- Add option in toolkit container to enable CDI in runtime
+- Remove Set from engine config API
+- Add EnableCDI() method to engine.Interface
+- Add IMEX binaries to CDI discovery
+- Rename test folder to tests
 - Add allow-cuda-compat-libs-from-container feature flag
+- Disable mounting of compat libs from container
 - Skip graphics modifier in CSV mode
-- Properly pass configSearchPaths to a Driver constructor
+- Move nvidia-toolkit to nvidia-ctk-installer
+- Automated regression testing for the NVIDIA Container Toolkit
 - Add support for containerd version 3 config
+- Remove watch option from create-dev-char-symlinks
 - Add string TOML source
+- Improve the implementation for UseLegacyConfig
+- Properly pass configSearchPaths to a Driver constructor
+- Fix create-device-node test when devices exist
+- Add imex mode to CDI spec generation
+- Only allow host-relative LDConfig paths
+- Fix NVIDIA_IMEX_CHANNELS handling on legacy images
+- Fix bug in default config file path
+- Fix fsnotify.Remove logic function.
+- Force symlink creation in create-symlink hook
+
+### Changes in the Toolkit Container
+
+- Create /work/nvidia-toolkit symlink
+- Use Apache license for images
+- Switch to golang distroless image
+- Switch to cuda ubi9 base image
+- Use single version tag for image
+- Extract deb and rpm packages to single image
+- Bump nvidia/cuda in /deployments/container
+- Bump nvidia/cuda in /deployments/container
+- Add E2E GitHub Action for Container Toolkit
+- Bump nvidia/cuda in /deployments/container
+- Move nvidia-toolkit to nvidia-ctk-installer
+- Add support for containerd version 3 config
+- Improve the implementation for UseLegacyConfig
+- Bump nvidia/cuda in /deployments/container
+- Add imex mode to CDI spec generation
+- Only allow host-relative LDConfig paths
+- Fallback to file for runtime config
 
 ### Changes in libnvidia-container
+
+- Fix pointer accessing local variable out of scope
+- Require version match between libnvidia-container-tools and libnvidia-container1
+- Add libnvidia-gpucomp.so to the list of compute libs
+- Use VERSION_ prefix for version parts in makefiles
+- Add additional logging
+- Do not discard container flags when --cuda-compat-mode is not specified
+- Remove unneeded --no-cntlibs argument from list command
+- Add cuda-compat-mode flag to configure command
+- Skip files when user has insufficient permissions
+- Fix building with Go 1.24
 - Add no-cntlibs CLI option to nvidia-container-cli
-
-### Changes in the Toolkit Container
-- Bump CUDA base image version to 12.6.3
-
-## v1.17.3
-- Only allow host-relative LDConfig paths by default.
-### Changes in libnvidia-container
+- Fix always using fallback
+- Add fallback for systems without memfd_create()
 - Create virtual copy of host ldconfig binary before calling fexecve()
+- Fix some typos in text.
 
-## v1.17.2
-- Fixed a bug where legacy images would set imex channels as `all`.
-
-## v1.17.1
-- Fixed a bug where specific symlinks existing in a container image could cause a container to fail to start.
-- Fixed a bug on Tegra-based systems where a container would fail to start.
-- Fixed a bug where the default container runtime config path was not properly set.
-
-### Changes in the Toolkit Container
-- Fallback to using a config file if the current runtime config can not be determined from the command line.
 
 ## v1.17.0
 - Promote v1.17.0-rc.2 to v1.17.0
