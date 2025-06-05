@@ -270,7 +270,7 @@ func (i CUDA) VisibleDevices() []string {
 	}
 
 	// Get the Fallback to reading from the environment variable if privileges are correct
-	envVarDeviceRequests := i.VisibleDevicesFromEnvVar()
+	envVarDeviceRequests := i.visibleDevicesFromEnvVar()
 	if len(envVarDeviceRequests) == 0 {
 		return nil
 	}
@@ -322,11 +322,11 @@ func (i CUDA) cdiDeviceRequestsFromAnnotations() []string {
 	return devices
 }
 
-// VisibleDevicesFromEnvVar returns the set of visible devices requested through environment variables.
+// visibleDevicesFromEnvVar returns the set of visible devices requested through environment variables.
 // If any of the preferredVisibleDeviceEnvVars are present in the image, they
 // are used to determine the visible devices. If this is not the case, the
 // NVIDIA_VISIBLE_DEVICES environment variable is used.
-func (i CUDA) VisibleDevicesFromEnvVar() []string {
+func (i CUDA) visibleDevicesFromEnvVar() []string {
 	envVars := i.visibleEnvVars()
 	return i.DevicesFromEnvvars(envVars...).List()
 }

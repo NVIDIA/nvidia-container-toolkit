@@ -29,9 +29,10 @@ import (
 
 // NewGraphicsModifier constructs a modifier that injects graphics-related modifications into an OCI runtime specification.
 // The value of the NVIDIA_DRIVER_CAPABILITIES environment variable is checked to determine if this modification should be made.
-func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, containerImage image.CUDA, driver *root.Driver, hookCreator discover.HookCreator) (oci.SpecModifier, error) {
-	if required, reason := requiresGraphicsModifier(containerImage); !required {
-		logger.Infof("No graphics modifier required: %v", reason)
+func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, container image.CUDA, driver *root.Driver, hookCreator discover.HookCreator) (oci.SpecModifier, error) {
+	devices, reason := requiresGraphicsModifier(container)
+	if len(devices) == 0 {
+		logger.Infof("No graphics modifier required; %v", reason)
 		return nil, nil
 	}
 
@@ -48,7 +49,7 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, containerI
 	devRoot := driver.Root
 	drmNodes, err := discover.NewDRMNodesDiscoverer(
 		logger,
-		containerImage.DevicesFromEnvvars(image.EnvVarNvidiaVisibleDevices),
+		image.NewVisibleDevices(devices...),
 		devRoot,
 		hookCreator,
 	)
@@ -64,14 +65,15 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, containerI
 }
 
 // requiresGraphicsModifier determines whether a graphics modifier is required.
-func requiresGraphicsModifier(cudaImage image.CUDA) (bool, string) {
-	if devices := cudaImage.VisibleDevicesFromEnvVar(); len(devices) == 0 {
-		return false, "no devices requested"
+func requiresGraphicsModifier(cudaImage image.CUDA) ([]string, string) {
+	devices := cudaImage.VisibleDevices()
+	if len(devices) == 0 {
+		return nil, "no devices requested"
 	}
 
 	if !cudaImage.GetDriverCapabilities().Any(image.DriverCapabilityGraphics, image.DriverCapabilityDisplay) {
-		return false, "no required capabilities requested"
+		return nil, "no required capabilities requested"
 	}
 
-	return true, ""
+	return devices, ""
 }
