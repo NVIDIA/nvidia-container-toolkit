@@ -1,3 +1,5 @@
 nvidia-container-runtime /usr/bin
 nvidia-ctk /usr/bin
 nvidia-cdi-hook /usr/bin
+nvidia-cdi-refresh.service /etc/systemd/system/
+nvidia-cdi-refresh.path /etc/systemd/system/
