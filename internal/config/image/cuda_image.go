@@ -25,6 +25,8 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"golang.org/x/mod/semver"
 	"tags.cncf.io/container-device-interface/pkg/parser"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 const (
@@ -38,27 +40,37 @@ const (
 // a map of environment variable to values that can be used to perform lookups
 // such as requirements.
 type CUDA struct {
-	env    map[string]string
-	mounts []specs.Mount
+	logger logger.Interface
+
+	env          map[string]string
+	isPrivileged bool
+	mounts       []specs.Mount
+
+	acceptDeviceListAsVolumeMounts bool
+	acceptEnvvarUnprivileged       bool
+	preferredVisibleDeviceEnvVars  []string
 }
 
 // NewCUDAImageFromSpec creates a CUDA image from the input OCI runtime spec.
 // The process environment is read (if present) to construc the CUDA Image.
-func NewCUDAImageFromSpec(spec *specs.Spec) (CUDA, error) {
+func NewCUDAImageFromSpec(spec *specs.Spec, opts ...Option) (CUDA, error) {
 	var env []string
 	if spec != nil && spec.Process != nil {
 		env = spec.Process.Env
 	}
 
-	return New(
+	specOpts := []Option{
 		WithEnv(env),
 		WithMounts(spec.Mounts),
-	)
+		WithPrivileged(IsPrivileged((*OCISpec)(spec))),
+	}
+
+	return New(append(opts, specOpts...)...)
 }
 
-// NewCUDAImageFromEnv creates a CUDA image from the input environment. The environment
+// newCUDAImageFromEnv creates a CUDA image from the input environment. The environment
 // is a list of strings of the form ENVAR=VALUE.
-func NewCUDAImageFromEnv(env []string) (CUDA, error) {
+func newCUDAImageFromEnv(env []string) (CUDA, error) {
 	return New(WithEnv(env))
 }
 
@@ -216,14 +228,53 @@ func (i CUDA) OnlyFullyQualifiedCDIDevices() bool {
 	return hasCDIdevice
 }
 
-// VisibleDevicesFromEnvVar returns the set of visible devices requested through
-// the NVIDIA_VISIBLE_DEVICES environment variable.
+// VisibleDevices returns a list of devices requested in the container image.
+// If volume mount requests are enabled these are returned if requested,
+// otherwise device requests through environment variables are considered.
+// In cases where environment variable requests required privileged containers,
+// such devices requests are ignored.
+func (i CUDA) VisibleDevices() []string {
+	// If enabled, try and get the device list from volume mounts first
+	if i.acceptDeviceListAsVolumeMounts {
+		volumeMountDeviceRequests := i.visibleDevicesFromMounts()
+		if len(volumeMountDeviceRequests) > 0 {
+			return volumeMountDeviceRequests
+		}
+	}
+
+	// Get the Fallback to reading from the environment variable if privileges are correct
+	envVarDeviceRequests := i.VisibleDevicesFromEnvVar()
+	if len(envVarDeviceRequests) == 0 {
+		return nil
+	}
+
+	// If the container is privileged, or environment variable requests are
+	// allowed for unprivileged containers, these devices are returned.
+	if i.isPrivileged || i.acceptEnvvarUnprivileged {
+		return envVarDeviceRequests
+	}
+
+	// We log a warning if we are ignoring the environment variable requests.
+	i.logger.Warningf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES in unprivileged container")
+
+	return nil
+}
+
+// VisibleDevicesFromEnvVar returns the set of visible devices requested through environment variables.
+// If any of the preferredVisibleDeviceEnvVars are present in the image, they
+// are used to determine the visible devices. If this is not the case, the
+// NVIDIA_VISIBLE_DEVICES environment variable is used.
 func (i CUDA) VisibleDevicesFromEnvVar() []string {
+	for _, envVar := range i.preferredVisibleDeviceEnvVars {
+		if i.HasEnvvar(envVar) {
+			return i.DevicesFromEnvvars(i.preferredVisibleDeviceEnvVars...).List()
+		}
+	}
 	return i.DevicesFromEnvvars(EnvVarNvidiaVisibleDevices).List()
 }
 
-// VisibleDevicesFromMounts returns the set of visible devices requested as mounts.
-func (i CUDA) VisibleDevicesFromMounts() []string {
+// visibleDevicesFromMounts returns the set of visible devices requested as mounts.
+func (i CUDA) visibleDevicesFromMounts() []string {
 	var devices []string
 	for _, device := range i.DevicesFromMounts() {
 		switch {
@@ -238,7 +289,6 @@ func (i CUDA) VisibleDevicesFromMounts() []string {
 }
 
 // DevicesFromMounts returns a list of device specified as mounts.
-// TODO: This should be merged with getDevicesFromMounts used in the NVIDIA Container Runtime
 func (i CUDA) DevicesFromMounts() []string {
 	root := filepath.Clean(DeviceListAsVolumeMountsRoot)
 	seen := make(map[string]bool)

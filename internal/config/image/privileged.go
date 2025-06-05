@@ -24,20 +24,39 @@ const (
 	capSysAdmin = "CAP_SYS_ADMIN"
 )
 
+type CapabilitiesGetter interface {
+	GetCapabilities() []string
+}
+
+type OCISpec specs.Spec
+
+type OCISpecCapabilities specs.LinuxCapabilities
+
 // IsPrivileged returns true if the container is a privileged container.
-func IsPrivileged(s *specs.Spec) bool {
-	if s.Process.Capabilities == nil {
+func IsPrivileged(s CapabilitiesGetter) bool {
+	if s == nil {
 		return false
 	}
-
-	// We only make sure that the bounding capabibility set has
-	// CAP_SYS_ADMIN. This allows us to make sure that the container was
-	// actually started as '--privileged', but also allow non-root users to
-	// access the privileged NVIDIA capabilities.
-	for _, c := range s.Process.Capabilities.Bounding {
+	for _, c := range s.GetCapabilities() {
 		if c == capSysAdmin {
 			return true
 		}
 	}
+
 	return false
+}
+
+func (s OCISpec) GetCapabilities() []string {
+	if s.Process == nil || s.Process.Capabilities == nil {
+		return nil
+	}
+	return (*OCISpecCapabilities)(s.Process.Capabilities).GetCapabilities()
+}
+
+func (c OCISpecCapabilities) GetCapabilities() []string {
+	// We only make sure that the bounding capability set has
+	// CAP_SYS_ADMIN. This allows us to make sure that the container was
+	// actually started as '--privileged', but also allow non-root users to
+	// access the privileged NVIDIA capabilities.
+	return c.Bounding
 }
