@@ -46,6 +46,11 @@ const (
 
 	// A CreateSymlinksHook is used to create symlinks in the container.
 	CreateSymlinksHook = discover.CreateSymlinksHook
+	// DisableDeviceNodeModificationHook refers to the hook used to ensure that
+	// device nodes are not created by libnvidia-ml.so or nvidia-smi in a
+	// container.
+	// Added in v1.17.8
+	DisableDeviceNodeModificationHook = discover.DisableDeviceNodeModificationHook
 	// An EnableCudaCompatHook is used to enabled CUDA Forward Compatibility.
 	// Added in v1.17.5
 	EnableCudaCompatHook = discover.EnableCudaCompatHook

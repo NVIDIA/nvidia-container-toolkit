@@ -113,6 +113,9 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover
 	updateLDCache, _ := discover.NewLDCacheUpdateHook(l.logger, libraries, l.hookCreator, l.ldconfigPath)
 	discoverers = append(discoverers, updateLDCache)
 
+	disableDeviceNodeModification := l.hookCreator.Create(DisableDeviceNodeModificationHook)
+	discoverers = append(discoverers, disableDeviceNodeModification)
+
 	d := discover.Merge(discoverers...)
 
 	return d, nil
