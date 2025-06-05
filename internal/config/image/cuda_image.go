@@ -228,6 +228,21 @@ func (i CUDA) OnlyFullyQualifiedCDIDevices() bool {
 	return hasCDIdevice
 }
 
+// visibleEnvVars returns the environment variables that are used to determine device visibility.
+// It returns the preferred environment variables that are set, or NVIDIA_VISIBLE_DEVICES if none are set.
+func (i CUDA) visibleEnvVars() []string {
+	var envVars []string
+	for _, envVar := range i.preferredVisibleDeviceEnvVars {
+		if i.HasEnvvar(envVar) {
+			envVars = append(envVars, envVar)
+		}
+	}
+	if len(envVars) == 0 {
+		envVars = append(envVars, EnvVarNvidiaVisibleDevices)
+	}
+	return envVars
+}
+
 // VisibleDevices returns a list of devices requested in the container image.
 // If volume mount requests are enabled these are returned if requested,
 // otherwise device requests through environment variables are considered.
@@ -255,7 +270,10 @@ func (i CUDA) VisibleDevices() []string {
 	}
 
 	// We log a warning if we are ignoring the environment variable requests.
-	i.logger.Warningf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES in unprivileged container")
+	envVars := i.visibleEnvVars()
+	if len(envVars) > 0 {
+		i.logger.Warningf("Ignoring devices requested by environment variable(s) in unprivileged container: %v", envVars)
+	}
 
 	return nil
 }
@@ -265,12 +283,8 @@ func (i CUDA) VisibleDevices() []string {
 // are used to determine the visible devices. If this is not the case, the
 // NVIDIA_VISIBLE_DEVICES environment variable is used.
 func (i CUDA) VisibleDevicesFromEnvVar() []string {
-	for _, envVar := range i.preferredVisibleDeviceEnvVars {
-		if i.HasEnvvar(envVar) {
-			return i.DevicesFromEnvvars(i.preferredVisibleDeviceEnvVars...).List()
-		}
-	}
-	return i.DevicesFromEnvvars(EnvVarNvidiaVisibleDevices).List()
+	envVars := i.visibleEnvVars()
+	return i.DevicesFromEnvvars(envVars...).List()
 }
 
 // visibleDevicesFromMounts returns the set of visible devices requested as mounts.
