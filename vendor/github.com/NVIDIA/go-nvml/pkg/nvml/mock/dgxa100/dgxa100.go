@@ -20,9 +20,10 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/google/uuid"
+
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"github.com/NVIDIA/go-nvml/pkg/nvml/mock"
-	"github.com/google/uuid"
 )
 
 type Server struct {
@@ -108,7 +109,7 @@ func NewDevice(index int) *Device {
 		},
 		GpuInstances:       make(map[*GpuInstance]struct{}),
 		GpuInstanceCounter: 0,
-		MemoryInfo:         nvml.Memory{42949672960, 0, 0},
+		MemoryInfo:         nvml.Memory{Total: 42949672960, Free: 0, Used: 0},
 	}
 	device.setMockFuncs()
 	return device
