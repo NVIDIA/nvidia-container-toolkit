@@ -88,31 +88,31 @@ func (l *library) SystemGetConfComputeCapabilities() (ConfComputeSystemCaps, Ret
 }
 
 // nvml.SystemGetConfComputeState()
-func SystemGetConfComputeState() (ConfComputeSystemState, Return) {
+func (l *library) SystemGetConfComputeState() (ConfComputeSystemState, Return) {
 	var state ConfComputeSystemState
 	ret := nvmlSystemGetConfComputeState(&state)
 	return state, ret
 }
 
 // nvml.SystemGetConfComputeGpusReadyState()
-func SystemGetConfComputeGpusReadyState() (uint32, Return) {
+func (l *library) SystemGetConfComputeGpusReadyState() (uint32, Return) {
 	var isAcceptingWork uint32
 	ret := nvmlSystemGetConfComputeGpusReadyState(&isAcceptingWork)
 	return isAcceptingWork, ret
 }
 
 // nvml.SystemSetConfComputeGpusReadyState()
-func SystemSetConfComputeGpusReadyState(isAcceptingWork uint32) Return {
+func (l *library) SystemSetConfComputeGpusReadyState(isAcceptingWork uint32) Return {
 	return nvmlSystemSetConfComputeGpusReadyState(isAcceptingWork)
 }
 
 // nvml.SystemSetNvlinkBwMode()
-func SystemSetNvlinkBwMode(nvlinkBwMode uint32) Return {
+func (l *library) SystemSetNvlinkBwMode(nvlinkBwMode uint32) Return {
 	return nvmlSystemSetNvlinkBwMode(nvlinkBwMode)
 }
 
 // nvml.SystemGetNvlinkBwMode()
-func SystemGetNvlinkBwMode() (uint32, Return) {
+func (l *library) SystemGetNvlinkBwMode() (uint32, Return) {
 	var nvlinkBwMode uint32
 	ret := nvmlSystemGetNvlinkBwMode(&nvlinkBwMode)
 	return nvlinkBwMode, ret
@@ -137,4 +137,12 @@ func (l *library) SystemGetConfComputeSettings() (SystemConfComputeSettings, Ret
 // nvml.SystemSetConfComputeKeyRotationThresholdInfo()
 func (l *library) SystemSetConfComputeKeyRotationThresholdInfo(keyRotationThresholdInfo ConfComputeSetKeyRotationThresholdInfo) Return {
 	return nvmlSystemSetConfComputeKeyRotationThresholdInfo(&keyRotationThresholdInfo)
+}
+
+// nvml.SystemGetDriverBranch()
+func (l *library) SystemGetDriverBranch() (SystemDriverBranchInfo, Return) {
+	var branchInfo SystemDriverBranchInfo
+	branchInfo.Version = STRUCT_VERSION(branchInfo, 1)
+	ret := nvmlSystemGetDriverBranch(&branchInfo, SYSTEM_DRIVER_VERSION_BUFFER_SIZE)
+	return branchInfo, ret
 }
