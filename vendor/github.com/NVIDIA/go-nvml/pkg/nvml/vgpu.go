@@ -478,3 +478,32 @@ func (l *library) GetVgpuDriverCapabilities(capability VgpuDriverCapability) (bo
 	ret := nvmlGetVgpuDriverCapabilities(capability, &capResult)
 	return (capResult != 0), ret
 }
+
+// nvml.VgpuTypeGetBAR1Info()
+func (l *library) VgpuTypeGetBAR1Info(vgpuTypeId VgpuTypeId) (VgpuTypeBar1Info, Return) {
+	return vgpuTypeId.GetBAR1Info()
+}
+
+func (vgpuTypeId nvmlVgpuTypeId) GetBAR1Info() (VgpuTypeBar1Info, Return) {
+	var bar1Info VgpuTypeBar1Info
+	bar1Info.Version = STRUCT_VERSION(bar1Info, 1)
+	ret := nvmlVgpuTypeGetBAR1Info(vgpuTypeId, &bar1Info)
+	return bar1Info, ret
+}
+
+// nvml.VgpuInstanceGetRuntimeStateSize()
+func (l *library) VgpuInstanceGetRuntimeStateSize(vgpuInstance VgpuInstance) (VgpuRuntimeState, Return) {
+	return vgpuInstance.GetRuntimeStateSize()
+}
+
+func (vgpuInstance nvmlVgpuInstance) GetRuntimeStateSize() (VgpuRuntimeState, Return) {
+	var pState VgpuRuntimeState
+	pState.Version = STRUCT_VERSION(pState, 1)
+	ret := nvmlVgpuInstanceGetRuntimeStateSize(vgpuInstance, &pState)
+	return pState, ret
+}
+
+// nvml.VgpuTypeGetMaxInstancesPerGpuInstance()
+func (l *library) VgpuTypeGetMaxInstancesPerGpuInstance(maxInstance *VgpuTypeMaxInstance) Return {
+	return nvmlVgpuTypeGetMaxInstancesPerGpuInstance(maxInstance)
+}
