@@ -86,37 +86,38 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 	if err != nil {
 		return nil, err
 	}
-	if cfg.AcceptDeviceListAsVolumeMounts {
-		mountDevices := container.CDIDevicesFromMounts()
-		if len(mountDevices) > 0 {
-			return mountDevices, nil
-		}
-	}
 
 	var devices []string
 	seen := make(map[string]bool)
-	for _, name := range container.VisibleDevicesFromEnvVar() {
+	for _, name := range container.VisibleDevices() {
+		// Skip empty device names
+		if strings.TrimSpace(name) == "" {
+			continue
+		}
+
 		if !parser.IsQualifiedName(name) {
 			name = fmt.Sprintf("%s=%s", cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind, name)
 		}
+
+		// Skip devices that result in empty device IDs after qualification
+		if strings.HasSuffix(name, "=") {
+			logger.Debugf("Ignoring device with empty ID: %q", name)
+			continue
+		}
+
 		if seen[name] {
 			logger.Debugf("Ignoring duplicate device %q", name)
 			continue
 		}
 		devices = append(devices, name)
+		seen[name] = true
 	}
 
 	if len(devices) == 0 {
 		return nil, nil
 	}
 
-	if cfg.AcceptEnvvarUnprivileged || image.IsPrivileged((*image.OCISpec)(rawSpec)) {
-		return devices, nil
-	}
-
-	logger.Warningf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES: %v", devices)
-
-	return nil, nil
+	return devices, nil
 }
 
 // getAnnotationDevices returns a list of devices specified in the annotations.
