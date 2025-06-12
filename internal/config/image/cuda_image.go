@@ -42,10 +42,12 @@ const (
 type CUDA struct {
 	logger logger.Interface
 
+	annotations  map[string]string
 	env          map[string]string
 	isPrivileged bool
 	mounts       []specs.Mount
 
+	annotationsPrefixes            []string
 	acceptDeviceListAsVolumeMounts bool
 	acceptEnvvarUnprivileged       bool
 	preferredVisibleDeviceEnvVars  []string
@@ -60,6 +62,7 @@ func NewCUDAImageFromSpec(spec *specs.Spec, opts ...Option) (CUDA, error) {
 	}
 
 	specOpts := []Option{
+		WithAnnotations(spec.Annotations),
 		WithEnv(env),
 		WithMounts(spec.Mounts),
 		WithPrivileged(IsPrivileged((*OCISpec)(spec))),
@@ -262,6 +265,32 @@ func (i CUDA) VisibleDevices() []string {
 	i.logger.Warningf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES in unprivileged container")
 
 	return nil
+}
+
+// CDIDeviceRequestsFromAnnotations returns a list of devices specified in the annotations.
+// Keys starting with the specified prefixes are considered and expected to
+// contain a comma-separated list of fully-qualified CDI devices names.
+// The format of the requested devices is not checked and the list is not
+// deduplicated.
+func (i CUDA) CDIDeviceRequestsFromAnnotations() []string {
+	if len(i.annotationsPrefixes) == 0 || len(i.annotations) == 0 {
+		return nil
+	}
+
+	var deviceKeys []string
+	for key := range i.annotations {
+		for _, prefix := range i.annotationsPrefixes {
+			if strings.HasPrefix(key, prefix) {
+				deviceKeys = append(deviceKeys, key)
+			}
+		}
+	}
+
+	var devices []string
+	for _, key := range deviceKeys {
+		devices = append(devices, strings.Split(i.annotations[key], ",")...)
+	}
+	return devices
 }
 
 // VisibleDevicesFromEnvVar returns the set of visible devices requested through environment variables.
