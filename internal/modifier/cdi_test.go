@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
 
 func TestGetAnnotationDevices(t *testing.T) {
@@ -79,7 +81,13 @@ func TestGetAnnotationDevices(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			devices, err := getAnnotationDevices(tc.prefixes, tc.annotations)
+			image, err := image.New(
+				image.WithAnnotations(tc.annotations),
+				image.WithAnnotationsPrefixes(tc.prefixes),
+			)
+			require.NoError(t, err)
+
+			devices, err := getAnnotationDevices(image)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 				return

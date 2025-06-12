@@ -18,7 +18,6 @@ package modifier
 
 import (
 	"fmt"
-	"strings"
 
 	"tags.cncf.io/container-device-interface/pkg/parser"
 
@@ -71,7 +70,18 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
 	}
 
-	annotationDevices, err := getAnnotationDevices(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes, rawSpec.Annotations)
+	container, err := image.NewCUDAImageFromSpec(
+		rawSpec,
+		image.WithLogger(logger),
+		image.WithAcceptDeviceListAsVolumeMounts(cfg.AcceptDeviceListAsVolumeMounts),
+		image.WithAcceptEnvvarUnprivileged(cfg.AcceptEnvvarUnprivileged),
+		image.WithAnnotationsPrefixes(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	annotationDevices, err := getAnnotationDevices(container)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse container annotations: %v", err)
 	}
@@ -79,13 +89,6 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 		return annotationDevices, nil
 	}
 
-	container, err := image.NewCUDAImageFromSpec(
-		rawSpec,
-		image.WithLogger(logger),
-	)
-	if err != nil {
-		return nil, err
-	}
 	if cfg.AcceptDeviceListAsVolumeMounts {
 		mountDevices := container.CDIDevicesFromMounts()
 		if len(mountDevices) > 0 {
@@ -123,31 +126,19 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 // Keys starting with the specified prefixes are considered and expected to contain a comma-separated list of
 // fully-qualified CDI devices names. If any device name is not fully-quality an error is returned.
 // The list of returned devices is deduplicated.
-func getAnnotationDevices(prefixes []string, annotations map[string]string) ([]string, error) {
-	devicesByKey := make(map[string][]string)
-	for key, value := range annotations {
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(key, prefix) {
-				devicesByKey[key] = strings.Split(value, ",")
-			}
-		}
-	}
-
+func getAnnotationDevices(image image.CUDA) ([]string, error) {
 	seen := make(map[string]bool)
 	var annotationDevices []string
-	for key, devices := range devicesByKey {
-		for _, device := range devices {
-			if !parser.IsQualifiedName(device) {
-				return nil, fmt.Errorf("invalid device name %q in annotation %q", device, key)
-			}
-			if seen[device] {
-				continue
-			}
-			annotationDevices = append(annotationDevices, device)
-			seen[device] = true
+	for _, device := range image.CDIDeviceRequestsFromAnnotations() {
+		if !parser.IsQualifiedName(device) {
+			return nil, fmt.Errorf("invalid device name %q in annotations", device)
 		}
+		if seen[device] {
+			continue
+		}
+		seen[device] = true
+		annotationDevices = append(annotationDevices, device)
 	}
-
 	return annotationDevices, nil
 }
 
