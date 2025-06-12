@@ -144,28 +144,13 @@ func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devic
 		return nil, fmt.Errorf("failed to construct CDI library: %w", err)
 	}
 
-	identifiers := []string{}
+	var identifiers []string
 	for _, device := range devices {
 		_, _, id := parser.ParseDevice(device)
 		identifiers = append(identifiers, id)
 	}
 
-	deviceSpecs, err := cdilib.GetDeviceSpecsByID(identifiers...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get CDI device specs: %w", err)
-	}
-
-	commonEdits, err := cdilib.GetCommonEdits()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get common CDI spec edits: %w", err)
-	}
-
-	return spec.New(
-		spec.WithDeviceSpecs(deviceSpecs),
-		spec.WithEdits(*commonEdits.ContainerEdits),
-		spec.WithVendor("runtime.nvidia.com"),
-		spec.WithClass("gpu"),
-	)
+	return cdilib.GetSpec(identifiers...)
 }
 
 type deduplicatedDeviceRequestor struct {

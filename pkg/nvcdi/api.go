@@ -27,7 +27,7 @@ import (
 
 // Interface defines the API for the nvcdi package
 type Interface interface {
-	GetSpec() (spec.Interface, error)
+	GetSpec(...string) (spec.Interface, error)
 	GetCommonEdits() (*cdi.ContainerEdits, error)
 	GetAllDeviceSpecs() ([]specs.Device, error)
 	GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, error)

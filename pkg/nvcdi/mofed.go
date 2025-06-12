@@ -58,7 +58,7 @@ func (l *mofedlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 
 // GetSpec is unsppported for the mofedlib specs.
 // mofedlib is typically wrapped by a spec that implements GetSpec.
-func (l *mofedlib) GetSpec() (spec.Interface, error) {
+func (l *mofedlib) GetSpec(...string) (spec.Interface, error) {
 	return nil, fmt.Errorf("GetSpec is not supported")
 }
 
