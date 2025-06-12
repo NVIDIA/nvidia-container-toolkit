@@ -33,8 +33,8 @@ import (
 // NewCDIModifier creates an OCI spec modifier that determines the modifications to make based on the
 // CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES environment variable is
 // used to select the devices to include.
-func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
-	devices, err := getDevicesFromSpec(logger, ociSpec, cfg)
+func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
+	devices, err := getDevicesFromImage(logger, cfg, image)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get required devices from OCI specification: %v", err)
 	}
@@ -64,23 +64,7 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spe
 	)
 }
 
-func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.Config) ([]string, error) {
-	rawSpec, err := ociSpec.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
-	}
-
-	container, err := image.NewCUDAImageFromSpec(
-		rawSpec,
-		image.WithLogger(logger),
-		image.WithAcceptDeviceListAsVolumeMounts(cfg.AcceptDeviceListAsVolumeMounts),
-		image.WithAcceptEnvvarUnprivileged(cfg.AcceptEnvvarUnprivileged),
-		image.WithAnnotationsPrefixes(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes),
-	)
-	if err != nil {
-		return nil, err
-	}
-
+func getDevicesFromImage(logger logger.Interface, cfg *config.Config, container image.CUDA) ([]string, error) {
 	annotationDevices, err := getAnnotationDevices(container)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse container annotations: %v", err)
@@ -113,7 +97,7 @@ func getDevicesFromSpec(logger logger.Interface, ociSpec oci.Spec, cfg *config.C
 		return nil, nil
 	}
 
-	if cfg.AcceptEnvvarUnprivileged || image.IsPrivileged((*image.OCISpec)(rawSpec)) {
+	if cfg.AcceptEnvvarUnprivileged || container.IsPrivileged() {
 		return devices, nil
 	}
 
