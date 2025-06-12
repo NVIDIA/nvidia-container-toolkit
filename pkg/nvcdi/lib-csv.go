@@ -34,7 +34,7 @@ type csvlib nvcdilib
 var _ Interface = (*csvlib)(nil)
 
 // GetSpec should not be called for wsllib
-func (l *csvlib) GetSpec() (spec.Interface, error) {
+func (l *csvlib) GetSpec(...string) (spec.Interface, error) {
 	return nil, fmt.Errorf("unexpected call to csvlib.GetSpec()")
 }
 
