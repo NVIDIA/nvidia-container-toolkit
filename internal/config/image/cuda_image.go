@@ -95,6 +95,10 @@ func (i CUDA) IsLegacy() bool {
 	return len(legacyCudaVersion) > 0 && len(cudaRequire) == 0
 }
 
+func (i CUDA) IsPrivileged() bool {
+	return i.isPrivileged
+}
+
 // GetRequirements returns the requirements from all NVIDIA_REQUIRE_ environment
 // variables.
 func (i CUDA) GetRequirements() ([]string, error) {
