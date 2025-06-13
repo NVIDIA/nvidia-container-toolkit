@@ -28,3 +28,4 @@ spec:
     install: false
   nvidiaDriver:
     install: true
+    branch: 550
