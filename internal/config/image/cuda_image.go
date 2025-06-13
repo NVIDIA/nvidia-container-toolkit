@@ -19,6 +19,7 @@ package image
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -300,16 +301,23 @@ func (i CUDA) cdiDeviceRequestsFromAnnotations() []string {
 		return nil
 	}
 
-	var devices []string
-	for key, value := range i.annotations {
+	var annotationKeys []string
+	for key := range i.annotations {
 		for _, prefix := range i.annotationsPrefixes {
 			if strings.HasPrefix(key, prefix) {
-				devices = append(devices, strings.Split(value, ",")...)
+				annotationKeys = append(annotationKeys, key)
 				// There is no need to check additional prefixes since we
 				// typically deduplicate devices in any case.
 				break
 			}
 		}
+	}
+	// We sort the annotationKeys for consistent results.
+	slices.Sort(annotationKeys)
+
+	var devices []string
+	for _, key := range annotationKeys {
+		devices = append(devices, strings.Split(i.annotations[key], ",")...)
 	}
 	return devices
 }
