@@ -136,7 +136,11 @@ func initRuntimeModeAndImage(logger logger.Interface, cfg *config.Config, ociSpe
 		return "", nil, err
 	}
 
-	mode := info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode, image)
+	modeResolver := info.NewRuntimeModeResolver(
+		info.WithLogger(logger),
+		info.WithImage(&image),
+	)
+	mode := modeResolver.ResolveRuntimeMode(cfg.NVIDIAContainerRuntimeConfig.Mode)
 	// We update the mode here so that we can continue passing just the config to other functions.
 	cfg.NVIDIAContainerRuntimeConfig.Mode = mode
 

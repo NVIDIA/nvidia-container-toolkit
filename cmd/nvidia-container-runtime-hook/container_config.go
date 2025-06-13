@@ -242,7 +242,14 @@ func (hookConfig *hookConfig) getNvidiaConfig(image image.CUDA, privileged bool)
 	}
 }
 
-func (hookConfig *hookConfig) getContainerConfig() (config containerConfig) {
+func (hookConfig *hookConfig) getContainerConfig() (config *containerConfig) {
+	hookConfig.Lock()
+	defer hookConfig.Unlock()
+
+	if hookConfig.containerConfig != nil {
+		return hookConfig.containerConfig
+	}
+
 	var h HookState
 	d := json.NewDecoder(os.Stdin)
 	if err := d.Decode(&h); err != nil {
@@ -271,10 +278,13 @@ func (hookConfig *hookConfig) getContainerConfig() (config containerConfig) {
 		log.Panicln(err)
 	}
 
-	return containerConfig{
+	cc := containerConfig{
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,
 		Image:  i,
 		Nvidia: hookConfig.getNvidiaConfig(i, privileged),
 	}
+	hookConfig.containerConfig = &cc
+
+	return hookConfig.containerConfig
 }
