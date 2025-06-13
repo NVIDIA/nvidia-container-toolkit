@@ -63,7 +63,7 @@ func TestGetConfig(t *testing.T) {
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/dev/null",
 					LogLevel:      "info",
-					Runtimes:      []string{"docker-runc", "runc", "crun"},
+					Runtimes:      []string{"runc", "crun"},
 					Mode:          "auto",
 					Modes: modesConfig{
 						CSV: csvModeConfig{
@@ -170,7 +170,7 @@ func TestGetConfig(t *testing.T) {
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/dev/null",
 					LogLevel:      "info",
-					Runtimes:      []string{"docker-runc", "runc", "crun"},
+					Runtimes:      []string{"runc", "crun"},
 					Mode:          "auto",
 					Modes: modesConfig{
 						CSV: csvModeConfig{
@@ -289,7 +289,7 @@ func TestGetConfig(t *testing.T) {
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/dev/null",
 					LogLevel:      "info",
-					Runtimes:      []string{"docker-runc", "runc", "crun"},
+					Runtimes:      []string{"runc", "crun"},
 					Mode:          "auto",
 					Modes: modesConfig{
 						CSV: csvModeConfig{
@@ -331,7 +331,7 @@ func TestGetConfig(t *testing.T) {
 				NVIDIAContainerRuntimeConfig: RuntimeConfig{
 					DebugFilePath: "/dev/null",
 					LogLevel:      "info",
-					Runtimes:      []string{"docker-runc", "runc", "crun"},
+					Runtimes:      []string{"runc", "crun"},
 					Mode:          "auto",
 					Modes: modesConfig{
 						CSV: csvModeConfig{
