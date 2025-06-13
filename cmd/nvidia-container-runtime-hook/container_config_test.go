@@ -487,7 +487,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 				hookCfg := tc.hookConfig
 				if hookCfg == nil {
 					defaultConfig, _ := config.GetDefault()
-					hookCfg = &hookConfig{defaultConfig}
+					hookCfg = &hookConfig{Config: defaultConfig}
 				}
 				cfg = hookCfg.getNvidiaConfig(image, tc.privileged)
 			}

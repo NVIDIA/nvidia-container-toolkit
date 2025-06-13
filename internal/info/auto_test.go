@@ -251,7 +251,12 @@ func TestResolveAutoMode(t *testing.T) {
 				image.WithAcceptDeviceListAsVolumeMounts(true),
 				image.WithAcceptEnvvarUnprivileged(true),
 			)
-			mode := resolveMode(logger, tc.mode, image, properties)
+			mr := NewRuntimeModeResolver(
+				WithLogger(logger),
+				WithImage(&image),
+				WithPropertyExtractor(properties),
+			)
+			mode := mr.ResolveRuntimeMode(tc.mode)
 			require.EqualValues(t, tc.expectedMode, mode)
 		})
 	}
