@@ -487,9 +487,9 @@ func TestGetVisibleDevicesFromMounts(t *testing.T) {
 			expectedDevices: []string{"GPU0-MIG0/0/1", "GPU1-MIG0/0/1"},
 		},
 		{
-			description:     "cdi devices are ignored",
-			mounts:          makeTestMounts("GPU0", "cdi/nvidia.com/gpu=all", "GPU1"),
-			expectedDevices: []string{"GPU0", "GPU1"},
+			description:     "cdi devices are included",
+			mounts:          makeTestMounts("GPU0", "nvidia.com/gpu=all", "GPU1"),
+			expectedDevices: []string{"GPU0", "nvidia.com/gpu=all", "GPU1"},
 		},
 		{
 			description:     "imex devices are ignored",
@@ -646,6 +646,73 @@ func TestImexChannelsFromEnvVar(t *testing.T) {
 				require.EqualValues(t, tc.expected, channels)
 			})
 		}
+	}
+}
+
+func TestCDIDeviceRequestsFromAnnotations(t *testing.T) {
+	testCases := []struct {
+		description     string
+		prefixes        []string
+		annotations     map[string]string
+		expectedDevices []string
+	}{
+		{
+			description: "no annotations",
+		},
+		{
+			description: "no matching annotations",
+			prefixes:    []string{"not-prefix/"},
+			annotations: map[string]string{
+				"prefix/foo": "example.com/device=bar",
+			},
+		},
+		{
+			description: "single matching annotation",
+			prefixes:    []string{"prefix/"},
+			annotations: map[string]string{
+				"prefix/foo": "example.com/device=bar",
+			},
+			expectedDevices: []string{"example.com/device=bar"},
+		},
+		{
+			description: "multiple matching annotations",
+			prefixes:    []string{"prefix/", "another-prefix/"},
+			annotations: map[string]string{
+				"prefix/foo":         "example.com/device=bar",
+				"another-prefix/bar": "example.com/device=baz",
+			},
+			expectedDevices: []string{"example.com/device=bar", "example.com/device=baz"},
+		},
+		{
+			description: "multiple matching annotations with duplicate devices",
+			prefixes:    []string{"prefix/", "another-prefix/"},
+			annotations: map[string]string{
+				"prefix/foo":         "example.com/device=bar",
+				"another-prefix/bar": "example.com/device=bar",
+			},
+			expectedDevices: []string{"example.com/device=bar", "example.com/device=bar"},
+		},
+		{
+			description: "invalid devices are returned as is",
+			prefixes:    []string{"prefix/"},
+			annotations: map[string]string{
+				"prefix/foo": "example.com/device",
+			},
+			expectedDevices: []string{"example.com/device"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			image, err := New(
+				WithAnnotationsPrefixes(tc.prefixes),
+				WithAnnotations(tc.annotations),
+			)
+			require.NoError(t, err)
+
+			devices := image.cdiDeviceRequestsFromAnnotations()
+			require.ElementsMatch(t, tc.expectedDevices, devices)
+		})
 	}
 }
 

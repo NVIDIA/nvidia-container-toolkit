@@ -50,7 +50,6 @@ func New(opt ...Option) (CUDA, error) {
 	if b.logger == nil {
 		b.logger = logger.New()
 	}
-
 	if b.env == nil {
 		b.env = make(map[string]string)
 	}
@@ -77,6 +76,20 @@ func WithAcceptDeviceListAsVolumeMounts(acceptDeviceListAsVolumeMounts bool) Opt
 func WithAcceptEnvvarUnprivileged(acceptEnvvarUnprivileged bool) Option {
 	return func(b *builder) error {
 		b.acceptEnvvarUnprivileged = acceptEnvvarUnprivileged
+		return nil
+	}
+}
+
+func WithAnnotations(annotations map[string]string) Option {
+	return func(b *builder) error {
+		b.annotations = annotations
+		return nil
+	}
+}
+
+func WithAnnotationsPrefixes(annotationsPrefixes []string) Option {
+	return func(b *builder) error {
+		b.annotationsPrefixes = annotationsPrefixes
 		return nil
 	}
 }
