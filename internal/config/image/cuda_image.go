@@ -238,6 +238,12 @@ func (i CUDA) OnlyFullyQualifiedCDIDevices() bool {
 // In cases where environment variable requests required privileged containers,
 // such devices requests are ignored.
 func (i CUDA) VisibleDevices() []string {
+	// If annotation device requests are present, these are preferred.
+	annotationDeviceRequests := i.cdiDeviceRequestsFromAnnotations()
+	if len(annotationDeviceRequests) > 0 {
+		return annotationDeviceRequests
+	}
+
 	// If enabled, try and get the device list from volume mounts first
 	if i.acceptDeviceListAsVolumeMounts {
 		volumeMountDeviceRequests := i.visibleDevicesFromMounts()
@@ -264,28 +270,27 @@ func (i CUDA) VisibleDevices() []string {
 	return nil
 }
 
-// CDIDeviceRequestsFromAnnotations returns a list of devices specified in the annotations.
+// cdiDeviceRequestsFromAnnotations returns a list of devices specified in the
+// annotations.
 // Keys starting with the specified prefixes are considered and expected to
 // contain a comma-separated list of fully-qualified CDI devices names.
 // The format of the requested devices is not checked and the list is not
 // deduplicated.
-func (i CUDA) CDIDeviceRequestsFromAnnotations() []string {
+func (i CUDA) cdiDeviceRequestsFromAnnotations() []string {
 	if len(i.annotationsPrefixes) == 0 || len(i.annotations) == 0 {
 		return nil
 	}
 
-	var deviceKeys []string
-	for key := range i.annotations {
+	var devices []string
+	for key, value := range i.annotations {
 		for _, prefix := range i.annotationsPrefixes {
 			if strings.HasPrefix(key, prefix) {
-				deviceKeys = append(deviceKeys, key)
+				devices = append(devices, strings.Split(value, ",")...)
+				// There is no need to check additional prefixes since we
+				// typically deduplicate devices in any case.
+				break
 			}
 		}
-	}
-
-	var devices []string
-	for _, key := range deviceKeys {
-		devices = append(devices, strings.Split(i.annotations[key], ",")...)
 	}
 	return devices
 }

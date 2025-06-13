@@ -89,15 +89,6 @@ func (c *cdiDeviceRequestor) DeviceRequests() []string {
 	if c == nil {
 		return nil
 	}
-	annotationDevices, err := getAnnotationDevices(c.image)
-	if err != nil {
-		c.logger.Warningf("failed to get device requests from container annotations: %v; ignoring.", err)
-		annotationDevices = nil
-	}
-	if len(annotationDevices) > 0 {
-		return annotationDevices
-	}
-
 	var devices []string
 	for _, name := range c.image.VisibleDevices() {
 		if !parser.IsQualifiedName(name) {
@@ -107,21 +98,6 @@ func (c *cdiDeviceRequestor) DeviceRequests() []string {
 	}
 
 	return devices
-}
-
-// getAnnotationDevices returns a list of devices specified in the annotations.
-// Keys starting with the specified prefixes are considered and expected to contain a comma-separated list of
-// fully-qualified CDI devices names. If any device name is not fully-quality an error is returned.
-// The list of returned devices is deduplicated.
-func getAnnotationDevices(image image.CUDA) ([]string, error) {
-	var annotationDevices []string
-	for _, device := range image.CDIDeviceRequestsFromAnnotations() {
-		if !parser.IsQualifiedName(device) {
-			return nil, fmt.Errorf("invalid device name %q in annotations", device)
-		}
-		annotationDevices = append(annotationDevices, device)
-	}
-	return annotationDevices, nil
 }
 
 // filterAutomaticDevices searches for "automatic" device names in the input slice.
@@ -190,21 +166,6 @@ func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devic
 		spec.WithVendor("runtime.nvidia.com"),
 		spec.WithClass("gpu"),
 	)
-}
-
-func deviceRequestorFromImage(image image.CUDA) deviceRequestor {
-	return &fromImage{image}
-}
-
-type fromImage struct {
-	image.CUDA
-}
-
-func (f *fromImage) DeviceRequests() []string {
-	if f == nil {
-		return nil
-	}
-	return f.CUDA.VisibleDevices()
 }
 
 type deduplicatedDeviceRequestor struct {
