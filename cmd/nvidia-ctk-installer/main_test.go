@@ -67,7 +67,7 @@ swarm-resource = ""
   debug = "/dev/null"
   log-level = "info"
   mode = "auto"
-  runtimes = ["docker-runc", "runc", "crun"]
+  runtimes = ["runc", "crun"]
 
   [nvidia-container-runtime.modes]
 
@@ -131,7 +131,7 @@ swarm-resource = ""
   debug = "/dev/null"
   log-level = "info"
   mode = "auto"
-  runtimes = ["docker-runc", "runc", "crun"]
+  runtimes = ["runc", "crun"]
 
   [nvidia-container-runtime.modes]
 
@@ -198,7 +198,7 @@ swarm-resource = ""
   debug = "/dev/null"
   log-level = "info"
   mode = "auto"
-  runtimes = ["docker-runc", "runc", "crun"]
+  runtimes = ["runc", "crun"]
 
   [nvidia-container-runtime.modes]
 
@@ -262,7 +262,7 @@ swarm-resource = ""
   debug = "/dev/null"
   log-level = "info"
   mode = "auto"
-  runtimes = ["docker-runc", "runc", "crun"]
+  runtimes = ["runc", "crun"]
 
   [nvidia-container-runtime.modes]
 
@@ -348,7 +348,7 @@ swarm-resource = ""
   debug = "/dev/null"
   log-level = "info"
   mode = "auto"
-  runtimes = ["docker-runc", "runc", "crun"]
+  runtimes = ["runc", "crun"]
 
   [nvidia-container-runtime.modes]
 
