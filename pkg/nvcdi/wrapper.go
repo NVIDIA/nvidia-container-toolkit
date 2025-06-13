@@ -35,8 +35,11 @@ type wrapper struct {
 }
 
 // GetSpec combines the device specs and common edits from the wrapped Interface to a single spec.Interface.
-func (l *wrapper) GetSpec() (spec.Interface, error) {
-	deviceSpecs, err := l.GetAllDeviceSpecs()
+func (l *wrapper) GetSpec(devices ...string) (spec.Interface, error) {
+	if len(devices) == 0 {
+		devices = append(devices, "all")
+	}
+	deviceSpecs, err := l.GetDeviceSpecsByID(devices...)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +56,16 @@ func (l *wrapper) GetSpec() (spec.Interface, error) {
 		spec.WithClass(l.class),
 		spec.WithMergedDeviceOptions(l.mergedDeviceOptions...),
 	)
+}
+
+func (l *wrapper) GetDeviceSpecsByID(devices ...string) ([]specs.Device, error) {
+	for _, device := range devices {
+		if device != "all" {
+			continue
+		}
+		return l.GetAllDeviceSpecs()
+	}
+	return l.Interface.GetDeviceSpecsByID(devices...)
 }
 
 // GetAllDeviceSpecs returns the device specs for all available devices.

@@ -58,7 +58,7 @@ func (l *gdslib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 
 // GetSpec is unsppported for the gdslib specs.
 // gdslib is typically wrapped by a spec that implements GetSpec.
-func (l *gdslib) GetSpec() (spec.Interface, error) {
+func (l *gdslib) GetSpec(...string) (spec.Interface, error) {
 	return nil, fmt.Errorf("GetSpec is not supported")
 }
 

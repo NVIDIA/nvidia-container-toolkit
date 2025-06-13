@@ -41,7 +41,7 @@ const (
 )
 
 // GetSpec should not be called for imexlib.
-func (l *imexlib) GetSpec() (spec.Interface, error) {
+func (l *imexlib) GetSpec(...string) (spec.Interface, error) {
 	return nil, fmt.Errorf("unexpected call to imexlib.GetSpec()")
 }
 
