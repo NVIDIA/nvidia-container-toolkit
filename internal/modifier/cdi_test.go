@@ -98,7 +98,7 @@ func TestDeviceRequests(t *testing.T) {
 					"another-prefix/bar": "example.com/device=baz",
 				},
 			},
-			expectedDevices: []string{"example.com/device=bar", "example.com/device=baz"},
+			expectedDevices: []string{"example.com/device=baz", "example.com/device=bar"},
 		},
 		{
 			description: "multiple matching annotations with duplicate devices",
