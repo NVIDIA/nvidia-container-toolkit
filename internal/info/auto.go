@@ -23,27 +23,75 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
-// ResolveAutoMode determines the correct mode for the platform if set to "auto"
-func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rmode string) {
-	return resolveMode(logger, mode, image, nil)
+type RuntimeModeResolver interface {
+	ResolveRuntimeMode(string) string
 }
 
-func resolveMode(logger logger.Interface, mode string, image image.CUDA, propertyExtractor info.PropertyExtractor) (rmode string) {
+type modeResolver struct {
+	logger logger.Interface
+	// TODO: This only needs to consider the requested devices.
+	image             *image.CUDA
+	propertyExtractor info.PropertyExtractor
+}
+
+type Option func(*modeResolver)
+
+func WithLogger(logger logger.Interface) Option {
+	return func(mr *modeResolver) {
+		mr.logger = logger
+	}
+}
+
+func WithImage(image *image.CUDA) Option {
+	return func(mr *modeResolver) {
+		mr.image = image
+	}
+}
+
+func WithPropertyExtractor(propertyExtractor info.PropertyExtractor) Option {
+	return func(mr *modeResolver) {
+		mr.propertyExtractor = propertyExtractor
+	}
+}
+
+func NewRuntimeModeResolver(opts ...Option) RuntimeModeResolver {
+	r := &modeResolver{}
+	for _, opt := range opts {
+		opt(r)
+	}
+	if r.logger == nil {
+		r.logger = &logger.NullLogger{}
+	}
+
+	return r
+}
+
+// ResolveAutoMode determines the correct mode for the platform if set to "auto"
+func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rmode string) {
+	r := modeResolver{
+		logger:            logger,
+		image:             &image,
+		propertyExtractor: nil,
+	}
+	return r.ResolveRuntimeMode(mode)
+}
+
+func (m *modeResolver) ResolveRuntimeMode(mode string) (rmode string) {
 	if mode != "auto" {
-		logger.Infof("Using requested mode '%s'", mode)
+		m.logger.Infof("Using requested mode '%s'", mode)
 		return mode
 	}
 	defer func() {
-		logger.Infof("Auto-detected mode as '%v'", rmode)
+		m.logger.Infof("Auto-detected mode as '%v'", rmode)
 	}()
 
-	if image.OnlyFullyQualifiedCDIDevices() {
+	if m.image.OnlyFullyQualifiedCDIDevices() {
 		return "cdi"
 	}
 
 	nvinfo := info.New(
-		info.WithLogger(logger),
-		info.WithPropertyExtractor(propertyExtractor),
+		info.WithLogger(m.logger),
+		info.WithPropertyExtractor(m.propertyExtractor),
 	)
 
 	switch nvinfo.ResolvePlatform() {
