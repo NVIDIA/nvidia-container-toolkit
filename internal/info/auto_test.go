@@ -44,10 +44,15 @@ func TestResolveAutoMode(t *testing.T) {
 			expectedMode: "not-auto",
 		},
 		{
+			description:  "legacy resolves to legacy",
+			mode:         "legacy",
+			expectedMode: "legacy",
+		},
+		{
 			description:  "no info defaults to legacy",
 			mode:         "auto",
 			info:         map[string]bool{},
-			expectedMode: "legacy",
+			expectedMode: "jit-cdi",
 		},
 		{
 			description: "non-nvml, non-tegra, nvgpu resolves to csv",
@@ -80,14 +85,14 @@ func TestResolveAutoMode(t *testing.T) {
 			expectedMode: "csv",
 		},
 		{
-			description: "nvml, non-tegra, non-nvgpu resolves to legacy",
+			description: "nvml, non-tegra, non-nvgpu resolves to jit-cdi",
 			mode:        "auto",
 			info: map[string]bool{
 				"nvml":  true,
 				"tegra": false,
 				"nvgpu": false,
 			},
-			expectedMode: "legacy",
+			expectedMode: "jit-cdi",
 		},
 		{
 			description: "nvml, non-tegra, nvgpu resolves to csv",
@@ -100,14 +105,14 @@ func TestResolveAutoMode(t *testing.T) {
 			expectedMode: "csv",
 		},
 		{
-			description: "nvml, tegra, non-nvgpu resolves to legacy",
+			description: "nvml, tegra, non-nvgpu resolves to jit-cdi",
 			mode:        "auto",
 			info: map[string]bool{
 				"nvml":  true,
 				"tegra": true,
 				"nvgpu": false,
 			},
-			expectedMode: "legacy",
+			expectedMode: "jit-cdi",
 		},
 		{
 			description: "nvml, tegra, nvgpu resolves to csv",
@@ -136,7 +141,7 @@ func TestResolveAutoMode(t *testing.T) {
 			},
 		},
 		{
-			description: "at least one non-cdi device resolves to legacy",
+			description: "at least one non-cdi device resolves to jit-cdi",
 			mode:        "auto",
 			envmap: map[string]string{
 				"NVIDIA_VISIBLE_DEVICES": "nvidia.com/gpu=0,0",
@@ -146,7 +151,7 @@ func TestResolveAutoMode(t *testing.T) {
 				"tegra": false,
 				"nvgpu": false,
 			},
-			expectedMode: "legacy",
+			expectedMode: "jit-cdi",
 		},
 		{
 			description: "at least one non-cdi device resolves to csv",
@@ -170,7 +175,7 @@ func TestResolveAutoMode(t *testing.T) {
 			expectedMode: "cdi",
 		},
 		{
-			description: "cdi mount and non-CDI devices resolves to legacy",
+			description: "cdi mount and non-CDI devices resolves to jit-cdi",
 			mode:        "auto",
 			mounts: []string{
 				"/var/run/nvidia-container-devices/cdi/nvidia.com/gpu/0",
@@ -181,7 +186,7 @@ func TestResolveAutoMode(t *testing.T) {
 				"tegra": false,
 				"nvgpu": false,
 			},
-			expectedMode: "legacy",
+			expectedMode: "jit-cdi",
 		},
 		{
 			description: "cdi mount and non-CDI envvar resolves to cdi",
@@ -198,22 +203,6 @@ func TestResolveAutoMode(t *testing.T) {
 				"nvgpu": false,
 			},
 			expectedMode: "cdi",
-		},
-		{
-			description: "non-cdi mount and CDI envvar resolves to legacy",
-			mode:        "auto",
-			envmap: map[string]string{
-				"NVIDIA_VISIBLE_DEVICES": "nvidia.com/gpu=0",
-			},
-			mounts: []string{
-				"/var/run/nvidia-container-devices/0",
-			},
-			info: map[string]bool{
-				"nvml":  true,
-				"tegra": false,
-				"nvgpu": false,
-			},
-			expectedMode: "legacy",
 		},
 	}
 
@@ -251,7 +240,12 @@ func TestResolveAutoMode(t *testing.T) {
 				image.WithAcceptDeviceListAsVolumeMounts(true),
 				image.WithAcceptEnvvarUnprivileged(true),
 			)
-			mode := resolveMode(logger, tc.mode, image, properties)
+			mr := NewRuntimeModeResolver(
+				WithLogger(logger),
+				WithImage(&image),
+				WithPropertyExtractor(properties),
+			)
+			mode := mr.ResolveRuntimeMode(tc.mode)
 			require.EqualValues(t, tc.expectedMode, mode)
 		})
 	}

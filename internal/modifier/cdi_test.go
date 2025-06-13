@@ -71,6 +71,18 @@ func TestDeviceRequests(t *testing.T) {
 			expectedDevices: []string{"nvidia.com/gpu=0", "example.com/class=device"},
 		},
 		{
+			description: "cdi devices from envvar with default kind",
+			input: cdiDeviceRequestor{
+				defaultKind: "runtime.nvidia.com/gpu",
+			},
+			spec: &specs.Spec{
+				Process: &specs.Process{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=all"},
+				},
+			},
+			expectedDevices: []string{"runtime.nvidia.com/gpu=all"},
+		},
+		{
 			description: "no matching annotations",
 			prefixes:    []string{"not-prefix/"},
 			spec: &specs.Spec{
@@ -98,7 +110,7 @@ func TestDeviceRequests(t *testing.T) {
 					"another-prefix/bar": "example.com/device=baz",
 				},
 			},
-			expectedDevices: []string{"example.com/device=bar", "example.com/device=baz"},
+			expectedDevices: []string{"example.com/device=baz", "example.com/device=bar"},
 		},
 		{
 			description: "multiple matching annotations with duplicate devices",

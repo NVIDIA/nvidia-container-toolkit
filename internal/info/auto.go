@@ -23,34 +23,101 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
-// ResolveAutoMode determines the correct mode for the platform if set to "auto"
-func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rmode string) {
-	return resolveMode(logger, mode, image, nil)
+// A RuntimeMode is used to select a specific mode of operation for the NVIDIA Container Runtime.
+type RuntimeMode string
+
+const (
+	RuntimeModeLegacy = RuntimeMode("legacy")
+	RuntimeModeCSV    = RuntimeMode("csv")
+	RuntimeModeCDI    = RuntimeMode("cdi")
+	RuntimeModeJitCDI = RuntimeMode("jit-cdi")
+)
+
+type RuntimeModeResolver interface {
+	ResolveRuntimeMode(string) RuntimeMode
 }
 
-func resolveMode(logger logger.Interface, mode string, image image.CUDA, propertyExtractor info.PropertyExtractor) (rmode string) {
+type modeResolver struct {
+	logger logger.Interface
+	// TODO: This only needs to consider the requested devices.
+	image             *image.CUDA
+	propertyExtractor info.PropertyExtractor
+	defaultMode       RuntimeMode
+}
+
+type Option func(*modeResolver)
+
+func WithDefaultMode(defaultMode RuntimeMode) Option {
+	return func(mr *modeResolver) {
+		mr.defaultMode = defaultMode
+	}
+}
+
+func WithLogger(logger logger.Interface) Option {
+	return func(mr *modeResolver) {
+		mr.logger = logger
+	}
+}
+
+func WithImage(image *image.CUDA) Option {
+	return func(mr *modeResolver) {
+		mr.image = image
+	}
+}
+
+func WithPropertyExtractor(propertyExtractor info.PropertyExtractor) Option {
+	return func(mr *modeResolver) {
+		mr.propertyExtractor = propertyExtractor
+	}
+}
+
+func NewRuntimeModeResolver(opts ...Option) RuntimeModeResolver {
+	r := &modeResolver{
+		defaultMode: RuntimeModeJitCDI,
+	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	if r.logger == nil {
+		r.logger = &logger.NullLogger{}
+	}
+
+	return r
+}
+
+// ResolveAutoMode determines the correct mode for the platform if set to "auto"
+func ResolveAutoMode(logger logger.Interface, mode string, image image.CUDA) (rmode RuntimeMode) {
+	r := modeResolver{
+		logger:            logger,
+		image:             &image,
+		propertyExtractor: nil,
+	}
+	return r.ResolveRuntimeMode(mode)
+}
+
+func (m *modeResolver) ResolveRuntimeMode(mode string) (rmode RuntimeMode) {
 	if mode != "auto" {
-		logger.Infof("Using requested mode '%s'", mode)
-		return mode
+		m.logger.Infof("Using requested mode '%s'", mode)
+		return RuntimeMode(mode)
 	}
 	defer func() {
-		logger.Infof("Auto-detected mode as '%v'", rmode)
+		m.logger.Infof("Auto-detected mode as '%v'", rmode)
 	}()
 
-	if image.OnlyFullyQualifiedCDIDevices() {
-		return "cdi"
+	if m.image.OnlyFullyQualifiedCDIDevices() {
+		return RuntimeModeCDI
 	}
 
 	nvinfo := info.New(
-		info.WithLogger(logger),
-		info.WithPropertyExtractor(propertyExtractor),
+		info.WithLogger(m.logger),
+		info.WithPropertyExtractor(m.propertyExtractor),
 	)
 
 	switch nvinfo.ResolvePlatform() {
 	case info.PlatformNVML, info.PlatformWSL:
-		return "legacy"
+		return m.defaultMode
 	case info.PlatformTegra:
-		return "csv"
+		return RuntimeModeCSV
 	}
-	return "legacy"
+	return m.defaultMode
 }
