@@ -62,7 +62,7 @@ load-kmods = true
 #debug = "/var/log/nvidia-container-runtime.log"
 log-level = "info"
 mode = "auto"
-runtimes = ["docker-runc", "runc", "crun"]
+runtimes = ["runc", "crun"]
 
 [nvidia-container-runtime.modes]
 

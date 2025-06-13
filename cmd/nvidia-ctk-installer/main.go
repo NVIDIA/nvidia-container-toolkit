@@ -27,7 +27,7 @@ const (
 )
 
 var availableRuntimes = map[string]struct{}{"docker": {}, "crio": {}, "containerd": {}}
-var defaultLowLevelRuntimes = []string{"docker-runc", "runc", "crun"}
+var defaultLowLevelRuntimes = []string{"runc", "crun"}
 
 var waitingForSignal = make(chan bool, 1)
 var signalReceived = make(chan bool, 1)
