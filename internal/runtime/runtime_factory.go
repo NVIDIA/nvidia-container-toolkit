@@ -81,8 +81,6 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		return nil, err
 	}
 
-	hookCreator := discover.NewHookCreator(discover.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path))
-
 	mode := info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode, image)
 	// We update the mode here so that we can continue passing just the config to other functions.
 	cfg.NVIDIAContainerRuntimeConfig.Mode = mode
@@ -91,6 +89,7 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		return nil, err
 	}
 
+	hookCreator := discover.NewHookCreator(discover.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path))
 	var modifiers modifier.List
 	for _, modifierType := range supportedModifierTypes(mode) {
 		switch modifierType {
