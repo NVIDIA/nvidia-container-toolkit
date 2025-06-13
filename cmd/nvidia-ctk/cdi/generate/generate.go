@@ -68,6 +68,14 @@ type options struct {
 	nvmllib nvml.Interface
 }
 
+// Add setter methods for csv.files and csv.ignorePatterns
+func (o *options) SetCSVFiles(files []string) {
+	o.csv.files = *cli.NewStringSlice(files...)
+}
+func (o *options) SetCSVIgnorePatterns(patterns []string) {
+	o.csv.ignorePatterns = *cli.NewStringSlice(patterns...)
+}
+
 // NewCommand constructs a generate-cdi command with the specified logger
 func NewCommand(logger logger.Interface) *cli.Command {
 	c := command{
@@ -207,6 +215,16 @@ func (m command) build() *cli.Command {
 }
 
 func (m command) validateFlags(c *cli.Context, opts *options) error {
+	// Load config file as base configuration
+	cfg, err := config.GetConfig()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %v", err)
+	}
+
+	// Use centralized flag resolution (CLI > config file > default)
+	config.ResolveCDIGenerateOptions(c, cfg, opts)
+
+	// Additional validation (format, mode, etc.) can remain here if needed
 	opts.format = strings.ToLower(opts.format)
 	switch opts.format {
 	case spec.FormatJSON:
