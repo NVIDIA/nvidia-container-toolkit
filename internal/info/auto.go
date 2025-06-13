@@ -55,9 +55,16 @@ type modeResolver struct {
 	// TODO: This only needs to consider the requested devices.
 	image             *image.CUDA
 	propertyExtractor info.PropertyExtractor
+	defaultMode       RuntimeMode
 }
 
 type Option func(*modeResolver)
+
+func WithDefaultMode(defaultMode RuntimeMode) Option {
+	return func(mr *modeResolver) {
+		mr.defaultMode = defaultMode
+	}
+}
 
 func WithLogger(logger logger.Interface) Option {
 	return func(mr *modeResolver) {
@@ -78,7 +85,9 @@ func WithPropertyExtractor(propertyExtractor info.PropertyExtractor) Option {
 }
 
 func NewRuntimeModeResolver(opts ...Option) RuntimeModeResolver {
-	r := &modeResolver{}
+	r := &modeResolver{
+		defaultMode: JitCDIRuntimeMode,
+	}
 	for _, opt := range opts {
 		opt(r)
 	}
@@ -119,9 +128,9 @@ func (m *modeResolver) ResolveRuntimeMode(mode string) (rmode RuntimeMode) {
 
 	switch nvinfo.ResolvePlatform() {
 	case info.PlatformNVML, info.PlatformWSL:
-		return JitCDIRuntimeMode
+		return m.defaultMode
 	case info.PlatformTegra:
 		return CSVRuntimeMode
 	}
-	return JitCDIRuntimeMode
+	return m.defaultMode
 }

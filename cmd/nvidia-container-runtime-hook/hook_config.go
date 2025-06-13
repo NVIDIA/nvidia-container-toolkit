@@ -140,6 +140,7 @@ func (c *hookConfig) assertModeIsLegacy() error {
 	mr := info.NewRuntimeModeResolver(
 		info.WithLogger(&logInterceptor{}),
 		info.WithImage(&c.containerConfig.Image),
+		info.WithDefaultMode(info.LegacyRuntimeMode),
 	)
 
 	mode := mr.ResolveRuntimeMode(c.NVIDIAContainerRuntimeConfig.Mode)
