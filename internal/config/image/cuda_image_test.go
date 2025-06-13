@@ -710,7 +710,7 @@ func TestCDIDeviceRequestsFromAnnotations(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			devices := image.CDIDeviceRequestsFromAnnotations()
+			devices := image.cdiDeviceRequestsFromAnnotations()
 			require.ElementsMatch(t, tc.expectedDevices, devices)
 		})
 	}

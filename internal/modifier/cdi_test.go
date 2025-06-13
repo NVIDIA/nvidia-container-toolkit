@@ -17,7 +17,6 @@
 package modifier
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
@@ -27,80 +26,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
 
-func TestGetAnnotationDevices(t *testing.T) {
-	testCases := []struct {
-		description     string
-		prefixes        []string
-		annotations     map[string]string
-		expectedDevices []string
-		expectedError   error
-	}{
-		{
-			description: "no annotations",
-		},
-		{
-			description: "no matching annotations",
-			prefixes:    []string{"not-prefix/"},
-			annotations: map[string]string{
-				"prefix/foo": "example.com/device=bar",
-			},
-		},
-		{
-			description: "single matching annotation",
-			prefixes:    []string{"prefix/"},
-			annotations: map[string]string{
-				"prefix/foo": "example.com/device=bar",
-			},
-			expectedDevices: []string{"example.com/device=bar"},
-		},
-		{
-			description: "multiple matching annotations",
-			prefixes:    []string{"prefix/", "another-prefix/"},
-			annotations: map[string]string{
-				"prefix/foo":         "example.com/device=bar",
-				"another-prefix/bar": "example.com/device=baz",
-			},
-			expectedDevices: []string{"example.com/device=bar", "example.com/device=baz"},
-		},
-		{
-			description: "multiple matching annotations with duplicate devices",
-			prefixes:    []string{"prefix/", "another-prefix/"},
-			annotations: map[string]string{
-				"prefix/foo":         "example.com/device=bar",
-				"another-prefix/bar": "example.com/device=bar",
-			},
-			expectedDevices: []string{"example.com/device=bar", "example.com/device=bar"},
-		},
-		{
-			description: "invalid devices",
-			prefixes:    []string{"prefix/"},
-			annotations: map[string]string{
-				"prefix/foo": "example.com/device",
-			},
-			expectedError: fmt.Errorf("invalid device %q", "example.com/device"),
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			image, err := image.New(
-				image.WithAnnotations(tc.annotations),
-				image.WithAnnotationsPrefixes(tc.prefixes),
-			)
-			require.NoError(t, err)
-
-			devices, err := getAnnotationDevices(image)
-			if tc.expectedError != nil {
-				require.Error(t, err)
-				return
-			}
-
-			require.NoError(t, err)
-			require.ElementsMatch(t, tc.expectedDevices, devices)
-		})
-	}
-}
-
 func TestDeviceRequests(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
@@ -108,6 +33,7 @@ func TestDeviceRequests(t *testing.T) {
 		description     string
 		input           cdiDeviceRequestor
 		spec            *specs.Spec
+		prefixes        []string
 		expectedDevices []string
 	}{
 		{
@@ -144,6 +70,73 @@ func TestDeviceRequests(t *testing.T) {
 			},
 			expectedDevices: []string{"nvidia.com/gpu=0", "example.com/class=device"},
 		},
+		{
+			description: "no matching annotations",
+			prefixes:    []string{"not-prefix/"},
+			spec: &specs.Spec{
+				Annotations: map[string]string{
+					"prefix/foo": "example.com/device=bar",
+				},
+			},
+		},
+		{
+			description: "single matching annotation",
+			prefixes:    []string{"prefix/"},
+			spec: &specs.Spec{
+				Annotations: map[string]string{
+					"prefix/foo": "example.com/device=bar",
+				},
+			},
+			expectedDevices: []string{"example.com/device=bar"},
+		},
+		{
+			description: "multiple matching annotations",
+			prefixes:    []string{"prefix/", "another-prefix/"},
+			spec: &specs.Spec{
+				Annotations: map[string]string{
+					"prefix/foo":         "example.com/device=bar",
+					"another-prefix/bar": "example.com/device=baz",
+				},
+			},
+			expectedDevices: []string{"example.com/device=bar", "example.com/device=baz"},
+		},
+		{
+			description: "multiple matching annotations with duplicate devices",
+			prefixes:    []string{"prefix/", "another-prefix/"},
+			spec: &specs.Spec{
+				Annotations: map[string]string{
+					"prefix/foo":         "example.com/device=bar",
+					"another-prefix/bar": "example.com/device=bar",
+				},
+			},
+			expectedDevices: []string{"example.com/device=bar", "example.com/device=bar"},
+		},
+		{
+			description: "devices in annotations are expanded",
+			input: cdiDeviceRequestor{
+				defaultKind: "nvidia.com/gpu",
+			},
+			prefixes: []string{"prefix/"},
+			spec: &specs.Spec{
+				Annotations: map[string]string{
+					"prefix/foo": "device",
+				},
+			},
+			expectedDevices: []string{"nvidia.com/gpu=device"},
+		},
+		{
+			description: "invalid devices in annotations are treated as strings",
+			input: cdiDeviceRequestor{
+				defaultKind: "nvidia.com/gpu",
+			},
+			prefixes: []string{"prefix/"},
+			spec: &specs.Spec{
+				Annotations: map[string]string{
+					"prefix/foo": "example.com/device",
+				},
+			},
+			expectedDevices: []string{"nvidia.com/gpu=example.com/device"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -153,6 +146,7 @@ func TestDeviceRequests(t *testing.T) {
 			tc.spec,
 			image.WithAcceptDeviceListAsVolumeMounts(true),
 			image.WithAcceptEnvvarUnprivileged(true),
+			image.WithAnnotationsPrefixes(tc.prefixes),
 		)
 		require.NoError(t, err)
 		tc.input.image = image
