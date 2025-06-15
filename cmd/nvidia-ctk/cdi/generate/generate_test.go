@@ -18,6 +18,7 @@ package generate
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -32,6 +33,29 @@ import (
 )
 
 func TestGenerateSpec(t *testing.T) {
+	// Create a temporary directory for config
+	tmpDir, err := os.MkdirTemp("", "nvidia-container-toolkit-test-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	// Create a temporary config file
+	configContent := `
+[nvidia-container-runtime]
+mode = "nvml"
+[[nvidia-container-runtime.modes.cdi]]
+spec-dirs = ["/etc/cdi", "/usr/local/cdi"]
+[nvidia-container-runtime.modes.csv]
+mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
+	`
+	configPath := filepath.Join(tmpDir, "config.toml")
+	err = os.WriteFile(configPath, []byte(configContent), 0600)
+	require.NoError(t, err)
+
+	// Set XDG_CONFIG_HOME to point to our temporary directory
+	oldXDGConfigHome := os.Getenv("XDG_CONFIG_HOME")
+	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	defer os.Setenv("XDG_CONFIG_HOME", oldXDGConfigHome)
+
 	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
 	moduleRoot, err := test.GetModuleRoot()
 	require.NoError(t, err)
@@ -63,6 +87,13 @@ func TestGenerateSpec(t *testing.T) {
 				class:             "device",
 				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
 				driverRoot:        driverRoot,
+				csv: struct {
+					files          cli.StringSlice
+					ignorePatterns cli.StringSlice
+				}{
+					files:          *cli.NewStringSlice("/etc/nvidia-container-runtime/host-files-for-container.d"),
+					ignorePatterns: *cli.NewStringSlice(),
+				},
 			},
 			expectedSpec: `---
 cdiVersion: 0.5.0
@@ -147,6 +178,13 @@ containerEdits:
 				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
 				driverRoot:        driverRoot,
 				disabledHooks:     valueOf(cli.NewStringSlice("enable-cuda-compat")),
+				csv: struct {
+					files          cli.StringSlice
+					ignorePatterns cli.StringSlice
+				}{
+					files:          *cli.NewStringSlice("/etc/nvidia-container-runtime/host-files-for-container.d"),
+					ignorePatterns: *cli.NewStringSlice(),
+				},
 			},
 			expectedSpec: `---
 cdiVersion: 0.5.0
@@ -223,6 +261,13 @@ containerEdits:
 				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
 				driverRoot:        driverRoot,
 				disabledHooks:     valueOf(cli.NewStringSlice("enable-cuda-compat", "update-ldcache")),
+				csv: struct {
+					files          cli.StringSlice
+					ignorePatterns cli.StringSlice
+				}{
+					files:          *cli.NewStringSlice("/etc/nvidia-container-runtime/host-files-for-container.d"),
+					ignorePatterns: *cli.NewStringSlice(),
+				},
 			},
 			expectedSpec: `---
 cdiVersion: 0.5.0
@@ -290,6 +335,13 @@ containerEdits:
 				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
 				driverRoot:        driverRoot,
 				disabledHooks:     valueOf(cli.NewStringSlice("all")),
+				csv: struct {
+					files          cli.StringSlice
+					ignorePatterns cli.StringSlice
+				}{
+					files:          *cli.NewStringSlice("/etc/nvidia-container-runtime/host-files-for-container.d"),
+					ignorePatterns: *cli.NewStringSlice(),
+				},
 			},
 			expectedSpec: `---
 cdiVersion: 0.5.0
@@ -332,6 +384,10 @@ containerEdits:
 
 			err := c.validateFlags(nil, &tc.options)
 			require.ErrorIs(t, err, tc.expectedValidateError)
+			// Set the ldconfig path to empty.
+			// This is required during test because config.GetConfig() returns
+			// the default ldconfig path, even if it is not set in the config file.
+			tc.options.ldconfigPath = ""
 			require.EqualValues(t, tc.expectedOptions, tc.options)
 
 			// Set up a mock server, reusing the DGX A100 mock.

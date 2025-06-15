@@ -23,6 +23,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 
+	ctkconfig "github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
@@ -32,6 +33,11 @@ type command struct {
 
 type config struct {
 	cdiSpecDirs cli.StringSlice
+}
+
+// SetCDISpecDirs sets the cdiSpecDirs field from a []string
+func (c *config) SetCDISpecDirs(dirs []string) {
+	c.cdiSpecDirs = *cli.NewStringSlice(dirs...)
 }
 
 // NewCommand constructs a cdi list command with the specified logger
@@ -71,10 +77,20 @@ func (m command) build() *cli.Command {
 	return &c
 }
 
-func (m command) validateFlags(c *cli.Context, cfg *config) error {
+func (m command) validateFlags(ctx *cli.Context, cfg *config) error {
+	// Load config file as base configuration
+	c, err := ctkconfig.GetConfig()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %v", err)
+	}
+
+	// Use centralized normalization
+	ctkconfig.ResolveCDIListConfig(ctx, c, cfg)
+
 	if len(cfg.cdiSpecDirs.Value()) == 0 {
 		return errors.New("at least one CDI specification directory must be specified")
 	}
+
 	return nil
 }
 
