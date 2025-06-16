@@ -29,10 +29,11 @@ type gdsDeviceDiscoverer struct {
 }
 
 // NewGDSDiscoverer creates a discoverer for GPUDirect Storage devices and mounts.
-func NewGDSDiscoverer(logger logger.Interface, driverRoot string, devRoot string) (Discover, error) {
+func NewGDSDiscoverer(logger logger.Interface, driverRoot string) (Discover, error) {
 	devices := NewCharDeviceDiscoverer(
 		logger,
-		devRoot,
+		// The /dev/nvidia-fs* devices are always created at /
+		"/",
 		[]string{"/dev/nvidia-fs*"},
 	)
 
