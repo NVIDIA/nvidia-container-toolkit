@@ -21,24 +21,16 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/moby/sys/reexec"
 	"github.com/urfave/cli/v2"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldconfig"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
 const (
-	// ldsoconfdFilenamePattern specifies the pattern for the filename
-	// in ld.so.conf.d that includes references to the specified directories.
-	// The 00-nvcr prefix is chosen to ensure that these libraries have a
-	// higher precedence than other libraries on the system, but lower than
-	// the 00-cuda-compat that is included in some containers.
-	ldsoconfdFilenamePattern = "00-nvcr-*.conf"
-
 	reexecUpdateLdCacheCommandName = "reexec-update-ldcache"
 )
 
@@ -123,15 +115,15 @@ func (m command) run(c *cli.Context, cfg *options) error {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
-	args := []string{
+	cmd, err := ldconfig.NewRunner(
 		reexecUpdateLdCacheCommandName,
-		strings.TrimPrefix(config.NormalizeLDConfigPath("@"+cfg.ldconfigPath), "@"),
+		cfg.ldconfigPath,
 		containerRootDir,
+		cfg.folders.Value()...,
+	)
+	if err != nil {
+		return err
 	}
-	args = append(args, cfg.folders.Value()...)
-
-	cmd := createReexecCommand(args)
-
 	return cmd.Run()
 }
 
@@ -143,15 +135,16 @@ func updateLdCacheHandler() {
 	}
 }
 
-// updateLdCache is invoked from a reexec'd handler and provides namespace
-// isolation for the operations performed by this hook.
-// At the point where this is invoked, we are in a new mount namespace that is
-// cloned from the parent.
+// updateLdCache ensures that the ldcache in the container is updated to include
+// libraries that are mounted from the host.
+// It is invoked from a reexec'd handler and provides namespace isolation for
+// the operations performed by this hook. At the point where this is invoked,
+// we are in a new mount namespace that is cloned from the parent.
 //
 // args[0] is the reexec initializer function name
 // args[1] is the path of the ldconfig binary on the host
 // args[2] is the container root directory
-// The remaining args are folders that need to be added to the ldcache.
+// The remaining args are folders where soname symlinks need to be created.
 func updateLdCache(args []string) error {
 	if len(args) < 3 {
 		return fmt.Errorf("incorrect arguments: %v", args)
@@ -159,97 +152,13 @@ func updateLdCache(args []string) error {
 	hostLdconfigPath := args[1]
 	containerRootDirPath := args[2]
 
-	// To prevent leaking the parent proc filesystem, we create a new proc mount
-	// in the container root.
-	if err := mountProc(containerRootDirPath); err != nil {
-		return fmt.Errorf("error mounting /proc: %w", err)
-	}
-
-	// We mount the host ldconfig before we pivot root since host paths are not
-	// visible after the pivot root operation.
-	ldconfigPath, err := mountLdConfig(hostLdconfigPath, containerRootDirPath)
+	ldconfig, err := ldconfig.New(
+		hostLdconfigPath,
+		containerRootDirPath,
+	)
 	if err != nil {
-		return fmt.Errorf("error mounting host ldconfig: %w", err)
+		return fmt.Errorf("failed to construct ldconfig runner: %w", err)
 	}
 
-	// We pivot to the container root for the new process, this further limits
-	// access to the host.
-	if err := pivotRoot(containerRootDirPath); err != nil {
-		return fmt.Errorf("error running pivot_root: %w", err)
-	}
-
-	return runLdconfig(ldconfigPath, args[3:]...)
-}
-
-// runLdconfig runs the ldconfig binary and ensures that the specified directories
-// are processed for the ldcache.
-func runLdconfig(ldconfigPath string, directories ...string) error {
-	args := []string{
-		"ldconfig",
-		// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
-		// be configured to use a different config file by default.
-		// Note that since we apply the `-r {{ .containerRootDir }}` argument, /etc/ld.so.conf is
-		// in the container.
-		"-f", "/etc/ld.so.conf",
-	}
-
-	containerRoot := containerRoot("/")
-
-	if containerRoot.hasPath("/etc/ld.so.cache") {
-		args = append(args, "-C", "/etc/ld.so.cache")
-	} else {
-		args = append(args, "-N")
-	}
-
-	if containerRoot.hasPath("/etc/ld.so.conf.d") {
-		err := createLdsoconfdFile(ldsoconfdFilenamePattern, directories...)
-		if err != nil {
-			return fmt.Errorf("failed to update ld.so.conf.d: %w", err)
-		}
-	} else {
-		args = append(args, directories...)
-	}
-
-	return SafeExec(ldconfigPath, args, nil)
-}
-
-// createLdsoconfdFile creates a file at /etc/ld.so.conf.d/.
-// The file is created at /etc/ld.so.conf.d/{{ .pattern }} using `CreateTemp` and
-// contains the specified directories on each line.
-func createLdsoconfdFile(pattern string, dirs ...string) error {
-	if len(dirs) == 0 {
-		return nil
-	}
-
-	ldsoconfdDir := "/etc/ld.so.conf.d"
-	if err := os.MkdirAll(ldsoconfdDir, 0755); err != nil {
-		return fmt.Errorf("failed to create ld.so.conf.d: %w", err)
-	}
-
-	configFile, err := os.CreateTemp(ldsoconfdDir, pattern)
-	if err != nil {
-		return fmt.Errorf("failed to create config file: %w", err)
-	}
-	defer func() {
-		_ = configFile.Close()
-	}()
-
-	added := make(map[string]bool)
-	for _, dir := range dirs {
-		if added[dir] {
-			continue
-		}
-		_, err = fmt.Fprintf(configFile, "%s\n", dir)
-		if err != nil {
-			return fmt.Errorf("failed to update config file: %w", err)
-		}
-		added[dir] = true
-	}
-
-	// The created file needs to be world readable for the cases where the container is run as a non-root user.
-	if err := configFile.Chmod(0644); err != nil {
-		return fmt.Errorf("failed to chmod config file: %w", err)
-	}
-
-	return nil
+	return ldconfig.UpdateLDCache(args[3:]...)
 }

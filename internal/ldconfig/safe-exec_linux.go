@@ -16,7 +16,7 @@
 # limitations under the License.
 **/
 
-package create_soname_symlinks
+package ldconfig
 
 import (
 	"fmt"
