@@ -19,6 +19,7 @@ package image
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -143,8 +144,8 @@ func (i CUDA) HasDisableRequire() bool {
 	return false
 }
 
-// DevicesFromEnvvars returns the devices requested by the image through environment variables
-func (i CUDA) DevicesFromEnvvars(envVars ...string) VisibleDevices {
+// devicesFromEnvvars returns the devices requested by the image through environment variables
+func (i CUDA) devicesFromEnvvars(envVars ...string) []string {
 	// We concantenate all the devices from the specified env.
 	var isSet bool
 	var devices []string
@@ -165,15 +166,15 @@ func (i CUDA) DevicesFromEnvvars(envVars ...string) VisibleDevices {
 
 	// Environment variable unset with legacy image: default to "all".
 	if !isSet && len(devices) == 0 && i.IsLegacy() {
-		return NewVisibleDevices("all")
+		devices = []string{"all"}
 	}
 
 	// Environment variable unset or empty or "void": return nil
 	if len(devices) == 0 || requested["void"] {
-		return NewVisibleDevices("void")
+		devices = []string{"void"}
 	}
 
-	return NewVisibleDevices(devices...)
+	return NewVisibleDevices(devices...).List()
 }
 
 // GetDriverCapabilities returns the requested driver capabilities.
@@ -232,6 +233,22 @@ func (i CUDA) OnlyFullyQualifiedCDIDevices() bool {
 	return hasCDIdevice
 }
 
+// visibleEnvVars returns the environment variables that are used to determine device visibility.
+// It returns the preferred environment variables that are set, or NVIDIA_VISIBLE_DEVICES if none are set.
+func (i CUDA) visibleEnvVars() []string {
+	var envVars []string
+	for _, envVar := range i.preferredVisibleDeviceEnvVars {
+		if !i.HasEnvvar(envVar) {
+			continue
+		}
+		envVars = append(envVars, envVar)
+	}
+	if len(envVars) > 0 {
+		return envVars
+	}
+	return []string{EnvVarNvidiaVisibleDevices}
+}
+
 // VisibleDevices returns a list of devices requested in the container image.
 // If volume mount requests are enabled these are returned if requested,
 // otherwise device requests through environment variables are considered.
@@ -253,7 +270,7 @@ func (i CUDA) VisibleDevices() []string {
 	}
 
 	// Get the Fallback to reading from the environment variable if privileges are correct
-	envVarDeviceRequests := i.VisibleDevicesFromEnvVar()
+	envVarDeviceRequests := i.visibleDevicesFromEnvVar()
 	if len(envVarDeviceRequests) == 0 {
 		return nil
 	}
@@ -265,7 +282,10 @@ func (i CUDA) VisibleDevices() []string {
 	}
 
 	// We log a warning if we are ignoring the environment variable requests.
-	i.logger.Warningf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES in unprivileged container")
+	envVars := i.visibleEnvVars()
+	if len(envVars) > 0 {
+		i.logger.Warningf("Ignoring devices requested by environment variable(s) in unprivileged container: %v", envVars)
+	}
 
 	return nil
 }
@@ -281,31 +301,34 @@ func (i CUDA) cdiDeviceRequestsFromAnnotations() []string {
 		return nil
 	}
 
-	var devices []string
-	for key, value := range i.annotations {
+	var annotationKeys []string
+	for key := range i.annotations {
 		for _, prefix := range i.annotationsPrefixes {
 			if strings.HasPrefix(key, prefix) {
-				devices = append(devices, strings.Split(value, ",")...)
+				annotationKeys = append(annotationKeys, key)
 				// There is no need to check additional prefixes since we
 				// typically deduplicate devices in any case.
 				break
 			}
 		}
 	}
+	// We sort the annotationKeys for consistent results.
+	slices.Sort(annotationKeys)
+
+	var devices []string
+	for _, key := range annotationKeys {
+		devices = append(devices, strings.Split(i.annotations[key], ",")...)
+	}
 	return devices
 }
 
-// VisibleDevicesFromEnvVar returns the set of visible devices requested through environment variables.
+// visibleDevicesFromEnvVar returns the set of visible devices requested through environment variables.
 // If any of the preferredVisibleDeviceEnvVars are present in the image, they
 // are used to determine the visible devices. If this is not the case, the
 // NVIDIA_VISIBLE_DEVICES environment variable is used.
-func (i CUDA) VisibleDevicesFromEnvVar() []string {
-	for _, envVar := range i.preferredVisibleDeviceEnvVars {
-		if i.HasEnvvar(envVar) {
-			return i.DevicesFromEnvvars(i.preferredVisibleDeviceEnvVars...).List()
-		}
-	}
-	return i.DevicesFromEnvvars(EnvVarNvidiaVisibleDevices).List()
+func (i CUDA) visibleDevicesFromEnvVar() []string {
+	envVars := i.visibleEnvVars()
+	return i.devicesFromEnvvars(envVars...)
 }
 
 // visibleDevicesFromMounts returns the set of visible devices requested as mounts.
@@ -391,7 +414,7 @@ func (m cdiDeviceMountRequest) qualifiedName() (string, error) {
 
 // ImexChannelsFromEnvVar returns the list of IMEX channels requested for the image.
 func (i CUDA) ImexChannelsFromEnvVar() []string {
-	imexChannels := i.DevicesFromEnvvars(EnvVarNvidiaImexChannels).List()
+	imexChannels := i.devicesFromEnvvars(EnvVarNvidiaImexChannels)
 	if len(imexChannels) == 1 && imexChannels[0] == "all" {
 		return nil
 	}

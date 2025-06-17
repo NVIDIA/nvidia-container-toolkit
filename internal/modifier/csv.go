@@ -33,7 +33,7 @@ import (
 // NewCSVModifier creates a modifier that applies modications to an OCI spec if required by the runtime wrapper.
 // The modifications are defined by CSV MountSpecs.
 func NewCSVModifier(logger logger.Interface, cfg *config.Config, container image.CUDA) (oci.SpecModifier, error) {
-	if devices := container.VisibleDevicesFromEnvVar(); len(devices) == 0 {
+	if devices := container.VisibleDevices(); len(devices) == 0 {
 		logger.Infof("No modification required; no devices requested")
 		return nil, nil
 	}
