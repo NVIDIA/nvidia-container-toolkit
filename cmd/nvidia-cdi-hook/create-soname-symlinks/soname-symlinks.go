@@ -22,12 +22,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/moby/sys/reexec"
 	"github.com/urfave/cli/v2"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldconfig"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
@@ -117,14 +116,15 @@ func (m command) run(c *cli.Context, cfg *options) error {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
-	args := []string{
+	cmd, err := ldconfig.NewRunner(
 		reexecUpdateLdCacheCommandName,
-		strings.TrimPrefix(config.NormalizeLDConfigPath("@"+cfg.ldconfigPath), "@"),
+		cfg.ldconfigPath,
 		containerRootDir,
+		cfg.folders.Value()...,
+	)
+	if err != nil {
+		return err
 	}
-	args = append(args, cfg.folders.Value()...)
-
-	cmd := createReexecCommand(args)
 
 	return cmd.Run()
 }
@@ -137,15 +137,16 @@ func createSonameSymlinksHandler() {
 	}
 }
 
-// createSonameSymlinks is invoked from a reexec'd handler and provides namespace
-// isolation for the operations performed by this hook.
-// At the point where this is invoked, we are in a new mount namespace that is
-// cloned from the parent.
+// createSonameSymlinks ensures that soname symlinks are created in the
+// specified directories.
+// It is invoked from a reexec'd handler and provides namespace isolation for
+// the operations performed by this hook. At the point where this is invoked,
+// we are in a new mount namespace that is cloned from the parent.
 //
 // args[0] is the reexec initializer function name
 // args[1] is the path of the ldconfig binary on the host
 // args[2] is the container root directory
-// The remaining args are directories that need to be added to the ldcache.
+// The remaining args are directories where soname symlinks need to be created.
 func createSonameSymlinks(args []string) error {
 	if len(args) < 3 {
 		return fmt.Errorf("incorrect arguments: %v", args)
@@ -153,39 +154,13 @@ func createSonameSymlinks(args []string) error {
 	hostLdconfigPath := args[1]
 	containerRootDirPath := args[2]
 
-	// To prevent leaking the parent proc filesystem, we create a new proc mount
-	// in the container root.
-	if err := mountProc(containerRootDirPath); err != nil {
-		return fmt.Errorf("error mounting /proc: %w", err)
-	}
-
-	// We mount the host ldconfig before we pivot root since host paths are not
-	// visible after the pivot root operation.
-	ldconfigPath, err := mountLdConfig(hostLdconfigPath, containerRootDirPath)
+	ldconfig, err := ldconfig.New(
+		hostLdconfigPath,
+		containerRootDirPath,
+	)
 	if err != nil {
-		return fmt.Errorf("error mounting host ldconfig: %w", err)
+		return fmt.Errorf("failed to construct ldconfig runner: %w", err)
 	}
 
-	// We pivot to the container root for the new process, this further limits
-	// access to the host.
-	if err := pivotRoot(containerRootDirPath); err != nil {
-		return fmt.Errorf("error running pivot_root: %w", err)
-	}
-
-	return runLdconfig(ldconfigPath, args[3:]...)
-}
-
-// runLdconfig runs the ldconfig binary and ensures that soname symlinks are
-// created in the specified directories.
-func runLdconfig(ldconfigPath string, directories ...string) error {
-	args := []string{
-		"ldconfig",
-		// Explicitly disable updating the LDCache.
-		"-N",
-		// Specify -n to only process the specified directories.
-		"-n",
-	}
-	args = append(args, directories...)
-
-	return SafeExec(ldconfigPath, args, nil)
+	return ldconfig.CreateSonameSymlinks(args[3:]...)
 }
