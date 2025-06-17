@@ -17,7 +17,7 @@
 # limitations under the License.
 **/
 
-package ldcache
+package ldconfig
 
 import (
 	"errors"
@@ -29,8 +29,8 @@ import (
 	"syscall"
 
 	securejoin "github.com/cyphar/filepath-securejoin"
-
 	"github.com/moby/sys/reexec"
+
 	"github.com/opencontainers/runc/libcontainer/utils"
 	"golang.org/x/sys/unix"
 )
@@ -182,7 +182,7 @@ func createTmpFs(target string, size int) error {
 // createReexecCommand creates a command that can be used to trigger the reexec
 // initializer.
 // On linux this command runs in new namespaces.
-func createReexecCommand(args []string) *exec.Cmd {
+func createReexecCommand(args []string) (*exec.Cmd, error) {
 	cmd := reexec.Command(args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -196,5 +196,5 @@ func createReexecCommand(args []string) *exec.Cmd {
 			syscall.CLONE_NEWNET,
 	}
 
-	return cmd
+	return cmd, nil
 }
