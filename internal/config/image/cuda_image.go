@@ -144,8 +144,8 @@ func (i CUDA) HasDisableRequire() bool {
 	return false
 }
 
-// DevicesFromEnvvars returns the devices requested by the image through environment variables
-func (i CUDA) DevicesFromEnvvars(envVars ...string) VisibleDevices {
+// devicesFromEnvvars returns the devices requested by the image through environment variables
+func (i CUDA) devicesFromEnvvars(envVars ...string) []string {
 	// We concantenate all the devices from the specified env.
 	var isSet bool
 	var devices []string
@@ -166,15 +166,15 @@ func (i CUDA) DevicesFromEnvvars(envVars ...string) VisibleDevices {
 
 	// Environment variable unset with legacy image: default to "all".
 	if !isSet && len(devices) == 0 && i.IsLegacy() {
-		return NewVisibleDevices("all")
+		devices = []string{"all"}
 	}
 
 	// Environment variable unset or empty or "void": return nil
 	if len(devices) == 0 || requested["void"] {
-		return NewVisibleDevices("void")
+		devices = []string{"void"}
 	}
 
-	return NewVisibleDevices(devices...)
+	return NewVisibleDevices(devices...).List()
 }
 
 // GetDriverCapabilities returns the requested driver capabilities.
@@ -328,7 +328,7 @@ func (i CUDA) cdiDeviceRequestsFromAnnotations() []string {
 // NVIDIA_VISIBLE_DEVICES environment variable is used.
 func (i CUDA) visibleDevicesFromEnvVar() []string {
 	envVars := i.visibleEnvVars()
-	return i.DevicesFromEnvvars(envVars...).List()
+	return i.devicesFromEnvvars(envVars...)
 }
 
 // visibleDevicesFromMounts returns the set of visible devices requested as mounts.
@@ -414,7 +414,7 @@ func (m cdiDeviceMountRequest) qualifiedName() (string, error) {
 
 // ImexChannelsFromEnvVar returns the list of IMEX channels requested for the image.
 func (i CUDA) ImexChannelsFromEnvVar() []string {
-	imexChannels := i.DevicesFromEnvvars(EnvVarNvidiaImexChannels).List()
+	imexChannels := i.devicesFromEnvvars(EnvVarNvidiaImexChannels)
 	if len(imexChannels) == 1 && imexChannels[0] == "all" {
 		return nil
 	}
