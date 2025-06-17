@@ -29,12 +29,12 @@ include $(CURDIR)/versions.mk
 
 IMAGE_VERSION := $(VERSION)
 
-IMAGE_TAG ?= $(VERSION)-$(DIST)
+IMAGE_TAG ?= $(VERSION)
 IMAGE = $(IMAGE_NAME):$(IMAGE_TAG)
 
 OUT_IMAGE_NAME ?= $(IMAGE_NAME)
 OUT_IMAGE_VERSION ?= $(IMAGE_VERSION)
-OUT_IMAGE_TAG = $(OUT_IMAGE_VERSION)-$(DIST)
+OUT_IMAGE_TAG = $(OUT_IMAGE_VERSION)
 OUT_IMAGE = $(OUT_IMAGE_NAME):$(OUT_IMAGE_TAG)
 
 ##### Public rules #####
@@ -56,30 +56,16 @@ else
 include $(CURDIR)/deployments/container/multi-arch.mk
 endif
 
-# For the default push target we also push a short tag equal to the version.
-# We skip this for the development release
-DEVEL_RELEASE_IMAGE_VERSION ?= devel
-PUSH_MULTIPLE_TAGS ?= true
-ifeq ($(strip $(OUT_IMAGE_VERSION)),$(DEVEL_RELEASE_IMAGE_VERSION))
-PUSH_MULTIPLE_TAGS = false
-endif
-ifeq ($(PUSH_MULTIPLE_TAGS),true)
-push-$(DEFAULT_PUSH_TARGET): push-short
-endif
-
-push-%: DIST = $(*)
-push-short: DIST = $(DEFAULT_PUSH_TARGET)
-
 # Define the push targets
 $(PUSH_TARGETS): push-%:
 	$(CURDIR)/scripts/publish-image.sh $(IMAGE) $(OUT_IMAGE)
 
-push-short:
-	$(CURDIR)/scripts/publish-image.sh $(IMAGE) $(OUT_IMAGE)
+DOCKERFILE = $(CURDIR)/deployments/container/Dockerfile
 
-
-build-%: DIST = $(*)
-build-%: DOCKERFILE = $(CURDIR)/deployments/container/Dockerfile
+# For packaging targets we set the output image tag to include the -packaging suffix.
+%-packaging: INTERMEDIATE_TARGET := --target=packaging
+%-packaging: IMAGE_TAG = $(IMAGE_VERSION)-packaging
+%-packaging: OUT_IMAGE_TAG = $(IMAGE_VERSION)-packaging
 
 ARTIFACTS_ROOT ?= $(shell realpath --relative-to=$(CURDIR) $(DIST_DIR))
 
@@ -110,16 +96,13 @@ PACKAGE_DIST_DEB = ubuntu18.04
 # TODO: This needs to be set to centos8 for ppc64le builds
 PACKAGE_DIST_RPM = centos7
 
-build-packaging: INTERMEDIATE_TARGET := --target=packaging
+# Handle the default build target.
+.PHONY: build push
+build: build-$(DEFAULT_PUSH_TARGET)
+push: push-$(DEFAULT_PUSH_TARGET)
 
 # Test targets
 test-%: DIST = $(*)
-
-# Handle the default build target.
-.PHONY: build
-build: $(DEFAULT_PUSH_TARGET)
-$(DEFAULT_PUSH_TARGET): build-$(DEFAULT_PUSH_TARGET)
-$(DEFAULT_PUSH_TARGET): DIST = $(DEFAULT_PUSH_TARGET)
 
 TEST_CASES ?= docker crio containerd
 $(TEST_TARGETS): test-%:
