@@ -48,14 +48,18 @@ ARG VERSION="N/A"
 ARG GIT_COMMIT="unknown"
 RUN make PREFIX=/artifacts/bin cmd-nvidia-ctk-installer
 
-# The packaging stage collects the deb and rpm packages built for supported
-# architectures.
-FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi9 AS packaging
+# The packaging stage collects the deb and rpm packages built for
+# supported architectures.
+FROM nvcr.io/nvidia/distroless/go:v3.1.9-dev AS packaging
+
+USER 0:0
+SHELL ["/busybox/sh", "-c"]
+RUN ln -s /busybox/sh /bin/sh
 
 ARG ARTIFACTS_ROOT
 COPY ${ARTIFACTS_ROOT} /artifacts/packages/
 
-WORKDIR /artifacts/packages
+WORKDIR /artifacts
 
 # build-args are added to the manifest.txt file below.
 ARG PACKAGE_VERSION
@@ -70,7 +74,12 @@ RUN echo "#IMAGE_EPOCH=$(date '+%s')" > /artifacts/manifest.txt && \
     env | sed 's/^/#/g' >> /artifacts/manifest.txt && \
     find /artifacts/packages -iname '*.deb' -o -iname '*.rpm' >> /artifacts/manifest.txt
 
-RUN mkdir /licenses && mv /NGC-DL-CONTAINER-LICENSE /licenses/NGC-DL-CONTAINER-LICENSE
+LABEL name="NVIDIA Container Toolkit Packages"
+LABEL vendor="NVIDIA"
+LABEL version="${VERSION}"
+LABEL release="N/A"
+LABEL summary="deb and rpm packages for the NVIDIA Container Toolkit"
+LABEL description="See summary"
 
 # The debpackages stage is used to extract the contents of deb packages.
 FROM nvcr.io/nvidia/cuda:12.9.0-base-ubuntu20.04 AS debpackages
@@ -116,13 +125,19 @@ RUN set -eux; \
 # - The extracted deb packages
 # - The extracted rpm packages
 # - The nvidia-ctk-installer binary
-FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi9 AS artifacts
+FROM scratch AS artifacts
 
 COPY --from=rpmpackages /artifacts/rpm /artifacts/rpm
 COPY --from=debpackages /artifacts/deb /artifacts/deb
 COPY --from=build /artifacts/bin /artifacts/build
 
-FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi9
+# The application stage contains the application used as a GPU Operator
+# operand.
+FROM nvcr.io/nvidia/distroless/go:v3.1.9-dev AS application
+
+USER 0:0
+SHELL ["/busybox/sh", "-c"]
+RUN ln -s /busybox/sh /bin/sh
 
 ENV NVIDIA_DISABLE_REQUIRE="true"
 ENV NVIDIA_VISIBLE_DEVICES=void
@@ -131,6 +146,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=utility
 COPY --from=artifacts /artifacts/rpm /artifacts/rpm
 COPY --from=artifacts /artifacts/deb /artifacts/deb
 COPY --from=artifacts /artifacts/build /work
+COPY --from=artifacts /NGC-DL-CONTAINER-LICENSE /licenses/NGC-DL-CONTAINER-LICENSE
 
 WORKDIR /work
 ENV PATH=/work:$PATH
@@ -143,7 +159,5 @@ LABEL version="${VERSION}"
 LABEL release="N/A"
 LABEL summary="Automatically Configure your Container Runtime for GPU support."
 LABEL description="See summary"
-
-RUN mkdir /licenses && mv /NGC-DL-CONTAINER-LICENSE /licenses/NGC-DL-CONTAINER-LICENSE
 
 ENTRYPOINT ["/work/nvidia-ctk-installer"]
