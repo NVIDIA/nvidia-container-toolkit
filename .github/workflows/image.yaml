@@ -80,7 +80,7 @@ jobs:
     strategy:
       matrix:
         dist:
-          - ubi8
+          - ubi9
           - packaging
     needs: packages
     steps:

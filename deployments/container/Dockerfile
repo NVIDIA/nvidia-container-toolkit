@@ -16,7 +16,7 @@
 ARG GOLANG_VERSION=x.x.x
 ARG VERSION="N/A"
 
-FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi8 AS build
+FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi9 AS build
 
 RUN dnf install -y \
     wget make git gcc \
@@ -50,7 +50,7 @@ RUN make PREFIX=/artifacts/bin cmd-nvidia-ctk-installer
 
 # The packaging stage collects the deb and rpm packages built for supported
 # architectures.
-FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi8 AS packaging
+FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi9 AS packaging
 
 ARG ARTIFACTS_ROOT
 COPY ${ARTIFACTS_ROOT} /artifacts/packages/
@@ -92,7 +92,7 @@ RUN set -eux; \
     for p in $(ls /deb-packages/${ARCH}/*.deb); do dpkg-deb -xv $p /artifacts/deb/; done
 
 # The rpmpackages stage is used to extract the contents of the rpm packages.
-FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi8 AS rpmpackages
+FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi9 AS rpmpackages
 RUN dnf install -y cpio
 
 ARG TARGETARCH
@@ -116,13 +116,13 @@ RUN set -eux; \
 # - The extracted deb packages
 # - The extracted rpm packages
 # - The nvidia-ctk-installer binary
-FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi8 AS artifacts
+FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi9 AS artifacts
 
 COPY --from=rpmpackages /artifacts/rpm /artifacts/rpm
 COPY --from=debpackages /artifacts/deb /artifacts/deb
 COPY --from=build /artifacts/bin /artifacts/build
 
-FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi8
+FROM nvcr.io/nvidia/cuda:12.9.0-base-ubi9
 
 ENV NVIDIA_DISABLE_REQUIRE="true"
 ENV NVIDIA_VISIBLE_DEVICES=void
