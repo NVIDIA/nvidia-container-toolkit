@@ -18,6 +18,7 @@ package modifier
 
 import (
 	"fmt"
+	"strings"
 
 	"tags.cncf.io/container-device-interface/pkg/parser"
 
@@ -27,17 +28,27 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
+)
+
+const (
+	automaticDeviceVendor = "runtime.nvidia.com"
+	automaticDeviceClass  = "gpu"
+	automaticDeviceKind   = automaticDeviceVendor + "/" + automaticDeviceClass
+	automaticDevicePrefix = automaticDeviceKind + "="
 )
 
 // NewCDIModifier creates an OCI spec modifier that determines the modifications to make based on the
 // CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES environment variable is
 // used to select the devices to include.
-func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
+func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, isJitCDI bool) (oci.SpecModifier, error) {
+	defaultKind := cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind
+	if isJitCDI {
+		defaultKind = automaticDeviceKind
+	}
 	deviceRequestor := newCDIDeviceRequestor(
 		logger,
 		image,
-		cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind,
+		defaultKind,
 	)
 	devices := deviceRequestor.DeviceRequests()
 	if len(devices) == 0 {
@@ -107,17 +118,34 @@ func (c *cdiDeviceRequestor) DeviceRequests() []string {
 func filterAutomaticDevices(devices []string) []string {
 	var automatic []string
 	for _, device := range devices {
-		vendor, class, _ := parser.ParseDevice(device)
-		if vendor == "runtime.nvidia.com" && class == "gpu" {
-			automatic = append(automatic, device)
+		if !strings.HasPrefix(device, automaticDevicePrefix) {
+			continue
 		}
+		automatic = append(automatic, device)
 	}
 	return automatic
 }
 
 func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, devices []string) (oci.SpecModifier, error) {
 	logger.Debugf("Generating in-memory CDI specs for devices %v", devices)
-	spec, err := generateAutomaticCDISpec(logger, cfg, devices)
+
+	var identifiers []string
+	for _, device := range devices {
+		identifiers = append(identifiers, strings.TrimPrefix(device, automaticDevicePrefix))
+	}
+
+	cdilib, err := nvcdi.New(
+		nvcdi.WithLogger(logger),
+		nvcdi.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path),
+		nvcdi.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
+		nvcdi.WithVendor(automaticDeviceVendor),
+		nvcdi.WithClass(automaticDeviceClass),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct CDI library: %w", err)
+	}
+
+	spec, err := cdilib.GetSpec(identifiers...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate CDI spec: %w", err)
 	}
@@ -130,27 +158,6 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 	}
 
 	return cdiDeviceRequestor, nil
-}
-
-func generateAutomaticCDISpec(logger logger.Interface, cfg *config.Config, devices []string) (spec.Interface, error) {
-	cdilib, err := nvcdi.New(
-		nvcdi.WithLogger(logger),
-		nvcdi.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path),
-		nvcdi.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
-		nvcdi.WithVendor("runtime.nvidia.com"),
-		nvcdi.WithClass("gpu"),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct CDI library: %w", err)
-	}
-
-	var identifiers []string
-	for _, device := range devices {
-		_, _, id := parser.ParseDevice(device)
-		identifiers = append(identifiers, id)
-	}
-
-	return cdilib.GetSpec(identifiers...)
 }
 
 type deduplicatedDeviceRequestor struct {

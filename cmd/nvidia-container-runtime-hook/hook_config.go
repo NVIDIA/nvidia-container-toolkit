@@ -7,9 +7,11 @@ import (
 	"path"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 )
 
 const (
@@ -20,7 +22,9 @@ const (
 // hookConfig wraps the toolkit config.
 // This allows for functions to be defined on the local type.
 type hookConfig struct {
+	sync.Mutex
 	*config.Config
+	containerConfig *containerConfig
 }
 
 // loadConfig loads the required paths for the hook config.
@@ -55,7 +59,7 @@ func getHookConfig() (*hookConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %v", err)
 	}
-	config := &hookConfig{cfg}
+	config := &hookConfig{Config: cfg}
 
 	allSupportedDriverCapabilities := image.SupportedDriverCapabilities
 	if config.SupportedDriverCapabilities == "all" {
@@ -73,8 +77,8 @@ func getHookConfig() (*hookConfig, error) {
 
 // getConfigOption returns the toml config option associated with the
 // specified struct field.
-func (c hookConfig) getConfigOption(fieldName string) string {
-	t := reflect.TypeOf(c)
+func (c *hookConfig) getConfigOption(fieldName string) string {
+	t := reflect.TypeOf(&c)
 	f, ok := t.FieldByName(fieldName)
 	if !ok {
 		return fieldName
@@ -126,4 +130,22 @@ func (c *hookConfig) nvidiaContainerCliCUDACompatModeFlags() []string {
 		return nil
 	}
 	return []string{flag}
+}
+
+func (c *hookConfig) assertModeIsLegacy() error {
+	if c.NVIDIAContainerRuntimeHookConfig.SkipModeDetection {
+		return nil
+	}
+
+	mr := info.NewRuntimeModeResolver(
+		info.WithLogger(&logInterceptor{}),
+		info.WithImage(&c.containerConfig.Image),
+		info.WithDefaultMode(info.LegacyRuntimeMode),
+	)
+
+	mode := mr.ResolveRuntimeMode(c.NVIDIAContainerRuntimeConfig.Mode)
+	if mode == "legacy" {
+		return nil
+	}
+	return fmt.Errorf("invoking the NVIDIA Container Runtime Hook directly (e.g. specifying the docker --gpus flag) is not supported. Please use the NVIDIA Container Runtime (e.g. specify the --runtime=nvidia flag) instead")
 }

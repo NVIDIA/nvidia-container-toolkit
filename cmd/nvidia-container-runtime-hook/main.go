@@ -55,7 +55,7 @@ func getCLIPath(config config.ContainerCLIConfig) string {
 }
 
 // getRootfsPath returns an absolute path. We don't need to resolve symlinks for now.
-func getRootfsPath(config containerConfig) string {
+func getRootfsPath(config *containerConfig) string {
 	rootfs, err := filepath.Abs(config.Rootfs)
 	if err != nil {
 		log.Panicln(err)
@@ -82,8 +82,8 @@ func doPrestart() {
 		return
 	}
 
-	if !hook.NVIDIAContainerRuntimeHookConfig.SkipModeDetection && info.ResolveAutoMode(&logInterceptor{}, hook.NVIDIAContainerRuntimeConfig.Mode, container.Image) != "legacy" {
-		log.Panicln("invoking the NVIDIA Container Runtime Hook directly (e.g. specifying the docker --gpus flag) is not supported. Please use the NVIDIA Container Runtime (e.g. specify the --runtime=nvidia flag) instead.")
+	if err := hook.assertModeIsLegacy(); err != nil {
+		log.Panicf("%v", err)
 	}
 
 	rootfs := getRootfsPath(container)
