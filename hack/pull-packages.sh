@@ -53,6 +53,6 @@ docker run --rm \
     -v $(pwd):$(pwd) \
     -w $(pwd) \
     -u $(id -u):$(id -g) \
-    --entrypoint="bash" \
+    --entrypoint="sh" \
         ${IMAGE} \
-        -c "cp --preserve=timestamps -R /artifacts/* ${DIST_DIR}"
+        -c "cp -p -R /artifacts/* ${DIST_DIR}"
