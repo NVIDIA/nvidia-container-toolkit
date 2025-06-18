@@ -16,7 +16,7 @@
 # limitations under the License.
 **/
 
-package ldcache
+package ldconfig
 
 import "syscall"
 
