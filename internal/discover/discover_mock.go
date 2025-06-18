@@ -20,6 +20,9 @@ var _ Discover = &DiscoverMock{}
 //			DevicesFunc: func() ([]Device, error) {
 //				panic("mock out the Devices method")
 //			},
+//			EnvVarsFunc: func() ([]EnvVar, error) {
+//				panic("mock out the EnvVars method")
+//			},
 //			HooksFunc: func() ([]Hook, error) {
 //				panic("mock out the Hooks method")
 //			},
@@ -36,6 +39,9 @@ type DiscoverMock struct {
 	// DevicesFunc mocks the Devices method.
 	DevicesFunc func() ([]Device, error)
 
+	// EnvVarsFunc mocks the EnvVars method.
+	EnvVarsFunc func() ([]EnvVar, error)
+
 	// HooksFunc mocks the Hooks method.
 	HooksFunc func() ([]Hook, error)
 
@@ -47,6 +53,9 @@ type DiscoverMock struct {
 		// Devices holds details about calls to the Devices method.
 		Devices []struct {
 		}
+		// EnvVars holds details about calls to the EnvVars method.
+		EnvVars []struct {
+		}
 		// Hooks holds details about calls to the Hooks method.
 		Hooks []struct {
 		}
@@ -55,6 +64,7 @@ type DiscoverMock struct {
 		}
 	}
 	lockDevices sync.RWMutex
+	lockEnvVars sync.RWMutex
 	lockHooks   sync.RWMutex
 	lockMounts  sync.RWMutex
 }
@@ -87,6 +97,37 @@ func (mock *DiscoverMock) DevicesCalls() []struct {
 	mock.lockDevices.RLock()
 	calls = mock.calls.Devices
 	mock.lockDevices.RUnlock()
+	return calls
+}
+
+// EnvVars calls EnvVarsFunc.
+func (mock *DiscoverMock) EnvVars() ([]EnvVar, error) {
+	callInfo := struct {
+	}{}
+	mock.lockEnvVars.Lock()
+	mock.calls.EnvVars = append(mock.calls.EnvVars, callInfo)
+	mock.lockEnvVars.Unlock()
+	if mock.EnvVarsFunc == nil {
+		var (
+			envVarsOut []EnvVar
+			errOut     error
+		)
+		return envVarsOut, errOut
+	}
+	return mock.EnvVarsFunc()
+}
+
+// EnvVarsCalls gets all the calls that were made to EnvVars.
+// Check the length with:
+//
+//	len(mockedDiscover.EnvVarsCalls())
+func (mock *DiscoverMock) EnvVarsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockEnvVars.RLock()
+	calls = mock.calls.EnvVars
+	mock.lockEnvVars.RUnlock()
 	return calls
 }
 
