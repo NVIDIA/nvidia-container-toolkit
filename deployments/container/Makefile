@@ -38,7 +38,7 @@ OUT_IMAGE_TAG = $(OUT_IMAGE_VERSION)
 OUT_IMAGE = $(OUT_IMAGE_NAME):$(OUT_IMAGE_TAG)
 
 ##### Public rules #####
-DEFAULT_PUSH_TARGET := ubi9
+DEFAULT_PUSH_TARGET := application
 DISTRIBUTIONS := $(DEFAULT_PUSH_TARGET)
 
 META_TARGETS := packaging
@@ -102,8 +102,6 @@ build: build-$(DEFAULT_PUSH_TARGET)
 push: push-$(DEFAULT_PUSH_TARGET)
 
 # Test targets
-test-%: DIST = $(*)
-
 TEST_CASES ?= docker crio containerd
 $(TEST_TARGETS): test-%:
 	TEST_CASES="$(TEST_CASES)" bash -x $(CURDIR)/test/container/main.sh run \
