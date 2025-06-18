@@ -81,6 +81,8 @@ LABEL release="N/A"
 LABEL summary="deb and rpm packages for the NVIDIA Container Toolkit"
 LABEL description="See summary"
 
+COPY LICENSE /licenses/
+
 # The debpackages stage is used to extract the contents of deb packages.
 FROM nvcr.io/nvidia/cuda:12.9.0-base-ubuntu20.04 AS debpackages
 
@@ -146,7 +148,6 @@ ENV NVIDIA_DRIVER_CAPABILITIES=utility
 COPY --from=artifacts /artifacts/rpm /artifacts/rpm
 COPY --from=artifacts /artifacts/deb /artifacts/deb
 COPY --from=artifacts /artifacts/build /work
-COPY --from=artifacts /NGC-DL-CONTAINER-LICENSE /licenses/NGC-DL-CONTAINER-LICENSE
 
 WORKDIR /work
 ENV PATH=/work:$PATH
@@ -159,5 +160,7 @@ LABEL version="${VERSION}"
 LABEL release="N/A"
 LABEL summary="Automatically Configure your Container Runtime for GPU support."
 LABEL description="See summary"
+
+COPY LICENSE /licenses/
 
 ENTRYPOINT ["/work/nvidia-ctk-installer"]
