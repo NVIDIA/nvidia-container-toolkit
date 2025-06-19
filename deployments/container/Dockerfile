@@ -164,3 +164,8 @@ LABEL description="See summary"
 COPY LICENSE /licenses/
 
 ENTRYPOINT ["/work/nvidia-ctk-installer"]
+
+# The GPU Operator exec's nvidia-toolkit in its entrypoint.
+# We create a symlink here to ensure compatibility with older
+# GPU Operator versions.
+RUN ln -s /work/nvidia-ctk-installer /work/nvidia-toolkit
