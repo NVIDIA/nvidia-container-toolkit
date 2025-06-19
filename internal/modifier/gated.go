@@ -48,7 +48,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 	devRoot := cfg.NVIDIAContainerCLIConfig.Root
 
 	if image.Getenv("NVIDIA_GDS") == "enabled" {
-		d, err := discover.NewGDSDiscoverer(logger, driverRoot, devRoot)
+		d, err := discover.NewGDSDiscoverer(logger, driverRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDS devices: %w", err)
 		}
