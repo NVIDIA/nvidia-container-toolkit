@@ -37,8 +37,6 @@ import (
 const (
 	// DefaultNvidiaDriverRoot specifies the default NVIDIA driver run directory
 	DefaultNvidiaDriverRoot = "/run/nvidia/driver"
-
-	configFilename = "config.toml"
 )
 
 type cdiOptions struct {
@@ -316,7 +314,7 @@ func (t *Installer) Install(cli *cli.Context, opts *Options) error {
 		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("could not install toolkit components: %w", err))
 	}
 
-	err = t.installToolkitConfig(cli, opts)
+	err = t.installToolkitConfig(cli, opts, toolkit.ConfigFilePath(t.toolkitRoot))
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
 	} else if err != nil {
@@ -343,13 +341,11 @@ func (t *Installer) Install(cli *cli.Context, opts *Options) error {
 
 // installToolkitConfig installs the config file for the NVIDIA container toolkit ensuring
 // that the settings are updated to match the desired install and nvidia driver directories.
-func (t *Installer) installToolkitConfig(c *cli.Context, opts *Options) error {
-	toolkitConfigDir := filepath.Join(t.toolkitRoot, ".config", "nvidia-container-runtime")
-	toolkitConfigPath := filepath.Join(toolkitConfigDir, configFilename)
+func (t *Installer) installToolkitConfig(c *cli.Context, opts *Options, toolkitConfigPath string) error {
 
 	t.logger.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
 
-	err := t.createDirectories(toolkitConfigDir)
+	err := t.createDirectories(filepath.Dir(toolkitConfigPath))
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("could not create required directories: %v", err)
 	} else if err != nil {

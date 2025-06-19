@@ -28,7 +28,7 @@ type createDirectory struct {
 	logger logger.Interface
 }
 
-func (t *toolkitInstaller) createDirectory() Installer {
+func (t *ToolkitInstaller) createDirectory() Installer {
 	return &createDirectory{
 		logger: t.logger,
 	}

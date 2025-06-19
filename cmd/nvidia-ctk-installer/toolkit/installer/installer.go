@@ -33,7 +33,7 @@ type Installer interface {
 	Install(string) error
 }
 
-type toolkitInstaller struct {
+type ToolkitInstaller struct {
 	logger       logger.Interface
 	ignoreErrors bool
 	sourceRoot   string
@@ -43,11 +43,11 @@ type toolkitInstaller struct {
 	ensureTargetDirectory Installer
 }
 
-var _ Installer = (*toolkitInstaller)(nil)
+var _ Installer = (*ToolkitInstaller)(nil)
 
 // New creates a toolkit installer with the specified options.
-func New(opts ...Option) (Installer, error) {
-	t := &toolkitInstaller{
+func New(opts ...Option) (*ToolkitInstaller, error) {
+	t := &ToolkitInstaller{
 		sourceRoot: "/",
 	}
 	for _, opt := range opts {
@@ -73,7 +73,7 @@ func New(opts ...Option) (Installer, error) {
 }
 
 // Install ensures that the required toolkit files are installed in the specified directory.
-func (t *toolkitInstaller) Install(destDir string) error {
+func (t *ToolkitInstaller) Install(destDir string) error {
 	var installers []Installer
 
 	installers = append(installers, t.ensureTargetDirectory)
@@ -96,6 +96,11 @@ func (t *toolkitInstaller) Install(destDir string) error {
 	}
 
 	return errs
+}
+
+func (t *ToolkitInstaller) ConfigFilePath(destDir string) string {
+	toolkitConfigDir := filepath.Join(destDir, ".config", "nvidia-container-runtime")
+	return filepath.Join(toolkitConfigDir, "config.toml")
 }
 
 type symlink struct {
