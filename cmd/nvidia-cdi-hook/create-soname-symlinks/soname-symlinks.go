@@ -1,5 +1,6 @@
 /**
-# Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +15,7 @@
 # limitations under the License.
 **/
 
-package ldcache
+package create_soname_symlinks
 
 import (
 	"errors"
@@ -31,7 +32,7 @@ import (
 )
 
 const (
-	reexecUpdateLdCacheCommandName = "reexec-update-ldcache"
+	reexecUpdateLdCacheCommandName = "reexec-create-soname-symlinks"
 )
 
 type command struct {
@@ -45,13 +46,13 @@ type options struct {
 }
 
 func init() {
-	reexec.Register(reexecUpdateLdCacheCommandName, updateLdCacheHandler)
+	reexec.Register(reexecUpdateLdCacheCommandName, createSonameSymlinksHandler)
 	if reexec.Init() {
 		os.Exit(0)
 	}
 }
 
-// NewCommand constructs an update-ldcache command with the specified logger
+// NewCommand constructs an create-soname-symlinks command with the specified logger
 func NewCommand(logger logger.Interface) *cli.Command {
 	c := command{
 		logger: logger,
@@ -59,14 +60,14 @@ func NewCommand(logger logger.Interface) *cli.Command {
 	return c.build()
 }
 
-// build the update-ldcache command
+// build the create-soname-symlinks command
 func (m command) build() *cli.Command {
 	cfg := options{}
 
-	// Create the 'update-ldcache' command
+	// Create the 'create-soname-symlinks' command
 	c := cli.Command{
-		Name:  "update-ldcache",
-		Usage: "Update ldcache in a container by running ldconfig",
+		Name:  "create-soname-symlinks",
+		Usage: "Create soname symlinks libraries in specified directories",
 		Before: func(c *cli.Context) error {
 			return m.validateFlags(c, &cfg)
 		},
@@ -78,12 +79,12 @@ func (m command) build() *cli.Command {
 	c.Flags = []cli.Flag{
 		&cli.StringSliceFlag{
 			Name:        "folder",
-			Usage:       "Specify a folder to add to /etc/ld.so.conf before updating the ld cache",
+			Usage:       "Specify a directory to generate soname symlinks in. Can be specified multiple times",
 			Destination: &cfg.folders,
 		},
 		&cli.StringFlag{
 			Name:        "ldconfig-path",
-			Usage:       "Specify the path to the ldconfig program",
+			Usage:       "Specify the path to ldconfig on the host",
 			Destination: &cfg.ldconfigPath,
 			Value:       "/sbin/ldconfig",
 		},
@@ -124,19 +125,20 @@ func (m command) run(c *cli.Context, cfg *options) error {
 	if err != nil {
 		return err
 	}
+
 	return cmd.Run()
 }
 
-// updateLdCacheHandler wraps updateLdCache with error handling.
-func updateLdCacheHandler() {
-	if err := updateLdCache(os.Args); err != nil {
+// createSonameSymlinksHandler wraps createSonameSymlinks with error handling.
+func createSonameSymlinksHandler() {
+	if err := createSonameSymlinks(os.Args); err != nil {
 		log.Printf("Error updating ldcache: %v", err)
 		os.Exit(1)
 	}
 }
 
-// updateLdCache ensures that the ldcache in the container is updated to include
-// libraries that are mounted from the host.
+// createSonameSymlinks ensures that soname symlinks are created in the
+// specified directories.
 // It is invoked from a reexec'd handler and provides namespace isolation for
 // the operations performed by this hook. At the point where this is invoked,
 // we are in a new mount namespace that is cloned from the parent.
@@ -144,8 +146,8 @@ func updateLdCacheHandler() {
 // args[0] is the reexec initializer function name
 // args[1] is the path of the ldconfig binary on the host
 // args[2] is the container root directory
-// The remaining args are folders where soname symlinks need to be created.
-func updateLdCache(args []string) error {
+// The remaining args are directories where soname symlinks need to be created.
+func createSonameSymlinks(args []string) error {
 	if len(args) < 3 {
 		return fmt.Errorf("incorrect arguments: %v", args)
 	}
@@ -160,5 +162,5 @@ func updateLdCache(args []string) error {
 		return fmt.Errorf("failed to construct ldconfig runner: %w", err)
 	}
 
-	return ldconfig.UpdateLDCache(args[3:]...)
+	return ldconfig.CreateSonameSymlinks(args[3:]...)
 }

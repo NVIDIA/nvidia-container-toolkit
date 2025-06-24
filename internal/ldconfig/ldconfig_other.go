@@ -17,14 +17,11 @@
 # limitations under the License.
 **/
 
-package ldcache
+package ldconfig
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
-
-	"github.com/moby/sys/reexec"
 )
 
 func pivotRoot(newroot string) error {
@@ -39,13 +36,6 @@ func mountProc(newroot string) error {
 	return fmt.Errorf("not supported")
 }
 
-// createReexecCommand creates a command that can be used ot trigger the reexec
-// initializer.
-func createReexecCommand(args []string) *exec.Cmd {
-	cmd := reexec.Command(args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	return cmd
+func createReexecCommand(args []string) (*exec.Cmd, error) {
+	return nil, fmt.Errorf("not supported")
 }
