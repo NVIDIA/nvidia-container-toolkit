@@ -70,9 +70,9 @@ function copy-file() {
         -v "$(pwd):$(pwd)" \
         -w "$(pwd)" \
         -u "$(id -u):$(id -g)" \
-        --entrypoint="bash" \
+        --entrypoint="sh" \
             "${image}" \
-            -c "cp ${path_in_image} ${path_on_host}"
+            -c "cp -p ${path_in_image} ${path_on_host}"
     fi
 }
 

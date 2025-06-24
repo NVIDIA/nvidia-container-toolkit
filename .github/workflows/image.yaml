@@ -79,8 +79,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        dist:
-          - ubi9
+        target:
+          - application
           - packaging
     needs: packages
     steps:
@@ -117,4 +117,4 @@ jobs:
           BUILD_MULTI_ARCH_IMAGES: ${{ inputs.build_multi_arch_images }}
         run: |
           echo "${VERSION}"
-          make -f deployments/container/Makefile build-${{ matrix.dist }}
+          make -f deployments/container/Makefile build-${{ matrix.target }}
