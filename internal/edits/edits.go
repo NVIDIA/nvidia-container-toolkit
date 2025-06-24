@@ -55,6 +55,11 @@ func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 		return nil, fmt.Errorf("failed to discover devices: %v", err)
 	}
 
+	envs, err := d.EnvVars()
+	if err != nil {
+		return nil, fmt.Errorf("failed to discover environment variables: %w", err)
+	}
+
 	mounts, err := d.Mounts()
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover mounts: %v", err)
@@ -72,6 +77,10 @@ func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 			return nil, fmt.Errorf("failed to created container edits for device: %v", err)
 		}
 		c.Append(edits)
+	}
+
+	for _, e := range envs {
+		c.Append(envvar(e).toEdits())
 	}
 
 	for _, m := range mounts {
