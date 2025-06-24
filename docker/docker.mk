@@ -85,11 +85,6 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 --%: docker-build-%
 	@
 
-LIBNVIDIA_CONTAINER_VERSION ?= $(LIB_VERSION)
-LIBNVIDIA_CONTAINER_TAG ?= $(LIB_TAG)
-
-LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)$(if $(LIBNVIDIA_CONTAINER_TAG),~$(LIBNVIDIA_CONTAINER_TAG))-1
-
 # private ubuntu target
 --ubuntu%: OS := ubuntu
 
@@ -129,7 +124,6 @@ docker-build-%:
 	    --build-arg PKG_NAME="$(LIB_NAME)" \
 	    --build-arg PKG_VERS="$(PACKAGE_VERSION)" \
 	    --build-arg PKG_REV="$(PACKAGE_REVISION)" \
-	    --build-arg LIBNVIDIA_CONTAINER_TOOLS_VERSION="$(LIBNVIDIA_CONTAINER_TOOLS_VERSION)" \
 	    --build-arg GIT_COMMIT="$(GIT_COMMIT)" \
 	    --tag $(BUILDIMAGE) \
 	    --file $(DOCKERFILE) .
