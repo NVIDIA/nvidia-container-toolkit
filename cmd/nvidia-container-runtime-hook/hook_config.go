@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 	"reflect"
 	"strings"
 	"sync"
@@ -12,11 +11,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
-)
-
-const (
-	configPath = "/etc/nvidia-container-runtime/config.toml"
-	driverPath = "/run/nvidia/driver"
 )
 
 // hookConfig wraps the toolkit config.
@@ -29,29 +23,27 @@ type hookConfig struct {
 
 // loadConfig loads the required paths for the hook config.
 func loadConfig() (*config.Config, error) {
-	var configPaths []string
-	var required bool
-	if len(*configflag) != 0 {
-		configPaths = append(configPaths, *configflag)
-		required = true
-	} else {
-		configPaths = append(configPaths, path.Join(driverPath, configPath), configPath)
+	configFilePath, required := getConfigFilePath()
+	cfg, err := config.New(
+		config.WithConfigFile(configFilePath),
+		config.WithRequired(true),
+	)
+	if err == nil {
+		return cfg.Config()
+	} else if os.IsNotExist(err) && !required {
+		return config.GetDefault()
 	}
+	return nil, fmt.Errorf("couldn't open required configuration file: %v", err)
+}
 
-	for _, p := range configPaths {
-		cfg, err := config.New(
-			config.WithConfigFile(p),
-			config.WithRequired(true),
-		)
-		if err == nil {
-			return cfg.Config()
-		} else if os.IsNotExist(err) && !required {
-			continue
-		}
-		return nil, fmt.Errorf("couldn't open required configuration file: %v", err)
+func getConfigFilePath() (string, bool) {
+	if configFromFlag := *configflag; configFromFlag != "" {
+		return configFromFlag, true
 	}
-
-	return config.GetDefault()
+	if configFromEnvvar := os.Getenv(config.FilePathOverrideEnvVar); configFromEnvvar != "" {
+		return configFromEnvvar, true
+	}
+	return config.GetConfigFilePath(), false
 }
 
 func getHookConfig() (*hookConfig, error) {

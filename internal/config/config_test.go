@@ -27,9 +27,26 @@ import (
 
 func TestGetConfigWithCustomConfig(t *testing.T) {
 	testDir := t.TempDir()
-	t.Setenv(configOverride, testDir)
+	t.Setenv(configRootOverride, testDir)
 
-	filename := filepath.Join(testDir, configFilePath)
+	filename := filepath.Join(testDir, RelativeFilePath)
+
+	// By default debug is disabled
+	contents := []byte("[nvidia-container-runtime]\ndebug = \"/nvidia-container-toolkit.log\"")
+
+	require.NoError(t, os.MkdirAll(filepath.Dir(filename), 0766))
+	require.NoError(t, os.WriteFile(filename, contents, 0600))
+
+	cfg, err := GetConfig()
+	require.NoError(t, err)
+	require.Equal(t, "/nvidia-container-toolkit.log", cfg.NVIDIAContainerRuntimeConfig.DebugFilePath)
+}
+
+func TestGetConfigWithConfigFilePathOverride(t *testing.T) {
+	testDir := t.TempDir()
+	filename := filepath.Join(testDir, RelativeFilePath)
+
+	t.Setenv(FilePathOverrideEnvVar, filename)
 
 	// By default debug is disabled
 	contents := []byte("[nvidia-container-runtime]\ndebug = \"/nvidia-container-toolkit.log\"")
