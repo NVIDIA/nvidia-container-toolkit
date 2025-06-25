@@ -28,4 +28,4 @@ The [user guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolk
 [Checkout the Contributing document!](CONTRIBUTING.md)
 
 * Please let us know by [filing a new issue](https://github.com/NVIDIA/nvidia-container-toolkit/issues/new)
-* You can contribute by creating a [merge request](https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/merge_requests/new) to our public GitLab repository
+* You can contribute by creating a [pull request](https://github.com/NVIDIA/nvidia-container-toolkit/compare) to our public GitHub repository
