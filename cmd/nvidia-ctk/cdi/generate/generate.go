@@ -60,6 +60,8 @@ type options struct {
 	librarySearchPaths []string
 	disabledHooks      []string
 
+	config string
+
 	csv struct {
 		files          []string
 		ignorePatterns []string
@@ -81,11 +83,41 @@ func NewCommand(logger logger.Interface) *cli.Command {
 func (m command) build() *cli.Command {
 	opts := options{}
 
+	var flags []cli.Flag
+
 	// Create the 'generate-cdi' command
 	c := cli.Command{
 		Name:  "generate",
 		Usage: "Generate CDI specifications for use with CDI-enabled runtimes",
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			// First, determine the config file path
+			var configFilePath string
+			if cmd.IsSet("config") {
+				configFilePath = cmd.String("config")
+			} else {
+				configFilePath = config.GetConfigFilePath()
+			}
+
+			// Load the config file
+			configToml, err := config.New(
+				config.WithConfigFile(configFilePath),
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			// Get the typed config
+			cfg, err := configToml.Config()
+			if err != nil {
+				return nil, err
+			}
+
+			// Apply config defaults to flags that haven't been set via env vars or CLI
+			// we can't use urfave/cli-altsrc here because we need to check the config file
+			// for defaults, and we can't use the config file as an input source for the
+			// flags because the config file is not yet loaded.
+			m.applyConfigDefaults(cmd, &opts, cfg)
+
 			return ctx, m.validateFlags(cmd, &opts)
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -93,7 +125,13 @@ func (m command) build() *cli.Command {
 		},
 	}
 
-	c.Flags = []cli.Flag{
+	flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:        "config",
+			Usage:       "Specify the path to the config file to use",
+			Destination: &opts.config,
+			Sources:     cli.EnvVars("NVIDIA_CTK_CONFIG_FILE"),
+		},
 		&cli.StringSliceFlag{
 			Name:        "config-search-path",
 			Usage:       "Specify the path to search for config files when discovering the entities that should be included in the CDI specification.",
@@ -204,7 +242,31 @@ func (m command) build() *cli.Command {
 		},
 	}
 
+	c.Flags = flags
+
 	return &c
+}
+
+// applyConfigDefaults applies default values from the config file to flags that haven't been set
+// via environment variables or CLI flags
+func (m command) applyConfigDefaults(cmd *cli.Command, opts *options, cfg *config.Config) {
+	// Apply mode from config if not set via env var or CLI
+	if !cmd.IsSet("mode") && cfg.NVIDIAContainerRuntimeConfig.Mode != "" {
+		opts.mode = cfg.NVIDIAContainerRuntimeConfig.Mode
+		m.logger.Debugf("Setting mode from config: %s", opts.mode)
+	}
+
+	// Apply ldconfig path from config if not set via env var or CLI
+	if !cmd.IsSet("ldconfig-path") && cfg.NVIDIAContainerCLIConfig.Ldconfig != "" {
+		opts.ldconfigPath = string(cfg.NVIDIAContainerCLIConfig.Ldconfig)
+		m.logger.Debugf("Setting ldconfig-path from config: %s", opts.ldconfigPath)
+	}
+
+	// Apply driver-root
+	if !cmd.IsSet("driver-root") && cfg.NVIDIAContainerCLIConfig.Root != "" {
+		opts.driverRoot = cfg.NVIDIAContainerCLIConfig.Root
+		m.logger.Debugf("Setting driver-root from config: %s", opts.driverRoot)
+	}
 }
 
 func (m command) validateFlags(c *cli.Command, opts *options) error {
