@@ -59,7 +59,7 @@ COPY deployments/systemd/ .
 
 RUN dch --create --package="${PKG_NAME}" \
         --newversion "${REVISION}" \
-            "See https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/blob/${GIT_COMMIT}/CHANGELOG.md for the changelog" && \
+            "See https://github.com/NVIDIA/nvidia-container-toolkit/blob/${GIT_COMMIT}/CHANGELOG.md for the changelog" && \
     dch --append "Bump libnvidia-container dependency to ${LIBNVIDIA_CONTAINER1_VERSION}" && \
     dch -r "" && \
     if [ "$REVISION" != "$(dpkg-parsechangelog --show-field=Version)" ]; then exit 1; fi

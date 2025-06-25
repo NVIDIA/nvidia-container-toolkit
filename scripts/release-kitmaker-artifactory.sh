@@ -160,7 +160,7 @@ function upload_archive() {
     props+=("platform=${os}-${arch}")
     props+=("changelist=${GIT_COMMIT_SHORT}")
     props+=("branch=${branch}")
-    props+=("source=https://gitlab.com/nvidia/container-toolkit/container-toolkit")
+    props+=("source=https://github.com/NVIDIA/nvidia-container-toolkit")
     # Package properties:
     props+=("package.epoch=${IMAGE_EPOCH}")
     props+=("package.version=${VERSION}")
