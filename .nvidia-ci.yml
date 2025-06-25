@@ -287,5 +287,6 @@ sign-images-dummy:
     - release-images-dummy
   variables:
     NGC_CLI: "echo [DUMMY] ngc-cli/ngc"
+    IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
   rules:
     - if: $CI_COMMIT_TAG == null || $CI_COMMIT_TAG == ""
