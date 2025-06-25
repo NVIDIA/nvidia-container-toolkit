@@ -17,25 +17,27 @@
 package runtime
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime/configure"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
-type runtimeCommand struct {
-	logger logger.Interface
+type command struct {
+	logger     *logrus.Logger
+	configFile *string
 }
 
 // NewCommand constructs a runtime command with the specified logger
-func NewCommand(logger logger.Interface) *cli.Command {
-	c := runtimeCommand{
-		logger: logger,
+func NewCommand(logger *logrus.Logger, configFile *string) *cli.Command {
+	c := command{
+		logger:     logger,
+		configFile: configFile,
 	}
 	return c.build()
 }
 
-func (m runtimeCommand) build() *cli.Command {
+func (m command) build() *cli.Command {
 	// Create the 'runtime' command
 	runtime := cli.Command{
 		Name:  "runtime",

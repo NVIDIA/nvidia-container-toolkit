@@ -21,14 +21,14 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
-
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type command struct {
-	logger logger.Interface
+	logger     *logrus.Logger
+	configFile *string
 }
 
 type config struct {
@@ -36,9 +36,10 @@ type config struct {
 }
 
 // NewCommand constructs a cdi list command with the specified logger
-func NewCommand(logger logger.Interface) *cli.Command {
+func NewCommand(logger *logrus.Logger, configFile *string) *cli.Command {
 	c := command{
-		logger: logger,
+		logger:     logger,
+		configFile: configFile,
 	}
 	return c.build()
 }

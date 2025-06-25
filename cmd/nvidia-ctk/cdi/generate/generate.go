@@ -23,13 +23,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
+
 	cdi "tags.cncf.io/container-device-interface/pkg/parser"
 
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
@@ -37,11 +38,13 @@ import (
 )
 
 const (
-	allDeviceName = "all"
+	allDeviceName        = "all"
+	defaultNvidiaCTKPath = "/usr/bin/nvidia-ctk"
 )
 
 type command struct {
-	logger logger.Interface
+	logger     *logrus.Logger
+	configFile *string
 }
 
 type options struct {
@@ -60,19 +63,24 @@ type options struct {
 	librarySearchPaths []string
 	disabledHooks      []string
 
+	config string
+
 	csv struct {
 		files          []string
 		ignorePatterns []string
 	}
+
+	appliedConfig *configAsValueSource
 
 	// the following are used for dependency injection during spec generation.
 	nvmllib nvml.Interface
 }
 
 // NewCommand constructs a generate-cdi command with the specified logger
-func NewCommand(logger logger.Interface) *cli.Command {
+func NewCommand(logger *logrus.Logger, configFile *string) *cli.Command {
 	c := command{
-		logger: logger,
+		logger:     logger,
+		configFile: configFile,
 	}
 	return c.build()
 }
@@ -81,6 +89,8 @@ func NewCommand(logger logger.Interface) *cli.Command {
 func (m command) build() *cli.Command {
 	opts := options{}
 
+	var flags []cli.Flag
+
 	// Create the 'generate-cdi' command
 	c := cli.Command{
 		Name:                   "generate",
@@ -88,6 +98,7 @@ func (m command) build() *cli.Command {
 		UseShortOptionHandling: true,
 		EnableShellCompletion:  true,
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			opts.config = *m.configFile
 			return ctx, m.validateFlags(cmd, &opts)
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -95,7 +106,7 @@ func (m command) build() *cli.Command {
 		},
 	}
 
-	c.Flags = []cli.Flag{
+	flags = []cli.Flag{
 		&cli.StringSliceFlag{
 			Name:        "config-search-path",
 			Usage:       "Specify the path to search for config files when discovering the entities that should be included in the CDI specification.",
@@ -123,7 +134,10 @@ func (m command) build() *cli.Command {
 				"If mode is set to 'auto' the mode will be determined based on the system configuration.",
 			Value:       string(nvcdi.ModeAuto),
 			Destination: &opts.mode,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_MODE"),
+			Sources: cli.NewValueSourceChain(
+				cli.EnvVar("NVIDIA_CTK_CDI_GENERATE_MODE"),
+				opts.Config().ValueSource("nvidia-container-runtime.mode"),
+			),
 		},
 		&cli.StringFlag{
 			Name:        "dev-root",
@@ -142,7 +156,10 @@ func (m command) build() *cli.Command {
 			Name:        "driver-root",
 			Usage:       "Specify the NVIDIA GPU driver root to use when discovering the entities that should be included in the CDI specification.",
 			Destination: &opts.driverRoot,
-			Sources:     cli.EnvVars("NVIDIA_CTK_DRIVER_ROOT"),
+			Sources: cli.NewValueSourceChain(
+				cli.EnvVar("NVIDIA_CTK_DRIVER_ROOT"),
+				opts.Config().ValueSource("nvidia-container-runtime.root"),
+			),
 		},
 		&cli.StringSliceFlag{
 			Name:        "library-search-path",
@@ -163,7 +180,10 @@ func (m command) build() *cli.Command {
 			Name:        "ldconfig-path",
 			Usage:       "Specify the path to use for ldconfig in the generated CDI specification",
 			Destination: &opts.ldconfigPath,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_LDCONFIG_PATH"),
+			Sources: cli.NewValueSourceChain(
+				cli.EnvVar("NVIDIA_CTK_CDI_GENERATE_LDCONFIG_PATH"),
+				opts.Config().ValueSource("nvidia-container-runtime.ldconfig"),
+			),
 		},
 		&cli.StringFlag{
 			Name:        "vendor",
@@ -205,6 +225,8 @@ func (m command) build() *cli.Command {
 			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_DISABLED_HOOKS"),
 		},
 	}
+
+	c.Flags = flags
 
 	return &c
 }

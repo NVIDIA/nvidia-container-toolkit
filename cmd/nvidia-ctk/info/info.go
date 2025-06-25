@@ -17,19 +17,20 @@
 package info
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
-
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type command struct {
-	logger logger.Interface
+	logger     *logrus.Logger
+	configFile *string
 }
 
 // NewCommand constructs an info command with the specified logger
-func NewCommand(logger logger.Interface) *cli.Command {
+func NewCommand(logger *logrus.Logger, configFile *string) *cli.Command {
 	c := command{
-		logger: logger,
+		logger:     logger,
+		configFile: configFile,
 	}
 	return c.build()
 }

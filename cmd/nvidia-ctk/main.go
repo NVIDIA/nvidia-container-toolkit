@@ -40,6 +40,8 @@ type options struct {
 	Debug bool
 	// Quiet indicates whether the CLI is started in "quiet" mode
 	Quiet bool
+	// Config specifies the path to the config file
+	Config string
 }
 
 func main() {
@@ -49,13 +51,13 @@ func main() {
 	opts := options{}
 
 	// Create the top-level CLI
-	c := cli.Command{}
-	c.DisableSliceFlagSeparator = true
-	c.Name = "NVIDIA Container Toolkit CLI"
-	c.UseShortOptionHandling = true
-	c.EnableShellCompletion = true
-	c.Usage = "Tools to configure the NVIDIA Container Toolkit"
-	c.Version = info.GetVersionString()
+	c := cli.Command{
+		Name:                   "NVIDIA Container Toolkit CLI",
+		UseShortOptionHandling: true,
+		EnableShellCompletion:  true,
+		Usage:                  "Tools to configure the NVIDIA Container Toolkit",
+		Version:                info.GetVersionString(),
+	}
 
 	// Setup the flags for this command
 	c.Flags = []cli.Flag{
@@ -72,6 +74,12 @@ func main() {
 			Destination: &opts.Quiet,
 			Sources:     cli.EnvVars("NVIDIA_CTK_QUIET"),
 		},
+		&cli.StringFlag{
+			Name:        "config",
+			Usage:       "Path to the config file",
+			Destination: &opts.Config,
+			Sources:     cli.EnvVars("NVIDIA_CTK_CONFIG"),
+		},
 	}
 
 	// Set log-level for all subcommands
@@ -84,17 +92,9 @@ func main() {
 			logLevel = logrus.ErrorLevel
 		}
 		logger.SetLevel(logLevel)
-		return ctx, nil
-	}
 
-	// Define the subcommands
-	c.Commands = []*cli.Command{
-		hook.NewCommand(logger),
-		runtime.NewCommand(logger),
-		infoCLI.NewCommand(logger),
-		cdi.NewCommand(logger),
-		system.NewCommand(logger),
-		config.NewCommand(logger),
+		cmd.Commands = getCommands(logger, &opts.Config)
+		return ctx, nil
 	}
 
 	// Run the CLI
@@ -102,5 +102,16 @@ func main() {
 	if err != nil {
 		logger.Errorf("%v", err)
 		os.Exit(1)
+	}
+}
+
+func getCommands(logger *logrus.Logger, configFile *string) []*cli.Command {
+	return []*cli.Command{
+		hook.NewCommand(logger, configFile),
+		runtime.NewCommand(logger, configFile),
+		infoCLI.NewCommand(logger, configFile),
+		cdi.NewCommand(logger, configFile),
+		system.NewCommand(logger, configFile),
+		config.NewCommand(logger, configFile),
 	}
 }

@@ -24,16 +24,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
 
 	createdefault "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/create-default"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/flags"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type command struct {
-	logger logger.Interface
+	logger     *logrus.Logger
+	configFile *string
 }
 
 // options stores the subcommand options
@@ -43,10 +44,11 @@ type options struct {
 	sets             []string
 }
 
-// NewCommand constructs an config command with the specified logger
-func NewCommand(logger logger.Interface) *cli.Command {
+// NewCommand constructs a config command with the specified logger
+func NewCommand(logger *logrus.Logger, configFile *string) *cli.Command {
 	c := command{
-		logger: logger,
+		logger:     logger,
+		configFile: configFile,
 	}
 	return c.build()
 }

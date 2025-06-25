@@ -20,25 +20,27 @@ import (
 	"context"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/commands"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
 )
 
-type hookCommand struct {
-	logger logger.Interface
+type command struct {
+	logger     *logrus.Logger
+	configFile *string
 }
 
 // NewCommand constructs CLI subcommand for handling CDI hooks.
-func NewCommand(logger logger.Interface) *cli.Command {
-	c := hookCommand{
-		logger: logger,
+func NewCommand(logger *logrus.Logger, configFile *string) *cli.Command {
+	c := command{
+		logger:     logger,
+		configFile: configFile,
 	}
 	return c.build()
 }
 
 // build
-func (m hookCommand) build() *cli.Command {
+func (m command) build() *cli.Command {
 	// Create the 'hook' subcommand
 	hook := cli.Command{
 		Name:  "hook",

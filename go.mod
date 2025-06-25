@@ -1,6 +1,8 @@
 module github.com/NVIDIA/nvidia-container-toolkit
 
-go 1.23.0
+go 1.23.2
+
+toolchain go1.24.4
 
 require (
 	github.com/NVIDIA/go-nvlib v0.7.3
@@ -13,6 +15,7 @@ require (
 	github.com/pelletier/go-toml v1.9.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
+	github.com/urfave/cli-altsrc/v3 v3.0.1
 	github.com/urfave/cli/v3 v3.3.8
 	golang.org/x/mod v0.25.0
 	golang.org/x/sys v0.33.0

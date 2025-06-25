@@ -17,21 +17,23 @@
 package system
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
 
 	devchar "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system/create-dev-char-symlinks"
 	devicenodes "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system/create-device-nodes"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type command struct {
-	logger logger.Interface
+	logger     *logrus.Logger
+	configFile *string
 }
 
-// NewCommand constructs a runtime command with the specified logger
-func NewCommand(logger logger.Interface) *cli.Command {
+// NewCommand constructs a system command with the specified logger
+func NewCommand(logger *logrus.Logger, configFile *string) *cli.Command {
 	c := command{
-		logger: logger,
+		logger:     logger,
+		configFile: configFile,
 	}
 	return c.build()
 }
