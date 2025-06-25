@@ -51,15 +51,12 @@ if [ $1 -gt 1 ]; then  # only on package upgrade
   cp -af %{_bindir}/nvidia-container-runtime-hook %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
 fi
 
-# Reload systemd unit cache
+# Reload systemd unit cache and enable nvidia-cdi-refresh services on both install and upgrade
 if command -v systemctl >/dev/null 2>&1 \
    && systemctl --quiet is-system-running 2>/dev/null; then
-  systemctl daemon-reload || true
-
-  # On fresh install ($1 == 1) enable the path unit so it starts at boot
-  if [ "$1" -eq 1 ]; then
-    systemctl enable --now nvidia-cdi-refresh.path || true
-  fi
+  systemctl daemon-reload || echo "Warning: Failed to reload systemd daemon" >&2
+  systemctl enable --now nvidia-cdi-refresh.path || echo "Warning: Failed to enable nvidia-cdi-refresh.path" >&2
+  systemctl enable --now nvidia-cdi-refresh.service || echo "Warning: Failed to enable nvidia-cdi-refresh.service" >&2
 fi
 
 %posttrans
