@@ -17,7 +17,7 @@
 package cdi
 
 import (
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/generate"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/list"
@@ -45,7 +45,7 @@ func (m command) build() *cli.Command {
 		Usage: "Provide tools for interacting with Container Device Interface specifications",
 	}
 
-	hook.Subcommands = []*cli.Command{
+	hook.Commands = []*cli.Command{
 		generate.NewCommand(m.logger),
 		transform.NewCommand(m.logger),
 		list.NewCommand(m.logger),

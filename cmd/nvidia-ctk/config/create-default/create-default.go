@@ -17,9 +17,10 @@
 package defaultsubcommand
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/flags"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
@@ -47,11 +48,11 @@ func (m command) build() *cli.Command {
 		Name:    "default",
 		Aliases: []string{"create-default", "generate-default"},
 		Usage:   "Generate the default NVIDIA Container Toolkit configuration file",
-		Before: func(c *cli.Context) error {
-			return m.validateFlags(c, &opts)
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, m.validateFlags(cmd, &opts)
 		},
-		Action: func(c *cli.Context) error {
-			return m.run(c, &opts)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return m.run(cmd, &opts)
 		},
 	}
 
@@ -67,11 +68,11 @@ func (m command) build() *cli.Command {
 	return &c
 }
 
-func (m command) validateFlags(c *cli.Context, opts *flags.Options) error {
+func (m command) validateFlags(c *cli.Command, opts *flags.Options) error {
 	return opts.Validate()
 }
 
-func (m command) run(c *cli.Context, opts *flags.Options) error {
+func (m command) run(c *cli.Command, opts *flags.Options) error {
 	cfgToml, err := config.New()
 	if err != nil {
 		return fmt.Errorf("unable to load or create config: %v", err)
