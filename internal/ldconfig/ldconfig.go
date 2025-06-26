@@ -19,9 +19,11 @@ package ldconfig
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
@@ -39,6 +41,7 @@ const (
 type Ldconfig struct {
 	ldconfigPath string
 	inRoot       string
+	isRootless   bool
 }
 
 // NewRunner creates an exec.Cmd that can be used to run ldconfig.
@@ -47,26 +50,59 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 		id,
 		strings.TrimPrefix(config.NormalizeLDConfigPath("@"+ldconfigPath), "@"),
 		containerRoot,
+		fmt.Sprintf("rootless=%v", os.Geteuid() != 0),
 	}
 	args = append(args, additionalargs...)
 
 	return createReexecCommand(args)
 }
 
-// New creates an Ldconfig struct that is used to perform operations on the
-// ldcache and libraries in a particular root (e.g. a container).
-func New(ldconfigPath string, inRoot string) (*Ldconfig, error) {
+// NewFromRunnerArgs creates an Ldconfig struct from the args passed to the Cmd
+// above.
+// This struct is used to perform operations on the ldcache and libraries in a
+// particular root (e.g. a container).
+//
+// args[0] is the reexec initializer function name
+// args[1] is the path of the ldconfig binary on the host
+// args[2] is the container root directory
+// args[3] is the optional flag indicating whether the container is being run rootless.
+// The remaining args are folders where soname symlinks need to be created.
+func NewFromArgs(args ...string) (*Ldconfig, []string, error) {
+	// Validate the number of arguments: [program, ldconfigPath, inRoot]
+	if len(args) < 4 {
+		return nil, args, fmt.Errorf("incorrect arguments: %v", args)
+	}
+
+	ldconfigPath := args[1]
+	if ldconfigPath == "" {
+		return nil, args, fmt.Errorf("an ldconfig path must be specified")
+	}
+
+	inRoot := args[2]
+	if inRoot == "" || inRoot == "/" {
+		return nil, args, fmt.Errorf("ldconfig must be run in the non-system root")
+	}
+
+	isRootless := false
+	if len(args) >= 4 && strings.HasPrefix(args[3], "rootless=") {
+		value, err := strconv.ParseBool(strings.TrimPrefix(args[3], "rootless="))
+		if err != nil {
+			return nil, args, err
+		}
+		isRootless = value
+	}
+
+	remainingArgs := args[3:]
+	if isRootless {
+		remainingArgs = args[4:]
+	}
+
 	l := &Ldconfig{
 		ldconfigPath: ldconfigPath,
 		inRoot:       inRoot,
+		isRootless:   isRootless,
 	}
-	if ldconfigPath == "" {
-		return nil, fmt.Errorf("an ldconfig path must be specified")
-	}
-	if inRoot == "" || inRoot == "/" {
-		return nil, fmt.Errorf("ldconfig must be run in the non-system root")
-	}
-	return l, nil
+	return l, remainingArgs, nil
 }
 
 // CreateSonameSymlinks uses ldconfig to create the soname symlinks in the
@@ -130,7 +166,10 @@ func (l *Ldconfig) prepareRoot() (string, error) {
 	// To prevent leaking the parent proc filesystem, we create a new proc mount
 	// in the specified root.
 	if err := mountProc(l.inRoot); err != nil {
-		return "", fmt.Errorf("error mounting /proc: %w", err)
+		if !l.isRootless {
+			return "", fmt.Errorf("error mounting /proc: %w", err)
+		}
+		log.Printf("Ignoring error for rootless container: %v", err)
 	}
 
 	// We mount the host ldconfig before we pivot root since host paths are not
