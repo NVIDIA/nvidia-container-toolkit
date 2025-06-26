@@ -25,46 +25,17 @@ import (
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
-	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
-
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
 
 type imexlib nvcdilib
 
-var _ Interface = (*imexlib)(nil)
+var _ wrapped = (*imexlib)(nil)
 
 const (
 	classImexChannel = "imex-channel"
 )
-
-// GetSpec should not be called for imexlib.
-func (l *imexlib) GetSpec(...string) (spec.Interface, error) {
-	return nil, fmt.Errorf("unexpected call to imexlib.GetSpec()")
-}
-
-// GetAllDeviceSpecs returns the device specs for all available devices.
-func (l *imexlib) GetAllDeviceSpecs() ([]specs.Device, error) {
-	channelsDiscoverer := discover.NewCharDeviceDiscoverer(
-		l.logger,
-		l.devRoot,
-		[]string{"/dev/nvidia-caps-imex-channels/channel*"},
-	)
-
-	channels, err := channelsDiscoverer.Devices()
-	if err != nil {
-		return nil, err
-	}
-
-	var channelIDs []string
-	for _, channel := range channels {
-		channelIDs = append(channelIDs, filepath.Base(channel.Path))
-	}
-
-	return l.GetDeviceSpecsByID(channelIDs...)
-}
 
 // GetCommonEdits returns an empty set of edits for IMEX devices.
 func (l *imexlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
@@ -73,16 +44,15 @@ func (l *imexlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 
 // GetDeviceSpecsByID returns the CDI device specs for the IMEX channels specified.
 func (l *imexlib) GetDeviceSpecsByID(ids ...string) ([]specs.Device, error) {
+	channelsIDs, err := l.getChannelIDs(ids...)
+	if err != nil {
+		return nil, err
+	}
 	var deviceSpecs []specs.Device
-	for _, id := range ids {
-		trimmed := strings.TrimPrefix(id, "channel")
-		_, err := strconv.ParseUint(trimmed, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid channel ID %v: %w", id, err)
-		}
-		path := "/dev/nvidia-caps-imex-channels/channel" + trimmed
+	for _, id := range channelsIDs {
+		path := "/dev/nvidia-caps-imex-channels/channel" + id
 		deviceSpec := specs.Device{
-			Name: trimmed,
+			Name: id,
 			ContainerEdits: specs.ContainerEdits{
 				DeviceNodes: []*specs.DeviceNode{
 					{
@@ -97,22 +67,40 @@ func (l *imexlib) GetDeviceSpecsByID(ids ...string) ([]specs.Device, error) {
 	return deviceSpecs, nil
 }
 
-// GetGPUDeviceEdits is unsupported for the imexlib specs
-func (l *imexlib) GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, error) {
-	return nil, fmt.Errorf("GetGPUDeviceEdits is not supported")
+func (l *imexlib) getChannelIDs(ids ...string) ([]string, error) {
+	var channelIDs []string
+	for _, id := range ids {
+		trimmed := strings.TrimPrefix(id, "channel")
+		if trimmed == "all" {
+			return l.getAllChannelIDs()
+		}
+		_, err := strconv.ParseUint(trimmed, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid channel ID %v: %w", id, err)
+		}
+		channelIDs = append(channelIDs, trimmed)
+	}
+	return channelIDs, nil
 }
 
-// GetGPUDeviceSpecs is unsupported for the imexlib specs
-func (l *imexlib) GetGPUDeviceSpecs(int, device.Device) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetGPUDeviceSpecs is not supported")
-}
+// getAllChannelIDs returns the device IDs for all available IMEX channels.
+func (l *imexlib) getAllChannelIDs() ([]string, error) {
+	channelsDiscoverer := discover.NewCharDeviceDiscoverer(
+		l.logger,
+		l.devRoot,
+		[]string{"/dev/nvidia-caps-imex-channels/channel*"},
+	)
 
-// GetMIGDeviceEdits is unsupported for the imexlib specs
-func (l *imexlib) GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi.ContainerEdits, error) {
-	return nil, fmt.Errorf("GetMIGDeviceEdits is not supported")
-}
+	channels, err := channelsDiscoverer.Devices()
+	if err != nil {
+		return nil, err
+	}
 
-// GetMIGDeviceSpecs is unsupported for the imexlib specs
-func (l *imexlib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetMIGDeviceSpecs is not supported")
+	var channelIDs []string
+	for _, channel := range channels {
+		channelID := filepath.Base(channel.Path)
+		channelIDs = append(channelIDs, strings.TrimPrefix(channelID, "channel"))
+	}
+
+	return channelIDs, nil
 }

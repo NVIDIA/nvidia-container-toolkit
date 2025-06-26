@@ -26,12 +26,18 @@ import (
 )
 
 type wrapper struct {
-	Interface
+	wrapped
 
 	vendor string
 	class  string
 
 	mergedDeviceOptions []transform.MergedDeviceOption
+}
+
+// TODO: Rename this type
+type wrapped interface {
+	GetCommonEdits() (*cdi.ContainerEdits, error)
+	GetDeviceSpecsByID(...string) ([]specs.Device, error)
 }
 
 // GetSpec combines the device specs and common edits from the wrapped Interface to a single spec.Interface.
@@ -59,23 +65,19 @@ func (l *wrapper) GetSpec(devices ...string) (spec.Interface, error) {
 }
 
 func (l *wrapper) GetDeviceSpecsByID(devices ...string) ([]specs.Device, error) {
-	for _, device := range devices {
-		if device != "all" {
-			continue
-		}
-		return l.GetAllDeviceSpecs()
-	}
-	return l.Interface.GetDeviceSpecsByID(devices...)
+	return l.wrapped.GetDeviceSpecsByID(devices...)
 }
 
 // GetAllDeviceSpecs returns the device specs for all available devices.
+//
+// Deprecated: Use GetDeviceSpecsByID("all") instead.
 func (l *wrapper) GetAllDeviceSpecs() ([]specs.Device, error) {
-	return l.Interface.GetAllDeviceSpecs()
+	return l.wrapped.GetDeviceSpecsByID("all")
 }
 
 // GetCommonEdits returns the wrapped edits and adds additional edits on top.
 func (m *wrapper) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	edits, err := m.Interface.GetCommonEdits()
+	edits, err := m.wrapped.GetCommonEdits()
 	if err != nil {
 		return nil, err
 	}
