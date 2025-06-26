@@ -28,10 +28,14 @@ import (
 
 type gdslib nvcdilib
 
-var _ wrapped = (*gdslib)(nil)
+var _ deviceSpecGeneratorFactory = (*gdslib)(nil)
 
-// GetDeviceSpecsByID returns the device specs for the specified devices.
-func (l *gdslib) GetDeviceSpecsByID(ids ...string) ([]specs.Device, error) {
+func (l *gdslib) DeviceSpecGenerators(...string) (DeviceSpecGenerator, error) {
+	return l, nil
+}
+
+// GetDeviceSpecs returns the CDI device specs for a single all device.
+func (l *gdslib) GetDeviceSpecs() ([]specs.Device, error) {
 	discoverer, err := discover.NewGDSDiscoverer(l.logger, l.driverRoot, l.devRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GPUDirect Storage discoverer: %v", err)

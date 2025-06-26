@@ -39,6 +39,11 @@ type SpecGenerator interface {
 	GetSpec(...string) (spec.Interface, error)
 }
 
+// A DeviceSpecGenerator is used to generate the specs for one or more devices.
+type DeviceSpecGenerator interface {
+	GetDeviceSpecs() ([]specs.Device, error)
+}
+
 // A HookName represents one of the predefined NVIDIA CDI hooks.
 type HookName = discover.HookName
 

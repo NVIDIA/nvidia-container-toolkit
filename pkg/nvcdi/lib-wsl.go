@@ -27,10 +27,14 @@ import (
 
 type wsllib nvcdilib
 
-var _ wrapped = (*wsllib)(nil)
+var _ deviceSpecGeneratorFactory = (*wsllib)(nil)
 
-// GetDeviceSpecsByID returns the device specs for the specified devices.
-func (l *wsllib) GetDeviceSpecsByID(...string) ([]specs.Device, error) {
+func (l *wsllib) DeviceSpecGenerators(...string) (DeviceSpecGenerator, error) {
+	return l, nil
+}
+
+// GetDeviceSpecs returns the CDI device specs for a single all device.
+func (l *wsllib) GetDeviceSpecs() ([]specs.Device, error) {
 	device := newDXGDeviceDiscoverer(l.logger, l.devRoot)
 	deviceEdits, err := edits.FromDiscoverer(device)
 	if err != nil {

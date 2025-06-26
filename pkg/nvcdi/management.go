@@ -32,20 +32,14 @@ import (
 
 type managementlib nvcdilib
 
-var _ wrapped = (*managementlib)(nil)
+var _ deviceSpecGeneratorFactory = (*managementlib)(nil)
 
-// GetAllDeviceSpecs returns all device specs for use in managemnt containers.
-// A single device with the name `all` is returned.
-//
-// Deprecated: Use GetDeviceSpecsByID("all") instead.
-func (m *managementlib) GetAllDeviceSpecs() ([]specs.Device, error) {
-	return m.GetDeviceSpecsByID("all")
+func (l *managementlib) DeviceSpecGenerators(...string) (DeviceSpecGenerator, error) {
+	return l, nil
 }
 
-// GetDeviceSpecsByID returns the CDI device specs for the GPU(s) represented by
-// the provided identifiers, where an identifier is an index or UUID of a valid
-// GPU device.
-func (m *managementlib) GetDeviceSpecsByID(...string) ([]specs.Device, error) {
+// GetDeviceSpecs returns the CDI device specs for a single all device.
+func (m *managementlib) GetDeviceSpecs() ([]specs.Device, error) {
 	devices, err := m.newManagementDeviceDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
