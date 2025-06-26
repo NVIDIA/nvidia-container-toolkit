@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
+	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
@@ -27,31 +28,66 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/dgpu"
 )
 
-// GetMIGDeviceSpecs returns the CDI device specs for the full GPU represented by 'device'.
-func (l *nvmllib) GetMIGDeviceSpecs(i int, d device.Device, j int, mig device.MigDevice) ([]specs.Device, error) {
-	edits, err := l.GetMIGDeviceEdits(d, mig)
+type migDeviceSpecGenerator struct {
+	*nvmllib
+	id       string
+	index    int
+	parent   device.Device
+	migIndex int
+	device   device.MigDevice
+}
+
+var _ deviceSpecGenerator = (*migDeviceSpecGenerator)(nil)
+
+func (l *nvmllib) newMIGDeviceSpecGeneratorFromNVMLDevice(id string, nvmlDevice nvml.Device) (deviceSpecGenerator, error) {
+	nvmlParentDevice, ret := nvmlDevice.GetDeviceHandleFromMigDeviceHandle()
+	if ret != nvml.SUCCESS {
+		return nil, fmt.Errorf("failed to get parent device handle: %w", ret)
+	}
+	nvlibMigDevice, err := l.devicelib.NewMigDevice(nvmlDevice)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get edits for device: %v", err)
+		return nil, fmt.Errorf("failed to construct device: %w", err)
+	}
+	nvlibParentDevice, err := l.devicelib.NewDevice(nvmlParentDevice)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct parent device: %w", err)
 	}
 
-	names, err := l.deviceNamers.GetMigDeviceNames(i, convert{d}, j, convert{mig})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get device name: %v", err)
+	e := &migDeviceSpecGenerator{
+		nvmllib: l,
+		id:      id,
+		parent:  nvlibParentDevice,
+		device:  nvlibMigDevice,
 	}
+	return e, nil
+}
+
+func (l *migDeviceSpecGenerator) GetDeviceSpecs() ([]specs.Device, error) {
+	deviceEdits, err := l.getDeviceEdits()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get CDI device edits for identifier %q: %w", l.id, err)
+	}
+
+	names, err := l.getNames()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get device names: %w", err)
+	}
+
 	var deviceSpecs []specs.Device
 	for _, name := range names {
-		spec := specs.Device{
+		deviceSpec := specs.Device{
 			Name:           name,
-			ContainerEdits: *edits.ContainerEdits,
+			ContainerEdits: *deviceEdits.ContainerEdits,
 		}
-		deviceSpecs = append(deviceSpecs, spec)
+		deviceSpecs = append(deviceSpecs, deviceSpec)
 	}
+
 	return deviceSpecs, nil
 }
 
 // GetMIGDeviceEdits returns the CDI edits for the MIG device represented by 'mig' on 'parent'.
-func (l *nvmllib) GetMIGDeviceEdits(parent device.Device, mig device.MigDevice) (*cdi.ContainerEdits, error) {
-	deviceNodes, err := dgpu.NewForMigDevice(parent, mig,
+func (l *migDeviceSpecGenerator) getDeviceEdits() (*cdi.ContainerEdits, error) {
+	deviceNodes, err := dgpu.NewForMigDevice(l.parent, l.device,
 		dgpu.WithDevRoot(l.devRoot),
 		dgpu.WithLogger(l.logger),
 		dgpu.WithHookCreator(l.hookCreator),
@@ -67,4 +103,8 @@ func (l *nvmllib) GetMIGDeviceEdits(parent device.Device, mig device.MigDevice) 
 	}
 
 	return editsForDevice, nil
+}
+
+func (l *migDeviceSpecGenerator) getNames() ([]string, error) {
+	return l.deviceNamers.GetMigDeviceNames(l.index, convert{l.parent}, l.migIndex, convert{l.device})
 }
