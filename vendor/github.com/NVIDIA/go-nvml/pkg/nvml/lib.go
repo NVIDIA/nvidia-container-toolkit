@@ -159,13 +159,16 @@ var nvmlComputeInstanceGetInfo = nvmlComputeInstanceGetInfo_v1
 var deviceGetComputeRunningProcesses = deviceGetComputeRunningProcesses_v1
 var deviceGetGraphicsRunningProcesses = deviceGetGraphicsRunningProcesses_v1
 var deviceGetMPSComputeRunningProcesses = deviceGetMPSComputeRunningProcesses_v1
-var GetBlacklistDeviceCount = GetExcludedDeviceCount
-var GetBlacklistDeviceInfoByIndex = GetExcludedDeviceInfoByIndex
 var nvmlDeviceGetGpuInstancePossiblePlacements = nvmlDeviceGetGpuInstancePossiblePlacements_v1
 var nvmlVgpuInstanceGetLicenseInfo = nvmlVgpuInstanceGetLicenseInfo_v1
 var nvmlDeviceGetDriverModel = nvmlDeviceGetDriverModel_v1
+var nvmlDeviceGetPowerMizerMode = DeviceGetPowerMizerMode_v1
+var nvmlDeviceReadWritePRM = DeviceReadWritePRM_v1
 
 // BlacklistDeviceInfo was replaced by ExcludedDeviceInfo
+var GetBlacklistDeviceCount = GetExcludedDeviceCount
+var GetBlacklistDeviceInfoByIndex = GetExcludedDeviceInfoByIndex
+
 type BlacklistDeviceInfo = ExcludedDeviceInfo
 
 type ProcessInfo_v1Slice []ProcessInfo_v1

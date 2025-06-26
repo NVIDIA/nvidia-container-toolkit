@@ -758,6 +758,16 @@ func (device nvmlDevice) GetPowerUsage() (uint32, Return) {
 	return power, ret
 }
 
+func (l *library) DeviceGetPowerMizerMode_v1(device Device) (DevicePowerMizerModes_v1, Return) {
+	return device.GetPowerMizerMode_v1()
+}
+
+func (device nvmlDevice) GetPowerMizerMode_v1() (DevicePowerMizerModes_v1, Return) {
+	var devicePowerMizerModes DevicePowerMizerModes_v1
+	ret := nvmlDeviceGetPowerMizerMode_v1(device, &devicePowerMizerModes)
+	return devicePowerMizerModes, ret
+}
+
 // nvml.DeviceGetTotalEnergyConsumption()
 func (l *library) DeviceGetTotalEnergyConsumption(device Device) (uint64, Return) {
 	return device.GetTotalEnergyConsumption()
@@ -1342,6 +1352,17 @@ func (device nvmlDevice) GetAccountingMode() (EnableState, Return) {
 	var mode EnableState
 	ret := nvmlDeviceGetAccountingMode(device, &mode)
 	return mode, ret
+}
+
+func (l *library) DeviceGetPdi(device Device) (Pdi, Return) {
+	return device.GetPdi()
+}
+
+func (device nvmlDevice) GetPdi() (Pdi, Return) {
+	var pdi Pdi
+	pdi.Version = STRUCT_VERSION(pdi, 1)
+	ret := nvmlDeviceGetPdi(device, &pdi)
+	return pdi, ret
 }
 
 // nvml.DeviceGetAccountingStats()
@@ -2037,6 +2058,14 @@ func (l *library) GetExcludedDeviceInfoByIndex(index int) (ExcludedDeviceInfo, R
 	return info, ret
 }
 
+func (l *library) DeviceReadWritePRM_v1(device Device, buffer *PRMTLV_v1) Return {
+	return device.ReadWritePRM_v1(buffer)
+}
+
+func (device nvmlDevice) ReadWritePRM_v1(buffer *PRMTLV_v1) Return {
+	return nvmlDeviceReadWritePRM_v1(device, buffer)
+}
+
 // nvml.DeviceSetMigMode()
 func (l *library) DeviceSetMigMode(device Device, mode int) (Return, Return) {
 	return device.SetMigMode(mode)
@@ -2100,6 +2129,33 @@ func (l *library) DeviceGetGpuInstanceProfileInfoV(device Device, profile int) G
 
 func (device nvmlDevice) GetGpuInstanceProfileInfoV(profile int) GpuInstanceProfileInfoHandler {
 	return GpuInstanceProfileInfoHandler{device, profile}
+}
+
+type GpuInstanceProfileInfoByIdHandler struct {
+	device    nvmlDevice
+	profileId int
+}
+
+func (handler GpuInstanceProfileInfoByIdHandler) V2() (GpuInstanceProfileInfo_v2, Return) {
+	var info GpuInstanceProfileInfo_v2
+	info.Version = STRUCT_VERSION(info, 2)
+	ret := nvmlDeviceGetGpuInstanceProfileInfoByIdV(handler.device, uint32(handler.profileId), &info)
+	return info, ret
+}
+
+func (handler GpuInstanceProfileInfoByIdHandler) V3() (GpuInstanceProfileInfo_v3, Return) {
+	var info GpuInstanceProfileInfo_v3
+	info.Version = STRUCT_VERSION(info, 3)
+	ret := nvmlDeviceGetGpuInstanceProfileInfoV(handler.device, uint32(handler.profileId), (*GpuInstanceProfileInfo_v2)(unsafe.Pointer(&info)))
+	return info, ret
+}
+
+func (l *library) DeviceGetGpuInstanceProfileInfoByIdV(device Device, profileId int) GpuInstanceProfileInfoByIdHandler {
+	return device.GetGpuInstanceProfileInfoByIdV(profileId)
+}
+
+func (device nvmlDevice) GetGpuInstanceProfileInfoByIdV(profileId int) GpuInstanceProfileInfoByIdHandler {
+	return GpuInstanceProfileInfoByIdHandler{device, profileId}
 }
 
 // nvml.DeviceGetGpuInstancePossiblePlacements()
@@ -2917,6 +2973,28 @@ func (device nvmlDevice) GetNumaNodeId() (int, Return) {
 	return int(node), ret
 }
 
+func (l *library) DeviceGetAddressingMode(device Device) (DeviceAddressingMode, Return) {
+	return device.GetAddressingMode()
+}
+
+func (device nvmlDevice) GetAddressingMode() (DeviceAddressingMode, Return) {
+	var deviceAddressingMode DeviceAddressingMode
+	deviceAddressingMode.Version = STRUCT_VERSION(deviceAddressingMode, 1)
+	ret := nvmlDeviceGetAddressingMode(device, &deviceAddressingMode)
+	return deviceAddressingMode, ret
+}
+
+func (l *library) DeviceGetRepairStatus(device Device) (RepairStatus, Return) {
+	return device.GetRepairStatus()
+}
+
+func (device nvmlDevice) GetRepairStatus() (RepairStatus, Return) {
+	var repairStatus RepairStatus
+	repairStatus.Version = STRUCT_VERSION(repairStatus, 1)
+	ret := nvmlDeviceGetRepairStatus(device, &repairStatus)
+	return repairStatus, ret
+}
+
 // nvml.DeviceGetPciInfoExt()
 func (l *library) DeviceGetPciInfoExt(device Device) (PciInfoExt, Return) {
 	return device.GetPciInfoExt()
@@ -2939,9 +3017,9 @@ func (handler GpuFabricInfoHandler) V1() (GpuFabricInfo, Return) {
 }
 
 func (handler GpuFabricInfoHandler) V2() (GpuFabricInfo_v2, Return) {
-	var info GpuFabricInfoV
+	var info GpuFabricInfo_v2
 	info.Version = STRUCT_VERSION(info, 2)
-	ret := nvmlDeviceGetGpuFabricInfoV(handler.device, &info)
+	ret := nvmlDeviceGetGpuFabricInfoV(handler.device, (*GpuFabricInfoV)(unsafe.Pointer(&info)))
 	return GpuFabricInfo_v2(info), ret
 }
 
@@ -3254,6 +3332,19 @@ func (device nvmlDevice) SetNvlinkBwMode(setBwMode *NvlinkSetBwMode) Return {
 	return nvmlDeviceSetNvlinkBwMode(device, setBwMode)
 }
 
+func (l *library) DeviceGetNvLinkInfo(device Device) (NvLinkInfo, Return) {
+	return device.GetNvLinkInfo()
+}
+
+// TODO: How do we handle the v1 vs v2 differences?
+func (device nvmlDevice) GetNvLinkInfo() (NvLinkInfo, Return) {
+	var info NvLinkInfo
+	info.Version = STRUCT_VERSION(info, 2)
+	ret := nvmlDeviceGetNvLinkInfo(device, &info)
+
+	return info, ret
+}
+
 // nvml.DeviceWorkloadPowerProfileGetProfilesInfo()
 func (l *library) DeviceWorkloadPowerProfileGetProfilesInfo(device Device) (WorkloadPowerProfileProfilesInfo, Return) {
 	return device.WorkloadPowerProfileGetProfilesInfo()
@@ -3321,6 +3412,14 @@ func (l *library) DevicePowerSmoothingSetState(device Device, state *PowerSmooth
 
 func (device nvmlDevice) PowerSmoothingSetState(state *PowerSmoothingState) Return {
 	return nvmlDevicePowerSmoothingSetState(device, state)
+}
+
+func (l *library) DeviceGetSramUniqueUncorrectedEccErrorCounts(device Device, errorCounts *EccSramUniqueUncorrectedErrorCounts) Return {
+	return device.GetSramUniqueUncorrectedEccErrorCounts(errorCounts)
+}
+
+func (device nvmlDevice) GetSramUniqueUncorrectedEccErrorCounts(errorCounts *EccSramUniqueUncorrectedErrorCounts) Return {
+	return nvmlDeviceGetSramUniqueUncorrectedEccErrorCounts(device, errorCounts)
 }
 
 // nvml.GpuInstanceGetCreatableVgpus()
