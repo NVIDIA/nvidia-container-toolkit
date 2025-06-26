@@ -118,7 +118,7 @@ func New(opts ...Option) (Interface, error) {
 		)
 	}
 
-	var lib Interface
+	var lib wrapped
 	switch l.resolveMode() {
 	case ModeCSV:
 		if len(l.csvFiles) == 0 {
@@ -162,7 +162,7 @@ func New(opts ...Option) (Interface, error) {
 	)
 
 	w := wrapper{
-		Interface:           lib,
+		wrapped:             lib,
 		vendor:              l.vendor,
 		class:               l.class,
 		mergedDeviceOptions: l.mergedDeviceOptions,
