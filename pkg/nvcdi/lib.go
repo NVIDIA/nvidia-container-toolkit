@@ -118,39 +118,39 @@ func New(opts ...Option) (Interface, error) {
 		)
 	}
 
-	var lib wrapped
+	var factory deviceSpecGeneratorFactory
 	switch l.resolveMode() {
 	case ModeCSV:
 		if len(l.csvFiles) == 0 {
 			l.csvFiles = csv.DefaultFileList()
 		}
-		lib = (*csvlib)(l)
+		factory = (*csvlib)(l)
 	case ModeManagement:
 		if l.vendor == "" {
 			l.vendor = "management.nvidia.com"
 		}
 		// Management containers in general do not require CUDA Forward compatibility.
 		l.disabledHooks = append(l.disabledHooks, HookEnableCudaCompat, DisableDeviceNodeModificationHook)
-		lib = (*managementlib)(l)
+		factory = (*managementlib)(l)
 	case ModeNvml:
-		lib = (*nvmllib)(l)
+		factory = (*nvmllib)(l)
 	case ModeWsl:
-		lib = (*wsllib)(l)
+		factory = (*wsllib)(l)
 	case ModeGds:
 		if l.class == "" {
 			l.class = "gds"
 		}
-		lib = (*gdslib)(l)
+		factory = (*gdslib)(l)
 	case ModeMofed:
 		if l.class == "" {
 			l.class = "mofed"
 		}
-		lib = (*mofedlib)(l)
+		factory = (*mofedlib)(l)
 	case ModeImex:
 		if l.class == "" {
 			l.class = classImexChannel
 		}
-		lib = (*imexlib)(l)
+		factory = (*imexlib)(l)
 	default:
 		return nil, fmt.Errorf("unknown mode %q", l.mode)
 	}
@@ -162,7 +162,7 @@ func New(opts ...Option) (Interface, error) {
 	)
 
 	w := wrapper{
-		wrapped:             lib,
+		factory:             factory,
 		vendor:              l.vendor,
 		class:               l.class,
 		mergedDeviceOptions: l.mergedDeviceOptions,

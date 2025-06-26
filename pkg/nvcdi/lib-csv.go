@@ -29,10 +29,9 @@ import (
 
 type csvlib nvcdilib
 
-var _ wrapped = (*csvlib)(nil)
+var _ deviceSpecGeneratorFactory = (*csvlib)(nil)
 
-// GetDeviceSpecsByID returns the device specs for the specified devices.
-func (l *csvlib) GetDeviceSpecsByID(ids ...string) ([]specs.Device, error) {
+func (l *csvlib) DeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, error) {
 	for _, id := range ids {
 		switch id {
 		case "all":
@@ -42,6 +41,11 @@ func (l *csvlib) GetDeviceSpecsByID(ids ...string) ([]specs.Device, error) {
 		}
 	}
 
+	return l, nil
+}
+
+// GetDeviceSpecs returns the CDI device specs for a single device.
+func (l *csvlib) GetDeviceSpecs() ([]specs.Device, error) {
 	d, err := tegra.New(
 		tegra.WithLogger(l.logger),
 		tegra.WithDriverRoot(l.driverRoot),

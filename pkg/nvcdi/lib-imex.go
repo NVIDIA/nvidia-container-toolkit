@@ -31,7 +31,12 @@ import (
 
 type imexlib nvcdilib
 
-var _ wrapped = (*imexlib)(nil)
+type imexChannel struct {
+	id      string
+	devRoot string
+}
+
+var _ deviceSpecGeneratorFactory = (*imexlib)(nil)
 
 const (
 	classImexChannel = "imex-channel"
@@ -42,29 +47,24 @@ func (l *imexlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	return edits.FromDiscoverer(discover.None{})
 }
 
-// GetDeviceSpecsByID returns the CDI device specs for the IMEX channels specified.
-func (l *imexlib) GetDeviceSpecsByID(ids ...string) ([]specs.Device, error) {
+// DeviceSpecGenerators returns the CDI device spec generators for the specified
+// imex channel IDs.
+// Valid IDs are:
+// * numeric channel IDs
+// * channel<numericChannelID>
+// * the special ID 'all'
+func (l *imexlib) DeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, error) {
 	channelsIDs, err := l.getChannelIDs(ids...)
 	if err != nil {
 		return nil, err
 	}
-	var deviceSpecs []specs.Device
+
+	var deviceSpecGenerators DeviceSpecGenerators
 	for _, id := range channelsIDs {
-		path := "/dev/nvidia-caps-imex-channels/channel" + id
-		deviceSpec := specs.Device{
-			Name: id,
-			ContainerEdits: specs.ContainerEdits{
-				DeviceNodes: []*specs.DeviceNode{
-					{
-						Path:     path,
-						HostPath: filepath.Join(l.devRoot, path),
-					},
-				},
-			},
-		}
-		deviceSpecs = append(deviceSpecs, deviceSpec)
+		deviceSpecGenerators = append(deviceSpecGenerators, &imexChannel{id: id, devRoot: l.devRoot})
 	}
-	return deviceSpecs, nil
+
+	return deviceSpecGenerators, nil
 }
 
 func (l *imexlib) getChannelIDs(ids ...string) ([]string, error) {
@@ -103,4 +103,21 @@ func (l *imexlib) getAllChannelIDs() ([]string, error) {
 	}
 
 	return channelIDs, nil
+}
+
+// GetDeviceSpecs returns the CDI device specs the specified IMEX channel.
+func (l *imexChannel) GetDeviceSpecs() ([]specs.Device, error) {
+	path := "/dev/nvidia-caps-imex-channels/channel" + l.id
+	deviceSpec := specs.Device{
+		Name: l.id,
+		ContainerEdits: specs.ContainerEdits{
+			DeviceNodes: []*specs.DeviceNode{
+				{
+					Path:     path,
+					HostPath: filepath.Join(l.devRoot, path),
+				},
+			},
+		},
+	}
+	return []specs.Device{deviceSpec}, nil
 }

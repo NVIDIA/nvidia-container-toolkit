@@ -28,10 +28,14 @@ import (
 
 type mofedlib nvcdilib
 
-var _ wrapped = (*mofedlib)(nil)
+var _ deviceSpecGeneratorFactory = (*mofedlib)(nil)
 
-// GetDeviceSpecsByID returns the device specs for the specified devices.
-func (l *mofedlib) GetDeviceSpecsByID(...string) ([]specs.Device, error) {
+func (l *mofedlib) DeviceSpecGenerators(...string) (DeviceSpecGenerator, error) {
+	return l, nil
+}
+
+// GetDeviceSpecs returns the CDI device specs for a single all device.
+func (l *mofedlib) GetDeviceSpecs() ([]specs.Device, error) {
 	discoverer, err := discover.NewMOFEDDiscoverer(l.logger, l.driverRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MOFED discoverer: %v", err)
