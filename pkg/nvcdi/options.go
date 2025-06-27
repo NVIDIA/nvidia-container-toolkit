@@ -165,13 +165,22 @@ func WithDisabledHook[T string | HookName](hook T) Option {
 	}
 }
 
-// WithFeatureFlag allows specified features to be toggled on.
-// This option can be specified multiple times for each feature flag.
-func WithFeatureFlag(featureFlag FeatureFlag) Option {
+// WithFeatureFlags allows the specified set of features to be toggled on.
+func WithFeatureFlags[T string | FeatureFlag](featureFlags ...T) Option {
 	return func(o *nvcdilib) {
 		if o.featureFlags == nil {
 			o.featureFlags = make(map[FeatureFlag]bool)
 		}
-		o.featureFlags[featureFlag] = true
+		for _, featureFlag := range featureFlags {
+			o.featureFlags[FeatureFlag(featureFlag)] = true
+		}
 	}
+}
+
+// WithFeatureFlag allows specified features to be toggled on.
+// This option can be specified multiple times for each feature flag.
+//
+// Deprecated: Use WithFeatureFlags
+func WithFeatureFlag[T string | FeatureFlag](featureFlag T) Option {
+	return WithFeatureFlags(featureFlag)
 }

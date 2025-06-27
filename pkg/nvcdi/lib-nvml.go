@@ -102,7 +102,7 @@ func (l *nvmllib) newDeviceSpecGeneratorFromNVMLDevice(id string, nvmlDevice nvm
 		return l.newMIGDeviceSpecGeneratorFromNVMLDevice(id, nvmlDevice)
 	}
 
-	return l.newFullGPUDeviceSpecGeneratorFromNVMLDevice(id, nvmlDevice)
+	return l.newFullGPUDeviceSpecGeneratorFromNVMLDevice(id, nvmlDevice, l.featureFlags)
 }
 
 // getDeviceSpecGeneratorsForAllDevices returns the CDI device spec generators
@@ -118,7 +118,7 @@ func (l *nvmllib) getDeviceSpecGeneratorsForAllDevices() (DeviceSpecGenerator, e
 		if isMigEnabled {
 			return nil
 		}
-		fullGPU, err := l.newFullGPUDeviceSpecGeneratorFromDevice(i, d)
+		fullGPU, err := l.newFullGPUDeviceSpecGeneratorFromDevice(i, d, l.featureFlags)
 		if err != nil {
 			return err
 		}
