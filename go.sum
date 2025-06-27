@@ -37,6 +37,8 @@ github.com/moby/sys/reexec v0.1.0/go.mod h1:EqjBg8F3X7iZe5pU6nRZnYCMUTXoxsjiIfHu
 github.com/moby/sys/symlink v0.3.0 h1:GZX89mEZ9u53f97npBy4Rc3vJKj7JBDj/PN2I22GrNU=
 github.com/moby/sys/symlink v0.3.0/go.mod h1:3eNdhduHmYPcgsJtZXW1W4XUJdZGBIkttZ8xKqPUJq0=
 github.com/mrunalp/fileutils v0.5.0/go.mod h1:M1WthSahJixYnrXQl/DFQuteStB1weuxD2QJNHXfbSQ=
+github.com/opencontainers/cgroups v0.0.1 h1:MXjMkkFpKv6kpuirUa4USFBas573sSAY082B4CiHEVA=
+github.com/opencontainers/cgroups v0.0.1/go.mod h1:s8lktyhlGUqM7OSRL5P7eAW6Wb+kWPNvt4qvVfzA5vs=
 github.com/opencontainers/runc v1.3.0 h1:cvP7xbEvD0QQAs0nZKLzkVog2OPZhI/V2w3WmTmUSXI=
 github.com/opencontainers/runc v1.3.0/go.mod h1:9wbWt42gV+KRxKRVVugNP6D5+PQciRbenB4fLVsqGPs=
 github.com/opencontainers/runtime-spec v1.0.3-0.20220825212826-86290f6a00fb/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
