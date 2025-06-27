@@ -32,18 +32,31 @@ var _ VisibleDevices = (*none)(nil)
 var _ VisibleDevices = (*void)(nil)
 var _ VisibleDevices = (*devices)(nil)
 
-// NewVisibleDevices creates a VisibleDevices based on the value of the specified envvar.
+// NewVisibleDevices creates a VisibleDevices based on the value of the
+// specified envvar.
+// If any of the envvars are the special values 'void', 'none', or 'all', these
+// are treated as special cases and all other requests are ignored.
+// The order of precedence for the special values is void > none > all.
 func NewVisibleDevices(envvars ...string) VisibleDevices {
+	hasSpecialDevice := make(map[string]bool)
 	for _, envvar := range envvars {
-		if envvar == "all" {
-			return all{}
+		switch {
+		case envvar == "" || envvar == "void":
+			hasSpecialDevice["void"] = true
+		case envvar == "none":
+			hasSpecialDevice["none"] = true
+		case envvar == "all":
+			hasSpecialDevice["all"] = true
 		}
-		if envvar == "none" {
-			return none{}
-		}
-		if envvar == "" || envvar == "void" {
-			return void{}
-		}
+	}
+
+	switch {
+	case hasSpecialDevice["void"]:
+		return void{}
+	case hasSpecialDevice["none"]:
+		return none{}
+	case hasSpecialDevice["all"]:
+		return all{}
 	}
 
 	return newDevices(envvars...)
@@ -83,23 +96,22 @@ func (v void) List() []string {
 }
 
 type devices struct {
-	len    int
-	lookup map[string]int
+	list   []string
+	lookup map[string]bool
 }
 
 func newDevices(idOrCommaSeparated ...string) devices {
-	lookup := make(map[string]int)
-
-	i := 0
+	var list []string
+	lookup := make(map[string]bool)
 	for _, commaSeparated := range idOrCommaSeparated {
 		for _, id := range strings.Split(commaSeparated, ",") {
-			lookup[id] = i
-			i++
+			lookup[id] = true
+			list = append(list, id)
 		}
 	}
 
 	d := devices{
-		len:    i,
+		list:   list,
 		lookup: lookup,
 	}
 	return d
@@ -107,13 +119,7 @@ func newDevices(idOrCommaSeparated ...string) devices {
 
 // List returns the list of requested devices
 func (d devices) List() []string {
-	list := make([]string, d.len)
-
-	for id, i := range d.lookup {
-		list[i] = id
-	}
-
-	return list
+	return d.list
 }
 
 // Has checks whether the specified ID is in the set of requested devices
