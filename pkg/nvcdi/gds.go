@@ -34,7 +34,7 @@ var _ Interface = (*gdslib)(nil)
 
 // GetAllDeviceSpecs returns the device specs for all available devices.
 func (l *gdslib) GetAllDeviceSpecs() ([]specs.Device, error) {
-	discoverer, err := discover.NewGDSDiscoverer(l.logger, l.driverRoot, l.devRoot)
+	discoverer, err := discover.NewGDSDiscoverer(l.logger, l.driverRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GPUDirect Storage discoverer: %v", err)
 	}
