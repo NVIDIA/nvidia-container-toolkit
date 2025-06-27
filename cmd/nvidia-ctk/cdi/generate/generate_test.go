@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 )
 
 func TestGenerateSpec(t *testing.T) {
@@ -476,12 +477,15 @@ containerEdits:
 			}
 			tc.options.nvmllib = server
 
-			spec, err := c.generateSpec(&tc.options)
+			tc.options.featureFlags = []string{string(nvcdi.FeatureDisableCoherentAnnotations)}
+			specs, err := c.generateSpecs(&tc.options)
 			require.ErrorIs(t, err, tc.expectedError)
 
 			var buf bytes.Buffer
-			_, err = spec.WriteTo(&buf)
-			require.NoError(t, err)
+			for _, spec := range specs {
+				_, err = spec.WriteTo(&buf)
+				require.NoError(t, err)
+			}
 
 			require.Equal(t, strings.ReplaceAll(tc.expectedSpec, "{{ .driverRoot }}", driverRoot), buf.String())
 		})

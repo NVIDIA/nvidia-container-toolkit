@@ -166,6 +166,28 @@ func WithDisabledHooks[T string | HookName](hooks ...T) Option {
 	}
 }
 
+// WithEnabledHooks explicitly enables a specific set of hooks.
+// If a hook is explicitly enabled, this takes precedence over it being disabled.
+func WithEnabledHooks[T string | HookName](hooks ...T) Option {
+	return func(o *nvcdilib) {
+		for _, hook := range hooks {
+			o.enabledHooks = append(o.enabledHooks, discover.HookName(hook))
+		}
+	}
+}
+
+// WithFeatureFlags allows the specified set of features to be toggled on.
+func WithFeatureFlags[T string | FeatureFlag](featureFlags ...T) Option {
+	return func(o *nvcdilib) {
+		if o.featureFlags == nil {
+			o.featureFlags = make(map[FeatureFlag]bool)
+		}
+		for _, featureFlag := range featureFlags {
+			o.featureFlags[FeatureFlag(featureFlag)] = true
+		}
+	}
+}
+
 // WithDisabledHook allows specific hooks to be disabled.
 // This option can be specified multiple times for each hook.
 //
@@ -176,21 +198,8 @@ func WithDisabledHook[T string | HookName](hook T) Option {
 
 // WithFeatureFlag allows specified features to be toggled on.
 // This option can be specified multiple times for each feature flag.
-func WithFeatureFlag(featureFlag FeatureFlag) Option {
-	return func(o *nvcdilib) {
-		if o.featureFlags == nil {
-			o.featureFlags = make(map[FeatureFlag]bool)
-		}
-		o.featureFlags[featureFlag] = true
-	}
-}
-
-// WithEnabledHooks explicitly enables a specific set of hooks.
-// If a hook is explicitly enabled, this takes precedence over it being disabled.
-func WithEnabledHooks[T string | HookName](hooks ...T) Option {
-	return func(o *nvcdilib) {
-		for _, hook := range hooks {
-			o.enabledHooks = append(o.enabledHooks, discover.HookName(hook))
-		}
-	}
+//
+// Deprecated: Use WithFeatureFlags
+func WithFeatureFlag[T string | FeatureFlag](featureFlag T) Option {
+	return WithFeatureFlags(featureFlag)
 }
