@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -436,7 +437,7 @@ swarm-resource = ""
 				"--toolkit-source-root=" + filepath.Join(artifactRoot, "deb"),
 			}
 
-			err := app.Run(append(testArgs, tc.args...))
+			err := app.Run(context.Background(), append(testArgs, tc.args...))
 
 			require.NoError(t, err)
 

@@ -22,7 +22,7 @@ import (
 	"os/exec"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/operator"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
@@ -53,7 +53,7 @@ type Options struct {
 }
 
 // ParseArgs parses the command line arguments to the CLI
-func ParseArgs(c *cli.Context, o *Options) error {
+func ParseArgs(c *cli.Command, o *Options) error {
 	if o.RuntimeDir != "" {
 		logrus.Debug("Runtime directory already set; ignoring arguments")
 		return nil
@@ -61,7 +61,7 @@ func ParseArgs(c *cli.Context, o *Options) error {
 
 	args := c.Args()
 
-	logrus.Infof("Parsing arguments: %v", args.Slice())
+	logrus.Infof("Parsing arguments: %v", args)
 	if c.NArg() != 1 {
 		return fmt.Errorf("incorrect number of arguments")
 	}

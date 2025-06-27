@@ -17,11 +17,12 @@
 package root
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -60,11 +61,11 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "root",
 		Usage: "Apply a root transform to a CDI specification",
-		Before: func(c *cli.Context) error {
-			return m.validateFlags(c, &opts)
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, m.validateFlags(cmd, &opts)
 		},
-		Action: func(c *cli.Context) error {
-			return m.run(c, &opts)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return m.run(cmd, &opts)
 		},
 	}
 
@@ -102,7 +103,7 @@ func (m command) build() *cli.Command {
 	return &c
 }
 
-func (m command) validateFlags(c *cli.Context, opts *options) error {
+func (m command) validateFlags(c *cli.Command, opts *options) error {
 	switch opts.relativeTo {
 	case "host":
 	case "container":
@@ -112,7 +113,7 @@ func (m command) validateFlags(c *cli.Context, opts *options) error {
 	return nil
 }
 
-func (m command) run(c *cli.Context, opts *options) error {
+func (m command) run(c *cli.Command, opts *options) error {
 	spec, err := opts.Load()
 	if err != nil {
 		return fmt.Errorf("failed to load CDI specification: %w", err)
