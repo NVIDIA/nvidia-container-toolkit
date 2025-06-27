@@ -130,7 +130,8 @@ func (l *Ldconfig) prepareRoot() (string, error) {
 	// To prevent leaking the parent proc filesystem, we create a new proc mount
 	// in the specified root.
 	if err := mountProc(l.inRoot); err != nil {
-		return "", fmt.Errorf("error mounting /proc: %w", err)
+		// Non-root users cannot mount /proc; print the error but continue execution
+		fmt.Fprintf(os.Stderr, "error mounting /proc: %s\n", err)
 	}
 
 	// We mount the host ldconfig before we pivot root since host paths are not
