@@ -217,7 +217,7 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 		})
 	})
 
-	Describe("Disabling device node creation", Ordered, func() {
+	When("Disabling device node creation", Ordered, func() {
 		BeforeAll(func(ctx context.Context) {
 			_, _, err := runner.Run("docker pull ubuntu")
 			Expect(err).ToNot(HaveOccurred())
@@ -255,6 +255,44 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			}
 
 			Expect(libs).To(ContainElements([]string{"libcuda.so", "libcuda.so.1"}))
+		})
+	})
+
+	When("Running containers with shared mount propagation", Ordered, func() {
+		var mountsBefore string
+		var tmpDirPath string
+
+		BeforeAll(func(ctx context.Context) {
+			_, _, err := runner.Run("docker pull ubuntu")
+			Expect(err).ToNot(HaveOccurred())
+
+			tmpDirPath = GinkgoT().TempDir()
+
+			output, _, err := runner.Run("mount | sort")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output).ToNot(BeEmpty())
+			mountsBefore = output
+		})
+
+		AfterEach(func() {
+			mountsAfter, _, err := runner.Run("mount | sort")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(mountsAfter).To(Equal(mountsBefore))
+		})
+
+		It("the nvidia-container-runtime-hook should not leak mounts", Label("legacy"), func(ctx context.Context) {
+			_, _, err := runner.Run("docker run --rm -i --runtime=runc -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all --mount type=bind,source=" + tmpDirPath + ",target=/empty,bind-propagation=shared ubuntu true")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("the nvidia-container-runtime should not leak mounts", func(ctx context.Context) {
+			_, _, err := runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all --mount type=bind,source=" + tmpDirPath + ",target=/empty,bind-propagation=shared ubuntu true")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("CDI mode should not leak mounts", func(ctx context.Context) {
+			_, _, err := runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=runtime.nvidia.com/gpu=all --mount type=bind,source=" + tmpDirPath + ",target=/empty,bind-propagation=shared ubuntu true")
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 })
