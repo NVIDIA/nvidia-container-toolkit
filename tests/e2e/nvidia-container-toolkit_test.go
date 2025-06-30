@@ -267,6 +267,8 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			tmpDirPath = GinkgoT().TempDir()
+			_, _, err = runner.Run("mkdir -p " + tmpDirPath)
+			Expect(err).ToNot(HaveOccurred())
 
 			output, _, err := runner.Run("mount | sort")
 			Expect(err).ToNot(HaveOccurred())
@@ -280,17 +282,17 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			Expect(mountsAfter).To(Equal(mountsBefore))
 		})
 
-		It("the nvidia-container-runtime-hook should not leak mounts", Label("legacy"), func(ctx context.Context) {
+		It("should not leak mounts when using the nvidia-container-runtime-hook", Label("legacy"), func(ctx context.Context) {
 			_, _, err := runner.Run("docker run --rm -i --runtime=runc -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all --mount type=bind,source=" + tmpDirPath + ",target=/empty,bind-propagation=shared ubuntu true")
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("the nvidia-container-runtime should not leak mounts", func(ctx context.Context) {
+		It("should not leak mounts when using the nvidia-container-runtime", func(ctx context.Context) {
 			_, _, err := runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all --mount type=bind,source=" + tmpDirPath + ",target=/empty,bind-propagation=shared ubuntu true")
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("CDI mode should not leak mounts", func(ctx context.Context) {
+		It("should not leak mounts when using CDI mode", func(ctx context.Context) {
 			_, _, err := runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=runtime.nvidia.com/gpu=all --mount type=bind,source=" + tmpDirPath + ",target=/empty,bind-propagation=shared ubuntu true")
 			Expect(err).ToNot(HaveOccurred())
 		})
