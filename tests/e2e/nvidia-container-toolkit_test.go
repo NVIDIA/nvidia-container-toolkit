@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -295,6 +296,59 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 		It("should not leak mounts when using CDI mode", func(ctx context.Context) {
 			_, _, err := runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=runtime.nvidia.com/gpu=all --mount type=bind,source=" + tmpDirPath + ",target=/empty,bind-propagation=shared ubuntu true")
 			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
+	When("Running a container where the firmware folder resolves outside the container root", Ordered, func() {
+		var outputDir string
+		BeforeAll(func(ctx context.Context) {
+			output, _, err := runner.Run("mktemp -d -p $(pwd)")
+			Expect(err).ToNot(HaveOccurred())
+			outputDir = strings.TrimSpace(output)
+
+			_, _, err = runner.Run("docker pull ubuntu")
+			Expect(err).ToNot(HaveOccurred())
+
+			_, _, err = runner.Run(`docker build -t firmware-test \
+            --build-arg RM_VERSION="$(basename $(ls -d /lib/firmware/nvidia/*.*))" \
+            --build-arg CURRENT_DIR="` + outputDir + `" \
+            - <<EOF
+FROM ubuntu
+RUN mkdir -p /lib/firmware/nvidia/
+ARG RM_VERSION
+ARG CURRENT_DIR
+RUN ln -s /../../../../../../../../\$CURRENT_DIR /lib/firmware/nvidia/\$RM_VERSION
+EOF`)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func(ctx context.Context) {
+			output, _, err := runner.Run("ls -A " + outputDir)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output).To(BeEmpty())
+		})
+
+		AfterAll(func(ctx context.Context) {
+			if outputDir != "" {
+				runner.Run(fmt.Sprintf("rm -rf %s", outputDir))
+			}
+		})
+
+		It("should not fail when using CDI", func(ctx context.Context) {
+			output, _, err := runner.Run("docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all firmware-test")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output).To(BeEmpty())
+		})
+
+		It("should not fail when using the nvidia-container-runtime", func(ctx context.Context) {
+			_, _, err := runner.Run("docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all firmware-test")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should fail when using the nvidia-container-runtime-hook", Label("legacy"), func(ctx context.Context) {
+			_, stderr, err := runner.Run("docker run --rm --runtime=runc --gpus=all firmware-test")
+			Expect(err).To(HaveOccurred())
+			Expect(stderr).To(ContainSubstring("nvidia-container-cli.real: mount error: path error:"))
 		})
 	})
 })

@@ -124,7 +124,7 @@ func (r remoteRunner) Run(script string) (string, string, error) {
 	// Run the script
 	err = session.Run(script)
 	if err != nil {
-		return "", "", fmt.Errorf("script execution failed: %v\nSTDOUT: %s\nSTDERR: %s", err, stdout.String(), stderr.String())
+		return "", stderr.String(), fmt.Errorf("script execution failed: %v\nSTDOUT: %s\nSTDERR: %s", err, stdout.String(), stderr.String())
 	}
 
 	// Return stdout as string if no errors
