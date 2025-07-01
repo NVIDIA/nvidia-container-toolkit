@@ -27,7 +27,7 @@ import (
 
 // Interface defines the API for the nvcdi package
 type Interface interface {
-	GetSpec(...string) (spec.Interface, error)
+	SpecGenerator
 	GetCommonEdits() (*cdi.ContainerEdits, error)
 	GetAllDeviceSpecs() ([]specs.Device, error)
 	GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, error)
@@ -35,6 +35,12 @@ type Interface interface {
 	GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi.ContainerEdits, error)
 	GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) ([]specs.Device, error)
 	GetDeviceSpecsByID(...string) ([]specs.Device, error)
+}
+
+// A SpecGenerator is used to generate a complete CDI spec for a collected set
+// of devices.
+type SpecGenerator interface {
+	GetSpec(...string) (spec.Interface, error)
 }
 
 // A HookName represents one of the predefined NVIDIA CDI hooks.
