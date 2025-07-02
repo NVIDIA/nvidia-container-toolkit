@@ -25,6 +25,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/prometheus/procfs"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 )
 
@@ -40,6 +42,7 @@ const (
 type Ldconfig struct {
 	ldconfigPath string
 	inRoot       string
+	noPivotRoot  bool
 	directories  []string
 }
 
@@ -50,6 +53,11 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 		"--ldconfig-path", strings.TrimPrefix(config.NormalizeLDConfigPath("@"+ldconfigPath), "@"),
 		"--container-root", containerRoot,
 	}
+
+	if noPivotRoot() {
+		args = append(args, "--no-pivot")
+	}
+
 	args = append(args, additionalargs...)
 
 	return createReexecCommand(args)
@@ -66,6 +74,10 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 //	--ldconfig-path=LDCONFIG_PATH	the path to ldconfig on the host
 //	--container-root=CONTAINER_ROOT	the path in which ldconfig must be run
 //
+// The following optional flags are supported:
+//
+//	--no-pivot	pivot_root should not be used to provide process isolation.
+//
 // The remaining args are folders where soname symlinks need to be created.
 func NewFromArgs(args ...string) (*Ldconfig, error) {
 	if len(args) < 1 {
@@ -74,6 +86,7 @@ func NewFromArgs(args ...string) (*Ldconfig, error) {
 	fs := flag.NewFlagSet(args[1], flag.ExitOnError)
 	ldconfigPath := fs.String("ldconfig-path", "", "the path to ldconfig on the host")
 	containerRoot := fs.String("container-root", "", "the path in which ldconfig must be run")
+	noPivot := fs.Bool("no-pivot", false, "don't use pivot_root to perform isolation")
 	if err := fs.Parse(args[1:]); err != nil {
 		return nil, err
 	}
@@ -88,6 +101,7 @@ func NewFromArgs(args ...string) (*Ldconfig, error) {
 	l := &Ldconfig{
 		ldconfigPath: *ldconfigPath,
 		inRoot:       *containerRoot,
+		noPivotRoot:  *noPivot,
 		directories:  fs.Args(),
 	}
 	return l, nil
@@ -164,9 +178,18 @@ func (l *Ldconfig) prepareRoot() (string, error) {
 		return "", fmt.Errorf("error mounting host ldconfig: %w", err)
 	}
 
+	// We select the function to pivot the root based on whether pivot_root is
+	// supported.
+	// See https://github.com/opencontainers/runc/blob/c3d127f6e8d9f6c06d78b8329cafa8dd39f6236e/libcontainer/rootfs_linux.go#L207-L216
+	var pivotRootFn func(string) error
+	if l.noPivotRoot {
+		pivotRootFn = msMoveRoot
+	} else {
+		pivotRootFn = pivotRoot
+	}
 	// We pivot to the container root for the new process, this further limits
 	// access to the host.
-	if err := pivotRoot(l.inRoot); err != nil {
+	if err := pivotRootFn(l.inRoot); err != nil {
 		return "", fmt.Errorf("error running pivot_root: %w", err)
 	}
 
@@ -227,4 +250,40 @@ func createLdsoconfdFile(pattern string, dirs ...string) error {
 	}
 
 	return nil
+}
+
+// noPivotRoot checks whether the current root filesystem supports a pivot_root.
+// See https://github.com/opencontainers/runc/blob/main/libcontainer/SPEC.md#filesystem
+// for a discussion on when this is not the case.
+// If we fail to detect whether pivot-root is supported, we assume that it is supported.
+// The logic to check for support is adapted from kata-containers:
+//
+//	https://github.com/kata-containers/kata-containers/blob/e7b9eddcede4bbe2edeb9c3af7b2358dc65da76f/src/agent/src/sandbox.rs#L150
+//
+// and checks whether "/" is mounted as a rootfs.
+func noPivotRoot() bool {
+	rootFsType, err := getRootfsType("/")
+	if err != nil {
+		return false
+	}
+	return rootFsType == "rootfs"
+}
+
+func getRootfsType(path string) (string, error) {
+	procSelf, err := procfs.Self()
+	if err != nil {
+		return "", err
+	}
+
+	mountStats, err := procSelf.MountStats()
+	if err != nil {
+		return "", err
+	}
+
+	for _, mountStat := range mountStats {
+		if mountStat.Mount == path {
+			return mountStat.Type, nil
+		}
+	}
+	return "", fmt.Errorf("mount stats for %q not found", path)
 }
