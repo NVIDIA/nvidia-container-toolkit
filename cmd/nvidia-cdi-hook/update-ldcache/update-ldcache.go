@@ -140,25 +140,11 @@ func updateLdCacheHandler() {
 // It is invoked from a reexec'd handler and provides namespace isolation for
 // the operations performed by this hook. At the point where this is invoked,
 // we are in a new mount namespace that is cloned from the parent.
-//
-// args[0] is the reexec initializer function name
-// args[1] is the path of the ldconfig binary on the host
-// args[2] is the container root directory
-// The remaining args are folders where soname symlinks need to be created.
 func updateLdCache(args []string) error {
-	if len(args) < 3 {
-		return fmt.Errorf("incorrect arguments: %v", args)
-	}
-	hostLdconfigPath := args[1]
-	containerRootDirPath := args[2]
-
-	ldconfig, err := ldconfig.New(
-		hostLdconfigPath,
-		containerRootDirPath,
-	)
+	ldconfig, err := ldconfig.NewFromArgs(args...)
 	if err != nil {
 		return fmt.Errorf("failed to construct ldconfig runner: %w", err)
 	}
 
-	return ldconfig.UpdateLDCache(args[3:]...)
+	return ldconfig.UpdateLDCache()
 }

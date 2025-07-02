@@ -18,6 +18,7 @@
 package ldconfig
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -39,40 +40,63 @@ const (
 type Ldconfig struct {
 	ldconfigPath string
 	inRoot       string
+	directories  []string
 }
 
 // NewRunner creates an exec.Cmd that can be used to run ldconfig.
 func NewRunner(id string, ldconfigPath string, containerRoot string, additionalargs ...string) (*exec.Cmd, error) {
 	args := []string{
 		id,
-		strings.TrimPrefix(config.NormalizeLDConfigPath("@"+ldconfigPath), "@"),
-		containerRoot,
+		"--ldconfig-path", strings.TrimPrefix(config.NormalizeLDConfigPath("@"+ldconfigPath), "@"),
+		"--container-root", containerRoot,
 	}
 	args = append(args, additionalargs...)
 
 	return createReexecCommand(args)
 }
 
-// New creates an Ldconfig struct that is used to perform operations on the
-// ldcache and libraries in a particular root (e.g. a container).
-func New(ldconfigPath string, inRoot string) (*Ldconfig, error) {
-	l := &Ldconfig{
-		ldconfigPath: ldconfigPath,
-		inRoot:       inRoot,
+// NewFromArgs creates an Ldconfig struct from the args passed to the Cmd
+// above.
+// This struct is used to perform operations on the ldcache and libraries in a
+// particular root (e.g. a container).
+//
+// args[0] is the reexec initializer function name
+// The following flags are required:
+//
+//	--ldconfig-path=LDCONFIG_PATH	the path to ldconfig on the host
+//	--container-root=CONTAINER_ROOT	the path in which ldconfig must be run
+//
+// The remaining args are folders where soname symlinks need to be created.
+func NewFromArgs(args ...string) (*Ldconfig, error) {
+	if len(args) < 1 {
+		return nil, fmt.Errorf("incorrect arguments: %v", args)
 	}
-	if ldconfigPath == "" {
+	fs := flag.NewFlagSet(args[1], flag.ExitOnError)
+	ldconfigPath := fs.String("ldconfig-path", "", "the path to ldconfig on the host")
+	containerRoot := fs.String("container-root", "", "the path in which ldconfig must be run")
+	if err := fs.Parse(args[1:]); err != nil {
+		return nil, err
+	}
+
+	if *ldconfigPath == "" {
 		return nil, fmt.Errorf("an ldconfig path must be specified")
 	}
-	if inRoot == "" || inRoot == "/" {
+	if *containerRoot == "" || *containerRoot == "/" {
 		return nil, fmt.Errorf("ldconfig must be run in the non-system root")
+	}
+
+	l := &Ldconfig{
+		ldconfigPath: *ldconfigPath,
+		inRoot:       *containerRoot,
+		directories:  fs.Args(),
 	}
 	return l, nil
 }
 
 // CreateSonameSymlinks uses ldconfig to create the soname symlinks in the
 // specified directories.
-func (l *Ldconfig) CreateSonameSymlinks(directories ...string) error {
-	if len(directories) == 0 {
+func (l *Ldconfig) CreateSonameSymlinks() error {
+	if len(l.directories) == 0 {
 		return nil
 	}
 	ldconfigPath, err := l.prepareRoot()
@@ -87,12 +111,12 @@ func (l *Ldconfig) CreateSonameSymlinks(directories ...string) error {
 		// Specify -n to only process the specified directories.
 		"-n",
 	}
-	args = append(args, directories...)
+	args = append(args, l.directories...)
 
 	return SafeExec(ldconfigPath, args, nil)
 }
 
-func (l *Ldconfig) UpdateLDCache(directories ...string) error {
+func (l *Ldconfig) UpdateLDCache() error {
 	ldconfigPath, err := l.prepareRoot()
 	if err != nil {
 		return err
@@ -115,12 +139,12 @@ func (l *Ldconfig) UpdateLDCache(directories ...string) error {
 	// containing the required directories, otherwise we add the specified
 	// directories to the ldconfig command directly.
 	if l.ldsoconfdDirectoryExists() {
-		err := createLdsoconfdFile(ldsoconfdFilenamePattern, directories...)
+		err := createLdsoconfdFile(ldsoconfdFilenamePattern, l.directories...)
 		if err != nil {
 			return fmt.Errorf("failed to update ld.so.conf.d: %w", err)
 		}
 	} else {
-		args = append(args, directories...)
+		args = append(args, l.directories...)
 	}
 
 	return SafeExec(ldconfigPath, args, nil)
