@@ -14,7 +14,8 @@
 
 [Unit]
 Description=Refresh NVIDIA CDI specification file
-ConditionPathExists=/usr/bin/nvidia-smi
+ConditionPathExists=|/usr/bin/nvidia-smi
+ConditionPathExists=|/usr/sbin/nvidia-smi
 ConditionPathExists=/usr/bin/nvidia-ctk
 
 [Service]
