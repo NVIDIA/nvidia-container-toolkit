@@ -27,6 +27,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/prometheus/procfs"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 )
 
@@ -59,6 +61,7 @@ type Ldconfig struct {
 	inRoot                string
 	isDebianLikeHost      bool
 	isDebianLikeContainer bool
+	noPivotRoot           bool
 	directories           []string
 }
 
@@ -72,6 +75,11 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 	if isDebianLike() {
 		args = append(args, "--is-debian-like-host")
 	}
+
+	if noPivotRoot() {
+		args = append(args, "--no-pivot")
+	}
+
 	args = append(args, additionalargs...)
 
 	return createReexecCommand(args)
@@ -94,6 +102,7 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 //	--is-debian-like-host	Indicates that the host system is debian-like (e.g. Debian, Ubuntu)
 //	                     	as opposed to non-Debian-like (e.g. RHEL, Fedora)
 //	                     	See https://github.com/NVIDIA/nvidia-container-toolkit/pull/1444
+//	--no-pivot           	pivot_root should not be used to provide process isolation.
 //
 // The remaining args are folders where soname symlinks need to be created.
 func NewFromArgs(args ...string) (*Ldconfig, error) {
@@ -107,6 +116,7 @@ func NewFromArgs(args ...string) (*Ldconfig, error) {
 This allows us to handle the case where there are  differences in behavior
 between the ldconfig from the host (as executed from an update-ldcache hook) and
 ldconfig in the container. Such differences include system search paths.`)
+	noPivot := fs.Bool("no-pivot", false, "don't use pivot_root to perform isolation")
 	if err := fs.Parse(args[1:]); err != nil {
 		return nil, err
 	}
@@ -122,6 +132,7 @@ ldconfig in the container. Such differences include system search paths.`)
 		ldconfigPath:     *ldconfigPath,
 		inRoot:           *containerRoot,
 		isDebianLikeHost: *isDebianLikeHost,
+		noPivotRoot:      *noPivot,
 		directories:      fs.Args(),
 	}
 	return l, nil
@@ -194,7 +205,7 @@ func (l *Ldconfig) prepareRoot() (string, error) {
 
 	// We pivot to the container root for the new process, this further limits
 	// access to the host.
-	if err := pivotRoot(root.Name()); err != nil {
+	if err := l.pivotRoot(root); err != nil {
 		return "", fmt.Errorf("error running pivot_root: %w", err)
 	}
 
@@ -455,4 +466,51 @@ func debianSystemSearchPaths() []string {
 	}
 	paths = append(paths, "/lib", "/usr/lib")
 	return paths
+}
+
+func (l *Ldconfig) pivotRoot(root *os.Root) error {
+	rootDir := root.Name()
+	// We select the function to pivot the root based on whether pivot_root is
+	// supported.
+	// See https://github.com/opencontainers/runc/blob/c3d127f6e8d9f6c06d78b8329cafa8dd39f6236e/libcontainer/rootfs_linux.go#L207-L216
+	if l.noPivotRoot {
+		return msMoveRoot(rootDir)
+	}
+	return pivotRoot(rootDir)
+}
+
+// noPivotRoot checks whether the current root filesystem supports a pivot_root.
+// See https://github.com/opencontainers/runc/blob/main/libcontainer/SPEC.md#filesystem
+// for a discussion on when this is not the case.
+// If we fail to detect whether pivot-root is supported, we assume that it is supported.
+// The logic to check for support is adapted from kata-containers:
+//
+//	https://github.com/kata-containers/kata-containers/blob/e7b9eddcede4bbe2edeb9c3af7b2358dc65da76f/src/agent/src/sandbox.rs#L150
+//
+// and checks whether "/" is mounted as a rootfs.
+func noPivotRoot() bool {
+	rootFsType, err := getRootfsType("/")
+	if err != nil {
+		return false
+	}
+	return rootFsType == "rootfs"
+}
+
+func getRootfsType(path string) (string, error) {
+	procSelf, err := procfs.Self()
+	if err != nil {
+		return "", err
+	}
+
+	mountStats, err := procSelf.MountStats()
+	if err != nil {
+		return "", err
+	}
+
+	for _, mountStat := range mountStats {
+		if mountStat.Mount == path {
+			return mountStat.Type, nil
+		}
+	}
+	return "", fmt.Errorf("mount stats for %q not found", path)
 }
