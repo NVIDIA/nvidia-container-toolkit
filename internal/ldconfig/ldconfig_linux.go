@@ -166,10 +166,12 @@ func createFileInRoot(containerRootDirPath string, destinationPath string, mode 
 
 // mountProc mounts a clean proc filesystem in the new root.
 func mountProc(newroot string) error {
-	target := filepath.Join(newroot, "/proc")
-
-	if err := os.MkdirAll(target, 0755); err != nil {
-		return fmt.Errorf("error creating directory: %w", err)
+	target, err := securejoin.SecureJoin(newroot, "proc")
+	if err != nil {
+		return err
+	}
+	if err := utils.MkdirAllInRoot(newroot, target, 0755); err != nil {
+		return err
 	}
 	return unix.Mount("proc", target, "proc", 0, "")
 }
