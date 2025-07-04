@@ -312,7 +312,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)
 	}
 
-	deviceSpecs, err := cdilib.GetAllDeviceSpecs()
+	deviceSpecs, err := cdilib.GetDeviceSpecsByID("all")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device CDI specs: %v", err)
 	}

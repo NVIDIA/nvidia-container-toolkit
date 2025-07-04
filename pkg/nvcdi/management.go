@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
@@ -29,16 +28,18 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
 
 type managementlib nvcdilib
 
-var _ Interface = (*managementlib)(nil)
+var _ deviceSpecGeneratorFactory = (*managementlib)(nil)
 
-// GetAllDeviceSpecs returns all device specs for use in managemnt containers.
-// A single device with the name `all` is returned.
-func (m *managementlib) GetAllDeviceSpecs() ([]specs.Device, error) {
+func (l *managementlib) DeviceSpecGenerators(...string) (DeviceSpecGenerator, error) {
+	return l, nil
+}
+
+// GetDeviceSpecs returns the CDI device specs for a single all device.
+func (m *managementlib) GetDeviceSpecs() ([]specs.Device, error) {
 	devices, err := m.newManagementDeviceDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
@@ -176,37 +177,4 @@ func (m managementDiscoverer) nodeIsBlocked(path string) bool {
 		}
 	}
 	return false
-}
-
-// GetSpec is unsppported for the managementlib specs.
-// managementlib is typically wrapped by a spec that implements GetSpec.
-func (m *managementlib) GetSpec(...string) (spec.Interface, error) {
-	return nil, fmt.Errorf("GetSpec is not supported")
-}
-
-// GetGPUDeviceEdits is unsupported for the managementlib specs
-func (m *managementlib) GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, error) {
-	return nil, fmt.Errorf("GetGPUDeviceEdits is not supported")
-}
-
-// GetGPUDeviceSpecs is unsupported for the managementlib specs
-func (m *managementlib) GetGPUDeviceSpecs(int, device.Device) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetGPUDeviceSpecs is not supported")
-}
-
-// GetMIGDeviceEdits is unsupported for the managementlib specs
-func (m *managementlib) GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi.ContainerEdits, error) {
-	return nil, fmt.Errorf("GetMIGDeviceEdits is not supported")
-}
-
-// GetMIGDeviceSpecs is unsupported for the managementlib specs
-func (m *managementlib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetMIGDeviceSpecs is not supported")
-}
-
-// GetDeviceSpecsByID returns the CDI device specs for the GPU(s) represented by
-// the provided identifiers, where an identifier is an index or UUID of a valid
-// GPU device.
-func (l *managementlib) GetDeviceSpecsByID(...string) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetDeviceSpecsByID is not supported")
 }

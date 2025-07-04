@@ -25,28 +25,66 @@ import (
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
-	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
-
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
 
 type imexlib nvcdilib
 
-var _ Interface = (*imexlib)(nil)
+type imexChannel struct {
+	id      string
+	devRoot string
+}
+
+var _ deviceSpecGeneratorFactory = (*imexlib)(nil)
 
 const (
 	classImexChannel = "imex-channel"
 )
 
-// GetSpec should not be called for imexlib.
-func (l *imexlib) GetSpec(...string) (spec.Interface, error) {
-	return nil, fmt.Errorf("unexpected call to imexlib.GetSpec()")
+// GetCommonEdits returns an empty set of edits for IMEX devices.
+func (l *imexlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
+	return edits.FromDiscoverer(discover.None{})
 }
 
-// GetAllDeviceSpecs returns the device specs for all available devices.
-func (l *imexlib) GetAllDeviceSpecs() ([]specs.Device, error) {
+// DeviceSpecGenerators returns the CDI device spec generators for the specified
+// imex channel IDs.
+// Valid IDs are:
+// * numeric channel IDs
+// * channel<numericChannelID>
+// * the special ID 'all'
+func (l *imexlib) DeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, error) {
+	channelsIDs, err := l.getChannelIDs(ids...)
+	if err != nil {
+		return nil, err
+	}
+
+	var deviceSpecGenerators DeviceSpecGenerators
+	for _, id := range channelsIDs {
+		deviceSpecGenerators = append(deviceSpecGenerators, &imexChannel{id: id, devRoot: l.devRoot})
+	}
+
+	return deviceSpecGenerators, nil
+}
+
+func (l *imexlib) getChannelIDs(ids ...string) ([]string, error) {
+	var channelIDs []string
+	for _, id := range ids {
+		trimmed := strings.TrimPrefix(id, "channel")
+		if trimmed == "all" {
+			return l.getAllChannelIDs()
+		}
+		_, err := strconv.ParseUint(trimmed, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid channel ID %v: %w", id, err)
+		}
+		channelIDs = append(channelIDs, trimmed)
+	}
+	return channelIDs, nil
+}
+
+// getAllChannelIDs returns the device IDs for all available IMEX channels.
+func (l *imexlib) getAllChannelIDs() ([]string, error) {
 	channelsDiscoverer := discover.NewCharDeviceDiscoverer(
 		l.logger,
 		l.devRoot,
@@ -60,59 +98,26 @@ func (l *imexlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 
 	var channelIDs []string
 	for _, channel := range channels {
-		channelIDs = append(channelIDs, filepath.Base(channel.Path))
+		channelID := filepath.Base(channel.Path)
+		channelIDs = append(channelIDs, strings.TrimPrefix(channelID, "channel"))
 	}
 
-	return l.GetDeviceSpecsByID(channelIDs...)
+	return channelIDs, nil
 }
 
-// GetCommonEdits returns an empty set of edits for IMEX devices.
-func (l *imexlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	return edits.FromDiscoverer(discover.None{})
-}
-
-// GetDeviceSpecsByID returns the CDI device specs for the IMEX channels specified.
-func (l *imexlib) GetDeviceSpecsByID(ids ...string) ([]specs.Device, error) {
-	var deviceSpecs []specs.Device
-	for _, id := range ids {
-		trimmed := strings.TrimPrefix(id, "channel")
-		_, err := strconv.ParseUint(trimmed, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid channel ID %v: %w", id, err)
-		}
-		path := "/dev/nvidia-caps-imex-channels/channel" + trimmed
-		deviceSpec := specs.Device{
-			Name: trimmed,
-			ContainerEdits: specs.ContainerEdits{
-				DeviceNodes: []*specs.DeviceNode{
-					{
-						Path:     path,
-						HostPath: filepath.Join(l.devRoot, path),
-					},
+// GetDeviceSpecs returns the CDI device specs the specified IMEX channel.
+func (l *imexChannel) GetDeviceSpecs() ([]specs.Device, error) {
+	path := "/dev/nvidia-caps-imex-channels/channel" + l.id
+	deviceSpec := specs.Device{
+		Name: l.id,
+		ContainerEdits: specs.ContainerEdits{
+			DeviceNodes: []*specs.DeviceNode{
+				{
+					Path:     path,
+					HostPath: filepath.Join(l.devRoot, path),
 				},
 			},
-		}
-		deviceSpecs = append(deviceSpecs, deviceSpec)
+		},
 	}
-	return deviceSpecs, nil
-}
-
-// GetGPUDeviceEdits is unsupported for the imexlib specs
-func (l *imexlib) GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, error) {
-	return nil, fmt.Errorf("GetGPUDeviceEdits is not supported")
-}
-
-// GetGPUDeviceSpecs is unsupported for the imexlib specs
-func (l *imexlib) GetGPUDeviceSpecs(int, device.Device) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetGPUDeviceSpecs is not supported")
-}
-
-// GetMIGDeviceEdits is unsupported for the imexlib specs
-func (l *imexlib) GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi.ContainerEdits, error) {
-	return nil, fmt.Errorf("GetMIGDeviceEdits is not supported")
-}
-
-// GetMIGDeviceSpecs is unsupported for the imexlib specs
-func (l *imexlib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetMIGDeviceSpecs is not supported")
+	return []specs.Device{deviceSpec}, nil
 }
