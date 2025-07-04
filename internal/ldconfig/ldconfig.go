@@ -18,11 +18,14 @@
 package ldconfig
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/prometheus/procfs"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 )
@@ -39,40 +42,75 @@ const (
 type Ldconfig struct {
 	ldconfigPath string
 	inRoot       string
+	noPivotRoot  bool
+	directories  []string
 }
 
 // NewRunner creates an exec.Cmd that can be used to run ldconfig.
 func NewRunner(id string, ldconfigPath string, containerRoot string, additionalargs ...string) (*exec.Cmd, error) {
 	args := []string{
 		id,
-		strings.TrimPrefix(config.NormalizeLDConfigPath("@"+ldconfigPath), "@"),
-		containerRoot,
+		"--ldconfig-path", strings.TrimPrefix(config.NormalizeLDConfigPath("@"+ldconfigPath), "@"),
+		"--container-root", containerRoot,
 	}
+
+	if noPivotRoot() {
+		args = append(args, "--no-pivot")
+	}
+
 	args = append(args, additionalargs...)
 
 	return createReexecCommand(args)
 }
 
-// New creates an Ldconfig struct that is used to perform operations on the
-// ldcache and libraries in a particular root (e.g. a container).
-func New(ldconfigPath string, inRoot string) (*Ldconfig, error) {
-	l := &Ldconfig{
-		ldconfigPath: ldconfigPath,
-		inRoot:       inRoot,
+// NewFromArgs creates an Ldconfig struct from the args passed to the Cmd
+// above.
+// This struct is used to perform operations on the ldcache and libraries in a
+// particular root (e.g. a container).
+//
+// args[0] is the reexec initializer function name
+// The following flags are required:
+//
+//	--ldconfig-path=LDCONFIG_PATH	the path to ldconfig on the host
+//	--container-root=CONTAINER_ROOT	the path in which ldconfig must be run
+//
+// The following optional flags are supported:
+//
+//	--no-pivot	pivot_root should not be used to provide process isolation.
+//
+// The remaining args are folders where soname symlinks need to be created.
+func NewFromArgs(args ...string) (*Ldconfig, error) {
+	if len(args) < 1 {
+		return nil, fmt.Errorf("incorrect arguments: %v", args)
 	}
-	if ldconfigPath == "" {
+	fs := flag.NewFlagSet(args[1], flag.ExitOnError)
+	ldconfigPath := fs.String("ldconfig-path", "", "the path to ldconfig on the host")
+	containerRoot := fs.String("container-root", "", "the path in which ldconfig must be run")
+	noPivot := fs.Bool("no-pivot", false, "don't use pivot_root to perform isolation")
+	if err := fs.Parse(args[1:]); err != nil {
+		return nil, err
+	}
+
+	if *ldconfigPath == "" {
 		return nil, fmt.Errorf("an ldconfig path must be specified")
 	}
-	if inRoot == "" || inRoot == "/" {
+	if *containerRoot == "" || *containerRoot == "/" {
 		return nil, fmt.Errorf("ldconfig must be run in the non-system root")
+	}
+
+	l := &Ldconfig{
+		ldconfigPath: *ldconfigPath,
+		inRoot:       *containerRoot,
+		noPivotRoot:  *noPivot,
+		directories:  fs.Args(),
 	}
 	return l, nil
 }
 
 // CreateSonameSymlinks uses ldconfig to create the soname symlinks in the
 // specified directories.
-func (l *Ldconfig) CreateSonameSymlinks(directories ...string) error {
-	if len(directories) == 0 {
+func (l *Ldconfig) CreateSonameSymlinks() error {
+	if len(l.directories) == 0 {
 		return nil
 	}
 	ldconfigPath, err := l.prepareRoot()
@@ -87,12 +125,12 @@ func (l *Ldconfig) CreateSonameSymlinks(directories ...string) error {
 		// Specify -n to only process the specified directories.
 		"-n",
 	}
-	args = append(args, directories...)
+	args = append(args, l.directories...)
 
 	return SafeExec(ldconfigPath, args, nil)
 }
 
-func (l *Ldconfig) UpdateLDCache(directories ...string) error {
+func (l *Ldconfig) UpdateLDCache() error {
 	ldconfigPath, err := l.prepareRoot()
 	if err != nil {
 		return err
@@ -115,12 +153,12 @@ func (l *Ldconfig) UpdateLDCache(directories ...string) error {
 	// containing the required directories, otherwise we add the specified
 	// directories to the ldconfig command directly.
 	if l.ldsoconfdDirectoryExists() {
-		err := createLdsoconfdFile(ldsoconfdFilenamePattern, directories...)
+		err := createLdsoconfdFile(ldsoconfdFilenamePattern, l.directories...)
 		if err != nil {
 			return fmt.Errorf("failed to update ld.so.conf.d: %w", err)
 		}
 	} else {
-		args = append(args, directories...)
+		args = append(args, l.directories...)
 	}
 
 	return SafeExec(ldconfigPath, args, nil)
@@ -140,9 +178,18 @@ func (l *Ldconfig) prepareRoot() (string, error) {
 		return "", fmt.Errorf("error mounting host ldconfig: %w", err)
 	}
 
+	// We select the function to pivot the root based on whether pivot_root is
+	// supported.
+	// See https://github.com/opencontainers/runc/blob/c3d127f6e8d9f6c06d78b8329cafa8dd39f6236e/libcontainer/rootfs_linux.go#L207-L216
+	var pivotRootFn func(string) error
+	if l.noPivotRoot {
+		pivotRootFn = msMoveRoot
+	} else {
+		pivotRootFn = pivotRoot
+	}
 	// We pivot to the container root for the new process, this further limits
 	// access to the host.
-	if err := pivotRoot(l.inRoot); err != nil {
+	if err := pivotRootFn(l.inRoot); err != nil {
 		return "", fmt.Errorf("error running pivot_root: %w", err)
 	}
 
@@ -203,4 +250,40 @@ func createLdsoconfdFile(pattern string, dirs ...string) error {
 	}
 
 	return nil
+}
+
+// noPivotRoot checks whether the current root filesystem supports a pivot_root.
+// See https://github.com/opencontainers/runc/blob/main/libcontainer/SPEC.md#filesystem
+// for a discussion on when this is not the case.
+// If we fail to detect whether pivot-root is supported, we assume that it is supported.
+// The logic to check for support is adapted from kata-containers:
+//
+//	https://github.com/kata-containers/kata-containers/blob/e7b9eddcede4bbe2edeb9c3af7b2358dc65da76f/src/agent/src/sandbox.rs#L150
+//
+// and checks whether "/" is mounted as a rootfs.
+func noPivotRoot() bool {
+	rootFsType, err := getRootfsType("/")
+	if err != nil {
+		return false
+	}
+	return rootFsType == "rootfs"
+}
+
+func getRootfsType(path string) (string, error) {
+	procSelf, err := procfs.Self()
+	if err != nil {
+		return "", err
+	}
+
+	mountStats, err := procSelf.MountStats()
+	if err != nil {
+		return "", err
+	}
+
+	for _, mountStat := range mountStats {
+		if mountStat.Mount == path {
+			return mountStat.Type, nil
+		}
+	}
+	return "", fmt.Errorf("mount stats for %q not found", path)
 }
