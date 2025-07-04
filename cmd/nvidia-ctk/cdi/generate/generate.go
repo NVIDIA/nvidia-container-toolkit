@@ -17,12 +17,13 @@
 package generate
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	cdi "tags.cncf.io/container-device-interface/pkg/parser"
 
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
@@ -46,7 +47,7 @@ type command struct {
 type options struct {
 	output               string
 	format               string
-	deviceNameStrategies cli.StringSlice
+	deviceNameStrategies []string
 	driverRoot           string
 	devRoot              string
 	nvidiaCDIHookPath    string
@@ -55,13 +56,13 @@ type options struct {
 	vendor               string
 	class                string
 
-	configSearchPaths  cli.StringSlice
-	librarySearchPaths cli.StringSlice
-	disabledHooks      cli.StringSlice
+	configSearchPaths  []string
+	librarySearchPaths []string
+	disabledHooks      []string
 
 	csv struct {
-		files          cli.StringSlice
-		ignorePatterns cli.StringSlice
+		files          []string
+		ignorePatterns []string
 	}
 
 	// the following are used for dependency injection during spec generation.
@@ -82,13 +83,15 @@ func (m command) build() *cli.Command {
 
 	// Create the 'generate-cdi' command
 	c := cli.Command{
-		Name:  "generate",
-		Usage: "Generate CDI specifications for use with CDI-enabled runtimes",
-		Before: func(c *cli.Context) error {
-			return m.validateFlags(c, &opts)
+		Name:                   "generate",
+		Usage:                  "Generate CDI specifications for use with CDI-enabled runtimes",
+		UseShortOptionHandling: true,
+		EnableShellCompletion:  true,
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, m.validateFlags(cmd, &opts)
 		},
-		Action: func(c *cli.Context) error {
-			return m.run(c, &opts)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return m.run(&opts)
 		},
 	}
 
@@ -97,20 +100,20 @@ func (m command) build() *cli.Command {
 			Name:        "config-search-path",
 			Usage:       "Specify the path to search for config files when discovering the entities that should be included in the CDI specification.",
 			Destination: &opts.configSearchPaths,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_CONFIG_SEARCH_PATHS"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CONFIG_SEARCH_PATHS"),
 		},
 		&cli.StringFlag{
 			Name:        "output",
 			Usage:       "Specify the file to output the generated CDI specification to. If this is '' the specification is output to STDOUT",
 			Destination: &opts.output,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_OUTPUT_FILE_PATH"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_OUTPUT_FILE_PATH"),
 		},
 		&cli.StringFlag{
 			Name:        "format",
 			Usage:       "The output format for the generated spec [json | yaml]. This overrides the format defined by the output file extension (if specified).",
 			Value:       spec.FormatYAML,
 			Destination: &opts.format,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_OUTPUT_FORMAT"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_OUTPUT_FORMAT"),
 		},
 		&cli.StringFlag{
 			Name:    "mode",
@@ -120,32 +123,32 @@ func (m command) build() *cli.Command {
 				"If mode is set to 'auto' the mode will be determined based on the system configuration.",
 			Value:       string(nvcdi.ModeAuto),
 			Destination: &opts.mode,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_MODE"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_MODE"),
 		},
 		&cli.StringFlag{
 			Name:        "dev-root",
 			Usage:       "Specify the root where `/dev` is located. If this is not specified, the driver-root is assumed.",
 			Destination: &opts.devRoot,
-			EnvVars:     []string{"NVIDIA_CTK_DEV_ROOT"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_DEV_ROOT"),
 		},
 		&cli.StringSliceFlag{
 			Name:        "device-name-strategy",
 			Usage:       "Specify the strategy for generating device names. If this is specified multiple times, the devices will be duplicated for each strategy. One of [index | uuid | type-index]",
-			Value:       cli.NewStringSlice(nvcdi.DeviceNameStrategyIndex, nvcdi.DeviceNameStrategyUUID),
+			Value:       []string{nvcdi.DeviceNameStrategyIndex, nvcdi.DeviceNameStrategyUUID},
 			Destination: &opts.deviceNameStrategies,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_DEVICE_NAME_STRATEGIES"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_DEVICE_NAME_STRATEGIES"),
 		},
 		&cli.StringFlag{
 			Name:        "driver-root",
 			Usage:       "Specify the NVIDIA GPU driver root to use when discovering the entities that should be included in the CDI specification.",
 			Destination: &opts.driverRoot,
-			EnvVars:     []string{"NVIDIA_CTK_DRIVER_ROOT"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_DRIVER_ROOT"),
 		},
 		&cli.StringSliceFlag{
 			Name:        "library-search-path",
 			Usage:       "Specify the path to search for libraries when discovering the entities that should be included in the CDI specification.\n\tNote: This option only applies to CSV mode.",
 			Destination: &opts.librarySearchPaths,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_LIBRARY_SEARCH_PATHS"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_LIBRARY_SEARCH_PATHS"),
 		},
 		&cli.StringFlag{
 			Name:    "nvidia-cdi-hook-path",
@@ -154,13 +157,13 @@ func (m command) build() *cli.Command {
 				"If not specified, the PATH will be searched for `nvidia-cdi-hook`. " +
 				"NOTE: That if this is specified as `nvidia-ctk`, the PATH will be searched for `nvidia-ctk` instead.",
 			Destination: &opts.nvidiaCDIHookPath,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_HOOK_PATH"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_HOOK_PATH"),
 		},
 		&cli.StringFlag{
 			Name:        "ldconfig-path",
 			Usage:       "Specify the path to use for ldconfig in the generated CDI specification",
 			Destination: &opts.ldconfigPath,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_LDCONFIG_PATH"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_LDCONFIG_PATH"),
 		},
 		&cli.StringFlag{
 			Name:        "vendor",
@@ -168,7 +171,7 @@ func (m command) build() *cli.Command {
 			Usage:       "the vendor string to use for the generated CDI specification.",
 			Value:       "nvidia.com",
 			Destination: &opts.vendor,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_VENDOR"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_VENDOR"),
 		},
 		&cli.StringFlag{
 			Name:        "class",
@@ -176,20 +179,20 @@ func (m command) build() *cli.Command {
 			Usage:       "the class string to use for the generated CDI specification.",
 			Value:       "gpu",
 			Destination: &opts.class,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_CLASS"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CLASS"),
 		},
 		&cli.StringSliceFlag{
 			Name:        "csv.file",
 			Usage:       "The path to the list of CSV files to use when generating the CDI specification in CSV mode.",
-			Value:       cli.NewStringSlice(csv.DefaultFileList()...),
+			Value:       csv.DefaultFileList(),
 			Destination: &opts.csv.files,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_CSV_FILES"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CSV_FILES"),
 		},
 		&cli.StringSliceFlag{
 			Name:        "csv.ignore-pattern",
 			Usage:       "specify a pattern the CSV mount specifications.",
 			Destination: &opts.csv.ignorePatterns,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_CSV_IGNORE_PATTERNS"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CSV_IGNORE_PATTERNS"),
 		},
 		&cli.StringSliceFlag{
 			Name:    "disable-hook",
@@ -199,14 +202,14 @@ func (m command) build() *cli.Command {
 				"special hook name 'all' can be used ensure that the generated " +
 				"CDI specification does not include any hooks.",
 			Destination: &opts.disabledHooks,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_GENERATE_DISABLED_HOOKS"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_DISABLED_HOOKS"),
 		},
 	}
 
 	return &c
 }
 
-func (m command) validateFlags(c *cli.Context, opts *options) error {
+func (m command) validateFlags(c *cli.Command, opts *options) error {
 	opts.format = strings.ToLower(opts.format)
 	switch opts.format {
 	case spec.FormatJSON:
@@ -220,7 +223,7 @@ func (m command) validateFlags(c *cli.Context, opts *options) error {
 		return fmt.Errorf("invalid discovery mode: %v", opts.mode)
 	}
 
-	for _, strategy := range opts.deviceNameStrategies.Value() {
+	for _, strategy := range opts.deviceNameStrategies {
 		_, err := nvcdi.NewDeviceNamer(strategy)
 		if err != nil {
 			return err
@@ -247,7 +250,7 @@ func (m command) validateFlags(c *cli.Context, opts *options) error {
 	return nil
 }
 
-func (m command) run(c *cli.Context, opts *options) error {
+func (m command) run(opts *options) error {
 	spec, err := m.generateSpec(opts)
 	if err != nil {
 		return fmt.Errorf("failed to generate CDI spec: %v", err)
@@ -279,7 +282,7 @@ func formatFromFilename(filename string) string {
 
 func (m command) generateSpec(opts *options) (spec.Interface, error) {
 	var deviceNamers []nvcdi.DeviceNamer
-	for _, strategy := range opts.deviceNameStrategies.Value() {
+	for _, strategy := range opts.deviceNameStrategies {
 		deviceNamer, err := nvcdi.NewDeviceNamer(strategy)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create device namer: %v", err)
@@ -295,15 +298,15 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithLdconfigPath(opts.ldconfigPath),
 		nvcdi.WithDeviceNamers(deviceNamers...),
 		nvcdi.WithMode(opts.mode),
-		nvcdi.WithConfigSearchPaths(opts.configSearchPaths.Value()),
-		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths.Value()),
-		nvcdi.WithCSVFiles(opts.csv.files.Value()),
-		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns.Value()),
+		nvcdi.WithConfigSearchPaths(opts.configSearchPaths),
+		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths),
+		nvcdi.WithCSVFiles(opts.csv.files),
+		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns),
 		// We set the following to allow for dependency injection:
 		nvcdi.WithNvmlLib(opts.nvmllib),
 	}
 
-	for _, hook := range opts.disabledHooks.Value() {
+	for _, hook := range opts.disabledHooks {
 		cdiOptions = append(cdiOptions, nvcdi.WithDisabledHook(hook))
 	}
 

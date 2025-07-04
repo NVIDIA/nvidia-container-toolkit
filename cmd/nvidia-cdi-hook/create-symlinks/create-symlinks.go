@@ -17,6 +17,7 @@
 package symlinks
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -24,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/moby/sys/symlink"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
@@ -36,7 +37,7 @@ type command struct {
 }
 
 type config struct {
-	links         cli.StringSlice
+	links         []string
 	containerSpec string
 }
 
@@ -53,10 +54,12 @@ func (m command) build() *cli.Command {
 	cfg := config{}
 
 	c := cli.Command{
-		Name:  "create-symlinks",
-		Usage: "A hook to create symlinks in the container.",
-		Action: func(c *cli.Context) error {
-			return m.run(c, &cfg)
+		Name:                   "create-symlinks",
+		Usage:                  "A hook to create symlinks in the container.",
+		UseShortOptionHandling: true,
+		EnableShellCompletion:  true,
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			return m.run(cmd, &cfg)
 		},
 	}
 
@@ -78,7 +81,7 @@ func (m command) build() *cli.Command {
 	return &c
 }
 
-func (m command) run(c *cli.Context, cfg *config) error {
+func (m command) run(_ *cli.Command, cfg *config) error {
 	s, err := oci.LoadContainerState(cfg.containerSpec)
 	if err != nil {
 		return fmt.Errorf("failed to load container state: %v", err)
@@ -90,7 +93,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 	}
 
 	created := make(map[string]bool)
-	for _, l := range cfg.links.Value() {
+	for _, l := range cfg.links {
 		if created[l] {
 			m.logger.Debugf("Link %v already processed", l)
 			continue

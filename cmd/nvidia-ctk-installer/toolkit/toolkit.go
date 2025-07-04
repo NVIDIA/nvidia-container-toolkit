@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/pkg/parser"
 
@@ -58,9 +58,9 @@ type Options struct {
 	ContainerRuntimeLogLevel string
 
 	ContainerRuntimeModesCdiDefaultKind        string
-	ContainerRuntimeModesCDIAnnotationPrefixes cli.StringSlice
+	ContainerRuntimeModesCDIAnnotationPrefixes []string
 
-	ContainerRuntimeRuntimes cli.StringSlice
+	ContainerRuntimeRuntimes []string
 
 	ContainerRuntimeHookSkipModeDetection bool
 
@@ -69,14 +69,14 @@ type Options struct {
 	// CDI stores the CDI options for the toolkit.
 	CDI cdiOptions
 
-	createDeviceNodes cli.StringSlice
+	createDeviceNodes []string
 
 	acceptNVIDIAVisibleDevicesWhenUnprivileged bool
 	acceptNVIDIAVisibleDevicesAsVolumeMounts   bool
 
 	ignoreErrors bool
 
-	optInFeatures cli.StringSlice
+	optInFeatures []string
 }
 
 func Flags(opts *Options) []cli.Flag {
@@ -86,106 +86,106 @@ func Flags(opts *Options) []cli.Flag {
 			Aliases:     []string{"nvidia-driver-root"},
 			Value:       DefaultNvidiaDriverRoot,
 			Destination: &opts.DriverRoot,
-			EnvVars:     []string{"NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"},
+			Sources:     cli.EnvVars("NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"),
 		},
 		&cli.StringFlag{
 			Name:        "driver-root-ctr-path",
 			Value:       DefaultNvidiaDriverRoot,
 			Destination: &opts.DriverRootCtrPath,
-			EnvVars:     []string{"DRIVER_ROOT_CTR_PATH"},
+			Sources:     cli.EnvVars("DRIVER_ROOT_CTR_PATH"),
 		},
 		&cli.StringFlag{
 			Name:        "dev-root",
 			Usage:       "Specify the root where `/dev` is located. If this is not specified, the driver-root is assumed.",
 			Destination: &opts.DevRoot,
-			EnvVars:     []string{"NVIDIA_DEV_ROOT", "DEV_ROOT"},
+			Sources:     cli.EnvVars("NVIDIA_DEV_ROOT", "DEV_ROOT"),
 		},
 		&cli.StringFlag{
 			Name:        "dev-root-ctr-path",
 			Usage:       "Specify the root where `/dev` is located in the container. If this is not specified, the driver-root-ctr-path is assumed.",
 			Destination: &opts.DevRootCtrPath,
-			EnvVars:     []string{"DEV_ROOT_CTR_PATH"},
+			Sources:     cli.EnvVars("DEV_ROOT_CTR_PATH"),
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-container-runtime.debug",
 			Aliases:     []string{"nvidia-container-runtime-debug"},
 			Usage:       "Specify the location of the debug log file for the NVIDIA Container Runtime",
 			Destination: &opts.ContainerRuntimeDebug,
-			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_DEBUG"},
+			Sources:     cli.EnvVars("NVIDIA_CONTAINER_RUNTIME_DEBUG"),
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-container-runtime.log-level",
 			Aliases:     []string{"nvidia-container-runtime-debug-log-level"},
 			Destination: &opts.ContainerRuntimeLogLevel,
-			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_LOG_LEVEL"},
+			Sources:     cli.EnvVars("NVIDIA_CONTAINER_RUNTIME_LOG_LEVEL"),
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-container-runtime.mode",
 			Aliases:     []string{"nvidia-container-runtime-mode"},
 			Destination: &opts.ContainerRuntimeMode,
-			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODE"},
+			Sources:     cli.EnvVars("NVIDIA_CONTAINER_RUNTIME_MODE"),
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-container-runtime.modes.cdi.default-kind",
 			Destination: &opts.ContainerRuntimeModesCdiDefaultKind,
-			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODES_CDI_DEFAULT_KIND"},
+			Sources:     cli.EnvVars("NVIDIA_CONTAINER_RUNTIME_MODES_CDI_DEFAULT_KIND"),
 		},
 		&cli.StringSliceFlag{
 			Name:        "nvidia-container-runtime.modes.cdi.annotation-prefixes",
 			Destination: &opts.ContainerRuntimeModesCDIAnnotationPrefixes,
-			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODES_CDI_ANNOTATION_PREFIXES"},
+			Sources:     cli.EnvVars("NVIDIA_CONTAINER_RUNTIME_MODES_CDI_ANNOTATION_PREFIXES"),
 		},
 		&cli.StringSliceFlag{
 			Name:        "nvidia-container-runtime.runtimes",
 			Destination: &opts.ContainerRuntimeRuntimes,
-			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_RUNTIMES"},
+			Sources:     cli.EnvVars("NVIDIA_CONTAINER_RUNTIME_RUNTIMES"),
 		},
 		&cli.BoolFlag{
 			Name:        "nvidia-container-runtime-hook.skip-mode-detection",
 			Value:       true,
 			Destination: &opts.ContainerRuntimeHookSkipModeDetection,
-			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_HOOK_SKIP_MODE_DETECTION"},
+			Sources:     cli.EnvVars("NVIDIA_CONTAINER_RUNTIME_HOOK_SKIP_MODE_DETECTION"),
 		},
 		&cli.StringFlag{
 			Name:        "nvidia-container-cli.debug",
 			Aliases:     []string{"nvidia-container-cli-debug"},
 			Usage:       "Specify the location of the debug log file for the NVIDIA Container CLI",
 			Destination: &opts.ContainerCLIDebug,
-			EnvVars:     []string{"NVIDIA_CONTAINER_CLI_DEBUG"},
+			Sources:     cli.EnvVars("NVIDIA_CONTAINER_CLI_DEBUG"),
 		},
 		&cli.BoolFlag{
 			Name:        "accept-nvidia-visible-devices-envvar-when-unprivileged",
 			Usage:       "Set the accept-nvidia-visible-devices-envvar-when-unprivileged config option",
 			Value:       true,
 			Destination: &opts.acceptNVIDIAVisibleDevicesWhenUnprivileged,
-			EnvVars:     []string{"ACCEPT_NVIDIA_VISIBLE_DEVICES_ENVVAR_WHEN_UNPRIVILEGED"},
+			Sources:     cli.EnvVars("ACCEPT_NVIDIA_VISIBLE_DEVICES_ENVVAR_WHEN_UNPRIVILEGED"),
 		},
 		&cli.BoolFlag{
 			Name:        "accept-nvidia-visible-devices-as-volume-mounts",
 			Usage:       "Set the accept-nvidia-visible-devices-as-volume-mounts config option",
 			Destination: &opts.acceptNVIDIAVisibleDevicesAsVolumeMounts,
-			EnvVars:     []string{"ACCEPT_NVIDIA_VISIBLE_DEVICES_AS_VOLUME_MOUNTS"},
+			Sources:     cli.EnvVars("ACCEPT_NVIDIA_VISIBLE_DEVICES_AS_VOLUME_MOUNTS"),
 		},
 		&cli.BoolFlag{
 			Name:        "cdi-enabled",
 			Aliases:     []string{"enable-cdi"},
 			Usage:       "enable the generation of a CDI specification",
 			Destination: &opts.CDI.Enabled,
-			EnvVars:     []string{"CDI_ENABLED", "ENABLE_CDI"},
+			Sources:     cli.EnvVars("CDI_ENABLED", "ENABLE_CDI"),
 		},
 		&cli.StringFlag{
 			Name:        "cdi-output-dir",
 			Usage:       "the directory where the CDI output files are to be written. If this is set to '', no CDI specification is generated.",
 			Value:       "/var/run/cdi",
 			Destination: &opts.CDI.outputDir,
-			EnvVars:     []string{"CDI_OUTPUT_DIR"},
+			Sources:     cli.EnvVars("CDI_OUTPUT_DIR"),
 		},
 		&cli.StringFlag{
 			Name:        "cdi-kind",
 			Usage:       "the vendor string to use for the generated CDI specification",
 			Value:       "management.nvidia.com/gpu",
 			Destination: &opts.CDI.kind,
-			EnvVars:     []string{"CDI_KIND"},
+			Sources:     cli.EnvVars("CDI_KIND"),
 		},
 		&cli.BoolFlag{
 			Name:        "ignore-errors",
@@ -196,15 +196,15 @@ func Flags(opts *Options) []cli.Flag {
 		&cli.StringSliceFlag{
 			Name:        "create-device-nodes",
 			Usage:       "(Only applicable with --cdi-enabled) specifies which device nodes should be created. If any one of the options is set to '' or 'none', no device nodes will be created.",
-			Value:       cli.NewStringSlice("control"),
+			Value:       []string{"control"},
 			Destination: &opts.createDeviceNodes,
-			EnvVars:     []string{"CREATE_DEVICE_NODES"},
+			Sources:     cli.EnvVars("CREATE_DEVICE_NODES"),
 		},
 		&cli.StringSliceFlag{
 			Name:        "opt-in-features",
 			Hidden:      true,
 			Destination: &opts.optInFeatures,
-			EnvVars:     []string{"NVIDIA_CONTAINER_TOOLKIT_OPT_IN_FEATURES"},
+			Sources:     cli.EnvVars("NVIDIA_CONTAINER_TOOLKIT_OPT_IN_FEATURES"),
 		},
 	}
 
@@ -259,7 +259,7 @@ func (t *Installer) ValidateOptions(opts *Options) error {
 	}
 
 	isDisabled := false
-	for _, mode := range opts.createDeviceNodes.Value() {
+	for _, mode := range opts.createDeviceNodes {
 		if mode != "" && mode != "none" && mode != "control" {
 			return fmt.Errorf("invalid --create-device-nodes value: %v", mode)
 		}
@@ -273,7 +273,7 @@ func (t *Installer) ValidateOptions(opts *Options) error {
 		isDisabled = true
 	}
 	if isDisabled {
-		opts.createDeviceNodes = *cli.NewStringSlice()
+		opts.createDeviceNodes = []string{}
 	}
 
 	return nil
@@ -281,7 +281,7 @@ func (t *Installer) ValidateOptions(opts *Options) error {
 
 // Install installs the components of the NVIDIA container toolkit.
 // Any existing installation is removed.
-func (t *Installer) Install(cli *cli.Context, opts *Options) error {
+func (t *Installer) Install(cli *cli.Command, opts *Options) error {
 	if t == nil {
 		return fmt.Errorf("toolkit installer is not initilized")
 	}
@@ -341,7 +341,7 @@ func (t *Installer) Install(cli *cli.Context, opts *Options) error {
 
 // installToolkitConfig installs the config file for the NVIDIA container toolkit ensuring
 // that the settings are updated to match the desired install and nvidia driver directories.
-func (t *Installer) installToolkitConfig(c *cli.Context, opts *Options, toolkitConfigPath string) error {
+func (t *Installer) installToolkitConfig(c *cli.Command, opts *Options, toolkitConfigPath string) error {
 
 	t.logger.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
 
@@ -387,12 +387,12 @@ func (t *Installer) installToolkitConfig(c *cli.Context, opts *Options, toolkitC
 		"nvidia-container-runtime-hook.skip-mode-detection": opts.ContainerRuntimeHookSkipModeDetection,
 	}
 
-	toolkitRuntimeList := opts.ContainerRuntimeRuntimes.Value()
+	toolkitRuntimeList := opts.ContainerRuntimeRuntimes
 	if len(toolkitRuntimeList) > 0 {
 		configValues["nvidia-container-runtime.runtimes"] = toolkitRuntimeList
 	}
 
-	for _, optInFeature := range opts.optInFeatures.Value() {
+	for _, optInFeature := range opts.optInFeatures {
 		configValues["features."+optInFeature] = true
 	}
 
@@ -462,7 +462,7 @@ func (t *Installer) createDirectories(dir ...string) error {
 }
 
 func (t *Installer) createDeviceNodes(opts *Options) error {
-	modes := opts.createDeviceNodes.Value()
+	modes := opts.createDeviceNodes
 	if len(modes) == 0 {
 		return nil
 	}
