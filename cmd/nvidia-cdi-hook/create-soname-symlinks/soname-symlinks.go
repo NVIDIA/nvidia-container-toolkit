@@ -18,13 +18,14 @@
 package create_soname_symlinks
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/moby/sys/reexec"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldconfig"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -40,7 +41,7 @@ type command struct {
 }
 
 type options struct {
-	folders       cli.StringSlice
+	folders       []string
 	ldconfigPath  string
 	containerSpec string
 }
@@ -66,13 +67,15 @@ func (m command) build() *cli.Command {
 
 	// Create the 'create-soname-symlinks' command
 	c := cli.Command{
-		Name:  "create-soname-symlinks",
-		Usage: "Create soname symlinks libraries in specified directories",
-		Before: func(c *cli.Context) error {
-			return m.validateFlags(c, &cfg)
+		Name:                   "create-soname-symlinks",
+		Usage:                  "Create soname symlinks libraries in specified directories",
+		UseShortOptionHandling: true,
+		EnableShellCompletion:  true,
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, m.validateFlags(cmd, &cfg)
 		},
-		Action: func(c *cli.Context) error {
-			return m.run(c, &cfg)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return m.run(cmd, &cfg)
 		},
 	}
 
@@ -98,14 +101,14 @@ func (m command) build() *cli.Command {
 	return &c
 }
 
-func (m command) validateFlags(c *cli.Context, cfg *options) error {
+func (m command) validateFlags(_ *cli.Command, cfg *options) error {
 	if cfg.ldconfigPath == "" {
 		return errors.New("ldconfig-path must be specified")
 	}
 	return nil
 }
 
-func (m command) run(c *cli.Context, cfg *options) error {
+func (m command) run(_ *cli.Command, cfg *options) error {
 	s, err := oci.LoadContainerState(cfg.containerSpec)
 	if err != nil {
 		return fmt.Errorf("failed to load container state: %v", err)
@@ -120,7 +123,7 @@ func (m command) run(c *cli.Context, cfg *options) error {
 		reexecUpdateLdCacheCommandName,
 		cfg.ldconfigPath,
 		containerRootDir,
-		cfg.folders.Value()...,
+		cfg.folders...,
 	)
 	if err != nil {
 		return err

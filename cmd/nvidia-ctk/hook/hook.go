@@ -17,26 +17,30 @@
 package hook
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/commands"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"context"
 
-	"github.com/urfave/cli/v2"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/commands"
+
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v3"
 )
 
-type hookCommand struct {
-	logger logger.Interface
+type command struct {
+	logger     *logrus.Logger
+	configFile *string
 }
 
 // NewCommand constructs CLI subcommand for handling CDI hooks.
-func NewCommand(logger logger.Interface) *cli.Command {
-	c := hookCommand{
-		logger: logger,
+func NewCommand(logger *logrus.Logger, configFile *string) *cli.Command {
+	c := command{
+		logger:     logger,
+		configFile: configFile,
 	}
 	return c.build()
 }
 
 // build
-func (m hookCommand) build() *cli.Command {
+func (m command) build() *cli.Command {
 	// Create the 'hook' subcommand
 	hook := cli.Command{
 		Name:  "hook",
@@ -48,13 +52,13 @@ func (m hookCommand) build() *cli.Command {
 		// referring to a new hook that is not yet supported by an older NVIDIA
 		// Container Toolkit version or a hook that has been removed in newer
 		// version.
-		Action: func(ctx *cli.Context) error {
-			commands.IssueUnsupportedHookWarning(m.logger, ctx)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			commands.IssueUnsupportedHookWarning(m.logger, cmd)
 			return nil
 		},
 	}
 
-	hook.Subcommands = commands.New(m.logger)
+	hook.Commands = commands.New(m.logger)
 
 	return &hook
 }

@@ -17,39 +17,41 @@
 package cdi
 
 import (
-	"github.com/urfave/cli/v2"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/generate"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/list"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/transform"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type command struct {
-	logger logger.Interface
+	logger     *logrus.Logger
+	configFile *string
 }
 
-// NewCommand constructs an info command with the specified logger
-func NewCommand(logger logger.Interface) *cli.Command {
+// NewCommand constructs a cdi command with the specified logger
+func NewCommand(logger *logrus.Logger, configFile *string) *cli.Command {
 	c := command{
-		logger: logger,
+		logger:     logger,
+		configFile: configFile,
 	}
 	return c.build()
 }
 
 // build
 func (m command) build() *cli.Command {
-	// Create the 'hook' command
-	hook := cli.Command{
+	// Create the 'cdi' command
+	cdi := cli.Command{
 		Name:  "cdi",
 		Usage: "Provide tools for interacting with Container Device Interface specifications",
 	}
 
-	hook.Subcommands = []*cli.Command{
-		generate.NewCommand(m.logger),
-		transform.NewCommand(m.logger),
-		list.NewCommand(m.logger),
+	cdi.Commands = []*cli.Command{
+		generate.NewCommand(m.logger, m.configFile),
+		list.NewCommand(m.logger, m.configFile),
+		transform.NewCommand(m.logger, m.configFile),
 	}
 
-	return &hook
+	return &cdi
 }

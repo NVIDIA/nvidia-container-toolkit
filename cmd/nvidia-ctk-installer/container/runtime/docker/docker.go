@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
-	cli "github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
@@ -42,8 +42,8 @@ func Flags(opts *Options) []cli.Flag {
 }
 
 // Setup updates docker configuration to include the nvidia runtime and reloads it
-func Setup(c *cli.Context, o *container.Options) error {
-	log.Infof("Starting 'setup' for %v", c.App.Name)
+func Setup(c *cli.Command, o *container.Options) error {
+	log.Infof("Starting 'setup' for %v", c.Name)
 
 	cfg, err := getRuntimeConfig(o)
 	if err != nil {
@@ -60,14 +60,14 @@ func Setup(c *cli.Context, o *container.Options) error {
 		return fmt.Errorf("unable to restart docker: %v", err)
 	}
 
-	log.Infof("Completed 'setup' for %v", c.App.Name)
+	log.Infof("Completed 'setup' for %v", c.Name)
 
 	return nil
 }
 
 // Cleanup reverts docker configuration to remove the nvidia runtime and reloads it
-func Cleanup(c *cli.Context, o *container.Options) error {
-	log.Infof("Starting 'cleanup' for %v", c.App.Name)
+func Cleanup(c *cli.Command, o *container.Options) error {
+	log.Infof("Starting 'cleanup' for %v", c.Name)
 
 	cfg, err := getRuntimeConfig(o)
 	if err != nil {
@@ -84,7 +84,7 @@ func Cleanup(c *cli.Context, o *container.Options) error {
 		return fmt.Errorf("unable to signal docker: %v", err)
 	}
 
-	log.Infof("Completed 'cleanup' for %v", c.App.Name)
+	log.Infof("Completed 'cleanup' for %v", c.Name)
 
 	return nil
 }

@@ -17,7 +17,7 @@
 package commands
 
 import (
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/chmod"
 	createsonamesymlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/create-soname-symlinks"
@@ -45,7 +45,7 @@ func New(logger logger.Interface) []*cli.Command {
 // hook has been specified.
 // This happens if a subcommand is provided that does not match one of the
 // subcommands that has been explicitly specified.
-func IssueUnsupportedHookWarning(logger logger.Interface, c *cli.Context) {
+func IssueUnsupportedHookWarning(logger logger.Interface, c *cli.Command) {
 	args := c.Args().Slice()
 	if len(args) == 0 {
 		logger.Warningf("No CDI hook specified")

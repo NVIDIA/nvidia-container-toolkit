@@ -19,7 +19,7 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime/containerd"
@@ -52,40 +52,40 @@ func Flags(opts *Options) []cli.Flag {
 			Usage:       "Path to the runtime config file",
 			Value:       runtimeSpecificDefault,
 			Destination: &opts.Config,
-			EnvVars:     []string{"RUNTIME_CONFIG", "CONTAINERD_CONFIG", "DOCKER_CONFIG"},
+			Sources:     cli.EnvVars("RUNTIME_CONFIG", "CONTAINERD_CONFIG", "DOCKER_CONFIG"),
 		},
 		&cli.StringFlag{
 			Name:        "executable-path",
 			Usage:       "The path to the runtime executable. This is used to extract the current config",
 			Destination: &opts.ExecutablePath,
-			EnvVars:     []string{"RUNTIME_EXECUTABLE_PATH"},
+			Sources:     cli.EnvVars("RUNTIME_EXECUTABLE_PATH"),
 		},
 		&cli.StringFlag{
 			Name:        "socket",
 			Usage:       "Path to the runtime socket file",
 			Value:       runtimeSpecificDefault,
 			Destination: &opts.Socket,
-			EnvVars:     []string{"RUNTIME_SOCKET", "CONTAINERD_SOCKET", "DOCKER_SOCKET"},
+			Sources:     cli.EnvVars("RUNTIME_SOCKET", "CONTAINERD_SOCKET", "DOCKER_SOCKET"),
 		},
 		&cli.StringFlag{
 			Name:        "restart-mode",
 			Usage:       "Specify how the runtime should be restarted; If 'none' is selected it will not be restarted [signal | systemd | none ]",
 			Value:       runtimeSpecificDefault,
 			Destination: &opts.RestartMode,
-			EnvVars:     []string{"RUNTIME_RESTART_MODE"},
+			Sources:     cli.EnvVars("RUNTIME_RESTART_MODE"),
 		},
 		&cli.BoolFlag{
 			Name:        "enable-cdi-in-runtime",
 			Usage:       "Enable CDI in the configured runt	ime",
 			Destination: &opts.EnableCDI,
-			EnvVars:     []string{"RUNTIME_ENABLE_CDI"},
+			Sources:     cli.EnvVars("RUNTIME_ENABLE_CDI"),
 		},
 		&cli.StringFlag{
 			Name:        "host-root",
 			Usage:       "Specify the path to the host root to be used when restarting the runtime using systemd",
 			Value:       defaultHostRootMount,
 			Destination: &opts.HostRootMount,
-			EnvVars:     []string{"HOST_ROOT_MOUNT"},
+			Sources:     cli.EnvVars("HOST_ROOT_MOUNT"),
 		},
 		&cli.StringFlag{
 			Name:        "runtime-name",
@@ -93,14 +93,14 @@ func Flags(opts *Options) []cli.Flag {
 			Usage:       "Specify the name of the `nvidia` runtime. If set-as-default is selected, the runtime is used as the default runtime.",
 			Value:       defaultRuntimeName,
 			Destination: &opts.RuntimeName,
-			EnvVars:     []string{"NVIDIA_RUNTIME_NAME", "CONTAINERD_RUNTIME_CLASS", "DOCKER_RUNTIME_NAME"},
+			Sources:     cli.EnvVars("NVIDIA_RUNTIME_NAME", "CONTAINERD_RUNTIME_CLASS", "DOCKER_RUNTIME_NAME"),
 		},
 		&cli.BoolFlag{
 			Name:        "set-as-default",
 			Usage:       "Set the `nvidia` runtime as the default runtime.",
 			Value:       defaultSetAsDefault,
 			Destination: &opts.SetAsDefault,
-			EnvVars:     []string{"NVIDIA_RUNTIME_SET_AS_DEFAULT", "CONTAINERD_SET_AS_DEFAULT", "DOCKER_SET_AS_DEFAULT"},
+			Sources:     cli.EnvVars("NVIDIA_RUNTIME_SET_AS_DEFAULT", "CONTAINERD_SET_AS_DEFAULT", "DOCKER_SET_AS_DEFAULT"),
 			Hidden:      true,
 		},
 	}
@@ -112,7 +112,7 @@ func Flags(opts *Options) []cli.Flag {
 }
 
 // Validate checks whether the specified options are valid
-func (opts *Options) Validate(logger logger.Interface, c *cli.Context, runtime string, toolkitRoot string, to *toolkit.Options) error {
+func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime string, toolkitRoot string, to *toolkit.Options) error {
 	// We set this option here to ensure that it is available in future calls.
 	opts.RuntimeDir = toolkitRoot
 
@@ -164,7 +164,7 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Context, runtime s
 	return nil
 }
 
-func Setup(c *cli.Context, opts *Options, runtime string) error {
+func Setup(c *cli.Command, opts *Options, runtime string) error {
 	switch runtime {
 	case containerd.Name:
 		return containerd.Setup(c, &opts.Options, &opts.containerdOptions)
@@ -177,7 +177,7 @@ func Setup(c *cli.Context, opts *Options, runtime string) error {
 	}
 }
 
-func Cleanup(c *cli.Context, opts *Options, runtime string) error {
+func Cleanup(c *cli.Command, opts *Options, runtime string) error {
 	switch runtime {
 	case containerd.Name:
 		return containerd.Cleanup(c, &opts.Options, &opts.containerdOptions)

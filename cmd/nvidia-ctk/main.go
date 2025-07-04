@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -29,7 +30,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 
-	cli "github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v3"
 )
 
 // options defines the options that can be set for the CLI through config files,
@@ -39,6 +40,8 @@ type options struct {
 	Debug bool
 	// Quiet indicates whether the CLI is started in "quiet" mode
 	Quiet bool
+	// Config specifies the path to the config file
+	Config string
 }
 
 func main() {
@@ -48,13 +51,13 @@ func main() {
 	opts := options{}
 
 	// Create the top-level CLI
-	c := cli.NewApp()
-	c.DisableSliceFlagSeparator = true
-	c.Name = "NVIDIA Container Toolkit CLI"
-	c.UseShortOptionHandling = true
-	c.EnableBashCompletion = true
-	c.Usage = "Tools to configure the NVIDIA Container Toolkit"
-	c.Version = info.GetVersionString()
+	c := cli.Command{
+		Name:                   "NVIDIA Container Toolkit CLI",
+		UseShortOptionHandling: true,
+		EnableShellCompletion:  true,
+		Usage:                  "Tools to configure the NVIDIA Container Toolkit",
+		Version:                info.GetVersionString(),
+	}
 
 	// Setup the flags for this command
 	c.Flags = []cli.Flag{
@@ -63,18 +66,24 @@ func main() {
 			Aliases:     []string{"d"},
 			Usage:       "Enable debug-level logging",
 			Destination: &opts.Debug,
-			EnvVars:     []string{"NVIDIA_CTK_DEBUG"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_DEBUG"),
 		},
 		&cli.BoolFlag{
 			Name:        "quiet",
 			Usage:       "Suppress all output except for errors; overrides --debug",
 			Destination: &opts.Quiet,
-			EnvVars:     []string{"NVIDIA_CTK_QUIET"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_QUIET"),
+		},
+		&cli.StringFlag{
+			Name:        "config",
+			Usage:       "Path to the config file",
+			Destination: &opts.Config,
+			Sources:     cli.EnvVars("NVIDIA_CTK_CONFIG"),
 		},
 	}
 
 	// Set log-level for all subcommands
-	c.Before = func(c *cli.Context) error {
+	c.Before = func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 		logLevel := logrus.InfoLevel
 		if opts.Debug {
 			logLevel = logrus.DebugLevel
@@ -83,23 +92,26 @@ func main() {
 			logLevel = logrus.ErrorLevel
 		}
 		logger.SetLevel(logLevel)
-		return nil
-	}
 
-	// Define the subcommands
-	c.Commands = []*cli.Command{
-		hook.NewCommand(logger),
-		runtime.NewCommand(logger),
-		infoCLI.NewCommand(logger),
-		cdi.NewCommand(logger),
-		system.NewCommand(logger),
-		config.NewCommand(logger),
+		cmd.Commands = getCommands(logger, &opts.Config)
+		return ctx, nil
 	}
 
 	// Run the CLI
-	err := c.Run(os.Args)
+	err := c.Run(context.Background(), os.Args)
 	if err != nil {
 		logger.Errorf("%v", err)
 		os.Exit(1)
+	}
+}
+
+func getCommands(logger *logrus.Logger, configFile *string) []*cli.Command {
+	return []*cli.Command{
+		hook.NewCommand(logger, configFile),
+		runtime.NewCommand(logger, configFile),
+		infoCLI.NewCommand(logger, configFile),
+		cdi.NewCommand(logger, configFile),
+		system.NewCommand(logger, configFile),
+		config.NewCommand(logger, configFile),
 	}
 }

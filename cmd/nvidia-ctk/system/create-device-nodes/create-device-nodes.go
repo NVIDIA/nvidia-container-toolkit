@@ -17,9 +17,10 @@
 package createdevicenodes
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/system/nvdevices"
@@ -56,11 +57,11 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "create-device-nodes",
 		Usage: "A utility to create NVIDIA device nodes",
-		Before: func(c *cli.Context) error {
-			return m.validateFlags(c, &opts)
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, m.validateFlags(&opts)
 		},
-		Action: func(c *cli.Context) error {
-			return m.run(c, &opts)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return m.run(&opts)
 		},
 	}
 
@@ -74,13 +75,13 @@ func (m command) build() *cli.Command {
 			Value:       "/",
 			Destination: &opts.root,
 			// TODO: Remove the NVIDIA_DRIVER_ROOT and DRIVER_ROOT envvars.
-			EnvVars: []string{"ROOT", "NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"},
+			Sources: cli.EnvVars("ROOT", "NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"),
 		},
 		&cli.StringFlag{
 			Name:        "dev-root",
 			Usage:       "specify the root where `/dev` is located. If this is not specified, the root is assumed.",
 			Destination: &opts.devRoot,
-			EnvVars:     []string{"NVIDIA_DEV_ROOT", "DEV_ROOT"},
+			Sources:     cli.EnvVars("NVIDIA_DEV_ROOT", "DEV_ROOT"),
 		},
 		&cli.BoolFlag{
 			Name:        "control-devices",
@@ -97,14 +98,14 @@ func (m command) build() *cli.Command {
 			Usage:       "if set, the command will not perform any operations",
 			Value:       false,
 			Destination: &opts.dryRun,
-			EnvVars:     []string{"DRY_RUN"},
+			Sources:     cli.EnvVars("DRY_RUN"),
 		},
 	}
 
 	return &c
 }
 
-func (m command) validateFlags(r *cli.Context, opts *options) error {
+func (m command) validateFlags(opts *options) error {
 	if opts.devRoot == "" && opts.root != "" {
 		m.logger.Infof("Using dev-root %q", opts.root)
 		opts.devRoot = opts.root
@@ -112,7 +113,7 @@ func (m command) validateFlags(r *cli.Context, opts *options) error {
 	return nil
 }
 
-func (m command) run(c *cli.Context, opts *options) error {
+func (m command) run(opts *options) error {
 	if opts.loadKernelModules {
 		modules := nvmodules.New(
 			nvmodules.WithLogger(m.logger),
