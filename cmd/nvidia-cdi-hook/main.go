@@ -78,7 +78,7 @@ func main() {
 			Usage:       "Suppress all output except for errors; overrides --debug",
 			Destination: &opts.Quiet,
 			// TODO: Support for NVIDIA_CDI_QUIET is deprecated and NVIDIA_CTK_QUIET should be used instead.
-			EnvVars: []string{"NVDIA_CTK_QUIET", "NVIDIA_CDI_QUIET"},
+			EnvVars: []string{"NVIDIA_CTK_QUIET", "NVIDIA_CDI_QUIET"},
 		},
 	}
 
