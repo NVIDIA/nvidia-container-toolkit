@@ -17,6 +17,8 @@
 package nvcdi
 
 import (
+	"fmt"
+
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
@@ -26,13 +28,25 @@ import (
 )
 
 type wrapper struct {
-	Interface
+	factory deviceSpecGeneratorFactory
 
 	vendor string
 	class  string
 
 	mergedDeviceOptions []transform.MergedDeviceOption
 }
+
+// TODO: Rename this type
+type deviceSpecGeneratorFactory interface {
+	DeviceSpecGenerators(...string) (DeviceSpecGenerator, error)
+	GetCommonEdits() (*cdi.ContainerEdits, error)
+}
+
+// DeviceSpecGenerators can be used to combine multiple device spec generators.
+// This type also implements the DeviceSpecGenerator interface.
+type DeviceSpecGenerators []DeviceSpecGenerator
+
+var _ DeviceSpecGenerator = (DeviceSpecGenerators)(nil)
 
 // GetSpec combines the device specs and common edits from the wrapped Interface to a single spec.Interface.
 func (l *wrapper) GetSpec(devices ...string) (spec.Interface, error) {
@@ -58,28 +72,48 @@ func (l *wrapper) GetSpec(devices ...string) (spec.Interface, error) {
 	)
 }
 
+// GetDeviceSpecsByID returns the CDI device specs for devices with the
+// specified IDs.
+// The device IDs are interpreted by the configured factory.
 func (l *wrapper) GetDeviceSpecsByID(devices ...string) ([]specs.Device, error) {
-	for _, device := range devices {
-		if device != "all" {
-			continue
-		}
-		return l.GetAllDeviceSpecs()
+	generators, err := l.factory.DeviceSpecGenerators(devices...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct device spec generators: %w", err)
 	}
-	return l.Interface.GetDeviceSpecsByID(devices...)
+	return generators.GetDeviceSpecs()
 }
 
 // GetAllDeviceSpecs returns the device specs for all available devices.
+//
+// Deprecated: Use GetDeviceSpecsByID("all") instead.
 func (l *wrapper) GetAllDeviceSpecs() ([]specs.Device, error) {
-	return l.Interface.GetAllDeviceSpecs()
+	return l.GetDeviceSpecsByID("all")
 }
 
 // GetCommonEdits returns the wrapped edits and adds additional edits on top.
 func (m *wrapper) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	edits, err := m.Interface.GetCommonEdits()
+	edits, err := m.factory.GetCommonEdits()
 	if err != nil {
 		return nil, err
 	}
 	edits.Env = append(edits.Env, image.EnvVarNvidiaVisibleDevices+"=void")
 
 	return edits, nil
+}
+
+// GetDeviceSpecs returns the combined specs for each device spec generator.
+func (g DeviceSpecGenerators) GetDeviceSpecs() ([]specs.Device, error) {
+	var allDeviceSpecs []specs.Device
+	for _, dsg := range g {
+		if dsg == nil {
+			continue
+		}
+		deviceSpecs, err := dsg.GetDeviceSpecs()
+		if err != nil {
+			return nil, err
+		}
+		allDeviceSpecs = append(allDeviceSpecs, deviceSpecs...)
+	}
+
+	return allDeviceSpecs, nil
 }
