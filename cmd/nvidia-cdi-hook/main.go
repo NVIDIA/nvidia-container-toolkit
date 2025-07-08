@@ -51,17 +51,29 @@ func main() {
 		Version: info.GetVersionString(),
 		// Define the subcommands
 		Commands: commands.New(logger),
-	}
-	// We set the default action for the `nvidia-cdi-hook` command to issue a
-	// warning and exit with no error.
-	// This means that if an unsupported hook is run, a container will not fail
-	// to launch. An unsupported hook could be the result of a CDI specification
-	// referring to a new hook that is not yet supported by an older NVIDIA
-	// Container Toolkit version or a hook that has been removed in newer
-	// version.
-	c.Action = func(ctx context.Context, cmd *cli.Command) error {
-		commands.IssueUnsupportedHookWarning(logger, cmd)
-		return nil
+		// Set log-level for all subcommands
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			logLevel := logrus.InfoLevel
+			if opts.Debug {
+				logLevel = logrus.DebugLevel
+			}
+			if opts.Quiet {
+				logLevel = logrus.ErrorLevel
+			}
+			logger.SetLevel(logLevel)
+			return ctx, nil
+		},
+		// We set the default action for the `nvidia-cdi-hook` command to issue a
+		// warning and exit with no error.
+		// This means that if an unsupported hook is run, a container will not fail
+		// to launch. An unsupported hook could be the result of a CDI specification
+		// referring to a new hook that is not yet supported by an older NVIDIA
+		// Container Toolkit version or a hook that has been removed in newer
+		// version.
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			commands.IssueUnsupportedHookWarning(logger, cmd)
+			return nil
+		},
 	}
 
 	// Setup the flags for this command
@@ -81,19 +93,6 @@ func main() {
 			// TODO: Support for NVIDIA_CDI_QUIET is deprecated and NVIDIA_CTK_QUIET should be used instead.
 			Sources: cli.EnvVars("NVIDIA_CTK_QUIET", "NVIDIA_CDI_QUIET"),
 		},
-	}
-
-	// Set log-level for all subcommands
-	c.Before = func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-		logLevel := logrus.InfoLevel
-		if opts.Debug {
-			logLevel = logrus.DebugLevel
-		}
-		if opts.Quiet {
-			logLevel = logrus.ErrorLevel
-		}
-		logger.SetLevel(logLevel)
-		return ctx, nil
 	}
 
 	// Run the CLI
