@@ -56,6 +56,18 @@ func main() {
 		EnableShellCompletion:     true,
 		Usage:                     "Tools to configure the NVIDIA Container Toolkit",
 		Version:                   info.GetVersionString(),
+		// Set log-level for all subcommands
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			logLevel := logrus.InfoLevel
+			if opts.Debug {
+				logLevel = logrus.DebugLevel
+			}
+			if opts.Quiet {
+				logLevel = logrus.ErrorLevel
+			}
+			logger.SetLevel(logLevel)
+			return ctx, nil
+		},
 	}
 
 	// Setup the flags for this command
@@ -73,19 +85,6 @@ func main() {
 			Destination: &opts.Quiet,
 			Sources:     cli.EnvVars("NVIDIA_CTK_QUIET"),
 		},
-	}
-
-	// Set log-level for all subcommands
-	c.Before = func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-		logLevel := logrus.InfoLevel
-		if opts.Debug {
-			logLevel = logrus.DebugLevel
-		}
-		if opts.Quiet {
-			logLevel = logrus.ErrorLevel
-		}
-		logger.SetLevel(logLevel)
-		return ctx, nil
 	}
 
 	// Define the subcommands
