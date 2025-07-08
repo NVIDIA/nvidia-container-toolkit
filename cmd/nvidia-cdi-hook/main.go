@@ -74,24 +74,22 @@ func main() {
 		},
 		// Define the subcommands
 		Commands: commands.New(logger),
-	}
-
-	// Setup the flags for this command
-	c.Flags = []cli.Flag{
-		&cli.BoolFlag{
-			Name:        "debug",
-			Aliases:     []string{"d"},
-			Usage:       "Enable debug-level logging",
-			Destination: &opts.Debug,
-			// TODO: Support for NVIDIA_CDI_DEBUG is deprecated and NVIDIA_CTK_DEBUG should be used instead.
-			Sources: cli.EnvVars("NVIDIA_CTK_DEBUG", "NVIDIA_CDI_DEBUG"),
-		},
-		&cli.BoolFlag{
-			Name:        "quiet",
-			Usage:       "Suppress all output except for errors; overrides --debug",
-			Destination: &opts.Quiet,
-			// TODO: Support for NVIDIA_CDI_QUIET is deprecated and NVIDIA_CTK_QUIET should be used instead.
-			Sources: cli.EnvVars("NVIDIA_CTK_QUIET", "NVIDIA_CDI_QUIET"),
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:        "debug",
+				Aliases:     []string{"d"},
+				Usage:       "Enable debug-level logging",
+				Destination: &opts.Debug,
+				// TODO: Support for NVIDIA_CDI_DEBUG is deprecated and NVIDIA_CTK_DEBUG should be used instead.
+				Sources: cli.EnvVars("NVIDIA_CTK_DEBUG", "NVIDIA_CDI_DEBUG"),
+			},
+			&cli.BoolFlag{
+				Name:        "quiet",
+				Usage:       "Suppress all output except for errors; overrides --debug",
+				Destination: &opts.Quiet,
+				// TODO: Support for NVIDIA_CDI_QUIET is deprecated and NVIDIA_CTK_QUIET should be used instead.
+				Sources: cli.EnvVars("NVIDIA_CTK_QUIET", "NVIDIA_CDI_QUIET"),
+			},
 		},
 	}
 

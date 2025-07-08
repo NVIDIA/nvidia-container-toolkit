@@ -57,15 +57,14 @@ func (m command) build() *cli.Command {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return m.run(&cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringSliceFlag{
-			Name:        "spec-dir",
-			Usage:       "specify the directories to scan for CDI specifications",
-			Value:       cdi.DefaultSpecDirs,
-			Destination: &cfg.cdiSpecDirs,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_SPEC_DIRS"),
+		Flags: []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:        "spec-dir",
+				Usage:       "specify the directories to scan for CDI specifications",
+				Value:       cdi.DefaultSpecDirs,
+				Destination: &cfg.cdiSpecDirs,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_SPEC_DIRS"),
+			},
 		},
 	}
 

@@ -68,47 +68,46 @@ func (m command) build() *cli.Command {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return m.run(&cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "dev-char-path",
-			Usage:       "The path at which the symlinks will be created. Symlinks will be created as `DEV_CHAR`/MAJOR:MINOR where MAJOR and MINOR are the major and minor numbers of a corresponding device node.",
-			Value:       defaultDevCharPath,
-			Destination: &cfg.devCharPath,
-			Sources:     cli.EnvVars("DEV_CHAR_PATH"),
-		},
-		&cli.StringFlag{
-			Name:        "driver-root",
-			Usage:       "The path to the driver root. `DRIVER_ROOT`/dev is searched for NVIDIA device nodes.",
-			Value:       "/",
-			Destination: &cfg.driverRoot,
-			Sources:     cli.EnvVars("NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"),
-		},
-		&cli.BoolFlag{
-			Name:        "create-all",
-			Usage:       "Create all possible /dev/char symlinks instead of limiting these to existing device nodes.",
-			Destination: &cfg.createAll,
-			Sources:     cli.EnvVars("CREATE_ALL"),
-		},
-		&cli.BoolFlag{
-			Name:        "load-kernel-modules",
-			Usage:       "Load the NVIDIA kernel modules before creating symlinks. This is only applicable when --create-all is set.",
-			Destination: &cfg.loadKernelModules,
-			Sources:     cli.EnvVars("LOAD_KERNEL_MODULES"),
-		},
-		&cli.BoolFlag{
-			Name:        "create-device-nodes",
-			Usage:       "Create the NVIDIA control device nodes in the driver root if they do not exist. This is only applicable when --create-all is set",
-			Destination: &cfg.createDeviceNodes,
-			Sources:     cli.EnvVars("CREATE_DEVICE_NODES"),
-		},
-		&cli.BoolFlag{
-			Name:        "dry-run",
-			Usage:       "If set, the command will not create any symlinks.",
-			Value:       false,
-			Destination: &cfg.dryRun,
-			Sources:     cli.EnvVars("DRY_RUN"),
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "dev-char-path",
+				Usage:       "The path at which the symlinks will be created. Symlinks will be created as `DEV_CHAR`/MAJOR:MINOR where MAJOR and MINOR are the major and minor numbers of a corresponding device node.",
+				Value:       defaultDevCharPath,
+				Destination: &cfg.devCharPath,
+				Sources:     cli.EnvVars("DEV_CHAR_PATH"),
+			},
+			&cli.StringFlag{
+				Name:        "driver-root",
+				Usage:       "The path to the driver root. `DRIVER_ROOT`/dev is searched for NVIDIA device nodes.",
+				Value:       "/",
+				Destination: &cfg.driverRoot,
+				Sources:     cli.EnvVars("NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"),
+			},
+			&cli.BoolFlag{
+				Name:        "create-all",
+				Usage:       "Create all possible /dev/char symlinks instead of limiting these to existing device nodes.",
+				Destination: &cfg.createAll,
+				Sources:     cli.EnvVars("CREATE_ALL"),
+			},
+			&cli.BoolFlag{
+				Name:        "load-kernel-modules",
+				Usage:       "Load the NVIDIA kernel modules before creating symlinks. This is only applicable when --create-all is set.",
+				Destination: &cfg.loadKernelModules,
+				Sources:     cli.EnvVars("LOAD_KERNEL_MODULES"),
+			},
+			&cli.BoolFlag{
+				Name:        "create-device-nodes",
+				Usage:       "Create the NVIDIA control device nodes in the driver root if they do not exist. This is only applicable when --create-all is set",
+				Destination: &cfg.createDeviceNodes,
+				Sources:     cli.EnvVars("CREATE_DEVICE_NODES"),
+			},
+			&cli.BoolFlag{
+				Name:        "dry-run",
+				Usage:       "If set, the command will not create any symlinks.",
+				Value:       false,
+				Destination: &cfg.dryRun,
+				Sources:     cli.EnvVars("DRY_RUN"),
+			},
 		},
 	}
 

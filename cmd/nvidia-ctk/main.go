@@ -77,22 +77,20 @@ func main() {
 			system.NewCommand(logger),
 			config.NewCommand(logger),
 		},
-	}
-
-	// Setup the flags for this command
-	c.Flags = []cli.Flag{
-		&cli.BoolFlag{
-			Name:        "debug",
-			Aliases:     []string{"d"},
-			Usage:       "Enable debug-level logging",
-			Destination: &opts.Debug,
-			Sources:     cli.EnvVars("NVIDIA_CTK_DEBUG"),
-		},
-		&cli.BoolFlag{
-			Name:        "quiet",
-			Usage:       "Suppress all output except for errors; overrides --debug",
-			Destination: &opts.Quiet,
-			Sources:     cli.EnvVars("NVIDIA_CTK_QUIET"),
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:        "debug",
+				Aliases:     []string{"d"},
+				Usage:       "Enable debug-level logging",
+				Destination: &opts.Debug,
+				Sources:     cli.EnvVars("NVIDIA_CTK_DEBUG"),
+			},
+			&cli.BoolFlag{
+				Name:        "quiet",
+				Usage:       "Suppress all output except for errors; overrides --debug",
+				Destination: &opts.Quiet,
+				Sources:     cli.EnvVars("NVIDIA_CTK_QUIET"),
+			},
 		},
 	}
 

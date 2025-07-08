@@ -93,116 +93,115 @@ func (m command) build() *cli.Command {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return m.run(&opts)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringSliceFlag{
-			Name:        "config-search-path",
-			Usage:       "Specify the path to search for config files when discovering the entities that should be included in the CDI specification.",
-			Destination: &opts.configSearchPaths,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CONFIG_SEARCH_PATHS"),
-		},
-		&cli.StringFlag{
-			Name:        "output",
-			Usage:       "Specify the file to output the generated CDI specification to. If this is '' the specification is output to STDOUT",
-			Destination: &opts.output,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_OUTPUT_FILE_PATH"),
-		},
-		&cli.StringFlag{
-			Name:        "format",
-			Usage:       "The output format for the generated spec [json | yaml]. This overrides the format defined by the output file extension (if specified).",
-			Value:       spec.FormatYAML,
-			Destination: &opts.format,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_OUTPUT_FORMAT"),
-		},
-		&cli.StringFlag{
-			Name:    "mode",
-			Aliases: []string{"discovery-mode"},
-			Usage: "The mode to use when discovering the available entities. " +
-				"One of [" + strings.Join(nvcdi.AllModes[string](), " | ") + "]. " +
-				"If mode is set to 'auto' the mode will be determined based on the system configuration.",
-			Value:       string(nvcdi.ModeAuto),
-			Destination: &opts.mode,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_MODE"),
-		},
-		&cli.StringFlag{
-			Name:        "dev-root",
-			Usage:       "Specify the root where `/dev` is located. If this is not specified, the driver-root is assumed.",
-			Destination: &opts.devRoot,
-			Sources:     cli.EnvVars("NVIDIA_CTK_DEV_ROOT"),
-		},
-		&cli.StringSliceFlag{
-			Name:        "device-name-strategy",
-			Usage:       "Specify the strategy for generating device names. If this is specified multiple times, the devices will be duplicated for each strategy. One of [index | uuid | type-index]",
-			Value:       []string{nvcdi.DeviceNameStrategyIndex, nvcdi.DeviceNameStrategyUUID},
-			Destination: &opts.deviceNameStrategies,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_DEVICE_NAME_STRATEGIES"),
-		},
-		&cli.StringFlag{
-			Name:        "driver-root",
-			Usage:       "Specify the NVIDIA GPU driver root to use when discovering the entities that should be included in the CDI specification.",
-			Destination: &opts.driverRoot,
-			Sources:     cli.EnvVars("NVIDIA_CTK_DRIVER_ROOT"),
-		},
-		&cli.StringSliceFlag{
-			Name:        "library-search-path",
-			Usage:       "Specify the path to search for libraries when discovering the entities that should be included in the CDI specification.\n\tNote: This option only applies to CSV mode.",
-			Destination: &opts.librarySearchPaths,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_LIBRARY_SEARCH_PATHS"),
-		},
-		&cli.StringFlag{
-			Name:    "nvidia-cdi-hook-path",
-			Aliases: []string{"nvidia-ctk-path"},
-			Usage: "Specify the path to use for the nvidia-cdi-hook in the generated CDI specification. " +
-				"If not specified, the PATH will be searched for `nvidia-cdi-hook`. " +
-				"NOTE: That if this is specified as `nvidia-ctk`, the PATH will be searched for `nvidia-ctk` instead.",
-			Destination: &opts.nvidiaCDIHookPath,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_HOOK_PATH"),
-		},
-		&cli.StringFlag{
-			Name:        "ldconfig-path",
-			Usage:       "Specify the path to use for ldconfig in the generated CDI specification",
-			Destination: &opts.ldconfigPath,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_LDCONFIG_PATH"),
-		},
-		&cli.StringFlag{
-			Name:        "vendor",
-			Aliases:     []string{"cdi-vendor"},
-			Usage:       "the vendor string to use for the generated CDI specification.",
-			Value:       "nvidia.com",
-			Destination: &opts.vendor,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_VENDOR"),
-		},
-		&cli.StringFlag{
-			Name:        "class",
-			Aliases:     []string{"cdi-class"},
-			Usage:       "the class string to use for the generated CDI specification.",
-			Value:       "gpu",
-			Destination: &opts.class,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CLASS"),
-		},
-		&cli.StringSliceFlag{
-			Name:        "csv.file",
-			Usage:       "The path to the list of CSV files to use when generating the CDI specification in CSV mode.",
-			Value:       csv.DefaultFileList(),
-			Destination: &opts.csv.files,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CSV_FILES"),
-		},
-		&cli.StringSliceFlag{
-			Name:        "csv.ignore-pattern",
-			Usage:       "specify a pattern the CSV mount specifications.",
-			Destination: &opts.csv.ignorePatterns,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CSV_IGNORE_PATTERNS"),
-		},
-		&cli.StringSliceFlag{
-			Name:    "disable-hook",
-			Aliases: []string{"disable-hooks"},
-			Usage: "specify a specific hook to skip when generating CDI " +
-				"specifications. This can be specified multiple times and the " +
-				"special hook name 'all' can be used ensure that the generated " +
-				"CDI specification does not include any hooks.",
-			Destination: &opts.disabledHooks,
-			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_DISABLED_HOOKS"),
+		Flags: []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:        "config-search-path",
+				Usage:       "Specify the path to search for config files when discovering the entities that should be included in the CDI specification.",
+				Destination: &opts.configSearchPaths,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CONFIG_SEARCH_PATHS"),
+			},
+			&cli.StringFlag{
+				Name:        "output",
+				Usage:       "Specify the file to output the generated CDI specification to. If this is '' the specification is output to STDOUT",
+				Destination: &opts.output,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_OUTPUT_FILE_PATH"),
+			},
+			&cli.StringFlag{
+				Name:        "format",
+				Usage:       "The output format for the generated spec [json | yaml]. This overrides the format defined by the output file extension (if specified).",
+				Value:       spec.FormatYAML,
+				Destination: &opts.format,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_OUTPUT_FORMAT"),
+			},
+			&cli.StringFlag{
+				Name:    "mode",
+				Aliases: []string{"discovery-mode"},
+				Usage: "The mode to use when discovering the available entities. " +
+					"One of [" + strings.Join(nvcdi.AllModes[string](), " | ") + "]. " +
+					"If mode is set to 'auto' the mode will be determined based on the system configuration.",
+				Value:       string(nvcdi.ModeAuto),
+				Destination: &opts.mode,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_MODE"),
+			},
+			&cli.StringFlag{
+				Name:        "dev-root",
+				Usage:       "Specify the root where `/dev` is located. If this is not specified, the driver-root is assumed.",
+				Destination: &opts.devRoot,
+				Sources:     cli.EnvVars("NVIDIA_CTK_DEV_ROOT"),
+			},
+			&cli.StringSliceFlag{
+				Name:        "device-name-strategy",
+				Usage:       "Specify the strategy for generating device names. If this is specified multiple times, the devices will be duplicated for each strategy. One of [index | uuid | type-index]",
+				Value:       []string{nvcdi.DeviceNameStrategyIndex, nvcdi.DeviceNameStrategyUUID},
+				Destination: &opts.deviceNameStrategies,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_DEVICE_NAME_STRATEGIES"),
+			},
+			&cli.StringFlag{
+				Name:        "driver-root",
+				Usage:       "Specify the NVIDIA GPU driver root to use when discovering the entities that should be included in the CDI specification.",
+				Destination: &opts.driverRoot,
+				Sources:     cli.EnvVars("NVIDIA_CTK_DRIVER_ROOT"),
+			},
+			&cli.StringSliceFlag{
+				Name:        "library-search-path",
+				Usage:       "Specify the path to search for libraries when discovering the entities that should be included in the CDI specification.\n\tNote: This option only applies to CSV mode.",
+				Destination: &opts.librarySearchPaths,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_LIBRARY_SEARCH_PATHS"),
+			},
+			&cli.StringFlag{
+				Name:    "nvidia-cdi-hook-path",
+				Aliases: []string{"nvidia-ctk-path"},
+				Usage: "Specify the path to use for the nvidia-cdi-hook in the generated CDI specification. " +
+					"If not specified, the PATH will be searched for `nvidia-cdi-hook`. " +
+					"NOTE: That if this is specified as `nvidia-ctk`, the PATH will be searched for `nvidia-ctk` instead.",
+				Destination: &opts.nvidiaCDIHookPath,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_HOOK_PATH"),
+			},
+			&cli.StringFlag{
+				Name:        "ldconfig-path",
+				Usage:       "Specify the path to use for ldconfig in the generated CDI specification",
+				Destination: &opts.ldconfigPath,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_LDCONFIG_PATH"),
+			},
+			&cli.StringFlag{
+				Name:        "vendor",
+				Aliases:     []string{"cdi-vendor"},
+				Usage:       "the vendor string to use for the generated CDI specification.",
+				Value:       "nvidia.com",
+				Destination: &opts.vendor,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_VENDOR"),
+			},
+			&cli.StringFlag{
+				Name:        "class",
+				Aliases:     []string{"cdi-class"},
+				Usage:       "the class string to use for the generated CDI specification.",
+				Value:       "gpu",
+				Destination: &opts.class,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CLASS"),
+			},
+			&cli.StringSliceFlag{
+				Name:        "csv.file",
+				Usage:       "The path to the list of CSV files to use when generating the CDI specification in CSV mode.",
+				Value:       csv.DefaultFileList(),
+				Destination: &opts.csv.files,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CSV_FILES"),
+			},
+			&cli.StringSliceFlag{
+				Name:        "csv.ignore-pattern",
+				Usage:       "specify a pattern the CSV mount specifications.",
+				Destination: &opts.csv.ignorePatterns,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CSV_IGNORE_PATTERNS"),
+			},
+			&cli.StringSliceFlag{
+				Name:    "disable-hook",
+				Aliases: []string{"disable-hooks"},
+				Usage: "specify a specific hook to skip when generating CDI " +
+					"specifications. This can be specified multiple times and the " +
+					"special hook name 'all' can be used ensure that the generated " +
+					"CDI specification does not include any hooks.",
+				Destination: &opts.disabledHooks,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_DISABLED_HOOKS"),
+			},
 		},
 	}
 

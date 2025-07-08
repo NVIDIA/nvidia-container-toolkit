@@ -54,14 +54,13 @@ func (m command) build() *cli.Command {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return m.run(cmd, &opts)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "output",
-			Aliases:     []string{"o"},
-			Usage:       "Specify the output file to write to; If not specified, the output is written to stdout",
-			Destination: &opts.Output,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "output",
+				Aliases:     []string{"o"},
+				Usage:       "Specify the output file to write to; If not specified, the output is written to stdout",
+				Destination: &opts.Output,
+			},
 		},
 	}
 

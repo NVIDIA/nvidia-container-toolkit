@@ -65,23 +65,22 @@ func (m command) build() *cli.Command {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return m.run(cmd, &cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringSliceFlag{
-			Name:        "path",
-			Usage:       "Specify a path to apply the specified mode to",
-			Destination: &cfg.paths,
-		},
-		&cli.StringFlag{
-			Name:        "mode",
-			Usage:       "Specify the file mode",
-			Destination: &cfg.modeStr,
-		},
-		&cli.StringFlag{
-			Name:        "container-spec",
-			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
-			Destination: &cfg.containerSpec,
+		Flags: []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:        "path",
+				Usage:       "Specify a path to apply the specified mode to",
+				Destination: &cfg.paths,
+			},
+			&cli.StringFlag{
+				Name:        "mode",
+				Usage:       "Specify the file mode",
+				Destination: &cfg.modeStr,
+			},
+			&cli.StringFlag{
+				Name:        "container-spec",
+				Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
+				Destination: &cfg.containerSpec,
+			},
 		},
 	}
 
