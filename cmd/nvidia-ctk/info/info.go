@@ -42,7 +42,5 @@ func (m command) build() *cli.Command {
 		Usage: "Provide information about the system",
 	}
 
-	info.Commands = []*cli.Command{}
-
 	return &info
 }

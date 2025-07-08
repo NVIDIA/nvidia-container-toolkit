@@ -41,11 +41,10 @@ func (m command) build() *cli.Command {
 	system := cli.Command{
 		Name:  "system",
 		Usage: "A collection of system-related utilities for the NVIDIA Container Toolkit",
-	}
-
-	system.Commands = []*cli.Command{
-		devchar.NewCommand(m.logger),
-		devicenodes.NewCommand(m.logger),
+		Commands: []*cli.Command{
+			devchar.NewCommand(m.logger),
+			devicenodes.NewCommand(m.logger),
+		},
 	}
 
 	return &system

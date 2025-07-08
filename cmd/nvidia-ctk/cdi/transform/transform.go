@@ -40,13 +40,12 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "transform",
 		Usage: "Apply a transform to a CDI specification",
+		Commands: []*cli.Command{
+			root.NewCommand(m.logger),
+		},
 	}
 
 	c.Flags = []cli.Flag{}
-
-	c.Commands = []*cli.Command{
-		root.NewCommand(m.logger),
-	}
 
 	return &c
 }

@@ -40,10 +40,9 @@ func (m runtimeCommand) build() *cli.Command {
 	runtime := cli.Command{
 		Name:  "runtime",
 		Usage: "A collection of runtime-related utilities for the NVIDIA Container Toolkit",
-	}
-
-	runtime.Commands = []*cli.Command{
-		configure.NewCommand(m.logger),
+		Commands: []*cli.Command{
+			configure.NewCommand(m.logger),
+		},
 	}
 
 	return &runtime
