@@ -17,7 +17,7 @@
 package transform
 
 import (
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/transform/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -40,12 +40,9 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "transform",
 		Usage: "Apply a transform to a CDI specification",
-	}
-
-	c.Flags = []cli.Flag{}
-
-	c.Subcommands = []*cli.Command{
-		root.NewCommand(m.logger),
+		Commands: []*cli.Command{
+			root.NewCommand(m.logger),
+		},
 	}
 
 	return &c

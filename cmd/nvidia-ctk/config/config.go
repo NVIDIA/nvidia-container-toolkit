@@ -17,13 +17,14 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	createdefault "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/create-default"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/flags"
@@ -39,7 +40,7 @@ type command struct {
 type options struct {
 	flags.Options
 	setListSeparator string
-	sets             cli.StringSlice
+	sets             []string
 }
 
 // NewCommand constructs an config command with the specified logger
@@ -56,69 +57,69 @@ func (m command) build() *cli.Command {
 
 	// Create the 'config' command
 	c := cli.Command{
-		Name:  "config",
-		Usage: "Interact with the NVIDIA Container Toolkit configuration",
-		Before: func(ctx *cli.Context) error {
-			return validateFlags(ctx, &opts)
+		Name:                   "config",
+		Usage:                  "Interact with the NVIDIA Container Toolkit configuration",
+		UseShortOptionHandling: true,
+		EnableShellCompletion:  true,
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, m.validateFlags(&opts)
 		},
-		Action: func(ctx *cli.Context) error {
-			return run(ctx, &opts)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return m.run(&opts)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "config-file",
-			Aliases:     []string{"config", "c"},
-			Usage:       "Specify the config file to modify.",
-			Value:       config.GetConfigFilePath(),
-			Destination: &opts.Config,
+		Commands: []*cli.Command{
+			createdefault.NewCommand(m.logger),
 		},
-		&cli.StringSliceFlag{
-			Name: "set",
-			Usage: "Set a config value using the pattern 'key[=value]'. " +
-				"Specifying only 'key' is equivalent to 'key=true' for boolean settings. " +
-				"This flag can be specified multiple times, but only the last value for a specific " +
-				"config option is applied. " +
-				"If the setting represents a list, the elements are colon-separated.",
-			Destination: &opts.sets,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "config-file",
+				Aliases:     []string{"config", "c"},
+				Usage:       "Specify the config file to modify.",
+				Value:       config.GetConfigFilePath(),
+				Destination: &opts.Config,
+			},
+			&cli.StringSliceFlag{
+				Name: "set",
+				Usage: "Set a config value using the pattern 'key[=value]'. " +
+					"Specifying only 'key' is equivalent to 'key=true' for boolean settings. " +
+					"This flag can be specified multiple times, but only the last value for a specific " +
+					"config option is applied. " +
+					"If the setting represents a list, the elements are colon-separated.",
+				Destination: &opts.sets,
+			},
+			&cli.StringFlag{
+				Name:        "set-list-separator",
+				Usage:       "Specify a separator for lists applied using the set command.",
+				Hidden:      true,
+				Value:       ":",
+				Destination: &opts.setListSeparator,
+			},
+			&cli.BoolFlag{
+				Name:        "in-place",
+				Aliases:     []string{"i"},
+				Usage:       "Modify the config file in-place",
+				Destination: &opts.InPlace,
+			},
+			&cli.StringFlag{
+				Name:        "output",
+				Aliases:     []string{"o"},
+				Usage:       "Specify the output file to write to; If not specified, the output is written to stdout",
+				Destination: &opts.Output,
+			},
 		},
-		&cli.StringFlag{
-			Name:        "set-list-separator",
-			Usage:       "Specify a separator for lists applied using the set command.",
-			Hidden:      true,
-			Value:       ":",
-			Destination: &opts.setListSeparator,
-		},
-		&cli.BoolFlag{
-			Name:        "in-place",
-			Aliases:     []string{"i"},
-			Usage:       "Modify the config file in-place",
-			Destination: &opts.InPlace,
-		},
-		&cli.StringFlag{
-			Name:        "output",
-			Aliases:     []string{"o"},
-			Usage:       "Specify the output file to write to; If not specified, the output is written to stdout",
-			Destination: &opts.Output,
-		},
-	}
-
-	c.Subcommands = []*cli.Command{
-		createdefault.NewCommand(m.logger),
 	}
 
 	return &c
 }
 
-func validateFlags(c *cli.Context, opts *options) error {
+func (m command) validateFlags(opts *options) error {
 	if opts.setListSeparator == "" {
 		return fmt.Errorf("set-list-separator must be set")
 	}
 	return nil
 }
 
-func run(c *cli.Context, opts *options) error {
+func (m command) run(opts *options) error {
 	cfgToml, err := config.New(
 		config.WithConfigFile(opts.Config),
 	)
@@ -126,7 +127,7 @@ func run(c *cli.Context, opts *options) error {
 		return fmt.Errorf("unable to create config: %v", err)
 	}
 
-	for _, set := range opts.sets.Value() {
+	for _, set := range opts.sets {
 		key, value, err := setFlagToKeyValue(set, opts.setListSeparator)
 		if err != nil {
 			return fmt.Errorf("invalid --set option %v: %w", set, err)

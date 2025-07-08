@@ -22,7 +22,6 @@ import (
 	"os/exec"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/operator"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
@@ -50,27 +49,6 @@ type Options struct {
 	SetAsDefault  bool
 	RestartMode   string
 	HostRootMount string
-}
-
-// ParseArgs parses the command line arguments to the CLI
-func ParseArgs(c *cli.Context, o *Options) error {
-	if o.RuntimeDir != "" {
-		logrus.Debug("Runtime directory already set; ignoring arguments")
-		return nil
-	}
-
-	args := c.Args()
-
-	logrus.Infof("Parsing arguments: %v", args.Slice())
-	if c.NArg() != 1 {
-		return fmt.Errorf("incorrect number of arguments")
-	}
-
-	o.RuntimeDir = args.Get(0)
-
-	logrus.Infof("Successfully parsed arguments")
-
-	return nil
 }
 
 // Configure applies the options to the specified config

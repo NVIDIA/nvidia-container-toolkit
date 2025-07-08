@@ -17,13 +17,14 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 
-	cli "github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/commands"
 )
@@ -44,62 +45,56 @@ func main() {
 	opts := options{}
 
 	// Create the top-level CLI
-	c := cli.NewApp()
-	c.Name = "NVIDIA CDI Hook"
-	c.UseShortOptionHandling = true
-	c.EnableBashCompletion = true
-	c.Usage = "Command to structure files for usage inside a container, called as hooks from a container runtime, defined in a CDI yaml file"
-	c.Version = info.GetVersionString()
-
-	// We set the default action for the `nvidia-cdi-hook` command to issue a
-	// warning and exit with no error.
-	// This means that if an unsupported hook is run, a container will not fail
-	// to launch. An unsupported hook could be the result of a CDI specification
-	// referring to a new hook that is not yet supported by an older NVIDIA
-	// Container Toolkit version or a hook that has been removed in newer
-	// version.
-	c.Action = func(ctx *cli.Context) error {
-		commands.IssueUnsupportedHookWarning(logger, ctx)
-		return nil
-	}
-
-	// Setup the flags for this command
-	c.Flags = []cli.Flag{
-		&cli.BoolFlag{
-			Name:        "debug",
-			Aliases:     []string{"d"},
-			Usage:       "Enable debug-level logging",
-			Destination: &opts.Debug,
-			// TODO: Support for NVIDIA_CDI_DEBUG is deprecated and NVIDIA_CTK_DEBUG should be used instead.
-			EnvVars: []string{"NVIDIA_CTK_DEBUG", "NVIDIA_CDI_DEBUG"},
+	c := cli.Command{
+		Name:    "NVIDIA CDI Hook",
+		Usage:   "Command to structure files for usage inside a container, called as hooks from a container runtime, defined in a CDI yaml file",
+		Version: info.GetVersionString(),
+		// Set log-level for all subcommands
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			logLevel := logrus.InfoLevel
+			if opts.Debug {
+				logLevel = logrus.DebugLevel
+			}
+			if opts.Quiet {
+				logLevel = logrus.ErrorLevel
+			}
+			logger.SetLevel(logLevel)
+			return ctx, nil
 		},
-		&cli.BoolFlag{
-			Name:        "quiet",
-			Usage:       "Suppress all output except for errors; overrides --debug",
-			Destination: &opts.Quiet,
-			// TODO: Support for NVIDIA_CDI_QUIET is deprecated and NVIDIA_CTK_QUIET should be used instead.
-			EnvVars: []string{"NVDIA_CTK_QUIET", "NVIDIA_CDI_QUIET"},
+		// We set the default action for the `nvidia-cdi-hook` command to issue a
+		// warning and exit with no error.
+		// This means that if an unsupported hook is run, a container will not fail
+		// to launch. An unsupported hook could be the result of a CDI specification
+		// referring to a new hook that is not yet supported by an older NVIDIA
+		// Container Toolkit version or a hook that has been removed in newer
+		// version.
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			commands.IssueUnsupportedHookWarning(logger, cmd)
+			return nil
+		},
+		// Define the subcommands
+		Commands: commands.New(logger),
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:        "debug",
+				Aliases:     []string{"d"},
+				Usage:       "Enable debug-level logging",
+				Destination: &opts.Debug,
+				// TODO: Support for NVIDIA_CDI_DEBUG is deprecated and NVIDIA_CTK_DEBUG should be used instead.
+				Sources: cli.EnvVars("NVIDIA_CTK_DEBUG", "NVIDIA_CDI_DEBUG"),
+			},
+			&cli.BoolFlag{
+				Name:        "quiet",
+				Usage:       "Suppress all output except for errors; overrides --debug",
+				Destination: &opts.Quiet,
+				// TODO: Support for NVIDIA_CDI_QUIET is deprecated and NVIDIA_CTK_QUIET should be used instead.
+				Sources: cli.EnvVars("NVIDIA_CTK_QUIET", "NVIDIA_CDI_QUIET"),
+			},
 		},
 	}
-
-	// Set log-level for all subcommands
-	c.Before = func(c *cli.Context) error {
-		logLevel := logrus.InfoLevel
-		if opts.Debug {
-			logLevel = logrus.DebugLevel
-		}
-		if opts.Quiet {
-			logLevel = logrus.ErrorLevel
-		}
-		logger.SetLevel(logLevel)
-		return nil
-	}
-
-	// Define the subcommands
-	c.Commands = commands.New(logger)
 
 	// Run the CLI
-	err := c.Run(os.Args)
+	err := c.Run(context.Background(), os.Args)
 	if err != nil {
 		logger.Errorf("%v", err)
 		os.Exit(1)

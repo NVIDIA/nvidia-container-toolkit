@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sys/unix"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime"
@@ -57,7 +58,7 @@ func main() {
 
 	// Run the CLI
 	logger.Infof("Starting %v", c.Name)
-	if err := c.Run(os.Args); err != nil {
+	if err := c.Run(context.Background(), os.Args); err != nil {
 		logger.Errorf("error running %v: %v", c.Name, err)
 		os.Exit(1)
 	}
@@ -73,86 +74,86 @@ type app struct {
 }
 
 // NewApp creates the CLI app fro the specified options.
-func NewApp(logger logger.Interface) *cli.App {
+func NewApp(logger logger.Interface) *cli.Command {
 	a := app{
 		logger: logger,
 	}
 	return a.build()
 }
 
-func (a app) build() *cli.App {
+func (a app) build() *cli.Command {
 	options := options{
 		toolkitOptions: toolkit.Options{},
 	}
 	// Create the top-level CLI
-	c := cli.NewApp()
-	c.Name = "nvidia-ctk-installer"
-	c.Usage = "Install the NVIDIA Container Toolkit and configure the specified runtime to use the `nvidia` runtime."
-	c.Version = info.GetVersionString()
-	c.Before = func(ctx *cli.Context) error {
-		return a.Before(ctx, &options)
-	}
-	c.Action = func(ctx *cli.Context) error {
-		return a.Run(ctx, &options)
+	c := cli.Command{
+		Name:    "nvidia-ctk-installer",
+		Usage:   "Install the NVIDIA Container Toolkit and configure the specified runtime to use the `nvidia` runtime.",
+		Version: info.GetVersionString(),
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, a.Before(cmd, &options)
+		},
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			return a.Run(cmd, &options)
+		},
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:        "no-daemon",
+				Aliases:     []string{"n"},
+				Usage:       "terminate immediately after setting up the runtime. Note that no cleanup will be performed",
+				Destination: &options.noDaemon,
+				Sources:     cli.EnvVars("NO_DAEMON"),
+			},
+			&cli.StringFlag{
+				Name:        "runtime",
+				Aliases:     []string{"r"},
+				Usage:       "the runtime to setup on this node. One of {'docker', 'crio', 'containerd'}",
+				Value:       defaultRuntime,
+				Destination: &options.runtime,
+				Sources:     cli.EnvVars("RUNTIME"),
+			},
+			&cli.StringFlag{
+				Name:    "toolkit-install-dir",
+				Aliases: []string{"root"},
+				Usage: "The directory where the NVIDIA Container Toolkit is to be installed. " +
+					"The components of the toolkit will be installed to `ROOT`/toolkit. " +
+					"Note that in the case of a containerized installer, this is the path in the container and it is " +
+					"recommended that this match the path on the host.",
+				Value:       defaultToolkitInstallDir,
+				Destination: &options.toolkitInstallDir,
+				Sources:     cli.EnvVars("TOOLKIT_INSTALL_DIR", "ROOT"),
+			},
+			&cli.StringFlag{
+				Name:        "toolkit-source-root",
+				Usage:       "The folder where the required toolkit artifacts can be found. If this is not specified, the path /artifacts/{{ .ToolkitPackageType }} is used where ToolkitPackageType is the resolved package type",
+				Destination: &options.sourceRoot,
+				Sources:     cli.EnvVars("TOOLKIT_SOURCE_ROOT"),
+			},
+			&cli.StringFlag{
+				Name:        "toolkit-package-type",
+				Usage:       "specify the package type to use for the toolkit. One of ['deb', 'rpm', 'auto', '']. If 'auto' or '' are used, the type is inferred automatically.",
+				Value:       "auto",
+				Destination: &options.packageType,
+				Sources:     cli.EnvVars("TOOLKIT_PACKAGE_TYPE"),
+			},
+			&cli.StringFlag{
+				Name:        "pid-file",
+				Value:       defaultPidFile,
+				Usage:       "the path to a toolkit.pid file to ensure that only a single configuration instance is running",
+				Destination: &options.pidFile,
+				Sources:     cli.EnvVars("TOOLKIT_PID_FILE", "PID_FILE"),
+			},
+		},
 	}
 
-	// Setup flags for the CLI
-	c.Flags = []cli.Flag{
-		&cli.BoolFlag{
-			Name:        "no-daemon",
-			Aliases:     []string{"n"},
-			Usage:       "terminate immediately after setting up the runtime. Note that no cleanup will be performed",
-			Destination: &options.noDaemon,
-			EnvVars:     []string{"NO_DAEMON"},
-		},
-		&cli.StringFlag{
-			Name:        "runtime",
-			Aliases:     []string{"r"},
-			Usage:       "the runtime to setup on this node. One of {'docker', 'crio', 'containerd'}",
-			Value:       defaultRuntime,
-			Destination: &options.runtime,
-			EnvVars:     []string{"RUNTIME"},
-		},
-		&cli.StringFlag{
-			Name:    "toolkit-install-dir",
-			Aliases: []string{"root"},
-			Usage: "The directory where the NVIDIA Container Toolkit is to be installed. " +
-				"The components of the toolkit will be installed to `ROOT`/toolkit. " +
-				"Note that in the case of a containerized installer, this is the path in the container and it is " +
-				"recommended that this match the path on the host.",
-			Value:       defaultToolkitInstallDir,
-			Destination: &options.toolkitInstallDir,
-			EnvVars:     []string{"TOOLKIT_INSTALL_DIR", "ROOT"},
-		},
-		&cli.StringFlag{
-			Name:        "toolkit-source-root",
-			Usage:       "The folder where the required toolkit artifacts can be found. If this is not specified, the path /artifacts/{{ .ToolkitPackageType }} is used where ToolkitPackageType is the resolved package type",
-			Destination: &options.sourceRoot,
-			EnvVars:     []string{"TOOLKIT_SOURCE_ROOT"},
-		},
-		&cli.StringFlag{
-			Name:        "toolkit-package-type",
-			Usage:       "specify the package type to use for the toolkit. One of ['deb', 'rpm', 'auto', '']. If 'auto' or '' are used, the type is inferred automatically.",
-			Value:       "auto",
-			Destination: &options.packageType,
-			EnvVars:     []string{"TOOLKIT_PACKAGE_TYPE"},
-		},
-		&cli.StringFlag{
-			Name:        "pid-file",
-			Value:       defaultPidFile,
-			Usage:       "the path to a toolkit.pid file to ensure that only a single configuration instance is running",
-			Destination: &options.pidFile,
-			EnvVars:     []string{"TOOLKIT_PID_FILE", "PID_FILE"},
-		},
-	}
-
+	// Add the additional flags specific to the toolkit and runtime config.
 	c.Flags = append(c.Flags, toolkit.Flags(&options.toolkitOptions)...)
 	c.Flags = append(c.Flags, runtime.Flags(&options.runtimeOptions)...)
 
-	return c
+	return &c
 }
 
-func (a *app) Before(c *cli.Context, o *options) error {
+func (a *app) Before(c *cli.Command, o *options) error {
 	if o.sourceRoot == "" {
 		sourceRoot, err := a.resolveSourceRoot(o.runtimeOptions.HostRootMount, o.packageType)
 		if err != nil {
@@ -170,7 +171,7 @@ func (a *app) Before(c *cli.Context, o *options) error {
 	return a.validateFlags(c, o)
 }
 
-func (a *app) validateFlags(c *cli.Context, o *options) error {
+func (a *app) validateFlags(c *cli.Command, o *options) error {
 	if o.toolkitInstallDir == "" {
 		return fmt.Errorf("the install root must be specified")
 	}
@@ -193,21 +194,21 @@ func (a *app) validateFlags(c *cli.Context, o *options) error {
 // Run installs the NVIDIA Container Toolkit and updates the requested runtime.
 // If the application is run as a daemon, the application waits and unconfigures
 // the runtime on termination.
-func (a *app) Run(c *cli.Context, o *options) error {
+func (a *app) Run(c *cli.Command, o *options) error {
 	err := a.initialize(o.pidFile)
 	if err != nil {
 		return fmt.Errorf("unable to initialize: %v", err)
 	}
 	defer a.shutdown(o.pidFile)
 
-	if len(o.toolkitOptions.ContainerRuntimeRuntimes.Value()) == 0 {
+	if len(o.toolkitOptions.ContainerRuntimeRuntimes) == 0 {
 		lowlevelRuntimePaths, err := runtime.GetLowlevelRuntimePaths(&o.runtimeOptions, o.runtime)
 		if err != nil {
 			return fmt.Errorf("unable to determine runtime options: %w", err)
 		}
 		lowlevelRuntimePaths = append(lowlevelRuntimePaths, defaultLowLevelRuntimes...)
 
-		o.toolkitOptions.ContainerRuntimeRuntimes = *cli.NewStringSlice(lowlevelRuntimePaths...)
+		o.toolkitOptions.ContainerRuntimeRuntimes = lowlevelRuntimePaths
 	}
 
 	err = a.toolkit.Install(c, &o.toolkitOptions)

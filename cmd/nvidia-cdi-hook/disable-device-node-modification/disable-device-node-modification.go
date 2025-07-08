@@ -20,13 +20,14 @@ package disabledevicenodemodification
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
@@ -47,31 +48,30 @@ func NewCommand(logger logger.Interface) *cli.Command {
 	c := cli.Command{
 		Name:  "disable-device-node-modification",
 		Usage: "Ensure that the /proc/driver/nvidia/params file present in the container does not allow device node modifications.",
-		Before: func(c *cli.Context) error {
-			return validateFlags(c, &cfg)
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, validateFlags(cmd, &cfg)
 		},
-		Action: func(c *cli.Context) error {
-			return run(c, &cfg)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return run(ctx, cmd, &cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "container-spec",
-			Hidden:      true,
-			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
-			Destination: &cfg.containerSpec,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "container-spec",
+				Hidden:      true,
+				Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
+				Destination: &cfg.containerSpec,
+			},
 		},
 	}
 
 	return &c
 }
 
-func validateFlags(c *cli.Context, cfg *options) error {
+func validateFlags(_ *cli.Command, _ *options) error {
 	return nil
 }
 
-func run(_ *cli.Context, cfg *options) error {
+func run(_ context.Context, _ *cli.Command, cfg *options) error {
 	modifiedParamsFileContents, err := getModifiedNVIDIAParamsContents()
 	if err != nil {
 		return fmt.Errorf("failed to get modified params file contents: %w", err)

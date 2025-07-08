@@ -17,13 +17,14 @@
 package cudacompat
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
@@ -63,37 +64,36 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "enable-cuda-compat",
 		Usage: "This hook ensures that the folder containing the CUDA compat libraries is added to the ldconfig search path if required.",
-		Before: func(c *cli.Context) error {
-			return m.validateFlags(c, &cfg)
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, m.validateFlags(cmd, &cfg)
 		},
-		Action: func(c *cli.Context) error {
-			return m.run(c, &cfg)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return m.run(cmd, &cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "host-driver-version",
-			Usage:       "Specify the host driver version. If the CUDA compat libraries detected in the container do not have a higher MAJOR version, the hook is a no-op.",
-			Destination: &cfg.hostDriverVersion,
-		},
-		&cli.StringFlag{
-			Name:        "container-spec",
-			Hidden:      true,
-			Category:    "testing-only",
-			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
-			Destination: &cfg.containerSpec,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "host-driver-version",
+				Usage:       "Specify the host driver version. If the CUDA compat libraries detected in the container do not have a higher MAJOR version, the hook is a no-op.",
+				Destination: &cfg.hostDriverVersion,
+			},
+			&cli.StringFlag{
+				Name:        "container-spec",
+				Hidden:      true,
+				Category:    "testing-only",
+				Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
+				Destination: &cfg.containerSpec,
+			},
 		},
 	}
 
 	return &c
 }
 
-func (m command) validateFlags(_ *cli.Context, cfg *options) error {
+func (m command) validateFlags(cmd *cli.Command, cfg *options) error {
 	return nil
 }
 
-func (m command) run(_ *cli.Context, cfg *options) error {
+func (m command) run(_ *cli.Command, cfg *options) error {
 	if cfg.hostDriverVersion == "" {
 		return nil
 	}
