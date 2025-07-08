@@ -67,6 +67,9 @@ func (m command) build() *cli.Command {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return m.run(&opts)
 		},
+		Commands: []*cli.Command{
+			createdefault.NewCommand(m.logger),
+		},
 	}
 
 	c.Flags = []cli.Flag{
@@ -105,10 +108,6 @@ func (m command) build() *cli.Command {
 			Usage:       "Specify the output file to write to; If not specified, the output is written to stdout",
 			Destination: &opts.Output,
 		},
-	}
-
-	c.Commands = []*cli.Command{
-		createdefault.NewCommand(m.logger),
 	}
 
 	return &c

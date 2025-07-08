@@ -49,8 +49,6 @@ func main() {
 		Name:    "NVIDIA CDI Hook",
 		Usage:   "Command to structure files for usage inside a container, called as hooks from a container runtime, defined in a CDI yaml file",
 		Version: info.GetVersionString(),
-		// Define the subcommands
-		Commands: commands.New(logger),
 		// Set log-level for all subcommands
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			logLevel := logrus.InfoLevel
@@ -74,6 +72,8 @@ func main() {
 			commands.IssueUnsupportedHookWarning(logger, cmd)
 			return nil
 		},
+		// Define the subcommands
+		Commands: commands.New(logger),
 	}
 
 	// Setup the flags for this command

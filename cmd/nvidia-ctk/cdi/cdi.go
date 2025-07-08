@@ -43,12 +43,11 @@ func (m command) build() *cli.Command {
 	cdi := cli.Command{
 		Name:  "cdi",
 		Usage: "Provide tools for interacting with Container Device Interface specifications",
-	}
-
-	cdi.Commands = []*cli.Command{
-		generate.NewCommand(m.logger),
-		transform.NewCommand(m.logger),
-		list.NewCommand(m.logger),
+		Commands: []*cli.Command{
+			generate.NewCommand(m.logger),
+			transform.NewCommand(m.logger),
+			list.NewCommand(m.logger),
+		},
 	}
 
 	return &cdi

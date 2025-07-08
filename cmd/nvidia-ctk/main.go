@@ -68,6 +68,15 @@ func main() {
 			logger.SetLevel(logLevel)
 			return ctx, nil
 		},
+		// Define the subcommands
+		Commands: []*cli.Command{
+			hook.NewCommand(logger),
+			runtime.NewCommand(logger),
+			infoCLI.NewCommand(logger),
+			cdi.NewCommand(logger),
+			system.NewCommand(logger),
+			config.NewCommand(logger),
+		},
 	}
 
 	// Setup the flags for this command
@@ -85,16 +94,6 @@ func main() {
 			Destination: &opts.Quiet,
 			Sources:     cli.EnvVars("NVIDIA_CTK_QUIET"),
 		},
-	}
-
-	// Define the subcommands
-	c.Commands = []*cli.Command{
-		hook.NewCommand(logger),
-		runtime.NewCommand(logger),
-		infoCLI.NewCommand(logger),
-		cdi.NewCommand(logger),
-		system.NewCommand(logger),
-		config.NewCommand(logger),
 	}
 
 	// Run the CLI

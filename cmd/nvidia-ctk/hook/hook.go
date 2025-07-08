@@ -54,9 +54,8 @@ func (m hookCommand) build() *cli.Command {
 			commands.IssueUnsupportedHookWarning(m.logger, cmd)
 			return nil
 		},
+		Commands: commands.New(m.logger),
 	}
-
-	hook.Commands = commands.New(m.logger)
 
 	return &hook
 }
