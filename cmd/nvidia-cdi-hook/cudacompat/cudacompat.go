@@ -70,20 +70,19 @@ func (m command) build() *cli.Command {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return m.run(cmd, &cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "host-driver-version",
-			Usage:       "Specify the host driver version. If the CUDA compat libraries detected in the container do not have a higher MAJOR version, the hook is a no-op.",
-			Destination: &cfg.hostDriverVersion,
-		},
-		&cli.StringFlag{
-			Name:        "container-spec",
-			Hidden:      true,
-			Category:    "testing-only",
-			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
-			Destination: &cfg.containerSpec,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "host-driver-version",
+				Usage:       "Specify the host driver version. If the CUDA compat libraries detected in the container do not have a higher MAJOR version, the hook is a no-op.",
+				Destination: &cfg.hostDriverVersion,
+			},
+			&cli.StringFlag{
+				Name:        "container-spec",
+				Hidden:      true,
+				Category:    "testing-only",
+				Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
+				Destination: &cfg.containerSpec,
+			},
 		},
 	}
 

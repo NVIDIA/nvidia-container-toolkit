@@ -96,58 +96,57 @@ func (a app) build() *cli.Command {
 		Action: func(_ context.Context, cmd *cli.Command) error {
 			return a.Run(cmd, &options)
 		},
-	}
-
-	// Setup flags for the CLI
-	c.Flags = []cli.Flag{
-		&cli.BoolFlag{
-			Name:        "no-daemon",
-			Aliases:     []string{"n"},
-			Usage:       "terminate immediately after setting up the runtime. Note that no cleanup will be performed",
-			Destination: &options.noDaemon,
-			Sources:     cli.EnvVars("NO_DAEMON"),
-		},
-		&cli.StringFlag{
-			Name:        "runtime",
-			Aliases:     []string{"r"},
-			Usage:       "the runtime to setup on this node. One of {'docker', 'crio', 'containerd'}",
-			Value:       defaultRuntime,
-			Destination: &options.runtime,
-			Sources:     cli.EnvVars("RUNTIME"),
-		},
-		&cli.StringFlag{
-			Name:    "toolkit-install-dir",
-			Aliases: []string{"root"},
-			Usage: "The directory where the NVIDIA Container Toolkit is to be installed. " +
-				"The components of the toolkit will be installed to `ROOT`/toolkit. " +
-				"Note that in the case of a containerized installer, this is the path in the container and it is " +
-				"recommended that this match the path on the host.",
-			Value:       defaultToolkitInstallDir,
-			Destination: &options.toolkitInstallDir,
-			Sources:     cli.EnvVars("TOOLKIT_INSTALL_DIR", "ROOT"),
-		},
-		&cli.StringFlag{
-			Name:        "toolkit-source-root",
-			Usage:       "The folder where the required toolkit artifacts can be found. If this is not specified, the path /artifacts/{{ .ToolkitPackageType }} is used where ToolkitPackageType is the resolved package type",
-			Destination: &options.sourceRoot,
-			Sources:     cli.EnvVars("TOOLKIT_SOURCE_ROOT"),
-		},
-		&cli.StringFlag{
-			Name:        "toolkit-package-type",
-			Usage:       "specify the package type to use for the toolkit. One of ['deb', 'rpm', 'auto', '']. If 'auto' or '' are used, the type is inferred automatically.",
-			Value:       "auto",
-			Destination: &options.packageType,
-			Sources:     cli.EnvVars("TOOLKIT_PACKAGE_TYPE"),
-		},
-		&cli.StringFlag{
-			Name:        "pid-file",
-			Value:       defaultPidFile,
-			Usage:       "the path to a toolkit.pid file to ensure that only a single configuration instance is running",
-			Destination: &options.pidFile,
-			Sources:     cli.EnvVars("TOOLKIT_PID_FILE", "PID_FILE"),
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:        "no-daemon",
+				Aliases:     []string{"n"},
+				Usage:       "terminate immediately after setting up the runtime. Note that no cleanup will be performed",
+				Destination: &options.noDaemon,
+				Sources:     cli.EnvVars("NO_DAEMON"),
+			},
+			&cli.StringFlag{
+				Name:        "runtime",
+				Aliases:     []string{"r"},
+				Usage:       "the runtime to setup on this node. One of {'docker', 'crio', 'containerd'}",
+				Value:       defaultRuntime,
+				Destination: &options.runtime,
+				Sources:     cli.EnvVars("RUNTIME"),
+			},
+			&cli.StringFlag{
+				Name:    "toolkit-install-dir",
+				Aliases: []string{"root"},
+				Usage: "The directory where the NVIDIA Container Toolkit is to be installed. " +
+					"The components of the toolkit will be installed to `ROOT`/toolkit. " +
+					"Note that in the case of a containerized installer, this is the path in the container and it is " +
+					"recommended that this match the path on the host.",
+				Value:       defaultToolkitInstallDir,
+				Destination: &options.toolkitInstallDir,
+				Sources:     cli.EnvVars("TOOLKIT_INSTALL_DIR", "ROOT"),
+			},
+			&cli.StringFlag{
+				Name:        "toolkit-source-root",
+				Usage:       "The folder where the required toolkit artifacts can be found. If this is not specified, the path /artifacts/{{ .ToolkitPackageType }} is used where ToolkitPackageType is the resolved package type",
+				Destination: &options.sourceRoot,
+				Sources:     cli.EnvVars("TOOLKIT_SOURCE_ROOT"),
+			},
+			&cli.StringFlag{
+				Name:        "toolkit-package-type",
+				Usage:       "specify the package type to use for the toolkit. One of ['deb', 'rpm', 'auto', '']. If 'auto' or '' are used, the type is inferred automatically.",
+				Value:       "auto",
+				Destination: &options.packageType,
+				Sources:     cli.EnvVars("TOOLKIT_PACKAGE_TYPE"),
+			},
+			&cli.StringFlag{
+				Name:        "pid-file",
+				Value:       defaultPidFile,
+				Usage:       "the path to a toolkit.pid file to ensure that only a single configuration instance is running",
+				Destination: &options.pidFile,
+				Sources:     cli.EnvVars("TOOLKIT_PID_FILE", "PID_FILE"),
+			},
 		},
 	}
 
+	// Add the additional flags specific to the toolkit and runtime config.
 	c.Flags = append(c.Flags, toolkit.Flags(&options.toolkitOptions)...)
 	c.Flags = append(c.Flags, runtime.Flags(&options.runtimeOptions)...)
 

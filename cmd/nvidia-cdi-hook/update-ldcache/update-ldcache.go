@@ -74,24 +74,23 @@ func (m command) build() *cli.Command {
 		Action: func(_ context.Context, cmd *cli.Command) error {
 			return m.run(cmd, &cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringSliceFlag{
-			Name:        "folder",
-			Usage:       "Specify a folder to add to /etc/ld.so.conf before updating the ld cache",
-			Destination: &cfg.folders,
-		},
-		&cli.StringFlag{
-			Name:        "ldconfig-path",
-			Usage:       "Specify the path to the ldconfig program",
-			Destination: &cfg.ldconfigPath,
-			Value:       "/sbin/ldconfig",
-		},
-		&cli.StringFlag{
-			Name:        "container-spec",
-			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
-			Destination: &cfg.containerSpec,
+		Flags: []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:        "folder",
+				Usage:       "Specify a folder to add to /etc/ld.so.conf before updating the ld cache",
+				Destination: &cfg.folders,
+			},
+			&cli.StringFlag{
+				Name:        "ldconfig-path",
+				Usage:       "Specify the path to the ldconfig program",
+				Destination: &cfg.ldconfigPath,
+				Value:       "/sbin/ldconfig",
+			},
+			&cli.StringFlag{
+				Name:        "container-spec",
+				Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
+				Destination: &cfg.containerSpec,
+			},
 		},
 	}
 

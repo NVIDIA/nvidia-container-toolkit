@@ -69,36 +69,35 @@ func (m command) build() *cli.Command {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return m.run(&opts)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "from",
-			Usage:       "specify the root to be transformed",
-			Destination: &opts.from,
-		},
-		&cli.StringFlag{
-			Name:        "input",
-			Usage:       "Specify the file to read the CDI specification from. If this is '-' the specification is read from STDIN",
-			Value:       "-",
-			Destination: &opts.input,
-		},
-		&cli.StringFlag{
-			Name:        "output",
-			Usage:       "Specify the file to output the generated CDI specification to. If this is '' the specification is output to STDOUT",
-			Destination: &opts.output,
-		},
-		&cli.StringFlag{
-			Name:        "relative-to",
-			Usage:       "specify whether the transform is relative to the host or to the container. One of [ host | container ]",
-			Value:       "host",
-			Destination: &opts.relativeTo,
-		},
-		&cli.StringFlag{
-			Name:        "to",
-			Usage:       "specify the replacement root. If this is the same as the from root, the transform is a no-op.",
-			Value:       "",
-			Destination: &opts.to,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "from",
+				Usage:       "specify the root to be transformed",
+				Destination: &opts.from,
+			},
+			&cli.StringFlag{
+				Name:        "input",
+				Usage:       "Specify the file to read the CDI specification from. If this is '-' the specification is read from STDIN",
+				Value:       "-",
+				Destination: &opts.input,
+			},
+			&cli.StringFlag{
+				Name:        "output",
+				Usage:       "Specify the file to output the generated CDI specification to. If this is '' the specification is output to STDOUT",
+				Destination: &opts.output,
+			},
+			&cli.StringFlag{
+				Name:        "relative-to",
+				Usage:       "specify whether the transform is relative to the host or to the container. One of [ host | container ]",
+				Value:       "host",
+				Destination: &opts.relativeTo,
+			},
+			&cli.StringFlag{
+				Name:        "to",
+				Usage:       "specify the replacement root. If this is the same as the from root, the transform is a no-op.",
+				Value:       "",
+				Destination: &opts.to,
+			},
 		},
 	}
 

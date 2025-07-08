@@ -70,43 +70,42 @@ func (m command) build() *cli.Command {
 		Commands: []*cli.Command{
 			createdefault.NewCommand(m.logger),
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "config-file",
-			Aliases:     []string{"config", "c"},
-			Usage:       "Specify the config file to modify.",
-			Value:       config.GetConfigFilePath(),
-			Destination: &opts.Config,
-		},
-		&cli.StringSliceFlag{
-			Name: "set",
-			Usage: "Set a config value using the pattern 'key[=value]'. " +
-				"Specifying only 'key' is equivalent to 'key=true' for boolean settings. " +
-				"This flag can be specified multiple times, but only the last value for a specific " +
-				"config option is applied. " +
-				"If the setting represents a list, the elements are colon-separated.",
-			Destination: &opts.sets,
-		},
-		&cli.StringFlag{
-			Name:        "set-list-separator",
-			Usage:       "Specify a separator for lists applied using the set command.",
-			Hidden:      true,
-			Value:       ":",
-			Destination: &opts.setListSeparator,
-		},
-		&cli.BoolFlag{
-			Name:        "in-place",
-			Aliases:     []string{"i"},
-			Usage:       "Modify the config file in-place",
-			Destination: &opts.InPlace,
-		},
-		&cli.StringFlag{
-			Name:        "output",
-			Aliases:     []string{"o"},
-			Usage:       "Specify the output file to write to; If not specified, the output is written to stdout",
-			Destination: &opts.Output,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "config-file",
+				Aliases:     []string{"config", "c"},
+				Usage:       "Specify the config file to modify.",
+				Value:       config.GetConfigFilePath(),
+				Destination: &opts.Config,
+			},
+			&cli.StringSliceFlag{
+				Name: "set",
+				Usage: "Set a config value using the pattern 'key[=value]'. " +
+					"Specifying only 'key' is equivalent to 'key=true' for boolean settings. " +
+					"This flag can be specified multiple times, but only the last value for a specific " +
+					"config option is applied. " +
+					"If the setting represents a list, the elements are colon-separated.",
+				Destination: &opts.sets,
+			},
+			&cli.StringFlag{
+				Name:        "set-list-separator",
+				Usage:       "Specify a separator for lists applied using the set command.",
+				Hidden:      true,
+				Value:       ":",
+				Destination: &opts.setListSeparator,
+			},
+			&cli.BoolFlag{
+				Name:        "in-place",
+				Aliases:     []string{"i"},
+				Usage:       "Modify the config file in-place",
+				Destination: &opts.InPlace,
+			},
+			&cli.StringFlag{
+				Name:        "output",
+				Aliases:     []string{"o"},
+				Usage:       "Specify the output file to write to; If not specified, the output is written to stdout",
+				Destination: &opts.Output,
+			},
 		},
 	}
 

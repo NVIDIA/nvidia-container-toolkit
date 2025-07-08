@@ -45,7 +45,5 @@ func (m command) build() *cli.Command {
 		},
 	}
 
-	c.Flags = []cli.Flag{}
-
 	return &c
 }

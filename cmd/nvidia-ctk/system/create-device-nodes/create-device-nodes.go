@@ -63,42 +63,41 @@ func (m command) build() *cli.Command {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return m.run(&opts)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name: "root",
-			// TODO: Remove this alias
-			Aliases: []string{"driver-root"},
-			Usage: "the path to to the root to use to load the kernel modules. This root must be a chrootable path. " +
-				"If device nodes to be created these will be created at `ROOT`/dev unless an alternative path is specified",
-			Value:       "/",
-			Destination: &opts.root,
-			// TODO: Remove the NVIDIA_DRIVER_ROOT and DRIVER_ROOT envvars.
-			Sources: cli.EnvVars("ROOT", "NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"),
-		},
-		&cli.StringFlag{
-			Name:        "dev-root",
-			Usage:       "specify the root where `/dev` is located. If this is not specified, the root is assumed.",
-			Destination: &opts.devRoot,
-			Sources:     cli.EnvVars("NVIDIA_DEV_ROOT", "DEV_ROOT"),
-		},
-		&cli.BoolFlag{
-			Name:        "control-devices",
-			Usage:       "create all control device nodes: nvidiactl, nvidia-modeset, nvidia-uvm, nvidia-uvm-tools",
-			Destination: &opts.control,
-		},
-		&cli.BoolFlag{
-			Name:        "load-kernel-modules",
-			Usage:       "load the NVIDIA Kernel Modules before creating devices nodes",
-			Destination: &opts.loadKernelModules,
-		},
-		&cli.BoolFlag{
-			Name:        "dry-run",
-			Usage:       "if set, the command will not perform any operations",
-			Value:       false,
-			Destination: &opts.dryRun,
-			Sources:     cli.EnvVars("DRY_RUN"),
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name: "root",
+				// TODO: Remove this alias
+				Aliases: []string{"driver-root"},
+				Usage: "the path to to the root to use to load the kernel modules. This root must be a chrootable path. " +
+					"If device nodes to be created these will be created at `ROOT`/dev unless an alternative path is specified",
+				Value:       "/",
+				Destination: &opts.root,
+				// TODO: Remove the NVIDIA_DRIVER_ROOT and DRIVER_ROOT envvars.
+				Sources: cli.EnvVars("ROOT", "NVIDIA_DRIVER_ROOT", "DRIVER_ROOT"),
+			},
+			&cli.StringFlag{
+				Name:        "dev-root",
+				Usage:       "specify the root where `/dev` is located. If this is not specified, the root is assumed.",
+				Destination: &opts.devRoot,
+				Sources:     cli.EnvVars("NVIDIA_DEV_ROOT", "DEV_ROOT"),
+			},
+			&cli.BoolFlag{
+				Name:        "control-devices",
+				Usage:       "create all control device nodes: nvidiactl, nvidia-modeset, nvidia-uvm, nvidia-uvm-tools",
+				Destination: &opts.control,
+			},
+			&cli.BoolFlag{
+				Name:        "load-kernel-modules",
+				Usage:       "load the NVIDIA Kernel Modules before creating devices nodes",
+				Destination: &opts.loadKernelModules,
+			},
+			&cli.BoolFlag{
+				Name:        "dry-run",
+				Usage:       "if set, the command will not perform any operations",
+				Value:       false,
+				Destination: &opts.dryRun,
+				Sources:     cli.EnvVars("DRY_RUN"),
+			},
 		},
 	}
 

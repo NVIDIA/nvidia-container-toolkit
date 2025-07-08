@@ -59,20 +59,19 @@ func (m command) build() *cli.Command {
 		Action: func(_ context.Context, cmd *cli.Command) error {
 			return m.run(cmd, &cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringSliceFlag{
-			Name:        "link",
-			Usage:       "Specify a specific link to create. The link is specified as target::link. If the link exists in the container root, it is removed.",
-			Destination: &cfg.links,
-		},
-		// The following flags are testing-only flags.
-		&cli.StringFlag{
-			Name:        "container-spec",
-			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN. This is only intended for testing.",
-			Destination: &cfg.containerSpec,
-			Hidden:      true,
+		Flags: []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:        "link",
+				Usage:       "Specify a specific link to create. The link is specified as target::link. If the link exists in the container root, it is removed.",
+				Destination: &cfg.links,
+			},
+			// The following flags are testing-only flags.
+			&cli.StringFlag{
+				Name:        "container-spec",
+				Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN. This is only intended for testing.",
+				Destination: &cfg.containerSpec,
+				Hidden:      true,
+			},
 		},
 	}
 

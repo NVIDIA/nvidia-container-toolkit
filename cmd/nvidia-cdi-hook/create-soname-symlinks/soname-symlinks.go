@@ -75,24 +75,23 @@ func (m command) build() *cli.Command {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return m.run(cmd, &cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringSliceFlag{
-			Name:        "folder",
-			Usage:       "Specify a directory to generate soname symlinks in. Can be specified multiple times",
-			Destination: &cfg.folders,
-		},
-		&cli.StringFlag{
-			Name:        "ldconfig-path",
-			Usage:       "Specify the path to ldconfig on the host",
-			Destination: &cfg.ldconfigPath,
-			Value:       "/sbin/ldconfig",
-		},
-		&cli.StringFlag{
-			Name:        "container-spec",
-			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
-			Destination: &cfg.containerSpec,
+		Flags: []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:        "folder",
+				Usage:       "Specify a directory to generate soname symlinks in. Can be specified multiple times",
+				Destination: &cfg.folders,
+			},
+			&cli.StringFlag{
+				Name:        "ldconfig-path",
+				Usage:       "Specify the path to ldconfig on the host",
+				Destination: &cfg.ldconfigPath,
+				Value:       "/sbin/ldconfig",
+			},
+			&cli.StringFlag{
+				Name:        "container-spec",
+				Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
+				Destination: &cfg.containerSpec,
+			},
 		},
 	}
 

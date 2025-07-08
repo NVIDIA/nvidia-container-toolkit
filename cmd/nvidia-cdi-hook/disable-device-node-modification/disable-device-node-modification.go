@@ -54,14 +54,13 @@ func NewCommand(logger logger.Interface) *cli.Command {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return run(ctx, cmd, &cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "container-spec",
-			Hidden:      true,
-			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
-			Destination: &cfg.containerSpec,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "container-spec",
+				Hidden:      true,
+				Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
+				Destination: &cfg.containerSpec,
+			},
 		},
 	}
 
