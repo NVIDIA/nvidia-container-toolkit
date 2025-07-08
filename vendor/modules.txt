@@ -67,6 +67,9 @@ github.com/stretchr/testify/require
 # github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 ## explicit
 github.com/syndtr/gocapability/capability
+# github.com/urfave/cli-altsrc/v3 v3.0.1
+## explicit; go 1.23.2
+github.com/urfave/cli-altsrc/v3
 # github.com/urfave/cli/v3 v3.3.8
 ## explicit; go 1.22
 github.com/urfave/cli/v3

@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/urfave/cli/v3"
+
 	cdi "tags.cncf.io/container-device-interface/pkg/parser"
 
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
@@ -42,6 +43,8 @@ const (
 
 type command struct {
 	logger logger.Interface
+
+	config *configAsValueSource
 }
 
 type options struct {
@@ -70,9 +73,10 @@ type options struct {
 }
 
 // NewCommand constructs a generate-cdi command with the specified logger
-func NewCommand(logger logger.Interface) *cli.Command {
+func NewCommand(logger logger.Interface, configFilePath *string) *cli.Command {
 	c := command{
 		logger: logger,
+		config: New(configFilePath),
 	}
 	return c.build()
 }
@@ -121,7 +125,10 @@ func (m command) build() *cli.Command {
 					"If mode is set to 'auto' the mode will be determined based on the system configuration.",
 				Value:       string(nvcdi.ModeAuto),
 				Destination: &opts.mode,
-				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_MODE"),
+				Sources: cli.NewValueSourceChain(
+					cli.EnvVar("NVIDIA_CTK_CDI_GENERATE_MODE"),
+					m.config.ValueFrom("nvidia-container-runtime.mode"),
+				),
 			},
 			&cli.StringFlag{
 				Name:        "dev-root",
@@ -140,7 +147,10 @@ func (m command) build() *cli.Command {
 				Name:        "driver-root",
 				Usage:       "Specify the NVIDIA GPU driver root to use when discovering the entities that should be included in the CDI specification.",
 				Destination: &opts.driverRoot,
-				Sources:     cli.EnvVars("NVIDIA_CTK_DRIVER_ROOT"),
+				Sources: cli.NewValueSourceChain(
+					cli.EnvVar("NVIDIA_CTK_DRIVER_ROOT"),
+					m.config.ValueFrom("nvidia-container-cli.root"),
+				),
 			},
 			&cli.StringSliceFlag{
 				Name:        "library-search-path",
@@ -161,7 +171,10 @@ func (m command) build() *cli.Command {
 				Name:        "ldconfig-path",
 				Usage:       "Specify the path to use for ldconfig in the generated CDI specification",
 				Destination: &opts.ldconfigPath,
-				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_LDCONFIG_PATH"),
+				Sources: cli.NewValueSourceChain(
+					cli.EnvVar("NVIDIA_CTK_CDI_GENERATE_LDCONFIG_PATH"),
+					m.config.ValueFrom("nvidia-container-cli.ldconfig"),
+				),
 			},
 			&cli.StringFlag{
 				Name:        "vendor",

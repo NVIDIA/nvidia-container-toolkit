@@ -29,6 +29,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
 	cli "github.com/urfave/cli/v3"
 )
@@ -40,6 +41,8 @@ type options struct {
 	Debug bool
 	// Quiet indicates whether the CLI is started in "quiet" mode
 	Quiet bool
+	// Config specifies the path to the config file
+	Config string
 }
 
 func main() {
@@ -66,17 +69,11 @@ func main() {
 				logLevel = logrus.ErrorLevel
 			}
 			logger.SetLevel(logLevel)
+
 			return ctx, nil
 		},
 		// Define the subcommands
-		Commands: []*cli.Command{
-			hook.NewCommand(logger),
-			runtime.NewCommand(logger),
-			infoCLI.NewCommand(logger),
-			cdi.NewCommand(logger),
-			system.NewCommand(logger),
-			config.NewCommand(logger),
-		},
+		Commands: getCommands(logger, &opts.Config),
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:        "debug",
@@ -91,6 +88,12 @@ func main() {
 				Destination: &opts.Quiet,
 				Sources:     cli.EnvVars("NVIDIA_CTK_QUIET"),
 			},
+			&cli.StringFlag{
+				Name:        "config",
+				Usage:       "Path to the config file",
+				Destination: &opts.Config,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CONFIG"),
+			},
 		},
 	}
 
@@ -99,5 +102,16 @@ func main() {
 	if err != nil {
 		logger.Errorf("%v", err)
 		os.Exit(1)
+	}
+}
+
+func getCommands(logger logger.Interface, configFilePath *string) []*cli.Command {
+	return []*cli.Command{
+		hook.NewCommand(logger),
+		runtime.NewCommand(logger),
+		infoCLI.NewCommand(logger),
+		cdi.NewCommand(logger, configFilePath),
+		system.NewCommand(logger),
+		config.NewCommand(logger),
 	}
 }
