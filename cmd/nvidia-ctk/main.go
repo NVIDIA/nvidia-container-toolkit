@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -29,7 +30,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 
-	cli "github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v3"
 )
 
 // options defines the options that can be set for the CLI through config files,
@@ -48,13 +49,14 @@ func main() {
 	opts := options{}
 
 	// Create the top-level CLI
-	c := cli.NewApp()
-	c.DisableSliceFlagSeparator = true
-	c.Name = "NVIDIA Container Toolkit CLI"
-	c.UseShortOptionHandling = true
-	c.EnableBashCompletion = true
-	c.Usage = "Tools to configure the NVIDIA Container Toolkit"
-	c.Version = info.GetVersionString()
+	c := cli.Command{
+		DisableSliceFlagSeparator: true,
+		Name:                      "NVIDIA Container Toolkit CLI",
+		UseShortOptionHandling:    true,
+		EnableShellCompletion:     true,
+		Usage:                     "Tools to configure the NVIDIA Container Toolkit",
+		Version:                   info.GetVersionString(),
+	}
 
 	// Setup the flags for this command
 	c.Flags = []cli.Flag{
@@ -63,18 +65,18 @@ func main() {
 			Aliases:     []string{"d"},
 			Usage:       "Enable debug-level logging",
 			Destination: &opts.Debug,
-			EnvVars:     []string{"NVIDIA_CTK_DEBUG"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_DEBUG"),
 		},
 		&cli.BoolFlag{
 			Name:        "quiet",
 			Usage:       "Suppress all output except for errors; overrides --debug",
 			Destination: &opts.Quiet,
-			EnvVars:     []string{"NVIDIA_CTK_QUIET"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_QUIET"),
 		},
 	}
 
 	// Set log-level for all subcommands
-	c.Before = func(c *cli.Context) error {
+	c.Before = func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 		logLevel := logrus.InfoLevel
 		if opts.Debug {
 			logLevel = logrus.DebugLevel
@@ -83,7 +85,7 @@ func main() {
 			logLevel = logrus.ErrorLevel
 		}
 		logger.SetLevel(logLevel)
-		return nil
+		return ctx, nil
 	}
 
 	// Define the subcommands
@@ -97,7 +99,7 @@ func main() {
 	}
 
 	// Run the CLI
-	err := c.Run(os.Args)
+	err := c.Run(context.Background(), os.Args)
 	if err != nil {
 		logger.Errorf("%v", err)
 		os.Exit(1)

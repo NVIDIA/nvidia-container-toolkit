@@ -17,10 +17,11 @@
 package list
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -31,7 +32,7 @@ type command struct {
 }
 
 type config struct {
-	cdiSpecDirs cli.StringSlice
+	cdiSpecDirs []string
 }
 
 // NewCommand constructs a cdi list command with the specified logger
@@ -50,11 +51,11 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "list",
 		Usage: "List the available CDI devices",
-		Before: func(c *cli.Context) error {
-			return m.validateFlags(c, &cfg)
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, m.validateFlags(&cfg)
 		},
-		Action: func(c *cli.Context) error {
-			return m.run(c, &cfg)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return m.run(&cfg)
 		},
 	}
 
@@ -62,26 +63,26 @@ func (m command) build() *cli.Command {
 		&cli.StringSliceFlag{
 			Name:        "spec-dir",
 			Usage:       "specify the directories to scan for CDI specifications",
-			Value:       cli.NewStringSlice(cdi.DefaultSpecDirs...),
+			Value:       cdi.DefaultSpecDirs,
 			Destination: &cfg.cdiSpecDirs,
-			EnvVars:     []string{"NVIDIA_CTK_CDI_SPEC_DIRS"},
+			Sources:     cli.EnvVars("NVIDIA_CTK_CDI_SPEC_DIRS"),
 		},
 	}
 
 	return &c
 }
 
-func (m command) validateFlags(c *cli.Context, cfg *config) error {
-	if len(cfg.cdiSpecDirs.Value()) == 0 {
+func (m command) validateFlags(cfg *config) error {
+	if len(cfg.cdiSpecDirs) == 0 {
 		return errors.New("at least one CDI specification directory must be specified")
 	}
 	return nil
 }
 
-func (m command) run(c *cli.Context, cfg *config) error {
+func (m command) run(cfg *config) error {
 	registry, err := cdi.NewCache(
 		cdi.WithAutoRefresh(false),
-		cdi.WithSpecDirs(cfg.cdiSpecDirs.Value()...),
+		cdi.WithSpecDirs(cfg.cdiSpecDirs...),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create CDI cache: %v", err)

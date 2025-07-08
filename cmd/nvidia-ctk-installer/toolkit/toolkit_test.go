@@ -25,7 +25,7 @@ import (
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
@@ -153,7 +153,7 @@ containerEdits:
 			)
 			require.NoError(t, ti.ValidateOptions(&options))
 
-			err := ti.Install(&cli.Context{}, &options)
+			err := ti.Install(&cli.Command{}, &options)
 			if tc.expectedError == nil {
 				require.NoError(t, err)
 			} else {

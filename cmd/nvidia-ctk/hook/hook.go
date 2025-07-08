@@ -17,10 +17,12 @@
 package hook
 
 import (
+	"context"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/commands"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 type hookCommand struct {
@@ -48,13 +50,13 @@ func (m hookCommand) build() *cli.Command {
 		// referring to a new hook that is not yet supported by an older NVIDIA
 		// Container Toolkit version or a hook that has been removed in newer
 		// version.
-		Action: func(ctx *cli.Context) error {
-			commands.IssueUnsupportedHookWarning(m.logger, ctx)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			commands.IssueUnsupportedHookWarning(m.logger, cmd)
 			return nil
 		},
 	}
 
-	hook.Subcommands = commands.New(m.logger)
+	hook.Commands = commands.New(m.logger)
 
 	return &hook
 }

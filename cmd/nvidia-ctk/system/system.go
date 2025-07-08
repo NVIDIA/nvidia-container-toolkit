@@ -17,7 +17,7 @@
 package system
 
 import (
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	devchar "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system/create-dev-char-symlinks"
 	devicenodes "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/system/create-device-nodes"
@@ -43,7 +43,7 @@ func (m command) build() *cli.Command {
 		Usage: "A collection of system-related utilities for the NVIDIA Container Toolkit",
 	}
 
-	system.Subcommands = []*cli.Command{
+	system.Commands = []*cli.Command{
 		devchar.NewCommand(m.logger),
 		devicenodes.NewCommand(m.logger),
 	}
