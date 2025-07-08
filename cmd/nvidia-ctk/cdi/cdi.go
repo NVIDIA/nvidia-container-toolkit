@@ -29,7 +29,7 @@ type command struct {
 	logger logger.Interface
 }
 
-// NewCommand constructs an info command with the specified logger
+// NewCommand constructs a cdi command with the specified logger
 func NewCommand(logger logger.Interface) *cli.Command {
 	c := command{
 		logger: logger,
@@ -39,17 +39,17 @@ func NewCommand(logger logger.Interface) *cli.Command {
 
 // build
 func (m command) build() *cli.Command {
-	// Create the 'hook' command
-	hook := cli.Command{
+	// Create the 'cdi' command
+	cdi := cli.Command{
 		Name:  "cdi",
 		Usage: "Provide tools for interacting with Container Device Interface specifications",
 	}
 
-	hook.Subcommands = []*cli.Command{
+	cdi.Commands = []*cli.Command{
 		generate.NewCommand(m.logger),
 		transform.NewCommand(m.logger),
 		list.NewCommand(m.logger),
 	}
 
-	return &hook
+	return &cdi
 }
