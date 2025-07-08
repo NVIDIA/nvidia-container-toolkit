@@ -26,13 +26,15 @@ import (
 )
 
 type command struct {
-	logger logger.Interface
+	logger         logger.Interface
+	configFilePath *string
 }
 
 // NewCommand constructs a cdi command with the specified logger
-func NewCommand(logger logger.Interface) *cli.Command {
+func NewCommand(logger logger.Interface, configFilePath *string) *cli.Command {
 	c := command{
-		logger: logger,
+		logger:         logger,
+		configFilePath: configFilePath,
 	}
 	return c.build()
 }
@@ -44,9 +46,9 @@ func (m command) build() *cli.Command {
 		Name:  "cdi",
 		Usage: "Provide tools for interacting with Container Device Interface specifications",
 		Commands: []*cli.Command{
-			generate.NewCommand(m.logger),
-			transform.NewCommand(m.logger),
+			generate.NewCommand(m.logger, m.configFilePath),
 			list.NewCommand(m.logger),
+			transform.NewCommand(m.logger),
 		},
 	}
 
