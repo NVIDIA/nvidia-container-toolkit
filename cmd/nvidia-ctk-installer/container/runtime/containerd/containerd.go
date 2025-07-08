@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
-	cli "github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
@@ -44,7 +44,7 @@ type Options struct {
 	useLegacyConfig bool
 	runtimeType     string
 
-	ContainerRuntimeModesCDIAnnotationPrefixes cli.StringSlice
+	ContainerRuntimeModesCDIAnnotationPrefixes []string
 
 	runtimeConfigOverrideJSON string
 }
@@ -58,26 +58,26 @@ func Flags(opts *Options) []cli.Flag {
 				"containerd.runtimes.default_runtime config section is used to define the default " +
 				"runtime instead of container.default_runtime_name.",
 			Destination: &opts.useLegacyConfig,
-			EnvVars:     []string{"CONTAINERD_USE_LEGACY_CONFIG"},
+			Sources:     cli.EnvVars("CONTAINERD_USE_LEGACY_CONFIG"),
 		},
 		&cli.StringFlag{
 			Name:        "runtime-type",
 			Usage:       "The runtime_type to use for the configured runtime classes",
 			Value:       defaultRuntmeType,
 			Destination: &opts.runtimeType,
-			EnvVars:     []string{"CONTAINERD_RUNTIME_TYPE"},
+			Sources:     cli.EnvVars("CONTAINERD_RUNTIME_TYPE"),
 		},
 		&cli.StringSliceFlag{
 			Name:        "nvidia-container-runtime-modes.cdi.annotation-prefixes",
 			Destination: &opts.ContainerRuntimeModesCDIAnnotationPrefixes,
-			EnvVars:     []string{"NVIDIA_CONTAINER_RUNTIME_MODES_CDI_ANNOTATION_PREFIXES"},
+			Sources:     cli.EnvVars("NVIDIA_CONTAINER_RUNTIME_MODES_CDI_ANNOTATION_PREFIXES"),
 		},
 		&cli.StringFlag{
 			Name:        "runtime-config-override",
 			Destination: &opts.runtimeConfigOverrideJSON,
 			Usage:       "specify additional runtime options as a JSON string. The paths are relative to the runtime config.",
 			Value:       "{}",
-			EnvVars:     []string{"RUNTIME_CONFIG_OVERRIDE", "CONTAINERD_RUNTIME_CONFIG_OVERRIDE"},
+			Sources:     cli.EnvVars("RUNTIME_CONFIG_OVERRIDE", "CONTAINERD_RUNTIME_CONFIG_OVERRIDE"),
 		},
 	}
 
@@ -85,8 +85,8 @@ func Flags(opts *Options) []cli.Flag {
 }
 
 // Setup updates a containerd configuration to include the nvidia-containerd-runtime and reloads it
-func Setup(c *cli.Context, o *container.Options, co *Options) error {
-	log.Infof("Starting 'setup' for %v", c.App.Name)
+func Setup(c *cli.Command, o *container.Options, co *Options) error {
+	log.Infof("Starting 'setup' for %v", c.Name)
 
 	cfg, err := getRuntimeConfig(o, co)
 	if err != nil {
@@ -103,14 +103,14 @@ func Setup(c *cli.Context, o *container.Options, co *Options) error {
 		return fmt.Errorf("unable to restart containerd: %v", err)
 	}
 
-	log.Infof("Completed 'setup' for %v", c.App.Name)
+	log.Infof("Completed 'setup' for %v", c.Name)
 
 	return nil
 }
 
 // Cleanup reverts a containerd configuration to remove the nvidia-containerd-runtime and reloads it
-func Cleanup(c *cli.Context, o *container.Options, co *Options) error {
-	log.Infof("Starting 'cleanup' for %v", c.App.Name)
+func Cleanup(c *cli.Command, o *container.Options, co *Options) error {
+	log.Infof("Starting 'cleanup' for %v", c.Name)
 
 	cfg, err := getRuntimeConfig(o, co)
 	if err != nil {
@@ -127,7 +127,7 @@ func Cleanup(c *cli.Context, o *container.Options, co *Options) error {
 		return fmt.Errorf("unable to restart containerd: %v", err)
 	}
 
-	log.Infof("Completed 'cleanup' for %v", c.App.Name)
+	log.Infof("Completed 'cleanup' for %v", c.Name)
 
 	return nil
 }
@@ -140,7 +140,7 @@ func RestartContainerd(o *container.Options) error {
 // containerAnnotationsFromCDIPrefixes returns the container annotations to set for the given CDI prefixes.
 func (o *Options) containerAnnotationsFromCDIPrefixes() []string {
 	var annotations []string
-	for _, prefix := range o.ContainerRuntimeModesCDIAnnotationPrefixes.Value() {
+	for _, prefix := range o.ContainerRuntimeModesCDIAnnotationPrefixes {
 		annotations = append(annotations, prefix+"*")
 	}
 

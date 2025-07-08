@@ -17,7 +17,7 @@
 package transform
 
 import (
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/transform/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -44,7 +44,7 @@ func (m command) build() *cli.Command {
 
 	c.Flags = []cli.Flag{}
 
-	c.Subcommands = []*cli.Command{
+	c.Commands = []*cli.Command{
 		root.NewCommand(m.logger),
 	}
 

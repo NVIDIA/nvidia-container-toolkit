@@ -17,13 +17,14 @@
 package ldcache
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/moby/sys/reexec"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldconfig"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -39,7 +40,7 @@ type command struct {
 }
 
 type options struct {
-	folders       cli.StringSlice
+	folders       []string
 	ldconfigPath  string
 	containerSpec string
 }
@@ -67,11 +68,11 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "update-ldcache",
 		Usage: "Update ldcache in a container by running ldconfig",
-		Before: func(c *cli.Context) error {
-			return m.validateFlags(c, &cfg)
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, m.validateFlags(cmd, &cfg)
 		},
-		Action: func(c *cli.Context) error {
-			return m.run(c, &cfg)
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			return m.run(cmd, &cfg)
 		},
 	}
 
@@ -97,14 +98,14 @@ func (m command) build() *cli.Command {
 	return &c
 }
 
-func (m command) validateFlags(c *cli.Context, cfg *options) error {
+func (m command) validateFlags(_ *cli.Command, cfg *options) error {
 	if cfg.ldconfigPath == "" {
 		return errors.New("ldconfig-path must be specified")
 	}
 	return nil
 }
 
-func (m command) run(c *cli.Context, cfg *options) error {
+func (m command) run(_ *cli.Command, cfg *options) error {
 	s, err := oci.LoadContainerState(cfg.containerSpec)
 	if err != nil {
 		return fmt.Errorf("failed to load container state: %v", err)
@@ -115,16 +116,16 @@ func (m command) run(c *cli.Context, cfg *options) error {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
-	cmd, err := ldconfig.NewRunner(
+	runner, err := ldconfig.NewRunner(
 		reexecUpdateLdCacheCommandName,
 		cfg.ldconfigPath,
 		containerRootDir,
-		cfg.folders.Value()...,
+		cfg.folders...,
 	)
 	if err != nil {
 		return err
 	}
-	return cmd.Run()
+	return runner.Run()
 }
 
 // updateLdCacheHandler wraps updateLdCache with error handling.

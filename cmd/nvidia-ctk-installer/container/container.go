@@ -22,7 +22,6 @@ import (
 	"os/exec"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/operator"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"

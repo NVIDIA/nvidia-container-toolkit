@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
-	cli "github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
@@ -63,7 +63,7 @@ func Flags(opts *Options) []cli.Flag {
 			Usage:       "path to the cri-o hooks directory",
 			Value:       defaultHooksDir,
 			Destination: &opts.hooksDir,
-			EnvVars:     []string{"CRIO_HOOKS_DIR"},
+			Sources:     cli.EnvVars("CRIO_HOOKS_DIR"),
 			DefaultText: defaultHooksDir,
 		},
 		&cli.StringFlag{
@@ -71,7 +71,7 @@ func Flags(opts *Options) []cli.Flag {
 			Usage:       "filename of the cri-o hook that will be created / removed in the hooks directory",
 			Value:       defaultHookFilename,
 			Destination: &opts.hookFilename,
-			EnvVars:     []string{"CRIO_HOOK_FILENAME"},
+			Sources:     cli.EnvVars("CRIO_HOOK_FILENAME"),
 			DefaultText: defaultHookFilename,
 		},
 		&cli.StringFlag{
@@ -79,7 +79,7 @@ func Flags(opts *Options) []cli.Flag {
 			Usage:       "the configuration mode to use. One of [hook | config]",
 			Value:       defaultConfigMode,
 			Destination: &opts.configMode,
-			EnvVars:     []string{"CRIO_CONFIG_MODE"},
+			Sources:     cli.EnvVars("CRIO_CONFIG_MODE"),
 		},
 	}
 
@@ -87,8 +87,8 @@ func Flags(opts *Options) []cli.Flag {
 }
 
 // Setup installs the prestart hook required to launch GPU-enabled containers
-func Setup(c *cli.Context, o *container.Options, co *Options) error {
-	log.Infof("Starting 'setup' for %v", c.App.Name)
+func Setup(c *cli.Command, o *container.Options, co *Options) error {
+	log.Infof("Starting 'setup' for %v", c.Name)
 
 	switch co.configMode {
 	case "hook":
@@ -136,8 +136,8 @@ func setupConfig(o *container.Options) error {
 }
 
 // Cleanup removes the specified prestart hook
-func Cleanup(c *cli.Context, o *container.Options, co *Options) error {
-	log.Infof("Starting 'cleanup' for %v", c.App.Name)
+func Cleanup(c *cli.Command, o *container.Options, co *Options) error {
+	log.Infof("Starting 'cleanup' for %v", c.Name)
 
 	switch co.configMode {
 	case "hook":

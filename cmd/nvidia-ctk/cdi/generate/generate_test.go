@@ -26,7 +26,6 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml/mock/dgxa100"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
-	"github.com/urfave/cli/v2"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
@@ -147,7 +146,7 @@ containerEdits:
 				vendor:        "example.com",
 				class:         "device",
 				driverRoot:    driverRoot,
-				disabledHooks: valueOf(cli.NewStringSlice("enable-cuda-compat")),
+				disabledHooks: []string{"enable-cuda-compat"},
 			},
 			expectedOptions: options{
 				format:            "yaml",
@@ -156,7 +155,7 @@ containerEdits:
 				class:             "device",
 				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
 				driverRoot:        driverRoot,
-				disabledHooks:     valueOf(cli.NewStringSlice("enable-cuda-compat")),
+				disabledHooks:     []string{"enable-cuda-compat"},
 			},
 			expectedSpec: `---
 cdiVersion: 0.5.0
@@ -233,7 +232,7 @@ containerEdits:
 				vendor:        "example.com",
 				class:         "device",
 				driverRoot:    driverRoot,
-				disabledHooks: valueOf(cli.NewStringSlice("enable-cuda-compat", "update-ldcache")),
+				disabledHooks: []string{"enable-cuda-compat", "update-ldcache"},
 			},
 			expectedOptions: options{
 				format:            "yaml",
@@ -242,7 +241,7 @@ containerEdits:
 				class:             "device",
 				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
 				driverRoot:        driverRoot,
-				disabledHooks:     valueOf(cli.NewStringSlice("enable-cuda-compat", "update-ldcache")),
+				disabledHooks:     []string{"enable-cuda-compat", "update-ldcache"},
 			},
 			expectedSpec: `---
 cdiVersion: 0.5.0
@@ -310,7 +309,7 @@ containerEdits:
 				vendor:        "example.com",
 				class:         "device",
 				driverRoot:    driverRoot,
-				disabledHooks: valueOf(cli.NewStringSlice("all")),
+				disabledHooks: []string{"all"},
 			},
 			expectedOptions: options{
 				format:            "yaml",
@@ -319,7 +318,7 @@ containerEdits:
 				class:             "device",
 				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
 				driverRoot:        driverRoot,
-				disabledHooks:     valueOf(cli.NewStringSlice("all")),
+				disabledHooks:     []string{"all"},
 			},
 			expectedSpec: `---
 cdiVersion: 0.5.0
@@ -393,10 +392,4 @@ containerEdits:
 			require.Equal(t, strings.ReplaceAll(tc.expectedSpec, "{{ .driverRoot }}", driverRoot), buf.String())
 		})
 	}
-}
-
-// valueOf returns the value of a pointer.
-// Note that this does not check for a nil pointer and is only used for testing.
-func valueOf[T any](v *T) T {
-	return *v
 }

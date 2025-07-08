@@ -17,10 +17,11 @@
 package configure
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
@@ -94,11 +95,11 @@ func (m command) build() *cli.Command {
 	configure := cli.Command{
 		Name:  "configure",
 		Usage: "Add a runtime to the specified container engine",
-		Before: func(c *cli.Context) error {
-			return m.validateFlags(c, &config)
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, m.validateFlags(&config)
 		},
-		Action: func(c *cli.Context) error {
-			return m.configureWrapper(c, &config)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return m.configureWrapper(&config)
 		},
 	}
 
@@ -176,7 +177,7 @@ func (m command) build() *cli.Command {
 	return &configure
 }
 
-func (m command) validateFlags(c *cli.Context, config *config) error {
+func (m command) validateFlags(config *config) error {
 	if config.mode == "oci-hook" {
 		if !filepath.IsAbs(config.nvidiaRuntime.hookPath) {
 			return fmt.Errorf("the NVIDIA runtime hook path %q is not an absolute path", config.nvidiaRuntime.hookPath)
@@ -244,18 +245,18 @@ func (m command) validateFlags(c *cli.Context, config *config) error {
 }
 
 // configureWrapper updates the specified container engine config to enable the NVIDIA runtime
-func (m command) configureWrapper(c *cli.Context, config *config) error {
+func (m command) configureWrapper(config *config) error {
 	switch config.mode {
 	case "oci-hook":
-		return m.configureOCIHook(c, config)
+		return m.configureOCIHook(config)
 	case "config-file":
-		return m.configureConfigFile(c, config)
+		return m.configureConfigFile(config)
 	}
 	return fmt.Errorf("unsupported config-mode: %v", config.mode)
 }
 
 // configureConfigFile updates the specified container engine config file to enable the NVIDIA runtime.
-func (m command) configureConfigFile(c *cli.Context, config *config) error {
+func (m command) configureConfigFile(config *config) error {
 	configSource, err := config.resolveConfigSource()
 	if err != nil {
 		return err
@@ -350,7 +351,7 @@ func (c *config) getOutputConfigPath() string {
 }
 
 // configureOCIHook creates and configures the OCI hook for the NVIDIA runtime
-func (m *command) configureOCIHook(c *cli.Context, config *config) error {
+func (m *command) configureOCIHook(config *config) error {
 	err := ocihook.CreateHook(config.hookFilePath, config.nvidiaRuntime.hookPath)
 	if err != nil {
 		return fmt.Errorf("error creating OCI hook: %v", err)
