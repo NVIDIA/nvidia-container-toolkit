@@ -19,6 +19,7 @@ Source5: nvidia-container-runtime.legacy
 Source6: nvidia-cdi-hook
 Source7: nvidia-cdi-refresh.service
 Source8: nvidia-cdi-refresh.path
+Source9: nvidia-cdi-refresh.env
 
 Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook <= 1.4.0-2
 Provides: nvidia-container-runtime
@@ -35,6 +36,7 @@ cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} 
 %install
 mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_sysconfdir}/systemd/system/
+mkdir -p %{buildroot}%{_sysconfdir}/nvidia-container-toolkit
 
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime-hook
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime
@@ -44,6 +46,7 @@ install -m 755 -t %{buildroot}%{_bindir} nvidia-ctk
 install -m 755 -t %{buildroot}%{_bindir} nvidia-cdi-hook
 install -m 644 -t %{buildroot}%{_sysconfdir}/systemd/system nvidia-cdi-refresh.service
 install -m 644 -t %{buildroot}%{_sysconfdir}/systemd/system nvidia-cdi-refresh.path
+install -m 644 -t %{buildroot}%{_sysconfdir}/nvidia-container-toolkit nvidia-cdi-refresh.env
 
 %post
 if [ $1 -gt 1 ]; then  # only on package upgrade
@@ -105,6 +108,7 @@ Provides tools such as the NVIDIA Container Runtime and NVIDIA Container Toolkit
 %{_bindir}/nvidia-cdi-hook
 %{_sysconfdir}/systemd/system/nvidia-cdi-refresh.service
 %{_sysconfdir}/systemd/system/nvidia-cdi-refresh.path
+%config(noreplace) %{_sysconfdir}/nvidia-container-toolkit/nvidia-cdi-refresh.env
 
 # The OPERATOR EXTENSIONS package consists of components that are required to enable GPU support in Kubernetes.
 # This package is not distributed as part of the NVIDIA Container Toolkit RPMs.
