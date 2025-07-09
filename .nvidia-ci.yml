@@ -46,6 +46,7 @@ stages:
   - pull
   - scan
   - release
+  - ngc-publish
 
 .pipeline-trigger-rules:
   rules:
@@ -231,37 +232,59 @@ push-images-to-staging:
     OUT_IMAGE_NAME: "${NGC_STAGING_REGISTRY}/container-toolkit"
     OUT_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
 
-.release-images:
-  extends:
-    - .copy-images
-  stage: release
+.publish-images:
+  stage: ngc-publish
   needs:
     - scan-images
     - push-images-to-staging
+  image:
+    name: "${CNT_NGC_PUBLISH_IMAGE}"
+    pull_policy: always
   variables:
-    IN_REGISTRY: "${CI_REGISTRY}"
-    IN_REGISTRY_USER: "${CI_REGISTRY_USER}"
-    IN_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
-    IN_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
-    IN_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
 
-    OUT_REGISTRY: "${NGC_REGISTRY}"
-    OUT_REGISTRY_USER: "${NGC_REGISTRY_USER}"
-    OUT_REGISTRY_TOKEN: "${NGC_REGISTRY_TOKEN}"
-    OUT_IMAGE_NAME: "${NGC_REGISTRY_IMAGE}"
+  variables:
+    GITLAB_ACCESS_TOKEN: "${CNT_GITLAB_TOKEN}"
+
     OUT_IMAGE_TAG: "${CI_COMMIT_TAG}"
 
-release-images-to-ngc:
+    VERSION_FILE: "build-info-${CI_PIPELINE_ID}.txt"
+    PROJECT_NAME: "nvidia-container-toolkit"
+  before_script:
+    - |
+      if [ -z "$NGC_PUBLISHING_PROJECT_PATH" ]; then
+        echo "NGC_PUBLISHING_PROJECT_PATH not set"
+        exit 1
+      else
+        echo "publishing to ${NGC_PUBLISHING_PROJECT_PATH}"
+      fi
+
+      rm -f ${VERSION_FILE}
+      echo "${IN_IMAGE_TAG} ${OUT_IMAGE_TAG}" >> ${VERSION_FILE}
+      echo "${IN_IMAGE_TAG}-packaging ${OUT_IMAGE_TAG}-packaging" >> ${VERSION_FILE}"
+      cat ${VERSION_FILE}
+  script:
+    - cnt-ngc-publish render --project-name "${PROJECT_NAME}" --versions-file "${VERSION_FILE}" --output "${PROJECT_NAME}".yaml
+    - cnt-ngc-publish merge-request --files "${PROJECT_NAME}.yaml"
+  artifacts:
+    paths:
+      - "${VERSION_FILE}"
+      - "${PROJECT_NAME}.yaml"
+
+
+publish-images-to-ngc:
   extends:
-    - .release-images
+    - .publish-images
   rules:
     - if: $CI_COMMIT_TAG
 
-release-images-dummy:
+# We create a dummy MR that exercises the publishing logic.
+# TODO: This MR should be closed automatically.
+publish-images-dummy:
   extends:
-    - .release-images
+    - .publish-images
   variables:
-    REGCTL: "echo [DUMMY] regctl"
+    NGC_PUBLISHING_PROJECT_PATH: dl/container-dev/ngc-automation
+    OUT_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
   rules:
     - if: $CI_COMMIT_TAG == null || $CI_COMMIT_TAG == ""
 
