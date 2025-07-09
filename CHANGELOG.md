@@ -1,5 +1,20 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.18.0-rc.2
+
+- Load settings from config.toml file during CDI generation
+- Use securejoin to resolve /proc
+- Refactor nvml CDI spec generation for consistency
+- Simplify nvcdi interface
+- Add SpecGenerator interface
+- Ensure that modified params file mount does not leak to host
+- Add test for leaking mounts with shared mount propagation
+
+### Changes in the Toolkit Container
+
+- Bump nvidia/distroless/go to v3.1.10-dev in /deployments/container
+- Bump nvidia/cuda to 12.9.1-base-ubi9 in /deployments/container
+
 ## v1.18.0-rc.1
 
 - Add create-soname-symlinks hook
