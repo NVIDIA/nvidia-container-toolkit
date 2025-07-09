@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include:
-  - local: '.common-ci.yml'
-
 default:
+  image: docker
+  services:
+    - name: docker:dind
+      command: ["--experimental"]
   tags:
     - cnt
     - container-dev
@@ -25,6 +26,8 @@ default:
     - type/docker
 
 variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: "/certs"
   # Release "devel"-tagged images off the main branch
@@ -38,6 +41,40 @@ variables:
   ARTIFACTORY_REPO_BASE: "https://urm.nvidia.com/artifactory/sw-gpu-cloudnative"
   KITMAKER_RELEASE_FOLDER: "kitmaker"
   PACKAGE_ARCHIVE_RELEASE_FOLDER: "releases"
+
+stages:
+  - pull
+  - scan
+  - release
+  - sign
+
+.pipeline-trigger-rules:
+  rules:
+    # We trigger the pipeline if started manually
+    - if: $CI_PIPELINE_SOURCE == "web"
+    # We trigger the pipeline on the main branch
+    - if: $CI_COMMIT_BRANCH == "main"
+    # We trigger the pipeline on the release- branches
+    - if: $CI_COMMIT_BRANCH =~ /^release-.*$/
+    # We trigger the pipeline on tags
+    - if: $CI_COMMIT_TAG && $CI_COMMIT_TAG != ""
+
+workflow:
+  rules:
+    # We trigger the pipeline on a merge request
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    # We then add all the regular triggers
+    - !reference [.pipeline-trigger-rules, rules]
+
+# Download the regctl binary for use in the release steps
+.regctl-setup:
+  before_script:
+    - export REGCTL_VERSION=v0.4.5
+    - apk add --no-cache curl
+    - mkdir -p bin
+    - curl -sSLo bin/regctl https://github.com/regclient/regclient/releases/download/${REGCTL_VERSION}/regctl-linux-amd64
+    - chmod a+x bin/regctl
+    - export PATH=$(pwd)/bin:${PATH}
 
 # .copy-images copies the required application and packaging images from the
 # IN_IMAGE="${IN_IMAGE_NAME}:${IN_IMAGE_TAG}${TAG_SUFFIX}"
