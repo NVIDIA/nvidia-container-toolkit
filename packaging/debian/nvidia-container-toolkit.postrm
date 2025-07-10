@@ -6,11 +6,11 @@ NVIDIA_CONTAINER_RUNTIME_HOOK=/usr/bin/nvidia-container-runtime-hook
 NVIDIA_CONTAINER_TOOLKIT=/usr/bin/nvidia-container-toolkit
 
 case "$1" in
-    purge)
+    purge|remove)
         [ -L "${NVIDIA_CONTAINER_TOOLKIT}" ] && rm ${NVIDIA_CONTAINER_TOOLKIT}
     ;;
 
-    upgrade|failed-upgrade|remove|abort-install|abort-upgrade|disappear)
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
     ;;
 
     *)
