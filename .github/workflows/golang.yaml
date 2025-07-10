@@ -50,7 +50,7 @@ jobs:
         skip-cache: true
 
     - name: Check golang modules
-      run: | 
+      run: |
         make check-vendor
         make -C deployments/devel check-modules
 
@@ -71,11 +71,12 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GOLANG_VERSION }}
-      
+
       - name: Run unit tests and generate coverage report
         run: make coverage
 
       - name: Upload to Coveralls
+        continue-on-error: true
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
