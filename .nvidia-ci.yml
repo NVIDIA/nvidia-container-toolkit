@@ -245,6 +245,7 @@ push-images-to-staging:
   variables:
     GITLAB_ACCESS_TOKEN: "${CNT_GITLAB_TOKEN}"
 
+    IN_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
     OUT_IMAGE_TAG: "${CI_COMMIT_TAG}"
 
     VERSION_FILE: "build-info-${CI_PIPELINE_ID}.txt"
@@ -284,7 +285,7 @@ publish-images-dummy:
     - .publish-images
   variables:
     NGC_PUBLISHING_PROJECT_PATH: dl/container-dev/ngc-automation
-    OUT_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+    OUT_IMAGE_TAG: "publish-${CI_COMMIT_SHORT_SHA}"
   rules:
     - if: $CI_COMMIT_TAG == null || $CI_COMMIT_TAG == ""
 
