@@ -20,7 +20,7 @@ type GpmMetricsGetType struct {
 	NumMetrics uint32
 	Sample1    GpmSample
 	Sample2    GpmSample
-	Metrics    [98]GpmMetric
+	Metrics    [210]GpmMetric
 }
 
 func (g *GpmMetricsGetType) convert() *nvmlGpmMetricsGetType {
@@ -30,9 +30,8 @@ func (g *GpmMetricsGetType) convert() *nvmlGpmMetricsGetType {
 		Sample1:    g.Sample1.(nvmlGpmSample),
 		Sample2:    g.Sample2.(nvmlGpmSample),
 	}
-	for i := range g.Metrics {
-		out.Metrics[i] = g.Metrics[i]
-	}
+	copy(out.Metrics[:], g.Metrics[:])
+
 	return out
 }
 
@@ -43,9 +42,8 @@ func (g *nvmlGpmMetricsGetType) convert() *GpmMetricsGetType {
 		Sample1:    g.Sample1,
 		Sample2:    g.Sample2,
 	}
-	for i := range g.Metrics {
-		out.Metrics[i] = g.Metrics[i]
-	}
+	copy(out.Metrics[:], g.Metrics[:])
+
 	return out
 }
 
@@ -122,7 +120,7 @@ func (device nvmlDevice) GpmQueryDeviceSupportV() GpmSupportV {
 
 func (gpmSupportV GpmSupportV) V1() (GpmSupport, Return) {
 	var gpmSupport GpmSupport
-	gpmSupport.Version = 1
+	gpmSupport.Version = STRUCT_VERSION(gpmSupport, 1)
 	ret := nvmlGpmQueryDeviceSupport(gpmSupportV.device, &gpmSupport)
 	return gpmSupport, ret
 }
@@ -133,7 +131,7 @@ func (l *library) GpmQueryDeviceSupport(device Device) (GpmSupport, Return) {
 
 func (device nvmlDevice) GpmQueryDeviceSupport() (GpmSupport, Return) {
 	var gpmSupport GpmSupport
-	gpmSupport.Version = GPM_SUPPORT_VERSION
+	gpmSupport.Version = STRUCT_VERSION(gpmSupport, GPM_SUPPORT_VERSION)
 	ret := nvmlGpmQueryDeviceSupport(device, &gpmSupport)
 	return gpmSupport, ret
 }

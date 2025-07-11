@@ -112,7 +112,7 @@ func (mrs MemoryResources) GetTotalAddressableMemory(roundUp bool) (uint64, uint
 		if key >= pciIOVNumBAR || numBAR == pciIOVNumBAR {
 			break
 		}
-		numBAR = numBAR + 1
+		numBAR++
 
 		region := mrs[key]
 
@@ -123,10 +123,10 @@ func (mrs MemoryResources) GetTotalAddressableMemory(roundUp bool) (uint64, uint
 		memSize := (region.End - region.Start) + 1
 
 		if memType32bit {
-			memSize32bit = memSize32bit + uint64(memSize)
+			memSize32bit += uint64(memSize)
 		}
 		if memType64bit {
-			memSize64bit = memSize64bit + uint64(memSize)
+			memSize64bit += uint64(memSize)
 		}
 
 	}

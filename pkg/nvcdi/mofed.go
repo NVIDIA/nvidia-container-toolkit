@@ -19,21 +19,23 @@ package nvcdi
 import (
 	"fmt"
 
-	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
 
 type mofedlib nvcdilib
 
-var _ Interface = (*mofedlib)(nil)
+var _ deviceSpecGeneratorFactory = (*mofedlib)(nil)
 
-// GetAllDeviceSpecs returns the device specs for all available devices.
-func (l *mofedlib) GetAllDeviceSpecs() ([]specs.Device, error) {
+func (l *mofedlib) DeviceSpecGenerators(...string) (DeviceSpecGenerator, error) {
+	return l, nil
+}
+
+// GetDeviceSpecs returns the CDI device specs for a single all device.
+func (l *mofedlib) GetDeviceSpecs() ([]specs.Device, error) {
 	discoverer, err := discover.NewMOFEDDiscoverer(l.logger, l.driverRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MOFED discoverer: %v", err)
@@ -54,37 +56,4 @@ func (l *mofedlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
 func (l *mofedlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	return edits.FromDiscoverer(discover.None{})
-}
-
-// GetSpec is unsppported for the mofedlib specs.
-// mofedlib is typically wrapped by a spec that implements GetSpec.
-func (l *mofedlib) GetSpec() (spec.Interface, error) {
-	return nil, fmt.Errorf("GetSpec is not supported")
-}
-
-// GetGPUDeviceEdits is unsupported for the mofedlib specs
-func (l *mofedlib) GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, error) {
-	return nil, fmt.Errorf("GetGPUDeviceEdits is not supported")
-}
-
-// GetGPUDeviceSpecs is unsupported for the mofedlib specs
-func (l *mofedlib) GetGPUDeviceSpecs(int, device.Device) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetGPUDeviceSpecs is not supported")
-}
-
-// GetMIGDeviceEdits is unsupported for the mofedlib specs
-func (l *mofedlib) GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi.ContainerEdits, error) {
-	return nil, fmt.Errorf("GetMIGDeviceEdits is not supported")
-}
-
-// GetMIGDeviceSpecs is unsupported for the mofedlib specs
-func (l *mofedlib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetMIGDeviceSpecs is not supported")
-}
-
-// GetDeviceSpecsByID returns the CDI device specs for the GPU(s) represented by
-// the provided identifiers, where an identifier is an index or UUID of a valid
-// GPU device.
-func (l *mofedlib) GetDeviceSpecsByID(...string) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetDeviceSpecsByID is not supported")
 }

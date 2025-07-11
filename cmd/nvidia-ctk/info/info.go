@@ -17,7 +17,7 @@
 package info
 
 import (
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
@@ -41,8 +41,6 @@ func (m command) build() *cli.Command {
 		Name:  "info",
 		Usage: "Provide information about the system",
 	}
-
-	info.Subcommands = []*cli.Command{}
 
 	return &info
 }

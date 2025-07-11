@@ -13,10 +13,10 @@
 # limitations under the License.
 
 # Supported OSs by architecture
-AMD64_TARGETS := ubuntu20.04 ubuntu18.04 ubuntu16.04 debian10 debian9
+AMD64_TARGETS := ubuntu22.04 ubuntu20.04 ubuntu18.04 ubuntu16.04 debian10 debian9
 X86_64_TARGETS := centos7 centos8 rhel7 rhel8 amazonlinux2 opensuse-leap15.1
 PPC64LE_TARGETS := ubuntu18.04 ubuntu16.04 centos7 centos8 rhel7 rhel8
-ARM64_TARGETS := ubuntu20.04 ubuntu18.04
+ARM64_TARGETS := ubuntu22.04 ubuntu20.04 ubuntu18.04
 AARCH64_TARGETS := centos7 centos8 rhel8 amazonlinux2
 
 # Define top-level build targets
@@ -85,11 +85,6 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 --%: docker-build-%
 	@
 
-LIBNVIDIA_CONTAINER_VERSION ?= $(LIB_VERSION)
-LIBNVIDIA_CONTAINER_TAG ?= $(LIB_TAG)
-
-LIBNVIDIA_CONTAINER_TOOLS_VERSION := $(LIBNVIDIA_CONTAINER_VERSION)$(if $(LIBNVIDIA_CONTAINER_TAG),~$(LIBNVIDIA_CONTAINER_TAG))-1
-
 # private ubuntu target
 --ubuntu%: OS := ubuntu
 
@@ -129,7 +124,6 @@ docker-build-%:
 	    --build-arg PKG_NAME="$(LIB_NAME)" \
 	    --build-arg PKG_VERS="$(PACKAGE_VERSION)" \
 	    --build-arg PKG_REV="$(PACKAGE_REVISION)" \
-	    --build-arg LIBNVIDIA_CONTAINER_TOOLS_VERSION="$(LIBNVIDIA_CONTAINER_TOOLS_VERSION)" \
 	    --build-arg GIT_COMMIT="$(GIT_COMMIT)" \
 	    --tag $(BUILDIMAGE) \
 	    --file $(DOCKERFILE) .

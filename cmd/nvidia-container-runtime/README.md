@@ -21,8 +21,8 @@ The `runtimes` config option allows for the low-level runtime to be specified. T
 The default value for this setting is:
 ```toml
 runtimes = [
-    "docker-runc",
     "runc",
+    "crun",
 ]
 ```
 

@@ -26,9 +26,9 @@ import (
 
 func TestGraphicsModifier(t *testing.T) {
 	testCases := []struct {
-		description      string
-		envmap           map[string]string
-		expectedRequired bool
+		description     string
+		envmap          map[string]string
+		expectedDevices []string
 	}{
 		{
 			description: "empty image does not create modifier",
@@ -52,7 +52,7 @@ func TestGraphicsModifier(t *testing.T) {
 				"NVIDIA_VISIBLE_DEVICES":     "all",
 				"NVIDIA_DRIVER_CAPABILITIES": "all",
 			},
-			expectedRequired: true,
+			expectedDevices: []string{"all"},
 		},
 		{
 			description: "devices with graphics capability creates modifier",
@@ -60,7 +60,7 @@ func TestGraphicsModifier(t *testing.T) {
 				"NVIDIA_VISIBLE_DEVICES":     "all",
 				"NVIDIA_DRIVER_CAPABILITIES": "graphics",
 			},
-			expectedRequired: true,
+			expectedDevices: []string{"all"},
 		},
 		{
 			description: "devices with compute,graphics capability creates modifier",
@@ -68,7 +68,7 @@ func TestGraphicsModifier(t *testing.T) {
 				"NVIDIA_VISIBLE_DEVICES":     "all",
 				"NVIDIA_DRIVER_CAPABILITIES": "compute,graphics",
 			},
-			expectedRequired: true,
+			expectedDevices: []string{"all"},
 		},
 		{
 			description: "devices with display capability creates modifier",
@@ -76,7 +76,7 @@ func TestGraphicsModifier(t *testing.T) {
 				"NVIDIA_VISIBLE_DEVICES":     "all",
 				"NVIDIA_DRIVER_CAPABILITIES": "display",
 			},
-			expectedRequired: true,
+			expectedDevices: []string{"all"},
 		},
 		{
 			description: "devices with display,graphics capability creates modifier",
@@ -84,7 +84,7 @@ func TestGraphicsModifier(t *testing.T) {
 				"NVIDIA_VISIBLE_DEVICES":     "all",
 				"NVIDIA_DRIVER_CAPABILITIES": "display,graphics",
 			},
-			expectedRequired: true,
+			expectedDevices: []string{"all"},
 		},
 	}
 
@@ -94,7 +94,7 @@ func TestGraphicsModifier(t *testing.T) {
 				image.WithEnvMap(tc.envmap),
 			)
 			required, _ := requiresGraphicsModifier(image)
-			require.EqualValues(t, tc.expectedRequired, required)
+			require.EqualValues(t, tc.expectedDevices, required)
 		})
 	}
 }

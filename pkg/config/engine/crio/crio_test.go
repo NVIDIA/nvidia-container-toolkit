@@ -19,20 +19,20 @@ package crio
 import (
 	"testing"
 
-	"github.com/pelletier/go-toml"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 func TestAddRuntime(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 	testCases := []struct {
-		description     string
-		config          string
-		setAsDefault    bool
-		configOverrides []map[string]interface{}
-		expectedConfig  string
-		expectedError   error
+		description    string
+		config         string
+		setAsDefault   bool
+		expectedConfig string
+		expectedError  error
 	}{
 		{
 			description: "empty config not default runtime",
@@ -91,7 +91,7 @@ func TestAddRuntime(t *testing.T) {
 			`,
 		},
 		{
-			description: "options from runc take precedence over default runtime",
+			description: "options from the default runtime take precedence over runc",
 			config: `
 			[crio]
 			[crio.runtime]
@@ -120,27 +120,85 @@ func TestAddRuntime(t *testing.T) {
 			[crio.runtime.runtimes.test]
 			runtime_path = "/usr/bin/test"
 			runtime_type = "oci"
-			runc_option = "option"
+			default_option = "option"
 			`,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			config, err := toml.Load(tc.config)
+			cfg, err := toml.Load(tc.config)
 			require.NoError(t, err)
 			expectedConfig, err := toml.Load(tc.expectedConfig)
 			require.NoError(t, err)
 
 			c := &Config{
 				Logger: logger,
-				Tree:   config,
+				Tree:   cfg,
 			}
 
-			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault, tc.configOverrides...)
+			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault)
 			require.NoError(t, err)
 
-			require.EqualValues(t, expectedConfig.String(), config.String())
+			require.EqualValues(t, expectedConfig.String(), cfg.String())
+		})
+	}
+}
+
+func TestGetRuntimeConfig(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+	config := `
+[crio.image]
+signature_policy = "/etc/crio/policy.json"
+
+[crio.runtime]
+default_runtime = "crun"
+
+[crio.runtime.runtimes.crun]
+runtime_path = "/usr/libexec/crio/crun"
+runtime_root = "/run/crun"
+monitor_path = "/usr/libexec/crio/conmon"
+allowed_annotations = [
+    "io.containers.trace-syscall",
+]
+
+[crio.runtime.runtimes.runc]
+runtime_path = "/usr/libexec/crio/runc"
+runtime_root = "/run/runc"
+monitor_path = "/usr/libexec/crio/conmon"
+`
+	testCases := []struct {
+		description   string
+		runtime       string
+		expected      string
+		expectedError error
+	}{
+		{
+			description:   "valid runtime config, existing runtime",
+			runtime:       "crun",
+			expected:      "/usr/libexec/crio/crun",
+			expectedError: nil,
+		},
+		{
+			description:   "valid runtime config, non-existing runtime",
+			runtime:       "some-other-runtime",
+			expected:      "",
+			expectedError: nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			cfg, err := toml.Load(config)
+			require.NoError(t, err)
+
+			c := &Config{
+				Logger: logger,
+				Tree:   cfg,
+			}
+
+			rc, err := c.GetRuntimeConfig(tc.runtime)
+			require.Equal(t, tc.expectedError, err)
+			require.Equal(t, tc.expected, rc.GetBinaryPath())
 		})
 	}
 }

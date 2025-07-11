@@ -25,6 +25,7 @@ import (
 
 func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
+	hookCreator := NewHookCreator()
 
 	testCases := []struct {
 		description    string
@@ -62,19 +63,15 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 					return mounts, nil
 				},
 			},
-			expectedMounts: []Mount{
-				{
-					Path: "/usr/lib64/libnvidia-allocator.so.123.45.67",
-				},
-			},
+			expectedMounts: nil,
 			expectedHooks: []Hook{
 				{
 					Lifecycle: "createContainer",
 					Path:      "/usr/bin/nvidia-cdi-hook",
 					Args: []string{"nvidia-cdi-hook", "create-symlinks",
-						"--link", "libnvidia-allocator.so.123.45.67::/usr/lib64/libnvidia-allocator.so.1",
 						"--link", "../libnvidia-allocator.so.1::/usr/lib64/gbm/nvidia-drm_gbm.so",
 					},
+					Env: []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -102,6 +99,7 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 					Args: []string{"nvidia-cdi-hook", "create-symlinks",
 						"--link", "libnvidia-vulkan-producer.so.123.45.67::/usr/lib64/libnvidia-vulkan-producer.so",
 					},
+					Env: []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -122,9 +120,6 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 			},
 			expectedMounts: []Mount{
 				{
-					Path: "/usr/lib64/libnvidia-allocator.so.123.45.67",
-				},
-				{
 					Path: "/usr/lib64/libnvidia-vulkan-producer.so.123.45.67",
 				},
 			},
@@ -133,10 +128,10 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 					Lifecycle: "createContainer",
 					Path:      "/usr/bin/nvidia-cdi-hook",
 					Args: []string{"nvidia-cdi-hook", "create-symlinks",
-						"--link", "libnvidia-allocator.so.123.45.67::/usr/lib64/libnvidia-allocator.so.1",
 						"--link", "../libnvidia-allocator.so.1::/usr/lib64/gbm/nvidia-drm_gbm.so",
 						"--link", "libnvidia-vulkan-producer.so.123.45.67::/usr/lib64/libnvidia-vulkan-producer.so",
 					},
+					Env: []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -145,9 +140,9 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			d := &graphicsDriverLibraries{
-				Discover:          tc.libraries,
-				logger:            logger,
-				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
+				Discover:    tc.libraries,
+				logger:      logger,
+				hookCreator: hookCreator,
 			}
 
 			devices, err := d.Devices()

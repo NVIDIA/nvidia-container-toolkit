@@ -17,19 +17,24 @@
 package dgpu
 
 import (
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 )
 
 type options struct {
-	logger            logger.Interface
-	devRoot           string
-	nvidiaCDIHookPath string
+	logger      logger.Interface
+	devRoot     string
+	hookCreator discover.HookCreator
 
+	isMigDevice bool
 	// migCaps stores the MIG capabilities for the system.
 	// If MIG is not available, this is nil.
 	migCaps      nvcaps.MigCaps
 	migCapsError error
+
+	nvsandboxutilslib nvsandboxutils.Interface
 }
 
 type Option func(*options)
@@ -48,10 +53,10 @@ func WithLogger(logger logger.Interface) Option {
 	}
 }
 
-// WithNVIDIACDIHookPath sets the path to the NVIDIA Container Toolkit CLI path for the library
-func WithNVIDIACDIHookPath(path string) Option {
+// WithHookCreator sets the hook creator for the library
+func WithHookCreator(hookCreator discover.HookCreator) Option {
 	return func(l *options) {
-		l.nvidiaCDIHookPath = path
+		l.hookCreator = hookCreator
 	}
 }
 
@@ -59,5 +64,12 @@ func WithNVIDIACDIHookPath(path string) Option {
 func WithMIGCaps(migCaps nvcaps.MigCaps) Option {
 	return func(l *options) {
 		l.migCaps = migCaps
+	}
+}
+
+// WithNvsandboxuitilsLib sets the nvsandboxutils library implementation.
+func WithNvsandboxuitilsLib(nvsandboxutilslib nvsandboxutils.Interface) Option {
+	return func(l *options) {
+		l.nvsandboxutilslib = nvsandboxutilslib
 	}
 }

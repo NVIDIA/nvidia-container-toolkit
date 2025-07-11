@@ -21,6 +21,7 @@ import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
@@ -99,9 +100,9 @@ func WithNvmlLib(nvmllib nvml.Interface) Option {
 }
 
 // WithMode sets the discovery mode for the library
-func WithMode(mode string) Option {
+func WithMode[m modeConstraint](mode m) Option {
 	return func(l *nvcdilib) {
-		l.mode = mode
+		l.mode = Mode(mode)
 	}
 }
 
@@ -153,5 +154,24 @@ func WithConfigSearchPaths(paths []string) Option {
 func WithLibrarySearchPaths(paths []string) Option {
 	return func(o *nvcdilib) {
 		o.librarySearchPaths = paths
+	}
+}
+
+// WithDisabledHook allows specific hooks to the disabled.
+// This option can be specified multiple times for each hook.
+func WithDisabledHook[T string | HookName](hook T) Option {
+	return func(o *nvcdilib) {
+		o.disabledHooks = append(o.disabledHooks, discover.HookName(hook))
+	}
+}
+
+// WithFeatureFlag allows specified features to be toggled on.
+// This option can be specified multiple times for each feature flag.
+func WithFeatureFlag(featureFlag FeatureFlag) Option {
+	return func(o *nvcdilib) {
+		if o.featureFlags == nil {
+			o.featureFlags = make(map[FeatureFlag]bool)
+		}
+		o.featureFlags[featureFlag] = true
 	}
 }

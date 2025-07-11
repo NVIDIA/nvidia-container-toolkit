@@ -17,10 +17,13 @@
 package commands
 
 import (
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/chmod"
+	createsonamesymlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/create-soname-symlinks"
 	symlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/create-symlinks"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/cudacompat"
+	disabledevicenodemodification "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/disable-device-node-modification"
 	ldcache "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/update-ldcache"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
@@ -32,5 +35,21 @@ func New(logger logger.Interface) []*cli.Command {
 		ldcache.NewCommand(logger),
 		symlinks.NewCommand(logger),
 		chmod.NewCommand(logger),
+		cudacompat.NewCommand(logger),
+		createsonamesymlinks.NewCommand(logger),
+		disabledevicenodemodification.NewCommand(logger),
+	}
+}
+
+// IssueUnsupportedHookWarning logs a warning that no hook or an unsupported
+// hook has been specified.
+// This happens if a subcommand is provided that does not match one of the
+// subcommands that has been explicitly specified.
+func IssueUnsupportedHookWarning(logger logger.Interface, c *cli.Command) {
+	args := c.Args().Slice()
+	if len(args) == 0 {
+		logger.Warningf("No CDI hook specified")
+	} else {
+		logger.Warningf("Unsupported CDI hook: %v", args[0])
 	}
 }

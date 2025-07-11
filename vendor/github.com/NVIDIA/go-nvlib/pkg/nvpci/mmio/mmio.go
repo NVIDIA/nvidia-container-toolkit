@@ -107,7 +107,7 @@ func (m *mmio) BigEndian() Mmio {
 }
 
 func (m *mmio) Close() error {
-	err := syscall.Munmap(*m.Bytes.Raw())
+	err := syscall.Munmap(*m.Raw())
 	if err != nil {
 		return fmt.Errorf("failed to munmap file: %v", err)
 	}
@@ -117,7 +117,7 @@ func (m *mmio) Close() error {
 func (m *mmio) Sync() error {
 	_, _, errno := syscall.Syscall(
 		syscall.SYS_MSYNC,
-		uintptr(unsafe.Pointer(&(*m.Bytes.Raw())[0])),
+		uintptr(unsafe.Pointer(&(*m.Raw())[0])),
 		uintptr(m.Len()),
 		uintptr(syscall.MS_SYNC|syscall.MS_INVALIDATE))
 	if errno != 0 {

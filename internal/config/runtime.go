@@ -29,8 +29,9 @@ type RuntimeConfig struct {
 
 // modesConfig defines (optional) per-mode configs
 type modesConfig struct {
-	CSV csvModeConfig `toml:"csv"`
-	CDI cdiModeConfig `toml:"cdi"`
+	CSV    csvModeConfig    `toml:"csv"`
+	CDI    cdiModeConfig    `toml:"cdi"`
+	Legacy legacyModeConfig `toml:"legacy"`
 }
 
 type cdiModeConfig struct {
@@ -46,12 +47,30 @@ type csvModeConfig struct {
 	MountSpecPath string `toml:"mount-spec-path"`
 }
 
-// GetDefaultRuntimeConfig defines the default values for the config
-func GetDefaultRuntimeConfig() (*RuntimeConfig, error) {
-	cfg, err := GetDefault()
-	if err != nil {
-		return nil, err
-	}
-
-	return &cfg.NVIDIAContainerRuntimeConfig, nil
+type legacyModeConfig struct {
+	// CUDACompatMode sets the mode to be used to make CUDA Forward Compat
+	// libraries discoverable in the container.
+	CUDACompatMode cudaCompatMode `toml:"cuda-compat-mode,omitempty"`
 }
+
+type cudaCompatMode string
+
+const (
+	defaultCUDACompatMode = CUDACompatModeLdconfig
+	// CUDACompatModeDisabled explicitly disables the handling of CUDA Forward
+	// Compatibility in the NVIDIA Container Runtime and NVIDIA Container
+	// Runtime Hook.
+	CUDACompatModeDisabled = cudaCompatMode("disabled")
+	// CUDACompatModeHook uses a container lifecycle hook to implement CUDA
+	// Forward Compatibility support. This requires the use of the NVIDIA
+	// Container Runtime and is not compatible with use cases where only the
+	// NVIDIA Container Runtime Hook is used (e.g. the Docker --gpus flag).
+	CUDACompatModeHook = cudaCompatMode("hook")
+	// CUDACompatModeLdconfig adds the folders containing CUDA Forward Compat
+	// libraries to the ldconfig command invoked from the NVIDIA Container
+	// Runtime Hook.
+	CUDACompatModeLdconfig = cudaCompatMode("ldconfig")
+	// CUDACompatModeMount mounts CUDA Forward Compat folders from the container
+	// to the container when using the NVIDIA Container Runtime Hook.
+	CUDACompatModeMount = cudaCompatMode("mount")
+)

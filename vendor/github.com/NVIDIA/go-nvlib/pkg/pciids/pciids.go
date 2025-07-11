@@ -396,7 +396,7 @@ func (p *parser) parse() Interface {
 			hkClass = db.classes[uint32(id)]
 
 			hkFullID = uint32(id) << 16
-			hkFullID = hkFullID & 0xFFFF0000
+			hkFullID &= 0xFFFF0000
 			hkFullName[0] = fmt.Sprintf("%s (%02x)", lit.name, id)
 		}
 
@@ -408,11 +408,11 @@ func (p *parser) parse() Interface {
 			}
 			hkSubClass = hkClass.subClasses[uint32(id)]
 
-			// Clear the last detected sub class.
-			hkFullID = hkFullID & 0xFFFF0000
-			hkFullID = hkFullID | uint32(id)<<8
+			// Clear the last detected subclass.
+			hkFullID &= 0xFFFF0000
+			hkFullID |= uint32(id) << 8
 			// Clear the last detected prog iface.
-			hkFullID = hkFullID & 0xFFFFFF00
+			hkFullID &= 0xFFFFFF00
 			hkFullName[1] = fmt.Sprintf("%s (%02x)", lit.name, id)
 
 			db.classes[uint32(hkFullID)] = class{

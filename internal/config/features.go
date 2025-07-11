@@ -16,70 +16,40 @@
 
 package config
 
-type featureName string
-
-const (
-	FeatureGDS      = featureName("gds")
-	FeatureMOFED    = featureName("mofed")
-	FeatureNVSWITCH = featureName("nvswitch")
-	FeatureGDRCopy  = featureName("gdrcopy")
-)
-
 // features specifies a set of named features.
 type features struct {
-	GDS      *feature `toml:"gds,omitempty"`
-	MOFED    *feature `toml:"mofed,omitempty"`
-	NVSWITCH *feature `toml:"nvswitch,omitempty"`
-	GDRCopy  *feature `toml:"gdrcopy,omitempty"`
+	// AllowCUDACompatLibsFromContainer allows CUDA compat libs from a container
+	// to override certain driver library mounts from the host.
+	AllowCUDACompatLibsFromContainer *feature `toml:"allow-cuda-compat-libs-from-container,omitempty"`
+	// AllowLDConfigFromContainer allows non-host ldconfig paths to be used.
+	// If this feature flag is not set to 'true' only host-rooted config paths
+	// (i.e. paths starting with an '@' are considered valid)
+	AllowLDConfigFromContainer *feature `toml:"allow-ldconfig-from-container,omitempty"`
+	// DisableCUDACompatLibHook, when enabled skips the injection of a specific
+	// hook to process CUDA compatibility libraries.
+	//
+	// Note: Since this mechanism replaces the logic in the `nvidia-container-cli`,
+	// toggling this feature has no effect if `allow-cuda-compat-libs-from-container` is enabled.
+	DisableCUDACompatLibHook *feature `toml:"disable-cuda-compat-lib-hook,omitempty"`
+	// DisableImexChannelCreation ensures that the implicit creation of
+	// requested IMEX channels is skipped when invoking the nvidia-container-cli.
+	DisableImexChannelCreation *feature `toml:"disable-imex-channel-creation,omitempty"`
+	// IgnoreImexChannelRequests configures the NVIDIA Container Toolkit to
+	// ignore IMEX channel requests through the NVIDIA_IMEX_CHANNELS envvar or
+	// volume mounts.
+	// This ensures that the NVIDIA Container Toolkit cannot be used to provide
+	// access to an IMEX channel by simply specifying an environment variable,
+	// possibly bypassing other checks by an orchestration system such as
+	// kubernetes.
+	IgnoreImexChannelRequests *feature `toml:"ignore-imex-channel-requests,omitempty"`
 }
 
 type feature bool
 
-// IsEnabled checks whether a specified named feature is enabled.
-// An optional list of environments to check for feature-specific environment
-// variables can also be supplied.
-func (fs features) IsEnabled(n featureName, in ...getenver) bool {
-	featureEnvvars := map[featureName]string{
-		FeatureGDS:      "NVIDIA_GDS",
-		FeatureMOFED:    "NVIDIA_MOFED",
-		FeatureNVSWITCH: "NVIDIA_NVSWITCH",
-		FeatureGDRCopy:  "NVIDIA_GDRCOPY",
-	}
-
-	envvar := featureEnvvars[n]
-	switch n {
-	case FeatureGDS:
-		return fs.GDS.isEnabled(envvar, in...)
-	case FeatureMOFED:
-		return fs.MOFED.isEnabled(envvar, in...)
-	case FeatureNVSWITCH:
-		return fs.NVSWITCH.isEnabled(envvar, in...)
-	case FeatureGDRCopy:
-		return fs.GDRCopy.isEnabled(envvar, in...)
-	default:
-		return false
-	}
-}
-
-// isEnabled checks whether a feature is enabled.
-// If the enabled value is explicitly set, this is returned, otherwise the
-// associated envvar is checked in the specified getenver for the string "enabled"
-// A CUDA container / image can be passed here.
-func (f *feature) isEnabled(envvar string, ins ...getenver) bool {
+// IsEnabled checks whether a feature is explicitly enabled.
+func (f *feature) IsEnabled() bool {
 	if f != nil {
 		return bool(*f)
 	}
-	if envvar == "" {
-		return false
-	}
-	for _, in := range ins {
-		if in.Getenv(envvar) == "enabled" {
-			return true
-		}
-	}
 	return false
-}
-
-type getenver interface {
-	Getenv(string) string
 }

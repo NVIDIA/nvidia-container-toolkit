@@ -17,7 +17,7 @@
 package cdi
 
 import (
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/generate"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/cdi/list"
@@ -26,30 +26,31 @@ import (
 )
 
 type command struct {
-	logger logger.Interface
+	logger         logger.Interface
+	configFilePath *string
 }
 
-// NewCommand constructs an info command with the specified logger
-func NewCommand(logger logger.Interface) *cli.Command {
+// NewCommand constructs a cdi command with the specified logger
+func NewCommand(logger logger.Interface, configFilePath *string) *cli.Command {
 	c := command{
-		logger: logger,
+		logger:         logger,
+		configFilePath: configFilePath,
 	}
 	return c.build()
 }
 
 // build
 func (m command) build() *cli.Command {
-	// Create the 'hook' command
-	hook := cli.Command{
+	// Create the 'cdi' command
+	cdi := cli.Command{
 		Name:  "cdi",
 		Usage: "Provide tools for interacting with Container Device Interface specifications",
+		Commands: []*cli.Command{
+			generate.NewCommand(m.logger, m.configFilePath),
+			list.NewCommand(m.logger),
+			transform.NewCommand(m.logger),
+		},
 	}
 
-	hook.Subcommands = []*cli.Command{
-		generate.NewCommand(m.logger),
-		transform.NewCommand(m.logger),
-		list.NewCommand(m.logger),
-	}
-
-	return &hook
+	return &cdi
 }

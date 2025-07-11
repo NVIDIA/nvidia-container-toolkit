@@ -17,18 +17,19 @@
 package symlinks
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/urfave/cli/v2"
+	"github.com/moby/sys/symlink"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
 type command struct {
@@ -36,9 +37,7 @@ type command struct {
 }
 
 type config struct {
-	hostRoot      string
-	filenames     cli.StringSlice
-	links         cli.StringSlice
+	links         []string
 	containerSpec string
 }
 
@@ -50,46 +49,36 @@ func NewCommand(logger logger.Interface) *cli.Command {
 	return c.build()
 }
 
-// build
+// build creates the create-symlink command.
 func (m command) build() *cli.Command {
 	cfg := config{}
 
-	// Create the '' command
 	c := cli.Command{
 		Name:  "create-symlinks",
-		Usage: "A hook to create symlinks in the container. This can be used to process CSV mount specs",
-		Action: func(c *cli.Context) error {
-			return m.run(c, &cfg)
+		Usage: "A hook to create symlinks in the container.",
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			return m.run(cmd, &cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "host-root",
-			Usage:       "The root on the host filesystem to use to resolve symlinks",
-			Destination: &cfg.hostRoot,
-		},
-		&cli.StringSliceFlag{
-			Name:        "csv-filename",
-			Usage:       "Specify a (CSV) filename to process",
-			Destination: &cfg.filenames,
-		},
-		&cli.StringSliceFlag{
-			Name:        "link",
-			Usage:       "Specify a specific link to create. The link is specified as target::link",
-			Destination: &cfg.links,
-		},
-		&cli.StringFlag{
-			Name:        "container-spec",
-			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
-			Destination: &cfg.containerSpec,
+		Flags: []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:        "link",
+				Usage:       "Specify a specific link to create. The link is specified as target::link. If the link exists in the container root, it is removed.",
+				Destination: &cfg.links,
+			},
+			// The following flags are testing-only flags.
+			&cli.StringFlag{
+				Name:        "container-spec",
+				Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN. This is only intended for testing.",
+				Destination: &cfg.containerSpec,
+				Hidden:      true,
+			},
 		},
 	}
 
 	return &c
 }
 
-func (m command) run(c *cli.Context, cfg *config) error {
+func (m command) run(_ *cli.Command, cfg *config) error {
 	s, err := oci.LoadContainerState(cfg.containerSpec)
 	if err != nil {
 		return fmt.Errorf("failed to load container state: %v", err)
@@ -100,90 +89,65 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
-	csvFiles := cfg.filenames.Value()
-
-	chainLocator := lookup.NewSymlinkChainLocator(
-		lookup.WithLogger(m.logger),
-		lookup.WithRoot(cfg.hostRoot),
-	)
-
-	var candidates []string
-	for _, file := range csvFiles {
-		mountSpecs, err := csv.NewCSVFileParser(m.logger, file).Parse()
-		if err != nil {
-			m.logger.Debugf("Skipping CSV file %v: %v", file, err)
-			continue
-		}
-
-		for _, ms := range mountSpecs {
-			if ms.Type != csv.MountSpecSym {
-				continue
-			}
-			targets, err := chainLocator.Locate(ms.Path)
-			if err != nil {
-				m.logger.Warningf("Failed to locate symlink %v", ms.Path)
-			}
-			candidates = append(candidates, targets...)
-		}
-	}
-
 	created := make(map[string]bool)
-	// candidates is a list of absolute paths to symlinks in a chain, or the final target of the chain.
-	for _, candidate := range candidates {
-		target, err := symlinks.Resolve(candidate)
-		if err != nil {
-			m.logger.Debugf("Skipping invalid link: %v", err)
-			continue
-		} else if target == candidate {
-			m.logger.Debugf("%v is not a symlink", candidate)
+	for _, l := range cfg.links {
+		if created[l] {
+			m.logger.Debugf("Link %v already processed", l)
 			continue
 		}
-
-		err = m.createLink(created, cfg.hostRoot, containerRoot, target, candidate)
-		if err != nil {
-			m.logger.Warningf("Failed to create link %v: %v", []string{target, candidate}, err)
-		}
-	}
-
-	links := cfg.links.Value()
-	for _, l := range links {
 		parts := strings.Split(l, "::")
 		if len(parts) != 2 {
-			m.logger.Warningf("Invalid link specification %v", l)
-			continue
+			return fmt.Errorf("invalid symlink specification %v", l)
 		}
 
-		err := m.createLink(created, cfg.hostRoot, containerRoot, parts[0], parts[1])
+		err := m.createLink(containerRoot, parts[0], parts[1])
 		if err != nil {
-			m.logger.Warningf("Failed to create link %v: %v", parts, err)
+			return fmt.Errorf("failed to create link %v: %w", parts, err)
 		}
+		created[l] = true
 	}
-
 	return nil
-
 }
 
-func (m command) createLink(created map[string]bool, hostRoot string, containerRoot string, target string, link string) error {
-	linkPath, err := changeRoot(hostRoot, containerRoot, link)
+// createLink creates a symbolic link in the specified container root.
+// This is equivalent to:
+//
+//	chroot {{ .containerRoot }} ln -f -s {{ .target }} {{ .link }}
+//
+// If the specified link already exists and points to the same target, this
+// operation is a no-op.
+// If a file exists at the link path or the link points to a different target
+// this file is removed before creating the link.
+//
+// Note that if the link path resolves to an absolute path oudside of the
+// specified root, this is treated as an absolute path in this root.
+func (m command) createLink(containerRoot string, targetPath string, link string) error {
+	linkPath := filepath.Join(containerRoot, link)
+
+	exists, err := linkExists(targetPath, linkPath)
 	if err != nil {
-		m.logger.Warningf("Failed to resolve path for link %v relative to %v: %v", link, containerRoot, err)
+		return fmt.Errorf("failed to check if link exists: %w", err)
 	}
-	if created[linkPath] {
-		m.logger.Debugf("Link %v already created", linkPath)
+	if exists {
+		m.logger.Debugf("Link %s already exists", linkPath)
 		return nil
 	}
 
-	targetPath, err := changeRoot(hostRoot, "/", target)
+	// We resolve the parent of the symlink that we're creating in the container root.
+	// If we resolve the full link path, an existing link at the location itself
+	// is also resolved here and we are unable to force create the link.
+	resolvedLinkParent, err := symlink.FollowSymlinkInScope(filepath.Dir(linkPath), containerRoot)
 	if err != nil {
-		m.logger.Warningf("Failed to resolve path for target %v relative to %v: %v", target, "/", err)
+		return fmt.Errorf("failed to follow path for link %v relative to %v: %w", link, containerRoot, err)
 	}
+	resolvedLinkPath := filepath.Join(resolvedLinkParent, filepath.Base(linkPath))
 
-	m.logger.Infof("Symlinking %v to %v", linkPath, targetPath)
-	err = os.MkdirAll(filepath.Dir(linkPath), 0755)
+	m.logger.Infof("Symlinking %v to %v", resolvedLinkPath, targetPath)
+	err = os.MkdirAll(filepath.Dir(resolvedLinkPath), 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)
 	}
-	err = os.Symlink(target, linkPath)
+	err = symlinks.ForceCreate(targetPath, resolvedLinkPath)
 	if err != nil {
 		return fmt.Errorf("failed to create symlink: %v", err)
 	}
@@ -191,41 +155,18 @@ func (m command) createLink(created map[string]bool, hostRoot string, containerR
 	return nil
 }
 
-func changeRoot(current string, new string, path string) (string, error) {
-	if !filepath.IsAbs(path) {
-		return path, nil
+// linkExists checks whether the specified link exists.
+// A link exists if the path exists, is a symlink, and points to the specified target.
+func linkExists(target string, link string) (bool, error) {
+	currentTarget, err := symlinks.Resolve(link)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
 	}
-
-	relative := path
-	if current != "" {
-		r, err := filepath.Rel(current, path)
-		if err != nil {
-			return "", err
-		}
-		relative = r
-	}
-
-	return filepath.Join(new, relative), nil
-}
-
-// Locate returns the link target of the specified filename or an empty slice if the
-// specified filename is not a symlink.
-func (m command) Locate(filename string) ([]string, error) {
-	info, err := os.Lstat(filename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get file info: %v", info)
+		return false, fmt.Errorf("failed to resolve existing symlink %s: %w", link, err)
 	}
-	if info.Mode()&os.ModeSymlink == 0 {
-		m.logger.Debugf("%v is not a symlink", filename)
-		return nil, nil
+	if currentTarget == target {
+		return true, nil
 	}
-
-	target, err := os.Readlink(filename)
-	if err != nil {
-		return nil, fmt.Errorf("error checking symlink: %v", err)
-	}
-
-	m.logger.Debugf("Resolved link: '%v' => '%v'", filename, target)
-
-	return []string{target}, nil
+	return false, nil
 }

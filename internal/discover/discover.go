@@ -22,6 +22,12 @@ type Device struct {
 	Path     string
 }
 
+// EnvVar represents a discovered environment variable.
+type EnvVar struct {
+	Name  string
+	Value string
+}
+
 // Mount represents a discovered mount.
 type Mount struct {
 	HostPath string
@@ -34,13 +40,15 @@ type Hook struct {
 	Lifecycle string
 	Path      string
 	Args      []string
+	Env       []string
 }
 
 // Discover defines an interface for discovering the devices, mounts, and hooks available on a system
 //
-//go:generate moq -stub -out discover_mock.go . Discover
+//go:generate moq -rm -fmt=goimports -stub -out discover_mock.go . Discover
 type Discover interface {
 	Devices() ([]Device, error)
+	EnvVars() ([]EnvVar, error)
 	Mounts() ([]Mount, error)
 	Hooks() ([]Hook, error)
 }

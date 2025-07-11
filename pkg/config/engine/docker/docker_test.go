@@ -213,3 +213,37 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 
 	}
 }
+
+func TestGetRuntimeConfig(t *testing.T) {
+	c := map[string]interface{}{
+		"runtimes": map[string]interface{}{
+			"nvidia": map[string]interface{}{
+				"path": "nvidia-container-runtime",
+				"args": []string{},
+			},
+		},
+	}
+	cfg := Config(c)
+
+	testCases := []struct {
+		description string
+		runtime     string
+		expected    string
+	}{
+		{
+			description: "existing runtime",
+			runtime:     "nvidia",
+			expected:    "nvidia-container-runtime",
+		},
+		{
+			description: "non-existent runtime",
+			runtime:     "some-other-runtime",
+			expected:    "",
+		},
+	}
+	for _, tc := range testCases {
+		rc, err := cfg.GetRuntimeConfig(tc.runtime)
+		require.NoError(t, err)
+		require.Equal(t, tc.expected, rc.GetBinaryPath())
+	}
+}

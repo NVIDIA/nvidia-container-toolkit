@@ -139,7 +139,7 @@ func TestNewNvmlMIGDiscoverer(t *testing.T) {
 			},
 			expectedDevices: nil,
 			expectedMounts:  nil,
-			expectedHooks:   []discover.Hook{},
+			expectedHooks:   nil,
 		},
 	}
 	for _, tc := range testCases {

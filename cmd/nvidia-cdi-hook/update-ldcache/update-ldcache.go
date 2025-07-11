@@ -17,18 +17,22 @@
 package ldcache
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
-	"path/filepath"
-	"strings"
-	"syscall"
 
-	"github.com/urfave/cli/v2"
+	"github.com/moby/sys/reexec"
+	"github.com/urfave/cli/v3"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldconfig"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+)
+
+const (
+	reexecUpdateLdCacheCommandName = "reexec-update-ldcache"
 )
 
 type command struct {
@@ -36,9 +40,16 @@ type command struct {
 }
 
 type options struct {
-	folders       cli.StringSlice
+	folders       []string
 	ldconfigPath  string
 	containerSpec string
+}
+
+func init() {
+	reexec.Register(reexecUpdateLdCacheCommandName, updateLdCacheHandler)
+	if reexec.Init() {
+		os.Exit(0)
+	}
 }
 
 // NewCommand constructs an update-ldcache command with the specified logger
@@ -57,141 +68,97 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "update-ldcache",
 		Usage: "Update ldcache in a container by running ldconfig",
-		Before: func(c *cli.Context) error {
-			return m.validateFlags(c, &cfg)
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, m.validateFlags(cmd, &cfg)
 		},
-		Action: func(c *cli.Context) error {
-			return m.run(c, &cfg)
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			return m.run(cmd, &cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringSliceFlag{
-			Name:        "folder",
-			Usage:       "Specify a folder to add to /etc/ld.so.conf before updating the ld cache",
-			Destination: &cfg.folders,
-		},
-		&cli.StringFlag{
-			Name:        "ldconfig-path",
-			Usage:       "Specify the path to the ldconfig program",
-			Destination: &cfg.ldconfigPath,
-			Value:       "/sbin/ldconfig",
-		},
-		&cli.StringFlag{
-			Name:        "container-spec",
-			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
-			Destination: &cfg.containerSpec,
+		Flags: []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:        "folder",
+				Usage:       "Specify a folder to add to /etc/ld.so.conf before updating the ld cache",
+				Destination: &cfg.folders,
+			},
+			&cli.StringFlag{
+				Name:        "ldconfig-path",
+				Usage:       "Specify the path to the ldconfig program",
+				Destination: &cfg.ldconfigPath,
+				Value:       "/sbin/ldconfig",
+			},
+			&cli.StringFlag{
+				Name:        "container-spec",
+				Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
+				Destination: &cfg.containerSpec,
+			},
 		},
 	}
 
 	return &c
 }
 
-func (m command) validateFlags(c *cli.Context, cfg *options) error {
+func (m command) validateFlags(_ *cli.Command, cfg *options) error {
 	if cfg.ldconfigPath == "" {
 		return errors.New("ldconfig-path must be specified")
 	}
 	return nil
 }
 
-func (m command) run(c *cli.Context, cfg *options) error {
+func (m command) run(_ *cli.Command, cfg *options) error {
 	s, err := oci.LoadContainerState(cfg.containerSpec)
 	if err != nil {
 		return fmt.Errorf("failed to load container state: %v", err)
 	}
 
-	containerRoot, err := s.GetContainerRoot()
-	if err != nil {
+	containerRootDir, err := s.GetContainerRoot()
+	if err != nil || containerRootDir == "" || containerRootDir == "/" {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
 
-	ldconfigPath := m.resolveLDConfigPath(cfg.ldconfigPath)
-	args := []string{filepath.Base(ldconfigPath)}
-	if containerRoot != "" {
-		args = append(args, "-r", containerRoot)
-	}
-
-	if root(containerRoot).hasPath("/etc/ld.so.cache") {
-		args = append(args, "-C", "/etc/ld.so.cache")
-	} else {
-		m.logger.Debugf("No ld.so.cache found, skipping update")
-		args = append(args, "-N")
-	}
-
-	folders := cfg.folders.Value()
-	if root(containerRoot).hasPath("/etc/ld.so.conf.d") {
-		err := m.createConfig(containerRoot, folders)
-		if err != nil {
-			return fmt.Errorf("failed to update ld.so.conf.d: %v", err)
-		}
-	} else {
-		args = append(args, folders...)
-	}
-
-	// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
-	// be configured to use a different config file by default.
-	args = append(args, "-f", "/etc/ld.so.conf")
-
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	return syscall.Exec(ldconfigPath, args, nil)
-}
-
-type root string
-
-func (r root) hasPath(path string) bool {
-	_, err := os.Stat(filepath.Join(string(r), path))
-	if err != nil && os.IsNotExist(err) {
-		return false
-	}
-	return true
-}
-
-// resolveLDConfigPath determines the LDConfig path to use for the system.
-// On systems such as Ubuntu where `/sbin/ldconfig` is a wrapper around
-// /sbin/ldconfig.real, the latter is returned.
-func (m command) resolveLDConfigPath(path string) string {
-	return strings.TrimPrefix(config.NormalizeLDConfigPath("@"+path), "@")
-}
-
-// createConfig creates (or updates) /etc/ld.so.conf.d/00-nvcr-<RANDOM_STRING>.conf in the container
-// to include the required paths.
-// Note that the 00-nvcr prefix is chosen to ensure that these libraries have
-// a higher precedence than other libraries on the system but are applied AFTER
-// 00-cuda-compat.conf.
-func (m command) createConfig(root string, folders []string) error {
-	if len(folders) == 0 {
-		m.logger.Debugf("No folders to add to /etc/ld.so.conf")
-		return nil
-	}
-
-	if err := os.MkdirAll(filepath.Join(root, "/etc/ld.so.conf.d"), 0755); err != nil {
-		return fmt.Errorf("failed to create ld.so.conf.d: %v", err)
-	}
-
-	configFile, err := os.CreateTemp(filepath.Join(root, "/etc/ld.so.conf.d"), "00-nvcr-*.conf")
+	runner, err := ldconfig.NewRunner(
+		reexecUpdateLdCacheCommandName,
+		cfg.ldconfigPath,
+		containerRootDir,
+		cfg.folders...,
+	)
 	if err != nil {
-		return fmt.Errorf("failed to create config file: %v", err)
+		return err
 	}
-	defer configFile.Close()
+	return runner.Run()
+}
 
-	m.logger.Debugf("Adding folders %v to %v", folders, configFile.Name())
+// updateLdCacheHandler wraps updateLdCache with error handling.
+func updateLdCacheHandler() {
+	if err := updateLdCache(os.Args); err != nil {
+		log.Printf("Error updating ldcache: %v", err)
+		os.Exit(1)
+	}
+}
 
-	configured := make(map[string]bool)
-	for _, folder := range folders {
-		if configured[folder] {
-			continue
-		}
-		_, err = configFile.WriteString(fmt.Sprintf("%s\n", folder))
-		if err != nil {
-			return fmt.Errorf("failed to update ld.so.conf.d: %v", err)
-		}
-		configured[folder] = true
+// updateLdCache ensures that the ldcache in the container is updated to include
+// libraries that are mounted from the host.
+// It is invoked from a reexec'd handler and provides namespace isolation for
+// the operations performed by this hook. At the point where this is invoked,
+// we are in a new mount namespace that is cloned from the parent.
+//
+// args[0] is the reexec initializer function name
+// args[1] is the path of the ldconfig binary on the host
+// args[2] is the container root directory
+// The remaining args are folders where soname symlinks need to be created.
+func updateLdCache(args []string) error {
+	if len(args) < 3 {
+		return fmt.Errorf("incorrect arguments: %v", args)
+	}
+	hostLdconfigPath := args[1]
+	containerRootDirPath := args[2]
+
+	ldconfig, err := ldconfig.New(
+		hostLdconfigPath,
+		containerRootDirPath,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to construct ldconfig runner: %w", err)
 	}
 
-	// The created file needs to be world readable for the cases where the container is run as a non-root user.
-	if err := os.Chmod(configFile.Name(), 0644); err != nil {
-		return fmt.Errorf("failed to chmod config file: %v", err)
-	}
-
-	return nil
+	return ldconfig.UpdateLDCache(args[3:]...)
 }

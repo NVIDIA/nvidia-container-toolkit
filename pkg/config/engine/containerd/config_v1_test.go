@@ -19,20 +19,20 @@ package containerd
 import (
 	"testing"
 
-	"github.com/pelletier/go-toml"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 func TestAddRuntimeV1(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 	testCases := []struct {
-		description     string
-		config          string
-		setAsDefault    bool
-		configOverrides []map[string]interface{}
-		expectedConfig  string
-		expectedError   error
+		description    string
+		config         string
+		setAsDefault   bool
+		expectedConfig string
+		expectedError  error
 	}{
 		{
 			description: "empty config not default runtime",
@@ -52,32 +52,6 @@ func TestAddRuntimeV1(t *testing.T) {
 						Runtime = "/usr/bin/test"
 			`,
 			expectedError: nil,
-		},
-		{
-			description: "empty config not default runtime with overrides",
-			configOverrides: []map[string]interface{}{
-				{
-					"options": map[string]interface{}{
-						"SystemdCgroup": true,
-					},
-				},
-			},
-			expectedConfig: `
-			version = 1
-			[plugins]
-			[plugins.cri]
-				[plugins.cri.containerd]
-				[plugins.cri.containerd.runtimes]
-					[plugins.cri.containerd.runtimes.test]
-					privileged_without_host_devices = false
-					runtime_engine = ""
-					runtime_root = ""
-					runtime_type = ""
-					[plugins.cri.containerd.runtimes.test.options]
-						BinaryName = "/usr/bin/test"
-						Runtime = "/usr/bin/test"
-						SystemdCgroup = true
-			`,
 		},
 		{
 			description: "options from runc are imported",
@@ -164,7 +138,7 @@ func TestAddRuntimeV1(t *testing.T) {
 				`,
 		},
 		{
-			description: "options from runc take precedence over default runtime",
+			description: "options from the default runtime take precedence over runc",
 			config: `
 			[plugins]
 			[plugins.cri]
@@ -212,34 +186,35 @@ func TestAddRuntimeV1(t *testing.T) {
 						BinaryName = "/usr/bin/default"
 						SystemdCgroup = false
 					[plugins.cri.containerd.runtimes.test]
-					privileged_without_host_devices = true
-					runtime_engine = "engine"
-					runtime_root = "root"
-					runtime_type = "type"
+					privileged_without_host_devices = false
+					runtime_engine = "defaultengine"
+					runtime_root = "defaultroot"
+					runtime_type = "defaulttype"
 					[plugins.cri.containerd.runtimes.test.options]
 						BinaryName = "/usr/bin/test"
 						Runtime = "/usr/bin/test"
-						SystemdCgroup = true
+						SystemdCgroup = false
 				`,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			config, err := toml.Load(tc.config)
-			require.NoError(t, err)
 			expectedConfig, err := toml.Load(tc.expectedConfig)
 			require.NoError(t, err)
 
-			c := &ConfigV1{
-				Logger: logger,
-				Tree:   config,
-			}
-
-			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault, tc.configOverrides...)
+			c, err := New(
+				WithLogger(logger),
+				WithConfigSource(toml.FromString(tc.config)),
+				WithUseLegacyConfig(true),
+				WithRuntimeType(""),
+			)
 			require.NoError(t, err)
 
-			require.EqualValues(t, expectedConfig.String(), config.String())
+			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault)
+			require.NoError(t, err)
+
+			require.EqualValues(t, expectedConfig.String(), c.String())
 		})
 	}
 }

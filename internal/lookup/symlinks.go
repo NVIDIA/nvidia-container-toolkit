@@ -62,6 +62,7 @@ func (p symlinkChain) Locate(pattern string) ([]string, error) {
 		return candidates, nil
 	}
 
+	var filenames []string
 	found := make(map[string]bool)
 	for len(candidates) > 0 {
 		candidate := candidates[0]
@@ -70,6 +71,7 @@ func (p symlinkChain) Locate(pattern string) ([]string, error) {
 			continue
 		}
 		found[candidate] = true
+		filenames = append(filenames, candidate)
 
 		target, err := symlinks.Resolve(candidate)
 		if err != nil {
@@ -87,11 +89,6 @@ func (p symlinkChain) Locate(pattern string) ([]string, error) {
 		if !found[target] {
 			candidates = append(candidates, target)
 		}
-	}
-
-	var filenames []string
-	for f := range found {
-		filenames = append(filenames, f)
 	}
 	return filenames, nil
 }

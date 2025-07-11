@@ -20,20 +20,19 @@ import (
 	"fmt"
 	"os"
 
-	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/pkg/parser"
-	"tags.cncf.io/container-device-interface/specs-go"
+	cdi "tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
 
 type builder struct {
-	raw         *specs.Spec
+	raw         *cdi.Spec
 	version     string
 	vendor      string
 	class       string
-	deviceSpecs []specs.Device
-	edits       specs.ContainerEdits
+	deviceSpecs []cdi.Device
+	edits       cdi.ContainerEdits
 	format      string
 
 	mergedDeviceOptions []transform.MergedDeviceOption
@@ -86,7 +85,7 @@ func newBuilder(opts ...Option) *builder {
 func (o *builder) Build() (*spec, error) {
 	raw := o.raw
 	if raw == nil {
-		raw = &specs.Spec{
+		raw = &cdi.Spec{
 			Version:        o.version,
 			Kind:           fmt.Sprintf("%s/%s", o.vendor, o.class),
 			Devices:        o.deviceSpecs,
@@ -127,14 +126,14 @@ func (o *builder) Build() (*spec, error) {
 type Option func(*builder)
 
 // WithDeviceSpecs sets the device specs for the spec builder
-func WithDeviceSpecs(deviceSpecs []specs.Device) Option {
+func WithDeviceSpecs(deviceSpecs []cdi.Device) Option {
 	return func(o *builder) {
 		o.deviceSpecs = deviceSpecs
 	}
 }
 
 // WithEdits sets the container edits for the spec builder
-func WithEdits(edits specs.ContainerEdits) Option {
+func WithEdits(edits cdi.ContainerEdits) Option {
 	return func(o *builder) {
 		o.edits = edits
 	}
@@ -176,7 +175,7 @@ func WithNoSimplify(noSimplify bool) Option {
 }
 
 // WithRawSpec sets the raw spec for the spec builder
-func WithRawSpec(raw *specs.Spec) Option {
+func WithRawSpec(raw *cdi.Spec) Option {
 	return func(o *builder) {
 		o.raw = raw
 	}

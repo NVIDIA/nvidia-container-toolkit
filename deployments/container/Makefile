@@ -27,28 +27,23 @@ DIST_DIR ?= $(CURDIR)/dist
 ##### Global variables #####
 include $(CURDIR)/versions.mk
 
-ifeq ($(IMAGE_NAME),)
-REGISTRY ?= nvidia
-IMAGE_NAME := $(REGISTRY)/container-toolkit
-endif
-
-VERSION ?= $(LIB_VERSION)$(if $(LIB_TAG),-$(LIB_TAG))
 IMAGE_VERSION := $(VERSION)
 
-IMAGE_TAG ?= $(VERSION)-$(DIST)
+IMAGE_TAG ?= $(VERSION)
 IMAGE = $(IMAGE_NAME):$(IMAGE_TAG)
 
 OUT_IMAGE_NAME ?= $(IMAGE_NAME)
 OUT_IMAGE_VERSION ?= $(IMAGE_VERSION)
-OUT_IMAGE_TAG = $(OUT_IMAGE_VERSION)-$(DIST)
+OUT_IMAGE_TAG = $(OUT_IMAGE_VERSION)
 OUT_IMAGE = $(OUT_IMAGE_NAME):$(OUT_IMAGE_TAG)
 
 ##### Public rules #####
-DEFAULT_PUSH_TARGET := ubuntu20.04
-DISTRIBUTIONS := ubuntu20.04 ubi8
+DEFAULT_PUSH_TARGET := application
+DISTRIBUTIONS := $(DEFAULT_PUSH_TARGET)
 
 META_TARGETS := packaging
 
+IMAGE_TARGETS := $(patsubst %,image-%,$(DISTRIBUTIONS) $(META_TARGETS))
 BUILD_TARGETS := $(patsubst %,build-%,$(DISTRIBUTIONS) $(META_TARGETS))
 PUSH_TARGETS := $(patsubst %,push-%,$(DISTRIBUTIONS) $(META_TARGETS))
 TEST_TARGETS := $(patsubst %,test-%,$(DISTRIBUTIONS))
@@ -61,44 +56,32 @@ else
 include $(CURDIR)/deployments/container/multi-arch.mk
 endif
 
-# For the default push target we also push a short tag equal to the version.
-# We skip this for the development release
-DEVEL_RELEASE_IMAGE_VERSION ?= devel
-PUSH_MULTIPLE_TAGS ?= true
-ifeq ($(strip $(OUT_IMAGE_VERSION)),$(DEVEL_RELEASE_IMAGE_VERSION))
-PUSH_MULTIPLE_TAGS = false
-endif
-ifeq ($(PUSH_MULTIPLE_TAGS),true)
-push-$(DEFAULT_PUSH_TARGET): push-short
-endif
-
-push-%: DIST = $(*)
-push-short: DIST = $(DEFAULT_PUSH_TARGET)
-
 # Define the push targets
 $(PUSH_TARGETS): push-%:
 	$(CURDIR)/scripts/publish-image.sh $(IMAGE) $(OUT_IMAGE)
 
-push-short:
-	$(CURDIR)/scripts/publish-image.sh $(IMAGE) $(OUT_IMAGE)
+DOCKERFILE = $(CURDIR)/deployments/container/Dockerfile
 
-
-build-%: DIST = $(*)
-build-%: DOCKERFILE = $(CURDIR)/deployments/container/Dockerfile.$(DOCKERFILE_SUFFIX)
+# For packaging targets we set the output image tag to include the -packaging suffix.
+%-packaging: INTERMEDIATE_TARGET := --target=packaging
+%-packaging: IMAGE_TAG = $(IMAGE_VERSION)-packaging
+%-packaging: OUT_IMAGE_TAG = $(IMAGE_VERSION)-packaging
 
 ARTIFACTS_ROOT ?= $(shell realpath --relative-to=$(CURDIR) $(DIST_DIR))
 
 # Use a generic build target to build the relevant images
-$(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
+$(IMAGE_TARGETS): image-%: $(ARTIFACTS_ROOT)
 	DOCKER_BUILDKIT=1 \
 		$(DOCKER) $(BUILDX) build --pull \
 		--provenance=false --sbom=false \
 		$(DOCKER_BUILD_OPTIONS) \
 		$(DOCKER_BUILD_PLATFORM_OPTIONS) \
+		$(INTERMEDIATE_TARGET) \
 		--tag $(IMAGE) \
 		--build-arg ARTIFACTS_ROOT="$(ARTIFACTS_ROOT)" \
 		--build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
-		--build-arg PACKAGE_DIST="$(PACKAGE_DIST)" \
+		--build-arg PACKAGE_DIST_DEB="$(PACKAGE_DIST_DEB)" \
+		--build-arg PACKAGE_DIST_RPM="$(PACKAGE_DIST_RPM)" \
 		--build-arg PACKAGE_VERSION="$(PACKAGE_VERSION)" \
 		--build-arg VERSION="$(VERSION)" \
 		--build-arg GIT_COMMIT="$(GIT_COMMIT)" \
@@ -109,20 +92,17 @@ $(BUILD_TARGETS): build-%: $(ARTIFACTS_ROOT)
 		$(CURDIR)
 
 
-build-ubuntu%: DOCKERFILE_SUFFIX := ubuntu
-build-ubuntu%: PACKAGE_DIST = ubuntu18.04
+PACKAGE_DIST_DEB = ubuntu18.04
+# TODO: This needs to be set to centos8 for ppc64le builds
+PACKAGE_DIST_RPM = centos7
 
-build-ubi8: DOCKERFILE_SUFFIX := ubi8
-build-ubi8: PACKAGE_DIST = centos7
-
-build-packaging: DOCKERFILE_SUFFIX := packaging
-build-packaging: PACKAGE_ARCH := amd64
-build-packaging: PACKAGE_DIST = all
+# Handle the default build target.
+.PHONY: build push
+build: build-$(DEFAULT_PUSH_TARGET)
+push: push-$(DEFAULT_PUSH_TARGET)
 
 # Test targets
-test-%: DIST = $(*)
-
-TEST_CASES ?= toolkit docker crio containerd
+TEST_CASES ?= docker crio containerd
 $(TEST_TARGETS): test-%:
 	TEST_CASES="$(TEST_CASES)" bash -x $(CURDIR)/test/container/main.sh run \
 		$(CURDIR)/shared-$(*) \

@@ -79,12 +79,12 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 				{
 					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
 					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
-					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+					Options:  []string{"ro", "nosuid", "nodev", "rbind", "rprivate"},
 				},
 				{
 					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
 					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
-					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+					Options:  []string{"ro", "nosuid", "nodev", "rbind", "rprivate"},
 				},
 			},
 			expectedHooks: []discover.Hook{
@@ -97,6 +97,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 						"--link",
 						"/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so::/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so",
 					},
+					Env: []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -135,12 +136,12 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 				{
 					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
 					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
-					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+					Options:  []string{"ro", "nosuid", "nodev", "rbind", "rprivate"},
 				},
 				{
 					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
 					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
-					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+					Options:  []string{"ro", "nosuid", "nodev", "rbind", "rprivate"},
 				},
 			},
 			expectedHooks: []discover.Hook{
@@ -153,6 +154,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 						"--link",
 						"/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so::/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so",
 					},
+					Env: []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
 		},
@@ -175,19 +177,20 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 				{
 					Path:     "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
 					HostPath: "/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so",
-					Options:  []string{"ro", "nosuid", "nodev", "bind"},
+					Options:  []string{"ro", "nosuid", "nodev", "rbind", "rprivate"},
 				},
 			},
 		},
 	}
 
+	hookCreator := discover.NewHookCreator()
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			defer setGetTargetsFromCSVFiles(tc.moutSpecs)()
 
 			o := tegraOptions{
 				logger:              logger,
-				nvidiaCDIHookPath:   "/usr/bin/nvidia-cdi-hook",
+				hookCreator:         hookCreator,
 				csvFiles:            []string{"dummy"},
 				ignorePatterns:      tc.ignorePatterns,
 				symlinkLocator:      tc.symlinkLocator,

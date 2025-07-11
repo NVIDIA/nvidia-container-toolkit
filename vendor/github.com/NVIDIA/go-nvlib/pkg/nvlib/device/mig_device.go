@@ -63,7 +63,7 @@ func (m *migdevice) GetProfile() (MigProfile, error) {
 		return m.profile, nil
 	}
 
-	parent, ret := m.Device.GetDeviceHandleFromMigDeviceHandle()
+	parent, ret := m.GetDeviceHandleFromMigDeviceHandle()
 	if ret != nvml.SUCCESS {
 		return nil, fmt.Errorf("error getting parent device handle: %v", ret)
 	}
@@ -73,17 +73,17 @@ func (m *migdevice) GetProfile() (MigProfile, error) {
 		return nil, fmt.Errorf("error getting parent memory info: %v", ret)
 	}
 
-	attributes, ret := m.Device.GetAttributes()
+	attributes, ret := m.GetAttributes()
 	if ret != nvml.SUCCESS {
 		return nil, fmt.Errorf("error getting MIG device attributes: %v", ret)
 	}
 
-	giID, ret := m.Device.GetGpuInstanceId()
+	giID, ret := m.GetGpuInstanceId()
 	if ret != nvml.SUCCESS {
 		return nil, fmt.Errorf("error getting MIG device GPU Instance ID: %v", ret)
 	}
 
-	ciID, ret := m.Device.GetComputeInstanceId()
+	ciID, ret := m.GetComputeInstanceId()
 	if ret != nvml.SUCCESS {
 		return nil, fmt.Errorf("error getting MIG device Compute Instance ID: %v", ret)
 	}

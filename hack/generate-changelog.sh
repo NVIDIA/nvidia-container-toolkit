@@ -102,7 +102,7 @@ LIB_NVIDIA_CONTAINER_REFERENCE=$( git ls-tree $REFERENCE third_party/libnvidia-c
 LIB_NVIDIA_CONTAINER_VERSION=$( git ls-tree $SHA third_party/libnvidia-container --object-only )
 
 echo ""
-if [[ $(git -C third_party/libnvidia-container log --pretty=format:"%s" $LIB_NVIDIA_CONTAINER_REFERENCE..$LIB_NVIDIA_CONTAINER_VERSION | grep -Ev "(^Merge )|(^Bump)|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g' | wc -l) -gt 0  ]]; then
+if [[ "${LIB_NVIDIA_CONTAINER_REFERENCE}" != "${LIB_NVIDIA_CONTAINER_VERSION}" ]] && [[ $(git -C third_party/libnvidia-container log --pretty=format:"%s" $LIB_NVIDIA_CONTAINER_REFERENCE..$LIB_NVIDIA_CONTAINER_VERSION | grep -Ev "(^Merge )|(^Bump)|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g' | wc -l) -gt 0  ]]; then
 echo "### Changes in libnvidia-container"
 echo ""
 git -C third_party/libnvidia-container log --pretty=format:"%s" $LIB_NVIDIA_CONTAINER_REFERENCE..$LIB_NVIDIA_CONTAINER_VERSION | grep -Ev "(^Merge )|(^Bump)|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g'

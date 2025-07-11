@@ -71,9 +71,7 @@ RUN make PREFIX=${DIST_DIR} cmds
 
 WORKDIR $DIST_DIR/..
 COPY packaging/rpm .
-
-ARG LIBNVIDIA_CONTAINER_TOOLS_VERSION
-ENV LIBNVIDIA_CONTAINER_TOOLS_VERSION ${LIBNVIDIA_CONTAINER_TOOLS_VERSION}
+COPY deployments/systemd/ ${DIST_DIR}/
 
 CMD arch=$(uname -m) && \
     rpmbuild --clean --target=$arch -bb \
@@ -81,7 +79,6 @@ CMD arch=$(uname -m) && \
              -D "release_date $(date +'%a %b %d %Y')" \
              -D "git_commit ${GIT_COMMIT}" \
              -D "version ${PKG_VERS}" \
-             -D "libnvidia_container_tools_version ${LIBNVIDIA_CONTAINER_TOOLS_VERSION}" \
              -D "release ${PKG_REV}" \
              SPECS/nvidia-container-toolkit.spec && \
     mv RPMS/$arch/*.rpm /dist

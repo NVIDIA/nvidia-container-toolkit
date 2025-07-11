@@ -21,6 +21,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
@@ -64,53 +65,108 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 
 // newSpecModifier is a factory method that creates constructs an OCI spec modifer based on the provided config.
 func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec, driver *root.Driver) (oci.SpecModifier, error) {
-	rawSpec, err := ociSpec.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
-	}
-
-	image, err := image.NewCUDAImageFromSpec(rawSpec)
+	mode, image, err := initRuntimeModeAndImage(logger, cfg, ociSpec)
 	if err != nil {
 		return nil, err
 	}
 
-	mode := info.ResolveAutoMode(logger, cfg.NVIDIAContainerRuntimeConfig.Mode, image)
-	modeModifier, err := newModeModifier(logger, mode, cfg, ociSpec, image)
-	if err != nil {
-		return nil, err
-	}
-	// For CDI mode we make no additional modifications.
-	if mode == "cdi" {
-		return modeModifier, nil
-	}
-
-	graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, image, driver)
+	modeModifier, err := newModeModifier(logger, mode, cfg, *image)
 	if err != nil {
 		return nil, err
 	}
 
-	featureModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, image)
-	if err != nil {
-		return nil, err
+	hookCreator := discover.NewHookCreator(discover.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path))
+	var modifiers modifier.List
+	for _, modifierType := range supportedModifierTypes(mode) {
+		switch modifierType {
+		case "mode":
+			modifiers = append(modifiers, modeModifier)
+		case "nvidia-hook-remover":
+			modifiers = append(modifiers, modifier.NewNvidiaContainerRuntimeHookRemover(logger))
+		case "graphics":
+			graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, *image, driver, hookCreator)
+			if err != nil {
+				return nil, err
+			}
+			modifiers = append(modifiers, graphicsModifier)
+		case "feature-gated":
+			featureGatedModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, *image, driver, hookCreator)
+			if err != nil {
+				return nil, err
+			}
+			modifiers = append(modifiers, featureGatedModifier)
+		}
 	}
 
-	modifiers := modifier.Merge(
-		modeModifier,
-		graphicsModifier,
-		featureModifier,
-	)
 	return modifiers, nil
 }
 
-func newModeModifier(logger logger.Interface, mode string, cfg *config.Config, ociSpec oci.Spec, image image.CUDA) (oci.SpecModifier, error) {
+func newModeModifier(logger logger.Interface, mode info.RuntimeMode, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
 	switch mode {
-	case "legacy":
+	case info.LegacyRuntimeMode:
 		return modifier.NewStableRuntimeModifier(logger, cfg.NVIDIAContainerRuntimeHookConfig.Path), nil
-	case "csv":
+	case info.CSVRuntimeMode:
 		return modifier.NewCSVModifier(logger, cfg, image)
-	case "cdi":
-		return modifier.NewCDIModifier(logger, cfg, ociSpec)
+	case info.CDIRuntimeMode, info.JitCDIRuntimeMode:
+		return modifier.NewCDIModifier(logger, cfg, image, mode == info.JitCDIRuntimeMode)
 	}
 
 	return nil, fmt.Errorf("invalid runtime mode: %v", cfg.NVIDIAContainerRuntimeConfig.Mode)
+}
+
+// initRuntimeModeAndImage constructs an image from the specified OCI runtime
+// specification and runtime config.
+// The image is also used to determine the runtime mode to apply.
+// If a non-CDI mode is detected we ensure that the image does not process
+// annotation devices.
+func initRuntimeModeAndImage(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec) (info.RuntimeMode, *image.CUDA, error) {
+	rawSpec, err := ociSpec.Load()
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to load OCI spec: %v", err)
+	}
+
+	image, err := image.NewCUDAImageFromSpec(
+		rawSpec,
+		image.WithLogger(logger),
+		image.WithAcceptDeviceListAsVolumeMounts(cfg.AcceptDeviceListAsVolumeMounts),
+		image.WithAcceptEnvvarUnprivileged(cfg.AcceptEnvvarUnprivileged),
+		image.WithAnnotationsPrefixes(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes),
+	)
+	if err != nil {
+		return "", nil, err
+	}
+
+	modeResolver := info.NewRuntimeModeResolver(
+		info.WithLogger(logger),
+		info.WithImage(&image),
+	)
+	mode := modeResolver.ResolveRuntimeMode(cfg.NVIDIAContainerRuntimeConfig.Mode)
+	// We update the mode here so that we can continue passing just the config to other functions.
+	cfg.NVIDIAContainerRuntimeConfig.Mode = string(mode)
+
+	if mode == "cdi" || len(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes) == 0 {
+		return mode, &image, nil
+	}
+
+	// For non-cdi modes we explicitly set the annotation prefixes to nil and
+	// call this function again to force a reconstruction of the image.
+	// Note that since the mode is now explicitly set, we will effectively skip
+	// the mode resolution.
+	cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes = nil
+
+	return initRuntimeModeAndImage(logger, cfg, ociSpec)
+}
+
+// supportedModifierTypes returns the modifiers supported for a specific runtime mode.
+func supportedModifierTypes(mode info.RuntimeMode) []string {
+	switch mode {
+	case info.CDIRuntimeMode, info.JitCDIRuntimeMode:
+		// For CDI mode we make no additional modifications.
+		return []string{"nvidia-hook-remover", "mode"}
+	case info.CSVRuntimeMode:
+		// For CSV mode we support mode and feature-gated modification.
+		return []string{"nvidia-hook-remover", "feature-gated", "mode"}
+	default:
+		return []string{"feature-gated", "graphics", "mode"}
+	}
 }

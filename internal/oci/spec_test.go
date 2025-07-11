@@ -19,14 +19,14 @@ func TestMaintainSpec(t *testing.T) {
 	}
 
 	for _, f := range files {
-		inputSpecPath := filepath.Join(moduleRoot, "test/input", f)
+		inputSpecPath := filepath.Join(moduleRoot, "tests/input", f)
 
 		spec := NewFileSpec(inputSpecPath).(*fileSpec)
 
 		_, err := spec.Load()
 		require.NoError(t, err)
 
-		outputSpecPath := filepath.Join(moduleRoot, "test/output", f)
+		outputSpecPath := filepath.Join(moduleRoot, "tests/output", f)
 		spec.path = outputSpecPath
 		spec.Flush()
 

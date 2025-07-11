@@ -17,7 +17,7 @@
 package runtime
 
 import (
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/runtime/configure"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -40,10 +40,9 @@ func (m runtimeCommand) build() *cli.Command {
 	runtime := cli.Command{
 		Name:  "runtime",
 		Usage: "A collection of runtime-related utilities for the NVIDIA Container Toolkit",
-	}
-
-	runtime.Subcommands = []*cli.Command{
-		configure.NewCommand(m.logger),
+		Commands: []*cli.Command{
+			configure.NewCommand(m.logger),
+		},
 	}
 
 	return &runtime

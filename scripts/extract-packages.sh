@@ -17,7 +17,7 @@
 function assert_usage() {
     echo "Incorrect arguments: $*" >&2
     echo "$(basename "${BASH_SOURCE[0]}") PACKAGE_IMAGE_NAME:PACKAGE_IMAGE_TAG" >&2
-    echo -e "\\tPACKAGE_IMAGE: container image holding packages [e.g. registry.gitlab.com/nvidia/container-toolkit/container-toolkit/staging/container-toolkit]" >&2
+    echo -e "\\tPACKAGE_IMAGE: container image holding packages [e.g. ghcr.io/nvidia/container-toolkit]" >&2
     echo -e "\\tPACKAGE_TAG: tag for container image holding packages. [e.g. 1a2b3c4-packaging]" >&2
     exit 1
 }
@@ -70,9 +70,9 @@ function copy-file() {
         -v "$(pwd):$(pwd)" \
         -w "$(pwd)" \
         -u "$(id -u):$(id -g)" \
-        --entrypoint="bash" \
+        --entrypoint="sh" \
             "${image}" \
-            -c "cp ${path_in_image} ${path_on_host}"
+            -c "cp -p ${path_in_image} ${path_on_host}"
     fi
 }
 

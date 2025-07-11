@@ -49,7 +49,7 @@ type Major int
 
 // Devices represents the set of devices under /proc/devices
 //
-//go:generate moq -stub -out devices_mock.go . Devices
+//go:generate moq -rm -fmt=goimports -stub -out devices_mock.go . Devices
 type Devices interface {
 	Exists(Name) bool
 	Get(Name) (Major, bool)

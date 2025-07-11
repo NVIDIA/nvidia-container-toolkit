@@ -90,16 +90,24 @@ func (i *propertyExtractor) HasTegraFiles() (bool, string) {
 }
 
 // UsesOnlyNVGPUModule checks whether the only the nvgpu module is used.
-// This kernel module is used on Tegra-based systems when using the iGPU.
-// Since some of these systems also support NVML, we use the device name
-// reported by NVML to determine whether the system is an iGPU system.
 //
-// Devices that use the nvgpu module have their device names as:
+// Deprecated: UsesOnlyNVGPUModule is deprecated, use HasOnlyIntegratedGPUs instead.
+func (i *propertyExtractor) UsesOnlyNVGPUModule() (uses bool, reason string) {
+	return i.HasOnlyIntegratedGPUs()
+}
+
+// HasOnlyIntegratedGPUs checks whether all GPUs are iGPUs that use NVML.
+//
+// As of Orin-based systems iGPUs also support limited NVML queries.
+// In the absence of a robust API, we rely on heuristics to make this decision.
+//
+// The following device names are checked:
 //
 //	GPU 0: Orin (nvgpu) (UUID: 54d0709b-558d-5a59-9c65-0c5fc14a21a4)
+//	GPU 0: NVIDIA Thor  (UUID: 54d0709b-558d-5a59-9c65-0c5fc14a21a4)
 //
-// This function returns true if ALL devices use the nvgpu module.
-func (i *propertyExtractor) UsesOnlyNVGPUModule() (uses bool, reason string) {
+// This function returns true if ALL devices are detected as iGPUs.
+func (i *propertyExtractor) HasOnlyIntegratedGPUs() (uses bool, reason string) {
 	// We ensure that this function never panics
 	defer func() {
 		if err := recover(); err != nil {
@@ -135,9 +143,19 @@ func (i *propertyExtractor) UsesOnlyNVGPUModule() (uses bool, reason string) {
 	}
 
 	for _, name := range names {
-		if !strings.Contains(name, "(nvgpu)") {
+		if !isIntegratedGPUName(name) {
 			return false, fmt.Sprintf("device %q does not use nvgpu module", name)
 		}
 	}
 	return true, "all devices use nvgpu module"
+}
+
+func isIntegratedGPUName(name string) bool {
+	if strings.Contains(name, "(nvgpu)") {
+		return true
+	}
+	if strings.Contains(name, "NVIDIA Thor") {
+		return true
+	}
+	return false
 }

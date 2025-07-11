@@ -96,7 +96,7 @@ func (s deviceNameUUID) GetMigDeviceName(i int, _ UUIDer, j int, mig UUIDer) (st
 	return uuid, nil
 }
 
-//go:generate moq -stub -out namer_nvml_mock.go . nvmlUUIDer
+//go:generate moq -rm -fmt=goimports -stub -out namer_nvml_mock.go . nvmlUUIDer
 type nvmlUUIDer interface {
 	GetUUID() (string, nvml.Return)
 }

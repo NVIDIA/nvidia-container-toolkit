@@ -19,9 +19,8 @@ package containerd
 import (
 	"fmt"
 
-	"github.com/pelletier/go-toml"
-
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 // ConfigV1 represents a version 1 containerd config
@@ -30,7 +29,7 @@ type ConfigV1 Config
 var _ engine.Interface = (*ConfigV1)(nil)
 
 // AddRuntime adds a runtime to the containerd config
-func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool, configOverrides ...map[string]interface{}) error {
+func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool) error {
 	if c == nil || c.Tree == nil {
 		return fmt.Errorf("config is nil")
 	}
@@ -39,18 +38,16 @@ func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool, confi
 
 	config.Set("version", int64(1))
 
-	// By default we extract the runtime options from the runc settings; if this does not exist we get the options from the default runtime specified in the config.
-	runtimeNamesForConfig := []string{"runc"}
-	if name, ok := config.GetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"}).(string); ok && name != "" {
-		runtimeNamesForConfig = append(runtimeNamesForConfig, name)
-	}
+	runtimeNamesForConfig := engine.GetLowLevelRuntimes(c)
 	for _, r := range runtimeNamesForConfig {
-		if options, ok := config.GetPath([]string{"plugins", "cri", "containerd", "runtimes", r}).(*toml.Tree); ok {
-			c.Logger.Debugf("using options from runtime %v: %v", r, options.String())
-			options, _ = toml.Load(options.String())
-			config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name}, options)
-			break
+		options := config.GetSubtreeByPath([]string{"plugins", "cri", "containerd", "runtimes", r})
+		if options == nil {
+			continue
 		}
+		c.Logger.Debugf("using options from runtime %v: %v", r, options)
+		config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name}, options.Copy())
+		break
+
 	}
 
 	if config.GetPath([]string{"plugins", "cri", "containerd", "runtimes", name}) == nil {
@@ -73,28 +70,20 @@ func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool, confi
 	config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "options", "BinaryName"}, path)
 	config.SetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "options", "Runtime"}, path)
 
-	if setAsDefault && c.UseDefaultRuntimeName {
-		config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"}, name)
-	} else if setAsDefault {
-		// Note: This is deprecated in containerd 1.4.0 and will be removed in 1.5.0
-		if config.GetPath([]string{"plugins", "cri", "containerd", "default_runtime"}) == nil {
-			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "runtime_type"}, c.RuntimeType)
-			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "runtime_root"}, "")
-			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "runtime_engine"}, "")
-			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "privileged_without_host_devices"}, false)
+	if setAsDefault {
+		if !c.UseLegacyConfig {
+			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"}, name)
+		} else {
+			// Note: This is deprecated in containerd 1.4.0 and will be removed in 1.5.0
+			if config.GetPath([]string{"plugins", "cri", "containerd", "default_runtime"}) == nil {
+				config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "runtime_type"}, c.RuntimeType)
+				config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "runtime_root"}, "")
+				config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "runtime_engine"}, "")
+				config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "privileged_without_host_devices"}, false)
+			}
+			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "options", "BinaryName"}, path)
+			config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "options", "Runtime"}, path)
 		}
-		config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "options", "BinaryName"}, path)
-		config.SetPath([]string{"plugins", "cri", "containerd", "default_runtime", "options", "Runtime"}, path)
-
-		defaultRuntimeSubtree := subtreeAtPath(config, "plugins", "cri", "containerd", "default_runtime")
-		if err := defaultRuntimeSubtree.applyOverrides(configOverrides...); err != nil {
-			return fmt.Errorf("failed to apply config overrides to default_runtime: %w", err)
-		}
-	}
-
-	runtimeSubtree := subtreeAtPath(config, "plugins", "cri", "containerd", "runtimes", name)
-	if err := runtimeSubtree.applyOverrides(configOverrides...); err != nil {
-		return fmt.Errorf("failed to apply config overrides: %w", err)
 	}
 
 	*c.Tree = config
@@ -154,14 +143,24 @@ func (c *ConfigV1) RemoveRuntime(name string) error {
 	return nil
 }
 
-// SetOption sets the specified containerd option.
-func (c *ConfigV1) Set(key string, value interface{}) {
-	config := *c.Tree
-	config.SetPath([]string{"plugins", "cri", "containerd", key}, value)
-	*c.Tree = config
-}
-
-// Save wrotes the config to a file
+// Save writes the config to a file
 func (c ConfigV1) Save(path string) (int64, error) {
 	return (Config)(c).Save(path)
+}
+
+func (c *ConfigV1) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
+	if c == nil || c.Tree == nil {
+		return nil, fmt.Errorf("config is nil")
+	}
+	runtimeData := c.GetSubtreeByPath([]string{"plugins", "cri", "containerd", "runtimes", name})
+
+	return &containerdCfgRuntime{
+		tree: runtimeData,
+	}, nil
+}
+
+func (c *ConfigV1) EnableCDI() {
+	config := *c.Tree
+	config.SetPath([]string{"plugins", "cri", "containerd", "enable_cdi"}, true)
+	*c.Tree = config
 }

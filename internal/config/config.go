@@ -18,6 +18,7 @@ package config
 
 import (
 	"bufio"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,8 +31,10 @@ import (
 )
 
 const (
-	configOverride = "XDG_CONFIG_HOME"
-	configFilePath = "nvidia-container-runtime/config.toml"
+	FilePathOverrideEnvVar = "NVIDIA_CTK_CONFIG_FILE_PATH"
+	RelativeFilePath       = "nvidia-container-runtime/config.toml"
+
+	configRootOverride = "XDG_CONFIG_HOME"
 
 	nvidiaCTKExecutable          = "nvidia-ctk"
 	nvidiaCTKDefaultFilePath     = "/usr/bin/nvidia-ctk"
@@ -50,6 +53,8 @@ var (
 	// NVIDIAContainerToolkitExecutable is the executable name for the NVIDIA Container Toolkit (an alias for the NVIDIA Container Runtime Hook)
 	NVIDIAContainerToolkitExecutable = "nvidia-container-toolkit"
 )
+
+var errInvalidConfig = errors.New("invalid config value")
 
 // Config represents the contents of the config.toml file for the NVIDIA Container Toolkit
 // Note: This is currently duplicated by the HookConfig in cmd/nvidia-container-toolkit/hook_config.go
@@ -71,11 +76,15 @@ type Config struct {
 
 // GetConfigFilePath returns the path to the config file for the configured system
 func GetConfigFilePath() string {
-	if XDGConfigDir := os.Getenv(configOverride); len(XDGConfigDir) != 0 {
-		return filepath.Join(XDGConfigDir, configFilePath)
+	if configFilePathOverride := os.Getenv(FilePathOverrideEnvVar); configFilePathOverride != "" {
+		return configFilePathOverride
+	}
+	configRoot := "/etc"
+	if XDGConfigDir := os.Getenv(configRootOverride); len(XDGConfigDir) != 0 {
+		configRoot = XDGConfigDir
 	}
 
-	return filepath.Join("/etc", configFilePath)
+	return filepath.Join(configRoot, RelativeFilePath)
 }
 
 // GetConfig sets up the config struct. Values are read from a toml file
@@ -107,7 +116,7 @@ func GetDefault() (*Config, error) {
 		NVIDIAContainerRuntimeConfig: RuntimeConfig{
 			DebugFilePath: "/dev/null",
 			LogLevel:      "info",
-			Runtimes:      []string{"docker-runc", "runc", "crun"},
+			Runtimes:      []string{"runc", "crun"},
 			Mode:          "auto",
 			Modes: modesConfig{
 				CSV: csvModeConfig{
@@ -118,6 +127,9 @@ func GetDefault() (*Config, error) {
 					AnnotationPrefixes: []string{cdi.AnnotationPrefix},
 					SpecDirs:           cdi.DefaultSpecDirs,
 				},
+				Legacy: legacyModeConfig{
+					CUDACompatMode: defaultCUDACompatMode,
+				},
 			},
 		},
 		NVIDIAContainerRuntimeHookConfig: RuntimeHookConfig{
@@ -127,8 +139,20 @@ func GetDefault() (*Config, error) {
 	return &d, nil
 }
 
-func getLdConfigPath() string {
-	return NormalizeLDConfigPath("@/sbin/ldconfig")
+// assertValid checks for a valid config.
+func (c *Config) assertValid() error {
+	err := c.NVIDIAContainerCLIConfig.Ldconfig.assertValid(c.Features.AllowLDConfigFromContainer.IsEnabled())
+	if err != nil {
+		return errors.Join(err, errInvalidConfig)
+	}
+	return nil
+}
+
+// getLdConfigPath allows us to override this function for testing.
+var getLdConfigPath = getLdConfigPathStub
+
+func getLdConfigPathStub() ldconfigPath {
+	return ldconfigPath("@/sbin/ldconfig").normalize()
 }
 
 func getUserGroup() string {

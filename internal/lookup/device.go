@@ -28,9 +28,15 @@ const (
 // NewCharDeviceLocator creates a Locator that can be used to find char devices at the specified root. A logger is
 // also specified.
 func NewCharDeviceLocator(opts ...Option) Locator {
+	filter := assertCharDevice
+	// TODO: We should have a better way to inject this logic than this envvar.
+	if os.Getenv("__NVCT_TESTING_DEVICES_ARE_FILES") == "true" {
+		filter = assertFile
+	}
+
 	opts = append(opts,
 		WithSearchPaths("", devRoot),
-		WithFilter(assertCharDevice),
+		WithFilter(filter),
 	)
 	return NewFileLocator(
 		opts...,

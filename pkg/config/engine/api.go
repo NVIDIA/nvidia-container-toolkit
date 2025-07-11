@@ -18,9 +18,16 @@ package engine
 
 // Interface defines the API for a runtime config updater.
 type Interface interface {
+	AddRuntime(string, string, bool) error
 	DefaultRuntime() string
-	AddRuntime(string, string, bool, ...map[string]interface{}) error
-	Set(string, interface{})
+	EnableCDI()
+	GetRuntimeConfig(string) (RuntimeConfig, error)
 	RemoveRuntime(string) error
 	Save(string) (int64, error)
+	String() string
+}
+
+// RuntimeConfig defines the interface to query container runtime handler configuration
+type RuntimeConfig interface {
+	GetBinaryPath() string
 }

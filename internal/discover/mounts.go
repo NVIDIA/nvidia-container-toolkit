@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
@@ -35,15 +34,13 @@ type mounts struct {
 	lookup   lookup.Locator
 	root     string
 	required []string
-	sync.Mutex
-	cache []Mount
 }
 
 var _ Discover = (*mounts)(nil)
 
 // NewMounts creates a discoverer for the required mounts using the specified locator.
 func NewMounts(logger logger.Interface, lookup lookup.Locator, root string, required []string) Discover {
-	return newMounts(logger, lookup, root, required)
+	return WithCache(newMounts(logger, lookup, root, required))
 }
 
 // newMounts creates a discoverer for the required mounts using the specified locator.
@@ -61,16 +58,8 @@ func (d *mounts) Mounts() ([]Mount, error) {
 		return nil, fmt.Errorf("no lookup defined")
 	}
 
-	if d.cache != nil {
-		d.logger.Debugf("returning cached mounts")
-		return d.cache, nil
-	}
-
-	d.Lock()
-	defer d.Unlock()
-
-	uniqueMounts := make(map[string]Mount)
-
+	var mounts []Mount
+	seen := make(map[string]bool)
 	for _, candidate := range d.required {
 		d.logger.Debugf("Locating %v", candidate)
 		located, err := d.lookup.Locate(candidate)
@@ -84,7 +73,7 @@ func (d *mounts) Mounts() ([]Mount, error) {
 		}
 		d.logger.Debugf("Located %v as %v", candidate, located)
 		for _, p := range located {
-			if _, ok := uniqueMounts[p]; ok {
+			if seen[p] {
 				d.logger.Debugf("Skipping duplicate mount %v", p)
 				continue
 			}
@@ -95,27 +84,23 @@ func (d *mounts) Mounts() ([]Mount, error) {
 			}
 
 			d.logger.Infof("Selecting %v as %v", p, r)
-			uniqueMounts[p] = Mount{
+			mount := Mount{
 				HostPath: p,
 				Path:     r,
 				Options: []string{
 					"ro",
 					"nosuid",
 					"nodev",
-					"bind",
+					"rbind",
+					"rprivate",
 				},
 			}
+			mounts = append(mounts, mount)
+			seen[p] = true
 		}
 	}
 
-	var mounts []Mount
-	for _, m := range uniqueMounts {
-		mounts = append(mounts, m)
-	}
-
-	d.cache = mounts
-
-	return d.cache, nil
+	return mounts, nil
 }
 
 // relativeTo returns the path relative to the root for the file locator

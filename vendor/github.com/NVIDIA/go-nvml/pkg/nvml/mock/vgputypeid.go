@@ -18,6 +18,9 @@ var _ nvml.VgpuTypeId = &VgpuTypeId{}
 //
 //		// make and configure a mocked nvml.VgpuTypeId
 //		mockedVgpuTypeId := &VgpuTypeId{
+//			GetBAR1InfoFunc: func() (nvml.VgpuTypeBar1Info, nvml.Return) {
+//				panic("mock out the GetBAR1Info method")
+//			},
 //			GetCapabilitiesFunc: func(vgpuCapability nvml.VgpuCapability) (bool, nvml.Return) {
 //				panic("mock out the GetCapabilities method")
 //			},
@@ -67,6 +70,9 @@ var _ nvml.VgpuTypeId = &VgpuTypeId{}
 //
 //	}
 type VgpuTypeId struct {
+	// GetBAR1InfoFunc mocks the GetBAR1Info method.
+	GetBAR1InfoFunc func() (nvml.VgpuTypeBar1Info, nvml.Return)
+
 	// GetCapabilitiesFunc mocks the GetCapabilities method.
 	GetCapabilitiesFunc func(vgpuCapability nvml.VgpuCapability) (bool, nvml.Return)
 
@@ -111,6 +117,9 @@ type VgpuTypeId struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// GetBAR1Info holds details about calls to the GetBAR1Info method.
+		GetBAR1Info []struct {
+		}
 		// GetCapabilities holds details about calls to the GetCapabilities method.
 		GetCapabilities []struct {
 			// VgpuCapability is the vgpuCapability argument value.
@@ -164,6 +173,7 @@ type VgpuTypeId struct {
 			Device nvml.Device
 		}
 	}
+	lockGetBAR1Info             sync.RWMutex
 	lockGetCapabilities         sync.RWMutex
 	lockGetClass                sync.RWMutex
 	lockGetCreatablePlacements  sync.RWMutex
@@ -178,6 +188,33 @@ type VgpuTypeId struct {
 	lockGetNumDisplayHeads      sync.RWMutex
 	lockGetResolution           sync.RWMutex
 	lockGetSupportedPlacements  sync.RWMutex
+}
+
+// GetBAR1Info calls GetBAR1InfoFunc.
+func (mock *VgpuTypeId) GetBAR1Info() (nvml.VgpuTypeBar1Info, nvml.Return) {
+	if mock.GetBAR1InfoFunc == nil {
+		panic("VgpuTypeId.GetBAR1InfoFunc: method is nil but VgpuTypeId.GetBAR1Info was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetBAR1Info.Lock()
+	mock.calls.GetBAR1Info = append(mock.calls.GetBAR1Info, callInfo)
+	mock.lockGetBAR1Info.Unlock()
+	return mock.GetBAR1InfoFunc()
+}
+
+// GetBAR1InfoCalls gets all the calls that were made to GetBAR1Info.
+// Check the length with:
+//
+//	len(mockedVgpuTypeId.GetBAR1InfoCalls())
+func (mock *VgpuTypeId) GetBAR1InfoCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetBAR1Info.RLock()
+	calls = mock.calls.GetBAR1Info
+	mock.lockGetBAR1Info.RUnlock()
+	return calls
 }
 
 // GetCapabilities calls GetCapabilitiesFunc.

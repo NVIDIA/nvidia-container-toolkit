@@ -280,27 +280,14 @@ func (p *nvpci) getGPUByPciBusID(address string, cache map[string]*NvidiaPCIDevi
 		return nil, fmt.Errorf("unable to convert device string to uint16: %v", deviceStr)
 	}
 
-	driver, err := filepath.EvalSymlinks(path.Join(devicePath, "driver"))
-	if err == nil {
-		driver = filepath.Base(driver)
-	} else if os.IsNotExist(err) {
-		driver = ""
-	} else {
-		return nil, fmt.Errorf("unable to detect driver for %s: %v", address, err)
+	driver, err := getDriver(devicePath)
+	if err != nil {
+		return nil, fmt.Errorf("unable to detect driver for %s: %w", address, err)
 	}
 
-	var iommuGroup int64
-	iommu, err := filepath.EvalSymlinks(path.Join(devicePath, "iommu_group"))
-	if err == nil {
-		iommuGroupStr := strings.TrimSpace(filepath.Base(iommu))
-		iommuGroup, err = strconv.ParseInt(iommuGroupStr, 0, 64)
-		if err != nil {
-			return nil, fmt.Errorf("unable to convert iommu_group string to int64: %v", iommuGroupStr)
-		}
-	} else if os.IsNotExist(err) {
-		iommuGroup = -1
-	} else {
-		return nil, fmt.Errorf("unable to detect iommu_group for %s: %v", address, err)
+	iommuGroup, err := getIOMMUGroup(devicePath)
+	if err != nil {
+		return nil, fmt.Errorf("unable to detect IOMMU group for %s: %w", address, err)
 	}
 
 	numa, err := os.ReadFile(path.Join(devicePath, "numa_node"))
@@ -359,7 +346,8 @@ func (p *nvpci) getGPUByPciBusID(address string, cache map[string]*NvidiaPCIDevi
 	var sriovInfo SriovInfo
 	// Device is a virtual function (VF) if "physfn" symlink exists.
 	physFnAddress, err := filepath.EvalSymlinks(path.Join(devicePath, "physfn"))
-	if err == nil {
+	switch {
+	case err == nil:
 		physFn, err := p.getGPUByPciBusID(filepath.Base(physFnAddress), cache)
 		if err != nil {
 			return nil, fmt.Errorf("unable to detect physfn for %s: %v", address, err)
@@ -369,12 +357,12 @@ func (p *nvpci) getGPUByPciBusID(address string, cache map[string]*NvidiaPCIDevi
 				PhysicalFunction: physFn,
 			},
 		}
-	} else if os.IsNotExist(err) {
+	case os.IsNotExist(err):
 		sriovInfo, err = p.getSriovInfoForPhysicalFunction(devicePath)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read SRIOV physical function details for %s: %v", devicePath, err)
 		}
-	} else {
+	default:
 		return nil, fmt.Errorf("unable to read %s: %v", path.Join(devicePath, "physfn"), err)
 	}
 
@@ -520,4 +508,32 @@ func (p *nvpci) getSriovInfoForPhysicalFunction(devicePath string) (sriovInfo Sr
 		},
 	}
 	return sriovInfo, nil
+}
+
+func getDriver(devicePath string) (string, error) {
+	driver, err := filepath.EvalSymlinks(path.Join(devicePath, "driver"))
+	switch {
+	case os.IsNotExist(err):
+		return "", nil
+	case err == nil:
+		return filepath.Base(driver), nil
+	}
+	return "", err
+}
+
+func getIOMMUGroup(devicePath string) (int64, error) {
+	var iommuGroup int64
+	iommu, err := filepath.EvalSymlinks(path.Join(devicePath, "iommu_group"))
+	switch {
+	case os.IsNotExist(err):
+		return -1, nil
+	case err == nil:
+		iommuGroupStr := strings.TrimSpace(filepath.Base(iommu))
+		iommuGroup, err = strconv.ParseInt(iommuGroupStr, 0, 64)
+		if err != nil {
+			return 0, fmt.Errorf("unable to convert iommu_group string to int64: %v", iommuGroupStr)
+		}
+		return iommuGroup, nil
+	}
+	return 0, err
 }

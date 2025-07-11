@@ -21,21 +21,34 @@ import (
 	"strings"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 type builder struct {
-	env            map[string]string
-	mounts         []specs.Mount
+	CUDA
+
 	disableRequire bool
 }
 
+// Option is a functional option for creating a CUDA image.
+type Option func(*builder) error
+
 // New creates a new CUDA image from the input options.
 func New(opt ...Option) (CUDA, error) {
-	b := &builder{}
+	b := &builder{
+		CUDA: CUDA{
+			acceptEnvvarUnprivileged: true,
+		},
+	}
 	for _, o := range opt {
 		if err := o(b); err != nil {
 			return CUDA{}, err
 		}
+	}
+
+	if b.logger == nil {
+		b.logger = logger.New()
 	}
 	if b.env == nil {
 		b.env = make(map[string]string)
@@ -47,18 +60,39 @@ func New(opt ...Option) (CUDA, error) {
 // build creates a CUDA image from the builder.
 func (b builder) build() (CUDA, error) {
 	if b.disableRequire {
-		b.env[envNVDisableRequire] = "true"
+		b.env[EnvVarNvidiaDisableRequire] = "true"
 	}
 
-	c := CUDA{
-		env:    b.env,
-		mounts: b.mounts,
-	}
-	return c, nil
+	return b.CUDA, nil
 }
 
-// Option is a functional option for creating a CUDA image.
-type Option func(*builder) error
+func WithAcceptDeviceListAsVolumeMounts(acceptDeviceListAsVolumeMounts bool) Option {
+	return func(b *builder) error {
+		b.acceptDeviceListAsVolumeMounts = acceptDeviceListAsVolumeMounts
+		return nil
+	}
+}
+
+func WithAcceptEnvvarUnprivileged(acceptEnvvarUnprivileged bool) Option {
+	return func(b *builder) error {
+		b.acceptEnvvarUnprivileged = acceptEnvvarUnprivileged
+		return nil
+	}
+}
+
+func WithAnnotations(annotations map[string]string) Option {
+	return func(b *builder) error {
+		b.annotations = annotations
+		return nil
+	}
+}
+
+func WithAnnotationsPrefixes(annotationsPrefixes []string) Option {
+	return func(b *builder) error {
+		b.annotationsPrefixes = annotationsPrefixes
+		return nil
+	}
+}
 
 // WithDisableRequire sets the disable require option.
 func WithDisableRequire(disableRequire bool) Option {
@@ -93,10 +127,35 @@ func WithEnvMap(env map[string]string) Option {
 	}
 }
 
+// WithLogger sets the logger to use when creating the CUDA image.
+func WithLogger(logger logger.Interface) Option {
+	return func(b *builder) error {
+		b.logger = logger
+		return nil
+	}
+}
+
 // WithMounts sets the mounts associated with the CUDA image.
 func WithMounts(mounts []specs.Mount) Option {
 	return func(b *builder) error {
 		b.mounts = mounts
+		return nil
+	}
+}
+
+// WithPreferredVisibleDevicesEnvVars sets the environment variables that
+// should take precedence over the default NVIDIA_VISIBLE_DEVICES.
+func WithPreferredVisibleDevicesEnvVars(preferredVisibleDeviceEnvVars ...string) Option {
+	return func(b *builder) error {
+		b.preferredVisibleDeviceEnvVars = preferredVisibleDeviceEnvVars
+		return nil
+	}
+}
+
+// WithPrivileged sets whether an image is privileged or not.
+func WithPrivileged(isPrivileged bool) Option {
+	return func(b *builder) error {
+		b.isPrivileged = isPrivileged
 		return nil
 	}
 }

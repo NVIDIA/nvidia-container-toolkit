@@ -23,6 +23,9 @@ var _ PropertyExtractor = &PropertyExtractorMock{}
 //			HasNvmlFunc: func() (bool, string) {
 //				panic("mock out the HasNvml method")
 //			},
+//			HasOnlyIntegratedGPUsFunc: func() (bool, string) {
+//				panic("mock out the HasOnlyIntegratedGPUs method")
+//			},
 //			HasTegraFilesFunc: func() (bool, string) {
 //				panic("mock out the HasTegraFiles method")
 //			},
@@ -45,6 +48,9 @@ type PropertyExtractorMock struct {
 	// HasNvmlFunc mocks the HasNvml method.
 	HasNvmlFunc func() (bool, string)
 
+	// HasOnlyIntegratedGPUsFunc mocks the HasOnlyIntegratedGPUs method.
+	HasOnlyIntegratedGPUsFunc func() (bool, string)
+
 	// HasTegraFilesFunc mocks the HasTegraFiles method.
 	HasTegraFilesFunc func() (bool, string)
 
@@ -62,6 +68,9 @@ type PropertyExtractorMock struct {
 		// HasNvml holds details about calls to the HasNvml method.
 		HasNvml []struct {
 		}
+		// HasOnlyIntegratedGPUs holds details about calls to the HasOnlyIntegratedGPUs method.
+		HasOnlyIntegratedGPUs []struct {
+		}
 		// HasTegraFiles holds details about calls to the HasTegraFiles method.
 		HasTegraFiles []struct {
 		}
@@ -72,11 +81,12 @@ type PropertyExtractorMock struct {
 		UsesOnlyNVGPUModule []struct {
 		}
 	}
-	lockHasDXCore           sync.RWMutex
-	lockHasNvml             sync.RWMutex
-	lockHasTegraFiles       sync.RWMutex
-	lockIsTegraSystem       sync.RWMutex
-	lockUsesOnlyNVGPUModule sync.RWMutex
+	lockHasDXCore             sync.RWMutex
+	lockHasNvml               sync.RWMutex
+	lockHasOnlyIntegratedGPUs sync.RWMutex
+	lockHasTegraFiles         sync.RWMutex
+	lockIsTegraSystem         sync.RWMutex
+	lockUsesOnlyNVGPUModule   sync.RWMutex
 }
 
 // HasDXCore calls HasDXCoreFunc.
@@ -130,6 +140,33 @@ func (mock *PropertyExtractorMock) HasNvmlCalls() []struct {
 	mock.lockHasNvml.RLock()
 	calls = mock.calls.HasNvml
 	mock.lockHasNvml.RUnlock()
+	return calls
+}
+
+// HasOnlyIntegratedGPUs calls HasOnlyIntegratedGPUsFunc.
+func (mock *PropertyExtractorMock) HasOnlyIntegratedGPUs() (bool, string) {
+	if mock.HasOnlyIntegratedGPUsFunc == nil {
+		panic("PropertyExtractorMock.HasOnlyIntegratedGPUsFunc: method is nil but PropertyExtractor.HasOnlyIntegratedGPUs was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockHasOnlyIntegratedGPUs.Lock()
+	mock.calls.HasOnlyIntegratedGPUs = append(mock.calls.HasOnlyIntegratedGPUs, callInfo)
+	mock.lockHasOnlyIntegratedGPUs.Unlock()
+	return mock.HasOnlyIntegratedGPUsFunc()
+}
+
+// HasOnlyIntegratedGPUsCalls gets all the calls that were made to HasOnlyIntegratedGPUs.
+// Check the length with:
+//
+//	len(mockedPropertyExtractor.HasOnlyIntegratedGPUsCalls())
+func (mock *PropertyExtractorMock) HasOnlyIntegratedGPUsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockHasOnlyIntegratedGPUs.RLock()
+	calls = mock.calls.HasOnlyIntegratedGPUs
+	mock.lockHasOnlyIntegratedGPUs.RUnlock()
 	return calls
 }
 

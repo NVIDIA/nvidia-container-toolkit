@@ -25,10 +25,10 @@ import (
 )
 
 type deviceFolderPermissions struct {
-	logger            logger.Interface
-	devRoot           string
-	nvidiaCDIHookPath string
-	devices           discover.Discover
+	logger      logger.Interface
+	devRoot     string
+	devices     discover.Discover
+	hookCreator discover.HookCreator
 }
 
 var _ discover.Discover = (*deviceFolderPermissions)(nil)
@@ -39,12 +39,12 @@ var _ discover.Discover = (*deviceFolderPermissions)(nil)
 // The nested devices that are applicable to the NVIDIA GPU devices are:
 //   - DRM devices at /dev/dri/*
 //   - NVIDIA Caps devices at /dev/nvidia-caps/*
-func newDeviceFolderPermissionHookDiscoverer(logger logger.Interface, devRoot string, nvidiaCDIHookPath string, devices discover.Discover) discover.Discover {
+func newDeviceFolderPermissionHookDiscoverer(logger logger.Interface, devRoot string, hookCreator discover.HookCreator, devices discover.Discover) discover.Discover {
 	d := &deviceFolderPermissions{
-		logger:            logger,
-		devRoot:           devRoot,
-		nvidiaCDIHookPath: nvidiaCDIHookPath,
-		devices:           devices,
+		logger:      logger,
+		devRoot:     devRoot,
+		hookCreator: hookCreator,
+		devices:     devices,
 	}
 
 	return d
@@ -55,28 +55,20 @@ func (d *deviceFolderPermissions) Devices() ([]discover.Device, error) {
 	return nil, nil
 }
 
+// EnvVars are empty for this discoverer
+func (d *deviceFolderPermissions) EnvVars() ([]discover.EnvVar, error) {
+	return nil, nil
+}
+
 // Hooks returns a set of hooks that sets the file mode to 755 of parent folders for nested device nodes.
 func (d *deviceFolderPermissions) Hooks() ([]discover.Hook, error) {
 	folders, err := d.getDeviceSubfolders()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device subfolders: %v", err)
 	}
-	if len(folders) == 0 {
-		return nil, nil
-	}
 
-	args := []string{"--mode", "755"}
-	for _, folder := range folders {
-		args = append(args, "--path", folder)
-	}
-
-	hook := discover.CreateNvidiaCDIHook(
-		d.nvidiaCDIHookPath,
-		"chmod",
-		args...,
-	)
-
-	return []discover.Hook{hook}, nil
+	//nolint:staticcheck // The ChmodHook is deprecated and will be removed in a future release.
+	return d.hookCreator.Create(discover.ChmodHook, folders...).Hooks()
 }
 
 func (d *deviceFolderPermissions) getDeviceSubfolders() ([]string, error) {

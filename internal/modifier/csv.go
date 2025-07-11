@@ -30,23 +30,16 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 )
 
-const (
-	visibleDevicesEnvvar = "NVIDIA_VISIBLE_DEVICES"
-	visibleDevicesVoid   = "void"
-
-	nvidiaRequireJetpackEnvvar = "NVIDIA_REQUIRE_JETPACK"
-)
-
 // NewCSVModifier creates a modifier that applies modications to an OCI spec if required by the runtime wrapper.
 // The modifications are defined by CSV MountSpecs.
-func NewCSVModifier(logger logger.Interface, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
-	if devices := image.DevicesFromEnvvars(visibleDevicesEnvvar); len(devices.List()) == 0 {
+func NewCSVModifier(logger logger.Interface, cfg *config.Config, container image.CUDA) (oci.SpecModifier, error) {
+	if devices := container.VisibleDevices(); len(devices) == 0 {
 		logger.Infof("No modification required; no devices requested")
 		return nil, nil
 	}
 	logger.Infof("Constructing modifier from config: %+v", *cfg)
 
-	if err := checkRequirements(logger, image); err != nil {
+	if err := checkRequirements(logger, container); err != nil {
 		return nil, fmt.Errorf("requirements not met: %v", err)
 	}
 
@@ -55,7 +48,7 @@ func NewCSVModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		return nil, fmt.Errorf("failed to get list of CSV files: %v", err)
 	}
 
-	if image.Getenv(nvidiaRequireJetpackEnvvar) != "csv-mounts=all" {
+	if container.Getenv(image.EnvVarNvidiaRequireJetpack) != "csv-mounts=all" {
 		csvFiles = csv.BaseFilesOnly(csvFiles)
 	}
 
@@ -75,20 +68,10 @@ func NewCSVModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		return nil, fmt.Errorf("failed to get CDI spec: %v", err)
 	}
 
-	cdiModifier, err := cdi.New(
+	return cdi.New(
 		cdi.WithLogger(logger),
 		cdi.WithSpec(spec.Raw()),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct CDI modifier: %v", err)
-	}
-
-	modifiers := Merge(
-		nvidiaContainerRuntimeHookRemover{logger},
-		cdiModifier,
-	)
-
-	return modifiers, nil
 }
 
 func checkRequirements(logger logger.Interface, image image.CUDA) error {

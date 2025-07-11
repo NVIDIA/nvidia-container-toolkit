@@ -19,32 +19,38 @@ package nvcdi
 import (
 	"fmt"
 
-	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 )
 
 type csvlib nvcdilib
 
-var _ Interface = (*csvlib)(nil)
+var _ deviceSpecGeneratorFactory = (*csvlib)(nil)
 
-// GetSpec should not be called for wsllib
-func (l *csvlib) GetSpec() (spec.Interface, error) {
-	return nil, fmt.Errorf("Unexpected call to csvlib.GetSpec()")
+func (l *csvlib) DeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, error) {
+	for _, id := range ids {
+		switch id {
+		case "all":
+		case "0":
+		default:
+			return nil, fmt.Errorf("unsupported device id: %v", id)
+		}
+	}
+
+	return l, nil
 }
 
-// GetAllDeviceSpecs returns the device specs for all available devices.
-func (l *csvlib) GetAllDeviceSpecs() ([]specs.Device, error) {
+// GetDeviceSpecs returns the CDI device specs for a single device.
+func (l *csvlib) GetDeviceSpecs() ([]specs.Device, error) {
 	d, err := tegra.New(
 		tegra.WithLogger(l.logger),
 		tegra.WithDriverRoot(l.driverRoot),
 		tegra.WithDevRoot(l.devRoot),
-		tegra.WithNVIDIACDIHookPath(l.nvidiaCDIHookPath),
+		tegra.WithHookCreator(l.hookCreator),
 		tegra.WithLdconfigPath(l.ldconfigPath),
 		tegra.WithCSVFiles(l.csvFiles),
 		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
@@ -76,33 +82,5 @@ func (l *csvlib) GetAllDeviceSpecs() ([]specs.Device, error) {
 
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
 func (l *csvlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	d := discover.None{}
-	return edits.FromDiscoverer(d)
-}
-
-// GetGPUDeviceEdits generates a CDI specification that can be used for GPU devices
-func (l *csvlib) GetGPUDeviceEdits(device.Device) (*cdi.ContainerEdits, error) {
-	return nil, fmt.Errorf("GetGPUDeviceEdits is not supported for CSV files")
-}
-
-// GetGPUDeviceSpecs returns the CDI device specs for the full GPU represented by 'device'.
-func (l *csvlib) GetGPUDeviceSpecs(i int, d device.Device) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetGPUDeviceSpecs is not supported for CSV files")
-}
-
-// GetMIGDeviceEdits generates a CDI specification that can be used for MIG devices
-func (l *csvlib) GetMIGDeviceEdits(device.Device, device.MigDevice) (*cdi.ContainerEdits, error) {
-	return nil, fmt.Errorf("GetMIGDeviceEdits is not supported for CSV files")
-}
-
-// GetMIGDeviceSpecs returns the CDI device specs for the full MIG represented by 'device'.
-func (l *csvlib) GetMIGDeviceSpecs(int, device.Device, int, device.MigDevice) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetMIGDeviceSpecs is not supported for CSV files")
-}
-
-// GetDeviceSpecsByID returns the CDI device specs for the GPU(s) represented by
-// the provided identifiers, where an identifier is an index or UUID of a valid
-// GPU device.
-func (l *csvlib) GetDeviceSpecsByID(...string) ([]specs.Device, error) {
-	return nil, fmt.Errorf("GetDeviceSpecsByID is not supported for CSV files")
+	return edits.FromDiscoverer(discover.None{})
 }

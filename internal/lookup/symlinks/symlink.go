@@ -25,11 +25,26 @@ import (
 func Resolve(filename string) (string, error) {
 	info, err := os.Lstat(filename)
 	if err != nil {
-		return filename, fmt.Errorf("failed to get file info: %v", info)
+		return filename, fmt.Errorf("failed to get file info: %w", err)
 	}
 	if info.Mode()&os.ModeSymlink == 0 {
 		return filename, nil
 	}
 
 	return os.Readlink(filename)
+}
+
+// ForceCreate creates a specified symlink.
+// If a file (or empty directory) exists at the path it is removed.
+func ForceCreate(target string, link string) error {
+	_, err := os.Lstat(link)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to get file info: %w", err)
+	}
+	if !os.IsNotExist(err) {
+		if err := os.Remove(link); err != nil {
+			return fmt.Errorf("failed to remove existing file: %w", err)
+		}
+	}
+	return os.Symlink(target, link)
 }

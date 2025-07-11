@@ -55,7 +55,7 @@ func getCLIPath(config config.ContainerCLIConfig) string {
 }
 
 // getRootfsPath returns an absolute path. We don't need to resolve symlinks for now.
-func getRootfsPath(config containerConfig) string {
+func getRootfsPath(config *containerConfig) string {
 	rootfs, err := filepath.Abs(config.Rootfs)
 	if err != nil {
 		log.Panicln(err)
@@ -75,15 +75,15 @@ func doPrestart() {
 	}
 	cli := hook.NVIDIAContainerCLIConfig
 
-	container := getContainerConfig(*hook)
+	container := hook.getContainerConfig()
 	nvidia := container.Nvidia
 	if nvidia == nil {
 		// Not a GPU container, nothing to do.
 		return
 	}
 
-	if !hook.NVIDIAContainerRuntimeHookConfig.SkipModeDetection && info.ResolveAutoMode(&logInterceptor{}, hook.NVIDIAContainerRuntimeConfig.Mode, container.Image) != "legacy" {
-		log.Panicln("invoking the NVIDIA Container Runtime Hook directly (e.g. specifying the docker --gpus flag) is not supported. Please use the NVIDIA Container Runtime (e.g. specify the --runtime=nvidia flag) instead.")
+	if err := hook.assertModeIsLegacy(); err != nil {
+		log.Panicf("%v", err)
 	}
 
 	rootfs := getRootfsPath(container)
@@ -94,6 +94,9 @@ func doPrestart() {
 	}
 	if cli.LoadKmods {
 		args = append(args, "--load-kmods")
+	}
+	if hook.Features.DisableImexChannelCreation.IsEnabled() {
+		args = append(args, "--no-create-imex-channels")
 	}
 	if cli.NoPivot {
 		args = append(args, "--no-pivot")
@@ -111,14 +114,16 @@ func doPrestart() {
 	}
 	args = append(args, "configure")
 
+	args = append(args, hook.nvidiaContainerCliCUDACompatModeFlags()...)
+
 	if ldconfigPath := cli.NormalizeLDConfigPath(); ldconfigPath != "" {
 		args = append(args, fmt.Sprintf("--ldconfig=%s", ldconfigPath))
 	}
 	if cli.NoCgroups {
 		args = append(args, "--no-cgroups")
 	}
-	if len(nvidia.Devices) > 0 {
-		args = append(args, fmt.Sprintf("--device=%s", nvidia.Devices))
+	if devicesString := strings.Join(nvidia.Devices, ","); len(devicesString) > 0 {
+		args = append(args, fmt.Sprintf("--device=%s", devicesString))
 	}
 	if len(nvidia.MigConfigDevices) > 0 {
 		args = append(args, fmt.Sprintf("--mig-config=%s", nvidia.MigConfigDevices))
@@ -126,8 +131,8 @@ func doPrestart() {
 	if len(nvidia.MigMonitorDevices) > 0 {
 		args = append(args, fmt.Sprintf("--mig-monitor=%s", nvidia.MigMonitorDevices))
 	}
-	if len(nvidia.ImexChannels) > 0 {
-		args = append(args, fmt.Sprintf("--imex-channel=%s", nvidia.ImexChannels))
+	if imexString := strings.Join(nvidia.ImexChannels, ","); len(imexString) > 0 {
+		args = append(args, fmt.Sprintf("--imex-channel=%s", imexString))
 	}
 
 	for _, cap := range strings.Split(nvidia.DriverCapabilities, ",") {

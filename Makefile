@@ -60,7 +60,7 @@ endif
 cmds: $(CMD_TARGETS)
 
 ifneq ($(shell uname),Darwin)
-EXTLDFLAGS = -Wl,--export-dynamic -Wl,--unresolved-symbols=ignore-in-object-files
+EXTLDFLAGS = -Wl,--export-dynamic -Wl,--unresolved-symbols=ignore-in-object-files -Wl,-z,lazy
 else
 EXTLDFLAGS = -Wl,-undefined,dynamic_lookup
 endif
@@ -90,24 +90,43 @@ goimports:
 lint:
 	golangci-lint run ./...
 
-vendor:
-	go mod tidy
-	go mod vendor
-	go mod verify
+vendor:  | mod-tidy mod-vendor mod-verify
+
+mod-tidy:
+	@for mod in $$(find . -name go.mod -not -path "./testdata/*" -not -path "./third_party/*"); do \
+	    echo "Tidying $$mod..."; ( \
+	        cd $$(dirname $$mod) && go mod tidy \
+            ) || exit 1; \
+	done
+
+mod-vendor:
+	@for mod in $$(find . -name go.mod -not -path "./testdata/*" -not -path "./third_party/*" -not -path "./deployments/*"); do \
+		echo "Vendoring $$mod..."; ( \
+			cd $$(dirname $$mod) && go mod vendor \
+			) || exit 1; \
+	done
+
+mod-verify:
+	@for mod in $$(find . -name go.mod -not -path "./testdata/*" -not -path "./third_party/*"); do \
+	    echo "Verifying $$mod..."; ( \
+	        cd $$(dirname $$mod) && go mod verify | sed 's/^/  /g' \
+	    ) || exit 1; \
+	done
+
 
 check-vendor: vendor
-	git diff --quiet HEAD -- go.mod go.sum vendor
+	git diff --exit-code HEAD -- go.mod go.sum vendor
 
 licenses:
 	go-licenses csv $(MODULE)/...
 
 COVERAGE_FILE := coverage.out
 test: build cmds
-	go test -coverprofile=$(COVERAGE_FILE) $(MODULE)/...
+	go test -coverprofile=$(COVERAGE_FILE).with-mocks $(MODULE)/...
 
 coverage: test
-	cat $(COVERAGE_FILE) | grep -v "_mock.go" > $(COVERAGE_FILE).no-mocks
-	go tool cover -func=$(COVERAGE_FILE).no-mocks
+	cat $(COVERAGE_FILE).with-mocks | grep -v "_mock.go" > $(COVERAGE_FILE)
+	go tool cover -func=$(COVERAGE_FILE)
 
 generate:
 	go generate $(MODULE)/...

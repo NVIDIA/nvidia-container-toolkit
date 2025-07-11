@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 )
 
@@ -33,6 +34,21 @@ const (
 type Config map[string]interface{}
 
 var _ engine.Interface = (*Config)(nil)
+
+type dockerRuntime map[string]interface{}
+
+var _ engine.RuntimeConfig = (*dockerRuntime)(nil)
+
+// GetBinaryPath retrieves the path to the low-level runtime binary for a runtime.
+// If no path is available, the empty string is returned.
+func (d dockerRuntime) GetBinaryPath() string {
+	if d == nil {
+		return ""
+	}
+
+	path, _ := d["path"].(string)
+	return path
+}
 
 // New creates a docker config with the specified options
 func New(opts ...Option) (engine.Interface, error) {
@@ -49,7 +65,7 @@ func New(opts ...Option) (engine.Interface, error) {
 }
 
 // AddRuntime adds a new runtime to the docker config
-func (c *Config) AddRuntime(name string, path string, setAsDefault bool, _ ...map[string]interface{}) error {
+func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	if c == nil {
 		return fmt.Errorf("config is nil")
 	}
@@ -87,6 +103,24 @@ func (c Config) DefaultRuntime() string {
 	return r
 }
 
+// EnableCDI sets features.cdi to true in the docker config.
+func (c *Config) EnableCDI() {
+	if c == nil {
+		return
+	}
+	config := *c
+
+	features, ok := config["features"].(map[string]bool)
+	if !ok {
+		features = make(map[string]bool)
+	}
+	features["cdi"] = true
+
+	config["features"] = features
+
+	*c = config
+}
+
 // RemoveRuntime removes a runtime from the docker config
 func (c *Config) RemoveRuntime(name string) error {
 	if c == nil {
@@ -116,11 +150,6 @@ func (c *Config) RemoveRuntime(name string) error {
 	return nil
 }
 
-// Set sets the specified docker option
-func (c *Config) Set(key string, value interface{}) {
-	(*c)[key] = value
-}
-
 // Save writes the config to the specified path
 func (c Config) Save(path string) (int64, error) {
 	output, err := json.MarshalIndent(c, "", "    ")
@@ -128,6 +157,35 @@ func (c Config) Save(path string) (int64, error) {
 		return 0, fmt.Errorf("unable to convert to JSON: %v", err)
 	}
 
-	n, err := engine.Config(path).Write(output)
+	n, err := config.Raw(path).Write(output)
 	return int64(n), err
+}
+
+// GetRuntimeConfig returns the runtime info of the runtime passed as input
+func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
+	if c == nil {
+		return nil, fmt.Errorf("config is nil")
+	}
+
+	cfg := *c
+
+	var runtimes map[string]interface{}
+	if _, ok := cfg["runtimes"]; ok {
+		runtimes = cfg["runtimes"].(map[string]interface{})
+		if r, ok := runtimes[name]; ok {
+			dr := dockerRuntime(r.(map[string]interface{}))
+			return &dr, nil
+		}
+	}
+	return &dockerRuntime{}, nil
+}
+
+// String returns the string representation of the JSON config.
+func (c Config) String() string {
+	output, err := json.MarshalIndent(c, "", "    ")
+	if err != nil {
+		return fmt.Sprintf("invalid JSON: %v", err)
+	}
+
+	return string(output)
 }

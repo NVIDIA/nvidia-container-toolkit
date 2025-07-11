@@ -17,6 +17,7 @@
 package chmod
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -25,7 +26,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
@@ -36,7 +37,7 @@ type command struct {
 }
 
 type config struct {
-	paths         cli.StringSlice
+	paths         []string
 	modeStr       string
 	mode          fs.FileMode
 	containerSpec string
@@ -58,36 +59,35 @@ func (m command) build() *cli.Command {
 	c := cli.Command{
 		Name:  "chmod",
 		Usage: "Set the permissions of folders in the container by running chmod. The container root is prefixed to the specified paths.",
-		Before: func(c *cli.Context) error {
-			return validateFlags(c, &cfg)
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			return ctx, m.validateFlags(cmd, &cfg)
 		},
-		Action: func(c *cli.Context) error {
-			return m.run(c, &cfg)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return m.run(cmd, &cfg)
 		},
-	}
-
-	c.Flags = []cli.Flag{
-		&cli.StringSliceFlag{
-			Name:        "path",
-			Usage:       "Specify a path to apply the specified mode to",
-			Destination: &cfg.paths,
-		},
-		&cli.StringFlag{
-			Name:        "mode",
-			Usage:       "Specify the file mode",
-			Destination: &cfg.modeStr,
-		},
-		&cli.StringFlag{
-			Name:        "container-spec",
-			Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
-			Destination: &cfg.containerSpec,
+		Flags: []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:        "path",
+				Usage:       "Specify a path to apply the specified mode to",
+				Destination: &cfg.paths,
+			},
+			&cli.StringFlag{
+				Name:        "mode",
+				Usage:       "Specify the file mode",
+				Destination: &cfg.modeStr,
+			},
+			&cli.StringFlag{
+				Name:        "container-spec",
+				Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
+				Destination: &cfg.containerSpec,
+			},
 		},
 	}
 
 	return &c
 }
 
-func validateFlags(c *cli.Context, cfg *config) error {
+func (m command) validateFlags(_ *cli.Command, cfg *config) error {
 	if strings.TrimSpace(cfg.modeStr) == "" {
 		return fmt.Errorf("a non-empty mode must be specified")
 	}
@@ -98,7 +98,7 @@ func validateFlags(c *cli.Context, cfg *config) error {
 	}
 	cfg.mode = fs.FileMode(modeInt)
 
-	for _, p := range cfg.paths.Value() {
+	for _, p := range cfg.paths {
 		if strings.TrimSpace(p) == "" {
 			return fmt.Errorf("paths must not be empty")
 		}
@@ -107,7 +107,7 @@ func validateFlags(c *cli.Context, cfg *config) error {
 	return nil
 }
 
-func (m command) run(c *cli.Context, cfg *config) error {
+func (m command) run(_ *cli.Command, cfg *config) error {
 	s, err := oci.LoadContainerState(cfg.containerSpec)
 	if err != nil {
 		return fmt.Errorf("failed to load container state: %v", err)
@@ -121,7 +121,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 		return fmt.Errorf("empty container root detected")
 	}
 
-	paths := m.getPaths(containerRoot, cfg.paths.Value(), cfg.mode)
+	paths := m.getPaths(containerRoot, cfg.paths, cfg.mode)
 	if len(paths) == 0 {
 		m.logger.Debugf("No paths specified; exiting")
 		return nil
