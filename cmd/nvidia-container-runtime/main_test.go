@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -87,8 +88,7 @@ func TestBadInput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	cmdCreate := exec.Command(nvidiaRuntime, "create", "--bundle")
+	cmdCreate := exec.Command(oci.Escape1(nvidiaRuntime), oci.Escape([]string{"create", "--bundle"})...) //nolint:gosec
 	t.Logf("executing: %s\n", strings.Join(cmdCreate.Args, " "))
 	err = cmdCreate.Run()
 	require.Error(t, err, "runtime should return an error")
@@ -105,8 +105,8 @@ func TestGoodInput(t *testing.T) {
 		t.Fatalf("error generating runtime spec: %v", err)
 	}
 
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	cmdRun := exec.Command(nvidiaRuntime, "run", "--bundle", cfg.bundlePath(), "testcontainer")
+	//nolint:gosec
+	cmdRun := exec.Command(oci.Escape1(nvidiaRuntime), oci.Escape([]string{"run", "--bundle", cfg.bundlePath(), "testcontainer"})...)
 	t.Logf("executing: %s\n", strings.Join(cmdRun.Args, " "))
 	output, err := cmdRun.CombinedOutput()
 	require.NoErrorf(t, err, "runtime should not return an error", "output=%v", string(output))
@@ -116,8 +116,8 @@ func TestGoodInput(t *testing.T) {
 	require.NoError(t, err, "should be no errors when reading and parsing spec from config.json")
 	require.Empty(t, spec.Hooks, "there should be no hooks in config.json")
 
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	cmdCreate := exec.Command(nvidiaRuntime, "create", "--bundle", cfg.bundlePath(), "testcontainer")
+	//nolint:gosec
+	cmdCreate := exec.Command(oci.Escape1(nvidiaRuntime), oci.Escape([]string{"create", "--bundle", cfg.bundlePath(), "testcontainer"})...)
 	t.Logf("executing: %s\n", strings.Join(cmdCreate.Args, " "))
 	err = cmdCreate.Run()
 	require.NoError(t, err, "runtime should not return an error")
@@ -161,8 +161,8 @@ func TestDuplicateHook(t *testing.T) {
 	}
 
 	// Test how runtime handles already existing prestart hook in config.json
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	cmdCreate := exec.Command(nvidiaRuntime, "create", "--bundle", cfg.bundlePath(), "testcontainer")
+	//nolint:gosec
+	cmdCreate := exec.Command(oci.Escape1(nvidiaRuntime), oci.Escape([]string{"create", "--bundle", cfg.bundlePath(), "testcontainer"})...)
 	t.Logf("executing: %s\n", strings.Join(cmdCreate.Args, " "))
 	output, err := cmdCreate.CombinedOutput()
 	require.NoErrorf(t, err, "runtime should not return an error", "output=%v", string(output))
@@ -230,8 +230,8 @@ func (c testConfig) generateNewRuntimeSpec() error {
 		return err
 	}
 
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	cmd := exec.Command("cp", c.unmodifiedSpecFile(), c.specFilePath())
+	//nolint:gosec
+	cmd := exec.Command(oci.Escape1("cp"), oci.Escape([]string{c.unmodifiedSpecFile(), c.specFilePath()})...)
 	err = cmd.Run()
 	if err != nil {
 		return err
