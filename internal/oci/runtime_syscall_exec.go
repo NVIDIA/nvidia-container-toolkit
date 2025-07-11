@@ -31,6 +31,9 @@ import (
 // These metacharacters include: | & ; ( ) < > \t \n $ \ `
 const shellMetachars = "|&;()<> \t\n$\\`"
 
+// metacharRegex matches any shell metacharcter.
+var metacharRegex = regexp.MustCompile(`([` + regexp.QuoteMeta(shellMetachars) + `])`)
+
 type syscallExec struct{}
 
 var _ Runtime = (*syscallExec)(nil)
@@ -54,7 +57,7 @@ func (r syscallExec) String() string {
 // Escape1 escapes shell metacharacters in a single command-line argument.
 func Escape1(arg string) string {
 	if strings.ContainsAny(arg, shellMetachars) {
-		e := regexp.MustCompile(`([|&;()<> \t\n$\\`+"`"+`])`).ReplaceAllString(arg, `\$1`)
+		e := metacharRegex.ReplaceAllString(arg, `\$1`)
 		return fmt.Sprintf(`"%s"`, e)
 	}
 	return arg
