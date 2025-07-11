@@ -8,13 +8,13 @@
 
 ## Introduction
 
-The NVIDIA Container Toolkit allows users to build and run GPU accelerated containers. The toolkit includes a container runtime [library](https://github.com/NVIDIA/libnvidia-container) and utilities to automatically configure containers to leverage NVIDIA GPUs.
+The NVIDIA Container Toolkit allows users to build and run GPU-accelerated containers. The toolkit includes a container runtime [library](https://github.com/NVIDIA/libnvidia-container) and utilities to automatically configure containers to leverage NVIDIA GPUs.
 
 Product documentation including an architecture overview, platform support, and installation and usage guides can be found in the [documentation repository](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/overview.html).
 
 ## Getting Started
 
-**Make sure you have installed the [NVIDIA driver](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#nvidia-drivers) for your Linux Distribution**
+**Make sure you have installed the [NVIDIA driver](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#nvidia-drivers) for your Linux Distribution**  
 **Note that you do not need to install the CUDA Toolkit on the host system, but the NVIDIA driver needs to be installed**
 
 For instructions on getting started with the NVIDIA Container Toolkit, refer to the [installation guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installation-guide).
@@ -28,4 +28,8 @@ The [user guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolk
 [Checkout the Contributing document!](CONTRIBUTING.md)
 
 * Please let us know by [filing a new issue](https://github.com/NVIDIA/nvidia-container-toolkit/issues/new)
-* You can contribute by creating a [pull request](https://github.com/NVIDIA/nvidia-container-toolkit/compare) to our public GitHub repository
+* You can contribute by creating a [merge request](https://gitlab.com/nvidia/container-toolkit/container-toolkit/-/merge_requests/new) to our public GitLab repository
+
+## Releases and Updates
+
+For the latest releases and updates, check the [CHANGELOG](https://github.com/NVIDIA/libnvidia-container/blob/main/CHANGELOG.md).
