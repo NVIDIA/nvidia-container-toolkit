@@ -19,16 +19,25 @@ package oci
 import (
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 	"syscall"
 )
+
+// shellMetachars represents a set of shell metacharacters that are commonly
+// used for shell scripting and may lead to security vulnerabilities if not
+// properly handled.
+//
+// These metacharacters include: | & ; ( ) < > \t \n $ \ `
+const shellMetachars = "|&;()<> \t\n$\\`"
 
 type syscallExec struct{}
 
 var _ Runtime = (*syscallExec)(nil)
 
 func (r syscallExec) Exec(args []string) error {
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	err := syscall.Exec(args[0], args, os.Environ())
+	args = Escape(args)
+	err := syscall.Exec(args[0], args, os.Environ()) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("could not exec '%v': %v", args[0], err)
 	}
@@ -40,4 +49,23 @@ func (r syscallExec) Exec(args []string) error {
 
 func (r syscallExec) String() string {
 	return "exec"
+}
+
+// Escape1 escapes shell metacharacters in a single command-line argument.
+func Escape1(arg string) string {
+	if strings.ContainsAny(arg, shellMetachars) {
+		e := regexp.MustCompile(`([|&;()<> \t\n$\\`+"`"+`])`).ReplaceAllString(arg, `\$1`)
+		return fmt.Sprintf(`"%s"`, e)
+	}
+	return arg
+}
+
+// Escape escapes shell metacharacters in a slice of command-line arguments
+// and returns a new slice containing the escaped arguments.
+func Escape(args []string) []string {
+	escaped := make([]string, len(args))
+	for i := range args {
+		escaped[i] = Escape1(args[i])
+	}
+	return escaped
 }
