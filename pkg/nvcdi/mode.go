@@ -42,6 +42,8 @@ const (
 	ModeCSV = Mode("csv")
 	// ModeImex configures the CDI spec generated to generate a spec for the available IMEX channels.
 	ModeImex = Mode("imex")
+	// ModeVfio configures the CDI spec generator to generate a VFIO spec.
+	ModeVfio = Mode("vfio")
 )
 
 type modeConstraint interface {
@@ -66,6 +68,7 @@ func getModes() modes {
 			ModeGds,
 			ModeMofed,
 			ModeCSV,
+			ModeVfio,
 		}
 		lookup := make(map[Mode]bool)
 
