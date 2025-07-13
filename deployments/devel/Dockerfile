@@ -14,7 +14,7 @@
 
 # This Dockerfile is also used to define the golang version used in this project
 # This allows dependabot to manage this version in addition to other images.
-FROM golang:1.23.10
+FROM golang:1.23.11
 
 WORKDIR /work
 COPY * .
