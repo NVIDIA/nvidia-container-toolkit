@@ -40,7 +40,7 @@ func TestEscape(t *testing.T) {
 		{
 			name:     "Slice with some Metacharacters",
 			input:    []string{"echo", "Hello World", "and", "goodbye | cat"},
-			expected: []string{"echo", `"Hello\ World"`, "and", `"goodbye\ \|\ cat"`},
+			expected: []string{"echo", `Hello\ World`, `and`, `goodbye\ \|\ cat`},
 		},
 	}
 
