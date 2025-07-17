@@ -88,7 +88,7 @@ func TestBadInput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmdCreate := exec.Command(oci.EscapeArg(nvidiaRuntime), oci.Escape([]string{"create", "--bundle"})...) //nolint:gosec
+	cmdCreate := exec.Command(oci.Escape([]string{nvidiaRuntime})[0], oci.Escape([]string{"create", "--bundle"})...) //nolint:gosec
 	t.Logf("executing: %s\n", strings.Join(cmdCreate.Args, " "))
 	err = cmdCreate.Run()
 	require.Error(t, err, "runtime should return an error")
@@ -106,7 +106,7 @@ func TestGoodInput(t *testing.T) {
 	}
 
 	//nolint:gosec
-	cmdRun := exec.Command(oci.EscapeArg(nvidiaRuntime), oci.Escape([]string{"run", "--bundle", cfg.bundlePath(), "testcontainer"})...)
+	cmdRun := exec.Command(oci.Escape([]string{nvidiaRuntime})[0], oci.Escape([]string{"run", "--bundle", cfg.bundlePath(), "testcontainer"})...)
 	t.Logf("executing: %s\n", strings.Join(cmdRun.Args, " "))
 	output, err := cmdRun.CombinedOutput()
 	require.NoErrorf(t, err, "runtime should not return an error", "output=%v", string(output))
@@ -117,7 +117,7 @@ func TestGoodInput(t *testing.T) {
 	require.Empty(t, spec.Hooks, "there should be no hooks in config.json")
 
 	//nolint:gosec
-	cmdCreate := exec.Command(oci.EscapeArg(nvidiaRuntime), oci.Escape([]string{"create", "--bundle", cfg.bundlePath(), "testcontainer"})...)
+	cmdCreate := exec.Command(oci.Escape([]string{nvidiaRuntime})[0], oci.Escape([]string{"create", "--bundle", cfg.bundlePath(), "testcontainer"})...)
 	t.Logf("executing: %s\n", strings.Join(cmdCreate.Args, " "))
 	err = cmdCreate.Run()
 	require.NoError(t, err, "runtime should not return an error")
@@ -162,7 +162,7 @@ func TestDuplicateHook(t *testing.T) {
 
 	// Test how runtime handles already existing prestart hook in config.json
 	//nolint:gosec
-	cmdCreate := exec.Command(oci.EscapeArg(nvidiaRuntime), oci.Escape([]string{"create", "--bundle", cfg.bundlePath(), "testcontainer"})...)
+	cmdCreate := exec.Command(oci.Escape([]string{nvidiaRuntime})[0], oci.Escape([]string{"create", "--bundle", cfg.bundlePath(), "testcontainer"})...)
 	t.Logf("executing: %s\n", strings.Join(cmdCreate.Args, " "))
 	output, err := cmdCreate.CombinedOutput()
 	require.NoErrorf(t, err, "runtime should not return an error", "output=%v", string(output))
@@ -231,7 +231,7 @@ func (c testConfig) generateNewRuntimeSpec() error {
 	}
 
 	//nolint:gosec
-	cmd := exec.Command(oci.EscapeArg("cp"), oci.Escape([]string{c.unmodifiedSpecFile(), c.specFilePath()})...)
+	cmd := exec.Command("cp", oci.Escape([]string{c.unmodifiedSpecFile(), c.specFilePath()})...)
 	err = cmd.Run()
 	if err != nil {
 		return err

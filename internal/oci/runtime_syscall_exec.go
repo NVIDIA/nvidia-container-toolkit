@@ -54,8 +54,8 @@ func (r syscallExec) String() string {
 	return "exec"
 }
 
-// EscapeArg escapes shell metacharacters in a single command-line argument.
-func EscapeArg(arg string) string {
+// escapeArg escapes shell metacharacters in a single command-line argument.
+func escapeArg(arg string) string {
 	if strings.ContainsAny(arg, shellMetachars) {
 		return metacharRegex.ReplaceAllString(arg, `\$1`)
 	}
@@ -67,7 +67,7 @@ func EscapeArg(arg string) string {
 func Escape(args []string) []string {
 	escaped := make([]string, len(args))
 	for i := range args {
-		escaped[i] = EscapeArg(args[i])
+		escaped[i] = escapeArg(args[i])
 	}
 	return escaped
 }
