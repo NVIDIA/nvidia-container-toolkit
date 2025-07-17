@@ -72,18 +72,22 @@ func (l *nvmllib) getDeviceSpecGeneratorsForIDs(ids ...string) (DeviceSpecGenera
 		identifiers = append(identifiers, device.Identifier(id))
 	}
 
-	devices, err := l.getNVMLDevicesByID(identifiers...)
+	uuids, err := l.normalizeDeviceIDs(identifiers...)
 	if err != nil {
 		return nil, err
 	}
 
 	var DeviceSpecGenerators DeviceSpecGenerators
-	for i, device := range devices {
-		editor, err := l.newDeviceSpecGeneratorFromNVMLDevice(ids[i], device)
+	for _, uuid := range uuids {
+		device, ret := l.nvmllib.DeviceGetHandleByUUID(string(uuid))
+		if ret != nvml.SUCCESS {
+			return nil, fmt.Errorf("failed to get device handle from UUID: %v", ret)
+		}
+		generator, err := l.newDeviceSpecGeneratorFromNVMLDevice(string(uuid), device)
 		if err != nil {
 			return nil, err
 		}
-		DeviceSpecGenerators = append(DeviceSpecGenerators, editor)
+		DeviceSpecGenerators = append(DeviceSpecGenerators, generator)
 	}
 
 	return DeviceSpecGenerators, nil
@@ -92,7 +96,7 @@ func (l *nvmllib) getDeviceSpecGeneratorsForIDs(ids ...string) (DeviceSpecGenera
 func (l *nvmllib) newDeviceSpecGeneratorFromNVMLDevice(id string, nvmlDevice nvml.Device) (DeviceSpecGenerator, error) {
 	isMig, ret := nvmlDevice.IsMigDeviceHandle()
 	if ret != nvml.SUCCESS {
-		return nil, ret
+		return nil, fmt.Errorf("%v", ret)
 	}
 	if isMig {
 		return l.newMIGDeviceSpecGeneratorFromNVMLDevice(id, nvmlDevice)
@@ -114,14 +118,11 @@ func (l *nvmllib) getDeviceSpecGeneratorsForAllDevices() (DeviceSpecGenerator, e
 		if isMigEnabled {
 			return nil
 		}
-		e := &fullGPUDeviceSpecGenerator{
-			nvmllib: l,
-			id:      fmt.Sprintf("%d", i),
-			index:   i,
-			device:  d,
+		fullGPU, err := l.newFullGPUDeviceSpecGeneratorFromDevice(i, d)
+		if err != nil {
+			return err
 		}
-
-		DeviceSpecGenerators = append(DeviceSpecGenerators, e)
+		DeviceSpecGenerators = append(DeviceSpecGenerators, fullGPU)
 		return nil
 	})
 	if err != nil {
@@ -129,18 +130,11 @@ func (l *nvmllib) getDeviceSpecGeneratorsForAllDevices() (DeviceSpecGenerator, e
 	}
 
 	err = l.devicelib.VisitMigDevices(func(i int, d device.Device, j int, mig device.MigDevice) error {
-		parentGenerator := &fullGPUDeviceSpecGenerator{
-			nvmllib: l,
-			index:   i,
-			id:      fmt.Sprintf("%d:%d", i, j),
-			device:  d,
+		migDevice, err := l.newMIGDeviceSpecGeneratorFromDevice(i, d, j, mig)
+		if err != nil {
+			return err
 		}
-		migGenerator := &migDeviceSpecGenerator{
-			fullGPUDeviceSpecGenerator: parentGenerator,
-			migIndex:                   j,
-			migDevice:                  mig,
-		}
-		DeviceSpecGenerators = append(DeviceSpecGenerators, parentGenerator, migGenerator)
+		DeviceSpecGenerators = append(DeviceSpecGenerators, migDevice)
 		return nil
 	})
 	if err != nil {
@@ -151,30 +145,40 @@ func (l *nvmllib) getDeviceSpecGeneratorsForAllDevices() (DeviceSpecGenerator, e
 }
 
 // TODO: move this to go-nvlib?
-func (l *nvmllib) getNVMLDevicesByID(identifiers ...device.Identifier) ([]nvml.Device, error) {
-	var devices []nvml.Device
+// normalizeDeviceID returns the UUIDs of the devices specified by the identifier.
+func (l *nvmllib) normalizeDeviceIDs(identifiers ...device.Identifier) ([]device.Identifier, error) {
+	var uuids []device.Identifier
 	for _, id := range identifiers {
-		dev, err := l.getNVMLDeviceByID(id)
-		if err != nvml.SUCCESS {
-			return nil, fmt.Errorf("failed to get NVML device handle for identifier %q: %w", id, err)
+		uuid, err := l.normalizeDeviceID(id)
+		if err != nil {
+			return nil, err
 		}
-		devices = append(devices, dev)
+		uuids = append(uuids, uuid)
 	}
-	return devices, nil
+	return uuids, nil
 }
 
-func (l *nvmllib) getNVMLDeviceByID(id device.Identifier) (nvml.Device, error) {
+func (l *nvmllib) normalizeDeviceID(id device.Identifier) (device.Identifier, error) {
 	var err error
 
 	if id.IsUUID() {
-		return l.nvmllib.DeviceGetHandleByUUID(string(id))
+		return id, nil
 	}
 
 	if id.IsGpuIndex() {
-		if idx, err := strconv.Atoi(string(id)); err == nil {
-			return l.nvmllib.DeviceGetHandleByIndex(idx)
+		idx, err := strconv.Atoi(string(id))
+		if err != nil {
+			return "", fmt.Errorf("failed to convert device index to an int: %w", err)
 		}
-		return nil, fmt.Errorf("failed to convert device index to an int: %w", err)
+		dev, ret := l.nvmllib.DeviceGetHandleByIndex(idx)
+		if ret != nvml.SUCCESS {
+			return "", fmt.Errorf("failed to get device handle from index: %v", ret)
+		}
+		uuid, ret := dev.GetUUID()
+		if ret != nvml.SUCCESS {
+			return "", fmt.Errorf("failed to get device UUID: %v", ret)
+		}
+		return device.Identifier(uuid), nil
 	}
 
 	if id.IsMigIndex() {
@@ -182,19 +186,27 @@ func (l *nvmllib) getNVMLDeviceByID(id device.Identifier) (nvml.Device, error) {
 		var parent nvml.Device
 		split := strings.SplitN(string(id), ":", 2)
 		if gpuIdx, err = strconv.Atoi(split[0]); err != nil {
-			return nil, fmt.Errorf("failed to convert device index to an int: %w", err)
+			return "", fmt.Errorf("failed to convert device index to an int: %w", err)
 		}
 		if migIdx, err = strconv.Atoi(split[1]); err != nil {
-			return nil, fmt.Errorf("failed to convert device index to an int: %w", err)
+			return "", fmt.Errorf("failed to convert device index to an int: %w", err)
 		}
 		parent, ret := l.nvmllib.DeviceGetHandleByIndex(gpuIdx)
 		if ret != nvml.SUCCESS {
-			return nil, fmt.Errorf("failed to get parent device handle: %v", ret)
+			return "", fmt.Errorf("failed to get parent device handle: %v", ret)
 		}
-		return parent.GetMigDeviceHandleByIndex(migIdx)
+		mig, ret := parent.GetMigDeviceHandleByIndex(migIdx)
+		if ret != nvml.SUCCESS {
+			return "", fmt.Errorf("failed to get MIG handle by index: %v", ret)
+		}
+		uuid, ret := mig.GetUUID()
+		if ret != nvml.SUCCESS {
+			return "", fmt.Errorf("failed to get MIG UUID: %v", ret)
+		}
+		return device.Identifier(uuid), nil
 	}
 
-	return nil, fmt.Errorf("identifier is not a valid UUID or index: %q", id)
+	return "", fmt.Errorf("identifier is not a valid UUID or index: %q", id)
 }
 
 func (l *nvmllib) init() error {
