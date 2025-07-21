@@ -47,12 +47,6 @@ func TestLDCacheUpdateHook(t *testing.T) {
 				{
 					Lifecycle: "createContainer",
 					Path:      testNvidiaCDIHookPath,
-					Args:      []string{"nvidia-cdi-hook", "create-soname-symlinks"},
-					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
-				},
-				{
-					Lifecycle: "createContainer",
-					Path:      testNvidiaCDIHookPath,
 					Args:      []string{"nvidia-cdi-hook", "update-ldcache"},
 					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
 				},
@@ -83,12 +77,6 @@ func TestLDCacheUpdateHook(t *testing.T) {
 				{
 					Lifecycle: "createContainer",
 					Path:      testNvidiaCDIHookPath,
-					Args:      []string{"nvidia-cdi-hook", "create-soname-symlinks", "--folder", "/usr/local/lib", "--folder", "/usr/local/libother"},
-					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
-				},
-				{
-					Lifecycle: "createContainer",
-					Path:      testNvidiaCDIHookPath,
 					Args:      []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/usr/local/lib", "--folder", "/usr/local/libother"},
 					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
 				},
@@ -106,12 +94,6 @@ func TestLDCacheUpdateHook(t *testing.T) {
 				{
 					Lifecycle: "createContainer",
 					Path:      testNvidiaCDIHookPath,
-					Args:      []string{"nvidia-cdi-hook", "create-soname-symlinks", "--folder", "/usr/local/lib"},
-					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
-				},
-				{
-					Lifecycle: "createContainer",
-					Path:      testNvidiaCDIHookPath,
 					Args:      []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/usr/local/lib"},
 					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
 				},
@@ -121,12 +103,6 @@ func TestLDCacheUpdateHook(t *testing.T) {
 			description:  "explicit ldconfig path is passed",
 			ldconfigPath: testLdconfigPath,
 			expectedHooks: []Hook{
-				{
-					Lifecycle: "createContainer",
-					Path:      testNvidiaCDIHookPath,
-					Args:      []string{"nvidia-cdi-hook", "create-soname-symlinks", "--ldconfig-path", testLdconfigPath},
-					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
-				},
 				{
 					Lifecycle: "createContainer",
 					Path:      testNvidiaCDIHookPath,

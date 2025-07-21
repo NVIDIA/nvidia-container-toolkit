@@ -63,9 +63,6 @@ const (
 	EnableCudaCompatHook = discover.EnableCudaCompatHook
 	// An UpdateLDCacheHook is used to update the ldcache in the container.
 	UpdateLDCacheHook = discover.UpdateLDCacheHook
-	// A CreateSonameSymlinksHook is the hook used to ensure that soname symlinks
-	// for injected libraries exist in the container.
-	CreateSonameSymlinksHook = discover.CreateSonameSymlinksHook
 
 	// Deprecated: Use CreateSymlinksHook instead.
 	HookCreateSymlinks = CreateSymlinksHook
