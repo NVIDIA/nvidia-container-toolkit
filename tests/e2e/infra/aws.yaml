@@ -20,7 +20,6 @@ spec:
     - 52.24.205.48/32
     image:
       architecture: amd64
-      imageId: ami-0ce2cb35386fc22e9
   containerRuntime:
     install: true
     name: docker
