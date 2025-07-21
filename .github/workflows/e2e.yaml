@@ -39,14 +39,14 @@ jobs:
     runs-on: linux-amd64-cpu4
     strategy:
       matrix:
+        is_pull_request:
+          - ${{!( startsWith(github.ref, 'refs/pull/') )}}
         driver_branch:
           - 550
           - 575
-        ispr:
-          - ${{github.event_name == 'pull_request'}}
         exclude:
-          - driver_branch: 575
-            ispr: true
+          - is_pull_request: true
+            driver_branch: 575
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
           go-version: ${{ env.GOLANG_VERSION }}
 
       - name: Set up Holodeck (${{ matrix.driver_branch }})
-        uses: NVIDIA/holodeck@v0.2.12
+        uses: NVIDIA/holodeck@v0.2.13
         with:
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
