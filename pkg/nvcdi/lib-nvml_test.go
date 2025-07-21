@@ -71,7 +71,7 @@ func TestNvmllibGetDeviceSpecGeneratorsForIDs(t *testing.T) {
 					if s == "GPU-12345678-1234-1234-1234-123456789abc" {
 						return server.Devices[3], nvml.SUCCESS
 					}
-					return nil, nvml.ERROR_INVALID_ARGUMENT
+					return server.Devices[0], nvml.SUCCESS
 				}
 			},
 			expectedError:  nil,
@@ -81,23 +81,34 @@ func TestNvmllibGetDeviceSpecGeneratorsForIDs(t *testing.T) {
 			name: "MIG device index",
 			ids:  []string{"0:0"},
 			setupMock: func(server *dgxa100.Server) {
+				mig := &mocknvml.Device{
+					IsMigDeviceHandleFunc: func() (bool, nvml.Return) {
+						return true, nvml.SUCCESS
+					},
+					GetDeviceHandleFromMigDeviceHandleFunc: func() (nvml.Device, nvml.Return) {
+						return server.Devices[0], nvml.SUCCESS
+					},
+					GetIndexFunc: func() (int, nvml.Return) {
+						return 0, nvml.SUCCESS
+					},
+					GetUUIDFunc: func() (string, nvml.Return) {
+						return "MIG-foo", nvml.SUCCESS
+					},
+				}
+
 				server.Devices[0].(*dgxa100.Device).GetMigDeviceHandleByIndexFunc = func(n int) (nvml.Device, nvml.Return) {
 					if n != 0 {
 						return nil, nvml.ERROR_INVALID_ARGUMENT
 					}
 
-					mig := &mocknvml.Device{
-						IsMigDeviceHandleFunc: func() (bool, nvml.Return) {
-							return true, nvml.SUCCESS
-						},
-						GetDeviceHandleFromMigDeviceHandleFunc: func() (nvml.Device, nvml.Return) {
-							return server.Devices[0], nvml.SUCCESS
-						},
-						GetIndexFunc: func() (int, nvml.Return) {
-							return 0, nvml.SUCCESS
-						},
-					}
 					return mig, nvml.SUCCESS
+				}
+
+				server.DeviceGetHandleByUUIDFunc = func(s string) (nvml.Device, nvml.Return) {
+					if s == "MIG-foo" {
+						return mig, nvml.SUCCESS
+					}
+					return nil, nvml.ERROR_INVALID_ARGUMENT
 				}
 			},
 			expectedError:  nil,
@@ -138,6 +149,9 @@ func mockOverrides(server *dgxa100.Server) {
 		}
 		(d.(*dgxa100.Device)).GetIndexFunc = func() (int, nvml.Return) {
 			return i, nvml.SUCCESS
+		}
+		(d.(*dgxa100.Device)).GetUUIDFunc = func() (string, nvml.Return) {
+			return d.(*dgxa100.Device).UUID, nvml.SUCCESS
 		}
 	}
 }

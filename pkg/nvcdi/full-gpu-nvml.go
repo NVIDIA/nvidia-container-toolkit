@@ -34,19 +34,31 @@ import (
 // single full GPU.
 type fullGPUDeviceSpecGenerator struct {
 	*nvmllib
-	id     string
-	index  int
-	device device.Device
+	uuid  string
+	index int
 }
 
 var _ DeviceSpecGenerator = (*fullGPUDeviceSpecGenerator)(nil)
 
-func (l *nvmllib) newFullGPUDeviceSpecGeneratorFromNVMLDevice(id string, nvmlDevice nvml.Device) (DeviceSpecGenerator, error) {
-	device, err := l.devicelib.NewDevice(nvmlDevice)
-	if err != nil {
-		return nil, err
+func (l *fullGPUDeviceSpecGenerator) GetUUID() (string, error) {
+	return l.uuid, nil
+}
+
+func (l *nvmllib) newFullGPUDeviceSpecGeneratorFromDevice(index int, d device.Device) (*fullGPUDeviceSpecGenerator, error) {
+	uuid, ret := d.GetUUID()
+	if ret != nvml.SUCCESS {
+		return nil, fmt.Errorf("failed to get device UUID: %v", ret)
+	}
+	e := &fullGPUDeviceSpecGenerator{
+		nvmllib: l,
+		uuid:    uuid,
+		index:   index,
 	}
 
+	return e, nil
+}
+
+func (l *nvmllib) newFullGPUDeviceSpecGeneratorFromNVMLDevice(uuid string, nvmlDevice nvml.Device) (DeviceSpecGenerator, error) {
 	index, ret := nvmlDevice.GetIndex()
 	if ret != nvml.SUCCESS {
 		return nil, fmt.Errorf("failed to get device index: %v", ret)
@@ -54,9 +66,8 @@ func (l *nvmllib) newFullGPUDeviceSpecGeneratorFromNVMLDevice(id string, nvmlDev
 
 	e := &fullGPUDeviceSpecGenerator{
 		nvmllib: l,
-		id:      id,
+		uuid:    uuid,
 		index:   index,
-		device:  device,
 	}
 	return e, nil
 }
@@ -64,7 +75,7 @@ func (l *nvmllib) newFullGPUDeviceSpecGeneratorFromNVMLDevice(id string, nvmlDev
 func (l *fullGPUDeviceSpecGenerator) GetDeviceSpecs() ([]specs.Device, error) {
 	deviceEdits, err := l.getDeviceEdits()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get CDI device edits for identifier %q: %w", l.id, err)
+		return nil, fmt.Errorf("failed to get CDI device edits: %w", err)
 	}
 
 	names, err := l.getNames()
@@ -84,14 +95,23 @@ func (l *fullGPUDeviceSpecGenerator) GetDeviceSpecs() ([]specs.Device, error) {
 	return deviceSpecs, nil
 }
 
+func (l *fullGPUDeviceSpecGenerator) device() (device.Device, error) {
+	return l.devicelib.NewDeviceByUUID(l.uuid)
+}
+
 // GetGPUDeviceEdits returns the CDI edits for the full GPU represented by 'device'.
 func (l *fullGPUDeviceSpecGenerator) getDeviceEdits() (*cdi.ContainerEdits, error) {
-	device, err := l.newFullGPUDiscoverer(l.device)
+	device, err := l.device()
+	if err != nil {
+		return nil, err
+	}
+
+	deviceDiscoverer, err := l.newFullGPUDiscoverer(device)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
 	}
 
-	editsForDevice, err := edits.FromDiscoverer(device)
+	editsForDevice, err := edits.FromDiscoverer(deviceDiscoverer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for device: %v", err)
 	}
@@ -100,7 +120,7 @@ func (l *fullGPUDeviceSpecGenerator) getDeviceEdits() (*cdi.ContainerEdits, erro
 }
 
 func (l *fullGPUDeviceSpecGenerator) getNames() ([]string, error) {
-	return l.deviceNamers.GetDeviceNames(l.index, convert{l.device})
+	return l.deviceNamers.GetDeviceNames(l.index, l)
 }
 
 // newFullGPUDiscoverer creates a discoverer for the full GPU defined by the specified device.

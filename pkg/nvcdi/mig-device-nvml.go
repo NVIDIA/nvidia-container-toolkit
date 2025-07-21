@@ -30,26 +30,53 @@ import (
 
 type migDeviceSpecGenerator struct {
 	*fullGPUDeviceSpecGenerator
-	migIndex  int
-	migDevice device.MigDevice
+	migIndex int
+	migUUID  string
 }
 
 var _ DeviceSpecGenerator = (*migDeviceSpecGenerator)(nil)
 
-func (l *nvmllib) newMIGDeviceSpecGeneratorFromNVMLDevice(id string, nvmlMIGDevice nvml.Device) (DeviceSpecGenerator, error) {
-	nvmlParentDevice, ret := nvmlMIGDevice.GetDeviceHandleFromMigDeviceHandle()
-	if ret != nvml.SUCCESS {
-		return nil, fmt.Errorf("failed to get parent device handle: %v", ret)
-	}
+func (l *migDeviceSpecGenerator) GetUUID() (string, error) {
+	return l.migUUID, nil
+}
 
-	fullGPUGenerator, err := l.newFullGPUDeviceSpecGeneratorFromNVMLDevice(id, nvmlParentDevice)
+func (l *nvmllib) newMIGDeviceSpecGeneratorFromDevice(i int, d device.Device, j int, m device.MigDevice) (*migDeviceSpecGenerator, error) {
+	parent, err := l.newFullGPUDeviceSpecGeneratorFromDevice(i, d)
 	if err != nil {
 		return nil, err
 	}
 
-	nvlibMIGDevice, err := l.devicelib.NewMigDevice(nvmlMIGDevice)
+	migUUID, ret := m.GetUUID()
+	if ret != nvml.SUCCESS {
+		return nil, fmt.Errorf("failed to get MIG UUID: %v", ret)
+	}
+
+	e := &migDeviceSpecGenerator{
+		fullGPUDeviceSpecGenerator: parent,
+		migIndex:                   j,
+		migUUID:                    migUUID,
+	}
+
+	return e, nil
+}
+
+func (l *nvmllib) newMIGDeviceSpecGeneratorFromNVMLDevice(uuid string, nvmlMIGDevice nvml.Device) (DeviceSpecGenerator, error) {
+	migDevice, err := l.devicelib.NewMigDevice(nvmlMIGDevice)
 	if err != nil {
-		return nil, fmt.Errorf("failed to construct device: %w", err)
+		return nil, err
+	}
+
+	nvmlParentDevice, ret := migDevice.GetDeviceHandleFromMigDeviceHandle()
+	if ret != nvml.SUCCESS {
+		return nil, fmt.Errorf("failed to get parent device handle: %v", ret)
+	}
+	parentDevice, err := l.devicelib.NewDevice(nvmlParentDevice)
+	if err != nil {
+		return nil, err
+	}
+	parentIndex, ret := parentDevice.GetIndex()
+	if ret != nvml.SUCCESS {
+		return nil, fmt.Errorf("failed to get parent device index: %v", ret)
 	}
 
 	migDeviceIndex, ret := nvmlMIGDevice.GetIndex()
@@ -57,18 +84,13 @@ func (l *nvmllib) newMIGDeviceSpecGeneratorFromNVMLDevice(id string, nvmlMIGDevi
 		return nil, fmt.Errorf("failed to get MIG device index: %w", ret)
 	}
 
-	e := &migDeviceSpecGenerator{
-		fullGPUDeviceSpecGenerator: fullGPUGenerator.(*fullGPUDeviceSpecGenerator),
-		migIndex:                   migDeviceIndex,
-		migDevice:                  nvlibMIGDevice,
-	}
-	return e, nil
+	return l.newMIGDeviceSpecGeneratorFromDevice(parentIndex, parentDevice, migDeviceIndex, migDevice)
 }
 
 func (l *migDeviceSpecGenerator) GetDeviceSpecs() ([]specs.Device, error) {
 	deviceEdits, err := l.getDeviceEdits()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get CDI device edits for identifier %q: %w", l.id, err)
+		return nil, fmt.Errorf("failed to get CDI device edits: %w", err)
 	}
 
 	names, err := l.getNames()
@@ -88,9 +110,21 @@ func (l *migDeviceSpecGenerator) GetDeviceSpecs() ([]specs.Device, error) {
 	return deviceSpecs, nil
 }
 
+func (l *migDeviceSpecGenerator) migDevice() (device.MigDevice, error) {
+	return l.devicelib.NewMigDeviceByUUID(l.migUUID)
+}
+
 // GetMIGDeviceEdits returns the CDI edits for the MIG device represented by 'mig' on 'parent'.
 func (l *migDeviceSpecGenerator) getDeviceEdits() (*cdi.ContainerEdits, error) {
-	deviceNodes, err := dgpu.NewForMigDevice(l.device, l.migDevice,
+	device, err := l.device()
+	if err != nil {
+		return nil, err
+	}
+	migDevice, err := l.migDevice()
+	if err != nil {
+		return nil, err
+	}
+	deviceNodes, err := dgpu.NewForMigDevice(device, migDevice,
 		dgpu.WithDevRoot(l.devRoot),
 		dgpu.WithLogger(l.logger),
 		dgpu.WithHookCreator(l.hookCreator),
@@ -109,5 +143,5 @@ func (l *migDeviceSpecGenerator) getDeviceEdits() (*cdi.ContainerEdits, error) {
 }
 
 func (l *migDeviceSpecGenerator) getNames() ([]string, error) {
-	return l.deviceNamers.GetMigDeviceNames(l.index, convert{l.device}, l.migIndex, convert{l.migDevice})
+	return l.deviceNamers.GetMigDeviceNames(l.index, l.fullGPUDeviceSpecGenerator, l.migIndex, l)
 }
