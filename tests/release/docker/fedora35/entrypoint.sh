@@ -22,7 +22,7 @@
 : ${LOCAL_REPO_DIRECTORY:=/local-repository}
 if [[ -d ${LOCAL_REPO_DIRECTORY} ]]; then
     echo "Setting up local-repository"
-    createrepo /local-repository
+    createrepo "${LOCAL_REPO_DIRECTORY}"
 
 cat >/etc/yum.repos.d/local.repo <<EOL
 [local-repository]
