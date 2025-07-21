@@ -39,13 +39,13 @@ jobs:
     runs-on: linux-amd64-cpu4
     strategy:
       matrix:
-        is_pull_request:
-          - ${{!( startsWith(github.ref, 'refs/pull/') )}}
+        ispr:
+          - ${{ github.ref_name != 'main' && !startsWith( github.ref_name, 'release-' ) }}
         driver_branch:
           - 550
           - 575
         exclude:
-          - is_pull_request: true
+          - ispr: true
             driver_branch: 575
     steps:
       - name: Check out code
