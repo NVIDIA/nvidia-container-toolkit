@@ -213,10 +213,10 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 	}
 }
 
-func setGetTargetsFromCSVFiles(ovverride map[csv.MountSpecType][]string) func() {
+func setGetTargetsFromCSVFiles(override map[csv.MountSpecType][]string) func() {
 	original := getTargetsFromCSVFiles
 	getTargetsFromCSVFiles = func(logger logger.Interface, files []string) map[csv.MountSpecType][]string {
-		return ovverride
+		return override
 	}
 
 	return func() {
