@@ -18,6 +18,8 @@ ARG VERSION="N/A"
 
 FROM nvcr.io/nvidia/cuda:12.9.1-base-ubi9 AS build
 
+RUN rm -f /etc/yum.repos.d/cuda.repo && rm -f /etc/ld.so.conf.d/nvidia.conf
+
 RUN dnf install -y \
     wget make git gcc \
      && \
@@ -86,6 +88,8 @@ COPY LICENSE /licenses/
 # The debpackages stage is used to extract the contents of deb packages.
 FROM nvcr.io/nvidia/cuda:12.9.1-base-ubuntu20.04 AS debpackages
 
+RUN rm -f /etc/apt/sources.list.d/cuda.list
+
 ARG TARGETARCH
 ARG PACKAGE_DIST_DEB=ubuntu18.04
 
@@ -104,6 +108,9 @@ RUN set -eux; \
 
 # The rpmpackages stage is used to extract the contents of the rpm packages.
 FROM nvcr.io/nvidia/cuda:12.9.1-base-ubi9 AS rpmpackages
+
+RUN rm -f /etc/yum.repos.d/cuda.repo && rm -f /etc/ld.so.conf.d/nvidia.conf
+
 RUN dnf install -y cpio
 
 ARG TARGETARCH

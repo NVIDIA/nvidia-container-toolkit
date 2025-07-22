@@ -398,7 +398,7 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			_, _, err = runner.Run(`docker build -t firmware-test \
-            --build-arg RM_VERSION="` + hostDriverVersion + `" \
+            --build-arg RM_VERSION="$(basename $(ls -d /lib/firmware/nvidia/*.*))" \
             --build-arg CURRENT_DIR="` + outputDir + `" \
             - <<EOF
 FROM ubuntu
