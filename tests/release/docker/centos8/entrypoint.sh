@@ -22,17 +22,17 @@
 : ${LOCAL_REPO_DIRECTORY:=/local-repository}
 if [[ -d ${LOCAL_REPO_DIRECTORY} ]]; then
     echo "Setting up local-repository"
-    createrepo /local-repository
+    createrepo "${LOCAL_REPO_DIRECTORY}"
 
     cat >/etc/yum.repos.d/local.repo <<EOL
 [local-repository]
 name=NVIDIA Container Toolkit Local Packages
-baseurl=file:///local-repository
-enabled=0
+baseurl=file://${LOCAL_REPO_DIRECTORY}
+enabled=1
 gpgcheck=0
 protect=1
 EOL
-    yum-config-manager --enable local-repository
+    
 elif [[ -n ${TEST_REPO} ]]; then
     ./install_repo.sh ${TEST_REPO}
 else
