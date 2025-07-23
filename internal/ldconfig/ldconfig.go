@@ -69,29 +69,6 @@ func New(ldconfigPath string, inRoot string) (*Ldconfig, error) {
 	return l, nil
 }
 
-// CreateSonameSymlinks uses ldconfig to create the soname symlinks in the
-// specified directories.
-func (l *Ldconfig) CreateSonameSymlinks(directories ...string) error {
-	if len(directories) == 0 {
-		return nil
-	}
-	ldconfigPath, err := l.prepareRoot()
-	if err != nil {
-		return err
-	}
-
-	args := []string{
-		filepath.Base(ldconfigPath),
-		// Explicitly disable updating the LDCache.
-		"-N",
-		// Specify -n to only process the specified directories.
-		"-n",
-	}
-	args = append(args, directories...)
-
-	return SafeExec(ldconfigPath, args, nil)
-}
-
 func (l *Ldconfig) UpdateLDCache(directories ...string) error {
 	ldconfigPath, err := l.prepareRoot()
 	if err != nil {

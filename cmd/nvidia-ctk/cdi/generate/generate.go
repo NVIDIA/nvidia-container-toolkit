@@ -173,7 +173,6 @@ func (m command) build() *cli.Command {
 				Destination: &opts.ldconfigPath,
 				Sources: cli.NewValueSourceChain(
 					cli.EnvVar("NVIDIA_CTK_CDI_GENERATE_LDCONFIG_PATH"),
-					m.config.ValueFrom("nvidia-container-cli.ldconfig"),
 				),
 			},
 			&cli.StringFlag{

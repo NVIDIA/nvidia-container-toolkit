@@ -17,11 +17,26 @@
 package discover
 
 import (
+	"debug/elf"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
+type Symlink struct {
+	target string
+	link   string
+}
+
+func (s *Symlink) String() string {
+	return fmt.Sprintf("%s::%s", s.target, s.link)
+}
+
 type additionalSymlinks struct {
+	logger logger.Interface
 	Discover
 	version     string
 	hookCreator HookCreator
@@ -29,11 +44,12 @@ type additionalSymlinks struct {
 
 // WithDriverDotSoSymlinks decorates the provided discoverer.
 // A hook is added that checks for specific driver symlinks that need to be created.
-func WithDriverDotSoSymlinks(mounts Discover, version string, hookCreator HookCreator) Discover {
+func WithDriverDotSoSymlinks(logger logger.Interface, mounts Discover, version string, hookCreator HookCreator) Discover {
 	if version == "" {
 		version = "*.*"
 	}
 	return &additionalSymlinks{
+		logger:      logger,
 		Discover:    mounts,
 		hookCreator: hookCreator,
 		version:     version,
@@ -60,7 +76,14 @@ func (d *additionalSymlinks) Hooks() ([]Hook, error) {
 		}
 		processedPaths[mount.Path] = true
 
-		for _, link := range d.getLinksForMount(mount.Path) {
+		linksForMount := d.getLinksForMount(mount.Path)
+		soSymlinks, err := d.getDotSoSymlinks(mount.HostPath, mount.Path)
+		if err != nil {
+			d.logger.Warningf("Failed to get soname symlinks for %+v: %v", mount, err)
+		}
+		linksForMount = append(linksForMount, soSymlinks...)
+
+		for _, link := range linksForMount {
 			if processedLinks[link] {
 				continue
 			}
@@ -109,4 +132,113 @@ func (d additionalSymlinks) isDriverLibrary(libraryName string, filename string)
 	pattern := libraryName + "." + d.version
 	match, _ := filepath.Match(pattern, filename)
 	return match
+}
+
+func (d *additionalSymlinks) getDotSoSymlinks(hostLibraryPath string, libraryContainerPath string) ([]string, error) {
+	hostLibraryDir := filepath.Dir(hostLibraryPath)
+	containerLibraryDir, libraryName := filepath.Split(libraryContainerPath)
+	if !d.isDriverLibrary("*", libraryName) {
+		return nil, nil
+	}
+
+	soname, err := getSoname(hostLibraryPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var soSymlinks []string
+	// Create the SONAME -> libraryName symlink.
+	// If the soname matches the library path, or the expected SONAME link does
+	// not exist on the host, we do not create it in the container.
+	if soname != libraryName && d.linkExistsInDir(hostLibraryDir, soname) {
+		s := Symlink{
+			target: libraryName,
+			link:   filepath.Join(containerLibraryDir, soname),
+		}
+		soSymlinks = append(soSymlinks, s.String())
+	}
+
+	soTarget := soname
+	if soTarget == "" {
+		soTarget = libraryName
+	}
+	// Create the .so -> SONAME symlink.
+	// If the .so link name matches the SONAME link, or the expected .so link
+	// does not exist on the host, we do not create it in the container.
+	if soLink := getSoLink(soTarget); soLink != soTarget && d.linkExistsInDir(hostLibraryDir, soLink) {
+		s := Symlink{
+			target: soTarget,
+			link:   filepath.Join(containerLibraryDir, soLink),
+		}
+		soSymlinks = append(soSymlinks, s.String())
+	}
+	return soSymlinks, nil
+}
+
+func (d *additionalSymlinks) linkExistsInDir(dir string, link string) bool {
+	if link == "" {
+		return false
+	}
+	linkPath := filepath.Join(dir, link)
+	exists, err := linkExists(linkPath)
+	if err != nil {
+		d.logger.Warningf("Failed to check symlink %q: %v", linkPath, err)
+		return false
+	}
+	return exists
+}
+
+// linkExists returns true if the specified symlink exists.
+// We use a function variable here to allow this to be overridden for testing.
+var linkExists = func(linkPath string) (bool, error) {
+	info, err := os.Lstat(linkPath)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	// The linkPath is a symlink.
+	if info.Mode()&os.ModeSymlink != 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// getSoname returns the soname for the specified library path.
+// We use a function variable here to allow this to be overridden for testing.
+var getSoname = func(libraryPath string) (string, error) {
+	lib, err := elf.Open(libraryPath)
+	if err != nil {
+		return "", err
+	}
+	defer lib.Close()
+
+	sonames, err := lib.DynString(elf.DT_SONAME)
+	if err != nil {
+		return "", err
+	}
+	if len(sonames) > 1 {
+		return "", fmt.Errorf("multiple SONAMEs detected for %v: %v", libraryPath, sonames)
+	}
+	if len(sonames) == 0 {
+		return filepath.Base(libraryPath), nil
+	}
+	return sonames[0], nil
+}
+
+// getSoLink returns the filename for the .so symlink that should point to the
+// soname symlink for the specified library.
+// If the soname / library name does not end in a `.so[.*]` then an empty string
+// is returned.
+func getSoLink(soname string) string {
+	ext := filepath.Ext(soname)
+	if ext == "" {
+		return ""
+	}
+	if ext == ".so" {
+		return soname
+	}
+	return getSoLink(strings.TrimSuffix(soname, ext))
 }

@@ -69,11 +69,13 @@ func getTestEnv() {
 
 	}
 
-	sshKey = getRequiredEnvvar[string]("E2E_SSH_KEY")
-	sshUser = getRequiredEnvvar[string]("E2E_SSH_USER")
-	sshHost = getRequiredEnvvar[string]("E2E_SSH_HOST")
+	sshHost = getEnvVarOrDefault("E2E_SSH_HOST", "")
+	if sshHost != "" {
+		sshKey = getRequiredEnvvar[string]("E2E_SSH_KEY")
+		sshUser = getRequiredEnvvar[string]("E2E_SSH_USER")
+		sshPort = getEnvVarOrDefault("E2E_SSH_PORT", "22")
+	}
 
-	sshPort = getEnvVarOrDefault("E2E_SSH_PORT", "22")
 }
 
 // getRequiredEnvvar returns the specified envvar if set or raises an error.

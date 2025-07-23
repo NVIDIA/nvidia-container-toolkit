@@ -23,6 +23,14 @@ GINKGO_BIN := $(CURDIR)/bin/ginkgo
 test: $(GINKGO_BIN)
 	$(GINKGO_BIN) $(GINKGO_ARGS) -v --json-report ginkgo.json ./tests/e2e/...
 
+# test-preinstalled runs the test cases against the version of the toolkit that
+# is already installed (and configured for docker) on the host.
+.PHONY: test-preinstalled
+test-preinstalled: test
+test-preinstalled: E2E_INSTALL_CTK = false
+test-preinstalled: E2E_SSH_HOST =
+
+
 $(GINKGO_BIN):
 	mkdir -p $(CURDIR)/bin
 	GOBIN=$(CURDIR)/bin go install github.com/onsi/ginkgo/v2/ginkgo@latest

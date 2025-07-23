@@ -106,15 +106,6 @@ containerEdits:
           path: /usr/bin/nvidia-cdi-hook
           args:
             - nvidia-cdi-hook
-            - create-soname-symlinks
-            - --folder
-            - /lib/x86_64-linux-gnu
-          env:
-            - NVIDIA_CTK_DEBUG=false
-        - hookName: createContainer
-          path: /usr/bin/nvidia-cdi-hook
-          args:
-            - nvidia-cdi-hook
             - update-ldcache
             - --folder
             - /lib/x86_64-linux-gnu
@@ -192,15 +183,6 @@ containerEdits:
           path: /usr/bin/nvidia-cdi-hook
           args:
             - nvidia-cdi-hook
-            - create-soname-symlinks
-            - --folder
-            - /lib/x86_64-linux-gnu
-          env:
-            - NVIDIA_CTK_DEBUG=false
-        - hookName: createContainer
-          path: /usr/bin/nvidia-cdi-hook
-          args:
-            - nvidia-cdi-hook
             - update-ldcache
             - --folder
             - /lib/x86_64-linux-gnu
@@ -272,15 +254,6 @@ containerEdits:
             - create-symlinks
             - --link
             - libcuda.so.1::/lib/x86_64-linux-gnu/libcuda.so
-          env:
-            - NVIDIA_CTK_DEBUG=false
-        - hookName: createContainer
-          path: /usr/bin/nvidia-cdi-hook
-          args:
-            - nvidia-cdi-hook
-            - create-soname-symlinks
-            - --folder
-            - /lib/x86_64-linux-gnu
           env:
             - NVIDIA_CTK_DEBUG=false
         - hookName: createContainer

@@ -61,12 +61,7 @@ func (d ldconfig) Hooks() ([]Hook, error) {
 		args = append(args, "--folder", f)
 	}
 
-	h := Merge(
-		d.hookCreator.Create(CreateSonameSymlinksHook, args...),
-		d.hookCreator.Create(UpdateLDCacheHook, args...),
-	)
-
-	return h.Hooks()
+	return d.hookCreator.Create(UpdateLDCacheHook, args...).Hooks()
 }
 
 // getLibraryPaths extracts the library dirs from the specified mounts

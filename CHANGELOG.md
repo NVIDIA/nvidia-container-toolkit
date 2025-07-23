@@ -2,6 +2,7 @@
 
 ## v1.18.0-rc.2
 
+- Ensure that .so symlinks are created for driver libraries in the container
 - Load settings from config.toml file during CDI generation
 - Use securejoin to resolve /proc
 - Refactor nvml CDI spec generation for consistency
