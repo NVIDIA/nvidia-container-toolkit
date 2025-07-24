@@ -343,7 +343,15 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 				Expect(chain[3]).To(HaveSuffix(hostDriverVersion))
 				Expect(chain[4]).To(HaveSuffix(hostDriverVersion))
 			}
-			Expect(symlinks).To(And(HaveKey("libcuda.so"), HaveKey("libnvidia-ml.so")))
+			Expect(symlinks).To(And(
+				HaveKey("libcuda.so"),
+				HaveKey("libnvcuvid.so"),
+			))
+
+			// The libnvidia-ml.so symlink was removed in the 560 driver branch.
+			if hostDriverMajor < "560" {
+				Expect(symlinks).To(HaveKey("libnvidia-ml.so"))
+			}
 		})
 	})
 
