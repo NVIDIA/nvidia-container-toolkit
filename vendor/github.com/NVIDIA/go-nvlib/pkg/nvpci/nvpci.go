@@ -46,6 +46,8 @@ const (
 )
 
 // Interface allows us to get a list of all NVIDIA PCI devices.
+//
+//go:generate moq -rm -fmt=goimports -out nvpci_mock.go . Interface
 type Interface interface {
 	GetAllDevices() ([]*NvidiaPCIDevice, error)
 	Get3DControllers() ([]*NvidiaPCIDevice, error)
