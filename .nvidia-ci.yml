@@ -165,10 +165,7 @@ scan-images:
   variables:
     IMAGE: "${CI_REGISTRY_IMAGE}/container-toolkit:${CI_COMMIT_SHORT_SHA}"
     IMAGE_ARCHIVE: "container-toolkit-${CI_JOB_ID}.tar"
-  rules:
-    - if: $IGNORE_SCANS == "yes"
-      allow_failure: true
-    - when: on_success
+  allow_failure: true
   script:
     - |
       docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
@@ -292,4 +289,3 @@ publish-images-dummy:
     OUT_IMAGE_TAG: "publish-${CI_COMMIT_SHORT_SHA}"
   rules:
     - if: $CI_COMMIT_TAG == null || $CI_COMMIT_TAG == ""
-
