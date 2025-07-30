@@ -252,12 +252,16 @@ push-images-to-staging:
     PROJECT_NAME: "nvidia-container-toolkit"
   before_script:
     - |
-      if [ -z "$NGC_PUBLISHING_PROJECT_PATH" ]; then
+      if [ -n "${OVERRIDE_PUBLISHING_PROJECT_PATH}" ]; then
+        NGC_PUBLISHING_PROJECT_PATH="${OVERRIDE_PUBLISHING_PROJECT_PATH}"
+      fi
+
+      if [ -z "${NGC_PUBLISHING_PROJECT_PATH}" ]; then
         echo "NGC_PUBLISHING_PROJECT_PATH not set"
         exit 1
-      else
-        echo "publishing to ${NGC_PUBLISHING_PROJECT_PATH}"
       fi
+
+      echo "publishing to ${NGC_PUBLISHING_PROJECT_PATH}"
 
       rm -f ${VERSION_FILE}
       echo "${IN_IMAGE_TAG} ${OUT_IMAGE_TAG}" >> ${VERSION_FILE}
@@ -284,7 +288,7 @@ publish-images-dummy:
   extends:
     - .publish-images
   variables:
-    NGC_PUBLISHING_PROJECT_PATH: dl/container-dev/ngc-automation
+    OVERRIDE_PUBLISHING_PROJECT_PATH: "dl/container-dev/ngc-automation"
     OUT_IMAGE_TAG: "publish-${CI_COMMIT_SHORT_SHA}"
   rules:
     - if: $CI_COMMIT_TAG == null || $CI_COMMIT_TAG == ""
