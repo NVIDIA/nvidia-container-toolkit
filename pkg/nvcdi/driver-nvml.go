@@ -82,19 +82,56 @@ func (l *nvcdilib) newDriverVersionDiscoverer(version string) (discover.Discover
 
 // NewDriverLibraryDiscoverer creates a discoverer for the libraries associated with the specified driver version.
 func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover, error) {
-	libraryPaths, libCudaDirectoryPath, err := getVersionLibs(l.logger, l.driver, version)
+	versionSuffixLibraryPaths, libCudaDirectoryPath, err := getVersionLibs(l.logger, l.driver, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get libraries for driver version: %v", err)
 	}
 
-	libraries := discover.NewMounts(
+	versionSuffixLibraryMounts := discover.NewMounts(
 		l.logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(l.logger),
 			lookup.WithRoot(l.driver.Root),
 		),
 		l.driver.Root,
-		libraryPaths,
+		versionSuffixLibraryPaths,
+	)
+
+	// List of explicit libraries to locate
+	// TODO(ArangoGutierrez): we should load the version of the libraries from
+	// the sandboxutils-filelist or have a way to allow users to specify the
+	// libraries to mount from the config file.
+	explicitLibraries := []string{
+		"libEGL.so.1.1.0",
+		"libGL.so.1.7.0",
+		"libGLESv1_CM.so.1.2.0",
+		"libGLESv2.so.2.1.0",
+		"libGLX.so.0",
+		"libGLdispatch.so.0",
+		"libOpenCL.so.1.0.0",
+		"libOpenGL.so.0",
+		"libnvidia-api.so.1",
+		"libnvidia-egl-xcb.so.1.0.0",
+		"libnvidia-egl-xlib.so.1.0.0",
+	}
+
+	explicitLibraryMounts := discover.NewMounts(
+		l.logger,
+		lookup.NewFileLocator(
+			lookup.WithLogger(l.logger),
+			lookup.WithRoot(l.driver.Root),
+			lookup.WithSearchPaths(
+				libCudaDirectoryPath,
+			),
+			lookup.WithOptional(true),
+		),
+		l.driver.Root,
+		explicitLibraries,
+	)
+
+	libraries := discover.Merge(
+		versionSuffixLibraryMounts,
+		explicitLibraryMounts,
 	)
 
 	var discoverers []discover.Discover
