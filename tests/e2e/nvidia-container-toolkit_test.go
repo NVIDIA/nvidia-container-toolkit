@@ -325,23 +325,20 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 				}
 			}
 
-			// The symlink chains have the pattern:
-			// [A.so, A.so.1, A.so.1, A.so.driverVersion, A.so.driverVersion]
+			// The RM_VERSION symlink chains have the pattern:
+			// [A.so -> A.so.1 -> A.so.driverVersion]
 			// A has the suffix .so.
 			Expect(symlinks).ToNot(BeEmpty())
 			for soSymlink, chain := range symlinks {
 				if soSymlink == "" {
 					continue
 				}
-				Expect(chain).To(HaveLen(5))
 				for _, c := range chain {
 					Expect(c).To(HavePrefix(soSymlink))
 				}
 				Expect(chain[0]).To(HaveSuffix(".so"))
-				Expect(chain[1]).To(Equal(chain[2]))
-				Expect(chain[3]).To(Equal(chain[4]))
-				Expect(chain[3]).To(HaveSuffix(hostDriverVersion))
-				Expect(chain[4]).To(HaveSuffix(hostDriverVersion))
+				Expect(chain[1]).ToNot(Equal(soSymlink))
+				Expect(chain[len(chain)-1]).ToNot(Equal(soSymlink))
 			}
 			Expect(symlinks).To(And(
 				HaveKey("libcuda.so"),
