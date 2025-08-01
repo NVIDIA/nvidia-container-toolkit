@@ -78,6 +78,11 @@ if [ "$1" = 0 ]; then  # package is uninstalled, not upgraded
   if [ -L %{_bindir}/nvidia-container-toolkit ]; then rm -f %{_bindir}/nvidia-container-toolkit; fi
 fi
 
+%postun base
+if [ "$1" -eq 0 ]; then
+    rm -f %{_sysconfdir}/cdi/nvidia.yaml
+fi
+
 %files
 %license LICENSE
 %{_bindir}/nvidia-container-runtime-hook
@@ -109,6 +114,7 @@ Provides tools such as the NVIDIA Container Runtime and NVIDIA Container Toolkit
 %{_sysconfdir}/systemd/system/nvidia-cdi-refresh.service
 %{_sysconfdir}/systemd/system/nvidia-cdi-refresh.path
 %config(noreplace) %{_sysconfdir}/nvidia-container-toolkit/nvidia-cdi-refresh.env
+%ghost %{_sysconfdir}/cdi/nvidia.yaml
 
 # The OPERATOR EXTENSIONS package consists of components that are required to enable GPU support in Kubernetes.
 # This package is not distributed as part of the NVIDIA Container Toolkit RPMs.
