@@ -28,7 +28,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 )
 
@@ -51,7 +50,10 @@ func NewDRMNodesDiscoverer(logger logger.Interface, devices image.VisibleDevices
 
 // NewGraphicsMountsDiscoverer creates a discoverer for the mounts required by graphics tools such as vulkan.
 func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, hookCreator HookCreator) (Discover, error) {
-	libraries := newGraphicsLibrariesDiscoverer(logger, driver, hookCreator)
+	libraries, err := newGraphicsLibrariesDiscoverer(logger, driver, hookCreator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct discoverer for graphics libraries: %w", err)
+	}
 
 	configs := NewMounts(
 		logger,
@@ -113,8 +115,15 @@ type graphicsDriverLibraries struct {
 
 var _ Discover = (*graphicsDriverLibraries)(nil)
 
-func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver, hookCreator HookCreator) Discover {
-	cudaLibRoot, cudaVersionPattern := getCUDALibRootAndVersionPattern(logger, driver)
+func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver, hookCreator HookCreator) (Discover, error) {
+	cudaVersionPattern, err := driver.Version()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get driver version: %w", err)
+	}
+	cudaLibRoot, err := driver.GetLibcudaParentDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get libcuda.so parent directory: %w", err)
+	}
 
 	libraries := NewMounts(
 		logger,
@@ -155,7 +164,7 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 		Discover:    Merge(libraries, xorgLibraries),
 		logger:      logger,
 		hookCreator: hookCreator,
-	}
+	}, nil
 }
 
 // Mounts discovers the required libraries and filters out libnvidia-allocator.so.
@@ -226,30 +235,6 @@ func (d graphicsDriverLibraries) isDriverLibrary(filename string, libraryName st
 	pattern := strings.TrimSuffix(libraryName, ".") + ".*.*"
 	match, _ := filepath.Match(pattern, filename)
 	return match
-}
-
-// getCUDALibRootAndVersionPattern returns the parent directory and the version
-// suffix of the libcuda.so.*.* library at the driver root.
-// If the library cannot be located an empty root is returned.
-// If the version string cannot be extracted, the generic *.* pattern is returned.
-func getCUDALibRootAndVersionPattern(logger logger.Interface, driver *root.Driver) (string, string) {
-	libCudaPaths, err := cuda.New(
-		driver.Libraries(),
-	).Locate(".*.*")
-	if err != nil {
-		logger.Warningf("failed to locate libcuda.so: %v; using *.*", err)
-		return "", "*.*"
-	}
-	libcudaPath := libCudaPaths[0]
-
-	libRoot := filepath.Dir(libcudaPath)
-	version := strings.TrimPrefix(filepath.Base(libcudaPath), "libcuda.so.")
-	if version == "" {
-		logger.Warningf("failed to extract version from %v; using *.*", libcudaPath)
-		version = "*.*"
-	}
-
-	return driver.RelativeToRoot(libRoot), version
 }
 
 // buildXOrgSearchPaths returns the ordered list of search paths for XOrg files.

@@ -17,9 +17,11 @@
 package root
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
@@ -27,6 +29,7 @@ import (
 
 // Driver represents a filesystem in which a set of drivers or devices is defined.
 type Driver struct {
+	sync.Mutex
 	logger logger.Interface
 	// Root represents the root from the perspective of the driver libraries and binaries.
 	Root string
@@ -34,18 +37,131 @@ type Driver struct {
 	librarySearchPaths []string
 	// configSearchPaths specified explicit search paths for discovering driver config files.
 	configSearchPaths []string
+
+	// version caches the driver version.
+	version string
+	// libcudasoPath caches the path to libcuda.so.VERSION.
+	libcudasoPath string
 }
 
 // New creates a new Driver root using the specified options.
 func New(opts ...Option) *Driver {
-	d := &Driver{}
+	o := &options{}
 	for _, opt := range opts {
-		opt(d)
+		opt(o)
 	}
-	if d.logger == nil {
-		d.logger = logger.New()
+	if o.logger == nil {
+		o.logger = logger.New()
 	}
+
+	var driverVersion string
+	if o.versioner != nil {
+		version, err := o.versioner.Version()
+		if err != nil {
+			o.logger.Warningf("Could not determine driver version: %v", err)
+		}
+		driverVersion = version
+	}
+
+	d := &Driver{
+		logger:             o.logger,
+		Root:               o.Root,
+		librarySearchPaths: o.librarySearchPaths,
+		configSearchPaths:  o.configSearchPaths,
+		version:            driverVersion,
+		libcudasoPath:      "",
+	}
+
 	return d
+}
+
+// Version returns the cached driver version if possible.
+// If this has not yet been initialised, the version is first updated and then returned.
+func (r *Driver) Version() (string, error) {
+	r.Lock()
+	defer r.Unlock()
+
+	if r.version == "" {
+		if err := r.updateInfo(); err != nil {
+			return "", err
+		}
+	}
+
+	return r.version, nil
+}
+
+// GetLibcudaParentDir returns the cached libcuda.so path if possible.
+// If this has not yet been initialized, the path is first detected and then returned.
+func (r *Driver) GetLibcudasoPath() (string, error) {
+	r.Lock()
+	defer r.Unlock()
+
+	if r.libcudasoPath == "" {
+		if err := r.updateInfo(); err != nil {
+			return "", err
+		}
+	}
+
+	return r.libcudasoPath, nil
+}
+
+func (r *Driver) GetLibcudaParentDir() (string, error) {
+	libcudasoPath, err := r.GetLibcudasoPath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Dir(libcudasoPath), nil
+}
+
+func (r *Driver) DriverLibraryLocator(additionalDirs ...string) (lookup.Locator, error) {
+	libcudasoParentDirPath, err := r.GetLibcudaParentDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get libcuda.so parent directory: %w", err)
+	}
+
+	searchPaths := []string{libcudasoParentDirPath}
+	for _, dir := range additionalDirs {
+		if strings.HasPrefix(dir, "/") {
+			searchPaths = append(searchPaths, dir)
+		} else {
+			searchPaths = append(searchPaths, filepath.Join(libcudasoParentDirPath, dir))
+		}
+	}
+
+	l := lookup.NewFileLocator(
+		lookup.WithRoot(r.Root),
+		lookup.WithLogger(r.logger),
+		lookup.WithSearchPaths(
+			searchPaths...,
+		),
+		lookup.WithOptional(true),
+	)
+	return l, nil
+}
+
+func (r *Driver) updateInfo() error {
+	versionSuffix := r.version
+	if versionSuffix == "" {
+		versionSuffix = "*.*"
+	}
+
+	libCudaPaths, err := r.Libraries().Locate("libcuda.so." + versionSuffix)
+	if err != nil {
+		return fmt.Errorf("failed to locate libcuda.so: %w", err)
+	}
+	libcudaPath := libCudaPaths[0]
+
+	version := strings.TrimPrefix(filepath.Base(libcudaPath), "libcuda.so.")
+	if version == "" {
+		return fmt.Errorf("failed to extract version from path %v", libcudaPath)
+	}
+
+	if r.version != "" && r.version != version {
+		return fmt.Errorf("unexpected version detected: %v != %v", r.version, version)
+	}
+	r.version = version
+	r.libcudasoPath = r.RelativeToRoot(libcudaPath)
+	return nil
 }
 
 // RelativeToRoot returns the specified path relative to the driver root.

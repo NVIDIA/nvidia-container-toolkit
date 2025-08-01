@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package cuda
+package root
 
 import (
 	"fmt"
@@ -35,19 +35,19 @@ func TestLocate(t *testing.T) {
 	testCases := []struct {
 		description   string
 		libcudaPath   string
-		expected      []string
+		expected      string
 		expectedError error
 	}{
 		{
 			description:   "no libcuda does not resolve library",
 			libcudaPath:   "",
-			expected:      []string{},
+			expected:      "",
 			expectedError: lookup.ErrNotFound,
 		},
 		{
 			description:   "no-ldcache searches /usr/lib64",
 			libcudaPath:   "/usr/lib64/libcuda.so.123.34",
-			expected:      []string{"/usr/lib64/libcuda.so.123.34"},
+			expected:      "/usr/lib64/libcuda.so.123.34",
 			expectedError: nil,
 		},
 	}
@@ -58,26 +58,17 @@ func TestLocate(t *testing.T) {
 			require.NoError(t, err)
 
 			l := New(
-				lookup.NewLibraryLocator(
-					lookup.WithLogger(logger),
-					lookup.WithRoot(driverRoot),
-				),
+				WithLogger(logger),
+				WithDriverRoot(driverRoot),
 			)
 
-			candidates, err := l.Locate(".*")
+			libcudasoPath, err := l.GetLibcudasoPath()
 			require.ErrorIs(t, err, tc.expectedError)
 
-			var strippedCandidates []string
-			for _, c := range candidates {
-				// NOTE: We need to strip `/private` on MacOs due to symlink resolution
-				strippedCandidates = append(strippedCandidates, strings.TrimPrefix(c, "/private"))
-			}
-			var expectedWithRoot []string
-			for _, e := range tc.expected {
-				expectedWithRoot = append(expectedWithRoot, filepath.Join(driverRoot, e))
-			}
+			// NOTE: We need to strip `/private` on MacOs due to symlink resolution
+			stripped := strings.TrimPrefix(libcudasoPath, "/private")
 
-			require.EqualValues(t, expectedWithRoot, strippedCandidates)
+			require.Equal(t, tc.expected, stripped)
 		})
 	}
 }
@@ -101,5 +92,5 @@ func setupDriverRoot(t *testing.T, libCudaPath string) (string, error) {
 	}
 	defer libCuda.Close()
 
-	return driverRoot, nil
+	return filepath.EvalSymlinks(driverRoot)
 }
