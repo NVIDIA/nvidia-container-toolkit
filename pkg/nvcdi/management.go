@@ -26,7 +26,6 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 )
 
@@ -76,12 +75,7 @@ func (m *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 		}()
 	}
 
-	version, err := m.getCudaVersion()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get CUDA version: %v", err)
-	}
-
-	driver, err := (*nvcdilib)(m).newDriverVersionDiscoverer(version)
+	driver, err := (*nvcdilib)(m).newDriverVersionDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create driver library discoverer: %v", err)
 	}
@@ -92,27 +86,6 @@ func (m *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	}
 
 	return edits, nil
-}
-
-// getCudaVersion returns the CUDA version for use in managementlib containers.
-func (m *managementlib) getCudaVersion() (string, error) {
-	version, err := (*nvcdilib)(m).getCudaVersion()
-	if err == nil {
-		return version, nil
-	}
-
-	libCudaPaths, err := cuda.New(
-		m.driver.Libraries(),
-	).Locate(".*.*")
-	if err != nil {
-		return "", fmt.Errorf("failed to locate libcuda.so: %v", err)
-	}
-
-	libCudaPath := libCudaPaths[0]
-
-	version = strings.TrimPrefix(filepath.Base(libCudaPath), "libcuda.so.")
-
-	return version, nil
 }
 
 type managementDiscoverer struct {

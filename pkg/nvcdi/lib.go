@@ -87,25 +87,18 @@ func New(opts ...Option) (Interface, error) {
 	if l.devRoot == "" {
 		l.devRoot = l.driverRoot
 	}
-	l.driver = root.New(
-		root.WithLogger(l.logger),
-		root.WithDriverRoot(l.driverRoot),
-		root.WithLibrarySearchPaths(l.librarySearchPaths...),
-		root.WithConfigSearchPaths(l.configSearchPaths...),
-	)
-	if l.nvmllib == nil {
-		var nvmlOpts []nvml.LibraryOption
-		candidates, err := l.driver.Libraries().Locate("libnvidia-ml.so.1")
-		if err != nil {
-			l.logger.Warningf("Ignoring error in locating libnvidia-ml.so.1: %v", err)
-		} else {
-			libNvidiaMlPath := candidates[0]
-			l.logger.Infof("Using %v", libNvidiaMlPath)
-			nvmlOpts = append(nvmlOpts, nvml.WithLibraryPath(libNvidiaMlPath))
-		}
-		l.nvmllib = nvml.New(nvmlOpts...)
-	}
+
+	l.nvmllib = l.getNvmlLib()
 	l.nvsandboxutilslib = l.getNvsandboxUtilsLib()
+	l.driver = l.getDriver(
+		root.WithVersioner(
+			root.FirstOf(
+				nvsandboxutilslibWithVersion(l.nvsandboxutilslib),
+				nvmllibWithVersion(l.nvmllib),
+			),
+		),
+	)
+
 	if l.devicelib == nil {
 		l.devicelib = device.New(l.nvmllib)
 	}
@@ -170,52 +163,80 @@ func New(opts ...Option) (Interface, error) {
 	return &w, nil
 }
 
-// getCudaVersion returns the CUDA version of the current system.
-func (l *nvcdilib) getCudaVersion() (string, error) {
-	version, err := l.getCudaVersionNvsandboxutils()
-	if err == nil {
-		return version, err
-	}
-
-	// Fallback to NVML
-	return l.getCudaVersionNvml()
+type nvmllibAsVersioner struct {
+	nvml.Interface
 }
 
-func (l *nvcdilib) getCudaVersionNvml() (string, error) {
-	if hasNVML, reason := l.infolib.HasNvml(); !hasNVML {
-		return "", fmt.Errorf("nvml not detected: %v", reason)
+func nvmllibWithVersion(nvmllib nvml.Interface) *nvmllibAsVersioner {
+	if nvmllib == nil {
+		return nil
 	}
-	if l.nvmllib == nil {
+	return &nvmllibAsVersioner{
+		Interface: nvmllib,
+	}
+}
+
+func (l *nvmllibAsVersioner) Version() (string, error) {
+	if l == nil || l.Interface == nil {
 		return "", fmt.Errorf("nvml library not initialized")
 	}
-	r := l.nvmllib.Init()
+
+	r := l.Init()
 	if r != nvml.SUCCESS {
 		return "", fmt.Errorf("failed to initialize nvml: %v", r)
 	}
 	defer func() {
-		if r := l.nvmllib.Shutdown(); r != nvml.SUCCESS {
-			l.logger.Warningf("failed to shutdown NVML: %v", r)
-		}
+		_ = l.Shutdown()
 	}()
 
-	version, r := l.nvmllib.SystemGetDriverVersion()
+	version, r := l.SystemGetDriverVersion()
 	if r != nvml.SUCCESS {
 		return "", fmt.Errorf("failed to get driver version: %v", r)
 	}
 	return version, nil
 }
 
-func (l *nvcdilib) getCudaVersionNvsandboxutils() (string, error) {
-	if l.nvsandboxutilslib == nil {
+type nvsandboxutilslibAsVersioner struct {
+	nvsandboxutils.Interface
+}
+
+func nvsandboxutilslibWithVersion(nvsandboxutilslib nvsandboxutils.Interface) *nvsandboxutilslibAsVersioner {
+	if nvsandboxutilslib == nil {
+		return nil
+	}
+	return &nvsandboxutilslibAsVersioner{
+		Interface: nvsandboxutilslib,
+	}
+}
+
+func (l *nvsandboxutilslibAsVersioner) Version() (string, error) {
+	if l == nil || l.Interface == nil {
 		return "", fmt.Errorf("libnvsandboxutils is not available")
 	}
 
 	// Sandboxutils initialization should happen before this function is called
-	version, ret := l.nvsandboxutilslib.GetDriverVersion()
+	version, ret := l.GetDriverVersion()
 	if ret != nvsandboxutils.SUCCESS {
 		return "", fmt.Errorf("%v", ret)
 	}
 	return version, nil
+}
+
+func (l *nvcdilib) getNvmlLib() nvml.Interface {
+	if l.nvmllib != nil {
+		return l.nvmllib
+	}
+
+	var nvmlOpts []nvml.LibraryOption
+	candidates, err := l.getDriver().Libraries().Locate("libnvidia-ml.so.1")
+	if err != nil {
+		l.logger.Warningf("Ignoring error in locating libnvidia-ml.so.1: %v", err)
+	} else {
+		libNvidiaMlPath := candidates[0]
+		l.logger.Infof("Using %v", libNvidiaMlPath)
+		nvmlOpts = append(nvmlOpts, nvml.WithLibraryPath(libNvidiaMlPath))
+	}
+	return nvml.New(nvmlOpts...)
 }
 
 // getNvsandboxUtilsLib returns the nvsandboxutilslib to use for CDI spec
@@ -230,7 +251,7 @@ func (l *nvcdilib) getNvsandboxUtilsLib() nvsandboxutils.Interface {
 
 	var nvsandboxutilsOpts []nvsandboxutils.LibraryOption
 	// Set the library path for libnvidia-sandboxutils
-	candidates, err := l.driver.Libraries().Locate("libnvidia-sandboxutils.so.1")
+	candidates, err := l.getDriver().Libraries().Locate("libnvidia-sandboxutils.so.1")
 	if err != nil {
 		l.logger.Warningf("Ignoring error in locating libnvidia-sandboxutils.so.1: %v", err)
 	} else {
@@ -238,5 +259,29 @@ func (l *nvcdilib) getNvsandboxUtilsLib() nvsandboxutils.Interface {
 		l.logger.Infof("Using %v", libNvidiaSandboxutilsPath)
 		nvsandboxutilsOpts = append(nvsandboxutilsOpts, nvsandboxutils.WithLibraryPath(libNvidiaSandboxutilsPath))
 	}
-	return nvsandboxutils.New(nvsandboxutilsOpts...)
+
+	// We try to initialize the library once to ensure that we have a valid installation.
+	lib := nvsandboxutils.New(nvsandboxutilsOpts...)
+	if r := lib.Init(l.driverRoot); r != nvsandboxutils.SUCCESS {
+		l.logger.Warningf("Failed to init nvsandboxutils: %v; ignoring", r)
+		return nil
+	}
+	defer func() {
+		_ = lib.Shutdown()
+	}()
+
+	return lib
+}
+
+func (l *nvcdilib) getDriver(additionalOptions ...root.Option) *root.Driver {
+	options := []root.Option{
+		root.WithLogger(l.logger),
+		root.WithDriverRoot(l.driverRoot),
+		root.WithLibrarySearchPaths(l.librarySearchPaths...),
+		root.WithConfigSearchPaths(l.configSearchPaths...),
+	}
+
+	options = append(options, additionalOptions...)
+
+	return root.New(options...)
 }
