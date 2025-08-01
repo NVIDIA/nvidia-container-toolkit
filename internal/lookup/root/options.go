@@ -18,28 +18,45 @@ package root
 
 import "github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
-type Option func(*Driver)
+type options struct {
+	logger logger.Interface
+	// Root represents the root from the perspective of the driver libraries and binaries.
+	Root string
+	// librarySearchPaths specifies explicit search paths for discovering libraries.
+	librarySearchPaths []string
+	// configSearchPaths specified explicit search paths for discovering driver config files.
+	configSearchPaths []string
+	versioner         Versioner
+}
+
+type Option func(*options)
 
 func WithLogger(logger logger.Interface) Option {
-	return func(d *Driver) {
-		d.logger = logger
+	return func(o *options) {
+		o.logger = logger
 	}
 }
 
 func WithDriverRoot(root string) Option {
-	return func(d *Driver) {
-		d.Root = root
+	return func(o *options) {
+		o.Root = root
 	}
 }
 
 func WithLibrarySearchPaths(paths ...string) Option {
-	return func(d *Driver) {
-		d.librarySearchPaths = paths
+	return func(o *options) {
+		o.librarySearchPaths = paths
 	}
 }
 
 func WithConfigSearchPaths(paths ...string) Option {
-	return func(d *Driver) {
-		d.configSearchPaths = paths
+	return func(o *options) {
+		o.configSearchPaths = paths
+	}
+}
+
+func WithVersioner(versioner Versioner) Option {
+	return func(o *options) {
+		o.versioner = versioner
 	}
 }
