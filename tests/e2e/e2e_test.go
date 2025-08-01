@@ -62,12 +62,8 @@ func getTestEnv() {
 
 	installCTK = getEnvVarOrDefault("E2E_INSTALL_CTK", false)
 
-	if installCTK {
-		imageName = getRequiredEnvvar[string]("E2E_IMAGE_NAME")
-
-		imageTag = getRequiredEnvvar[string]("E2E_IMAGE_TAG")
-
-	}
+	imageName = getRequiredEnvvar[string]("E2E_IMAGE_NAME")
+	imageTag = getRequiredEnvvar[string]("E2E_IMAGE_TAG")
 
 	sshHost = getEnvVarOrDefault("E2E_SSH_HOST", "")
 	if sshHost != "" {
