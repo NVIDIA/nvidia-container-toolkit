@@ -72,6 +72,9 @@ var _ nvml.VgpuInstance = &VgpuInstance{}
 //			GetMetadataFunc: func() (nvml.VgpuMetadata, nvml.Return) {
 //				panic("mock out the GetMetadata method")
 //			},
+//			GetRuntimeStateSizeFunc: func() (nvml.VgpuRuntimeState, nvml.Return) {
+//				panic("mock out the GetRuntimeStateSize method")
+//			},
 //			GetTypeFunc: func() (nvml.VgpuTypeId, nvml.Return) {
 //				panic("mock out the GetType method")
 //			},
@@ -148,6 +151,9 @@ type VgpuInstance struct {
 	// GetMetadataFunc mocks the GetMetadata method.
 	GetMetadataFunc func() (nvml.VgpuMetadata, nvml.Return)
 
+	// GetRuntimeStateSizeFunc mocks the GetRuntimeStateSize method.
+	GetRuntimeStateSizeFunc func() (nvml.VgpuRuntimeState, nvml.Return)
+
 	// GetTypeFunc mocks the GetType method.
 	GetTypeFunc func() (nvml.VgpuTypeId, nvml.Return)
 
@@ -221,6 +227,9 @@ type VgpuInstance struct {
 		// GetMetadata holds details about calls to the GetMetadata method.
 		GetMetadata []struct {
 		}
+		// GetRuntimeStateSize holds details about calls to the GetRuntimeStateSize method.
+		GetRuntimeStateSize []struct {
+		}
 		// GetType holds details about calls to the GetType method.
 		GetType []struct {
 		}
@@ -257,6 +266,7 @@ type VgpuInstance struct {
 	lockGetLicenseStatus    sync.RWMutex
 	lockGetMdevUUID         sync.RWMutex
 	lockGetMetadata         sync.RWMutex
+	lockGetRuntimeStateSize sync.RWMutex
 	lockGetType             sync.RWMutex
 	lockGetUUID             sync.RWMutex
 	lockGetVmDriverVersion  sync.RWMutex
@@ -752,6 +762,33 @@ func (mock *VgpuInstance) GetMetadataCalls() []struct {
 	mock.lockGetMetadata.RLock()
 	calls = mock.calls.GetMetadata
 	mock.lockGetMetadata.RUnlock()
+	return calls
+}
+
+// GetRuntimeStateSize calls GetRuntimeStateSizeFunc.
+func (mock *VgpuInstance) GetRuntimeStateSize() (nvml.VgpuRuntimeState, nvml.Return) {
+	if mock.GetRuntimeStateSizeFunc == nil {
+		panic("VgpuInstance.GetRuntimeStateSizeFunc: method is nil but VgpuInstance.GetRuntimeStateSize was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetRuntimeStateSize.Lock()
+	mock.calls.GetRuntimeStateSize = append(mock.calls.GetRuntimeStateSize, callInfo)
+	mock.lockGetRuntimeStateSize.Unlock()
+	return mock.GetRuntimeStateSizeFunc()
+}
+
+// GetRuntimeStateSizeCalls gets all the calls that were made to GetRuntimeStateSize.
+// Check the length with:
+//
+//	len(mockedVgpuInstance.GetRuntimeStateSizeCalls())
+func (mock *VgpuInstance) GetRuntimeStateSizeCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetRuntimeStateSize.RLock()
+	calls = mock.calls.GetRuntimeStateSize
+	mock.lockGetRuntimeStateSize.RUnlock()
 	return calls
 }
 
