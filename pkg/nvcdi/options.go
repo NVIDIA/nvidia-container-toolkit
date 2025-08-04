@@ -175,3 +175,12 @@ func WithFeatureFlag(featureFlag FeatureFlag) Option {
 		o.featureFlags[featureFlag] = true
 	}
 }
+
+// WithEnableChmodHook allows the chmod hook to be enabled.
+// This hook is disabled by default as it was originally a workaround
+// for older versions of crun that has since been fixed.
+func WithEnableChmodHook(enabled bool) Option {
+	return func(o *nvcdilib) {
+		o.enableChmodHook = enabled
+	}
+}
