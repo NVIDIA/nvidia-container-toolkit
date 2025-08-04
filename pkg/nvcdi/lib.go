@@ -59,6 +59,7 @@ type nvcdilib struct {
 	featureFlags map[FeatureFlag]bool
 
 	disabledHooks []discover.HookName
+	enabledHooks  []discover.HookName
 	hookCreator   discover.HookCreator
 }
 
@@ -152,6 +153,7 @@ func New(opts ...Option) (Interface, error) {
 	l.hookCreator = discover.NewHookCreator(
 		discover.WithNVIDIACDIHookPath(l.nvidiaCDIHookPath),
 		discover.WithDisabledHooks(l.disabledHooks...),
+		discover.WithEnabledHooks(l.enabledHooks...),
 	)
 
 	w := wrapper{

@@ -76,6 +76,7 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 	}
 
 	hookCreator := discover.NewHookCreator(discover.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path))
+
 	var modifiers modifier.List
 	for _, modifierType := range supportedModifierTypes(mode) {
 		switch modifierType {

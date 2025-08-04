@@ -62,6 +62,7 @@ type options struct {
 	configSearchPaths  []string
 	librarySearchPaths []string
 	disabledHooks      []string
+	enabledHooks       []string
 
 	csv struct {
 		files          []string
@@ -214,6 +215,13 @@ func (m command) build() *cli.Command {
 				Destination: &opts.disabledHooks,
 				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_DISABLED_HOOKS"),
 			},
+			&cli.StringSliceFlag{
+				Name:        "enable-hook",
+				Aliases:     []string{"enable-hooks"},
+				Usage:       "Explicitly enable a hook in the generated CDI specification. This overrides disabled hooks. This can be specified multiple times.",
+				Destination: &opts.enabledHooks,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_ENABLED_HOOKS"),
+			},
 		},
 	}
 
@@ -257,6 +265,12 @@ func (m command) validateFlags(c *cli.Command, opts *options) error {
 	}
 	if err := cdi.ValidateClassName(opts.class); err != nil {
 		return fmt.Errorf("invalid CDI class name: %v", err)
+	}
+
+	for _, hook := range opts.enabledHooks {
+		if hook == "all" {
+			return fmt.Errorf("enabling all hooks is not supported")
+		}
 	}
 	return nil
 }
@@ -313,12 +327,10 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths),
 		nvcdi.WithCSVFiles(opts.csv.files),
 		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns),
+		nvcdi.WithDisabledHooks(opts.disabledHooks...),
+		nvcdi.WithEnabledHooks(opts.enabledHooks...),
 		// We set the following to allow for dependency injection:
 		nvcdi.WithNvmlLib(opts.nvmllib),
-	}
-
-	for _, hook := range opts.disabledHooks {
-		cdiOptions = append(cdiOptions, nvcdi.WithDisabledHook(hook))
 	}
 
 	cdilib, err := nvcdi.New(cdiOptions...)
