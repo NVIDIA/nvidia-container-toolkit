@@ -82,6 +82,7 @@ type Option func(*cdiHookCreator)
 type cdiHookCreator struct {
 	nvidiaCDIHookPath string
 	disabledHooks     map[HookName]bool
+	enableChmodHook   bool
 
 	fixedArgs    []string
 	debugLogging bool
@@ -114,6 +115,15 @@ func WithDisabledHooks(hooks ...HookName) Option {
 func WithNVIDIACDIHookPath(nvidiaCDIHookPath string) Option {
 	return func(c *cdiHookCreator) {
 		c.nvidiaCDIHookPath = nvidiaCDIHookPath
+	}
+}
+
+// WithEnableChmodHook allows the chmod hook to be enabled.
+// By default, the chmod hook is disabled as it was a workaround for older
+// versions of crun that has since been fixed.
+func WithEnableChmodHook(enabled bool) Option {
+	return func(c *cdiHookCreator) {
+		c.enableChmodHook = enabled
 	}
 }
 
@@ -162,6 +172,10 @@ func (c cdiHookCreator) isDisabled(name HookName, args ...string) bool {
 			return true
 		}
 	case ChmodHook:
+		// ChmodHook is disabled by default unless explicitly enabled
+		if !c.enableChmodHook {
+			return true
+		}
 		if len(args) == 0 {
 			return true
 		}
