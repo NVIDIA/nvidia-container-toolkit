@@ -361,6 +361,91 @@ containerEdits:
             - rprivate
 `,
 		},
+		{
+			description: "enableChmodHook",
+			options: options{
+				format:          "yaml",
+				mode:            "nvml",
+				vendor:          "example.com",
+				class:           "device",
+				driverRoot:      driverRoot,
+				enableChmodHook: true,
+			},
+			expectedOptions: options{
+				format:            "yaml",
+				mode:              "nvml",
+				vendor:            "example.com",
+				class:             "device",
+				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
+				driverRoot:        driverRoot,
+				enableChmodHook:   true,
+			},
+			expectedSpec: `---
+cdiVersion: 0.5.0
+kind: example.com/device
+devices:
+    - name: "0"
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
+    - name: all
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
+containerEdits:
+    env:
+        - NVIDIA_CTK_LIBCUDA_DIR=/lib/x86_64-linux-gnu
+        - NVIDIA_VISIBLE_DEVICES=void
+    deviceNodes:
+        - path: /dev/nvidiactl
+          hostPath: {{ .driverRoot }}/dev/nvidiactl
+    hooks:
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - create-symlinks
+            - --link
+            - libcuda.so.1::/lib/x86_64-linux-gnu/libcuda.so
+          env:
+            - NVIDIA_CTK_DEBUG=false
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - enable-cuda-compat
+            - --host-driver-version=999.88.77
+          env:
+            - NVIDIA_CTK_DEBUG=false
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - update-ldcache
+            - --folder
+            - /lib/x86_64-linux-gnu
+          env:
+            - NVIDIA_CTK_DEBUG=false
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - disable-device-node-modification
+          env:
+            - NVIDIA_CTK_DEBUG=false
+    mounts:
+        - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - rbind
+            - rprivate
+`,
+		},
 	}
 
 	for _, tc := range testCases {
