@@ -42,6 +42,12 @@ type features struct {
 	// possibly bypassing other checks by an orchestration system such as
 	// kubernetes.
 	IgnoreImexChannelRequests *feature `toml:"ignore-imex-channel-requests,omitempty"`
+	// EnableChmodHook allows the chmod hook to be injected for device folder permissions.
+	// This hook was originally added as a workaround for a specific crun issue with device
+	// nodes in subdirectories of /dev (e.g., /dev/dri/*, /dev/nvidia-caps/*).
+	// Since this issue has been resolved in newer versions of crun, this hook is disabled
+	// by default. Users who still require this functionality can explicitly enable it.
+	EnableChmodHook *feature `toml:"enable-chmod-hook,omitempty"`
 }
 
 type feature bool
