@@ -84,6 +84,8 @@ devices:
               hostPath: /host/driver/root/dev/nvidia-caps-imex-channels/channel1
             - path: /dev/nvidia-caps-imex-channels/channel2047
               hostPath: /host/driver/root/dev/nvidia-caps-imex-channels/channel2047
+            - path: /dev/nvidia-caps/nvidia-cap1
+              hostPath: /host/driver/root/dev/nvidia-caps/nvidia-cap1
 containerEdits:
     env:
         - NVIDIA_CTK_LIBCUDA_DIR=/lib/x86_64-linux-gnu
