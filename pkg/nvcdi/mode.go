@@ -33,6 +33,8 @@ const (
 	ModeWsl = Mode("wsl")
 	// ModeManagement configures the CDI spec generator to generate a management spec.
 	ModeManagement = Mode("management")
+	// ModeGdrcopy configures the CDI spec generator to generate a GDR Copy spec.
+	ModeGdrcopy = Mode("gdrcopy")
 	// ModeGds configures the CDI spec generator to generate a GDS spec.
 	ModeGds = Mode("gds")
 	// ModeMofed configures the CDI spec generator to generate a MOFED spec.
@@ -61,6 +63,7 @@ func getModes() modes {
 		all := []Mode{
 			ModeAuto,
 			ModeCSV,
+			ModeGdrcopy,
 			ModeGds,
 			ModeImex,
 			ModeManagement,

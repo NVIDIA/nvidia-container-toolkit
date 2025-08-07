@@ -129,7 +129,7 @@ func New(opts ...Option) (Interface, error) {
 		factory = (*nvmllib)(l)
 	case ModeWsl:
 		factory = (*wsllib)(l)
-	case ModeGds, ModeMofed:
+	case ModeGdrcopy, ModeGds, ModeMofed:
 		if l.class == "" {
 			l.class = string(l.mode)
 		}
