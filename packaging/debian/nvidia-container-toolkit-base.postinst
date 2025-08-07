@@ -13,6 +13,10 @@ case "$1" in
           systemctl daemon-reload || echo "Warning: Failed to reload systemd daemon" >&2
           systemctl enable --now nvidia-cdi-refresh.path || echo "Warning: Failed to enable nvidia-cdi-refresh.path" >&2
           systemctl enable --now nvidia-cdi-refresh.service || echo "Warning: Failed to enable nvidia-cdi-refresh.service" >&2
+          
+          # Trigger CDI spec regeneration immediately after install/upgrade
+          echo "Regenerating NVIDIA CDI specification..."
+          systemctl start nvidia-cdi-refresh.service || echo "Warning: Failed to trigger CDI refresh" >&2
         fi
     ;;
 

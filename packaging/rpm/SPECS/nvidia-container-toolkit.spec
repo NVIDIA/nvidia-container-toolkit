@@ -54,14 +54,6 @@ if [ $1 -gt 1 ]; then  # only on package upgrade
   cp -af %{_bindir}/nvidia-container-runtime-hook %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
 fi
 
-# Reload systemd unit cache and enable nvidia-cdi-refresh services on both install and upgrade
-if command -v systemctl >/dev/null 2>&1 \
-   && systemctl --quiet is-system-running 2>/dev/null; then
-  systemctl daemon-reload || echo "Warning: Failed to reload systemd daemon" >&2
-  systemctl enable --now nvidia-cdi-refresh.path || echo "Warning: Failed to enable nvidia-cdi-refresh.path" >&2
-  systemctl enable --now nvidia-cdi-refresh.service || echo "Warning: Failed to enable nvidia-cdi-refresh.service" >&2
-fi
-
 %posttrans
 if [ ! -e %{_bindir}/nvidia-container-runtime-hook ]; then
   # repairing lost file nvidia-container-runtime-hook
@@ -69,9 +61,6 @@ if [ ! -e %{_bindir}/nvidia-container-runtime-hook ]; then
 fi
 rm -rf %{_localstatedir}/lib/rpm-state/nvidia-container-toolkit
 ln -sf %{_bindir}/nvidia-container-runtime-hook %{_bindir}/nvidia-container-toolkit
-
-# Generate the default config; If this file already exists no changes are made.
-%{_bindir}/nvidia-ctk --quiet config --config-file=%{_sysconfdir}/nvidia-container-runtime/config.toml --in-place
 
 %postun
 if [ "$1" = 0 ]; then  # package is uninstalled, not upgraded
@@ -100,6 +89,22 @@ Conflicts: nvidia-container-toolkit <= 1.10.0-1
 
 %description base
 Provides tools such as the NVIDIA Container Runtime and NVIDIA Container Toolkit CLI to enable GPU support in containers.
+
+%post base
+# Generate the default config; If this file already exists no changes are made.
+%{_bindir}/nvidia-ctk --quiet config --config-file=%{_sysconfdir}/nvidia-container-runtime/config.toml --in-place
+
+# Reload systemd unit cache and enable nvidia-cdi-refresh services on both install and upgrade
+if command -v systemctl >/dev/null 2>&1 \
+   && systemctl --quiet is-system-running 2>/dev/null; then
+  systemctl daemon-reload || echo "Warning: Failed to reload systemd daemon" >&2
+  systemctl enable --now nvidia-cdi-refresh.path || echo "Warning: Failed to enable nvidia-cdi-refresh.path" >&2
+  systemctl enable --now nvidia-cdi-refresh.service || echo "Warning: Failed to enable nvidia-cdi-refresh.service" >&2
+  
+  # Trigger CDI spec regeneration immediately after install/upgrade
+  echo "Regenerating NVIDIA CDI specification..."
+  systemctl start nvidia-cdi-refresh.service || echo "Warning: Failed to trigger CDI refresh" >&2
+fi
 
 %files base
 %license LICENSE
