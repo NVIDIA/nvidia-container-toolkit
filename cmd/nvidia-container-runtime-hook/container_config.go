@@ -153,23 +153,7 @@ func (hookConfig *hookConfig) getImexChannels(image image.CUDA, privileged bool)
 		return nil
 	}
 
-	// If enabled, try and get the device list from volume mounts first
-	if hookConfig.AcceptDeviceListAsVolumeMounts {
-		devices := image.ImexChannelsFromMounts()
-		if len(devices) > 0 {
-			return devices
-		}
-	}
-	devices := image.ImexChannelsFromEnvVar()
-	if len(devices) == 0 {
-		return nil
-	}
-
-	if privileged || hookConfig.AcceptEnvvarUnprivileged {
-		return devices
-	}
-
-	return nil
+	return image.ImexChannelRequests()
 }
 
 func (hookConfig *hookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage bool) image.DriverCapabilities {
