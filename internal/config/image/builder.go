@@ -127,6 +127,15 @@ func WithEnvMap(env map[string]string) Option {
 	}
 }
 
+// WithIgnoreImexChannelRequests sets whether per-container IMEX channel
+// requests are supported.
+func WithIgnoreImexChannelRequests(ignoreImexChannelRequests bool) Option {
+	return func(b *builder) error {
+		b.ignoreImexChannelRequests = ignoreImexChannelRequests
+		return nil
+	}
+}
+
 // WithLogger sets the logger to use when creating the CUDA image.
 func WithLogger(logger logger.Interface) Option {
 	return func(b *builder) error {

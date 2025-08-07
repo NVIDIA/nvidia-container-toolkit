@@ -716,7 +716,7 @@ func TestImexChannelsFromEnvVar(t *testing.T) {
 				i, err := newCUDAImageFromEnv(append(baseEnvvars, tc.env...))
 				require.NoError(t, err)
 
-				channels := i.ImexChannelsFromEnvVar()
+				channels := i.imexChannelsFromEnvVar()
 				require.EqualValues(t, tc.expected, channels)
 			})
 		}

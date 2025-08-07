@@ -148,30 +148,6 @@ func getMigDevices(image image.CUDA, envvar string) *string {
 	return &devices
 }
 
-func (hookConfig *hookConfig) getImexChannels(image image.CUDA, privileged bool) []string {
-	if hookConfig.Features.IgnoreImexChannelRequests.IsEnabled() {
-		return nil
-	}
-
-	// If enabled, try and get the device list from volume mounts first
-	if hookConfig.AcceptDeviceListAsVolumeMounts {
-		devices := image.ImexChannelsFromMounts()
-		if len(devices) > 0 {
-			return devices
-		}
-	}
-	devices := image.ImexChannelsFromEnvVar()
-	if len(devices) == 0 {
-		return nil
-	}
-
-	if privileged || hookConfig.AcceptEnvvarUnprivileged {
-		return devices
-	}
-
-	return nil
-}
-
 func (hookConfig *hookConfig) getDriverCapabilities(cudaImage image.CUDA, legacyImage bool) image.DriverCapabilities {
 	// We use the default driver capabilities by default. This is filtered to only include the
 	// supported capabilities
@@ -223,8 +199,6 @@ func (hookConfig *hookConfig) getNvidiaConfig(image image.CUDA, privileged bool)
 		log.Panicln("cannot set MIG_MONITOR_DEVICES in non privileged container")
 	}
 
-	imexChannels := hookConfig.getImexChannels(image, privileged)
-
 	driverCapabilities := hookConfig.getDriverCapabilities(image, legacyImage).String()
 
 	requirements, err := image.GetRequirements()
@@ -236,7 +210,7 @@ func (hookConfig *hookConfig) getNvidiaConfig(image image.CUDA, privileged bool)
 		Devices:            devices,
 		MigConfigDevices:   migConfigDevices,
 		MigMonitorDevices:  migMonitorDevices,
-		ImexChannels:       imexChannels,
+		ImexChannels:       image.ImexChannelRequests(),
 		DriverCapabilities: driverCapabilities,
 		Requirements:       requirements,
 	}
@@ -273,6 +247,7 @@ func (hookConfig *hookConfig) getContainerConfig() (config *containerConfig) {
 		image.WithAcceptDeviceListAsVolumeMounts(hookConfig.AcceptDeviceListAsVolumeMounts),
 		image.WithAcceptEnvvarUnprivileged(hookConfig.AcceptEnvvarUnprivileged),
 		image.WithPreferredVisibleDevicesEnvVars(hookConfig.getSwarmResourceEnvvars()...),
+		image.WithIgnoreImexChannelRequests(hookConfig.Features.IgnoreImexChannelRequests.IsEnabled()),
 	)
 	if err != nil {
 		log.Panicln(err)
