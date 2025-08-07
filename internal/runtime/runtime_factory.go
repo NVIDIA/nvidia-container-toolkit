@@ -75,10 +75,16 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		return nil, err
 	}
 
-	hookCreator := discover.NewHookCreator(
+	opts := []discover.Option{
 		discover.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path),
-		discover.WithEnableChmodHook(cfg.Features.EnableChmodHook.IsEnabled()),
-	)
+	}
+
+	// Apply disabled hooks from config
+	for _, hook := range cfg.NVIDIAContainerRuntimeHookConfig.DisabledHooks {
+		opts = append(opts, discover.WithDisabledHooks(discover.HookName(hook)))
+	}
+
+	hookCreator := discover.NewHookCreator(opts...)
 	var modifiers modifier.List
 	for _, modifierType := range supportedModifierTypes(mode) {
 		switch modifierType {

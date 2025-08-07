@@ -62,7 +62,7 @@ type options struct {
 	configSearchPaths  []string
 	librarySearchPaths []string
 	disabledHooks      []string
-	enableChmodHook    bool
+	enabledHooks       []string
 
 	csv struct {
 		files          []string
@@ -215,11 +215,12 @@ func (m command) build() *cli.Command {
 				Destination: &opts.disabledHooks,
 				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_DISABLED_HOOKS"),
 			},
-			&cli.BoolFlag{
-				Name:        "enable-chmod-hook",
-				Usage:       "Enable the chmod hook for device folder permissions. This hook is disabled by default.",
-				Destination: &opts.enableChmodHook,
-				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_ENABLE_CHMOD_HOOK"),
+			&cli.StringSliceFlag{
+				Name:        "enable-hook",
+				Aliases:     []string{"enable-hooks"},
+				Usage:       "Explicitly enable a hook in the generated CDI specification. This overrides disabled hooks. This can be specified multiple times.",
+				Destination: &opts.enabledHooks,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_ENABLED_HOOKS"),
 			},
 		},
 	}
@@ -328,8 +329,8 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		cdiOptions = append(cdiOptions, nvcdi.WithDisabledHook(hook))
 	}
 
-	if opts.enableChmodHook {
-		cdiOptions = append(cdiOptions, nvcdi.WithEnableChmodHook(true))
+	for _, hook := range opts.enabledHooks {
+		cdiOptions = append(cdiOptions, nvcdi.WithEnabledHook(hook))
 	}
 
 	cdilib, err := nvcdi.New(cdiOptions...)

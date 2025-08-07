@@ -50,6 +50,14 @@ const (
 	defaultNvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
 )
 
+// defaultDisabledHooks defines hooks that are disabled by default.
+// These hooks can be explicitly enabled using the WithEnabledHooks option.
+var defaultDisabledHooks = map[HookName]bool{
+	// ChmodHook is disabled by default as it was a workaround for older
+	// versions of crun that has since been fixed.
+	ChmodHook: true,
+}
+
 var _ Discover = (*Hook)(nil)
 
 // Devices returns an empty list of devices for a Hook discoverer.
@@ -82,7 +90,7 @@ type Option func(*cdiHookCreator)
 type cdiHookCreator struct {
 	nvidiaCDIHookPath string
 	disabledHooks     map[HookName]bool
-	enableChmodHook   bool
+	enabledHooks      map[HookName]bool
 
 	fixedArgs    []string
 	debugLogging bool
@@ -101,12 +109,22 @@ type HookCreator interface {
 	Create(HookName, ...string) *Hook
 }
 
-// WithDisabledHooks sets the set of hooks that are disabled for the CDI hook creator.
+// WithDisabledHooks explicitly disables the specified hooks.
 // This can be specified multiple times.
 func WithDisabledHooks(hooks ...HookName) Option {
 	return func(c *cdiHookCreator) {
 		for _, hook := range hooks {
 			c.disabledHooks[hook] = true
+		}
+	}
+}
+
+// WithEnabledHooks explicitly enables the specified hooks.
+// This is useful for enabling hooks that are disabled by default.
+func WithEnabledHooks(hooks ...HookName) Option {
+	return func(c *cdiHookCreator) {
+		for _, hook := range hooks {
+			c.enabledHooks[hook] = true
 		}
 	}
 }
@@ -118,22 +136,26 @@ func WithNVIDIACDIHookPath(nvidiaCDIHookPath string) Option {
 	}
 }
 
-// WithEnableChmodHook allows the chmod hook to be enabled.
-// By default, the chmod hook is disabled as it was a workaround for older
-// versions of crun that has since been fixed.
-func WithEnableChmodHook(enabled bool) Option {
-	return func(c *cdiHookCreator) {
-		c.enableChmodHook = enabled
-	}
-}
-
 func NewHookCreator(opts ...Option) HookCreator {
+	disabledHooks := make(map[HookName]bool)
+	enabledHooks := make(map[HookName]bool)
+	for hook := range defaultDisabledHooks {
+		disabledHooks[hook] = true
+	}
+
 	cdiHookCreator := &cdiHookCreator{
 		nvidiaCDIHookPath: defaultNvidiaCDIHookPath,
-		disabledHooks:     make(map[HookName]bool),
+		disabledHooks:     disabledHooks,
+		enabledHooks:      enabledHooks,
 	}
 	for _, opt := range opts {
 		opt(cdiHookCreator)
+	}
+
+	// Correct the disabledHooks map to ensure that explicitly enabled hooks
+	// are not disabled.
+	for hook := range enabledHooks {
+		cdiHookCreator.disabledHooks[hook] = false
 	}
 
 	if cdiHookCreator.disabledHooks[AllHooks] {
@@ -160,25 +182,15 @@ func (c cdiHookCreator) Create(name HookName, args ...string) *Hook {
 	}
 }
 
-// isDisabled checks if the specified hook name is disabled.
 func (c cdiHookCreator) isDisabled(name HookName, args ...string) bool {
 	if c.disabledHooks[name] {
 		return true
 	}
 
+	// still reject hooks that require args if none were provided
 	switch name {
-	case CreateSymlinksHook:
-		if len(args) == 0 {
-			return true
-		}
-	case ChmodHook:
-		// ChmodHook is disabled by default unless explicitly enabled
-		if !c.enableChmodHook {
-			return true
-		}
-		if len(args) == 0 {
-			return true
-		}
+	case CreateSymlinksHook, ChmodHook:
+		return len(args) == 0
 	}
 	return false
 }

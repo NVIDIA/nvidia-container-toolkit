@@ -58,9 +58,9 @@ type nvcdilib struct {
 
 	featureFlags map[FeatureFlag]bool
 
-	disabledHooks   []discover.HookName
-	enableChmodHook bool
-	hookCreator     discover.HookCreator
+	disabledHooks []discover.HookName
+	enabledHooks  []discover.HookName
+	hookCreator   discover.HookCreator
 }
 
 // New creates a new nvcdi library
@@ -153,7 +153,7 @@ func New(opts ...Option) (Interface, error) {
 	l.hookCreator = discover.NewHookCreator(
 		discover.WithNVIDIACDIHookPath(l.nvidiaCDIHookPath),
 		discover.WithDisabledHooks(l.disabledHooks...),
-		discover.WithEnableChmodHook(l.enableChmodHook),
+		discover.WithEnabledHooks(l.enabledHooks...),
 	)
 
 	w := wrapper{
