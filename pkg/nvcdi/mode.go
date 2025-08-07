@@ -104,6 +104,7 @@ func (l *nvcdilib) resolveMode() (rmode Mode) {
 	}
 	defer func() {
 		l.logger.Infof("Auto-detected mode as '%v'", rmode)
+		l.mode = rmode
 	}()
 
 	platform := l.infolib.ResolvePlatform()
