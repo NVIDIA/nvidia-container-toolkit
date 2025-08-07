@@ -60,12 +60,13 @@ func getModes() modes {
 	validModesOnce.Do(func() {
 		all := []Mode{
 			ModeAuto,
+			ModeCSV,
+			ModeGds,
+			ModeImex,
+			ModeManagement,
+			ModeMofed,
 			ModeNvml,
 			ModeWsl,
-			ModeManagement,
-			ModeGds,
-			ModeMofed,
-			ModeCSV,
 		}
 		lookup := make(map[Mode]bool)
 
