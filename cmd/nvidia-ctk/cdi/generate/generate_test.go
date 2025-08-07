@@ -109,6 +109,8 @@ containerEdits:
             - update-ldcache
             - --folder
             - /lib/x86_64-linux-gnu
+            - --folder
+            - /lib/x86_64-linux-gnu/vdpau
           env:
             - NVIDIA_CTK_DEBUG=false
         - hookName: createContainer
@@ -121,6 +123,14 @@ containerEdits:
     mounts:
         - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
           containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - rbind
+            - rprivate
+        - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77
           options:
             - ro
             - nosuid
@@ -186,6 +196,8 @@ containerEdits:
             - update-ldcache
             - --folder
             - /lib/x86_64-linux-gnu
+            - --folder
+            - /lib/x86_64-linux-gnu/vdpau
           env:
             - NVIDIA_CTK_DEBUG=false
         - hookName: createContainer
@@ -198,6 +210,14 @@ containerEdits:
     mounts:
         - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
           containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - rbind
+            - rprivate
+        - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77
           options:
             - ro
             - nosuid
@@ -272,6 +292,14 @@ containerEdits:
             - nodev
             - rbind
             - rprivate
+        - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - rbind
+            - rprivate
 `,
 		},
 		{
@@ -317,6 +345,14 @@ containerEdits:
     mounts:
         - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
           containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - rbind
+            - rprivate
+        - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77
           options:
             - ro
             - nosuid
