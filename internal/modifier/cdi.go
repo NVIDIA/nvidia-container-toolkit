@@ -62,7 +62,9 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		return nil, fmt.Errorf("requesting a CDI device with vendor 'runtime.nvidia.com' is not supported when requesting other CDI devices")
 	}
 	if len(automaticDevices) > 0 {
-		automaticDevices = append(automaticDevices, gatedDevices(image).DeviceRequests()...)
+		automaticDevices = append(automaticDevices, withUniqueDevices(gatedDevices(image)).DeviceRequests()...)
+		automaticDevices = append(automaticDevices, withUniqueDevices(imexDevices(image)).DeviceRequests()...)
+
 		automaticModifier, err := newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
 		if err == nil {
 			return automaticModifier, nil
@@ -135,6 +137,17 @@ func (g gatedDevices) DeviceRequests() []string {
 	return devices
 }
 
+type imexDevices image.CUDA
+
+func (d imexDevices) DeviceRequests() []string {
+	var devices []string
+	i := (image.CUDA)(d)
+	for _, channelID := range i.ImexChannelRequests() {
+		devices = append(devices, "mode=imex,id="+channelID)
+	}
+	return devices
+}
+
 // filterAutomaticDevices searches for "automatic" device names in the input slice.
 // "Automatic" devices are a well-defined list of CDI device names which, when requested,
 // trigger the generation of a CDI spec at runtime. This removes the need to generate a
@@ -155,17 +168,21 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 
 	perModeIdentifiers := make(map[string][]string)
 	perModeDeviceClass := map[string]string{"auto": automaticDeviceClass}
-	modes := []string{"auto"}
+	uniqueModes := []string{"auto"}
+	seen := make(map[string]bool)
 	for _, device := range devices {
-		if strings.HasPrefix(device, "mode=") {
-			modes = append(modes, strings.TrimPrefix(device, "mode="))
-			continue
+		mode, id := getModeIdentifier(device)
+		if !seen[mode] {
+			uniqueModes = append(uniqueModes, mode)
+			seen[mode] = true
 		}
-		perModeIdentifiers["auto"] = append(perModeIdentifiers["auto"], strings.TrimPrefix(device, automaticDevicePrefix))
+		if id != "" {
+			perModeIdentifiers[id] = append(perModeIdentifiers[id], id)
+		}
 	}
 
 	var modifiers oci.SpecModifiers
-	for _, mode := range modes {
+	for _, mode := range uniqueModes {
 		cdilib, err := nvcdi.New(
 			nvcdi.WithLogger(logger),
 			nvcdi.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path),
@@ -195,6 +212,18 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 	}
 
 	return modifiers, nil
+}
+
+func getModeIdentifier(device string) (string, string) {
+	if !strings.HasPrefix(device, "mode=") {
+		return "auto", strings.TrimPrefix(device, automaticDevicePrefix)
+	}
+	parts := strings.SplitN(device, ",", 2)
+	mode := strings.TrimPrefix(parts[0], "mode=")
+	if len(parts) == 2 {
+		return mode, strings.TrimPrefix(parts[1], "id=")
+	}
+	return mode, ""
 }
 
 type deduplicatedDeviceRequestor struct {
