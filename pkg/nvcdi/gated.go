@@ -61,6 +61,8 @@ func (l *gatedlib) getModeDiscoverer() (discover.Discover, error) {
 		return discover.NewGDSDiscoverer(l.logger, l.driverRoot, l.devRoot)
 	case ModeMofed:
 		return discover.NewMOFEDDiscoverer(l.logger, l.driverRoot)
+	case ModeNvswitch:
+		return discover.NewNvSwitchDiscoverer(l.logger, l.devRoot)
 	default:
 		return nil, fmt.Errorf("unrecognized mode")
 	}

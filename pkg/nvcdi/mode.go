@@ -42,8 +42,10 @@ const (
 	// ModeCSV configures the CDI spec generator to generate a spec based on the contents of CSV
 	// mountspec files.
 	ModeCSV = Mode("csv")
-	// ModeImex configures the CDI spec generated to generate a spec for the available IMEX channels.
+	// ModeImex configures the CDI spec generator to generate a spec for the available IMEX channels.
 	ModeImex = Mode("imex")
+	// ModeNvswitch configures the CDI spec generator to generate a spec for the available nvswitch devices.
+	ModeNvswitch = Mode("nvswitch")
 )
 
 type modeConstraint interface {
@@ -69,6 +71,7 @@ func getModes() modes {
 			ModeManagement,
 			ModeMofed,
 			ModeNvml,
+			ModeNvswitch,
 			ModeWsl,
 		}
 		lookup := make(map[Mode]bool)
