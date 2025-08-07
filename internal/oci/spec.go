@@ -31,6 +31,12 @@ type SpecModifier interface {
 	Modify(*specs.Spec) error
 }
 
+// SpecModifiers is a collection of OCI Spec modifiers that can be treated as a
+// single modifier.
+type SpecModifiers []SpecModifier
+
+var _ SpecModifier = (SpecModifiers)(nil)
+
 // Spec defines the operations to be performed on an OCI specification
 //
 //go:generate moq -rm -fmt=goimports -stub -out spec_mock.go . Spec
@@ -56,4 +62,17 @@ func NewSpec(logger logger.Interface, args []string) (Spec, error) {
 	ociSpec := NewFileSpec(ociSpecPath)
 
 	return ociSpec, nil
+}
+
+// Modify a spec based on a collection of modifiers.
+func (ms SpecModifiers) Modify(s *specs.Spec) error {
+	for _, m := range ms {
+		if m == nil {
+			continue
+		}
+		if err := m.Modify(s); err != nil {
+			return err
+		}
+	}
+	return nil
 }
