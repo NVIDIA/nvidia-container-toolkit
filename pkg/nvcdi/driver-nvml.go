@@ -150,17 +150,17 @@ func (l *nvcdilib) getExplicitDriverLibraryMounts() (discover.Discover, error) {
 	// the sandboxutils-filelist or have a way to allow users to specify the
 	// libraries to mount from the config file.
 	explicitLibraries := []string{
-		"libEGL.so.1.1.0",
-		"libGL.so.1.7.0",
-		"libGLESv1_CM.so.1.2.0",
-		"libGLESv2.so.2.1.0",
-		"libGLX.so.0",
-		"libGLdispatch.so.0",
-		"libOpenCL.so.1.0.0",
-		"libOpenGL.so.0",
-		"libnvidia-api.so.1",
-		"libnvidia-egl-xcb.so.1.0.0",
-		"libnvidia-egl-xlib.so.1.0.0",
+		"libEGL.so",
+		"libGL.so",
+		"libGLESv1_CM.so",
+		"libGLESv2.so",
+		"libGLX.so",
+		"libGLdispatch.so",
+		"libOpenCL.so",
+		"libOpenGL.so",
+		"libnvidia-api.so",
+		"libnvidia-egl-xcb.so",
+		"libnvidia-egl-xlib.so",
 	}
 
 	driverLibraryLocator, err := l.driver.DriverLibraryLocator()
