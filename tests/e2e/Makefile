@@ -20,8 +20,14 @@ LOG_ARTIFACTS_DIR ?= $(CURDIR)/e2e_logs
 
 GINKGO_BIN := $(CURDIR)/bin/ginkgo
 
+# If GINKGO_FOCUS is not set, run all tests
+# current available tests:
+# - nvidia-container-cli
+# - docker
+GINKGO_FOCUS ?=
+
 test: $(GINKGO_BIN)
-	$(GINKGO_BIN) $(GINKGO_ARGS) -v --json-report ginkgo.json ./tests/e2e/...
+	$(GINKGO_BIN) $(GINKGO_ARGS) -v --json-report ginkgo.json --focus="$(GINKGO_FOCUS)" ./tests/e2e/...
 
 # test-preinstalled runs the test cases against the version of the toolkit that
 # is already installed (and configured for docker) on the host.

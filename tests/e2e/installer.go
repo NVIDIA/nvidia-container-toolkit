@@ -28,11 +28,18 @@ var dockerInstallTemplate = `
 #! /usr/bin/env bash
 set -xe
 
-: ${IMAGE:={{.Image}}}
+# if the TEMP_DIR is already set, use it
+if [ -f /tmp/ctk_e2e_temp_dir.txt ]; then
+    TEMP_DIR=$(cat /tmp/ctk_e2e_temp_dir.txt)
+else
+    TEMP_DIR="/tmp/ctk_e2e.$(date +%s)_$RANDOM"
+    echo "$TEMP_DIR" > /tmp/ctk_e2e_temp_dir.txt
+fi
 
-# Create a temporary directory
-TEMP_DIR="/tmp/ctk_e2e.$(date +%s)_$RANDOM"
-mkdir -p "$TEMP_DIR"
+# if TEMP_DIR does not exist, create it
+if [ ! -d "$TEMP_DIR" ]; then
+    mkdir -p "$TEMP_DIR"
+fi
 
 # Given that docker has an init function that checks for the existence of the
 # nvidia-container-toolkit, we need to create a symlink to the nvidia-container-runtime-hook
@@ -46,7 +53,7 @@ docker run --pid=host --rm -i --privileged	\
 	-v /var/run/docker.sock:/var/run/docker.sock	\
 	-v "$TEMP_DIR:$TEMP_DIR"	\
 	-v /etc/docker:/config-root	\
-	${IMAGE}	\
+	{{.Image}}	\
 	--root "$TEMP_DIR"	\
 	--runtime=docker	\
 	--config=/config-root/daemon.json	\
