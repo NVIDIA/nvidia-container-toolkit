@@ -211,7 +211,7 @@ func NewDriverBinariesDiscoverer(logger logger.Interface, driverRoot string) dis
 func getVersionLibs(logger logger.Interface, driver *root.Driver, version string) ([]string, error) {
 	logger.Infof("Using driver version %v", version)
 
-	libraries, err := driver.DriverLibraryLocator()
+	libraries, err := driver.DriverLibraryLocator("vdpau")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get driver library locator: %w", err)
 	}
