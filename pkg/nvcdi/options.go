@@ -175,3 +175,11 @@ func WithFeatureFlag(featureFlag FeatureFlag) Option {
 		o.featureFlags[featureFlag] = true
 	}
 }
+
+// WithEnabledHook explicitly enables a specific hook.
+// This option can be specified multiple times for each hook.
+func WithEnabledHook[T string | HookName](hook T) Option {
+	return func(o *nvcdilib) {
+		o.enabledHooks = append(o.enabledHooks, discover.HookName(hook))
+	}
+}

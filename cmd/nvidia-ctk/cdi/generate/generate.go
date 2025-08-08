@@ -62,6 +62,7 @@ type options struct {
 	configSearchPaths  []string
 	librarySearchPaths []string
 	disabledHooks      []string
+	enabledHooks       []string
 
 	csv struct {
 		files          []string
@@ -214,6 +215,13 @@ func (m command) build() *cli.Command {
 				Destination: &opts.disabledHooks,
 				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_DISABLED_HOOKS"),
 			},
+			&cli.StringSliceFlag{
+				Name:        "enable-hook",
+				Aliases:     []string{"enable-hooks"},
+				Usage:       "Explicitly enable a hook in the generated CDI specification. This overrides disabled hooks. This can be specified multiple times.",
+				Destination: &opts.enabledHooks,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_ENABLED_HOOKS"),
+			},
 		},
 	}
 
@@ -319,6 +327,10 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 
 	for _, hook := range opts.disabledHooks {
 		cdiOptions = append(cdiOptions, nvcdi.WithDisabledHook(hook))
+	}
+
+	for _, hook := range opts.enabledHooks {
+		cdiOptions = append(cdiOptions, nvcdi.WithEnabledHook(hook))
 	}
 
 	cdilib, err := nvcdi.New(cdiOptions...)

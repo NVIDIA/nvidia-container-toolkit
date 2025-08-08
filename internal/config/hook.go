@@ -23,4 +23,7 @@ type RuntimeHookConfig struct {
 	Path string `toml:"path"`
 	// SkipModeDetection disables the mode check for the runtime hook.
 	SkipModeDetection bool `toml:"skip-mode-detection"`
+	// DisabledHooks specifies the hooks that are disabled for the NVIDIA
+	// Container Runtime hook.
+	DisabledHooks []string `toml:"disabled,omitempty"`
 }
