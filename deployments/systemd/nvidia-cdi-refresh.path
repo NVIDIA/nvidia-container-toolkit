@@ -13,11 +13,12 @@
 # limitations under the License.
 
 [Unit]
-Description=Trigger CDI refresh on NVIDIA driver install / uninstall events
+Description=Trigger CDI refresh on NVIDIA driver or toolkit install / upgrade events
 
 [Path]
 PathChanged=/lib/modules/%v/modules.dep
 PathChanged=/lib/modules/%v/modules.dep.bin
+PathChanged=/usr/bin/nvidia-ctk
 
 [Install]
 WantedBy=multi-user.target
