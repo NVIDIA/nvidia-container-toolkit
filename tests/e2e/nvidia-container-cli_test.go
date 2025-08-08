@@ -114,17 +114,21 @@ unshare --mount --pid --fork --propagation private -- sh -eux <<'\''IN_NS'\''
 IN_NS
 `
 
-	dockerRunCmdTemplate = `docker run -d --name node-container-e2e --privileged --runtime=nvidia \
+	startTestContainerTemplate = `docker run -d --name {{.ContainerName}} --privileged --runtime=nvidia \
     -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all \
     -e NVIDIA_DRIVER_CAPABILITIES=all \
+	{{ range $i, $a := .AdditionalArguments -}}
+	{{ $a }} \
+	{{ end -}}
 	ubuntu sleep infinity`
 )
 
 var _ = Describe("nvidia-container-cli", Ordered, ContinueOnFailure, Label("libnvidia-container"), func() {
 	var (
-		runner        Runner
-		containerName = "node-container-e2e"
-		hostOutput    string
+		runner                       Runner
+		containerName                = "node-container-e2e"
+		hostOutput                   string
+		additionalContainerArguments []string
 	)
 
 	BeforeAll(func(ctx context.Context) {
@@ -145,6 +149,21 @@ var _ = Describe("nvidia-container-cli", Ordered, ContinueOnFailure, Label("libn
 
 			err = installer.Install()
 			Expect(err).ToNot(HaveOccurred())
+		} else {
+			// If installCTK is false, we use the preinstalled toolkit.
+			// TODO: This should be updated for other distributions and other components of the toolkit.
+			output, _, err := runner.Run("ls /lib/**/libnvidia-container*.so.*.*")
+			Expect(err).ToNot(HaveOccurred())
+
+			output = strings.TrimSpace(output)
+			Expect(output).ToNot(BeEmpty())
+
+			for _, lib := range strings.Split(output, "\n") {
+				additionalContainerArguments = append(additionalContainerArguments, "-v "+lib+":"+lib)
+			}
+			additionalContainerArguments = append(additionalContainerArguments,
+				"-v /usr/bin/nvidia-container-cli:/usr/bin/nvidia-container-cli",
+			)
 		}
 
 		// Capture the host GPU list.
@@ -168,33 +187,46 @@ var _ = Describe("nvidia-container-cli", Ordered, ContinueOnFailure, Label("libn
 
 	It("should report the same GPUs inside the container as on the host", func(ctx context.Context) {
 		// Launch the container in detached mode.
-		_, _, err := runner.Run(dockerRunCmdTemplate)
+		var startContainerScriptBuilder strings.Builder
+		startContainerTemplate, err := template.New("startContainer").Parse(startTestContainerTemplate)
 		Expect(err).ToNot(HaveOccurred())
-
-		// Install docker and nvidia-container-toolkit in the container.
-		// Run as root and use bash for better compatibility
-		_, _, err = runner.Run(fmt.Sprintf("docker exec -u root %s bash -c '%s'", containerName, installDockerTemplate))
-		Expect(err).ToNot(HaveOccurred())
-
-		// Build the docker run command (detached mode) from the template so it
-		// stays readable while still resulting in a single-line invocation.
-		tmpl, err := template.New("toolkitInstall").Parse(installCTKTemplate)
-		Expect(err).ToNot(HaveOccurred())
-
-		var toolkitInstall strings.Builder
-		err = tmpl.Execute(&toolkitInstall, struct {
-			ToolkitImage string
+		err = startContainerTemplate.Execute(&startContainerScriptBuilder, struct {
+			ContainerName       string
+			AdditionalArguments []string
 		}{
-			ToolkitImage: imageName + ":" + imageTag,
+			ContainerName:       containerName,
+			AdditionalArguments: additionalContainerArguments,
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		_, _, err = runner.Run(fmt.Sprintf("docker exec -u root %s bash -c '%s'", containerName, toolkitInstall.String()))
+		startContainerScript := startContainerScriptBuilder.String()
+		GinkgoLogr.Info("Starting test container", "script", startContainerScript)
+		_, _, err = runner.Run(startContainerScript)
 		Expect(err).ToNot(HaveOccurred())
 
+		// Install docker in the container.
+		_, _, err = runner.Run(fmt.Sprintf("docker exec -u root "+containerName+" bash -c '%s'", installDockerTemplate))
+		Expect(err).ToNot(HaveOccurred())
+
+		if installCTK {
+			// Install nvidia-container-cli in the container.
+			tmpl, err := template.New("toolkitInstall").Parse(installCTKTemplate)
+			Expect(err).ToNot(HaveOccurred())
+
+			var toolkitInstall strings.Builder
+			err = tmpl.Execute(&toolkitInstall, struct {
+				ToolkitImage string
+			}{
+				ToolkitImage: imageName + ":" + imageTag,
+			})
+			Expect(err).ToNot(HaveOccurred())
+
+			_, _, err = runner.Run(fmt.Sprintf("docker exec -u root "+containerName+" bash -c '%s'", toolkitInstall.String()))
+			Expect(err).ToNot(HaveOccurred())
+		}
+
 		// Run the test script in the container.
-		// Capture but don't fail on errors - we'll check the results via container logs.
-		output, _, err := runner.Run(fmt.Sprintf("docker exec -u root %s bash -c '%s'", containerName, libnvidiaContainerCliTestTemplate))
+		output, _, err := runner.Run(fmt.Sprintf("docker exec -u root "+containerName+" bash -c '%s'", libnvidiaContainerCliTestTemplate))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(strings.TrimSpace(output)).ToNot(BeEmpty())
 		Expect(hostOutput).To(ContainSubstring(strings.TrimSpace(output)))
