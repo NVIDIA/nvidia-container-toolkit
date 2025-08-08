@@ -128,7 +128,7 @@ func (r *Driver) DriverLibraryLocator(additionalDirs ...string) (lookup.Locator,
 		}
 	}
 
-	l := lookup.NewFileLocator(
+	l := lookup.NewSymlinkLocator(
 		lookup.WithRoot(r.Root),
 		lookup.WithLogger(r.logger),
 		lookup.WithSearchPaths(

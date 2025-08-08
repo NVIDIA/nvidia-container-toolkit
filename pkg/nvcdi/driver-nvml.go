@@ -76,19 +76,18 @@ func (l *nvcdilib) newDriverVersionDiscoverer() (discover.Discover, error) {
 
 // NewDriverLibraryDiscoverer creates a discoverer for the libraries associated with the specified driver version.
 func (l *nvcdilib) NewDriverLibraryDiscoverer(version string, libcudaSoParentDirPath string) (discover.Discover, error) {
-	libraryPaths, err := getVersionLibs(l.logger, l.driver, version)
+	versionSuffixLibraryMounts, err := l.getVersionSuffixDriverLibraryMounts(version)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get libraries for driver version: %v", err)
+		return nil, err
+	}
+	explicitLibraryMounts, err := l.getExplicitDriverLibraryMounts()
+	if err != nil {
+		return nil, err
 	}
 
-	libraries := discover.NewMounts(
-		l.logger,
-		lookup.NewFileLocator(
-			lookup.WithLogger(l.logger),
-			lookup.WithRoot(l.driver.Root),
-		),
-		l.driver.Root,
-		libraryPaths,
+	libraries := discover.Merge(
+		versionSuffixLibraryMounts,
+		explicitLibraryMounts,
 	)
 
 	var discoverers []discover.Discover
@@ -96,12 +95,12 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string, libcudaSoParentDir
 	driverDotSoSymlinksDiscoverer := discover.WithDriverDotSoSymlinks(
 		l.logger,
 		libraries,
-		version,
+		// Since we don't only match version suffixes, we now need to match on wildcards.
+		"",
 		l.hookCreator,
 	)
 	discoverers = append(discoverers, driverDotSoSymlinksDiscoverer)
 
-	// TODO: The following should use the version directly.
 	cudaCompatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(l.logger, l.hookCreator, version)
 	discoverers = append(discoverers, cudaCompatLibHookDiscoverer)
 
@@ -124,6 +123,59 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string, libcudaSoParentDir
 	d := discover.Merge(discoverers...)
 
 	return d, nil
+}
+
+func (l *nvcdilib) getVersionSuffixDriverLibraryMounts(version string) (discover.Discover, error) {
+	versionSuffixLibraryPaths, err := getVersionLibs(l.logger, l.driver, version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get libraries for driver version: %v", err)
+	}
+
+	mounts := discover.NewMounts(
+		l.logger,
+		lookup.NewFileLocator(
+			lookup.WithLogger(l.logger),
+			lookup.WithRoot(l.driver.Root),
+		),
+		l.driver.Root,
+		versionSuffixLibraryPaths,
+	)
+
+	return mounts, nil
+}
+
+func (l *nvcdilib) getExplicitDriverLibraryMounts() (discover.Discover, error) {
+	// List of explicit libraries to locate
+	// TODO(ArangoGutierrez): we should load the version of the libraries from
+	// the sandboxutils-filelist or have a way to allow users to specify the
+	// libraries to mount from the config file.
+	explicitLibraries := []string{
+		"libEGL.so",
+		"libGL.so",
+		"libGLESv1_CM.so",
+		"libGLESv2.so",
+		"libGLX.so",
+		"libGLdispatch.so",
+		"libOpenCL.so",
+		"libOpenGL.so",
+		"libnvidia-api.so",
+		"libnvidia-egl-xcb.so",
+		"libnvidia-egl-xlib.so",
+	}
+
+	driverLibraryLocator, err := l.driver.DriverLibraryLocator()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get driver library locator: %w", err)
+	}
+	mounts := discover.NewMounts(
+		l.logger,
+		driverLibraryLocator,
+		l.driver.Root,
+		explicitLibraries,
+	)
+
+	return mounts, nil
+
 }
 
 func getUTSRelease() (string, error) {
