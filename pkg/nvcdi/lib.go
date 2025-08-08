@@ -129,16 +129,11 @@ func New(opts ...Option) (Interface, error) {
 		factory = (*nvmllib)(l)
 	case ModeWsl:
 		factory = (*wsllib)(l)
-	case ModeGds:
+	case ModeGdrcopy, ModeGds, ModeMofed:
 		if l.class == "" {
-			l.class = "gds"
+			l.class = string(l.mode)
 		}
-		factory = (*gdslib)(l)
-	case ModeMofed:
-		if l.class == "" {
-			l.class = "mofed"
-		}
-		factory = (*mofedlib)(l)
+		factory = (*gatedlib)(l)
 	case ModeImex:
 		if l.class == "" {
 			l.class = classImexChannel

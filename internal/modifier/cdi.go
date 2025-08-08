@@ -62,6 +62,7 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		return nil, fmt.Errorf("requesting a CDI device with vendor 'runtime.nvidia.com' is not supported when requesting other CDI devices")
 	}
 	if len(automaticDevices) > 0 {
+		automaticDevices = append(automaticDevices, gatedDevices(image).DeviceRequests()...)
 		automaticModifier, err := newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
 		if err == nil {
 			return automaticModifier, nil
@@ -111,6 +112,29 @@ func (c *cdiDeviceRequestor) DeviceRequests() []string {
 	return devices
 }
 
+type gatedDevices image.CUDA
+
+// DeviceRequests returns a list of devices that are required for gated devices.
+func (g gatedDevices) DeviceRequests() []string {
+	i := (image.CUDA)(g)
+
+	var devices []string
+	if i.Getenv("NVIDIA_GDS") == "enabled" {
+		devices = append(devices, "mode=gds")
+	}
+	if i.Getenv("NVIDIA_MOFED") == "enabled" {
+		devices = append(devices, "mode=mofed")
+	}
+	if i.Getenv("NVIDIA_GDRCOPY") == "enabled" {
+		devices = append(devices, "mode=gdrcopy")
+	}
+	if i.Getenv("NVIDIA_NVSWITCH") == "enabled" {
+		devices = append(devices, "mode=nvswitch")
+	}
+
+	return devices
+}
+
 // filterAutomaticDevices searches for "automatic" device names in the input slice.
 // "Automatic" devices are a well-defined list of CDI device names which, when requested,
 // trigger the generation of a CDI spec at runtime. This removes the need to generate a
@@ -129,35 +153,48 @@ func filterAutomaticDevices(devices []string) []string {
 func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, devices []string) (oci.SpecModifier, error) {
 	logger.Debugf("Generating in-memory CDI specs for devices %v", devices)
 
-	var identifiers []string
+	perModeIdentifiers := make(map[string][]string)
+	perModeDeviceClass := map[string]string{"auto": automaticDeviceClass}
+	modes := []string{"auto"}
 	for _, device := range devices {
-		identifiers = append(identifiers, strings.TrimPrefix(device, automaticDevicePrefix))
+		if strings.HasPrefix(device, "mode=") {
+			modes = append(modes, strings.TrimPrefix(device, "mode="))
+			continue
+		}
+		perModeIdentifiers["auto"] = append(perModeIdentifiers["auto"], strings.TrimPrefix(device, automaticDevicePrefix))
 	}
 
-	cdilib, err := nvcdi.New(
-		nvcdi.WithLogger(logger),
-		nvcdi.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path),
-		nvcdi.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
-		nvcdi.WithVendor(automaticDeviceVendor),
-		nvcdi.WithClass(automaticDeviceClass),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct CDI library: %w", err)
+	var modifiers oci.SpecModifiers
+	for _, mode := range modes {
+		cdilib, err := nvcdi.New(
+			nvcdi.WithLogger(logger),
+			nvcdi.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path),
+			nvcdi.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
+			nvcdi.WithVendor(automaticDeviceVendor),
+			nvcdi.WithClass(perModeDeviceClass[mode]),
+			nvcdi.WithMode(mode),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct CDI library for mode %q: %w", mode, err)
+		}
+
+		spec, err := cdilib.GetSpec(perModeIdentifiers[mode]...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate CDI spec for mode %q: %w", mode, err)
+		}
+
+		cdiDeviceRequestor, err := cdi.New(
+			cdi.WithLogger(logger),
+			cdi.WithSpec(spec.Raw()),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct CDI modifier for mode %q: %w", mode, err)
+		}
+
+		modifiers = append(modifiers, cdiDeviceRequestor)
 	}
 
-	spec, err := cdilib.GetSpec(identifiers...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate CDI spec: %w", err)
-	}
-	cdiDeviceRequestor, err := cdi.New(
-		cdi.WithLogger(logger),
-		cdi.WithSpec(spec.Raw()),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct CDI modifier: %w", err)
-	}
-
-	return cdiDeviceRequestor, nil
+	return modifiers, nil
 }
 
 type deduplicatedDeviceRequestor struct {
