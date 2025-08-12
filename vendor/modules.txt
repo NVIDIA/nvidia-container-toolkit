@@ -70,7 +70,7 @@ github.com/syndtr/gocapability/capability
 # github.com/urfave/cli-altsrc/v3 v3.0.1
 ## explicit; go 1.23.2
 github.com/urfave/cli-altsrc/v3
-# github.com/urfave/cli/v3 v3.3.8
+# github.com/urfave/cli/v3 v3.4.0
 ## explicit; go 1.22
 github.com/urfave/cli/v3
 # github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
