@@ -33,6 +33,8 @@ const (
 	ModeWsl = Mode("wsl")
 	// ModeManagement configures the CDI spec generator to generate a management spec.
 	ModeManagement = Mode("management")
+	// ModeGdrcopy configures the CDI spec generator to generate a GDR Copy spec.
+	ModeGdrcopy = Mode("gdrcopy")
 	// ModeGds configures the CDI spec generator to generate a GDS spec.
 	ModeGds = Mode("gds")
 	// ModeMofed configures the CDI spec generator to generate a MOFED spec.
@@ -40,8 +42,10 @@ const (
 	// ModeCSV configures the CDI spec generator to generate a spec based on the contents of CSV
 	// mountspec files.
 	ModeCSV = Mode("csv")
-	// ModeImex configures the CDI spec generated to generate a spec for the available IMEX channels.
+	// ModeImex configures the CDI spec generator to generate a spec for the available IMEX channels.
 	ModeImex = Mode("imex")
+	// ModeNvswitch configures the CDI spec generator to generate a spec for the available nvswitch devices.
+	ModeNvswitch = Mode("nvswitch")
 )
 
 type modeConstraint interface {
@@ -60,12 +64,15 @@ func getModes() modes {
 	validModesOnce.Do(func() {
 		all := []Mode{
 			ModeAuto,
-			ModeNvml,
-			ModeWsl,
-			ModeManagement,
-			ModeGds,
-			ModeMofed,
 			ModeCSV,
+			ModeGdrcopy,
+			ModeGds,
+			ModeImex,
+			ModeManagement,
+			ModeMofed,
+			ModeNvml,
+			ModeNvswitch,
+			ModeWsl,
 		}
 		lookup := make(map[Mode]bool)
 
@@ -103,6 +110,7 @@ func (l *nvcdilib) resolveMode() (rmode Mode) {
 	}
 	defer func() {
 		l.logger.Infof("Auto-detected mode as '%v'", rmode)
+		l.mode = rmode
 	}()
 
 	platform := l.infolib.ResolvePlatform()

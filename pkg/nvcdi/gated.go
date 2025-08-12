@@ -26,23 +26,23 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 )
 
-type mofedlib nvcdilib
+type gatedlib nvcdilib
 
-var _ deviceSpecGeneratorFactory = (*mofedlib)(nil)
+var _ deviceSpecGeneratorFactory = (*gatedlib)(nil)
 
-func (l *mofedlib) DeviceSpecGenerators(...string) (DeviceSpecGenerator, error) {
+func (l *gatedlib) DeviceSpecGenerators(...string) (DeviceSpecGenerator, error) {
 	return l, nil
 }
 
 // GetDeviceSpecs returns the CDI device specs for a single all device.
-func (l *mofedlib) GetDeviceSpecs() ([]specs.Device, error) {
-	discoverer, err := discover.NewMOFEDDiscoverer(l.logger, l.driverRoot)
+func (l *gatedlib) GetDeviceSpecs() ([]specs.Device, error) {
+	discoverer, err := l.getModeDiscoverer()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create MOFED discoverer: %v", err)
+		return nil, fmt.Errorf("failed to create discoverer for mode %q: %w", l.mode, err)
 	}
 	edits, err := edits.FromDiscoverer(discoverer)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create container edits for MOFED devices: %v", err)
+		return nil, fmt.Errorf("failed to create container edits: %w", err)
 	}
 
 	deviceSpec := specs.Device{
@@ -53,7 +53,22 @@ func (l *mofedlib) GetDeviceSpecs() ([]specs.Device, error) {
 	return []specs.Device{deviceSpec}, nil
 }
 
+func (l *gatedlib) getModeDiscoverer() (discover.Discover, error) {
+	switch l.mode {
+	case ModeGdrcopy:
+		return discover.NewGDRCopyDiscoverer(l.logger, l.devRoot)
+	case ModeGds:
+		return discover.NewGDSDiscoverer(l.logger, l.driverRoot, l.devRoot)
+	case ModeMofed:
+		return discover.NewMOFEDDiscoverer(l.logger, l.driverRoot)
+	case ModeNvswitch:
+		return discover.NewNvSwitchDiscoverer(l.logger, l.devRoot)
+	default:
+		return nil, fmt.Errorf("unrecognized mode")
+	}
+}
+
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
-func (l *mofedlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
+func (l *gatedlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	return edits.FromDiscoverer(discover.None{})
 }
