@@ -16,7 +16,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli-altsrc/v3 v3.0.1
-	github.com/urfave/cli/v3 v3.3.8
+	github.com/urfave/cli/v3 v3.4.1
 	golang.org/x/mod v0.27.0
 	golang.org/x/sys v0.35.0
 	tags.cncf.io/container-device-interface v1.0.1
