@@ -116,21 +116,17 @@ type HookCreator interface {
 
 // WithDisabledHooks explicitly disables the specified hooks.
 // This can be specified multiple times.
-func WithDisabledHooks[T string | HookName](hooks ...T) Option {
+func WithDisabledHooks(hooks ...HookName) Option {
 	return func(c *hookCreatorOptions) {
-		for _, h := range hooks {
-			c.disabledHooks = append(c.disabledHooks, HookName(h))
-		}
+		c.disabledHooks = append(c.disabledHooks, hooks...)
 	}
 }
 
 // WithEnabledHooks explicitly enables the specified hooks.
 // This is useful for enabling hooks that are disabled by default.
-func WithEnabledHooks[T string | HookName](hooks ...T) Option {
+func WithEnabledHooks(hooks ...HookName) Option {
 	return func(c *hookCreatorOptions) {
-		for _, h := range hooks {
-			c.enabledHooks = append(c.enabledHooks, HookName(h))
-		}
+		c.enabledHooks = append(c.enabledHooks, hooks...)
 	}
 }
 

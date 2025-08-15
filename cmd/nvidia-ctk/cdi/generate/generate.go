@@ -321,16 +321,10 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths),
 		nvcdi.WithCSVFiles(opts.csv.files),
 		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns),
+		nvcdi.WithDisabledHooks(opts.disabledHooks...),
+		nvcdi.WithEnabledHooks(opts.enabledHooks...),
 		// We set the following to allow for dependency injection:
 		nvcdi.WithNvmlLib(opts.nvmllib),
-	}
-
-	for _, hook := range opts.disabledHooks {
-		cdiOptions = append(cdiOptions, nvcdi.WithDisabledHook(hook))
-	}
-
-	for _, hook := range opts.enabledHooks {
-		cdiOptions = append(cdiOptions, nvcdi.WithEnabledHook(hook))
 	}
 
 	cdilib, err := nvcdi.New(cdiOptions...)
