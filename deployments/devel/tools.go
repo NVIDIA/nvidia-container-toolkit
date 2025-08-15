@@ -21,6 +21,5 @@ package main
 
 // Define the tooling required to build the device plugin.
 import (
-	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/matryer/moq"
 )
