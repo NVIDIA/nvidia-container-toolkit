@@ -361,6 +361,91 @@ containerEdits:
             - rprivate
 `,
 		},
+		{
+			description: "enableChmodHook",
+			options: options{
+				format:        "yaml",
+				mode:          "management",
+				vendor:        "example.com",
+				class:         "device",
+				driverRoot:    driverRoot,
+				enabledHooks:  []string{"chmod"},
+				disabledHooks: []string{"enable-cuda-compat", "update-ldcache", "disable-device-node-modification"},
+			},
+			expectedOptions: options{
+				format:            "yaml",
+				mode:              "management",
+				vendor:            "example.com",
+				class:             "device",
+				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
+				driverRoot:        driverRoot,
+				enabledHooks:      []string{"chmod"},
+				disabledHooks:     []string{"enable-cuda-compat", "update-ldcache", "disable-device-node-modification"},
+			},
+			expectedSpec: `---
+cdiVersion: 0.5.0
+kind: example.com/device
+devices:
+    - name: all
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
+            - path: /dev/nvidiactl
+              hostPath: {{ .driverRoot }}/dev/nvidiactl
+            - path: /dev/nvidia-caps-imex-channels/channel0
+              hostPath: {{ .driverRoot }}/dev/nvidia-caps-imex-channels/channel0
+            - path: /dev/nvidia-caps-imex-channels/channel1
+              hostPath: {{ .driverRoot }}/dev/nvidia-caps-imex-channels/channel1
+            - path: /dev/nvidia-caps-imex-channels/channel2047
+              hostPath: {{ .driverRoot }}/dev/nvidia-caps-imex-channels/channel2047
+            - path: /dev/nvidia-caps/nvidia-cap1
+              hostPath: {{ .driverRoot }}/dev/nvidia-caps/nvidia-cap1
+        hooks:
+            - hookName: createContainer
+              path: /usr/bin/nvidia-cdi-hook
+              args:
+                - nvidia-cdi-hook
+                - chmod
+                - --mode
+                - "755"
+                - --path
+                - /dev/nvidia-caps
+              env:
+                - NVIDIA_CTK_DEBUG=false
+containerEdits:
+    env:
+        - NVIDIA_CTK_LIBCUDA_DIR=/lib/x86_64-linux-gnu
+        - NVIDIA_VISIBLE_DEVICES=void
+    hooks:
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - create-symlinks
+            - --link
+            - libcuda.so.1::/lib/x86_64-linux-gnu/libcuda.so
+          env:
+            - NVIDIA_CTK_DEBUG=false
+    mounts:
+        - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - rbind
+            - rprivate
+        - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - rbind
+            - rprivate
+`,
+		},
 	}
 
 	for _, tc := range testCases {
