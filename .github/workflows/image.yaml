@@ -51,7 +51,7 @@ jobs:
       fail-fast: false
       
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         name: Check out code
 
       - name: Set up QEMU
@@ -90,7 +90,7 @@ jobs:
             dist: ubi8
     needs: packages
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         name: Check out code
 
       - name: Set up QEMU
