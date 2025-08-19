@@ -172,12 +172,27 @@ func GetLowlevelRuntimePaths(o *container.Options, co *Options) ([]string, error
 }
 
 func getRuntimeConfig(o *container.Options, co *Options) (engine.Interface, error) {
+	if len(o.ConfigSources) == 0 {
+		o.ConfigSources = []string{"command", "file"}
+	}
+
+	var loaders []toml.Loader
+	for _, configSource := range o.ConfigSources {
+		switch configSource {
+		case "file":
+			loaders = append(loaders, toml.FromFile(o.TopLevelConfigPath))
+		case "command":
+			loaders = append(loaders, containerd.CommandLineSource(o.HostRootMount, o.ExecutablePath))
+		default:
+			return nil, fmt.Errorf("unsupported config source %q", configSource)
+		}
+	}
+
 	options := []containerd.Option{
 		containerd.WithTopLevelConfigPath(o.TopLevelConfigPath),
 		containerd.WithConfigSource(
 			toml.LoadFirst(
-				containerd.CommandLineSource(o.HostRootMount, o.ExecutablePath),
-				toml.FromFile(o.TopLevelConfigPath),
+				loaders...,
 			),
 		),
 		containerd.WithRuntimeType(co.runtimeType),
