@@ -50,6 +50,8 @@ type Options struct {
 	SetAsDefault  bool
 	RestartMode   string
 	HostRootMount string
+
+	ConfigSources cli.StringSlice
 }
 
 // ParseArgs parses the command line arguments to the CLI

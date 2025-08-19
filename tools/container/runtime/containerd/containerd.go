@@ -169,12 +169,23 @@ func GetLowlevelRuntimePaths(o *container.Options, co *Options) ([]string, error
 }
 
 func getRuntimeConfig(o *container.Options, co *Options) (engine.Interface, error) {
+	var loaders []toml.Loader
+	for _, source := range o.ConfigSources.Value() {
+		switch source {
+		case "file":
+			loaders = append(loaders, toml.FromFile(o.Config))
+		case "command":
+			loaders = append(loaders, containerd.CommandLineSource(o.HostRootMount, o.ExecutablePath))
+		default:
+			// TODO: log a warning here.
+		}
+	}
+
 	return containerd.New(
 		containerd.WithPath(o.Config),
 		containerd.WithConfigSource(
 			toml.LoadFirst(
-				containerd.CommandLineSource(o.HostRootMount, o.ExecutablePath),
-				toml.FromFile(o.Config),
+				loaders...,
 			),
 		),
 		containerd.WithRuntimeType(co.runtimeType),
