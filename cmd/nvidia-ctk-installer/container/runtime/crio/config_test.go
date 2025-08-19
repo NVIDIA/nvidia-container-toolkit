@@ -622,13 +622,23 @@ plugin_dirs = [
 	}
 
 	for _, tc := range testCases {
+		// Set default options that would normally be set by the CLI.
+		if tc.containerOptions.ConfigSources == nil {
+			tc.containerOptions.ConfigSources = []string{"command", "file"}
+		}
+		tc.options.hookFilename = "99-nvidia.json"
+
 		t.Run(tc.description, func(t *testing.T) {
 			// Update any paths as required
 			testRoot := t.TempDir()
 			tc.containerOptions.TopLevelConfigPath = strings.ReplaceAll(tc.containerOptions.TopLevelConfigPath, "{{ .testRoot }}", testRoot)
 			tc.containerOptions.DropInConfig = strings.ReplaceAll(tc.containerOptions.DropInConfig, "{{ .testRoot }}", testRoot)
 			tc.options.hooksDir = strings.ReplaceAll(tc.options.hooksDir, "{{ .testRoot }}", testRoot)
-			tc.options.hookFilename = "99-nvidia.json"
+			var testConfigSources []string
+			for _, configSource := range tc.containerOptions.ConfigSources {
+				testConfigSources = append(testConfigSources, strings.ReplaceAll(configSource, "{{ .testRoot }}", testRoot))
+			}
+			tc.containerOptions.ConfigSources = testConfigSources
 
 			// Prepare the test environment
 			if tc.prepareEnvironment != nil {

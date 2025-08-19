@@ -1783,6 +1783,10 @@ version = 3
 	}
 
 	for _, tc := range testCases {
+		// Set default options that would normally be set by the CLI.
+		if tc.containerOptions.ConfigSources == nil {
+			tc.containerOptions.ConfigSources = []string{"command", "file"}
+		}
 		t.Run(tc.description, func(t *testing.T) {
 			// Create a temporary directory for the test
 			testRoot := t.TempDir()
@@ -1791,6 +1795,11 @@ version = 3
 			tc.containerOptions.TopLevelConfigPath = strings.ReplaceAll(tc.containerOptions.TopLevelConfigPath, "{{ .testRoot }}", testRoot)
 			tc.containerOptions.DropInConfig = strings.ReplaceAll(tc.containerOptions.DropInConfig, "{{ .testRoot }}", testRoot)
 			tc.containerOptions.RuntimeDir = strings.ReplaceAll(tc.containerOptions.RuntimeDir, "{{ .testRoot }}", testRoot)
+			var testConfigSources []string
+			for _, configSource := range tc.containerOptions.ConfigSources {
+				testConfigSources = append(testConfigSources, strings.ReplaceAll(configSource, "{{ .testRoot }}", testRoot))
+			}
+			tc.containerOptions.ConfigSources = testConfigSources
 
 			// Prepare the environment
 			if tc.prepareEnvironment != nil {
