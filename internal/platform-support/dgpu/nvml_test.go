@@ -54,9 +54,9 @@ func TestNewNvmlDGPUDiscoverer(t *testing.T) {
 					return 3, nvml.SUCCESS
 				},
 				GetPciInfoFunc: func() (nvml.PciInfo, nvml.Return) {
-					var busID [32]int8
+					var busID [32]uint8
 					for i, b := range []byte("00000000:45:00:00") {
-						busID[i] = int8(b)
+						busID[i] = b
 					}
 					info := nvml.PciInfo{
 						BusId: busID,
@@ -123,9 +123,9 @@ func TestNewNvmlMIGDiscoverer(t *testing.T) {
 					return 3, nvml.SUCCESS
 				},
 				GetPciInfoFunc: func() (nvml.PciInfo, nvml.Return) {
-					var busID [32]int8
+					var busID [32]uint8
 					for i, b := range []byte("00000000:45:00:00") {
-						busID[i] = int8(b)
+						busID[i] = b
 					}
 					info := nvml.PciInfo{
 						BusId: busID,

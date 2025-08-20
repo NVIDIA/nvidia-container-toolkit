@@ -214,6 +214,8 @@ func (vgpuInstance nvmlVgpuInstance) GetLicenseInfo() (VgpuLicenseInfo, Return) 
 }
 
 // nvml.VgpuInstanceGetLicenseStatus()
+//
+// Deprecated: Use VgpuInstanceGetLicenseInfo instead.
 func (l *library) VgpuInstanceGetLicenseStatus(vgpuInstance VgpuInstance) (int, Return) {
 	return vgpuInstance.GetLicenseStatus()
 }
