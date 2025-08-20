@@ -19,9 +19,12 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -340,7 +343,15 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			_, _, err := runner.Run("docker pull ubuntu")
 			Expect(err).ToNot(HaveOccurred())
 
-			tmpDirPath = GinkgoT().TempDir()
+			var tmpDirPath string
+			// Make test runable from a MacOs hosts.
+			// On darwin, the temp dir is in /var/folders/.../T/
+			// We need to convert it to /tmp/...
+			if runtime.GOOS == "darwin" {
+				tmpDirPath = path.Join("/tmp", uuid.NewString())
+			} else {
+				tmpDirPath = GinkgoT().TempDir()
+			}
 			_, _, err = runner.Run("mkdir -p " + tmpDirPath)
 			Expect(err).ToNot(HaveOccurred())
 
