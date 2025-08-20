@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	startTestContainerTemplate = `docker run -d --name {{.ContainerName}} --privileged --runtime=nvidia \
+	outerContainerTemplate = `docker run -d --name {{.ContainerName}} --privileged --runtime=nvidia \
     -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all \
     -e NVIDIA_DRIVER_CAPABILITIES=all \
 	{{ range $i, $a := .AdditionalArguments -}}
@@ -160,16 +160,48 @@ func NewNestedContainerRunner(runner Runner, installCTK bool, containerName stri
 		for _, lib := range strings.Split(output, "\n") {
 			additionalContainerArguments = append(additionalContainerArguments, "-v "+lib+":"+lib)
 		}
-		additionalContainerArguments = append(additionalContainerArguments, "-v /usr/bin/nvidia-container-cli:/usr/bin/nvidia-container-cli")
+
+		// Look for NVIDIA binaries in standard locations and mount them as volumes
+		nvidiaBinaries := []string{
+			"nvidia-container-cli",
+			"nvidia-container-runtime",
+			"nvidia-container-runtime-hook",
+			"nvidia-ctk",
+			"nvidia-cdi-hook",
+			"nvidia-container-runtime.cdi",
+			"nvidia-container-runtime.legacy",
+		}
+
+		searchPaths := []string{
+			"/usr/bin",
+			"/usr/sbin",
+			"/usr/local/bin",
+			"/usr/local/sbin",
+		}
+
+		for _, binary := range nvidiaBinaries {
+			for _, searchPath := range searchPaths {
+				binaryPath := searchPath + "/" + binary
+				// Check if the binary exists at this path
+				checkCmd := fmt.Sprintf("test -f %s && echo 'exists'", binaryPath)
+				output, _, err := runner.Run(checkCmd)
+				if err == nil && strings.TrimSpace(output) == "exists" {
+					// Binary found, add it as a volume mount
+					additionalContainerArguments = append(additionalContainerArguments,
+						fmt.Sprintf("-v %s:%s", binaryPath, binaryPath))
+					break // Move to the next binary once found
+				}
+			}
+		}
 	}
 
 	// Launch the container in detached mode.
-	var startContainerScriptBuilder strings.Builder
-	startContainerTemplate, err := template.New("startContainer").Parse(startTestContainerTemplate)
+	var outerContainerScriptBuilder strings.Builder
+	outerContainerTemplate, err := template.New("outerContainer").Parse(outerContainerTemplate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse start container template: %w", err)
 	}
-	err = startContainerTemplate.Execute(&startContainerScriptBuilder, struct {
+	err = outerContainerTemplate.Execute(&outerContainerScriptBuilder, struct {
 		ContainerName       string
 		AdditionalArguments []string
 	}{
@@ -180,8 +212,8 @@ func NewNestedContainerRunner(runner Runner, installCTK bool, containerName stri
 		return nil, fmt.Errorf("failed to execute start container template: %w", err)
 	}
 
-	startContainerScript := startContainerScriptBuilder.String()
-	_, _, err = runner.Run(startContainerScript)
+	outerContainerScript := outerContainerScriptBuilder.String()
+	_, _, err = runner.Run(outerContainerScript)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run start container script: %w", err)
 	}

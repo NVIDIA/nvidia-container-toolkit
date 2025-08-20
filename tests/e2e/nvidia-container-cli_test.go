@@ -71,33 +71,12 @@ IN_NS
 
 var _ = Describe("nvidia-container-cli", Ordered, ContinueOnFailure, Label("libnvidia-container"), func() {
 	var (
-		runner                Runner
 		nestedContainerRunner Runner
 		containerName         = "node-container-e2e"
 		hostOutput            string
 	)
 
 	BeforeAll(func(ctx context.Context) {
-		runner = NewRunner(
-			WithHost(sshHost),
-			WithPort(sshPort),
-			WithSshKey(sshKey),
-			WithSshUser(sshUser),
-		)
-
-		// If installCTK is true, install the toolkit on the host. before creating
-		// the nested container.
-		if installCTK {
-			installer, err := NewToolkitInstaller(
-				WithImage(nvidiaContainerToolkitImage),
-				WithMode(InstallUsingNVIDIACTKInstaller),
-			)
-			Expect(err).ToNot(HaveOccurred())
-
-			_, _, err = installer.Install(runner)
-			Expect(err).ToNot(HaveOccurred())
-		}
-
 		var err error
 		nestedContainerRunner, err = NewNestedContainerRunner(runner, installCTK, containerName)
 		Expect(err).ToNot(HaveOccurred())
