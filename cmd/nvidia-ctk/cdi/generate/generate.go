@@ -18,6 +18,7 @@ package generate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,6 +27,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	cdi "tags.cncf.io/container-device-interface/pkg/parser"
+	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
@@ -63,6 +65,8 @@ type options struct {
 	librarySearchPaths []string
 	disabledHooks      []string
 	enabledHooks       []string
+
+	featureFlags []string
 
 	csv struct {
 		files          []string
@@ -222,6 +226,13 @@ func (m command) build() *cli.Command {
 				Destination: &opts.enabledHooks,
 				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_ENABLED_HOOKS"),
 			},
+			&cli.StringSliceFlag{
+				Name:        "feature-flag",
+				Aliases:     []string{"feature-flags"},
+				Usage:       "specify feature flags for CDI spec generation",
+				Destination: &opts.featureFlags,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_FEATURE_FLAGS"),
+			},
 		},
 	}
 
@@ -276,21 +287,18 @@ func (m command) validateFlags(c *cli.Command, opts *options) error {
 }
 
 func (m command) run(opts *options) error {
-	spec, err := m.generateSpec(opts)
+	specs, err := m.generateSpecs(opts)
 	if err != nil {
 		return fmt.Errorf("failed to generate CDI spec: %v", err)
 	}
-	m.logger.Infof("Generated CDI spec with version %v", spec.Raw().Version)
 
-	if opts.output == "" {
-		_, err := spec.WriteTo(os.Stdout)
-		if err != nil {
-			return fmt.Errorf("failed to write CDI spec to STDOUT: %v", err)
-		}
-		return nil
+	var errs error
+	for _, spec := range specs {
+		m.logger.Infof("Generated CDI spec with version %v", spec.Raw().Version)
+
+		errs = errors.Join(errs, spec.Save(opts.output))
 	}
-
-	return spec.Save(opts.output)
+	return errs
 }
 
 func formatFromFilename(filename string) string {
@@ -305,7 +313,34 @@ func formatFromFilename(filename string) string {
 	return ""
 }
 
-func (m command) generateSpec(opts *options) (spec.Interface, error) {
+type generatedSpecs struct {
+	spec.Interface
+	filenameInfix string
+}
+
+func (g *generatedSpecs) Save(filename string) error {
+	filename = g.updateFilename(filename)
+
+	if filename == "" {
+		_, err := g.WriteTo(os.Stdout)
+		if err != nil {
+			return fmt.Errorf("failed to write CDI spec to STDOUT: %v", err)
+		}
+		return nil
+	}
+
+	return g.Interface.Save(filename)
+}
+
+func (g generatedSpecs) updateFilename(filename string) string {
+	if g.filenameInfix == "" || filename == "" {
+		return filename
+	}
+	ext := filepath.Ext(filepath.Base(filename))
+	return strings.TrimSuffix(filename, ext) + g.filenameInfix + ext
+}
+
+func (m command) generateSpecs(opts *options) ([]generatedSpecs, error) {
 	var deviceNamers []nvcdi.DeviceNamer
 	for _, strategy := range opts.deviceNameStrategies {
 		deviceNamer, err := nvcdi.NewDeviceNamer(strategy)
@@ -329,6 +364,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns),
 		nvcdi.WithDisabledHooks(opts.disabledHooks...),
 		nvcdi.WithEnabledHooks(opts.enabledHooks...),
+		nvcdi.WithFeatureFlags(opts.featureFlags...),
 		// We set the following to allow for dependency injection:
 		nvcdi.WithNvmlLib(opts.nvmllib),
 	}
@@ -338,7 +374,7 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)
 	}
 
-	deviceSpecs, err := cdilib.GetDeviceSpecsByID("all")
+	allDeviceSpecs, err := cdilib.GetDeviceSpecsByID("all")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device CDI specs: %v", err)
 	}
@@ -348,10 +384,8 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 		return nil, fmt.Errorf("failed to create edits common for entities: %v", err)
 	}
 
-	return spec.New(
+	commonSpecOptions := []spec.Option{
 		spec.WithVendor(opts.vendor),
-		spec.WithClass(opts.class),
-		spec.WithDeviceSpecs(deviceSpecs),
 		spec.WithEdits(*commonEdits.ContainerEdits),
 		spec.WithFormat(opts.format),
 		spec.WithMergedDeviceOptions(
@@ -359,5 +393,70 @@ func (m command) generateSpec(opts *options) (spec.Interface, error) {
 			transform.WithSkipIfExists(true),
 		),
 		spec.WithPermissions(0644),
+	}
+
+	fullSpec, err := spec.New(
+		append(commonSpecOptions,
+			spec.WithClass(opts.class),
+			spec.WithDeviceSpecs(allDeviceSpecs),
+		)...,
 	)
+	if err != nil {
+		return nil, err
+	}
+	var allSpecs []generatedSpecs
+
+	allSpecs = append(allSpecs, generatedSpecs{Interface: fullSpec, filenameInfix: ""})
+
+	deviceSpecsByDeviceCoherence := (deviceSpecs)(allDeviceSpecs).splitOnAnnotation("gpu.nvidia.com/coherent")
+
+	if coherentDeviceSpecs := deviceSpecsByDeviceCoherence["gpu.nvidia.com/coherent=true"]; len(coherentDeviceSpecs) > 0 {
+		infix := ".coherent"
+		coherentSpecs, err := spec.New(
+			append(commonSpecOptions,
+				spec.WithClass(opts.class+infix),
+				spec.WithDeviceSpecs(coherentDeviceSpecs),
+			)...,
+		)
+		if err != nil {
+			return nil, err
+		}
+		allSpecs = append(allSpecs, generatedSpecs{Interface: coherentSpecs, filenameInfix: infix})
+	}
+
+	if noncoherentDeviceSpecs := deviceSpecsByDeviceCoherence["gpu.nvidia.com/coherent=false"]; len(noncoherentDeviceSpecs) > 0 {
+		infix := ".noncoherent"
+		noncoherentSpecs, err := spec.New(
+			append(commonSpecOptions,
+				spec.WithClass(opts.class+infix),
+				spec.WithDeviceSpecs(noncoherentDeviceSpecs),
+			)...,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+		allSpecs = append(allSpecs, generatedSpecs{Interface: noncoherentSpecs, filenameInfix: infix})
+	}
+
+	return allSpecs, nil
+}
+
+type deviceSpecs []specs.Device
+
+func (d deviceSpecs) splitOnAnnotation(key string) map[string][]specs.Device {
+	splitSpecs := make(map[string][]specs.Device)
+
+	for _, deviceSpec := range d {
+		if len(deviceSpec.Annotations) == 0 {
+			continue
+		}
+		value, ok := deviceSpec.Annotations[key]
+		if !ok {
+			continue
+		}
+		splitSpecs[key+"="+value] = append(splitSpecs[key+"="+value], deviceSpec)
+	}
+
+	return splitSpecs
 }

@@ -80,4 +80,7 @@ const (
 	// FeatureDisableNvsandboxUtils disables the use of nvsandboxutils when
 	// querying devices.
 	FeatureDisableNvsandboxUtils = FeatureFlag("disable-nvsandbox-utils")
+	// FeatureDisableCoherentAnnotations disables the addition of annotations
+	// coherent or non-coherent devices.
+	FeatureDisableCoherentAnnotations = FeatureFlag("disable-coherent-annotations")
 )
