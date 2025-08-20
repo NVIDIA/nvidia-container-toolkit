@@ -1,5 +1,5 @@
-github.com/NVIDIA/go-nvlib v0.7.4 h1:qnXK8qhm45YfxalhZ76XwKdAMmxz1GIgzE0e/Hhhshs=
-github.com/NVIDIA/go-nvlib v0.7.4/go.mod h1:i95Je7GinMy/+BDs++DAdbPmT2TubjNP8i8joC7DD7I=
+github.com/NVIDIA/go-nvlib v0.8.0 h1:vorMvnsJYvZaxiluSXFd+fIFeQFPWSiSjNPiJyvDs0c=
+github.com/NVIDIA/go-nvlib v0.8.0/go.mod h1:bV+OEgjJCbFXf5T8c082mVPFuiF+gKwf9CMT7DWGUBI=
 github.com/NVIDIA/go-nvml v0.13.0-0 h1:ZbPDoheBQGF9WHNb3qIXvhgNGqc/p7OsUPvRzuI9qGE=
 github.com/NVIDIA/go-nvml v0.13.0-0/go.mod h1:+KNA7c7gIBH7SKSJ1ntlwkfN80zdx8ovl4hrK3LmPt4=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
