@@ -1,5 +1,21 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.18.0-rc.3
+- Generate separate specs for coherent and noncoherent devices
+- Disable chmod hook by default
+- Add support for gated modifications jit-cdi mode
+- Add support for nvswitch mode to nvcdi API
+- Add support for gdrcopy mode to nvcdi API
+- Consolidate CDI spec generation of gated modes
+- Add missing imex mode to Valid modes
+- Add explicitLibs list to libs discovery
+- Consolidate logic to determine driver version
+- Fix: Enable local YUM repo by default in CentOS8 and Fedora35 entrypoints
+
+### Changes in the Toolkit Container
+
+- Bump nvidia/distroless/go to v3.1.11-dev in /deployments/container
+
 ## v1.18.0-rc.2
 
 - Ensure that .so symlinks are created for driver libraries in the container
