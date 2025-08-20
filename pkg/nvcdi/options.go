@@ -157,12 +157,21 @@ func WithLibrarySearchPaths(paths []string) Option {
 	}
 }
 
-// WithDisabledHook allows specific hooks to the disabled.
-// This option can be specified multiple times for each hook.
-func WithDisabledHook[T string | HookName](hook T) Option {
+// WithDisabledHooks allows specific hooks to be disabled.
+func WithDisabledHooks[T string | HookName](hooks ...T) Option {
 	return func(o *nvcdilib) {
-		o.disabledHooks = append(o.disabledHooks, discover.HookName(hook))
+		for _, hook := range hooks {
+			o.disabledHooks = append(o.disabledHooks, discover.HookName(hook))
+		}
 	}
+}
+
+// WithDisabledHook allows specific hooks to be disabled.
+// This option can be specified multiple times for each hook.
+//
+// Deprecated: Use WithDisabledHooks instead
+func WithDisabledHook[T string | HookName](hook T) Option {
+	return WithDisabledHooks(hook)
 }
 
 // WithFeatureFlag allows specified features to be toggled on.
@@ -173,5 +182,15 @@ func WithFeatureFlag(featureFlag FeatureFlag) Option {
 			o.featureFlags = make(map[FeatureFlag]bool)
 		}
 		o.featureFlags[featureFlag] = true
+	}
+}
+
+// WithEnabledHooks explicitly enables a specific set of hooks.
+// If a hook is explicitly enabled, this takes precedence over it being disabled.
+func WithEnabledHooks[T string | HookName](hooks ...T) Option {
+	return func(o *nvcdilib) {
+		for _, hook := range hooks {
+			o.enabledHooks = append(o.enabledHooks, discover.HookName(hook))
+		}
 	}
 }
