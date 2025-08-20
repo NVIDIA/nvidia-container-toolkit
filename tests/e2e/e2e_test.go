@@ -30,6 +30,8 @@ import (
 
 // Test context
 var (
+	runner Runner
+
 	ctx context.Context
 
 	installCTK bool
@@ -49,12 +51,34 @@ func TestMain(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	ctx = context.Background()
-	getTestEnv()
 
 	RunSpecs(t,
 		suiteName,
 	)
 }
+
+var _ = BeforeSuite(func() {
+	getTestEnv()
+
+	runner = NewRunner(
+		WithHost(sshHost),
+		WithPort(sshPort),
+		WithSshKey(sshKey),
+		WithSshUser(sshUser),
+	)
+
+	if installCTK {
+		installer, err := NewToolkitInstaller(
+			WithRunner(runner),
+			WithImage(imageName+":"+imageTag),
+			WithTemplate(dockerInstallTemplate),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = installer.Install()
+		Expect(err).ToNot(HaveOccurred())
+	}
+})
 
 // getTestEnv gets the test environment variables
 func getTestEnv() {
@@ -73,7 +97,6 @@ func getTestEnv() {
 		sshUser = getRequiredEnvvar[string]("E2E_SSH_USER")
 		sshPort = getEnvVarOrDefault("E2E_SSH_PORT", "22")
 	}
-
 }
 
 // getRequiredEnvvar returns the specified envvar if set or raises an error.
