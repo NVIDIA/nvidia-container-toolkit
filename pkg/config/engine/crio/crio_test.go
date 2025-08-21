@@ -45,6 +45,19 @@ func TestAddRuntime(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			description:  "empty config, set as default runtime",
+			setAsDefault: true,
+			expectedConfig: `
+			[crio]
+			[crio.runtime]
+			default_runtime = "test"
+			[crio.runtime.runtimes.test]
+			runtime_path = "/usr/bin/test"
+			runtime_type = "oci"
+			`,
+			expectedError: nil,
+		},
+		{
 			description: "options from runc are imported",
 			config: `
 			[crio]
@@ -122,6 +135,47 @@ func TestAddRuntime(t *testing.T) {
 			runtime_type = "oci"
 			default_option = "option"
 			`,
+		},
+		{
+			description:  "runtime already exists in config, default runtime",
+			setAsDefault: true,
+			config: `
+			[crio]
+			[crio.runtime]
+			default_runtime = "test"
+			[crio.runtime.runtimes.test]
+			runtime_path = "/usr/bin/test"
+			runtime_type = "oci"
+			`,
+			expectedConfig: `
+			[crio]
+			[crio.runtime]
+			default_runtime = "test"
+			[crio.runtime.runtimes.test]
+			runtime_path = "/usr/bin/test"
+			runtime_type = "oci"
+			`,
+			expectedError: nil,
+		},
+		{
+			description:  "runtime already exists in config, not default runtime",
+			setAsDefault: false,
+			config: `
+			[crio]
+			[crio.runtime]
+			default_runtime = "test"
+			[crio.runtime.runtimes.test]
+			runtime_path = "/usr/bin/test"
+			runtime_type = "oci"
+			`,
+			expectedConfig: `
+			[crio]
+			[crio.runtime]
+			[crio.runtime.runtimes.test]
+			runtime_path = "/usr/bin/test"
+			runtime_type = "oci"
+			`,
+			expectedError: nil,
 		},
 	}
 

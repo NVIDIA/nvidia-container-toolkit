@@ -64,6 +64,11 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 
 	if setAsDefault {
 		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"}, name)
+	} else {
+		defaultRuntime, ok := config.GetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"}).(string)
+		if ok && defaultRuntime == name {
+			config.DeletePath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"})
+		}
 	}
 
 	*c.Tree = config
