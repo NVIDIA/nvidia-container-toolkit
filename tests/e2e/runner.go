@@ -35,23 +35,35 @@ const (
 	{{ range $i, $a := .AdditionalArguments -}}
 	{{ $a }} \
 	{{ end -}}
-	ubuntu sleep infinity`
+	{{.OuterContainerImage}} sleep infinity`
 
 	installDockerTemplate = `
 	export DEBIAN_FRONTEND=noninteractive
 
 	# Add Docker official GPG key:
 	apt-get update
-	apt-get install -y ca-certificates curl apt-utils gnupg2
+	apt-get install -y apt-utils ca-certificates curl gnupg2
 	install -m 0755 -d /etc/apt/keyrings
-	curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+
+	# Read OS information from /etc/os-release
+	. /etc/os-release
+
+	if [ "${ID}" = "debian" ]; then
+		curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+	else
+		curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+	fi
 	chmod a+r /etc/apt/keyrings/docker.asc
 
 	# Add the repository to Apt sources:
-	echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo \"${UBUNTU_CODENAME:-$VERSION_CODENAME}\") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+	if [ "${ID}" = "debian" ]; then
+		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian ${VERSION_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+	else
+		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME:-$VERSION_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+	fi
 	apt-get update
 
-	apt-get install -y docker-ce docker-ce-cli containerd.io
+	apt-get install -y docker-ce docker-ce-cli
 
 	# start dockerd in the background
 	dockerd &
@@ -132,7 +144,7 @@ func NewRunner(opts ...runnerOption) Runner {
 // NewNestedContainerRunner creates a new nested container runner.
 // A nested container runs a container inside another container based on a
 // given runner (remote or local).
-func NewNestedContainerRunner(runner Runner, installCTK bool, containerName string) (Runner, error) {
+func NewNestedContainerRunner(runner Runner, baseImage string, installCTK bool, containerName string) (Runner, error) {
 	additionalContainerArguments := []string{}
 
 	// If a container with the same name exists from a previous test run, remove it first.
@@ -195,6 +207,9 @@ func NewNestedContainerRunner(runner Runner, installCTK bool, containerName stri
 		}
 	}
 
+	// Mount the /lib/modules directory as a volume to enable the nvidia-cdi-refresh service
+	additionalContainerArguments = append(additionalContainerArguments, "-v /lib/modules:/lib/modules")
+
 	// Launch the container in detached mode.
 	var outerContainerScriptBuilder strings.Builder
 	outerContainerTemplate, err := template.New("outerContainer").Parse(outerContainerTemplate)
@@ -204,9 +219,11 @@ func NewNestedContainerRunner(runner Runner, installCTK bool, containerName stri
 	err = outerContainerTemplate.Execute(&outerContainerScriptBuilder, struct {
 		ContainerName       string
 		AdditionalArguments []string
+		OuterContainerImage string
 	}{
 		ContainerName:       containerName,
 		AdditionalArguments: additionalContainerArguments,
+		OuterContainerImage: baseImage,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute start container template: %w", err)

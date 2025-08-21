@@ -72,13 +72,12 @@ IN_NS
 var _ = Describe("nvidia-container-cli", Ordered, ContinueOnFailure, Label("libnvidia-container"), func() {
 	var (
 		nestedContainerRunner Runner
-		containerName         = "node-container-e2e"
 		hostOutput            string
 	)
 
 	BeforeAll(func(ctx context.Context) {
 		var err error
-		nestedContainerRunner, err = NewNestedContainerRunner(runner, installCTK, containerName)
+		nestedContainerRunner, err = NewNestedContainerRunner(runner, "ubuntu", installCTK, testContainerName)
 		Expect(err).ToNot(HaveOccurred())
 
 		// We also need to install the toolkit in the nested runner.
@@ -103,7 +102,7 @@ var _ = Describe("nvidia-container-cli", Ordered, ContinueOnFailure, Label("libn
 	AfterAll(func(ctx context.Context) {
 		// Cleanup: remove the container and the temporary script on the host.
 		// Use || true to ensure cleanup doesn't fail the test
-		runner.Run(fmt.Sprintf("docker rm -f %s 2>/dev/null || true", containerName)) //nolint:errcheck
+		runner.Run(fmt.Sprintf("docker rm -f %s 2>/dev/null || true", testContainerName)) //nolint:errcheck
 	})
 
 	It("should report the same GPUs inside the container as on the host", func(ctx context.Context) {
