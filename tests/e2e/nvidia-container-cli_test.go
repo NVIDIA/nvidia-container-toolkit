@@ -71,14 +71,14 @@ IN_NS
 
 var _ = Describe("nvidia-container-cli", Ordered, ContinueOnFailure, Label("libnvidia-container"), func() {
 	var (
+		containerName         = "nvct-e2e-nvidia-container-cli-tests"
 		nestedContainerRunner Runner
-		containerName         = "node-container-e2e"
 		hostOutput            string
 	)
 
 	BeforeAll(func(ctx context.Context) {
 		var err error
-		nestedContainerRunner, err = NewNestedContainerRunner(runner, installCTK, containerName, localCacheDir)
+		nestedContainerRunner, err = NewNestedContainerRunner(runner, "ubuntu", installCTK, containerName, localCacheDir)
 		Expect(err).ToNot(HaveOccurred())
 
 		if installCTK {
