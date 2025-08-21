@@ -343,9 +343,8 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			_, _, err := runner.Run("docker pull ubuntu")
 			Expect(err).ToNot(HaveOccurred())
 
-			var tmpDirPath string
 			// Make test runable from a MacOs hosts.
-			// On darwin, the temp dir is in /var/folders/.../T/
+			// On darwin, the GinkgoT().TempDir() dir is in /var/folders/.../T/
 			// We need to convert it to /tmp/...
 			if runtime.GOOS == "darwin" {
 				tmpDirPath = path.Join("/tmp", uuid.NewString())
