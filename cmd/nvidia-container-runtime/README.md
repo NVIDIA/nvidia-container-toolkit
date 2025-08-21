@@ -88,7 +88,7 @@ Alternatively the NVIDIA Container Runtime can be set as the default runtime for
 
 ## Environment variables (OCI spec)
 
-Each environment variable maps to an command-line argument for `nvidia-container-cli` from [libnvidia-container](https://github.com/NVIDIA/libnvidia-container).
+Each environment variable maps to a command-line argument for `nvidia-container-cli` from [libnvidia-container](https://github.com/NVIDIA/libnvidia-container).
 These variables are already set in our [official CUDA images](https://hub.docker.com/r/nvidia/cuda/).
 
 ### `NVIDIA_VISIBLE_DEVICES`
