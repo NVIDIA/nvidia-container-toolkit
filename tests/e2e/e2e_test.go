@@ -43,6 +43,8 @@ var (
 	sshUser string
 	sshHost string
 	sshPort string
+
+	testContainerName = "ctk-e2e-test-container"
 )
 
 func TestMain(t *testing.T) {
