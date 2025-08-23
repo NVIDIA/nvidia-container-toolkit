@@ -47,6 +47,8 @@ type Options struct {
 	ContainerRuntimeModesCDIAnnotationPrefixes []string
 
 	runtimeConfigOverrideJSON string
+
+	dropInDir string
 }
 
 func Flags(opts *Options) []cli.Flag {
@@ -78,6 +80,12 @@ func Flags(opts *Options) []cli.Flag {
 			Usage:       "specify additional runtime options as a JSON string. The paths are relative to the runtime config.",
 			Value:       "{}",
 			Sources:     cli.EnvVars("RUNTIME_CONFIG_OVERRIDE", "CONTAINERD_RUNTIME_CONFIG_OVERRIDE"),
+		},
+		&cli.StringFlag{
+			Name:        "containerd-drop-in-dir",
+			Usage:       "the directory to store the drop-in configuration for the containerd runtime",
+			Value:       "/etc/containerd/conf.d",
+			Destination: &opts.dropInDir,
 		},
 	}
 
@@ -180,5 +188,6 @@ func getRuntimeConfig(o *container.Options, co *Options) (engine.Interface, erro
 		containerd.WithRuntimeType(co.runtimeType),
 		containerd.WithUseLegacyConfig(co.useLegacyConfig),
 		containerd.WithContainerAnnotations(co.containerAnnotationsFromCDIPrefixes()...),
+		containerd.WithDropInDir(co.dropInDir),
 	)
 }

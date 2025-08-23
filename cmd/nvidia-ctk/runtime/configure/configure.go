@@ -46,6 +46,10 @@ const (
 	defaultCrioConfigFilePath       = "/etc/crio/crio.conf"
 	defaultDockerConfigFilePath     = "/etc/docker/daemon.json"
 
+	defaultContainerdDropInDir = "/etc/containerd/conf.d"
+	defaultCrioDropInDir       = "/etc/crio/conf.d"
+	defaultDropInFileName      = "99.nvidia.toml"
+
 	defaultConfigSource = configSourceFile
 	configSourceCommand = "command"
 	configSourceFile    = "file"
@@ -66,13 +70,14 @@ func NewCommand(logger logger.Interface) *cli.Command {
 // config defines the options that can be set for the CLI through config files,
 // environment variables, or command line config
 type config struct {
-	dryRun         bool
-	runtime        string
-	configFilePath string
-	executablePath string
-	configSource   string
-	mode           string
-	hookFilePath   string
+	dryRun           bool
+	runtime          string
+	configFilePath   string
+	executablePath   string
+	configSource     string
+	mode             string
+	hookFilePath     string
+	dropInConfigPath string
 
 	nvidiaRuntime struct {
 		name         string
@@ -170,6 +175,11 @@ func (m command) build() *cli.Command {
 				Usage:       "Enable CDI in the configured runtime",
 				Destination: &config.cdi.enabled,
 			},
+			&cli.StringFlag{
+				Name:        "drop-in-config-path",
+				Usage:       "the path to the drop-in configuration file for the containerd runtime",
+				Destination: &config.dropInConfigPath,
+			},
 		},
 	}
 
@@ -262,24 +272,37 @@ func (m command) configureConfigFile(config *config) error {
 	}
 
 	var cfg engine.Interface
+	var outputPath string
 	switch config.runtime {
 	case "containerd":
+		if config.dropInConfigPath == "" {
+			config.dropInConfigPath = filepath.Join(defaultContainerdDropInDir, defaultDropInFileName)
+		}
 		cfg, err = containerd.New(
 			containerd.WithLogger(m.logger),
 			containerd.WithPath(config.configFilePath),
 			containerd.WithConfigSource(configSource),
+			containerd.WithDropInDir(config.dropInConfigPath),
 		)
+		outputPath = config.dropInConfigPath
 	case "crio":
+		if config.dropInConfigPath == "" {
+			// CRI-O uses .conf extension for drop-in files
+			config.dropInConfigPath = filepath.Join(defaultCrioDropInDir, "99-nvidia.conf")
+		}
 		cfg, err = crio.New(
 			crio.WithLogger(m.logger),
 			crio.WithPath(config.configFilePath),
 			crio.WithConfigSource(configSource),
+			crio.WithDropInDir(config.dropInConfigPath),
 		)
+		outputPath = config.dropInConfigPath
 	case "docker":
 		cfg, err = docker.New(
 			docker.WithLogger(m.logger),
 			docker.WithPath(config.configFilePath),
 		)
+		outputPath = config.getOutputConfigPath()
 	default:
 		err = fmt.Errorf("unrecognized runtime '%v'", config.runtime)
 	}
@@ -300,7 +323,6 @@ func (m command) configureConfigFile(config *config) error {
 		cfg.EnableCDI()
 	}
 
-	outputPath := config.getOutputConfigPath()
 	n, err := cfg.Save(outputPath)
 	if err != nil {
 		return fmt.Errorf("unable to flush config: %v", err)

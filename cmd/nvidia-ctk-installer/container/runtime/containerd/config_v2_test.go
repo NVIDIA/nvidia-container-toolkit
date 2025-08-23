@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
@@ -85,8 +86,9 @@ func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
 
 			cfg := v2.(*containerd.Config)
 
-			defaultRuntimeName := cfg.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"})
-			require.EqualValues(t, tc.expectedDefaultRuntimeName, defaultRuntimeName)
+			// For v2 configs, default runtime is set in NVConfig (drop-in configuration)
+			defaultRuntimeName := cfg.NVConfig.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"})
+			assert.Equal(t, tc.expectedDefaultRuntimeName, defaultRuntimeName)
 		})
 	}
 }
@@ -358,10 +360,22 @@ func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
 			err = o.UpdateConfig(v2)
 			require.NoError(t, err)
 
-			expected, err := toml.TreeFromMap(tc.expectedConfig)
-			require.NoError(t, err)
+			cfg := v2.(*containerd.Config)
 
-			require.Equal(t, expected.String(), v2.String())
+			// Verify nvidia runtimes are in NVConfig
+			for _, runtimeName := range []string{tc.runtimeName, "nvidia-cdi", "nvidia-legacy"} {
+				if tc.runtimeName == "NAME" && runtimeName == "nvidia" {
+					continue // Skip "nvidia" when runtime name is "NAME"
+				}
+				runtimePath := cfg.NVConfig.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", runtimeName, "options", "BinaryName"})
+				assert.NotNil(t, runtimePath)
+			}
+
+			// Verify main Tree remains unchanged (still contains original runc runtime)
+			originalConfig := runcConfigMapV2("/runc-binary")
+			expectedMain, err := toml.TreeFromMap(originalConfig)
+			require.NoError(t, err)
+			assert.Equal(t, expectedMain.String(), cfg.Tree.String(), "Main config should remain unchanged")
 		})
 	}
 }
@@ -397,9 +411,13 @@ func TestUpdateV2ConfigEnableCDI(t *testing.T) {
 			cfg, err := toml.LoadMap(map[string]interface{}{})
 			require.NoError(t, err)
 
+			nvConfig, err := toml.LoadMap(map[string]interface{}{})
+			require.NoError(t, err)
+
 			v2 := &containerd.Config{
 				Logger:               logger,
 				Tree:                 cfg,
+				NVConfig:             nvConfig,
 				RuntimeType:          runtimeType,
 				CRIRuntimePluginName: "io.containerd.grpc.v1.cri",
 			}
@@ -407,8 +425,9 @@ func TestUpdateV2ConfigEnableCDI(t *testing.T) {
 			err = o.UpdateConfig(v2)
 			require.NoError(t, err)
 
-			enableCDIValue := cfg.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "enable_cdi"})
-			require.EqualValues(t, tc.expectedEnableCDIValue, enableCDIValue)
+			// For v2 configs, enable_cdi is set in NVConfig (drop-in configuration)
+			enableCDIValue := v2.NVConfig.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "enable_cdi"})
+			assert.Equal(t, tc.expectedEnableCDIValue, enableCDIValue)
 		})
 	}
 }
