@@ -447,6 +447,7 @@ type deviceSpecs []specs.Device
 func (d deviceSpecs) splitOnAnnotation(key string) map[string][]specs.Device {
 	splitSpecs := make(map[string][]specs.Device)
 
+	var specsToRemoveAnnotations []*specs.Device
 	for _, deviceSpec := range d {
 		if len(deviceSpec.Annotations) == 0 {
 			continue
@@ -456,6 +457,21 @@ func (d deviceSpecs) splitOnAnnotation(key string) map[string][]specs.Device {
 			continue
 		}
 		splitSpecs[key+"="+value] = append(splitSpecs[key+"="+value], deviceSpec)
+		specsToRemoveAnnotations = append(specsToRemoveAnnotations, &deviceSpec)
+	}
+
+	// We also remove the annotations that were used to split the devices:
+	for _, deviceSpec := range specsToRemoveAnnotations {
+		if len(deviceSpec.Annotations) == 0 {
+			continue
+		}
+		if _, ok := deviceSpec.Annotations[key]; !ok {
+			continue
+		}
+		delete(deviceSpec.Annotations, key)
+		if len(deviceSpec.Annotations) == 0 {
+			deviceSpec.Annotations = nil
+		}
 	}
 
 	return splitSpecs
