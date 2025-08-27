@@ -266,13 +266,13 @@ func (m command) configureConfigFile(config *config) error {
 	case "containerd":
 		cfg, err = containerd.New(
 			containerd.WithLogger(m.logger),
-			containerd.WithPath(config.configFilePath),
+			containerd.WithTopLevelConfigPath(config.configFilePath),
 			containerd.WithConfigSource(configSource),
 		)
 	case "crio":
 		cfg, err = crio.New(
 			crio.WithLogger(m.logger),
-			crio.WithPath(config.configFilePath),
+			crio.WithTopLevelConfigPath(config.configFilePath),
 			crio.WithConfigSource(configSource),
 		)
 	case "docker":

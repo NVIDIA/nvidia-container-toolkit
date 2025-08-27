@@ -40,10 +40,11 @@ func TestApp(t *testing.T) {
 	hostRoot := filepath.Join(moduleRoot, "testdata", "lookup", "rootfs-1")
 
 	testCases := []struct {
-		description           string
-		args                  []string
-		expectedToolkitConfig string
-		expectedRuntimeConfig string
+		description                 string
+		args                        []string
+		expectedToolkitConfig       string
+		expectedRuntimeConfig       string
+		expectedDropInRuntimeConfig string
 	}{
 		{
 			description: "no args",
@@ -285,7 +286,10 @@ swarm-resource = ""
 [nvidia-ctk]
   path = "{{ .toolkitRoot }}/toolkit/nvidia-ctk"
 `,
-			expectedRuntimeConfig: `version = 2
+			expectedRuntimeConfig: `imports = ["{{ .testRoot }}/config.d/*.toml"]
+version = 2
+`,
+			expectedDropInRuntimeConfig: `version = 2
 
 [plugins]
 
@@ -371,7 +375,10 @@ swarm-resource = ""
 [nvidia-ctk]
   path = "{{ .toolkitRoot }}/toolkit/nvidia-ctk"
 `,
-			expectedRuntimeConfig: `version = 2
+			expectedRuntimeConfig: `imports = ["{{ .testRoot }}/config.d/*.toml"]
+version = 2
+`,
+			expectedDropInRuntimeConfig: `version = 2
 
 [plugins]
 
@@ -418,6 +425,7 @@ swarm-resource = ""
 
 			cdiOutputDir := filepath.Join(testRoot, "/var/run/cdi")
 			runtimeConfigFile := filepath.Join(testRoot, "config.file")
+			runtimeDropInConfigFile := filepath.Join(testRoot, "config.d/config.toml")
 
 			toolkitRoot := filepath.Join(testRoot, "toolkit-test")
 			toolkitConfigFile := filepath.Join(toolkitRoot, "toolkit/.config/nvidia-container-runtime/config.toml")
@@ -430,6 +438,7 @@ swarm-resource = ""
 				"--no-daemon",
 				"--cdi-output-dir=" + cdiOutputDir,
 				"--config=" + runtimeConfigFile,
+				"--drop-in-config=" + runtimeDropInConfigFile,
 				"--create-device-nodes=none",
 				"--driver-root-ctr-path=" + hostRoot,
 				"--pid-file=" + filepath.Join(testRoot, "toolkit.pid"),
@@ -446,10 +455,24 @@ swarm-resource = ""
 			require.NoError(t, err)
 			require.EqualValues(t, strings.ReplaceAll(tc.expectedToolkitConfig, "{{ .toolkitRoot }}", toolkitRoot), string(toolkitConfigFileContents))
 
-			require.FileExists(t, runtimeConfigFile)
-			runtimeConfigFileContents, err := os.ReadFile(runtimeConfigFile)
-			require.NoError(t, err)
-			require.EqualValues(t, strings.ReplaceAll(tc.expectedRuntimeConfig, "{{ .toolkitRoot }}", toolkitRoot), string(runtimeConfigFileContents))
+			if len(tc.expectedRuntimeConfig) > 0 {
+				require.FileExists(t, runtimeConfigFile)
+				runtimeConfigFileContents, err := os.ReadFile(runtimeConfigFile)
+				require.NoError(t, err)
+				expected := strings.ReplaceAll(tc.expectedRuntimeConfig, "{{ .testRoot }}", testRoot)
+				require.Equal(t, strings.ReplaceAll(expected, "{{ .toolkitRoot }}", toolkitRoot), string(runtimeConfigFileContents))
+			} else {
+				require.NoFileExists(t, runtimeConfigFile)
+			}
+
+			if len(tc.expectedDropInRuntimeConfig) > 0 {
+				require.FileExists(t, runtimeDropInConfigFile)
+				runtimeDropInConfigFileContents, err := os.ReadFile(runtimeDropInConfigFile)
+				require.NoError(t, err)
+				require.Equal(t, strings.ReplaceAll(tc.expectedDropInRuntimeConfig, "{{ .toolkitRoot }}", toolkitRoot), string(runtimeDropInConfigFileContents))
+			} else {
+				require.NoFileExists(t, runtimeDropInConfigFile)
+			}
 		})
 	}
 

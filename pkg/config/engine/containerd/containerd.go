@@ -32,6 +32,10 @@ const (
 // Config represents the containerd config
 type Config struct {
 	*toml.Tree
+	configOptions
+}
+
+type configOptions struct {
 	Version              int64
 	Logger               logger.Interface
 	RuntimeType          string
@@ -83,12 +87,12 @@ func New(opts ...Option) (engine.Interface, error) {
 		b.configSource = toml.FromFile(b.topLevelConfigPath)
 	}
 
-	tomlConfig, err := b.configSource.Load()
+	sourceConfigTree, err := b.configSource.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %v", err)
 	}
 
-	configVersion, err := b.parseVersion(tomlConfig)
+	configVersion, err := b.parseVersion(sourceConfigTree)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config version: %w", err)
 	}
@@ -100,8 +104,7 @@ func New(opts ...Option) (engine.Interface, error) {
 	}
 	b.logger.Infof("Using CRI runtime plugin name %q", criRuntimePluginName)
 
-	cfg := &Config{
-		Tree:                 tomlConfig,
+	sourceConfigOptions := configOptions{
 		Version:              configVersion,
 		CRIRuntimePluginName: criRuntimePluginName,
 		Logger:               b.logger,
@@ -109,11 +112,36 @@ func New(opts ...Option) (engine.Interface, error) {
 		UseLegacyConfig:      b.useLegacyConfig,
 		ContainerAnnotations: b.containerAnnotations,
 	}
-
+	sourceConfig := &Config{
+		Tree:          sourceConfigTree,
+		configOptions: sourceConfigOptions,
+	}
 	switch configVersion {
 	case 1:
-		return (*ConfigV1)(cfg), nil
+		// Version 1 configs do not support imports / drop-in files.
+		// We return the sourceConfig as is.
+		return (*ConfigV1)(sourceConfig), nil
 	default:
+		// For other versions, we create a DropInConfig with a reference to the
+		// top-level config if present.
+		topLevelConfig := &Config{
+			Tree: func() *toml.Tree {
+				t, _ := toml.FromFile(b.topLevelConfigPath).Load()
+				return t
+			}(),
+			configOptions: sourceConfigOptions,
+		}
+		dropInConfig := &engine.Config{
+			Source: sourceConfig,
+			// The destinationConfig is an empty config with the same options
+			// as the source config.
+			Destination: &Config{
+				Tree:          toml.NewEmpty(),
+				configOptions: sourceConfigOptions,
+			},
+		}
+
+		cfg := NewConfigWithDropIn(b.topLevelConfigPath, topLevelConfig, dropInConfig)
 		return cfg, nil
 	}
 }

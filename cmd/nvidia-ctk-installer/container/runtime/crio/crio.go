@@ -42,7 +42,9 @@ const (
 	defaultHookFilename = "oci-nvidia-hook.json"
 
 	// Config-based settings
-	DefaultConfig      = "/etc/crio/crio.conf"
+	DefaultConfig       = "/etc/crio/crio.conf"
+	DefaultDropInConfig = "/etc/crio/conf.d/99-nvidia.toml"
+
 	DefaultSocket      = "/var/run/crio/crio.sock"
 	DefaultRestartMode = "systemd"
 )
@@ -199,7 +201,7 @@ func GetLowlevelRuntimePaths(o *container.Options) ([]string, error) {
 
 func getRuntimeConfig(o *container.Options) (engine.Interface, error) {
 	return crio.New(
-		crio.WithPath(o.Config),
+		crio.WithTopLevelConfigPath(o.Config),
 		crio.WithConfigSource(
 			toml.LoadFirst(
 				crio.CommandLineSource(o.HostRootMount, o.ExecutablePath),

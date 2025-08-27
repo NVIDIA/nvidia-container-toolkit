@@ -34,6 +34,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 		Name: "test",
 	}
 
+	// TODO: Add test case for v1 and DropInConfig. This should fail.
 	testCases := []struct {
 		description                 string
 		containerOptions            container.Options
@@ -561,6 +562,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 			description: "v2: top-level config does not exist",
 			containerOptions: container.Options{
 				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
 				RuntimeName:    "nvidia",
 				RuntimeDir:     "/usr/bin",
 				SetAsDefault:   false,
@@ -576,7 +578,17 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
-				expected := `version = 2
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 2
+`
+				require.Equal(t, expected, string(actual))
+
+				require.FileExists(t, co.DropInConfig)
+
+				actualDropIn, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
+
+				expectedDropIn := `version = 2
 
 [plugins]
 
@@ -613,11 +625,12 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
 `
-				require.Equal(t, expected, string(actual))
+				require.Equal(t, expectedDropIn, string(actualDropIn))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoFileExists(t, co.Config, "Config file should be deleted if it didn't exist originally")
+				require.NoFileExists(t, co.Config)
+				require.NoFileExists(t, co.DropInConfig)
 				return nil
 			},
 		},
@@ -625,6 +638,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 			description: "v2: existing config without nvidia runtime and CDI enabled",
 			containerOptions: container.Options{
 				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
 				RuntimeName:    "nvidia",
 				RuntimeDir:     "/usr/bin",
 				EnableCDI:      true,
@@ -662,7 +676,34 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
-				expected := `version = 2
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 2
+
+[plugins]
+
+  [plugins."io.containerd.grpc.v1.cri"]
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      default_runtime_name = "runc"
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
+`
+
+				// TODO (follow-up): Add a function to compare toml files by contents.
+				require.Equal(t, expected, string(actual))
+
+				require.FileExists(t, co.DropInConfig)
+
+				actualDropIn, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
+
+				expectedDropIn := `version = 2
 
 [plugins]
 
@@ -670,7 +711,6 @@ func TestContainerdConfigLifecycle(t *testing.T) {
     enable_cdi = true
 
     [plugins."io.containerd.grpc.v1.cri".containerd]
-      default_runtime_name = "runc"
 
       [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
 
@@ -691,14 +731,8 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
-
-        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-          runtime_type = "io.containerd.runc.v2"
-
-          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-            BinaryName = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				require.Equal(t, expectedDropIn, string(actualDropIn))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -707,12 +741,16 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
-				expected := `version = 2
+				// TODO: What is the expectation here? Do we expect that the imports \
+				// are updated.
+				// TODO: Add a test case, where the original config consists of only imports and version
+				// with the imports referring to another location.
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 2
 
 [plugins]
 
   [plugins."io.containerd.grpc.v1.cri"]
-    enable_cdi = true
 
     [plugins."io.containerd.grpc.v1.cri".containerd]
       default_runtime_name = "runc"
@@ -726,6 +764,9 @@ func TestContainerdConfigLifecycle(t *testing.T) {
             BinaryName = "/usr/bin/runc"
 `
 				require.Equal(t, expected, string(actual))
+
+				require.NoFileExists(t, co.DropInConfig)
+
 				return nil
 			},
 		},
@@ -733,6 +774,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 			description: "v2: existing config with nvidia runtime using old path already present",
 			containerOptions: container.Options{
 				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
 				RuntimeName:    "nvidia",
 				RuntimeDir:     "/usr/bin",
 				SetAsDefault:   true,
@@ -774,7 +816,39 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
-				expected := `version = 2
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 2
+
+[plugins]
+
+  [plugins."io.containerd.grpc.v1.cri"]
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      default_runtime_name = "nvidia"
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
+            BinaryName = "/old/path/nvidia-container-runtime"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
+`
+
+				require.Equal(t, expected, string(actual))
+
+				require.FileExists(t, co.DropInConfig)
+
+				actualDropIn, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
+
+				expectedDropIn := `version = 2
 
 [plugins]
 
@@ -802,14 +876,8 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
-
-        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-          runtime_type = "io.containerd.runc.v2"
-
-          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-            BinaryName = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				require.Equal(t, expectedDropIn, string(actualDropIn))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -818,11 +886,31 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				// If file exists, verify nvidia runtimes were removed
 				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
-				contentStr := string(actual)
 
-				require.NotContains(t, contentStr, "nvidia")
-				require.NotContains(t, contentStr, "nvidia-cdi")
-				require.NotContains(t, contentStr, "nvidia-legacy")
+				// TODO: Do we expect that the default_runtime = nvidia be removed?
+				// TODO: Should the `nvidia` runtimes be removed from the top-level config?
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 2
+
+[plugins]
+
+  [plugins."io.containerd.grpc.v1.cri"]
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
+`
+
+				require.Equal(t, expected, string(actual))
+
+				require.NoFileExists(t, co.DropInConfig)
+
 				return nil
 			},
 		},
@@ -830,6 +918,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 			description: "v2: complex config with multiple plugins and settings",
 			containerOptions: container.Options{
 				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
 				RuntimeName:    "nvidia",
 				RuntimeDir:     "/usr/bin",
 				EnableCDI:      true,
@@ -886,14 +975,14 @@ state = "/run/containerd"
 				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
-				expected := `root = "/var/lib/containerd"
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+root = "/var/lib/containerd"
 state = "/run/containerd"
 version = 2
 
 [plugins]
 
   [plugins."io.containerd.grpc.v1.cri"]
-    enable_cdi = true
 
     [plugins."io.containerd.grpc.v1.cri".containerd]
       default_runtime_name = "runc"
@@ -906,6 +995,41 @@ version = 2
 
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.custom.options]
             TypeUrl = "custom.runtime/options"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
+            SystemdCgroup = true
+
+    [plugins."io.containerd.grpc.v1.cri".registry]
+
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+          endpoint = ["https://registry-1.docker.io"]
+
+  [plugins."io.containerd.internal.v1.opt"]
+    path = "/opt/containerd"
+`
+				require.Equal(t, expected, string(actual))
+
+				require.FileExists(t, co.DropInConfig)
+
+				actualDropIn, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
+
+				expectedDropIn := `version = 2
+
+[plugins]
+
+  [plugins."io.containerd.grpc.v1.cri"]
+    enable_cdi = true
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
 
         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
           container_annotations = ["cdi.k8s.io*"]
@@ -930,6 +1054,36 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
             SystemdCgroup = true
+`
+				require.Equal(t, expectedDropIn, string(actualDropIn))
+				return nil
+			},
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
+
+				actual, err := os.ReadFile(co.Config)
+				require.NoError(t, err)
+
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+root = "/var/lib/containerd"
+state = "/run/containerd"
+version = 2
+
+[plugins]
+
+  [plugins."io.containerd.grpc.v1.cri"]
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      default_runtime_name = "runc"
+      snapshotter = "overlayfs"
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.custom]
+          runtime_type = "io.containerd.custom.v1"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.custom.options]
+            TypeUrl = "custom.runtime/options"
 
         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
           runtime_type = "io.containerd.runc.v2"
@@ -949,19 +1103,9 @@ version = 2
     path = "/opt/containerd"
 `
 				require.Equal(t, expected, string(actual))
-				return nil
-			},
-			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
 
-				// If file exists, verify nvidia runtimes were removed
-				actual, err := os.ReadFile(co.Config)
-				require.NoError(t, err)
-				contentStr := string(actual)
+				require.NoFileExists(t, co.DropInConfig)
 
-				require.NotContains(t, contentStr, "nvidia")
-				require.NotContains(t, contentStr, "nvidia-cdi")
-				require.NotContains(t, contentStr, "nvidia-legacy")
 				return nil
 			},
 		},
@@ -969,6 +1113,7 @@ version = 2
 			description: "v2: existing config without default runtime (SetAsDefault=false)",
 			containerOptions: container.Options{
 				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
 				RuntimeName:    "nvidia",
 				RuntimeDir:     "/usr/bin",
 				SetAsDefault:   false,
@@ -1004,7 +1149,31 @@ version = 2
 				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
-				expected := `version = 2
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 2
+
+[plugins]
+
+  [plugins."io.containerd.grpc.v1.cri"]
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
+`
+				require.Equal(t, expected, string(actual))
+
+				require.FileExists(t, co.DropInConfig)
+
+				actualDropIn, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
+
+				expectedDropIn := `version = 2
 
 [plugins]
 
@@ -1031,17 +1200,10 @@ version = 2
 
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
-
-        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-          runtime_type = "io.containerd.runc.v2"
-
-          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-            BinaryName = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
 
-				// Verify that default_runtime_name is NOT present
-				require.NotContains(t, string(actual), "default_runtime_name")
+				require.Equal(t, expectedDropIn, string(actualDropIn))
+
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -1050,7 +1212,8 @@ version = 2
 				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
-				expected := `version = 2
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 2
 
 [plugins]
 
@@ -1068,9 +1231,8 @@ version = 2
 `
 				require.Equal(t, expected, string(actual))
 
-				// Verify that default_runtime_name is still NOT present
-				require.NotContains(t, string(actual), "default_runtime_name")
-				require.NotContains(t, string(actual), "nvidia")
+				require.NoFileExists(t, co.DropInConfig)
+
 				return nil
 			},
 		},
@@ -1078,6 +1240,7 @@ version = 2
 			description: "v2: existing config without default runtime (SetAsDefault=true)",
 			containerOptions: container.Options{
 				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
 				RuntimeName:    "nvidia",
 				RuntimeDir:     "/usr/bin",
 				SetAsDefault:   true,
@@ -1096,7 +1259,6 @@ version = 2
 [plugins]
   [plugins."io.containerd.grpc.v1.cri"]
     [plugins."io.containerd.grpc.v1.cri".containerd]
-      # Note: No default_runtime_name specified
 
       [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
@@ -1114,7 +1276,32 @@ version = 2
 				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
-				expected := `version = 2
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 2
+
+[plugins]
+
+  [plugins."io.containerd.grpc.v1.cri"]
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
+`
+
+				require.Equal(t, expected, string(actual))
+
+				require.FileExists(t, co.DropInConfig)
+
+				actualDropIn, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
+
+				expectedDropIn := `version = 2
 
 [plugins]
 
@@ -1142,14 +1329,8 @@ version = 2
 
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
-
-        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-          runtime_type = "io.containerd.runc.v2"
-
-          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-            BinaryName = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				require.Equal(t, expectedDropIn, string(actualDropIn))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -1158,7 +1339,9 @@ version = 2
 				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
-				expected := `version = 2
+				// TODO: Add test where imports are already specified.
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 2
 
 [plugins]
 
@@ -1176,6 +1359,8 @@ version = 2
 `
 				require.Equal(t, expected, string(actual))
 
+				require.NoFileExists(t, co.DropInConfig)
+
 				return nil
 			},
 		},
@@ -1184,6 +1369,7 @@ version = 2
 			description: "v3: minimal config without nvidia runtime",
 			containerOptions: container.Options{
 				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
 				RuntimeName:    "nvidia",
 				RuntimeDir:     "/usr/bin",
 				SetAsDefault:   false,
@@ -1218,7 +1404,31 @@ version = 2
 				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
-				expected := `version = 3
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 3
+
+[plugins]
+
+  [plugins."io.containerd.cri.v1.runtime"]
+
+    [plugins."io.containerd.cri.v1.runtime".containerd]
+
+      [plugins."io.containerd.cri.v1.runtime".containerd.runtimes]
+
+        [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
+`
+				require.Equal(t, expected, string(actual))
+
+				require.FileExists(t, co.DropInConfig)
+
+				actualDropIn, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
+
+				expectedDropIn := `version = 3
 
 [plugins]
 
@@ -1245,14 +1455,9 @@ version = 2
 
           [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
-
-        [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc]
-          runtime_type = "io.containerd.runc.v2"
-
-          [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
-            BinaryName = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				require.Equal(t, expectedDropIn, string(actualDropIn))
+
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -1262,7 +1467,8 @@ version = 2
 				require.NoError(t, err)
 
 				// Should return to original v3 config with just runc
-				expected := `version = 3
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 3
 
 [plugins]
 
@@ -1279,6 +1485,9 @@ version = 2
             BinaryName = "/usr/bin/runc"
 `
 				require.Equal(t, expected, string(actual))
+
+				require.NoFileExists(t, co.DropInConfig)
+
 				return nil
 			},
 		},
@@ -1286,6 +1495,7 @@ version = 2
 			description: "v3: existing config with runtime and OPTIONS inheritance",
 			containerOptions: container.Options{
 				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
 				RuntimeName:    "nvidia",
 				RuntimeDir:     "/usr/bin",
 				SetAsDefault:   true,
@@ -1325,7 +1535,35 @@ version = 2
 				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
-				expected := `version = 3
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 3
+
+[plugins]
+
+  [plugins."io.containerd.cri.v1.runtime"]
+
+    [plugins."io.containerd.cri.v1.runtime".containerd]
+      default_runtime_name = "runc"
+
+      [plugins."io.containerd.cri.v1.runtime".containerd.runtimes]
+
+        [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
+            NoPivotRoot = false
+            Root = "/run/containerd/runc"
+            SystemdCgroup = true
+`
+				require.Equal(t, expected, string(actual))
+
+				require.FileExists(t, co.DropInConfig)
+
+				actualDropIn, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
+
+				expectedDropIn := `version = 3
 
 [plugins]
 
@@ -1362,17 +1600,9 @@ version = 2
             NoPivotRoot = false
             Root = "/run/containerd/runc"
             SystemdCgroup = true
-
-        [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc]
-          runtime_type = "io.containerd.runc.v2"
-
-          [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
-            BinaryName = "/usr/bin/runc"
-            NoPivotRoot = false
-            Root = "/run/containerd/runc"
-            SystemdCgroup = true
 `
-				require.Equal(t, expected, string(actual))
+				require.Equal(t, expectedDropIn, string(actualDropIn))
+
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -1382,13 +1612,15 @@ version = 2
 				require.NoError(t, err)
 
 				// After cleanup, should return to original state
-				expected := `version = 3
+				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
+version = 3
 
 [plugins]
 
   [plugins."io.containerd.cri.v1.runtime"]
 
     [plugins."io.containerd.cri.v1.runtime".containerd]
+      default_runtime_name = "runc"
 
       [plugins."io.containerd.cri.v1.runtime".containerd.runtimes]
 
@@ -1402,6 +1634,9 @@ version = 2
             SystemdCgroup = true
 `
 				require.Equal(t, expected, string(actual))
+
+				require.NoFileExists(t, co.DropInConfig)
+
 				return nil
 			},
 		},
@@ -1414,6 +1649,7 @@ version = 2
 
 			// Update paths
 			tc.containerOptions.Config = strings.ReplaceAll(tc.containerOptions.Config, "{{ .testRoot }}", testRoot)
+			tc.containerOptions.DropInConfig = strings.ReplaceAll(tc.containerOptions.DropInConfig, "{{ .testRoot }}", testRoot)
 			tc.containerOptions.RuntimeDir = strings.ReplaceAll(tc.containerOptions.RuntimeDir, "{{ .testRoot }}", testRoot)
 
 			// Prepare the environment

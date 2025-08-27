@@ -37,8 +37,8 @@ func WithLogger(logger logger.Interface) Option {
 	}
 }
 
-// WithPath sets the path for the config builder
-func WithPath(path string) Option {
+// WithTopLevelConfigPath sets the path for the top-level containerd config.
+func WithTopLevelConfigPath(path string) Option {
 	return func(b *builder) {
 		b.topLevelConfigPath = path
 	}
