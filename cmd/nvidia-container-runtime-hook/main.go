@@ -13,6 +13,8 @@ import (
 	"strings"
 	"syscall"
 
+	"golang.org/x/mod/semver"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -62,6 +64,103 @@ func getRootfsPath(config *containerConfig) string {
 	}
 	return rootfs
 }
+
+// shouldEnableNoCgroups detects if we're running with crun version 1.23+ where BPF cgroup
+// device rules may fail silently and we should automatically enable no-cgroups mode as a workaround.
+// This addresses the issue with crun 1.23+ where systemd fails to apply BPF programs but
+// doesn't report the failure back to crun.
+func shouldEnableNoCgroups() bool {
+	// Check if we're running with crun version 1.23+
+	if isAffectedCrunVersion() {
+		if *debugflag {
+			log.Printf("Detected crun 1.23+ with potential BPF cgroup device rules issue, enabling no-cgroups mode")
+		}
+		return true
+	}
+
+	return false
+}
+
+// isAffectedCrunVersion checks if we're running with crun version 1.23+ which has
+// the BPF cgroup device rules issue where systemd may fail to apply BPF programs silently
+func isAffectedCrunVersion() bool {
+	version, err := getCrunVersion()
+	if err != nil {
+		// If we can't determine crun version, assume it's not crun or not problematic
+		return false
+	}
+
+	// Parse version and check if it's 1.23 or higher using semver
+	return isVersionAtLeast(version, "1.23")
+}
+
+// getCrunVersion attempts to get the crun version by executing 'crun --version'
+func getCrunVersion() (string, error) {
+	// First try to find crun in the PATH
+	crunPath, err := execLookPath("crun")
+	if err != nil {
+		return "", fmt.Errorf("crun not found in PATH: %w", err)
+	}
+
+	// Execute crun --version
+	cmd := execCommand(crunPath, "--version")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to execute crun --version: %w", err)
+	}
+
+	// Parse the version from output like "crun version 1.23.1"
+	lines := strings.Split(string(output), "\n")
+	if len(lines) == 0 {
+		return "", fmt.Errorf("no output from crun --version")
+	}
+
+	versionLine := lines[0]
+	parts := strings.Fields(versionLine)
+	if len(parts) < 3 || parts[0] != "crun" || parts[1] != "version" {
+		return "", fmt.Errorf("unexpected crun version output format: %s", versionLine)
+	}
+
+	return parts[2], nil
+}
+
+// isVersionAtLeast checks if the given version is at least the minimum version
+// Uses golang.org/x/mod/semver for proper semantic version comparison
+func isVersionAtLeast(version, minVersion string) bool {
+	// semver.Compare requires versions to start with 'v'
+	v1 := normalizeVersion(version)
+	v2 := normalizeVersion(minVersion)
+
+	// semver.Compare returns -1, 0, or 1
+	// We want >= so we check for 0 (equal) or 1 (greater)
+	return semver.Compare(v1, v2) >= 0
+}
+
+// normalizeVersion ensures the version string is in proper semver format with 'v' prefix
+func normalizeVersion(version string) string {
+	if version == "" {
+		return "v0.0.0"
+	}
+
+	// Add 'v' prefix if not present
+	if !strings.HasPrefix(version, "v") {
+		version = "v" + version
+	}
+
+	// Ensure we have at least major.minor.patch format
+	parts := strings.Split(strings.TrimPrefix(version, "v"), ".")
+	for len(parts) < 3 {
+		parts = append(parts, "0")
+	}
+
+	return "v" + strings.Join(parts, ".")
+}
+
+// For testing - these can be overridden in tests
+var (
+	execCommand  = exec.Command
+	execLookPath = exec.LookPath
+)
 
 func doPrestart() {
 	var err error
@@ -119,7 +218,7 @@ func doPrestart() {
 	if ldconfigPath := cli.NormalizeLDConfigPath(); ldconfigPath != "" {
 		args = append(args, fmt.Sprintf("--ldconfig=%s", ldconfigPath))
 	}
-	if cli.NoCgroups {
+	if cli.NoCgroups || shouldEnableNoCgroups() {
 		args = append(args, "--no-cgroups")
 	}
 	if devicesString := strings.Join(nvidia.Devices, ","); len(devicesString) > 0 {
