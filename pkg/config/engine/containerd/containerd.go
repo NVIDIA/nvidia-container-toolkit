@@ -83,12 +83,12 @@ func New(opts ...Option) (engine.Interface, error) {
 		b.configSource = toml.FromFile(b.path)
 	}
 
-	tomlConfig, err := b.configSource.Load()
+	sourceConfig, err := b.configSource.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %v", err)
 	}
 
-	configVersion, err := b.parseVersion(tomlConfig)
+	configVersion, err := b.parseVersion(sourceConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config version: %w", err)
 	}
@@ -100,20 +100,40 @@ func New(opts ...Option) (engine.Interface, error) {
 	}
 	b.logger.Infof("Using CRI runtime plugin name %q", criRuntimePluginName)
 
-	cfg := &Config{
-		Tree:                 tomlConfig,
-		Version:              configVersion,
-		CRIRuntimePluginName: criRuntimePluginName,
-		Logger:               b.logger,
-		RuntimeType:          b.runtimeType,
-		UseLegacyConfig:      b.useLegacyConfig,
-		ContainerAnnotations: b.containerAnnotations,
-	}
-
 	switch configVersion {
 	case 1:
+		cfg := &Config{
+			Tree:                 sourceConfig,
+			Version:              configVersion,
+			CRIRuntimePluginName: criRuntimePluginName,
+			Logger:               b.logger,
+			RuntimeType:          b.runtimeType,
+			UseLegacyConfig:      b.useLegacyConfig,
+			ContainerAnnotations: b.containerAnnotations,
+		}
 		return (*ConfigV1)(cfg), nil
 	default:
+		cfg := &engine.DropInConfig{
+			Source: &Config{
+				Tree:                 sourceConfig,
+				Version:              configVersion,
+				CRIRuntimePluginName: criRuntimePluginName,
+				Logger:               b.logger,
+				RuntimeType:          b.runtimeType,
+				UseLegacyConfig:      b.useLegacyConfig,
+				ContainerAnnotations: b.containerAnnotations,
+			},
+			Destination: &Config{
+				Tree:                 toml.NewEmpty(),
+				Version:              configVersion,
+				CRIRuntimePluginName: criRuntimePluginName,
+				Logger:               b.logger,
+				RuntimeType:          b.runtimeType,
+				UseLegacyConfig:      b.useLegacyConfig,
+				ContainerAnnotations: b.containerAnnotations,
+			},
+		}
+
 		return cfg, nil
 	}
 }
