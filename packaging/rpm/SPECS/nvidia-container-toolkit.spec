@@ -95,15 +95,19 @@ Provides tools such as the NVIDIA Container Runtime and NVIDIA Container Toolkit
 %{_bindir}/nvidia-ctk --quiet config --config-file=%{_sysconfdir}/nvidia-container-runtime/config.toml --in-place
 
 # Reload systemd unit cache and enable nvidia-cdi-refresh services on both install and upgrade
-if command -v systemctl >/dev/null 2>&1 \
-   && systemctl --quiet is-system-running 2>/dev/null; then
-  systemctl daemon-reload || echo "Warning: Failed to reload systemd daemon" >&2
-  systemctl enable --now nvidia-cdi-refresh.path || echo "Warning: Failed to enable nvidia-cdi-refresh.path" >&2
-  systemctl enable --now nvidia-cdi-refresh.service || echo "Warning: Failed to enable nvidia-cdi-refresh.service" >&2
-  
-  # Trigger CDI spec regeneration immediately after install/upgrade
-  echo "Regenerating NVIDIA CDI specification..."
-  systemctl start nvidia-cdi-refresh.service || echo "Warning: Failed to trigger CDI refresh" >&2
+if command -v systemctl >/dev/null 2>&1; then
+  SYSTEMD_STATE=$(systemctl is-system-running 2>/dev/null || true)
+  case "$SYSTEMD_STATE" in
+    running|degraded)
+      systemctl daemon-reload || echo "Warning: Failed to reload systemd daemon" >&2
+      systemctl enable --now nvidia-cdi-refresh.path || echo "Warning: Failed to enable nvidia-cdi-refresh.path" >&2
+      systemctl enable --now nvidia-cdi-refresh.service || echo "Warning: Failed to enable nvidia-cdi-refresh.service" >&2
+      
+      # Trigger CDI spec regeneration immediately after install/upgrade
+      echo "Regenerating NVIDIA CDI specification..."
+      systemctl start nvidia-cdi-refresh.service || echo "Warning: Failed to trigger CDI refresh" >&2
+      ;;
+  esac
 fi
 
 %files base
