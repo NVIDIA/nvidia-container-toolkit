@@ -113,6 +113,7 @@ func New(opts ...Option) (engine.Interface, error) {
 		}
 		return (*ConfigV1)(cfg), nil
 	default:
+
 		cfg := &WithTopLevel{
 			Interface: &engine.DropInConfig{
 				Source: &Config{
@@ -137,7 +138,18 @@ func New(opts ...Option) (engine.Interface, error) {
 			topLevelConfig: &topLevelConfig{
 				// TODO: It should be clearer that b.path is the top-level config.
 				filename: b.path,
-				version:  configVersion,
+				config: &Config{
+					Tree: func() *toml.Tree {
+						t, _ := toml.FromFile(b.path).Load()
+						return t
+					}(),
+					Version:              configVersion,
+					CRIRuntimePluginName: criRuntimePluginName,
+					Logger:               b.logger,
+					RuntimeType:          b.runtimeType,
+					UseLegacyConfig:      b.useLegacyConfig,
+					ContainerAnnotations: b.containerAnnotations,
+				},
 			},
 		}
 
