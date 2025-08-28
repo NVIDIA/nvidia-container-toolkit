@@ -127,20 +127,19 @@ func TestAddRuntime(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			cfg, err := toml.Load(tc.config)
-			require.NoError(t, err)
 			expectedConfig, err := toml.Load(tc.expectedConfig)
 			require.NoError(t, err)
 
-			c := &Config{
-				Logger: logger,
-				Tree:   cfg,
-			}
+			c, err := New(
+				WithLogger(logger),
+				WithConfigSource(toml.FromString(tc.config)),
+			)
+			require.NoError(t, err)
 
 			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault)
 			require.NoError(t, err)
 
-			require.EqualValues(t, expectedConfig.String(), cfg.String())
+			require.EqualValues(t, expectedConfig.String(), c.String())
 		})
 	}
 }
@@ -188,13 +187,11 @@ monitor_path = "/usr/libexec/crio/conmon"
 	}
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			cfg, err := toml.Load(config)
+			c, err := New(
+				WithLogger(logger),
+				WithConfigSource(toml.FromString(config)),
+			)
 			require.NoError(t, err)
-
-			c := &Config{
-				Logger: logger,
-				Tree:   cfg,
-			}
 
 			rc, err := c.GetRuntimeConfig(tc.runtime)
 			require.Equal(t, tc.expectedError, err)

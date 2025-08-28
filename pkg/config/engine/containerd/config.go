@@ -28,29 +28,37 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	if c == nil || c.Tree == nil {
 		return fmt.Errorf("config is nil")
 	}
+	defaultRuntimeOptions := c.GetDefaultRuntimeOptions()
+	return c.AddRuntimeWithOptions(name, path, setAsDefault, defaultRuntimeOptions)
+}
+
+func (c *Config) GetDefaultRuntimeOptions() interface{} {
+	runtimeNamesForConfig := engine.GetLowLevelRuntimes(c)
+	for _, r := range runtimeNamesForConfig {
+		options := c.GetSubtreeByPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", r})
+		if options != nil {
+			c.Logger.Debugf("Using options from runtime %v: %v", r, options)
+			return options.Copy()
+		}
+	}
+	c.Logger.Warningf("Could not infer options from runtimes %v", runtimeNamesForConfig)
+	options, _ := toml.TreeFromMap(map[string]interface{}{
+		"runtime_type":                    c.RuntimeType,
+		"runtime_root":                    "",
+		"runtime_engine":                  "",
+		"privileged_without_host_devices": false,
+	})
+	return options
+}
+
+func (c *Config) AddRuntimeWithOptions(name string, path string, setAsDefault bool, options interface{}) error {
 	config := *c.Tree
 
 	config.Set("version", c.Version)
 
-	runtimeNamesForConfig := engine.GetLowLevelRuntimes(c)
-	for _, r := range runtimeNamesForConfig {
-		options := config.GetSubtreeByPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", r})
-		if options == nil {
-			continue
-		}
-		c.Logger.Debugf("using options from runtime %v: %v", r, options)
-		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name}, options.Copy())
-		break
+	if options != nil {
+		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name}, options)
 	}
-
-	if config.GetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name}) == nil {
-		c.Logger.Warningf("could not infer options from runtimes %v; using defaults", runtimeNamesForConfig)
-		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name, "runtime_type"}, c.RuntimeType)
-		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name, "runtime_root"}, "")
-		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name, "runtime_engine"}, "")
-		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name, "privileged_without_host_devices"}, false)
-	}
-
 	if len(c.ContainerAnnotations) > 0 {
 		annotations, err := c.getRuntimeAnnotations([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name, "container_annotations"})
 		if err != nil {
@@ -65,7 +73,6 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	if setAsDefault {
 		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"}, name)
 	}
-
 	*c.Tree = config
 	return nil
 }
