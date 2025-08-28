@@ -16,9 +16,131 @@
 
 package containerd
 
+import (
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v3"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
+)
+
 const (
 	runtimeType = "runtime_type"
 )
+
+func TestSetupCleanup(t *testing.T) {
+	c := &cli.Command{
+		Name: "test",
+	}
+	testCases := []struct {
+		description                 string
+		containerOptions            container.Options
+		options                     Options
+		prepareEnvironment          func(*testing.T, string) error
+		expectedSetupError          error
+		assertSetupPostConditions   func(*testing.T, string) error
+		expectedCleanupError        error
+		assertCleanupPostConditions func(*testing.T, string) error
+	}{
+		{
+			description: "top-level config does not exist",
+			containerOptions: container.Options{
+				DropInConfig: "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				Config:       "{{ .testRoot }}/etc/containerd/config.toml",
+			},
+			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
+				require.FileExists(t, filepath.Join(testRoot, "/etc/containerd/config.toml"))
+				topLevel, err := toml.FromFile(filepath.Join(testRoot, "/etc/containerd/config.toml")).Load()
+				require.NoError(t, err)
+				require.EqualValues(t, `imports = ["`+filepath.Join(testRoot, "/conf.d/*.toml")+`"]
+version = 2
+`, topLevel.String())
+				require.FileExists(t, filepath.Join(testRoot, "/conf.d/99-nvidia.toml"))
+				dropIn, err := toml.FromFile(filepath.Join(testRoot, "/conf.d/99-nvidia.toml")).Load()
+				require.NoError(t, err)
+				require.EqualValues(t, `version = 2
+
+[plugins]
+
+  [plugins."io.containerd.grpc.v1.cri"]
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
+          privileged_without_host_devices = false
+          runtime_engine = ""
+          runtime_root = ""
+          runtime_type = ""
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
+            BinaryName = "nvidia-container-runtime"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-cdi]
+          privileged_without_host_devices = false
+          runtime_engine = ""
+          runtime_root = ""
+          runtime_type = ""
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-cdi.options]
+            BinaryName = "nvidia-container-runtime.cdi"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy]
+          privileged_without_host_devices = false
+          runtime_engine = ""
+          runtime_root = ""
+          runtime_type = ""
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
+            BinaryName = "nvidia-container-runtime.legacy"
+`, dropIn.String())
+				return nil
+			},
+			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
+				require.NoFileExists(t, filepath.Join(testRoot, "/etc/containerd/config.toml"))
+				require.NoFileExists(t, filepath.Join(testRoot, "/conf.d/99-nvidia.toml"))
+				return nil
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		// TODO: Add tests for restart mode.
+		tc.containerOptions.RestartMode = "none"
+		t.Run(tc.description, func(t *testing.T) {
+			// Update any paths as required:
+			testRoot := t.TempDir()
+			tc.containerOptions.Config = strings.ReplaceAll(tc.containerOptions.Config, "{{ .testRoot }}", testRoot)
+			tc.containerOptions.DropInConfig = strings.ReplaceAll(tc.containerOptions.DropInConfig, "{{ .testRoot }}", testRoot)
+
+			// Prepare the test environment
+			if tc.prepareEnvironment != nil {
+				require.NoError(t, tc.prepareEnvironment(t, testRoot))
+			}
+
+			err := Setup(c, &tc.containerOptions, &tc.options)
+			require.EqualValues(t, tc.expectedSetupError, err)
+
+			// TODO: Check state
+			if tc.assertSetupPostConditions != nil {
+				require.NoError(t, tc.assertSetupPostConditions(t, testRoot))
+			}
+
+			err = Cleanup(c, &tc.containerOptions, &tc.options)
+			require.EqualValues(t, tc.expectedCleanupError, err)
+
+			if tc.assertCleanupPostConditions != nil {
+				require.NoError(t, tc.assertCleanupPostConditions(t, testRoot))
+			}
+		})
+	}
+
+}
 
 // func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
 // 	logger, _ := testlog.NewNullLogger()

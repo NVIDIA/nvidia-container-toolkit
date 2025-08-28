@@ -35,8 +35,9 @@ const (
 
 // Options defines the shared options for the CLIs to configure containers runtimes.
 type Options struct {
-	Config string
-	Socket string
+	DropInConfig string
+	Config       string
+	Socket       string
 	// ExecutablePath specifies the path to the container runtime executable.
 	// This is used to extract the current config, for example.
 	// If a HostRootMount is specified, this path is relative to the host root
@@ -71,8 +72,12 @@ func (o Options) Unconfigure(cfg engine.Interface) error {
 
 // flush flushes the specified config to disk
 func (o Options) flush(cfg engine.Interface) error {
-	logrus.Infof("Flushing config to %v", o.Config)
-	n, err := cfg.Save(o.Config)
+	filepath := o.DropInConfig
+	if filepath == "" {
+		filepath = o.Config
+	}
+	logrus.Infof("Flushing config to %v", filepath)
+	n, err := cfg.Save(filepath)
 	if err != nil {
 		return fmt.Errorf("unable to flush config: %v", err)
 	}
