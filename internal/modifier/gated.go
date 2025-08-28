@@ -92,6 +92,11 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 }
 
 func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, driver *root.Driver, hookCreator discover.HookCreator) (discover.Discover, error) {
+	// We don't support the enable-cuda-compat hook in CSV mode.
+	if cfg.NVIDIAContainerRuntimeConfig.Mode == "csv" {
+		return nil, nil
+	}
+
 	// For legacy mode, we only include the enable-cuda-compat hook if cuda-compat-mode is set to hook.
 	if cfg.NVIDIAContainerRuntimeConfig.Mode == "legacy" && cfg.NVIDIAContainerRuntimeConfig.Modes.Legacy.CUDACompatMode != config.CUDACompatModeHook {
 		return nil, nil
