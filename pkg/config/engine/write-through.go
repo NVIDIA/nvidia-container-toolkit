@@ -37,7 +37,7 @@ func (c *DropInConfig) Save(path string) (int64, error) {
 }
 
 func (c *DropInConfig) String() string {
-	return c.Source.String() + c.Destination.String()
+	return c.Destination.String()
 }
 
 type RuntimeConfigSource interface {

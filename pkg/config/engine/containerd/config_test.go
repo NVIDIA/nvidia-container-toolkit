@@ -95,14 +95,6 @@ func TestAddRuntime(t *testing.T) {
 			[plugins."io.containerd.grpc.v1.cri"]
 				[plugins."io.containerd.grpc.v1.cri".containerd]
 				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-					privileged_without_host_devices = true
-					runtime_engine = "engine"
-					runtime_root = "root"
-					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-						BinaryName = "/usr/bin/runc"
-						SystemdCgroup = true
 					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
@@ -136,16 +128,7 @@ func TestAddRuntime(t *testing.T) {
 			[plugins]
 			[plugins."io.containerd.grpc.v1.cri"]
 				[plugins."io.containerd.grpc.v1.cri".containerd]
-				default_runtime_name = "default"
 				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.default]
-					privileged_without_host_devices = true
-					runtime_engine = "engine"
-					runtime_root = "root"
-					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.default.options]
-						BinaryName = "/usr/bin/default"
-						SystemdCgroup = true
 					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
@@ -187,24 +170,7 @@ func TestAddRuntime(t *testing.T) {
 			[plugins]
 			[plugins."io.containerd.grpc.v1.cri"]
 				[plugins."io.containerd.grpc.v1.cri".containerd]
-				default_runtime_name = "default"
 				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-					privileged_without_host_devices = true
-					runtime_engine = "engine"
-					runtime_root = "root"
-					runtime_type = "type"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-						BinaryName = "/usr/bin/runc"
-						SystemdCgroup = true
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.default]
-					privileged_without_host_devices = false
-					runtime_engine = "defaultengine"
-					runtime_root = "defaultroot"
-					runtime_type = "defaulttype"
-					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.default.options]
-						BinaryName = "/usr/bin/default"
-						SystemdCgroup = false
 					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
 					privileged_without_host_devices = false
 					runtime_engine = "defaultengine"
@@ -259,14 +225,6 @@ func TestAddRuntime(t *testing.T) {
 			[plugins."io.containerd.cri.v1.runtime"]
 				[plugins."io.containerd.cri.v1.runtime".containerd]
 				[plugins."io.containerd.cri.v1.runtime".containerd.runtimes]
-					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc]
-					privileged_without_host_devices = true
-					runtime_engine = "engine"
-					runtime_root = "root"
-					runtime_type = "type"
-					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
-						BinaryName = "/usr/bin/runc"
-						SystemdCgroup = true
 					[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.test]
 					privileged_without_host_devices = true
 					runtime_engine = "engine"
