@@ -113,24 +113,31 @@ func New(opts ...Option) (engine.Interface, error) {
 		}
 		return (*ConfigV1)(cfg), nil
 	default:
-		cfg := &engine.DropInConfig{
-			Source: &Config{
-				Tree:                 sourceConfig,
-				Version:              configVersion,
-				CRIRuntimePluginName: criRuntimePluginName,
-				Logger:               b.logger,
-				RuntimeType:          b.runtimeType,
-				UseLegacyConfig:      b.useLegacyConfig,
-				ContainerAnnotations: b.containerAnnotations,
+		cfg := &WithTopLevel{
+			Interface: &engine.DropInConfig{
+				Source: &Config{
+					Tree:                 sourceConfig,
+					Version:              configVersion,
+					CRIRuntimePluginName: criRuntimePluginName,
+					Logger:               b.logger,
+					RuntimeType:          b.runtimeType,
+					UseLegacyConfig:      b.useLegacyConfig,
+					ContainerAnnotations: b.containerAnnotations,
+				},
+				Destination: &Config{
+					Tree:                 toml.NewEmpty(),
+					Version:              configVersion,
+					CRIRuntimePluginName: criRuntimePluginName,
+					Logger:               b.logger,
+					RuntimeType:          b.runtimeType,
+					UseLegacyConfig:      b.useLegacyConfig,
+					ContainerAnnotations: b.containerAnnotations,
+				},
 			},
-			Destination: &Config{
-				Tree:                 toml.NewEmpty(),
-				Version:              configVersion,
-				CRIRuntimePluginName: criRuntimePluginName,
-				Logger:               b.logger,
-				RuntimeType:          b.runtimeType,
-				UseLegacyConfig:      b.useLegacyConfig,
-				ContainerAnnotations: b.containerAnnotations,
+			topLevelConfig: &topLevelConfig{
+				// TODO: It should be clearer that b.path is the top-level config.
+				filename: b.path,
+				version:  configVersion,
 			},
 		}
 
