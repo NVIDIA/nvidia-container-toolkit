@@ -14,8 +14,7 @@ func (c *DropInConfig) RemoveRuntime(runtime string) error {
 
 func (c *DropInConfig) AddRuntime(name string, path string, setAsDefault bool) error {
 	options := c.Source.GetDefaultRuntimeOptions()
-	c.Destination.AddRuntimeWithOptions(name, path, setAsDefault, options)
-	return nil
+	return c.Destination.AddRuntimeWithOptions(name, path, setAsDefault, options)
 }
 
 func (c *DropInConfig) EnableCDI() {
