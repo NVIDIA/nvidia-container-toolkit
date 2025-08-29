@@ -62,7 +62,9 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		return nil, fmt.Errorf("requesting a CDI device with vendor 'runtime.nvidia.com' is not supported when requesting other CDI devices")
 	}
 	if len(automaticDevices) > 0 {
-		automaticDevices = append(automaticDevices, gatedDevices(image).DeviceRequests()...)
+		automaticDevices = append(automaticDevices, withUniqueDevices(gatedDevices(image)).DeviceRequests()...)
+		automaticDevices = append(automaticDevices, withUniqueDevices(imexDevices(image)).DeviceRequests()...)
+
 		automaticModifier, err := newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
 		if err == nil {
 			return automaticModifier, nil
@@ -135,6 +137,17 @@ func (g gatedDevices) DeviceRequests() []string {
 	return devices
 }
 
+type imexDevices image.CUDA
+
+func (d imexDevices) DeviceRequests() []string {
+	var devices []string
+	i := (image.CUDA)(d)
+	for _, channelID := range i.ImexChannelRequests() {
+		devices = append(devices, "mode=imex,id="+channelID)
+	}
+	return devices
+}
+
 // filterAutomaticDevices searches for "automatic" device names in the input slice.
 // "Automatic" devices are a well-defined list of CDI device names which, when requested,
 // trigger the generation of a CDI spec at runtime. This removes the need to generate a
@@ -158,7 +171,12 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 	modes := []string{"auto"}
 	for _, device := range devices {
 		if strings.HasPrefix(device, "mode=") {
-			modes = append(modes, strings.TrimPrefix(device, "mode="))
+			parts := strings.SplitN(device, ",", 2)
+			mode := strings.TrimPrefix(parts[0], "mode=")
+			modes = append(modes, mode)
+			if len(parts) == 2 {
+				perModeIdentifiers[mode] = append(perModeIdentifiers[mode], strings.TrimPrefix(parts[1], "id="))
+			}
 			continue
 		}
 		perModeIdentifiers["auto"] = append(perModeIdentifiers["auto"], strings.TrimPrefix(device, automaticDevicePrefix))
