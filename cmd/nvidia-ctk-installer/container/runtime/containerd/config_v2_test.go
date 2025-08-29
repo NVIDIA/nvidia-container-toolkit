@@ -126,7 +126,6 @@ version = 2
 			err := Setup(c, &tc.containerOptions, &tc.options)
 			require.EqualValues(t, tc.expectedSetupError, err)
 
-			// TODO: Check state
 			if tc.assertSetupPostConditions != nil {
 				require.NoError(t, tc.assertSetupPostConditions(t, testRoot))
 			}
@@ -139,7 +138,6 @@ version = 2
 			}
 		})
 	}
-
 }
 
 // func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
