@@ -26,10 +26,10 @@ var _ Loader = (*empty)(nil)
 
 // Load is a no-op for an empty source.
 func (e empty) Load() (*Tree, error) {
-	return newEmpty(), nil
+	return NewEmpty(), nil
 }
 
-func newEmpty() *Tree {
+func NewEmpty() *Tree {
 	tomlTree, _ := toml.TreeFromMap(nil)
 	return (*Tree)(tomlTree)
 }

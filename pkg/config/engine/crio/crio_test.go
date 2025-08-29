@@ -55,10 +55,6 @@ func TestAddRuntime(t *testing.T) {
 			`,
 			expectedConfig: `
 			[crio]
-			[crio.runtime.runtimes.runc]
-			runtime_path = "/usr/bin/runc"
-			runtime_type = "runcoci"
-			runc_option = "option"
 			[crio.runtime.runtimes.test]
 			runtime_path = "/usr/bin/test"
 			runtime_type = "oci"
@@ -79,11 +75,6 @@ func TestAddRuntime(t *testing.T) {
 			expectedConfig: `
 			[crio]
 			[crio.runtime]
-			default_runtime = "default"
-			[crio.runtime.runtimes.default]
-			runtime_path = "/usr/bin/default"
-			runtime_type = "defaultoci"
-			default_option = "option"
 			[crio.runtime.runtimes.test]
 			runtime_path = "/usr/bin/test"
 			runtime_type = "oci"
@@ -108,15 +99,6 @@ func TestAddRuntime(t *testing.T) {
 			expectedConfig: `
 			[crio]
 			[crio.runtime]
-			default_runtime = "default"
-			[crio.runtime.runtimes.default]
-			runtime_path = "/usr/bin/default"
-			runtime_type = "defaultoci"
-			default_option = "option"
-			[crio.runtime.runtimes.runc]
-			runtime_path = "/usr/bin/runc"
-			runtime_type = "runcoci"
-			runc_option = "option"
 			[crio.runtime.runtimes.test]
 			runtime_path = "/usr/bin/test"
 			runtime_type = "oci"
@@ -127,20 +109,19 @@ func TestAddRuntime(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			cfg, err := toml.Load(tc.config)
-			require.NoError(t, err)
 			expectedConfig, err := toml.Load(tc.expectedConfig)
 			require.NoError(t, err)
 
-			c := &Config{
-				Logger: logger,
-				Tree:   cfg,
-			}
+			c, err := New(
+				WithLogger(logger),
+				WithConfigSource(toml.FromString(tc.config)),
+			)
+			require.NoError(t, err)
 
 			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault)
 			require.NoError(t, err)
 
-			require.EqualValues(t, expectedConfig.String(), cfg.String())
+			require.EqualValues(t, expectedConfig.String(), c.String())
 		})
 	}
 }
@@ -188,13 +169,11 @@ monitor_path = "/usr/libexec/crio/conmon"
 	}
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			cfg, err := toml.Load(config)
+			c, err := New(
+				WithLogger(logger),
+				WithConfigSource(toml.FromString(config)),
+			)
 			require.NoError(t, err)
-
-			c := &Config{
-				Logger: logger,
-				Tree:   cfg,
-			}
 
 			rc, err := c.GetRuntimeConfig(tc.runtime)
 			require.Equal(t, tc.expectedError, err)
