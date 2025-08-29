@@ -97,6 +97,12 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 
 	if setAsDefault {
 		config.SetPath([]string{"crio", "runtime", "default_runtime"}, name)
+	} else {
+		if defaultRuntime, ok := config.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok {
+			if defaultRuntime == name {
+				config.DeletePath([]string{"crio", "runtime", "default_runtime"})
+			}
+		}
 	}
 
 	*c.Tree = config
