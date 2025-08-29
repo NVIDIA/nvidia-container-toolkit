@@ -437,7 +437,7 @@ type Interface interface {
 	DeviceGetComputeInstanceId(Device) (int, Return)
 	DeviceGetComputeMode(Device) (ComputeMode, Return)
 	DeviceGetComputeRunningProcesses(Device) ([]ProcessInfo, Return)
-	DeviceGetConfComputeGpuAttestationReport(Device) (ConfComputeGpuAttestationReport, Return)
+	DeviceGetConfComputeGpuAttestationReport(Device, *ConfComputeGpuAttestationReport) Return
 	DeviceGetConfComputeGpuCertificate(Device) (ConfComputeGpuCertificate, Return)
 	DeviceGetConfComputeMemSizeInfo(Device) (ConfComputeMemSizeInfo, Return)
 	DeviceGetConfComputeProtectedMemoryUsage(Device) (Memory, Return)
@@ -814,7 +814,7 @@ type Device interface {
 	GetComputeInstanceId() (int, Return)
 	GetComputeMode() (ComputeMode, Return)
 	GetComputeRunningProcesses() ([]ProcessInfo, Return)
-	GetConfComputeGpuAttestationReport() (ConfComputeGpuAttestationReport, Return)
+	GetConfComputeGpuAttestationReport(*ConfComputeGpuAttestationReport) Return
 	GetConfComputeGpuCertificate() (ConfComputeGpuCertificate, Return)
 	GetConfComputeMemSizeInfo() (ConfComputeMemSizeInfo, Return)
 	GetConfComputeProtectedMemoryUsage() (Memory, Return)
