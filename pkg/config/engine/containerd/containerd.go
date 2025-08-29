@@ -25,16 +25,25 @@ import (
 )
 
 const (
+	defaultContainerdDropInDir = "/etc/containerd/conf.d"
+	// defaultConfigVersion is the default config version for containerd v1.6+
 	defaultConfigVersion = 2
-	defaultRuntimeType   = "io.containerd.runc.v2"
+	// defaultRuntimeType is the default runtime type for containerd
+	defaultRuntimeType = "io.containerd.runc.v2"
 )
 
 // Config represents the containerd config
 type Config struct {
 	*toml.Tree
-	Version              int64
-	Logger               logger.Interface
-	RuntimeType          string
+	NVConfig *toml.Tree
+
+	Version int64
+	Logger  logger.Interface
+
+	baseConfigPath   string
+	dropInConfigPath string
+	RuntimeType      string
+
 	ContainerAnnotations []string
 	// UseLegacyConfig indicates whether a config file pre v1.3 should be generated.
 	// For version 1 config prior to containerd v1.4 the default runtime was
@@ -67,7 +76,7 @@ func (c *containerdCfgRuntime) GetBinaryPath() string {
 	return binPath
 }
 
-// New creates a containerd config with the specified options
+// New creates a containerd config with the specified options.
 func New(opts ...Option) (engine.Interface, error) {
 	b := &builder{
 		configVersion: defaultConfigVersion,
@@ -100,8 +109,20 @@ func New(opts ...Option) (engine.Interface, error) {
 	}
 	b.logger.Infof("Using CRI runtime plugin name %q", criRuntimePluginName)
 
+	var dropInConfigPath string
+	if b.dropInDir != "" {
+		dropInConfigPath = b.dropInDir
+	} else {
+		dropInConfigPath = defaultContainerdDropInDir
+	}
+
+	nvConfig, _ := toml.TreeFromMap(map[string]interface{}{})
+
 	cfg := &Config{
 		Tree:                 tomlConfig,
+		baseConfigPath:       b.path,
+		dropInConfigPath:     dropInConfigPath,
+		NVConfig:             nvConfig,
 		Version:              configVersion,
 		CRIRuntimePluginName: criRuntimePluginName,
 		Logger:               b.logger,
@@ -112,6 +133,7 @@ func New(opts ...Option) (engine.Interface, error) {
 
 	switch configVersion {
 	case 1:
+		// Version 1 configs don't support drop-in
 		return (*ConfigV1)(cfg), nil
 	default:
 		return cfg, nil

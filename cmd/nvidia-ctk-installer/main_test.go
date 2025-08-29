@@ -437,7 +437,18 @@ swarm-resource = ""
 				"--toolkit-source-root=" + filepath.Join(artifactRoot, "deb"),
 			}
 
-			err := app.Run(context.Background(), append(testArgs, tc.args...))
+			// Add containerd drop-in directory for containerd runtime tests to avoid permission issues
+			finalArgs := make([]string, 0, len(testArgs)+len(tc.args)+1)
+			finalArgs = append(finalArgs, testArgs...)
+			finalArgs = append(finalArgs, tc.args...)
+			for _, arg := range tc.args {
+				if arg == "--runtime=containerd" {
+					finalArgs = append(finalArgs, "--containerd-drop-in-dir="+filepath.Join(testRoot, "containerd", "conf.d"))
+					break
+				}
+			}
+
+			err := app.Run(context.Background(), finalArgs)
 
 			require.NoError(t, err)
 

@@ -25,6 +25,7 @@ type builder struct {
 	logger       logger.Interface
 	configSource toml.Loader
 	path         string
+	dropInDir    string
 }
 
 // Option defines a function that can be used to configure the config builder
@@ -48,5 +49,12 @@ func WithPath(path string) Option {
 func WithConfigSource(configSource toml.Loader) Option {
 	return func(b *builder) {
 		b.configSource = configSource
+	}
+}
+
+// WithDropInDir sets the drop-in directory for the config builder
+func WithDropInDir(dropInDir string) Option {
+	return func(b *builder) {
+		b.dropInDir = dropInDir
 	}
 }

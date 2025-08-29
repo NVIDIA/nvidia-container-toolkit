@@ -17,11 +17,15 @@
 package crio
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
@@ -37,7 +41,6 @@ func TestAddRuntime(t *testing.T) {
 		{
 			description: "empty config not default runtime",
 			expectedConfig: `
-			[crio]
 			[crio.runtime.runtimes.test]
 			runtime_path = "/usr/bin/test"
 			runtime_type = "oci"
@@ -54,11 +57,6 @@ func TestAddRuntime(t *testing.T) {
 			runc_option = "option"
 			`,
 			expectedConfig: `
-			[crio]
-			[crio.runtime.runtimes.runc]
-			runtime_path = "/usr/bin/runc"
-			runtime_type = "runcoci"
-			runc_option = "option"
 			[crio.runtime.runtimes.test]
 			runtime_path = "/usr/bin/test"
 			runtime_type = "oci"
@@ -77,13 +75,6 @@ func TestAddRuntime(t *testing.T) {
 			default_option = "option"
 			`,
 			expectedConfig: `
-			[crio]
-			[crio.runtime]
-			default_runtime = "default"
-			[crio.runtime.runtimes.default]
-			runtime_path = "/usr/bin/default"
-			runtime_type = "defaultoci"
-			default_option = "option"
 			[crio.runtime.runtimes.test]
 			runtime_path = "/usr/bin/test"
 			runtime_type = "oci"
@@ -106,17 +97,6 @@ func TestAddRuntime(t *testing.T) {
 			runc_option = "option"
 			`,
 			expectedConfig: `
-			[crio]
-			[crio.runtime]
-			default_runtime = "default"
-			[crio.runtime.runtimes.default]
-			runtime_path = "/usr/bin/default"
-			runtime_type = "defaultoci"
-			default_option = "option"
-			[crio.runtime.runtimes.runc]
-			runtime_path = "/usr/bin/runc"
-			runtime_type = "runcoci"
-			runc_option = "option"
 			[crio.runtime.runtimes.test]
 			runtime_path = "/usr/bin/test"
 			runtime_type = "oci"
@@ -132,15 +112,18 @@ func TestAddRuntime(t *testing.T) {
 			expectedConfig, err := toml.Load(tc.expectedConfig)
 			require.NoError(t, err)
 
+			nvConfig, _ := toml.TreeFromMap(map[string]interface{}{})
 			c := &Config{
-				Logger: logger,
-				Tree:   cfg,
+				Logger:   logger,
+				Tree:     cfg,
+				NVConfig: nvConfig,
 			}
 
 			err = c.AddRuntime("test", "/usr/bin/test", tc.setAsDefault)
 			require.NoError(t, err)
 
-			require.EqualValues(t, expectedConfig.String(), cfg.String())
+			// For drop-in approach, check NVConfig instead of main Tree
+			require.EqualValues(t, expectedConfig.String(), c.NVConfig.String())
 		})
 	}
 }
@@ -201,4 +184,66 @@ monitor_path = "/usr/libexec/crio/conmon"
 			require.Equal(t, tc.expected, rc.GetBinaryPath())
 		})
 	}
+}
+
+func TestDropInIntegration(t *testing.T) {
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "crio.conf")
+	dropInDir := filepath.Join(tempDir, "crio.conf.d")
+	dropInPath := filepath.Join(dropInDir, "99-nvidia.conf")
+
+	// Create minimal config
+	config, err := toml.TreeFromMap(map[string]interface{}{
+		"crio": map[string]interface{}{
+			"runtime": map[string]interface{}{},
+		},
+	})
+	require.NoError(t, err)
+	_, err = config.Save(configPath)
+	require.NoError(t, err)
+
+	// Create config with drop-in support
+	cfg, err := New(
+		WithLogger(logger.New()),
+		WithPath(configPath),
+		WithDropInDir(dropInPath),
+		WithConfigSource(toml.FromFile(configPath)),
+	)
+	require.NoError(t, err)
+
+	// Add runtime
+	err = cfg.AddRuntime("nvidia", "/usr/bin/nvidia-container-runtime", true)
+	require.NoError(t, err)
+
+	// Save drop-in configuration
+	_, err = cfg.Save(dropInPath)
+	require.NoError(t, err)
+
+	// Verify drop-in was created
+	_, err = os.Stat(dropInPath)
+	require.NoError(t, err)
+
+	// Verify drop-in content
+	dropInTree, err := toml.LoadFile(dropInPath)
+	require.NoError(t, err)
+
+	// Check runtime configuration
+	runtimePath := dropInTree.GetPath([]string{"crio", "runtime", "runtimes", "nvidia", "runtime_path"})
+	assert.Equal(t, "/usr/bin/nvidia-container-runtime", runtimePath)
+
+	// Check runtime type
+	runtimeType := dropInTree.GetPath([]string{"crio", "runtime", "runtimes", "nvidia", "runtime_type"})
+	assert.Equal(t, "oci", runtimeType)
+
+	// Check default runtime
+	defaultRuntime := dropInTree.GetPath([]string{"crio", "runtime", "default_runtime"})
+	assert.Equal(t, "nvidia", defaultRuntime)
+
+	// Test removal
+	err = cfg.RemoveRuntime("nvidia")
+	require.NoError(t, err)
+
+	// Verify drop-in is removed
+	_, err = os.Stat(dropInPath)
+	assert.True(t, os.IsNotExist(err))
 }

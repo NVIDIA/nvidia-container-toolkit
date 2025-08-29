@@ -29,6 +29,7 @@ type builder struct {
 	path                 string
 	runtimeType          string
 	containerAnnotations []string
+	dropInDir            string
 }
 
 // Option defines a function that can be used to configure the config builder
@@ -45,6 +46,12 @@ func WithLogger(logger logger.Interface) Option {
 func WithPath(path string) Option {
 	return func(b *builder) {
 		b.path = path
+	}
+}
+
+func WithDropInDir(dropInDir string) Option {
+	return func(b *builder) {
+		b.dropInDir = dropInDir
 	}
 }
 

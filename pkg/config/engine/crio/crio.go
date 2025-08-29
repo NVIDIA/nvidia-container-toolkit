@@ -18,16 +18,28 @@ package crio
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
+const (
+	// defaultCrioDropInDir is the default directory for CRI-O drop-in configuration files
+	defaultCrioDropInDir = "/etc/crio/crio.conf.d"
+	// dropInFileName is the name of the NVIDIA runtime drop-in file
+	dropInFileName = "99-nvidia.conf"
+)
+
 // Config represents the cri-o config
 type Config struct {
 	*toml.Tree
-	Logger logger.Interface
+	NVConfig         *toml.Tree // For drop-in configuration
+	Logger           logger.Interface
+	baseConfigPath   string
+	dropInConfigPath string
 }
 
 type crioRuntime struct {
@@ -67,39 +79,52 @@ func New(opts ...Option) (engine.Interface, error) {
 		return nil, err
 	}
 
+	var dropInConfigPath string
+	if b.dropInDir != "" {
+		dropInConfigPath = b.dropInDir
+	} else {
+		dropInConfigPath = filepath.Join(defaultCrioDropInDir, dropInFileName)
+	}
+
+	nvConfig, _ := toml.TreeFromMap(map[string]interface{}{})
+
 	cfg := Config{
-		Tree:   tomlConfig,
-		Logger: b.logger,
+		Tree:             tomlConfig,
+		NVConfig:         nvConfig,
+		Logger:           b.logger,
+		baseConfigPath:   b.path,
+		dropInConfigPath: dropInConfigPath,
 	}
 	return &cfg, nil
 }
 
-// AddRuntime adds a new runtime to the crio config
 func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	if c == nil {
 		return fmt.Errorf("config is nil")
 	}
 
-	config := *c.Tree
+	dropInConfig := c.NVConfig
 
 	runtimeNamesForConfig := engine.GetLowLevelRuntimes(c)
 	for _, r := range runtimeNamesForConfig {
-		if options, ok := config.GetPath([]string{"crio", "runtime", "runtimes", r}).(*toml.Tree); ok {
+		if options, ok := c.GetPath([]string{"crio", "runtime", "runtimes", r}).(*toml.Tree); ok {
 			c.Logger.Debugf("using options from runtime %v: %v", r, options.String())
-			options, _ = toml.Load(options.String())
-			config.SetPath([]string{"crio", "runtime", "runtimes", name}, options)
+			// Parse and copy the options
+			optionsCopy, _ := toml.Load(options.String())
+			dropInConfig.SetPath([]string{"crio", "runtime", "runtimes", name}, optionsCopy)
 			break
 		}
 	}
 
-	config.SetPath([]string{"crio", "runtime", "runtimes", name, "runtime_path"}, path)
-	config.SetPath([]string{"crio", "runtime", "runtimes", name, "runtime_type"}, "oci")
+	dropInConfig.SetPath([]string{"crio", "runtime", "runtimes", name, "runtime_path"}, path)
+	dropInConfig.SetPath([]string{"crio", "runtime", "runtimes", name, "runtime_type"}, "oci")
 
+	// Set as default if requested
 	if setAsDefault {
-		config.SetPath([]string{"crio", "runtime", "default_runtime"}, name)
+		dropInConfig.SetPath([]string{"crio", "runtime", "default_runtime"}, name)
 	}
 
-	*c.Tree = config
+	c.NVConfig = dropInConfig
 	return nil
 }
 
@@ -114,32 +139,21 @@ func (c *Config) DefaultRuntime() string {
 	return ""
 }
 
-// RemoveRuntime removes a runtime from the cri-o config
 func (c *Config) RemoveRuntime(name string) error {
 	if c == nil {
 		return nil
 	}
 
-	config := *c.Tree
-	if runtime, ok := config.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok {
-		if runtime == name {
-			config.DeletePath([]string{"crio", "runtime", "default_runtime"})
-		}
+	if _, err := os.Stat(c.dropInConfigPath); os.IsNotExist(err) {
+		c.Logger.Debugf("Drop-in file %s does not exist, nothing to remove", c.dropInConfigPath)
+		return nil
 	}
 
-	runtimeClassPath := []string{"crio", "runtime", "runtimes", name}
-	config.DeletePath(runtimeClassPath)
-	for i := 0; i < len(runtimeClassPath); i++ {
-		remainingPath := runtimeClassPath[:len(runtimeClassPath)-i]
-		if entry, ok := config.GetPath(remainingPath).(*toml.Tree); ok {
-			if len(entry.Keys()) != 0 {
-				break
-			}
-			config.DeletePath(remainingPath)
-		}
+	if err := os.Remove(c.dropInConfigPath); err != nil {
+		return fmt.Errorf("failed to remove drop-in file %s: %w", c.dropInConfigPath, err)
 	}
 
-	*c.Tree = config
+	c.Logger.Infof("Removed drop-in configuration at %s", c.dropInConfigPath)
 	return nil
 }
 
@@ -155,6 +169,18 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 
 // EnableCDI is a no-op for CRI-O since it always enabled where supported.
 func (c *Config) EnableCDI() {}
+
+// Save saves the drop-in configuration to the specified path
+func (c *Config) Save(path string) (int64, error) {
+	// Create drop-in directory if it doesn't exist
+	dropInDir := filepath.Dir(c.dropInConfigPath)
+	if err := os.MkdirAll(dropInDir, 0755); err != nil {
+		return 0, fmt.Errorf("failed to create drop-in directory %s: %w", dropInDir, err)
+	}
+
+	// Save the NVConfig to the drop-in file path
+	return c.NVConfig.Save(c.dropInConfigPath)
+}
 
 // CommandLineSource returns the CLI-based crio config loader
 func CommandLineSource(hostRoot string, executablePath string) toml.Loader {

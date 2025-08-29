@@ -145,7 +145,11 @@ func (c *ConfigV1) RemoveRuntime(name string) error {
 
 // Save writes the config to a file
 func (c ConfigV1) Save(path string) (int64, error) {
-	return (Config)(c).Save(path)
+	return (Config)(c).Tree.Save(path)
+}
+
+func (c *ConfigV1) String() string {
+	return c.Tree.String()
 }
 
 func (c *ConfigV1) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
