@@ -74,24 +74,36 @@ func New(opts ...Option) (engine.Interface, error) {
 	return &cfg, nil
 }
 
-// AddRuntime adds a new runtime to the crio config
+// AddRuntime adds a new runtime to the crio config.
+// The runtime options are extracted from the default runtime and the applicable
+// settings are overridden.
 func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
-	if c == nil {
+	if c == nil || c.Tree == nil {
 		return fmt.Errorf("config is nil")
 	}
+	defaultRuntimeOptions := c.GetDefaultRuntimeOptions()
+	return c.AddRuntimeWithOptions(name, path, setAsDefault, defaultRuntimeOptions)
+}
 
-	config := *c.Tree
-
+func (c *Config) GetDefaultRuntimeOptions() interface{} {
 	runtimeNamesForConfig := engine.GetLowLevelRuntimes(c)
 	for _, r := range runtimeNamesForConfig {
-		if options, ok := config.GetPath([]string{"crio", "runtime", "runtimes", r}).(*toml.Tree); ok {
-			c.Logger.Debugf("using options from runtime %v: %v", r, options.String())
-			options, _ = toml.Load(options.String())
-			config.SetPath([]string{"crio", "runtime", "runtimes", name}, options)
-			break
+		options := c.GetSubtreeByPath([]string{"crio", "runtime", "runtimes", r})
+		if options != nil {
+			c.Logger.Debugf("Using options from runtime %v: %v", r, options)
+			return options.Copy()
 		}
 	}
+	c.Logger.Warningf("Could not infer options from runtimes %v", runtimeNamesForConfig)
+	return nil
+}
 
+func (c *Config) AddRuntimeWithOptions(name string, path string, setAsDefault bool, options interface{}) error {
+	config := *c.Tree
+
+	if options != nil {
+		config.SetPath([]string{"crio", "runtime", "runtimes", name}, options)
+	}
 	config.SetPath([]string{"crio", "runtime", "runtimes", name, "runtime_path"}, path)
 	config.SetPath([]string{"crio", "runtime", "runtimes", name, "runtime_type"}, "oci")
 
@@ -104,7 +116,6 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 			}
 		}
 	}
-
 	*c.Tree = config
 	return nil
 }
