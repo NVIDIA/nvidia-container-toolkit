@@ -26,6 +26,7 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml/mock/dgxa100"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
@@ -488,6 +489,165 @@ containerEdits:
 			}
 
 			require.Equal(t, strings.ReplaceAll(tc.expectedSpec, "{{ .driverRoot }}", driverRoot), buf.String())
+		})
+	}
+}
+
+func TestSplitOnAnnotation(t *testing.T) {
+	testCases := []struct {
+		description            string
+		input                  deviceSpecs
+		annotation             string
+		expectedInputPostSplit deviceSpecs
+		expectedOutput         map[string][]specs.Device
+	}{
+		{
+			description: "non-matching annotation",
+			input: deviceSpecs{
+				specs.Device{
+					Name: "foo",
+					Annotations: map[string]string{
+						"key": "value",
+					},
+				},
+			},
+			annotation: "not-key",
+			expectedInputPostSplit: deviceSpecs{
+				specs.Device{
+					Name: "foo",
+					Annotations: map[string]string{
+						"key": "value",
+					},
+				},
+			},
+			expectedOutput: map[string][]specs.Device{},
+		},
+		{
+			description: "single annotation present",
+			input: deviceSpecs{
+				specs.Device{
+					Name: "foo",
+					Annotations: map[string]string{
+						"key": "value",
+					},
+				},
+			},
+			annotation: "key",
+			expectedInputPostSplit: deviceSpecs{
+				specs.Device{
+					Name:        "foo",
+					Annotations: map[string]string{},
+				},
+			},
+			expectedOutput: map[string][]specs.Device{
+				"key=value": {
+					{
+						Name:        "foo",
+						Annotations: map[string]string{},
+					},
+				},
+			},
+		},
+		{
+			description: "non-matching annotations are not removed",
+			input: deviceSpecs{
+				specs.Device{
+					Name: "foo",
+					Annotations: map[string]string{
+						"key":     "value",
+						"another": "foo",
+					},
+				},
+			},
+			annotation: "key",
+			expectedInputPostSplit: deviceSpecs{
+				specs.Device{
+					Name:        "foo",
+					Annotations: map[string]string{"another": "foo"},
+				},
+			},
+			expectedOutput: map[string][]specs.Device{
+				"key=value": {
+					{
+						Name:        "foo",
+						Annotations: map[string]string{"another": "foo"},
+					},
+				},
+			},
+		},
+		{
+			description: "duplicated annotations different names",
+			input: func() deviceSpecs {
+				annotations := map[string]string{
+					"key": "value",
+				}
+				return deviceSpecs{
+					{Name: "0", Annotations: annotations},
+					{Name: "first", Annotations: annotations},
+				}
+			}(),
+			annotation: "key",
+			expectedInputPostSplit: deviceSpecs{
+				specs.Device{Name: "0", Annotations: map[string]string{}},
+				specs.Device{Name: "first", Annotations: map[string]string{}},
+			},
+			expectedOutput: map[string][]specs.Device{
+				"key=value": {
+					{Name: "0", Annotations: map[string]string{}},
+					{Name: "first", Annotations: map[string]string{}},
+				},
+			},
+		},
+		{
+			description: "annotation with different values",
+			input: deviceSpecs{
+				specs.Device{
+					Name: "foo",
+					Annotations: map[string]string{
+						"key": "value",
+					},
+				},
+				specs.Device{
+					Name: "bar",
+					Annotations: map[string]string{
+						"key": "another",
+					},
+				},
+			},
+			annotation: "key",
+			expectedInputPostSplit: deviceSpecs{
+				specs.Device{
+					Name:        "foo",
+					Annotations: map[string]string{},
+				},
+				specs.Device{
+					Name:        "bar",
+					Annotations: map[string]string{},
+				},
+			},
+			expectedOutput: map[string][]specs.Device{
+				"key=value": {
+					{
+						Name:        "foo",
+						Annotations: map[string]string{},
+					},
+				},
+				"key=another": {
+					{
+						Name:        "bar",
+						Annotations: map[string]string{},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			result := tc.input.splitOnAnnotation(tc.annotation)
+
+			require.EqualValues(t, tc.expectedOutput, result)
+			require.EqualValues(t, tc.expectedInputPostSplit, tc.input)
 		})
 	}
 }
