@@ -6,7 +6,7 @@ toolchain go1.24.4
 
 require (
 	github.com/NVIDIA/go-nvlib v0.8.0
-	github.com/NVIDIA/go-nvml v0.13.0-0
+	github.com/NVIDIA/go-nvml v0.13.0-1
 	github.com/cyphar/filepath-securejoin v0.4.1
 	github.com/moby/sys/reexec v0.1.0
 	github.com/moby/sys/symlink v0.3.0
