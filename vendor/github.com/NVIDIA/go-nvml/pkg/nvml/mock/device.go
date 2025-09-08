@@ -120,7 +120,7 @@ var _ nvml.Device = &Device{}
 //			GetComputeRunningProcessesFunc: func() ([]nvml.ProcessInfo, nvml.Return) {
 //				panic("mock out the GetComputeRunningProcesses method")
 //			},
-//			GetConfComputeGpuAttestationReportFunc: func() (nvml.ConfComputeGpuAttestationReport, nvml.Return) {
+//			GetConfComputeGpuAttestationReportFunc: func(confComputeGpuAttestationReport *nvml.ConfComputeGpuAttestationReport) nvml.Return {
 //				panic("mock out the GetConfComputeGpuAttestationReport method")
 //			},
 //			GetConfComputeGpuCertificateFunc: func() (nvml.ConfComputeGpuCertificate, nvml.Return) {
@@ -902,7 +902,7 @@ type Device struct {
 	GetComputeRunningProcessesFunc func() ([]nvml.ProcessInfo, nvml.Return)
 
 	// GetConfComputeGpuAttestationReportFunc mocks the GetConfComputeGpuAttestationReport method.
-	GetConfComputeGpuAttestationReportFunc func() (nvml.ConfComputeGpuAttestationReport, nvml.Return)
+	GetConfComputeGpuAttestationReportFunc func(confComputeGpuAttestationReport *nvml.ConfComputeGpuAttestationReport) nvml.Return
 
 	// GetConfComputeGpuCertificateFunc mocks the GetConfComputeGpuCertificate method.
 	GetConfComputeGpuCertificateFunc func() (nvml.ConfComputeGpuCertificate, nvml.Return)
@@ -1707,6 +1707,8 @@ type Device struct {
 		}
 		// GetConfComputeGpuAttestationReport holds details about calls to the GetConfComputeGpuAttestationReport method.
 		GetConfComputeGpuAttestationReport []struct {
+			// ConfComputeGpuAttestationReport is the confComputeGpuAttestationReport argument value.
+			ConfComputeGpuAttestationReport *nvml.ConfComputeGpuAttestationReport
 		}
 		// GetConfComputeGpuCertificate holds details about calls to the GetConfComputeGpuCertificate method.
 		GetConfComputeGpuCertificate []struct {
@@ -3873,16 +3875,19 @@ func (mock *Device) GetComputeRunningProcessesCalls() []struct {
 }
 
 // GetConfComputeGpuAttestationReport calls GetConfComputeGpuAttestationReportFunc.
-func (mock *Device) GetConfComputeGpuAttestationReport() (nvml.ConfComputeGpuAttestationReport, nvml.Return) {
+func (mock *Device) GetConfComputeGpuAttestationReport(confComputeGpuAttestationReport *nvml.ConfComputeGpuAttestationReport) nvml.Return {
 	if mock.GetConfComputeGpuAttestationReportFunc == nil {
 		panic("Device.GetConfComputeGpuAttestationReportFunc: method is nil but Device.GetConfComputeGpuAttestationReport was just called")
 	}
 	callInfo := struct {
-	}{}
+		ConfComputeGpuAttestationReport *nvml.ConfComputeGpuAttestationReport
+	}{
+		ConfComputeGpuAttestationReport: confComputeGpuAttestationReport,
+	}
 	mock.lockGetConfComputeGpuAttestationReport.Lock()
 	mock.calls.GetConfComputeGpuAttestationReport = append(mock.calls.GetConfComputeGpuAttestationReport, callInfo)
 	mock.lockGetConfComputeGpuAttestationReport.Unlock()
-	return mock.GetConfComputeGpuAttestationReportFunc()
+	return mock.GetConfComputeGpuAttestationReportFunc(confComputeGpuAttestationReport)
 }
 
 // GetConfComputeGpuAttestationReportCalls gets all the calls that were made to GetConfComputeGpuAttestationReport.
@@ -3890,8 +3895,10 @@ func (mock *Device) GetConfComputeGpuAttestationReport() (nvml.ConfComputeGpuAtt
 //
 //	len(mockedDevice.GetConfComputeGpuAttestationReportCalls())
 func (mock *Device) GetConfComputeGpuAttestationReportCalls() []struct {
+	ConfComputeGpuAttestationReport *nvml.ConfComputeGpuAttestationReport
 } {
 	var calls []struct {
+		ConfComputeGpuAttestationReport *nvml.ConfComputeGpuAttestationReport
 	}
 	mock.lockGetConfComputeGpuAttestationReport.RLock()
 	calls = mock.calls.GetConfComputeGpuAttestationReport
