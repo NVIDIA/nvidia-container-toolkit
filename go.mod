@@ -1,6 +1,6 @@
 module github.com/NVIDIA/nvidia-container-toolkit
 
-go 1.23.2
+go 1.24.0
 
 toolchain go1.24.4
 
@@ -18,7 +18,7 @@ require (
 	github.com/urfave/cli-altsrc/v3 v3.0.1
 	github.com/urfave/cli/v3 v3.4.1
 	golang.org/x/mod v0.27.0
-	golang.org/x/sys v0.35.0
+	golang.org/x/sys v0.36.0
 	tags.cncf.io/container-device-interface v1.0.1
 	tags.cncf.io/container-device-interface/specs-go v1.0.0
 )
