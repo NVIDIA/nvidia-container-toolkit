@@ -206,5 +206,6 @@ func getRuntimeConfig(o *container.Options) (engine.Interface, error) {
 				toml.FromFile(o.Config),
 			),
 		),
+		crio.WithNvidiaConfig(o.NvidiaConfig),
 	)
 }

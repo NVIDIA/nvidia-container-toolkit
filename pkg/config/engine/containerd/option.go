@@ -29,6 +29,7 @@ type builder struct {
 	path                 string
 	runtimeType          string
 	containerAnnotations []string
+	nvidiaConfig         string
 }
 
 // Option defines a function that can be used to configure the config builder
@@ -80,5 +81,14 @@ func WithConfigVersion(configVersion int) Option {
 func WithContainerAnnotations(containerAnnotations ...string) Option {
 	return func(b *builder) {
 		b.containerAnnotations = containerAnnotations
+	}
+}
+
+// WithNvidiaConfig sets the NVIDIA-specific config file path for the config builder.
+// When set, configurations will be saved to this file instead of modifying
+// the main config file directly.
+func WithNvidiaConfig(path string) Option {
+	return func(b *builder) {
+		b.nvidiaConfig = path
 	}
 }

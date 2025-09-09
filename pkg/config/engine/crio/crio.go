@@ -18,6 +18,8 @@ package crio
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
@@ -27,7 +29,8 @@ import (
 // Config represents the cri-o config
 type Config struct {
 	*toml.Tree
-	Logger logger.Interface
+	Logger       logger.Interface
+	nvidiaConfig string
 }
 
 type crioRuntime struct {
@@ -68,8 +71,9 @@ func New(opts ...Option) (engine.Interface, error) {
 	}
 
 	cfg := Config{
-		Tree:   tomlConfig,
-		Logger: b.logger,
+		Tree:         tomlConfig,
+		Logger:       b.logger,
+		nvidiaConfig: b.nvidiaConfig,
 	}
 	return &cfg, nil
 }
@@ -137,6 +141,32 @@ func (c *Config) RemoveRuntime(name string) error {
 		return nil
 	}
 
+	// If using NVIDIA-specific configuration, handle file cleanup
+	if c.nvidiaConfig != "" {
+		// Check if all NVIDIA runtimes are being removed
+		remainingNvidiaRuntimes := 0
+		if runtimes := c.GetPath([]string{"crio", "runtime", "runtimes"}); runtimes != nil {
+			if runtimesTree, ok := runtimes.(*toml.Tree); ok {
+				for _, runtimeName := range runtimesTree.Keys() {
+					if c.isNvidiaRuntime(runtimeName) && runtimeName != name {
+						remainingNvidiaRuntimes++
+					}
+				}
+			}
+		}
+
+		// If this is the last NVIDIA runtime, remove the NVIDIA config file
+		if remainingNvidiaRuntimes == 0 {
+			if err := os.Remove(c.nvidiaConfig); err != nil && !os.IsNotExist(err) {
+				c.Logger.Warningf("Failed to remove NVIDIA config file %s: %v", c.nvidiaConfig, err)
+			} else {
+				c.Logger.Infof("Removed NVIDIA config file: %s", c.nvidiaConfig)
+			}
+			// Don't modify the in-memory tree when using NVIDIA-specific configuration
+			return nil
+		}
+	}
+
 	config := *c.Tree
 	if runtime, ok := config.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok {
 		if runtime == name {
@@ -172,6 +202,68 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 
 // EnableCDI is a no-op for CRI-O since it always enabled where supported.
 func (c *Config) EnableCDI() {}
+
+// Save writes the config to the specified path or NVIDIA-specific config file
+func (c *Config) Save(path string) (int64, error) {
+	if c.nvidiaConfig == "" {
+		// Backward compatibility: save to main config
+		return c.Tree.Save(path)
+	}
+
+	// Ensure directory for NVIDIA config file exists
+	dir := filepath.Dir(c.nvidiaConfig)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return 0, fmt.Errorf("failed to create directory for NVIDIA config: %w", err)
+	}
+
+	// Save runtime configs to NVIDIA config file
+	nvidiaConfig := c.extractRuntimeConfig()
+	n, err := nvidiaConfig.Save(c.nvidiaConfig)
+	if err != nil {
+		return n, fmt.Errorf("failed to save NVIDIA config: %w", err)
+	}
+
+	// For CRI-O, we don't need to update the main config with imports
+	// CRI-O automatically loads config files from the config directory
+	c.Logger.Infof("Wrote NVIDIA runtime configuration to: %s", c.nvidiaConfig)
+	return n, nil
+}
+
+// extractRuntimeConfig creates a new config tree with only runtime configurations
+func (c *Config) extractRuntimeConfig() *toml.Tree {
+	config, _ := toml.TreeFromMap(map[string]interface{}{})
+
+	// Extract runtime configurations for NVIDIA runtimes
+	if runtimes := c.GetPath([]string{"crio", "runtime", "runtimes"}); runtimes != nil {
+		if runtimesTree, ok := runtimes.(*toml.Tree); ok {
+			nvidiaRuntimes, _ := toml.TreeFromMap(map[string]interface{}{})
+			for _, name := range runtimesTree.Keys() {
+				if c.isNvidiaRuntime(name) {
+					if runtime := runtimesTree.Get(name); runtime != nil {
+						nvidiaRuntimes.Set(name, runtime)
+					}
+				}
+			}
+			if len(nvidiaRuntimes.Keys()) > 0 {
+				config.SetPath([]string{"crio", "runtime", "runtimes"}, nvidiaRuntimes)
+			}
+		}
+	}
+
+	// Extract default runtime if it's one of ours
+	if defaultRuntime, ok := c.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok {
+		if c.isNvidiaRuntime(defaultRuntime) {
+			config.SetPath([]string{"crio", "runtime", "default_runtime"}, defaultRuntime)
+		}
+	}
+
+	return config
+}
+
+// isNvidiaRuntime checks if the runtime name is an NVIDIA runtime
+func (c *Config) isNvidiaRuntime(name string) bool {
+	return name == "nvidia" || name == "nvidia-cdi" || name == "nvidia-legacy"
+}
 
 // CommandLineSource returns the CLI-based crio config loader
 func CommandLineSource(hostRoot string, executablePath string) toml.Loader {

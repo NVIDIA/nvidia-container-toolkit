@@ -25,6 +25,7 @@ type builder struct {
 	logger       logger.Interface
 	configSource toml.Loader
 	path         string
+	nvidiaConfig string
 }
 
 // Option defines a function that can be used to configure the config builder
@@ -48,5 +49,14 @@ func WithPath(path string) Option {
 func WithConfigSource(configSource toml.Loader) Option {
 	return func(b *builder) {
 		b.configSource = configSource
+	}
+}
+
+// WithNvidiaConfig sets the NVIDIA-specific config file path for the config builder.
+// When set, configurations will be saved to this file instead of modifying
+// the main config file directly.
+func WithNvidiaConfig(path string) Option {
+	return func(b *builder) {
+		b.nvidiaConfig = path
 	}
 }

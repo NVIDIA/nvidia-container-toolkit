@@ -36,6 +36,8 @@ const (
 	defaultHostRootMount = "/host"
 
 	runtimeSpecificDefault = "RUNTIME_SPECIFIC_DEFAULT"
+
+	defaultNVIDIARuntimeConfigFilePath = "/etc/nvidia-container-runtime/config.d/99-nvidia.conf"
 )
 
 type Options struct {
@@ -53,6 +55,13 @@ func Flags(opts *Options) []cli.Flag {
 			Value:       runtimeSpecificDefault,
 			Destination: &opts.Config,
 			Sources:     cli.EnvVars("RUNTIME_CONFIG", "CONTAINERD_CONFIG", "DOCKER_CONFIG"),
+		},
+		&cli.StringFlag{
+			Name:        "drop-in-config",
+			Usage:       "Path to the NVIDIA-specific config file to create. When specified, runtime configurations are saved to this file instead of modifying the main config file",
+			Destination: &opts.NvidiaConfig,
+			Value:       defaultNVIDIARuntimeConfigFilePath,
+			Sources:     cli.EnvVars("RUNTIME_DROP_IN_CONFIG"),
 		},
 		&cli.StringFlag{
 			Name:        "executable-path",

@@ -49,6 +49,9 @@ type Options struct {
 	SetAsDefault  bool
 	RestartMode   string
 	HostRootMount string
+	// NvidiaConfig specifies the path to the NVIDIA-specific config file to use instead of
+	// modifying the main configuration file.
+	NvidiaConfig string
 }
 
 // Configure applies the options to the specified config

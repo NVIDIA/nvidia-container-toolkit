@@ -18,6 +18,8 @@ package containerd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
@@ -123,10 +125,36 @@ func (c *Config) EnableCDI() {
 	*c.Tree = config
 }
 
-// RemoveRuntime removes a runtime from the docker config
+// RemoveRuntime removes a runtime from the containerd config
 func (c *Config) RemoveRuntime(name string) error {
 	if c == nil || c.Tree == nil {
 		return nil
+	}
+
+	// If using NVIDIA-specific configuration, handle file cleanup
+	if c.nvidiaConfig != "" {
+		// Check if all NVIDIA runtimes are being removed
+		remainingNvidiaRuntimes := 0
+		if runtimes := c.GetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes"}); runtimes != nil {
+			if runtimesTree, ok := runtimes.(*toml.Tree); ok {
+				for _, runtimeName := range runtimesTree.Keys() {
+					if c.isNvidiaRuntime(runtimeName) && runtimeName != name {
+						remainingNvidiaRuntimes++
+					}
+				}
+			}
+		}
+
+		// If this is the last NVIDIA runtime, remove the NVIDIA config file
+		if remainingNvidiaRuntimes == 0 {
+			if err := os.Remove(c.nvidiaConfig); err != nil && !os.IsNotExist(err) {
+				c.Logger.Warningf("Failed to remove NVIDIA config file %s: %v", c.nvidiaConfig, err)
+			} else {
+				c.Logger.Infof("Removed NVIDIA config file: %s", c.nvidiaConfig)
+			}
+			// Don't modify the in-memory tree when using NVIDIA-specific configuration
+			return nil
+		}
 	}
 
 	config := *c.Tree
@@ -153,4 +181,135 @@ func (c *Config) RemoveRuntime(name string) error {
 
 	*c.Tree = config
 	return nil
+}
+
+// Save writes the config to the specified path or NVIDIA-specific config file
+func (c *Config) Save(path string) (int64, error) {
+	if c.nvidiaConfig == "" {
+		// Backward compatibility: save to main config
+		return c.Tree.Save(path)
+	}
+
+	// Ensure directory for NVIDIA config file exists
+	dir := filepath.Dir(c.nvidiaConfig)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return 0, fmt.Errorf("failed to create directory for NVIDIA config: %w", err)
+	}
+
+	// Save runtime configs to NVIDIA config file
+	nvidiaConfig := c.extractRuntimeConfig()
+	n, err := nvidiaConfig.Save(c.nvidiaConfig)
+	if err != nil {
+		return n, fmt.Errorf("failed to save NVIDIA config: %w", err)
+	}
+
+	// Update main config with imports directive
+	if err := c.updateMainConfigImports(path); err != nil {
+		// Try to clean up the NVIDIA config file on error
+		os.Remove(c.nvidiaConfig)
+		return n, fmt.Errorf("failed to update main config imports: %w", err)
+	}
+
+	c.Logger.Infof("Wrote NVIDIA runtime configuration to: %s", c.nvidiaConfig)
+	return n, nil
+}
+
+// extractRuntimeConfig creates a new config tree with only runtime configurations
+func (c *Config) extractRuntimeConfig() *toml.Tree {
+	config, _ := toml.TreeFromMap(map[string]interface{}{
+		"version": c.Version,
+	})
+
+	// Extract runtime configurations for NVIDIA runtimes
+	if runtimes := c.GetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes"}); runtimes != nil {
+		if runtimesTree, ok := runtimes.(*toml.Tree); ok {
+			nvidiaRuntimes, _ := toml.TreeFromMap(map[string]interface{}{})
+			for _, name := range runtimesTree.Keys() {
+				if c.isNvidiaRuntime(name) {
+					if runtime := runtimesTree.Get(name); runtime != nil {
+						nvidiaRuntimes.Set(name, runtime)
+					}
+				}
+			}
+			if len(nvidiaRuntimes.Keys()) > 0 {
+				config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes"}, nvidiaRuntimes)
+			}
+		}
+	}
+
+	// Extract default runtime name if it's one of ours
+	if defaultRuntime, ok := c.GetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"}).(string); ok {
+		if c.isNvidiaRuntime(defaultRuntime) {
+			config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"}, defaultRuntime)
+		}
+	}
+
+	// Extract CDI enablement
+	if cdiEnabled, ok := c.GetPath([]string{"plugins", c.CRIRuntimePluginName, "enable_cdi"}).(bool); ok && cdiEnabled {
+		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "enable_cdi"}, true)
+	}
+
+	return config
+}
+
+// updateMainConfigImports ensures the main config includes an imports directive
+func (c *Config) updateMainConfigImports(path string) error {
+	// Load the main config file
+	mainConfig, err := toml.FromFile(path).Load()
+	if err != nil {
+		// If the file doesn't exist, create a minimal config with imports
+		if os.IsNotExist(err) {
+			mainConfig, _ = toml.TreeFromMap(map[string]interface{}{
+				"version": c.Version,
+			})
+		} else {
+			return fmt.Errorf("failed to load main config: %w", err)
+		}
+	}
+
+	// Add imports directive if not present
+	importPattern := c.nvidiaConfig
+	imports := mainConfig.Get("imports")
+	if imports == nil {
+		mainConfig.Set("imports", []string{importPattern})
+	} else if importsList, ok := imports.([]interface{}); ok {
+		// Check if the import pattern already exists
+		found := false
+		for _, imp := range importsList {
+			if impStr, ok := imp.(string); ok && impStr == importPattern {
+				found = true
+				break
+			}
+		}
+		if !found {
+			// Add our import pattern
+			importsList = append(importsList, importPattern)
+			mainConfig.Set("imports", importsList)
+		}
+	} else if importsStrList, ok := imports.([]string); ok {
+		// Check if the import pattern already exists
+		found := false
+		for _, imp := range importsStrList {
+			if imp == importPattern {
+				found = true
+				break
+			}
+		}
+		if !found {
+			// Add our import pattern
+			importsStrList = append(importsStrList, importPattern)
+			mainConfig.Set("imports", importsStrList)
+		}
+	} else {
+		return fmt.Errorf("unexpected imports type: %T", imports)
+	}
+
+	// Save the updated main config
+	_, err = mainConfig.Save(path)
+	return err
+}
+
+// isNvidiaRuntime checks if the runtime name is an NVIDIA runtime
+func (c *Config) isNvidiaRuntime(name string) bool {
+	return name == "nvidia" || name == "nvidia-cdi" || name == "nvidia-legacy"
 }

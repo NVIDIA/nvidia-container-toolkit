@@ -46,6 +46,9 @@ type Config struct {
 	// for the CRI runtime service. The name of this plugin was changed in v3 of the
 	// containerd configuration file.
 	CRIRuntimePluginName string
+	// nvidiaConfig specifies the path to the NVIDIA-specific configuration file.
+	// If set, runtime configurations will be saved to this file instead of the main config.
+	nvidiaConfig string
 }
 
 var _ engine.Interface = (*Config)(nil)
@@ -108,6 +111,7 @@ func New(opts ...Option) (engine.Interface, error) {
 		RuntimeType:          b.runtimeType,
 		UseLegacyConfig:      b.useLegacyConfig,
 		ContainerAnnotations: b.containerAnnotations,
+		nvidiaConfig:         b.nvidiaConfig,
 	}
 
 	switch configVersion {
