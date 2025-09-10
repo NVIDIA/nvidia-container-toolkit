@@ -103,6 +103,12 @@ func Flags(opts *Options) []cli.Flag {
 			Sources:     cli.EnvVars("NVIDIA_RUNTIME_SET_AS_DEFAULT", "CONTAINERD_SET_AS_DEFAULT", "DOCKER_SET_AS_DEFAULT"),
 			Hidden:      true,
 		},
+		&cli.StringSliceFlag{
+			Name:        "config-source",
+			Usage:       "specify the config sources",
+			Destination: &opts.ConfigSources,
+			Sources:     cli.EnvVars("RUNTIME_CONFIG_SOURCES"),
+		},
 	}
 
 	flags = append(flags, containerd.Flags(&opts.containerdOptions)...)
@@ -136,6 +142,9 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 		}
 		if opts.RestartMode == runtimeSpecificDefault {
 			opts.RestartMode = containerd.DefaultRestartMode
+		}
+		if len(opts.ConfigSources) == 0 {
+			opts.ConfigSources = []string{"command", "file"}
 		}
 	case crio.Name:
 		if opts.Config == runtimeSpecificDefault {
