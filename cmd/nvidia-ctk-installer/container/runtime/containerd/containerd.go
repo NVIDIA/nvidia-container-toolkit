@@ -36,7 +36,7 @@ const (
 	DefaultSocket      = "/run/containerd/containerd.sock"
 	DefaultRestartMode = "signal"
 
-	defaultRuntmeType = "io.containerd.runc.v2"
+	defaultRuntimeType = "io.containerd.runc.v2"
 )
 
 // Options stores the containerd-specific options
@@ -63,7 +63,7 @@ func Flags(opts *Options) []cli.Flag {
 		&cli.StringFlag{
 			Name:        "runtime-type",
 			Usage:       "The runtime_type to use for the configured runtime classes",
-			Value:       defaultRuntmeType,
+			Value:       defaultRuntimeType,
 			Destination: &opts.runtimeType,
 			Sources:     cli.EnvVars("CONTAINERD_RUNTIME_TYPE"),
 		},

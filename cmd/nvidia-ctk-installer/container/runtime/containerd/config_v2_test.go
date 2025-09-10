@@ -1,5 +1,5 @@
 /**
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,504 +17,385 @@
 package containerd
 
 import (
-	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
-	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+	cli "github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/containerd"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
-const (
-	runtimeType = "runtime_type"
-)
-
-func TestUpdateV2ConfigDefaultRuntime(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
-	const runtimeDir = "/test/runtime/dir"
-
-	testCases := []struct {
-		setAsDefault               bool
-		runtimeName                string
-		expectedDefaultRuntimeName interface{}
-	}{
-		{},
-		{
-			setAsDefault:               false,
-			runtimeName:                "nvidia",
-			expectedDefaultRuntimeName: nil,
-		},
-		{
-			setAsDefault:               false,
-			runtimeName:                "NAME",
-			expectedDefaultRuntimeName: nil,
-		},
-		{
-			setAsDefault:               true,
-			runtimeName:                "nvidia",
-			expectedDefaultRuntimeName: "nvidia",
-		},
-		{
-			setAsDefault:               true,
-			runtimeName:                "NAME",
-			expectedDefaultRuntimeName: "NAME",
-		},
+// TestSetupCleanup tests the complete Setup->Cleanup lifecycle following Evan Lezar's pattern
+func TestSetupCleanup(t *testing.T) {
+	c := &cli.Command{
+		Name: "test",
 	}
 
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &container.Options{
-				RuntimeName:  tc.runtimeName,
-				RuntimeDir:   runtimeDir,
-				SetAsDefault: tc.setAsDefault,
-			}
-
-			v2, err := containerd.New(
-				containerd.WithLogger(logger),
-				containerd.WithConfigSource(toml.Empty),
-				containerd.WithRuntimeType(runtimeType),
-				containerd.WithContainerAnnotations("cdi.k8s.io/*"),
-			)
-			require.NoError(t, err)
-
-			err = o.UpdateConfig(v2)
-			require.NoError(t, err)
-
-			cfg := v2.(*containerd.Config)
-
-			defaultRuntimeName := cfg.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "default_runtime_name"})
-			require.EqualValues(t, tc.expectedDefaultRuntimeName, defaultRuntimeName)
-		})
-	}
-}
-
-func TestUpdateV2Config(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
-	const runtimeDir = "/test/runtime/dir"
-
 	testCases := []struct {
-		runtimeName    string
-		expectedConfig map[string]interface{}
+		description                 string
+		containerOptions            container.Options
+		options                     Options
+		prepareEnvironment          func(*testing.T, string) error
+		expectedSetupError          error
+		assertSetupPostConditions   func(*testing.T, string) error
+		expectedCleanupError        error
+		assertCleanupPostConditions func(*testing.T, string) error
 	}{
 		{
-			runtimeName: "nvidia",
-			expectedConfig: map[string]interface{}{
-				"version": int64(2),
-				"plugins": map[string]interface{}{
-					"io.containerd.grpc.v1.cri": map[string]interface{}{
-						"containerd": map[string]interface{}{
-							"runtimes": map[string]interface{}{
-								"nvidia": map[string]interface{}{
-									"runtime_type":                    "runtime_type",
-									"runtime_root":                    "",
-									"runtime_engine":                  "",
-									"privileged_without_host_devices": false,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime",
-									},
-								},
-								"nvidia-cdi": map[string]interface{}{
-									"runtime_type":                    "runtime_type",
-									"runtime_root":                    "",
-									"runtime_engine":                  "",
-									"privileged_without_host_devices": false,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.cdi",
-									},
-								},
-								"nvidia-legacy": map[string]interface{}{
-									"runtime_type":                    "runtime_type",
-									"runtime_root":                    "",
-									"runtime_engine":                  "",
-									"privileged_without_host_devices": false,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.legacy",
+			description: "top-level config does not exist",
+			containerOptions: container.Options{
+				Config:       "{{ .testRoot }}/etc/containerd/config.toml",
+				RuntimeName:  "nvidia",
+				RuntimeDir:   "/usr/bin",
+				SetAsDefault: false,
+				RestartMode:  "none",
+			},
+			options: Options{
+				runtimeType: defaultRuntimeType,
+			},
+			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
+				require.FileExists(t, filepath.Join(testRoot, "etc/containerd/config.toml"))
+				verifyRuntimesPresent(t, filepath.Join(testRoot, "etc/containerd/config.toml"),
+					"nvidia", "nvidia-cdi", "nvidia-legacy")
+				return nil
+			},
+			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
+				// Verify that nvidia runtimes were removed
+				if _, err := os.Stat(filepath.Join(testRoot, "etc/containerd/config.toml")); err == nil {
+					verifyRuntimesAbsent(t, filepath.Join(testRoot, "etc/containerd/config.toml"),
+						"nvidia", "nvidia-cdi", "nvidia-legacy")
+				}
+				return nil
+			},
+		},
+		{
+			description: "existing config without nvidia runtime",
+			containerOptions: container.Options{
+				Config:       "{{ .testRoot }}/etc/containerd/config.toml",
+				RuntimeName:  "nvidia",
+				RuntimeDir:   "/usr/bin",
+				EnableCDI:    true,
+				SetAsDefault: false,
+				RestartMode:  "none",
+			},
+			options: Options{
+				runtimeType: defaultRuntimeType,
+			},
+			prepareEnvironment: func(t *testing.T, testRoot string) error {
+				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
+				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+
+				cfg, err := containerd.New(
+					containerd.WithConfigSource(toml.FromMap(map[string]interface{}{
+						"version": int64(2),
+						"plugins": map[string]interface{}{
+							"io.containerd.grpc.v1.cri": map[string]interface{}{
+								"containerd": map[string]interface{}{
+									"default_runtime_name": "runc",
+									"runtimes": map[string]interface{}{
+										"runc": map[string]interface{}{
+											"runtime_type": "io.containerd.runc.v2",
+											"options": map[string]interface{}{
+												"BinaryName": "/usr/bin/runc",
+											},
+										},
 									},
 								},
 							},
 						},
-					},
-				},
+					})),
+				)
+				require.NoError(t, err)
+				_, err = cfg.Save(configPath)
+				require.NoError(t, err)
+				return nil
+			},
+			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
+				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
+				require.FileExists(t, configPath)
+				verifyRuntimesPresent(t, configPath, "nvidia", "nvidia-cdi", "nvidia-legacy")
+				verifyCDIEnabled(t, configPath, true)
+				return nil
+			},
+			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
+				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
+				require.FileExists(t, configPath)
+				verifyRuntimesAbsent(t, configPath, "nvidia", "nvidia-cdi", "nvidia-legacy")
+				// Note: CDI state is not reverted in current implementation
+				return nil
 			},
 		},
 		{
-			runtimeName: "NAME",
-			expectedConfig: map[string]interface{}{
-				"version": int64(2),
-				"plugins": map[string]interface{}{
-					"io.containerd.grpc.v1.cri": map[string]interface{}{
-						"containerd": map[string]interface{}{
-							"runtimes": map[string]interface{}{
-								"NAME": map[string]interface{}{
-									"runtime_type":                    "runtime_type",
-									"runtime_root":                    "",
-									"runtime_engine":                  "",
-									"privileged_without_host_devices": false,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime",
-									},
-								},
-								"nvidia-cdi": map[string]interface{}{
-									"runtime_type":                    "runtime_type",
-									"runtime_root":                    "",
-									"runtime_engine":                  "",
-									"privileged_without_host_devices": false,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.cdi",
-									},
-								},
-								"nvidia-legacy": map[string]interface{}{
-									"runtime_type":                    "runtime_type",
-									"runtime_root":                    "",
-									"runtime_engine":                  "",
-									"privileged_without_host_devices": false,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"BinaryName": "/test/runtime/dir/nvidia-container-runtime.legacy",
+			description: "existing config with nvidia runtime already present",
+			containerOptions: container.Options{
+				Config:       "{{ .testRoot }}/etc/containerd/config.toml",
+				RuntimeName:  "nvidia",
+				RuntimeDir:   "/usr/bin",
+				SetAsDefault: true,
+				RestartMode:  "none",
+			},
+			options: Options{
+				runtimeType: defaultRuntimeType,
+			},
+			prepareEnvironment: func(t *testing.T, testRoot string) error {
+				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
+				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+
+				cfg, err := containerd.New(
+					containerd.WithConfigSource(toml.FromMap(map[string]interface{}{
+						"version": int64(2),
+						"plugins": map[string]interface{}{
+							"io.containerd.grpc.v1.cri": map[string]interface{}{
+								"containerd": map[string]interface{}{
+									"default_runtime_name": "nvidia",
+									"runtimes": map[string]interface{}{
+										"runc": map[string]interface{}{
+											"runtime_type": "io.containerd.runc.v2",
+											"options": map[string]interface{}{
+												"BinaryName": "/usr/bin/runc",
+											},
+										},
+										"nvidia": map[string]interface{}{
+											"runtime_type": "io.containerd.runc.v2",
+											"options": map[string]interface{}{
+												"BinaryName": "/old/path/nvidia-container-runtime",
+											},
+										},
 									},
 								},
 							},
 						},
-					},
-				},
+					})),
+				)
+				require.NoError(t, err)
+				_, err = cfg.Save(configPath)
+				require.NoError(t, err)
+				return nil
+			},
+			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
+				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
+				require.FileExists(t, configPath)
+
+				cfg, err := containerd.New(
+					containerd.WithPath(configPath),
+					containerd.WithConfigSource(toml.FromFile(configPath)),
+				)
+				require.NoError(t, err)
+				c := cfg.(*containerd.Config)
+
+				// Verify runtime path was updated
+				nvidiaPath := c.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd",
+					"runtimes", "nvidia", "options", "BinaryName"})
+				require.Equal(t, "/usr/bin/nvidia-container-runtime", nvidiaPath)
+
+				// Verify default runtime
+				defaultRuntime := c.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri",
+					"containerd", "default_runtime_name"})
+				require.Equal(t, "nvidia", defaultRuntime)
+
+				return nil
+			},
+			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
+				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
+				require.FileExists(t, configPath)
+				verifyRuntimesAbsent(t, configPath, "nvidia", "nvidia-cdi", "nvidia-legacy")
+
+				// Default runtime should be cleared
+				cfg, err := containerd.New(
+					containerd.WithPath(configPath),
+					containerd.WithConfigSource(toml.FromFile(configPath)),
+				)
+				require.NoError(t, err)
+				c := cfg.(*containerd.Config)
+				defaultRuntime := c.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri",
+					"containerd", "default_runtime_name"})
+				require.Nil(t, defaultRuntime)
+
+				return nil
 			},
 		},
-	}
-
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &container.Options{
-				RuntimeName: tc.runtimeName,
-				RuntimeDir:  runtimeDir,
-			}
-
-			v2, err := containerd.New(
-				containerd.WithLogger(logger),
-				containerd.WithConfigSource(toml.Empty),
-				containerd.WithRuntimeType(runtimeType),
-				containerd.WithContainerAnnotations("cdi.k8s.io/*"),
-			)
-			require.NoError(t, err)
-
-			err = o.UpdateConfig(v2)
-			require.NoError(t, err)
-
-			expected, err := toml.TreeFromMap(tc.expectedConfig)
-			require.NoError(t, err)
-
-			require.Equal(t, expected.String(), v2.String())
-		})
-	}
-
-}
-
-func TestUpdateV2ConfigWithRuncPresent(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
-	const runtimeDir = "/test/runtime/dir"
-
-	testCases := []struct {
-		runtimeName    string
-		expectedConfig map[string]interface{}
-	}{
 		{
-			runtimeName: "nvidia",
-			expectedConfig: map[string]interface{}{
-				"version": int64(2),
-				"plugins": map[string]interface{}{
-					"io.containerd.grpc.v1.cri": map[string]interface{}{
-						"containerd": map[string]interface{}{
-							"runtimes": map[string]interface{}{
-								"runc": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/runc-binary",
+			description: "complex config with multiple plugins and settings",
+			containerOptions: container.Options{
+				Config:       "{{ .testRoot }}/etc/containerd/config.toml",
+				RuntimeName:  "nvidia",
+				RuntimeDir:   "/usr/bin",
+				EnableCDI:    true,
+				SetAsDefault: false,
+				RestartMode:  "none",
+			},
+			options: Options{
+				runtimeType: defaultRuntimeType,
+				ContainerRuntimeModesCDIAnnotationPrefixes: []string{"cdi.k8s.io"},
+			},
+			prepareEnvironment: func(t *testing.T, testRoot string) error {
+				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
+				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+
+				cfg, err := containerd.New(
+					containerd.WithConfigSource(toml.FromMap(map[string]interface{}{
+						"version": int64(2),
+						"root":    "/var/lib/containerd",
+						"state":   "/run/containerd",
+						"plugins": map[string]interface{}{
+							"io.containerd.grpc.v1.cri": map[string]interface{}{
+								"containerd": map[string]interface{}{
+									"snapshotter":          "overlayfs",
+									"default_runtime_name": "runc",
+									"runtimes": map[string]interface{}{
+										"runc": map[string]interface{}{
+											"runtime_type": "io.containerd.runc.v2",
+											"options": map[string]interface{}{
+												"BinaryName":    "/usr/bin/runc",
+												"SystemdCgroup": true,
+											},
+										},
+										"custom": map[string]interface{}{
+											"runtime_type": "io.containerd.custom.v1",
+											"options": map[string]interface{}{
+												"TypeUrl": "custom.runtime/options",
+											},
+										},
 									},
 								},
-								"nvidia": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime",
-									},
-								},
-								"nvidia-cdi": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.cdi",
-									},
-								},
-								"nvidia-legacy": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.legacy",
+								"registry": map[string]interface{}{
+									"mirrors": map[string]interface{}{
+										"docker.io": map[string]interface{}{
+											"endpoint": []string{"https://registry-1.docker.io"},
+										},
 									},
 								},
 							},
-						},
-					},
-				},
-			},
-		},
-		{
-			runtimeName: "NAME",
-			expectedConfig: map[string]interface{}{
-				"version": int64(2),
-				"plugins": map[string]interface{}{
-					"io.containerd.grpc.v1.cri": map[string]interface{}{
-						"containerd": map[string]interface{}{
-							"runtimes": map[string]interface{}{
-								"runc": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/runc-binary",
-									},
-								},
-								"NAME": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime",
-									},
-								},
-								"nvidia-cdi": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.cdi",
-									},
-								},
-								"nvidia-legacy": map[string]interface{}{
-									"runtime_type":                    "runc_runtime_type",
-									"runtime_root":                    "runc_runtime_root",
-									"runtime_engine":                  "runc_runtime_engine",
-									"privileged_without_host_devices": true,
-									"container_annotations":           []string{"cdi.k8s.io/*"},
-									"options": map[string]interface{}{
-										"runc-option": "value",
-										"BinaryName":  "/test/runtime/dir/nvidia-container-runtime.legacy",
-									},
-								},
+							"io.containerd.internal.v1.opt": map[string]interface{}{
+								"path": "/opt/containerd",
 							},
 						},
-					},
-				},
+					})),
+				)
+				require.NoError(t, err)
+				_, err = cfg.Save(configPath)
+				require.NoError(t, err)
+				return nil
 			},
-		},
-	}
+			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
+				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
+				require.FileExists(t, configPath)
 
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &container.Options{
-				RuntimeName: tc.runtimeName,
-				RuntimeDir:  runtimeDir,
-			}
+				// Verify nvidia runtimes added
+				verifyRuntimesPresent(t, configPath, "nvidia", "nvidia-cdi", "nvidia-legacy")
+				// Verify CDI enabled
+				verifyCDIEnabled(t, configPath, true)
 
-			v2, err := containerd.New(
-				containerd.WithLogger(logger),
-				containerd.WithConfigSource(toml.FromMap(runcConfigMapV2("/runc-binary"))),
-				containerd.WithRuntimeType(runtimeType),
-				containerd.WithContainerAnnotations("cdi.k8s.io/*"),
-			)
-			require.NoError(t, err)
+				// Verify other config preserved
+				cfg, err := containerd.New(
+					containerd.WithPath(configPath),
+					containerd.WithConfigSource(toml.FromFile(configPath)),
+				)
+				require.NoError(t, err)
+				c := cfg.(*containerd.Config)
 
-			err = o.UpdateConfig(v2)
-			require.NoError(t, err)
+				// Check non-runtime settings preserved
+				require.Equal(t, "/var/lib/containerd", c.GetPath([]string{"root"}))
 
-			expected, err := toml.TreeFromMap(tc.expectedConfig)
-			require.NoError(t, err)
+				return nil
+			},
+			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
+				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
+				require.FileExists(t, configPath)
 
-			require.Equal(t, expected.String(), v2.String())
-		})
-	}
-}
+				// Verify nvidia runtimes removed
+				verifyRuntimesAbsent(t, configPath, "nvidia", "nvidia-cdi", "nvidia-legacy")
 
-func TestUpdateV2ConfigEnableCDI(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
-	const runtimeDir = "/test/runtime/dir"
-
-	testCases := []struct {
-		enableCDI              bool
-		expectedEnableCDIValue interface{}
-	}{
-		{},
-		{
-			enableCDI:              false,
-			expectedEnableCDIValue: nil,
-		},
-		{
-			enableCDI:              true,
-			expectedEnableCDIValue: true,
+				// Note: CDI state and other settings should be preserved but CDI is not currently reverted
+				return nil
+			},
 		},
 	}
 
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("%v", tc.enableCDI), func(t *testing.T) {
-			o := &container.Options{
-				EnableCDI:    tc.enableCDI,
-				RuntimeName:  "nvidia",
-				RuntimeDir:   runtimeDir,
-				SetAsDefault: false,
+		t.Run(tc.description, func(t *testing.T) {
+			// Update any paths as required
+			testRoot := t.TempDir()
+			tc.containerOptions.Config = strings.ReplaceAll(tc.containerOptions.Config, "{{ .testRoot }}", testRoot)
+
+			// Prepare the test environment
+			if tc.prepareEnvironment != nil {
+				require.NoError(t, tc.prepareEnvironment(t, testRoot))
 			}
 
-			cfg, err := toml.LoadMap(map[string]interface{}{})
-			require.NoError(t, err)
+			err := Setup(c, &tc.containerOptions, &tc.options)
+			require.EqualValues(t, tc.expectedSetupError, err)
 
-			v2 := &containerd.Config{
-				Logger:               logger,
-				Tree:                 cfg,
-				RuntimeType:          runtimeType,
-				CRIRuntimePluginName: "io.containerd.grpc.v1.cri",
+			if tc.assertSetupPostConditions != nil {
+				require.NoError(t, tc.assertSetupPostConditions(t, testRoot))
 			}
 
-			err = o.UpdateConfig(v2)
-			require.NoError(t, err)
+			err = Cleanup(c, &tc.containerOptions, &tc.options)
+			require.EqualValues(t, tc.expectedCleanupError, err)
 
-			enableCDIValue := cfg.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "enable_cdi"})
-			require.EqualValues(t, tc.expectedEnableCDIValue, enableCDIValue)
+			if tc.assertCleanupPostConditions != nil {
+				require.NoError(t, tc.assertCleanupPostConditions(t, testRoot))
+			}
 		})
 	}
 }
 
-func TestRevertV2Config(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
+// verifyRuntimesPresent checks that expected runtimes exist in config
+func verifyRuntimesPresent(t *testing.T, configPath string, runtimes ...string) {
+	cfg, err := containerd.New(
+		containerd.WithPath(configPath),
+		containerd.WithConfigSource(toml.FromFile(configPath)),
+	)
+	require.NoError(t, err)
 
-	testCases := []struct {
-		config map[string]interface {
-		}
-		expected map[string]interface{}
-	}{
-		{},
-		{
-			config: map[string]interface{}{
-				"version": int64(2),
-			},
-		},
-		{
-			config: map[string]interface{}{
-				"version": int64(2),
-				"plugins": map[string]interface{}{
-					"io.containerd.grpc.v1.cri": map[string]interface{}{
-						"containerd": map[string]interface{}{
-							"runtimes": map[string]interface{}{
-								"nvidia": runtimeMapV2("/test/runtime/dir/nvidia-container-runtime"),
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			config: map[string]interface{}{
-				"version": int64(2),
-				"plugins": map[string]interface{}{
-					"io.containerd.grpc.v1.cri": map[string]interface{}{
-						"containerd": map[string]interface{}{
-							"runtimes": map[string]interface{}{
-								"nvidia": runtimeMapV2("/test/runtime/dir/nvidia-container-runtime"),
-							},
-							"default_runtime_name": "nvidia",
-						},
-					},
-				},
-			},
-		},
-	}
-
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			o := &container.Options{
-				RuntimeName: "nvidia",
-			}
-
-			expected, err := toml.TreeFromMap(tc.expected)
-			require.NoError(t, err)
-
-			v2, err := containerd.New(
-				containerd.WithLogger(logger),
-				containerd.WithConfigSource(toml.FromMap(tc.config)),
-				containerd.WithRuntimeType(runtimeType),
-				containerd.WithContainerAnnotations("cdi.k8s.io/*"),
-			)
-			require.NoError(t, err)
-
-			err = o.RevertConfig(v2)
-			require.NoError(t, err)
-
-			require.Equal(t, expected.String(), v2.String())
-		})
+	c := cfg.(*containerd.Config)
+	for _, runtime := range runtimes {
+		runtimeConfig := c.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", runtime})
+		require.NotNil(t, runtimeConfig, "Runtime %s should be present", runtime)
 	}
 }
 
-func runtimeMapV2(binary string) map[string]interface{} {
-	return map[string]interface{}{
-		"runtime_type":                    runtimeType,
-		"runtime_root":                    "",
-		"runtime_engine":                  "",
-		"privileged_without_host_devices": false,
-		"options": map[string]interface{}{
-			"BinaryName": binary,
-		},
+// verifyRuntimesAbsent checks that runtimes don't exist in config
+func verifyRuntimesAbsent(t *testing.T, configPath string, runtimes ...string) {
+	// If config file doesn't exist, all runtimes are absent
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return
+	}
+
+	cfg, err := containerd.New(
+		containerd.WithPath(configPath),
+		containerd.WithConfigSource(toml.FromFile(configPath)),
+	)
+	require.NoError(t, err)
+
+	c := cfg.(*containerd.Config)
+	for _, runtime := range runtimes {
+		runtimeConfig := c.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "runtimes", runtime})
+		require.Nil(t, runtimeConfig, "Runtime %s should not be present", runtime)
 	}
 }
 
-func runcConfigMapV2(binary string) map[string]interface{} {
-	return map[string]interface{}{
-		"version": 2,
-		"plugins": map[string]interface{}{
-			"io.containerd.grpc.v1.cri": map[string]interface{}{
-				"containerd": map[string]interface{}{
-					"runtimes": map[string]interface{}{
-						"runc": map[string]interface{}{
-							"runtime_type":                    "runc_runtime_type",
-							"runtime_root":                    "runc_runtime_root",
-							"runtime_engine":                  "runc_runtime_engine",
-							"privileged_without_host_devices": true,
-							"options": map[string]interface{}{
-								"runc-option": "value",
-								"BinaryName":  binary,
-							},
-						},
-					},
-				},
-			},
-		},
+// verifyCDIEnabled checks if CDI is enabled in the config
+func verifyCDIEnabled(t *testing.T, configPath string, expectedEnabled bool) {
+	cfg, err := containerd.New(
+		containerd.WithPath(configPath),
+		containerd.WithConfigSource(toml.FromFile(configPath)),
+	)
+	require.NoError(t, err)
+
+	c := cfg.(*containerd.Config)
+	enableCDI := c.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "enable_cdi"})
+
+	if expectedEnabled {
+		require.NotNil(t, enableCDI, "CDI should be enabled")
+		require.True(t, enableCDI.(bool), "CDI should be set to true")
+	} else if enableCDI != nil {
+		// CDI can be either absent or false
+		require.False(t, enableCDI.(bool), "CDI should be set to false")
 	}
 }

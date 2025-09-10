@@ -28,6 +28,10 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
+const (
+	runtimeType = "runtime_type"
+)
+
 func TestUpdateV1ConfigDefaultRuntime(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 	const runtimeDir = "/test/runtime/dir"
