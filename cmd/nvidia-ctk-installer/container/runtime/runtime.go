@@ -55,6 +55,12 @@ func Flags(opts *Options) []cli.Flag {
 			Sources:     cli.EnvVars("RUNTIME_CONFIG", "CONTAINERD_CONFIG", "DOCKER_CONFIG"),
 		},
 		&cli.StringFlag{
+			Name:        "nvidia-config",
+			Usage:       "Path to the NVIDIA-specific config file to create. When specified, runtime configurations are saved to this file instead of modifying the main config file",
+			Destination: &opts.NvidiaConfig,
+			Sources:     cli.EnvVars("RUNTIME_NVIDIA_CONFIG"),
+		},
+		&cli.StringFlag{
 			Name:        "executable-path",
 			Usage:       "The path to the runtime executable. This is used to extract the current config",
 			Destination: &opts.ExecutablePath,

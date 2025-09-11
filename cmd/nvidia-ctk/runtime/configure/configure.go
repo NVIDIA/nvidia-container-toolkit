@@ -73,6 +73,7 @@ type config struct {
 	configSource   string
 	mode           string
 	hookFilePath   string
+	nvidiaConfig   string
 
 	nvidiaRuntime struct {
 		name         string
@@ -117,6 +118,11 @@ func (m command) build() *cli.Command {
 				Name:        "config",
 				Usage:       "path to the config file for the target runtime",
 				Destination: &config.configFilePath,
+			},
+			&cli.StringFlag{
+				Name:        "nvidia-config",
+				Usage:       "path to the NVIDIA-specific config file to create. When specified, runtime configurations are saved to this file instead of modifying the main config file",
+				Destination: &config.nvidiaConfig,
 			},
 			&cli.StringFlag{
 				Name:        "executable-path",
@@ -268,12 +274,14 @@ func (m command) configureConfigFile(config *config) error {
 			containerd.WithLogger(m.logger),
 			containerd.WithPath(config.configFilePath),
 			containerd.WithConfigSource(configSource),
+			containerd.WithNvidiaConfig(config.nvidiaConfig),
 		)
 	case "crio":
 		cfg, err = crio.New(
 			crio.WithLogger(m.logger),
 			crio.WithPath(config.configFilePath),
 			crio.WithConfigSource(configSource),
+			crio.WithNvidiaConfig(config.nvidiaConfig),
 		)
 	case "docker":
 		cfg, err = docker.New(

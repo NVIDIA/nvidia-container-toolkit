@@ -180,5 +180,6 @@ func getRuntimeConfig(o *container.Options, co *Options) (engine.Interface, erro
 		containerd.WithRuntimeType(co.runtimeType),
 		containerd.WithUseLegacyConfig(co.useLegacyConfig),
 		containerd.WithContainerAnnotations(co.containerAnnotationsFromCDIPrefixes()...),
+		containerd.WithNvidiaConfig(o.NvidiaConfig),
 	)
 }
