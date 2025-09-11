@@ -68,10 +68,6 @@ func TestAddRuntime(t *testing.T) {
 			`,
 			expectedConfig: `
 			[crio]
-			[crio.runtime.runtimes.runc]
-			runtime_path = "/usr/bin/runc"
-			runtime_type = "runcoci"
-			runc_option = "option"
 			[crio.runtime.runtimes.test]
 			runtime_path = "/usr/bin/test"
 			runtime_type = "oci"
@@ -92,11 +88,6 @@ func TestAddRuntime(t *testing.T) {
 			expectedConfig: `
 			[crio]
 			[crio.runtime]
-			default_runtime = "default"
-			[crio.runtime.runtimes.default]
-			runtime_path = "/usr/bin/default"
-			runtime_type = "defaultoci"
-			default_option = "option"
 			[crio.runtime.runtimes.test]
 			runtime_path = "/usr/bin/test"
 			runtime_type = "oci"
@@ -121,15 +112,6 @@ func TestAddRuntime(t *testing.T) {
 			expectedConfig: `
 			[crio]
 			[crio.runtime]
-			default_runtime = "default"
-			[crio.runtime.runtimes.default]
-			runtime_path = "/usr/bin/default"
-			runtime_type = "defaultoci"
-			default_option = "option"
-			[crio.runtime.runtimes.runc]
-			runtime_path = "/usr/bin/runc"
-			runtime_type = "runcoci"
-			runc_option = "option"
 			[crio.runtime.runtimes.test]
 			runtime_path = "/usr/bin/test"
 			runtime_type = "oci"

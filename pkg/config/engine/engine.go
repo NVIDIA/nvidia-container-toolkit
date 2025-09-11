@@ -24,7 +24,7 @@ import "strings"
 //	the default runtime, "runc", and "crun"
 //
 // If an nvidia* runtime is set as the default runtime, this is ignored.
-func GetBinaryPathsForRuntimes(cfg Interface) []string {
+func GetBinaryPathsForRuntimes(cfg defaultRuntimesGetter) []string {
 
 	var binaryPaths []string
 	seen := make(map[string]bool)
@@ -45,9 +45,14 @@ func GetBinaryPathsForRuntimes(cfg Interface) []string {
 	return binaryPaths
 }
 
+type defaultRuntimesGetter interface {
+	DefaultRuntime() string
+	GetRuntimeConfig(string) (RuntimeConfig, error)
+}
+
 // GetLowLevelRuntimes returns a predefined list low-level runtimes from the specified config.
 // nvidia* runtimes are ignored.
-func GetLowLevelRuntimes(cfg Interface) []string {
+func GetLowLevelRuntimes(cfg defaultRuntimesGetter) []string {
 	var runtimes []string
 	isValidDefault := func(s string) bool {
 		if s == "" {
