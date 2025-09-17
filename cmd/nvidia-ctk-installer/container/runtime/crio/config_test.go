@@ -17,7 +17,6 @@
 package crio
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,7 +26,6 @@ import (
 	cli "github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 )
 
 // TestCrioConfigLifecycle tests the complete Setup->Cleanup lifecycle for both config and hook modes
@@ -460,11 +458,10 @@ plugin_dirs = [
 				actual, err := os.ReadFile(hookPath)
 				require.NoError(t, err)
 
-				expectedContents := filepath.Join("/usr/bin", config.NVIDIAContainerRuntimeHookExecutable)
-				expected := fmt.Sprintf(`{
+				expected := `{
   "version": "1.0.0",
   "hook": {
-    "path": "%s",
+    "path": "/usr/bin/nvidia-container-runtime-hook",
     "args": [
       "nvidia-container-runtime-hook",
       "prestart"
@@ -483,7 +480,7 @@ plugin_dirs = [
     "prestart"
   ]
 }
-`, expectedContents)
+`
 
 				require.Equal(t, expected, string(actual))
 
@@ -542,11 +539,10 @@ plugin_dirs = [
 				actual, err := os.ReadFile(hookPath)
 				require.NoError(t, err)
 
-				expectedContents := filepath.Join("/usr/bin", config.NVIDIAContainerRuntimeHookExecutable)
-				expected := fmt.Sprintf(`{
+				expected := `{
   "version": "1.0.0",
   "hook": {
-    "path": "%s",
+    "path": "/usr/bin/nvidia-container-runtime-hook",
     "args": [
       "nvidia-container-runtime-hook",
       "prestart"
@@ -565,7 +561,7 @@ plugin_dirs = [
     "prestart"
   ]
 }
-`, expectedContents)
+`
 
 				require.Equal(t, expected, string(actual))
 
