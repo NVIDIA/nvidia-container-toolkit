@@ -38,11 +38,11 @@ func TestCrioConfigLifecycle(t *testing.T) {
 		description                 string
 		containerOptions            container.Options
 		options                     Options
-		prepareEnvironment          func(*testing.T, string) error
+		prepareEnvironment          func(*testing.T, *container.Options, *Options) error
 		expectedSetupError          error
-		assertSetupPostConditions   func(*testing.T, string) error
+		assertSetupPostConditions   func(*testing.T, *container.Options, *Options) error
 		expectedCleanupError        error
-		assertCleanupPostConditions func(*testing.T, string) error
+		assertCleanupPostConditions func(*testing.T, *container.Options, *Options) error
 	}{
 		{
 			description: "config mode: top-level config does not exist",
@@ -56,11 +56,10 @@ func TestCrioConfigLifecycle(t *testing.T) {
 			options: Options{
 				configMode: "config",
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/crio/crio.conf")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `
@@ -85,9 +84,8 @@ func TestCrioConfigLifecycle(t *testing.T) {
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/crio/crio.conf")
-				require.NoFileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
+				require.NoFileExists(t, co.Config)
 				return nil
 			},
 		},
@@ -103,9 +101,8 @@ func TestCrioConfigLifecycle(t *testing.T) {
 			options: Options{
 				configMode: "config",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/crio/crio.conf")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, _ *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				configContent := `[crio]
 [crio.runtime]
@@ -120,15 +117,14 @@ monitor_path = "/usr/libexec/crio/conmon"
 [crio.image]
 signature_policy = "/etc/crio/policy.json"
 `
-				err := os.WriteFile(configPath, []byte(configContent), 0600)
+				err := os.WriteFile(co.Config, []byte(configContent), 0600)
 				require.NoError(t, err)
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/crio/crio.conf")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `
@@ -169,11 +165,10 @@ signature_policy = "/etc/crio/policy.json"
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/crio/crio.conf")
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				// Should restore to original config
@@ -210,9 +205,8 @@ signature_policy = "/etc/crio/policy.json"
 			options: Options{
 				configMode: "config",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/crio/crio.conf")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, _ *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				configContent := `[crio]
 [crio.runtime]
@@ -226,15 +220,14 @@ runtime_type = "oci"
 runtime_path = "/old/path/nvidia-container-runtime"
 runtime_type = "oci"
 `
-				err := os.WriteFile(configPath, []byte(configContent), 0600)
+				err := os.WriteFile(co.Config, []byte(configContent), 0600)
 				require.NoError(t, err)
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/crio/crio.conf")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `
@@ -264,11 +257,10 @@ runtime_type = "oci"
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/crio/crio.conf")
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				// Note: cleanup removes nvidia runtimes but doesn't restore original default_runtime
@@ -299,9 +291,8 @@ runtime_type = "oci"
 			options: Options{
 				configMode: "config",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/crio/crio.conf")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, _ *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				configContent := `[crio]
 [crio.runtime]
@@ -334,15 +325,14 @@ plugin_dirs = [
   "/usr/libexec/cni"
 ]
 `
-				err := os.WriteFile(configPath, []byte(configContent), 0600)
+				err := os.WriteFile(co.Config, []byte(configContent), 0600)
 				require.NoError(t, err)
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/crio/crio.conf")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `
@@ -396,11 +386,10 @@ plugin_dirs = [
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/crio/crio.conf")
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				// Should restore to original complex config
@@ -451,8 +440,8 @@ plugin_dirs = [
 				hooksDir:     "{{ .testRoot }}/etc/crio/hooks.d",
 				hookFilename: "99-nvidia.json",
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				hookPath := filepath.Join(testRoot, "etc/crio/hooks.d/99-nvidia.json")
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				hookPath := filepath.Join(o.hooksDir, o.hookFilename)
 				require.FileExists(t, hookPath)
 
 				actual, err := os.ReadFile(hookPath)
@@ -486,8 +475,8 @@ plugin_dirs = [
 
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				hookPath := filepath.Join(testRoot, "etc/crio/hooks.d/99-nvidia.json")
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				hookPath := filepath.Join(o.hooksDir, o.hookFilename)
 				require.NoFileExists(t, hookPath)
 				return nil
 			},
@@ -504,9 +493,9 @@ plugin_dirs = [
 				hooksDir:     "{{ .testRoot }}/etc/crio/hooks.d",
 				hookFilename: "99-nvidia.json",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				hooksDir := filepath.Join(testRoot, "etc/crio/hooks.d")
-				require.NoError(t, os.MkdirAll(hooksDir, 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
+				hookPath := filepath.Join(o.hooksDir, o.hookFilename)
+				require.NoError(t, os.MkdirAll(filepath.Dir(hookPath), 0755))
 
 				// Create existing hook with old path
 				existingHookJSON := `{
@@ -526,14 +515,13 @@ plugin_dirs = [
   ]
 }`
 
-				hookPath := filepath.Join(hooksDir, "99-nvidia.json")
 				err := os.WriteFile(hookPath, []byte(existingHookJSON), 0600)
 				require.NoError(t, err)
 
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				hookPath := filepath.Join(testRoot, "etc/crio/hooks.d/99-nvidia.json")
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				hookPath := filepath.Join(o.hooksDir, o.hookFilename)
 				require.FileExists(t, hookPath)
 
 				actual, err := os.ReadFile(hookPath)
@@ -567,8 +555,8 @@ plugin_dirs = [
 
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				hookPath := filepath.Join(testRoot, "etc/crio/hooks.d/99-nvidia.json")
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				hookPath := filepath.Join(o.hooksDir, o.hookFilename)
 				require.NoFileExists(t, hookPath)
 				return nil
 			},
@@ -581,24 +569,25 @@ plugin_dirs = [
 			testRoot := t.TempDir()
 			tc.containerOptions.Config = strings.ReplaceAll(tc.containerOptions.Config, "{{ .testRoot }}", testRoot)
 			tc.options.hooksDir = strings.ReplaceAll(tc.options.hooksDir, "{{ .testRoot }}", testRoot)
+			tc.options.hookFilename = "99-nvidia.json"
 
 			// Prepare the test environment
 			if tc.prepareEnvironment != nil {
-				require.NoError(t, tc.prepareEnvironment(t, testRoot))
+				require.NoError(t, tc.prepareEnvironment(t, &tc.containerOptions, &tc.options))
 			}
 
 			err := Setup(c, &tc.containerOptions, &tc.options)
 			require.EqualValues(t, tc.expectedSetupError, err)
 
 			if tc.assertSetupPostConditions != nil {
-				require.NoError(t, tc.assertSetupPostConditions(t, testRoot))
+				require.NoError(t, tc.assertSetupPostConditions(t, &tc.containerOptions, &tc.options))
 			}
 
 			err = Cleanup(c, &tc.containerOptions, &tc.options)
 			require.EqualValues(t, tc.expectedCleanupError, err)
 
 			if tc.assertCleanupPostConditions != nil {
-				require.NoError(t, tc.assertCleanupPostConditions(t, testRoot))
+				require.NoError(t, tc.assertCleanupPostConditions(t, &tc.containerOptions, &tc.options))
 			}
 		})
 	}
