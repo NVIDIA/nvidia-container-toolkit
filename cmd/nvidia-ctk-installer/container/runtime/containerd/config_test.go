@@ -38,11 +38,11 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 		description                 string
 		containerOptions            container.Options
 		options                     Options
-		prepareEnvironment          func(*testing.T, string) error
+		prepareEnvironment          func(*testing.T, *container.Options, *Options) error
 		expectedSetupError          error
-		assertSetupPostConditions   func(*testing.T, string) error
+		assertSetupPostConditions   func(*testing.T, *container.Options, *Options) error
 		expectedCleanupError        error
-		assertCleanupPostConditions func(*testing.T, string) error
+		assertCleanupPostConditions func(*testing.T, *container.Options, *Options) error
 	}{
 		// V1 test cases
 		// Note: We don't test "v1: top-level config does not exist" because new configs
@@ -61,9 +61,8 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				// Write initial v1 config
 				initialConfig := `version = 1
@@ -80,14 +79,13 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins.cri.containerd.runtimes.runc.options]
             Runtime = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 1
@@ -132,11 +130,10 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 1
@@ -174,9 +171,8 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				// Write initial v1 config without a default runtime set
 				// This tests OPTIONS inheritance from an existing runtime
@@ -196,14 +192,13 @@ func TestContainerdConfigLifecycle(t *testing.T) {
             SystemdCgroup = true
             NoPivotRoot = false
 `
-				require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 1
@@ -263,11 +258,10 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 1
@@ -307,9 +301,8 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				// Create config with default_runtime_name pointing to custom runtime
 				// This tests that OPTIONS are inherited from the default runtime
@@ -338,14 +331,13 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins.cri.containerd.runtimes.runc.options]
             Runtime = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				// Verify that nvidia runtimes inherit OPTIONS from the default runtime (custom)
@@ -416,11 +408,10 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				// After cleanup, should return to original state
@@ -469,9 +460,8 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				// Write initial v1 config with default_runtime_name set to "runc"
 				initialConfig := `version = 1
@@ -488,14 +478,13 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins.cri.containerd.runtimes.runc.options]
             Runtime = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 1
@@ -539,11 +528,10 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				// Current implementation limitation: default_runtime_name is deleted entirely
@@ -582,11 +570,10 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 2
@@ -629,10 +616,8 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				// On cleanup, config should be deleted when starting from non-existent
-				require.NoFileExists(t, configPath, "Config file should be deleted if it didn't exist originally")
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoFileExists(t, co.Config, "Config file should be deleted if it didn't exist originally")
 				return nil
 			},
 		},
@@ -650,9 +635,8 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				// Write initial config
 				initialConfig := `version = 2
@@ -669,14 +653,13 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 2
@@ -718,12 +701,10 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				require.FileExists(t, configPath)
-
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 2
@@ -761,9 +742,8 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				initialConfig := `version = 2
 
@@ -785,14 +765,13 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 2
@@ -833,13 +812,11 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
 				// If file exists, verify nvidia runtimes were removed
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 				contentStr := string(actual)
 
@@ -864,9 +841,8 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				runtimeType: "io.containerd.runc.v2",
 				ContainerRuntimeModesCDIAnnotationPrefixes: []string{"cdi.k8s.io"},
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				// Write initial complex config
 				initialConfig := `version = 2
@@ -901,14 +877,13 @@ state = "/run/containerd"
   [plugins."io.containerd.internal.v1.opt"]
     path = "/opt/containerd"
 `
-				require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `root = "/var/lib/containerd"
@@ -976,13 +951,11 @@ version = 2
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
 				// If file exists, verify nvidia runtimes were removed
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 				contentStr := string(actual)
 
@@ -1005,9 +978,8 @@ version = 2
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				// Write initial config without any default runtime
 				initialConfig := `version = 2
@@ -1023,14 +995,13 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 2
@@ -1073,11 +1044,10 @@ version = 2
 				require.NotContains(t, string(actual), "default_runtime_name")
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 2
@@ -1117,9 +1087,8 @@ version = 2
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				// Write initial config without any default runtime
 				initialConfig := `version = 2
@@ -1136,14 +1105,13 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 2
@@ -1184,11 +1152,10 @@ version = 2
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 2
@@ -1226,9 +1193,8 @@ version = 2
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				// Write v3 config with runc runtime
 				initialConfig := `version = 3
@@ -1243,14 +1209,13 @@ version = 2
           [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 3
@@ -1290,11 +1255,10 @@ version = 2
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				// Should return to original v3 config with just runc
@@ -1331,9 +1295,8 @@ version = 2
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
-			prepareEnvironment: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
 
 				// Write initial v3 config with a runtime that has custom OPTIONS
 				initialConfig := `version = 3
@@ -1353,14 +1316,13 @@ version = 2
             NoPivotRoot = false
             Root = "/run/containerd/runc"
 `
-				require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
 				return nil
 			},
-			assertSetupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				expected := `version = 3
@@ -1413,11 +1375,10 @@ version = 2
 				require.Equal(t, expected, string(actual))
 				return nil
 			},
-			assertCleanupPostConditions: func(t *testing.T, testRoot string) error {
-				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
-				require.FileExists(t, configPath)
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.Config)
 
-				actual, err := os.ReadFile(configPath)
+				actual, err := os.ReadFile(co.Config)
 				require.NoError(t, err)
 
 				// After cleanup, should return to original state
@@ -1457,21 +1418,21 @@ version = 2
 
 			// Prepare the environment
 			if tc.prepareEnvironment != nil {
-				require.NoError(t, tc.prepareEnvironment(t, testRoot))
+				require.NoError(t, tc.prepareEnvironment(t, &tc.containerOptions, &tc.options))
 			}
 
 			err := Setup(c, &tc.containerOptions, &tc.options)
 			require.EqualValues(t, tc.expectedSetupError, err)
 
 			if tc.assertSetupPostConditions != nil {
-				require.NoError(t, tc.assertSetupPostConditions(t, testRoot))
+				require.NoError(t, tc.assertSetupPostConditions(t, &tc.containerOptions, &tc.options))
 			}
 
 			err = Cleanup(c, &tc.containerOptions, &tc.options)
 			require.EqualValues(t, tc.expectedCleanupError, err)
 
 			if tc.assertCleanupPostConditions != nil {
-				require.NoError(t, tc.assertCleanupPostConditions(t, testRoot))
+				require.NoError(t, tc.assertCleanupPostConditions(t, &tc.containerOptions, &tc.options))
 			}
 		})
 	}
