@@ -49,6 +49,8 @@ type Options struct {
 	SetAsDefault  bool
 	RestartMode   string
 	HostRootMount string
+
+	ConfigSources []string
 }
 
 // Configure applies the options to the specified config
