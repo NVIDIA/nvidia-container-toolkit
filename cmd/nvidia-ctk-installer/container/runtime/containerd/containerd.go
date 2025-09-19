@@ -172,11 +172,11 @@ func GetLowlevelRuntimePaths(o *container.Options, co *Options) ([]string, error
 
 func getRuntimeConfig(o *container.Options, co *Options) (engine.Interface, error) {
 	return containerd.New(
-		containerd.WithTopLevelConfigPath(o.Config),
+		containerd.WithTopLevelConfigPath(o.TopLevelConfigPath),
 		containerd.WithConfigSource(
 			toml.LoadFirst(
 				containerd.CommandLineSource(o.HostRootMount, o.ExecutablePath),
-				toml.FromFile(o.Config),
+				toml.FromFile(o.TopLevelConfigPath),
 			),
 		),
 		containerd.WithRuntimeType(co.runtimeType),

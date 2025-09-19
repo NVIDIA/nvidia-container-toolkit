@@ -47,18 +47,18 @@ func TestCrioConfigLifecycle(t *testing.T) {
 		{
 			description: "config mode: top-level config does not exist",
 			containerOptions: container.Options{
-				Config:       "{{ .testRoot }}/etc/crio/crio.conf",
-				DropInConfig: "{{ .testRoot }}/conf.d/99-nvidia.toml",
-				RuntimeName:  "nvidia",
-				RuntimeDir:   "/usr/bin",
-				SetAsDefault: false,
-				RestartMode:  "none",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/crio/crio.conf",
+				DropInConfig:       "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       false,
+				RestartMode:        "none",
 			},
 			options: Options{
 				configMode: "config",
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
-				require.NoFileExists(t, co.Config)
+				require.NoFileExists(t, co.TopLevelConfigPath)
 				require.FileExists(t, co.DropInConfig)
 
 				actual, err := os.ReadFile(co.DropInConfig)
@@ -87,7 +87,7 @@ func TestCrioConfigLifecycle(t *testing.T) {
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
-				require.NoFileExists(t, co.Config)
+				require.NoFileExists(t, co.TopLevelConfigPath)
 				require.NoFileExists(t, co.DropInConfig)
 				return nil
 			},
@@ -95,18 +95,18 @@ func TestCrioConfigLifecycle(t *testing.T) {
 		{
 			description: "config mode: existing config without nvidia runtime",
 			containerOptions: container.Options{
-				Config:       "{{ .testRoot }}/etc/crio/crio.conf",
-				DropInConfig: "{{ .testRoot }}/conf.d/99-nvidia.toml",
-				RuntimeName:  "nvidia",
-				RuntimeDir:   "/usr/bin",
-				SetAsDefault: false,
-				RestartMode:  "none",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/crio/crio.conf",
+				DropInConfig:       "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       false,
+				RestartMode:        "none",
 			},
 			options: Options{
 				configMode: "config",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, _ *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				configContent := `[crio]
 [crio.runtime]
@@ -121,14 +121,14 @@ monitor_path = "/usr/libexec/crio/conmon"
 [crio.image]
 signature_policy = "/etc/crio/policy.json"
 `
-				err := os.WriteFile(co.Config, []byte(configContent), 0600)
+				err := os.WriteFile(co.TopLevelConfigPath, []byte(configContent), 0600)
 				require.NoError(t, err)
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actualTopLevel, err := os.ReadFile(co.Config)
+				actualTopLevel, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expectedTopLevel := `[crio]
@@ -180,11 +180,11 @@ signature_policy = "/etc/crio/policy.json"
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
 				require.NoFileExists(t, co.DropInConfig)
 
-				actualTopLevel, err := os.ReadFile(co.Config)
+				actualTopLevel, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				// Leaves original config unchanged
@@ -209,18 +209,18 @@ signature_policy = "/etc/crio/policy.json"
 		{
 			description: "config mode: existing config with nvidia runtime already present",
 			containerOptions: container.Options{
-				Config:       "{{ .testRoot }}/etc/crio/crio.conf",
-				DropInConfig: "{{ .testRoot }}/conf.d/99-nvidia.toml",
-				RuntimeName:  "nvidia",
-				RuntimeDir:   "/usr/bin",
-				SetAsDefault: true,
-				RestartMode:  "none",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/crio/crio.conf",
+				DropInConfig:       "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       true,
+				RestartMode:        "none",
 			},
 			options: Options{
 				configMode: "config",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, _ *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				configContent := `[crio]
 [crio.runtime]
@@ -234,14 +234,14 @@ runtime_type = "oci"
 runtime_path = "/old/path/nvidia-container-runtime"
 runtime_type = "oci"
 `
-				err := os.WriteFile(co.Config, []byte(configContent), 0600)
+				err := os.WriteFile(co.TopLevelConfigPath, []byte(configContent), 0600)
 				require.NoError(t, err)
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actualTopLevel, err := os.ReadFile(co.Config)
+				actualTopLevel, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				// TODO: Do we expect the top-level config to change? i.e. Should
@@ -290,9 +290,9 @@ runtime_type = "oci"
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actualTopLevel, err := os.ReadFile(co.Config)
+				actualTopLevel, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				// TODO: Do we expect the top-level config to change? i.e. Should
@@ -320,18 +320,18 @@ runtime_type = "oci"
 		{
 			description: "config mode: complex config with multiple settings",
 			containerOptions: container.Options{
-				Config:       "{{ .testRoot }}/etc/crio/crio.conf",
-				DropInConfig: "{{ .testRoot }}/conf.d/99-nvidia.toml",
-				RuntimeName:  "nvidia",
-				RuntimeDir:   "/usr/bin",
-				SetAsDefault: false,
-				RestartMode:  "none",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/crio/crio.conf",
+				DropInConfig:       "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       false,
+				RestartMode:        "none",
 			},
 			options: Options{
 				configMode: "config",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, _ *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				configContent := `[crio]
 [crio.runtime]
@@ -364,14 +364,14 @@ plugin_dirs = [
   "/usr/libexec/cni"
 ]
 `
-				err := os.WriteFile(co.Config, []byte(configContent), 0600)
+				err := os.WriteFile(co.TopLevelConfigPath, []byte(configContent), 0600)
 				require.NoError(t, err)
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `[crio]
@@ -441,9 +441,9 @@ plugin_dirs = [
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				// Should restore to original complex config
@@ -628,7 +628,7 @@ plugin_dirs = [
 		t.Run(tc.description, func(t *testing.T) {
 			// Update any paths as required
 			testRoot := t.TempDir()
-			tc.containerOptions.Config = strings.ReplaceAll(tc.containerOptions.Config, "{{ .testRoot }}", testRoot)
+			tc.containerOptions.TopLevelConfigPath = strings.ReplaceAll(tc.containerOptions.TopLevelConfigPath, "{{ .testRoot }}", testRoot)
 			tc.containerOptions.DropInConfig = strings.ReplaceAll(tc.containerOptions.DropInConfig, "{{ .testRoot }}", testRoot)
 			tc.options.hooksDir = strings.ReplaceAll(tc.options.hooksDir, "{{ .testRoot }}", testRoot)
 			tc.options.hookFilename = "99-nvidia.json"

@@ -96,7 +96,7 @@ func RestartDocker(o *container.Options) error {
 
 func GetLowlevelRuntimePaths(o *container.Options) ([]string, error) {
 	cfg, err := docker.New(
-		docker.WithPath(o.Config),
+		docker.WithPath(o.TopLevelConfigPath),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load docker config: %w", err)
@@ -106,6 +106,6 @@ func GetLowlevelRuntimePaths(o *container.Options) ([]string, error) {
 
 func getRuntimeConfig(o *container.Options) (engine.Interface, error) {
 	return docker.New(
-		docker.WithPath(o.Config),
+		docker.WithPath(o.TopLevelConfigPath),
 	)
 }
