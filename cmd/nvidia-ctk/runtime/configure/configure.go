@@ -46,6 +46,9 @@ const (
 	defaultCrioConfigFilePath       = "/etc/crio/crio.conf"
 	defaultDockerConfigFilePath     = "/etc/docker/daemon.json"
 
+	defaultContainerdDropInConfigFilePath = "/etc/containerd/config.d/99-nvidia.toml"
+	defaultCrioDropInConfigFilePath       = "/etc/crio/conf.d/99-nvidia.toml"
+
 	defaultConfigSource = configSourceFile
 	configSourceCommand = "command"
 	configSourceFile    = "file"
@@ -66,13 +69,14 @@ func NewCommand(logger logger.Interface) *cli.Command {
 // config defines the options that can be set for the CLI through config files,
 // environment variables, or command line config
 type config struct {
-	dryRun         bool
-	runtime        string
-	configFilePath string
-	executablePath string
-	configSource   string
-	mode           string
-	hookFilePath   string
+	dryRun           bool
+	runtime          string
+	configFilePath   string
+	dropInConfigPath string
+	executablePath   string
+	configSource     string
+	mode             string
+	hookFilePath     string
 
 	nvidiaRuntime struct {
 		name         string
@@ -117,6 +121,11 @@ func (m command) build() *cli.Command {
 				Name:        "config",
 				Usage:       "path to the config file for the target runtime",
 				Destination: &config.configFilePath,
+			},
+			&cli.StringFlag{
+				Name:        "drop-in-config",
+				Usage:       "path to the NVIDIA-specific config file to create. When specified, runtime configurations are saved to this file instead of modifying the main config file",
+				Destination: &config.dropInConfigPath,
 			},
 			&cli.StringFlag{
 				Name:        "executable-path",
@@ -241,6 +250,15 @@ func (m command) validateFlags(config *config) error {
 		}
 	}
 
+	if config.dropInConfigPath == "" && (config.runtime == "containerd" || config.runtime == "crio") {
+		switch config.runtime {
+		case "containerd":
+			config.dropInConfigPath = defaultContainerdDropInConfigFilePath
+		case "crio":
+			config.dropInConfigPath = defaultCrioDropInConfigFilePath
+		}
+	}
+
 	return nil
 }
 
@@ -347,7 +365,14 @@ func (c *config) getOutputConfigPath() string {
 	if c.dryRun {
 		return ""
 	}
-	return c.configFilePath
+	var configFilePath string
+	if c.runtime == "containerd" || c.runtime == "crio" {
+		configFilePath = c.dropInConfigPath
+	} else {
+		configFilePath = c.configFilePath
+	}
+
+	return configFilePath
 }
 
 // configureOCIHook creates and configures the OCI hook for the NVIDIA runtime
