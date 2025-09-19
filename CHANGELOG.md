@@ -1,6 +1,21 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.18.0-rc.4
+
+- Add drop-in file support for containerd and crio
+- Add support for IMEX_CHANNELS to jit-cdi mode
+- Refactor IMEX channel requests from image
+- Remove redundant CDI annotations
+- support running and degraded systemd state during install
+- Don't inject enable-cuda-compat hook in CSV mode
+- Cleanup default runtime in runtime config when setAsDefault=false
+
+### Changes in the Toolkit Container
+
+- Bump nvidia/distroless/go to v3.1.12-dev in /deployments/container
+
 ## v1.18.0-rc.3
+
 - Generate separate specs for coherent and noncoherent devices
 - Disable chmod hook by default
 - Add support for gated modifications jit-cdi mode
