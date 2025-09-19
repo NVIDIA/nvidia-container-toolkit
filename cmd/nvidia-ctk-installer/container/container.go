@@ -35,7 +35,8 @@ const (
 
 // Options defines the shared options for the CLIs to configure containers runtimes.
 type Options struct {
-	DropInConfig string
+	DropInConfig         string
+	DropInConfigHostPath string
 	// TopLevelConfigPath stores the path to the top-level config for the runtime.
 	TopLevelConfigPath string
 	Socket             string

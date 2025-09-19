@@ -635,6 +635,84 @@ version = 2
 			},
 		},
 		{
+			description: "v2: top-level config does not exist with drop-in-config-host-path",
+			containerOptions: container.Options{
+				TopLevelConfigPath:   "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:         "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				DropInConfigHostPath: "/some/host/path/conf.d/99-nvidia.toml",
+				RuntimeName:          "nvidia",
+				RuntimeDir:           "/usr/bin",
+				SetAsDefault:         false,
+				RestartMode:          "none",
+				ExecutablePath:       "not-containerd",
+			},
+			options: Options{
+				runtimeType: "io.containerd.runc.v2",
+			},
+			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.FileExists(t, co.TopLevelConfigPath)
+
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
+				require.NoError(t, err)
+
+				expected := `imports = ["/some/host/path/conf.d/*.toml"]
+version = 2
+`
+				require.Equal(t, expected, string(actual))
+
+				require.NoFileExists(t, co.DropInConfigHostPath)
+				require.FileExists(t, co.DropInConfig)
+
+				actualDropIn, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
+
+				expectedDropIn := `version = 2
+
+[plugins]
+
+  [plugins."io.containerd.grpc.v1.cri"]
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
+          privileged_without_host_devices = false
+          runtime_engine = ""
+          runtime_root = ""
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
+            BinaryName = "/usr/bin/nvidia-container-runtime"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-cdi]
+          privileged_without_host_devices = false
+          runtime_engine = ""
+          runtime_root = ""
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-cdi.options]
+            BinaryName = "/usr/bin/nvidia-container-runtime.cdi"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy]
+          privileged_without_host_devices = false
+          runtime_engine = ""
+          runtime_root = ""
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
+            BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
+`
+				require.Equal(t, expectedDropIn, string(actualDropIn))
+				return nil
+			},
+			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
+				require.NoFileExists(t, co.TopLevelConfigPath)
+				require.NoFileExists(t, co.DropInConfig)
+				return nil
+			},
+		},
+		{
 			description: "v2: existing config without nvidia runtime and CDI enabled",
 			containerOptions: container.Options{
 				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",

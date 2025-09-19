@@ -37,15 +37,17 @@ var _ engine.Interface = (*ConfigWithDropIn)(nil)
 // A topLevelConfig stores the original on-disk top-level config.
 // The path to the config is also stored to allow it to be modified if required.
 type topLevelConfig struct {
-	path   string
-	config *Config
+	path                   string
+	containerToHostPathMap map[string]string
+	config                 *Config
 }
 
-func NewConfigWithDropIn(topLevelConfigPath string, tlConfig *Config, dropInConfig engine.Interface) *ConfigWithDropIn {
+func NewConfigWithDropIn(topLevelConfigPath string, containerToHostPathMap map[string]string, tlConfig *Config, dropInConfig engine.Interface) *ConfigWithDropIn {
 	return &ConfigWithDropIn{
 		topLevelConfig: &topLevelConfig{
-			path:   topLevelConfigPath,
-			config: tlConfig,
+			path:                   topLevelConfigPath,
+			containerToHostPathMap: containerToHostPathMap,
+			config:                 tlConfig,
 		},
 		Interface: dropInConfig,
 	}
@@ -117,11 +119,25 @@ func (c *topLevelConfig) removeImports(dropInFilename string) {
 		return
 	}
 
-	requiredImport := filepath.Dir(dropInFilename) + "/*.toml"
+	requiredImport := c.importPattern(dropInFilename)
 	if currentImports[0] != requiredImport {
 		return
 	}
 	c.config.Delete("imports")
+}
+
+func (c *topLevelConfig) importPattern(dropInFilename string) string {
+	return c.asHostPath(filepath.Dir(dropInFilename)) + "/*.toml"
+}
+
+func (c *topLevelConfig) asHostPath(path string) string {
+	if c.containerToHostPathMap == nil {
+		return path
+	}
+	if hostPath, ok := c.containerToHostPathMap[path]; ok {
+		return hostPath
+	}
+	return path
 }
 
 // removeVersion removes the version if it is the ONLY field in the file.
@@ -142,7 +158,7 @@ func (c *topLevelConfig) ensureImports(dropInFilename string) {
 		currentImports = ci
 	}
 
-	requiredImport := filepath.Dir(dropInFilename) + "/*.toml"
+	requiredImport := c.importPattern(dropInFilename)
 	for _, currentImport := range currentImports {
 		// If the requiredImport is already present, then we need not update the config.
 		if currentImport == requiredImport {

@@ -62,6 +62,13 @@ func Flags(opts *Options) []cli.Flag {
 			Sources:     cli.EnvVars("RUNTIME_DROP_IN_CONFIG"),
 		},
 		&cli.StringFlag{
+			Name: "drop-in-config-host-path",
+			Usage: "When running in a container, this is the path to the drop-in config (--drop-in-config) on the host. " +
+				"This is required to correctly update the top-level config if required since paths there must be host-relative.",
+			Destination: &opts.DropInConfigHostPath,
+			Sources:     cli.EnvVars("RUNTIME_DROP_IN_CONFIG_HOST_PATH"),
+		},
+		&cli.StringFlag{
 			Name:        "executable-path",
 			Usage:       "The path to the runtime executable. This is used to extract the current config",
 			Destination: &opts.ExecutablePath,
