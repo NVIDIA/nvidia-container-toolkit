@@ -88,7 +88,7 @@ func (c *ConfigWithDropIn) RemoveRuntime(name string) error {
 	return c.Interface.RemoveRuntime(name)
 }
 
-// flush saves the top-level config to it's path.
+// flush saves the top-level config to its path.
 // If the config is empty, the file will be deleted.
 func (c *topLevelConfig) flush() error {
 	_, err := c.config.Save(c.path)
