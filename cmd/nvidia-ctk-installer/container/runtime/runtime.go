@@ -51,7 +51,7 @@ func Flags(opts *Options) []cli.Flag {
 			Name:        "config",
 			Usage:       "Path to the runtime config file",
 			Value:       runtimeSpecificDefault,
-			Destination: &opts.Config,
+			Destination: &opts.TopLevelConfigPath,
 			Sources:     cli.EnvVars("RUNTIME_CONFIG", "CONTAINERD_CONFIG", "DOCKER_CONFIG"),
 		},
 		&cli.StringFlag{
@@ -145,8 +145,8 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 	// TODO: Add the runtime-specific DropInConfigs here.
 	switch runtime {
 	case containerd.Name:
-		if opts.Config == runtimeSpecificDefault {
-			opts.Config = containerd.DefaultConfig
+		if opts.TopLevelConfigPath == runtimeSpecificDefault {
+			opts.TopLevelConfigPath = containerd.DefaultConfig
 		}
 		if opts.DropInConfig == runtimeSpecificDefault {
 			opts.DropInConfig = containerd.DefaultDropInConfig
@@ -158,8 +158,8 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 			opts.RestartMode = containerd.DefaultRestartMode
 		}
 	case crio.Name:
-		if opts.Config == runtimeSpecificDefault {
-			opts.Config = crio.DefaultConfig
+		if opts.TopLevelConfigPath == runtimeSpecificDefault {
+			opts.TopLevelConfigPath = crio.DefaultConfig
 		}
 		if opts.DropInConfig == runtimeSpecificDefault {
 			opts.DropInConfig = crio.DefaultDropInConfig
@@ -171,8 +171,8 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 			opts.RestartMode = crio.DefaultRestartMode
 		}
 	case docker.Name:
-		if opts.Config == runtimeSpecificDefault {
-			opts.Config = docker.DefaultConfig
+		if opts.TopLevelConfigPath == runtimeSpecificDefault {
+			opts.TopLevelConfigPath = docker.DefaultConfig
 		}
 		// Docker does not support drop-in configs.
 		if opts.DropInConfig == runtimeSpecificDefault {

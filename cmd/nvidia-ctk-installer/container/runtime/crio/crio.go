@@ -201,11 +201,11 @@ func GetLowlevelRuntimePaths(o *container.Options) ([]string, error) {
 
 func getRuntimeConfig(o *container.Options) (engine.Interface, error) {
 	return crio.New(
-		crio.WithTopLevelConfigPath(o.Config),
+		crio.WithTopLevelConfigPath(o.TopLevelConfigPath),
 		crio.WithConfigSource(
 			toml.LoadFirst(
 				crio.CommandLineSource(o.HostRootMount, o.ExecutablePath),
-				toml.FromFile(o.Config),
+				toml.FromFile(o.TopLevelConfigPath),
 			),
 		),
 	)

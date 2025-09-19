@@ -51,19 +51,19 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 		{
 			description: "v1: existing config without nvidia runtime",
 			containerOptions: container.Options{
-				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
-				RuntimeName:    "nvidia",
-				RuntimeDir:     "/usr/bin",
-				EnableCDI:      true,
-				SetAsDefault:   false,
-				RestartMode:    "none",
-				ExecutablePath: "not-containerd",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				EnableCDI:          true,
+				SetAsDefault:       false,
+				RestartMode:        "none",
+				ExecutablePath:     "not-containerd",
 			},
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				// Write initial v1 config
 				initialConfig := `version = 1
@@ -80,13 +80,13 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins.cri.containerd.runtimes.runc.options]
             Runtime = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.TopLevelConfigPath, []byte(initialConfig), 0600))
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `version = 1
@@ -132,9 +132,9 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `version = 1
@@ -162,18 +162,18 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 		{
 			description: "v1: existing config with default_runtime_name and OPTIONS inheritance",
 			containerOptions: container.Options{
-				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
-				RuntimeName:    "nvidia",
-				RuntimeDir:     "/usr/bin",
-				SetAsDefault:   true,
-				RestartMode:    "none",
-				ExecutablePath: "not-containerd",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       true,
+				RestartMode:        "none",
+				ExecutablePath:     "not-containerd",
 			},
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				// Write initial v1 config without a default runtime set
 				// This tests OPTIONS inheritance from an existing runtime
@@ -193,13 +193,13 @@ func TestContainerdConfigLifecycle(t *testing.T) {
             SystemdCgroup = true
             NoPivotRoot = false
 `
-				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.TopLevelConfigPath, []byte(initialConfig), 0600))
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `version = 1
@@ -260,9 +260,9 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `version = 1
@@ -292,18 +292,18 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 		{
 			description: "v1: OPTIONS inheritance from default runtime specified by default_runtime_name",
 			containerOptions: container.Options{
-				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
-				RuntimeName:    "nvidia",
-				RuntimeDir:     "/usr/bin",
-				SetAsDefault:   false, // Don't change the default runtime
-				RestartMode:    "none",
-				ExecutablePath: "not-containerd",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       false, // Don't change the default runtime
+				RestartMode:        "none",
+				ExecutablePath:     "not-containerd",
 			},
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				// Create config with default_runtime_name pointing to custom runtime
 				// This tests that OPTIONS are inherited from the default runtime
@@ -332,13 +332,13 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins.cri.containerd.runtimes.runc.options]
             Runtime = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.TopLevelConfigPath, []byte(initialConfig), 0600))
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				// Verify that nvidia runtimes inherit OPTIONS from the default runtime (custom)
@@ -410,9 +410,9 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				// After cleanup, should return to original state
@@ -451,18 +451,18 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 		{
 			description: "v1: existing config with default_runtime_name set and restoration on cleanup",
 			containerOptions: container.Options{
-				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
-				RuntimeName:    "nvidia",
-				RuntimeDir:     "/usr/bin",
-				SetAsDefault:   true,
-				RestartMode:    "none",
-				ExecutablePath: "not-containerd",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       true,
+				RestartMode:        "none",
+				ExecutablePath:     "not-containerd",
 			},
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				// Write initial v1 config with default_runtime_name set to "runc"
 				initialConfig := `version = 1
@@ -479,13 +479,13 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins.cri.containerd.runtimes.runc.options]
             Runtime = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.TopLevelConfigPath, []byte(initialConfig), 0600))
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `version = 1
@@ -530,9 +530,9 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				// Current implementation limitation: default_runtime_name is deleted entirely
@@ -561,21 +561,21 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 		{
 			description: "v2: top-level config does not exist",
 			containerOptions: container.Options{
-				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
-				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
-				RuntimeName:    "nvidia",
-				RuntimeDir:     "/usr/bin",
-				SetAsDefault:   false,
-				RestartMode:    "none",
-				ExecutablePath: "not-containerd",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:       "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       false,
+				RestartMode:        "none",
+				ExecutablePath:     "not-containerd",
 			},
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
@@ -629,7 +629,7 @@ version = 2
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoFileExists(t, co.Config)
+				require.NoFileExists(t, co.TopLevelConfigPath)
 				require.NoFileExists(t, co.DropInConfig)
 				return nil
 			},
@@ -637,20 +637,20 @@ version = 2
 		{
 			description: "v2: existing config without nvidia runtime and CDI enabled",
 			containerOptions: container.Options{
-				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
-				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
-				RuntimeName:    "nvidia",
-				RuntimeDir:     "/usr/bin",
-				EnableCDI:      true,
-				SetAsDefault:   false,
-				RestartMode:    "none",
-				ExecutablePath: "not-containerd",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:       "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				EnableCDI:          true,
+				SetAsDefault:       false,
+				RestartMode:        "none",
+				ExecutablePath:     "not-containerd",
 			},
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				// Write initial config
 				initialConfig := `version = 2
@@ -667,13 +667,13 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.TopLevelConfigPath, []byte(initialConfig), 0600))
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
@@ -736,9 +736,9 @@ version = 2
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				// TODO: What is the expectation here? Do we expect that the imports \
@@ -773,19 +773,19 @@ version = 2
 		{
 			description: "v2: existing config with nvidia runtime using old path already present",
 			containerOptions: container.Options{
-				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
-				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
-				RuntimeName:    "nvidia",
-				RuntimeDir:     "/usr/bin",
-				SetAsDefault:   true,
-				RestartMode:    "none",
-				ExecutablePath: "not-containerd",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:       "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       true,
+				RestartMode:        "none",
+				ExecutablePath:     "not-containerd",
 			},
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				initialConfig := `version = 2
 
@@ -807,13 +807,13 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.TopLevelConfigPath, []byte(initialConfig), 0600))
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
@@ -881,10 +881,10 @@ version = 2
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
 				// If file exists, verify nvidia runtimes were removed
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				// TODO: Do we expect that the default_runtime = nvidia be removed?
@@ -917,21 +917,21 @@ version = 2
 		{
 			description: "v2: complex config with multiple plugins and settings",
 			containerOptions: container.Options{
-				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
-				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
-				RuntimeName:    "nvidia",
-				RuntimeDir:     "/usr/bin",
-				EnableCDI:      true,
-				SetAsDefault:   false,
-				RestartMode:    "none",
-				ExecutablePath: "not-containerd",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:       "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				EnableCDI:          true,
+				SetAsDefault:       false,
+				RestartMode:        "none",
+				ExecutablePath:     "not-containerd",
 			},
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 				ContainerRuntimeModesCDIAnnotationPrefixes: []string{"cdi.k8s.io"},
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				// Write initial complex config
 				initialConfig := `version = 2
@@ -966,13 +966,13 @@ state = "/run/containerd"
   [plugins."io.containerd.internal.v1.opt"]
     path = "/opt/containerd"
 `
-				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.TopLevelConfigPath, []byte(initialConfig), 0600))
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
@@ -1059,9 +1059,9 @@ version = 2
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
@@ -1112,19 +1112,19 @@ version = 2
 		{
 			description: "v2: existing config without default runtime (SetAsDefault=false)",
 			containerOptions: container.Options{
-				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
-				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
-				RuntimeName:    "nvidia",
-				RuntimeDir:     "/usr/bin",
-				SetAsDefault:   false,
-				RestartMode:    "none",
-				ExecutablePath: "not-containerd",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:       "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       false,
+				RestartMode:        "none",
+				ExecutablePath:     "not-containerd",
 			},
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				// Write initial config without any default runtime
 				initialConfig := `version = 2
@@ -1140,13 +1140,13 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.TopLevelConfigPath, []byte(initialConfig), 0600))
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
@@ -1207,9 +1207,9 @@ version = 2
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
@@ -1239,19 +1239,19 @@ version = 2
 		{
 			description: "v2: existing config without default runtime (SetAsDefault=true)",
 			containerOptions: container.Options{
-				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
-				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
-				RuntimeName:    "nvidia",
-				RuntimeDir:     "/usr/bin",
-				SetAsDefault:   true,
-				RestartMode:    "none",
-				ExecutablePath: "not-containerd",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:       "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       true,
+				RestartMode:        "none",
+				ExecutablePath:     "not-containerd",
 			},
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				// Write initial config without any default runtime
 				initialConfig := `version = 2
@@ -1267,13 +1267,13 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.TopLevelConfigPath, []byte(initialConfig), 0600))
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
@@ -1334,9 +1334,9 @@ version = 2
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				// TODO: Add test where imports are already specified.
@@ -1368,19 +1368,19 @@ version = 2
 		{
 			description: "v3: minimal config without nvidia runtime",
 			containerOptions: container.Options{
-				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
-				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
-				RuntimeName:    "nvidia",
-				RuntimeDir:     "/usr/bin",
-				SetAsDefault:   false,
-				RestartMode:    "none",
-				ExecutablePath: "not-containerd",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:       "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       false,
+				RestartMode:        "none",
+				ExecutablePath:     "not-containerd",
 			},
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				// Write v3 config with runc runtime
 				initialConfig := `version = 3
@@ -1395,13 +1395,13 @@ version = 2
           [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.TopLevelConfigPath, []byte(initialConfig), 0600))
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
@@ -1461,9 +1461,9 @@ version = 3
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				// Should return to original v3 config with just runc
@@ -1494,19 +1494,19 @@ version = 3
 		{
 			description: "v3: existing config with runtime and OPTIONS inheritance",
 			containerOptions: container.Options{
-				Config:         "{{ .testRoot }}/etc/containerd/config.toml",
-				DropInConfig:   "{{ .testRoot }}/conf.d/99-nvidia.toml",
-				RuntimeName:    "nvidia",
-				RuntimeDir:     "/usr/bin",
-				SetAsDefault:   true,
-				RestartMode:    "none",
-				ExecutablePath: "not-containerd",
+				TopLevelConfigPath: "{{ .testRoot }}/etc/containerd/config.toml",
+				DropInConfig:       "{{ .testRoot }}/conf.d/99-nvidia.toml",
+				RuntimeName:        "nvidia",
+				RuntimeDir:         "/usr/bin",
+				SetAsDefault:       true,
+				RestartMode:        "none",
+				ExecutablePath:     "not-containerd",
 			},
 			options: Options{
 				runtimeType: "io.containerd.runc.v2",
 			},
 			prepareEnvironment: func(t *testing.T, co *container.Options, o *Options) error {
-				require.NoError(t, os.MkdirAll(filepath.Dir(co.Config), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Dir(co.TopLevelConfigPath), 0755))
 
 				// Write initial v3 config with a runtime that has custom OPTIONS
 				initialConfig := `version = 3
@@ -1526,13 +1526,13 @@ version = 3
             NoPivotRoot = false
             Root = "/run/containerd/runc"
 `
-				require.NoError(t, os.WriteFile(co.Config, []byte(initialConfig), 0600))
+				require.NoError(t, os.WriteFile(co.TopLevelConfigPath, []byte(initialConfig), 0600))
 				return nil
 			},
 			assertSetupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
@@ -1606,9 +1606,9 @@ version = 3
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
-				require.FileExists(t, co.Config)
+				require.FileExists(t, co.TopLevelConfigPath)
 
-				actual, err := os.ReadFile(co.Config)
+				actual, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
 				// After cleanup, should return to original state
@@ -1648,7 +1648,7 @@ version = 3
 			testRoot := t.TempDir()
 
 			// Update paths
-			tc.containerOptions.Config = strings.ReplaceAll(tc.containerOptions.Config, "{{ .testRoot }}", testRoot)
+			tc.containerOptions.TopLevelConfigPath = strings.ReplaceAll(tc.containerOptions.TopLevelConfigPath, "{{ .testRoot }}", testRoot)
 			tc.containerOptions.DropInConfig = strings.ReplaceAll(tc.containerOptions.DropInConfig, "{{ .testRoot }}", testRoot)
 			tc.containerOptions.RuntimeDir = strings.ReplaceAll(tc.containerOptions.RuntimeDir, "{{ .testRoot }}", testRoot)
 

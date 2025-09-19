@@ -36,9 +36,9 @@ const (
 // Options defines the shared options for the CLIs to configure containers runtimes.
 type Options struct {
 	DropInConfig string
-	// TODO: Rename to TopLevelConfig
-	Config string
-	Socket string
+	// TopLevelConfigPath stores the path to the top-level config for the runtime.
+	TopLevelConfigPath string
+	Socket             string
 	// ExecutablePath specifies the path to the container runtime executable.
 	// This is used to extract the current config, for example.
 	// If a HostRootMount is specified, this path is relative to the host root
@@ -75,7 +75,7 @@ func (o Options) Unconfigure(cfg engine.Interface) error {
 func (o Options) flush(cfg engine.Interface) error {
 	filepath := o.DropInConfig
 	if filepath == "" {
-		filepath = o.Config
+		filepath = o.TopLevelConfigPath
 	}
 	logrus.Infof("Flushing config to %v", filepath)
 	n, err := cfg.Save(filepath)
