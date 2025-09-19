@@ -26,7 +26,7 @@ type builder struct {
 	configSource         toml.Loader
 	configVersion        int
 	useLegacyConfig      bool
-	path                 string
+	topLevelConfigPath   string
 	runtimeType          string
 	containerAnnotations []string
 }
@@ -44,7 +44,7 @@ func WithLogger(logger logger.Interface) Option {
 // WithPath sets the path for the config builder
 func WithPath(path string) Option {
 	return func(b *builder) {
-		b.path = path
+		b.topLevelConfigPath = path
 	}
 }
 

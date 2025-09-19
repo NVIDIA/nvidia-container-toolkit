@@ -80,7 +80,7 @@ func New(opts ...Option) (engine.Interface, error) {
 		b.logger = logger.New()
 	}
 	if b.configSource == nil {
-		b.configSource = toml.FromFile(b.path)
+		b.configSource = toml.FromFile(b.topLevelConfigPath)
 	}
 
 	tomlConfig, err := b.configSource.Load()
