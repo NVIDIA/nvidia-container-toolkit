@@ -73,7 +73,7 @@ func (c *ConfigWithDropIn) Save(dropInPath string) (int64, error) {
 	}
 
 	// TODO: Only do this if we've actually modified the config.
-	if err := c.topLevelConfig.flush(); err != nil {
+	if _, err := c.topLevelConfig.Save(dropInPath); err != nil {
 		return 0, fmt.Errorf("failed to save top-level config: %w", err)
 	}
 
@@ -90,12 +90,13 @@ func (c *ConfigWithDropIn) RemoveRuntime(name string) error {
 
 // flush saves the top-level config to its path.
 // If the config is empty, the file will be deleted.
-func (c *topLevelConfig) flush() error {
-	_, err := c.config.Save(c.path)
-	if err != nil {
-		return fmt.Errorf("failed to flush config to %q: %w", c.path, err)
+func (c *topLevelConfig) Save(dropInPath string) (int64, error) {
+	saveToPath := c.path
+	if dropInPath == "" {
+		saveToPath = ""
 	}
-	return nil
+
+	return c.config.Save(saveToPath)
 }
 
 func (c *topLevelConfig) simplify(dropInFilename string) {
