@@ -59,19 +59,26 @@ func New(opts ...Option) (engine.Interface, error) {
 		b.logger = logger.New()
 	}
 	if b.configSource == nil {
-		b.configSource = toml.FromFile(b.path)
+		b.configSource = toml.FromFile(b.topLevelConfigPath)
 	}
 
-	tomlConfig, err := b.configSource.Load()
+	sourceConfig, err := b.configSource.Load()
 	if err != nil {
 		return nil, err
 	}
 
-	cfg := Config{
-		Tree:   tomlConfig,
-		Logger: b.logger,
+	cfg := &engine.Config{
+		Source: &Config{
+			Tree:   sourceConfig,
+			Logger: b.logger,
+		},
+		Destination: &Config{
+			Tree:   toml.NewEmpty(),
+			Logger: b.logger,
+		},
 	}
-	return &cfg, nil
+
+	return cfg, nil
 }
 
 // AddRuntime adds a new runtime to the crio config.

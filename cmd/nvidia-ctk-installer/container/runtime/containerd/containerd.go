@@ -32,7 +32,9 @@ import (
 const (
 	Name = "containerd"
 
-	DefaultConfig      = "/etc/containerd/config.toml"
+	DefaultConfig       = "/etc/containerd/config.toml"
+	DefaultDropInConfig = "/etc/containerd/config.d/99-nvidia.toml"
+
 	DefaultSocket      = "/run/containerd/containerd.sock"
 	DefaultRestartMode = "signal"
 
@@ -170,7 +172,7 @@ func GetLowlevelRuntimePaths(o *container.Options, co *Options) ([]string, error
 
 func getRuntimeConfig(o *container.Options, co *Options) (engine.Interface, error) {
 	return containerd.New(
-		containerd.WithPath(o.Config),
+		containerd.WithTopLevelConfigPath(o.Config),
 		containerd.WithConfigSource(
 			toml.LoadFirst(
 				containerd.CommandLineSource(o.HostRootMount, o.ExecutablePath),

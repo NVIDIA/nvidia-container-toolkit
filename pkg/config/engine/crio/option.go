@@ -22,9 +22,9 @@ import (
 )
 
 type builder struct {
-	logger       logger.Interface
-	configSource toml.Loader
-	path         string
+	logger             logger.Interface
+	configSource       toml.Loader
+	topLevelConfigPath string
 }
 
 // Option defines a function that can be used to configure the config builder
@@ -37,10 +37,10 @@ func WithLogger(logger logger.Interface) Option {
 	}
 }
 
-// WithPath sets the path for the config builder
-func WithPath(path string) Option {
+// WithTopLevelConfigPath sets the path for the top-level containerd config.
+func WithTopLevelConfigPath(path string) Option {
 	return func(b *builder) {
-		b.path = path
+		b.topLevelConfigPath = path
 	}
 }
 

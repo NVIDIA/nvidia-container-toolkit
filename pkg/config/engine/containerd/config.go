@@ -60,7 +60,7 @@ func (c *Config) AddRuntimeWithOptions(name string, path string, setAsDefault bo
 		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name}, options)
 	}
 	if len(c.ContainerAnnotations) > 0 {
-		annotations, err := c.getRuntimeAnnotations([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name, "container_annotations"})
+		annotations, err := c.getStringArrayValue([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name, "container_annotations"})
 		if err != nil {
 			return err
 		}
@@ -82,7 +82,7 @@ func (c *Config) AddRuntimeWithOptions(name string, path string, setAsDefault bo
 	return nil
 }
 
-func (c *Config) getRuntimeAnnotations(path []string) ([]string, error) {
+func (c *Config) getStringArrayValue(path []string) ([]string, error) {
 	if c == nil || c.Tree == nil {
 		return nil, nil
 	}
