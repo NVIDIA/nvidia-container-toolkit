@@ -29,10 +29,25 @@ type builder struct {
 	topLevelConfigPath   string
 	runtimeType          string
 	containerAnnotations []string
+
+	containerToHostPathMap map[string]string
 }
 
 // Option defines a function that can be used to configure the config builder
 type Option func(*builder)
+
+// WithContainerPathAsHostPath maps a given container path to a host path.
+func WithContainerPathAsHostPath(containerPath string, hostPath string) Option {
+	return func(b *builder) {
+		if containerPath == "" || hostPath == "" || containerPath == hostPath {
+			return
+		}
+		if b.containerToHostPathMap == nil {
+			b.containerToHostPathMap = make(map[string]string)
+		}
+		b.containerToHostPathMap[containerPath] = hostPath
+	}
+}
 
 // WithLogger sets the logger for the config builder
 func WithLogger(logger logger.Interface) Option {
