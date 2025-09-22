@@ -19,6 +19,7 @@ package containerd
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v3"
@@ -171,7 +172,7 @@ func GetLowlevelRuntimePaths(o *container.Options, co *Options) ([]string, error
 }
 
 func getRuntimeConfig(o *container.Options, co *Options) (engine.Interface, error) {
-	return containerd.New(
+	options := []containerd.Option{
 		containerd.WithTopLevelConfigPath(o.TopLevelConfigPath),
 		containerd.WithConfigSource(
 			toml.LoadFirst(
@@ -182,5 +183,12 @@ func getRuntimeConfig(o *container.Options, co *Options) (engine.Interface, erro
 		containerd.WithRuntimeType(co.runtimeType),
 		containerd.WithUseLegacyConfig(co.useLegacyConfig),
 		containerd.WithContainerAnnotations(co.containerAnnotationsFromCDIPrefixes()...),
-	)
+	}
+	if o.DropInConfigHostPath != "" && o.DropInConfig != "" {
+		options = append(options,
+			containerd.WithContainerPathAsHostPath(filepath.Dir(o.DropInConfig), filepath.Dir(o.DropInConfigHostPath)),
+		)
+	}
+
+	return containerd.New(options...)
 }
