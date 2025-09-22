@@ -17,6 +17,7 @@
 package container
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -69,7 +70,23 @@ func (o Options) Unconfigure(cfg engine.Interface) error {
 	if err != nil {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
-	return o.flush(cfg)
+
+	if err := o.flush(cfg); err != nil {
+		return err
+	}
+
+	if o.DropInConfig == "" {
+		return nil
+	}
+	// When a drop-in config is used, we remove the drop-in file explicitly.
+	// This is require for cases where we may have to include other contents
+	// in the drop-in file and as such it may not be empty when we flush it.
+	err = os.Remove(o.DropInConfig)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("failed to remove drop-in config file: %w", err)
+	}
+
+	return nil
 }
 
 // flush flushes the specified config to disk

@@ -789,6 +789,7 @@ version = 2
     enable_cdi = true
 
     [plugins."io.containerd.grpc.v1.cri".containerd]
+      default_runtime_name = "runc"
 
       [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
 
@@ -809,6 +810,12 @@ version = 2
 
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
 `
 				require.Equal(t, expectedDropIn, string(actualDropIn))
 				return nil
@@ -954,6 +961,12 @@ version = 2
 
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
 `
 				require.Equal(t, expectedDropIn, string(actualDropIn))
 				return nil
@@ -1106,8 +1119,16 @@ version = 2
     enable_cdi = true
 
     [plugins."io.containerd.grpc.v1.cri".containerd]
+      default_runtime_name = "runc"
+      snapshotter = "overlayfs"
 
       [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.custom]
+          runtime_type = "io.containerd.custom.v1"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.custom.options]
+            TypeUrl = "custom.runtime/options"
 
         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
           container_annotations = ["cdi.k8s.io*"]
@@ -1132,6 +1153,20 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
             SystemdCgroup = true
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
+            SystemdCgroup = true
+
+    [plugins."io.containerd.grpc.v1.cri".registry]
+
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+          endpoint = ["https://registry-1.docker.io"]
 `
 				require.Equal(t, expectedDropIn, string(actualDropIn))
 				return nil
@@ -1278,6 +1313,12 @@ version = 2
 
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
 `
 
 				require.Equal(t, expectedDropIn, string(actualDropIn))
@@ -1407,6 +1448,12 @@ version = 2
 
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
 `
 				require.Equal(t, expectedDropIn, string(actualDropIn))
 				return nil
@@ -1533,6 +1580,12 @@ version = 3
 
           [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
+
+        [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
 `
 				require.Equal(t, expectedDropIn, string(actualDropIn))
 
@@ -1675,6 +1728,15 @@ version = 3
 
           [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
+            NoPivotRoot = false
+            Root = "/run/containerd/runc"
+            SystemdCgroup = true
+
+        [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
+            BinaryName = "/usr/bin/runc"
             NoPivotRoot = false
             Root = "/run/containerd/runc"
             SystemdCgroup = true
