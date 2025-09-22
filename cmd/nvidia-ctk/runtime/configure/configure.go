@@ -259,7 +259,7 @@ func (m command) validateFlags(config *config) error {
 		}
 	}
 
-	if !filepath.IsAbs(config.dropInConfigPath) {
+	if config.dropInConfigPath != "" && !filepath.IsAbs(config.dropInConfigPath) {
 		return fmt.Errorf("the drop-in-config path %q is not an absolute path", config.dropInConfigPath)
 	}
 
