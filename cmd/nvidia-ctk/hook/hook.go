@@ -37,7 +37,6 @@ func NewCommand(logger logger.Interface) *cli.Command {
 
 // build
 func (m hookCommand) build() *cli.Command {
-	// Create the 'hook' subcommand
 	return commands.ConfigureCDIHookCommand(m.logger, &cli.Command{
 		Name:  "hook",
 		Usage: "A collection of hooks that may be injected into an OCI spec",

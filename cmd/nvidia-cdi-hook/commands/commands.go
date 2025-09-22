@@ -18,6 +18,7 @@ package commands
 
 import (
 	"context"
+	"strings"
 
 	"github.com/urfave/cli/v3"
 
@@ -33,7 +34,7 @@ import (
 // and error handling for unsupported hooks.
 // This allows the same command to be used for the nvidia-cdi-hook and
 // nvidia-ctk hook commands.
-func ConfigureCDIHookCommand(logger logger.Interface, cmd *cli.Command) *cli.Command {
+func ConfigureCDIHookCommand(logger logger.Interface, base *cli.Command) *cli.Command {
 	// We set the default action for the command to issue a warning and exit
 	// with no error.
 	// This means that if an unsupported hook is run, a container will not fail
@@ -41,19 +42,65 @@ func ConfigureCDIHookCommand(logger logger.Interface, cmd *cli.Command) *cli.Com
 	// referring to a new hook that is not yet supported by an older NVIDIA
 	// Container Toolkit version or a hook that has been removed in newer
 	// version.
-	cmd.Action = func(ctx context.Context, cmd *cli.Command) error {
+	base.Action = func(ctx context.Context, cmd *cli.Command) error {
 		return issueUnsupportedHookWarning(logger, cmd)
 	}
-	// Define the subcommands
-	cmd.Commands = []*cli.Command{
+	// CommandNotFound is triggered when an unrecognised (sub)command is detected.
+	// We assume that an unrecognised (sub)command represents an unsupported hook
+	// (usually a hook that was added or removed)
+	base.CommandNotFound = func(ctx context.Context, cmd *cli.Command, commandName string) {
+		_ = issueUnsupportedHookWarning(logger, cmd)
+	}
+	// OnUsageError is triggered when an unexpected flag is detected.
+	// We check the invoked command to determine whether it is an expected
+	// hook, and assume that this is an unsupported hook otherwise.
+	base.OnUsageError = func(ctx context.Context, cmd *cli.Command, err error, isSubcommand bool) error {
+		// If this is not an error that comes from parsing an unrecognised flag,
+		// return it as is.
+		if !strings.HasPrefix(err.Error(), "flag provided but not defined: -") {
+			return err
+		}
+
+		// If the first argument is a recognised command, we return the error as
+		// is since it represents an incorrect argument to the specific hook.
+		var subcommandName string
+		for _, arg := range cmd.Args().Slice() {
+			if strings.HasPrefix(arg, "-") {
+				continue
+			}
+			subcommandName = arg
+			break
+		}
+		// If a subcommand is detected and is a recognised subcommand, we return
+		// the error as is.
+		if subcommandName != "" && cmd.Command(subcommandName) != nil {
+			return err
+		}
+
+		// At this point either no args have been supplied or the (sub)command
+		// (first arg) is not regognised.
+		// We issue a warning and returun nil.
+		return issueUnsupportedHookWarning(logger, cmd)
+	}
+
+	// Define the supported hooks.
+	base.Commands = []*cli.Command{
 		ldcache.NewCommand(logger),
 		symlinks.NewCommand(logger),
 		chmod.NewCommand(logger),
 		cudacompat.NewCommand(logger),
 		disabledevicenodemodification.NewCommand(logger),
+		{
+			Name:   "noop",
+			Usage:  "The noop hook performs no actions and is only added to facilitate basic testing of the CLI",
+			Hidden: true,
+			Action: func(_ context.Context, _ *cli.Command) error {
+				return nil
+			},
+		},
 	}
 
-	return cmd
+	return base
 }
 
 // issueUnsupportedHookWarning logs a warning that no hook or an unsupported
