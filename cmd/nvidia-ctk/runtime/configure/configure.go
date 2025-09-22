@@ -250,7 +250,7 @@ func (m command) validateFlags(config *config) error {
 		}
 	}
 
-	if config.dropInConfigPath == "" && (config.runtime == "containerd" || config.runtime == "crio") {
+	if config.dropInConfigPath == "" {
 		switch config.runtime {
 		case "containerd":
 			config.dropInConfigPath = defaultContainerdDropInConfigFilePath
@@ -261,6 +261,10 @@ func (m command) validateFlags(config *config) error {
 
 	if config.dropInConfigPath != "" && !filepath.IsAbs(config.dropInConfigPath) {
 		return fmt.Errorf("the drop-in-config path %q is not an absolute path", config.dropInConfigPath)
+	}
+
+	if config.dropInConfigPath != "" && config.runtime == "docker" {
+		return fmt.Errorf("runtime %v does not support drop-in configs", config.runtime)
 	}
 
 	return nil

@@ -92,6 +92,7 @@ func (c *ConfigWithDropIn) RemoveRuntime(name string) error {
 // If the config is empty, the file will be deleted.
 func (c *topLevelConfig) Save(dropInPath string) (int64, error) {
 	saveToPath := c.path
+	// If dropInPath is empty, we write to STDOUT
 	if dropInPath == "" {
 		saveToPath = ""
 	}
