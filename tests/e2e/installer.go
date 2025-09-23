@@ -62,11 +62,49 @@ docker run --pid=host --rm -i --privileged	\
 	--restart-mode=systemd
 `
 
+// containerdInstallTemplate is a template for installing the NVIDIA Container Toolkit
+// on a host using containerd with drop-in configuration support.
+var containerdInstallTemplate = `
+set -xe
+
+# if the TEMP_DIR is already set, use it
+if [ -f /tmp/ctk_e2e_temp_dir.txt ]; then
+    TEMP_DIR=$(cat /tmp/ctk_e2e_temp_dir.txt)
+else
+    TEMP_DIR="/tmp/ctk_e2e.$(date +%s)_$RANDOM"
+    echo "$TEMP_DIR" > /tmp/ctk_e2e_temp_dir.txt
+fi
+
+# if TEMP_DIR does not exist, create it
+if [ ! -d "$TEMP_DIR" ]; then
+    mkdir -p "$TEMP_DIR"
+fi
+
+# Create the drop-in config directory if it doesn't exist
+mkdir -p /etc/containerd/conf.d || true
+
+docker run --pid=host --rm -i --privileged \
+    -v /:/host \
+    -v "$TEMP_DIR:$TEMP_DIR" \
+    -v /etc/containerd:/config-root \
+    {{.Image}} \
+    --root "$TEMP_DIR/toolkit" \
+    --runtime=containerd \
+    --config=/config-root/config.toml \
+    --drop-in-config=/config-root/conf.d/99-nvidia.toml \
+    --drop-in-config-host-path=/etc/containerd/conf.d/99-nvidia.toml \
+    --driver-root=/ \
+    --no-daemon \
+    --restart-mode=none{{if .AdditionalFlags}} \
+    {{.AdditionalFlags}}{{end}}
+`
+
 type ToolkitInstaller struct {
 	runner   Runner
 	template string
 
-	Image string
+	Image           string
+	AdditionalFlags string
 }
 
 type installerOption func(*ToolkitInstaller)
@@ -86,6 +124,12 @@ func WithImage(image string) installerOption {
 func WithTemplate(template string) installerOption {
 	return func(i *ToolkitInstaller) {
 		i.template = template
+	}
+}
+
+func WithAdditionalFlags(flags string) installerOption {
+	return func(i *ToolkitInstaller) {
+		i.AdditionalFlags = flags
 	}
 }
 

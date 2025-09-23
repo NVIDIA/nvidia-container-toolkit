@@ -352,7 +352,9 @@ func (r remoteRunner) Run(script string) (string, string, error) {
 }
 
 func (r nestedContainerRunner) Run(script string) (string, string, error) {
-	return r.runner.Run(fmt.Sprintf("docker exec -u root "+r.containerName+" bash -c '%s'", script))
+	// Escape single quotes in the script to prevent shell syntax errors
+	escapedScript := strings.ReplaceAll(script, "'", "'\"'\"'")
+	return r.runner.Run(fmt.Sprintf("docker exec -u root "+r.containerName+" bash -c '%s'", escapedScript))
 }
 
 // createSshClient creates a ssh client, and retries if it fails to connect

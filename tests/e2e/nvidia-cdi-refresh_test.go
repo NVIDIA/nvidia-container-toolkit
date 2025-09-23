@@ -19,8 +19,8 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"strings"
+	"text/template"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

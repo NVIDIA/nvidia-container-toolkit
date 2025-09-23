@@ -20,10 +20,10 @@ package installer
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"io"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	log "github.com/sirupsen/logrus"
 

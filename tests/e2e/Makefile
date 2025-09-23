@@ -25,6 +25,7 @@ GINKGO_BIN := $(CURDIR)/bin/ginkgo
 # - nvidia-container-cli
 # - docker
 # - nvidia-cdi-refresh
+# - containerd
 GINKGO_FOCUS ?=
 
 test: $(GINKGO_BIN)

@@ -42,8 +42,8 @@ curl -fsSL http://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu-b
 }
 
 # Enter a new mount + PID namespace so we can pivot_root without touching the
-# container'\''s original filesystem.
-unshare --mount --pid --fork --propagation private -- sh -eux <<'\''IN_NS'\''
+# container's original filesystem.
+unshare --mount --pid --fork --propagation private -- sh -eux <<'IN_NS'
   : "${ROOTFS:?}"
 
   # 1 Bind-mount the new root and make the mount private
