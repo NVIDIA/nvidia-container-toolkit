@@ -26,6 +26,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/ocihook"
@@ -35,7 +36,10 @@ import (
 const (
 	Name = "crio"
 
-	defaultConfigMode = "hook"
+	defaultConfigMode = configModeConfig
+
+	configModeConfig = "config"
+	configModeHook   = "hook"
 
 	// Hook-based settings
 	defaultHooksDir     = "/usr/share/containers/oci/hooks.d"
@@ -86,6 +90,16 @@ func Flags(opts *Options) []cli.Flag {
 	}
 
 	return flags
+}
+
+func (opts *Options) Validate(logger logger.Interface, _ *cli.Command) error {
+	if opts.configMode != configModeConfig && opts.configMode != configModeHook {
+		return fmt.Errorf("invalid cri-o config mode: %q", opts.configMode)
+	}
+	if opts.configMode == configModeHook {
+		logger.Warningf("The %q config for cri-o is deprecated", opts.configMode)
+	}
+	return nil
 }
 
 // Setup installs the prestart hook required to launch GPU-enabled containers

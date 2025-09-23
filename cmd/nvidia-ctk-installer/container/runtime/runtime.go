@@ -146,6 +146,9 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 		}
 	case containerd.Name:
 	case crio.Name:
+		if err := opts.crioOptions.Validate(logger, c); err != nil {
+			return fmt.Errorf("invalid cri-o config: %w", err)
+		}
 	}
 
 	// Apply the runtime-specific config changes.
