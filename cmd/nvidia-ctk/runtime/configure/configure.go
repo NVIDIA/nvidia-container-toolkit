@@ -177,13 +177,14 @@ func (m command) build() *cli.Command {
 }
 
 func (m command) validateFlags(config *config) error {
-	if config.mode == "oci-hook" {
+	if config.mode == "oci-hook" || config.mode == "hook" {
+		m.logger.Warningf("The %q config-mode is deprecated", config.mode)
 		if !filepath.IsAbs(config.nvidiaRuntime.hookPath) {
 			return fmt.Errorf("the NVIDIA runtime hook path %q is not an absolute path", config.nvidiaRuntime.hookPath)
 		}
 		return nil
 	}
-	if config.mode != "" && config.mode != "config-file" {
+	if config.mode != "" && config.mode != "config-file" && config.mode != "config" {
 		m.logger.Warningf("Ignoring unsupported config mode for %v: %q", config.runtime, config.mode)
 	}
 	config.mode = "config-file"
@@ -246,9 +247,9 @@ func (m command) validateFlags(config *config) error {
 // configureWrapper updates the specified container engine config to enable the NVIDIA runtime
 func (m command) configureWrapper(config *config) error {
 	switch config.mode {
-	case "oci-hook":
+	case "oci-hook", "hook":
 		return m.configureOCIHook(config)
-	case "config-file":
+	case "config-file", "config":
 		return m.configureConfigFile(config)
 	}
 	return fmt.Errorf("unsupported config-mode: %v", config.mode)
