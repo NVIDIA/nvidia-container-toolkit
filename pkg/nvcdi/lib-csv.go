@@ -82,5 +82,25 @@ func (l *csvlib) GetDeviceSpecs() ([]specs.Device, error) {
 
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
 func (l *csvlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	return edits.FromDiscoverer(discover.None{})
+	if l.featureFlags["disable-openrm-drivers-in-csv"] {
+		return edits.FromDiscoverer(discover.None{})
+	}
+
+	d, err := (*nvcdilib)(l).newDriverVersionDiscoverer()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create discoverer for driver files: %v", err)
+	}
+
+	metaDevices := discover.NewCharDeviceDiscoverer(
+		l.logger,
+		l.devRoot,
+		[]string{
+			"/dev/nvidia-modeset",
+			"/dev/nvidia-uvm-tools",
+			"/dev/nvidia-uvm",
+			"/dev/nvidiactl",
+		},
+	)
+
+	return edits.FromDiscoverer(discover.Merge(d, metaDevices))
 }
