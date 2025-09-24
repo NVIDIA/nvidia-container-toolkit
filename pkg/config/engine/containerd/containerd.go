@@ -133,10 +133,15 @@ func New(opts ...Option) (engine.Interface, error) {
 		}
 		dropInConfig := &engine.Config{
 			Source: sourceConfig,
-			// The destinationConfig is an empty config with the same options
-			// as the source config.
+			// The destinationConfig is a minimal config with the same options
+			// as the source config. The starting content of the destinationConfig
+			// is the entire plugins."io.containerd.grpc.v1.cri" section of the source
+			// config. This is needed due to how containerd merges configuration from
+			// multiple files. In particular, plugins are overridden by key and the
+			// content is not merged. This issue is fixed starting in containerd 2.1
+			// Reference: https://github.com/containerd/containerd/issues/5837
 			Destination: &Config{
-				Tree:          toml.NewEmpty(),
+				Tree:          getBaseDropInConfigTree(sourceConfig),
 				configOptions: sourceConfigOptions,
 			},
 		}
@@ -203,4 +208,18 @@ func chrootIfRequired(hostRoot string, commandLine ...string) []string {
 	}
 
 	return append([]string{"chroot", hostRoot}, commandLine...)
+}
+
+// getBaseDropInConfigTree returns the base config to use for the drop-in config file.
+// For older containerd versions (e.g. 1.7) the plugins section of multiple
+// configs are not fully merged, but merged by key instead. This means that we
+// need to duplicate the entire plugin-specific config in the drop in file so as
+// to not override settings applied in the base config.
+func getBaseDropInConfigTree(sourceConfig *Config) *toml.Tree {
+	baseDropInConfigTree := toml.NewEmpty()
+	criPlugin := sourceConfig.GetSubtreeByPath([]string{"plugins", sourceConfig.CRIRuntimePluginName})
+	if criPlugin != nil {
+		baseDropInConfigTree.SetPath([]string{"plugins", sourceConfig.CRIRuntimePluginName}, criPlugin)
+	}
+	return baseDropInConfigTree
 }
