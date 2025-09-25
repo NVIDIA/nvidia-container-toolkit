@@ -141,7 +141,7 @@ func New(opts ...Option) (engine.Interface, error) {
 			},
 		}
 
-		cfg := NewConfigWithDropIn(b.topLevelConfigPath, b.containerToHostPathMap, topLevelConfig, dropInConfig)
+		cfg := NewConfigWithDropIn(b.logger, b.topLevelConfigPath, b.containerToHostPathMap, topLevelConfig, dropInConfig)
 		return cfg, nil
 	}
 }

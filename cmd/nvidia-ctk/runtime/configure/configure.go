@@ -52,6 +52,10 @@ const (
 	defaultConfigSource = configSourceFile
 	configSourceCommand = "command"
 	configSourceFile    = "file"
+
+	// TODO: We may want to spend some time unifying the handling of config
+	// files here with the Setup-Cleanup logic in nvidia-ctk-installer.
+	runtimeSpecificDefault = "RUNTIME_SPECIFIC_DEFAULT"
 )
 
 type command struct {
@@ -125,6 +129,7 @@ func (m command) build() *cli.Command {
 			&cli.StringFlag{
 				Name:        "drop-in-config",
 				Usage:       "path to the NVIDIA-specific config file to create. When specified, runtime configurations are saved to this file instead of modifying the main config file",
+				Value:       runtimeSpecificDefault,
 				Destination: &config.dropInConfigPath,
 			},
 			&cli.StringFlag{
@@ -250,21 +255,23 @@ func (m command) validateFlags(config *config) error {
 		}
 	}
 
-	if config.dropInConfigPath == "" {
+	if config.dropInConfigPath == runtimeSpecificDefault {
 		switch config.runtime {
 		case "containerd":
 			config.dropInConfigPath = defaultContainerdDropInConfigFilePath
 		case "crio":
 			config.dropInConfigPath = defaultCrioDropInConfigFilePath
+		case "docker":
+			config.dropInConfigPath = ""
 		}
-	}
-
-	if config.dropInConfigPath != "" && !filepath.IsAbs(config.dropInConfigPath) {
-		return fmt.Errorf("the drop-in-config path %q is not an absolute path", config.dropInConfigPath)
 	}
 
 	if config.dropInConfigPath != "" && config.runtime == "docker" {
 		return fmt.Errorf("runtime %v does not support drop-in configs", config.runtime)
+	}
+
+	if config.dropInConfigPath != "" && !filepath.IsAbs(config.dropInConfigPath) {
+		return fmt.Errorf("the drop-in-config path %q is not an absolute path", config.dropInConfigPath)
 	}
 
 	return nil
@@ -371,16 +378,12 @@ func (c *config) getCommandConfigSource() toml.Loader {
 // getOutputConfigPath returns the configured config path or "" if dry-run is enabled
 func (c *config) getOutputConfigPath() string {
 	if c.dryRun {
-		return ""
+		return engine.SaveToSTDOUT
 	}
-	var configFilePath string
-	if c.runtime == "containerd" || c.runtime == "crio" {
-		configFilePath = c.dropInConfigPath
-	} else {
-		configFilePath = c.configFilePath
+	if c.dropInConfigPath != "" {
+		return c.dropInConfigPath
 	}
-
-	return configFilePath
+	return c.configFilePath
 }
 
 // configureOCIHook creates and configures the OCI hook for the NVIDIA runtime
