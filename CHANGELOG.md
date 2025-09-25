@@ -1,5 +1,13 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.17.9
+- Don't inject enable-cuda-compat hook in CSV mode
+- Use securejoin to resolve /proc
+
+### Changes in the Toolkit Container
+
+- Bump nvidia/cuda to 12.9.1 in /deployments/container
+
 ## v1.17.8
 
 - Updated the ordering of Mounts in CDI to have a deterministic output. This makes testing more consistent.
