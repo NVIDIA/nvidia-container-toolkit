@@ -17,6 +17,8 @@
 package commands
 
 import (
+	"context"
+
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/chmod"
@@ -27,27 +29,43 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
-// New creates the commands associated with supported CDI hooks.
-// These are shared by the nvidia-cdi-hook and nvidia-ctk hook commands.
-func New(logger logger.Interface) []*cli.Command {
-	return []*cli.Command{
+// ConfigureCDIHookCommand configures a base command with supported CDI hooks
+// and error handling for unsupported hooks.
+// This allows the same command to be used for the nvidia-cdi-hook and
+// nvidia-ctk hook commands.
+func ConfigureCDIHookCommand(logger logger.Interface, cmd *cli.Command) *cli.Command {
+	// We set the default action for the command to issue a warning and exit
+	// with no error.
+	// This means that if an unsupported hook is run, a container will not fail
+	// to launch. An unsupported hook could be the result of a CDI specification
+	// referring to a new hook that is not yet supported by an older NVIDIA
+	// Container Toolkit version or a hook that has been removed in newer
+	// version.
+	cmd.Action = func(ctx context.Context, cmd *cli.Command) error {
+		return issueUnsupportedHookWarning(logger, cmd)
+	}
+	// Define the subcommands
+	cmd.Commands = []*cli.Command{
 		ldcache.NewCommand(logger),
 		symlinks.NewCommand(logger),
 		chmod.NewCommand(logger),
 		cudacompat.NewCommand(logger),
 		disabledevicenodemodification.NewCommand(logger),
 	}
+
+	return cmd
 }
 
-// IssueUnsupportedHookWarning logs a warning that no hook or an unsupported
+// issueUnsupportedHookWarning logs a warning that no hook or an unsupported
 // hook has been specified.
 // This happens if a subcommand is provided that does not match one of the
 // subcommands that has been explicitly specified.
-func IssueUnsupportedHookWarning(logger logger.Interface, c *cli.Command) {
+func issueUnsupportedHookWarning(logger logger.Interface, c *cli.Command) error {
 	args := c.Args().Slice()
 	if len(args) == 0 {
 		logger.Warningf("No CDI hook specified")
 	} else {
 		logger.Warningf("Unsupported CDI hook: %v", args[0])
 	}
+	return nil
 }
