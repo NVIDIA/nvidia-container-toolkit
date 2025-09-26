@@ -193,13 +193,8 @@ func (d *device) IsCoherent() (bool, error) {
 		return false, fmt.Errorf("error getting addressing mode: %v", ret)
 	}
 
-	switch nvml.DeviceAddressingModeType(mode.Value) {
-	case nvml.DEVICE_ADDRESSING_MODE_HMM:
+	if nvml.DeviceAddressingModeType(mode.Value) == nvml.DEVICE_ADDRESSING_MODE_ATS {
 		return true, nil
-	case nvml.DEVICE_ADDRESSING_MODE_ATS:
-		return true, nil
-	case nvml.DEVICE_ADDRESSING_MODE_NONE:
-		return false, nil
 	}
 	return false, nil
 }
