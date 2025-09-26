@@ -14,7 +14,7 @@
 
 LIB_NAME := nvidia-container-toolkit
 LIB_VERSION := 1.18.0
-LIB_TAG := rc.4
+LIB_TAG := rc.5
 
 # The package version is the combination of the library version and tag.
 # If the tag is specified the two components are joined with a tilde (~).

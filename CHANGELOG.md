@@ -1,7 +1,15 @@
 # NVIDIA Container Toolkit Changelog
 
 ## v1.18.0-rc.5
+- Fix handling of unrecognised hooks
+- Disable generation of coherent CDI specs by default
 - Update go-nvlib to restrict nvidia.com/gpu.coherent devices to devices with an ATS addressing mode.
+- Deprecate the hook config mode for cri-o
+
+### Changes in the Toolkit Container
+- Deprecate the hook config mode for cri-o
+- Add CRI plugin config from source containerd config to drop-in file
+- Add support for drop-in config files in a container
 
 ## v1.18.0-rc.4
 
