@@ -75,7 +75,7 @@ func (l *nvcdilib) newDriverVersionDiscoverer() (discover.Discover, error) {
 }
 
 // NewDriverLibraryDiscoverer creates a discoverer for the libraries associated with the specified driver version.
-func (l *nvcdilib) NewDriverLibraryDiscoverer(version string, libcudaSoParentDirPath string) (discover.Discover, error) {
+func (l *nvcdilib) NewDriverLibraryDiscoverer(version string, libCudaSoParentDirectoryPath string) (discover.Discover, error) {
 	versionSuffixLibraryMounts, err := l.getVersionSuffixDriverLibraryMounts(version)
 	if err != nil {
 		return nil, err
@@ -110,10 +110,6 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string, libcudaSoParentDir
 	disableDeviceNodeModification := l.hookCreator.Create(DisableDeviceNodeModificationHook)
 	discoverers = append(discoverers, disableDeviceNodeModification)
 
-	libCudaSoParentDirectoryPath, err := l.driver.GetLibcudaParentDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get libcuda.so parent directory path: %w", err)
-	}
 	environmentVariable := &discover.EnvVar{
 		Name:  "NVIDIA_CTK_LIBCUDA_DIR",
 		Value: libCudaSoParentDirectoryPath,

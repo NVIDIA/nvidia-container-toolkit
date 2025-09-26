@@ -90,7 +90,7 @@ func (r *Driver) Version() (string, error) {
 	return r.version, nil
 }
 
-// GetLibcudaParentDir returns the cached libcuda.so path if possible.
+// GetLibcudasoPath returns the cached libcuda.so path if possible.
 // If this has not yet been initialized, the path is first detected and then returned.
 func (r *Driver) GetLibcudasoPath() (string, error) {
 	r.Lock()

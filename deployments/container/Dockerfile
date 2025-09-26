@@ -42,6 +42,9 @@ RUN set -eux; \
 ENV GOPATH=/go
 ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
 
+ARG GOPROXY=direct
+ENV GOPROXY=$GOPROXY
+
 WORKDIR /build
 COPY . .
 

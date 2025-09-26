@@ -76,7 +76,11 @@ jobs:
           path: ${{ github.workspace }}/dist/*
 
   image:
-    runs-on: ubuntu-latest
+    runs-on: linux-amd64-cpu4
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
     strategy:
       matrix:
         target:
@@ -109,12 +113,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Setup JFrog CLI
+        id: jfrog
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: https://${{ secrets.OIDC_ARTIFACTORY_ENDPOINT }}/
+        with:
+          oidc-provider-name: nvgithub
+          oidc-audience: ${{ secrets.OIDC_ARTIFACTORY_ENDPOINT }}
+
       - name: Build image
         env:
           IMAGE_NAME: ghcr.io/nvidia/container-toolkit
           VERSION: ${{ inputs.version }}
           PUSH_ON_BUILD: "true"
           BUILD_MULTI_ARCH_IMAGES: ${{ inputs.build_multi_arch_images }}
+          OIDC_USER: ${{ steps.jfrog.outputs.oidc-user }}
+          OIDC_TOKEN: ${{ steps.jfrog.outputs.oidc-token }}
+          OIDC_ARTIFACTORY_ENDPOINT: ${{ secrets.OIDC_ARTIFACTORY_ENDPOINT }}
         run: |
+          OIDC_USER_ENCODED=$(python3 -c 'import urllib.parse, os; print(urllib.parse.quote_plus(os.environ["OIDC_USER"]))')
+          export GOPROXY="https://${OIDC_USER_ENCODED}:${OIDC_TOKEN}@${OIDC_ARTIFACTORY_ENDPOINT}/artifactory/api/go/edge-go-remote-virtual"
           echo "${VERSION}"
           make -f deployments/container/Makefile build-${{ matrix.target }}
