@@ -17,8 +17,6 @@
 package hook
 
 import (
-	"context"
-
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/commands"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
@@ -39,23 +37,8 @@ func NewCommand(logger logger.Interface) *cli.Command {
 
 // build
 func (m hookCommand) build() *cli.Command {
-	// Create the 'hook' subcommand
-	hook := cli.Command{
+	return commands.ConfigureCDIHookCommand(m.logger, &cli.Command{
 		Name:  "hook",
 		Usage: "A collection of hooks that may be injected into an OCI spec",
-		// We set the default action for the `hook` subcommand to issue a
-		// warning and exit with no error.
-		// This means that if an unsupported hook is run, a container will not fail
-		// to launch. An unsupported hook could be the result of a CDI specification
-		// referring to a new hook that is not yet supported by an older NVIDIA
-		// Container Toolkit version or a hook that has been removed in newer
-		// version.
-		Action: func(ctx context.Context, cmd *cli.Command) error {
-			commands.IssueUnsupportedHookWarning(m.logger, cmd)
-			return nil
-		},
-		Commands: commands.New(m.logger),
-	}
-
-	return &hook
+	})
 }
