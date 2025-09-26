@@ -29,7 +29,6 @@ import (
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 )
 
 func TestGenerateSpec(t *testing.T) {
@@ -478,7 +477,6 @@ containerEdits:
 			}
 			tc.options.nvmllib = server
 
-			tc.options.featureFlags = []string{string(nvcdi.FeatureDisableCoherentAnnotations)}
 			specs, err := c.generateSpecs(&tc.options)
 			require.ErrorIs(t, err, tc.expectedError)
 

@@ -112,7 +112,7 @@ func (l *fullGPUDeviceSpecGenerator) device() (device.Device, error) {
 }
 
 func (l *fullGPUDeviceSpecGenerator) getDeviceAnnotations() (map[string]string, error) {
-	if l.featureFlags[FeatureDisableCoherentAnnotations] {
+	if !l.featureFlags[FeatureEnableCoherentAnnotations] {
 		return nil, nil
 	}
 

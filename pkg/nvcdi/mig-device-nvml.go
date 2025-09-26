@@ -41,7 +41,7 @@ func (l *migDeviceSpecGenerator) GetUUID() (string, error) {
 }
 
 func (l *nvmllib) newMIGDeviceSpecGeneratorFromDevice(i int, d device.Device, j int, m device.MigDevice) (*migDeviceSpecGenerator, error) {
-	parent, err := l.newFullGPUDeviceSpecGeneratorFromDevice(i, d, map[FeatureFlag]bool{FeatureDisableCoherentAnnotations: true})
+	parent, err := l.newFullGPUDeviceSpecGeneratorFromDevice(i, d, make(map[FeatureFlag]bool))
 	if err != nil {
 		return nil, err
 	}
