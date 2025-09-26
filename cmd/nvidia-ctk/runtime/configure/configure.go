@@ -46,9 +46,16 @@ const (
 	defaultCrioConfigFilePath       = "/etc/crio/crio.conf"
 	defaultDockerConfigFilePath     = "/etc/docker/daemon.json"
 
+	defaultContainerdDropInConfigFilePath = "/etc/containerd/config.d/99-nvidia.toml"
+	defaultCrioDropInConfigFilePath       = "/etc/crio/conf.d/99-nvidia.toml"
+
 	defaultConfigSource = configSourceFile
 	configSourceCommand = "command"
 	configSourceFile    = "file"
+
+	// TODO: We may want to spend some time unifying the handling of config
+	// files here with the Setup-Cleanup logic in nvidia-ctk-installer.
+	runtimeSpecificDefault = "RUNTIME_SPECIFIC_DEFAULT"
 )
 
 type command struct {
@@ -66,13 +73,14 @@ func NewCommand(logger logger.Interface) *cli.Command {
 // config defines the options that can be set for the CLI through config files,
 // environment variables, or command line config
 type config struct {
-	dryRun         bool
-	runtime        string
-	configFilePath string
-	executablePath string
-	configSource   string
-	mode           string
-	hookFilePath   string
+	dryRun           bool
+	runtime          string
+	configFilePath   string
+	dropInConfigPath string
+	executablePath   string
+	configSource     string
+	mode             string
+	hookFilePath     string
 
 	nvidiaRuntime struct {
 		name         string
@@ -117,6 +125,12 @@ func (m command) build() *cli.Command {
 				Name:        "config",
 				Usage:       "path to the config file for the target runtime",
 				Destination: &config.configFilePath,
+			},
+			&cli.StringFlag{
+				Name:        "drop-in-config",
+				Usage:       "path to the NVIDIA-specific config file to create. When specified, runtime configurations are saved to this file instead of modifying the main config file",
+				Value:       runtimeSpecificDefault,
+				Destination: &config.dropInConfigPath,
 			},
 			&cli.StringFlag{
 				Name:        "executable-path",
@@ -241,6 +255,25 @@ func (m command) validateFlags(config *config) error {
 		}
 	}
 
+	if config.dropInConfigPath == runtimeSpecificDefault {
+		switch config.runtime {
+		case "containerd":
+			config.dropInConfigPath = defaultContainerdDropInConfigFilePath
+		case "crio":
+			config.dropInConfigPath = defaultCrioDropInConfigFilePath
+		case "docker":
+			config.dropInConfigPath = ""
+		}
+	}
+
+	if config.dropInConfigPath != "" && config.runtime == "docker" {
+		return fmt.Errorf("runtime %v does not support drop-in configs", config.runtime)
+	}
+
+	if config.dropInConfigPath != "" && !filepath.IsAbs(config.dropInConfigPath) {
+		return fmt.Errorf("the drop-in-config path %q is not an absolute path", config.dropInConfigPath)
+	}
+
 	return nil
 }
 
@@ -345,7 +378,10 @@ func (c *config) getCommandConfigSource() toml.Loader {
 // getOutputConfigPath returns the configured config path or "" if dry-run is enabled
 func (c *config) getOutputConfigPath() string {
 	if c.dryRun {
-		return ""
+		return engine.SaveToSTDOUT
+	}
+	if c.dropInConfigPath != "" {
+		return c.dropInConfigPath
 	}
 	return c.configFilePath
 }

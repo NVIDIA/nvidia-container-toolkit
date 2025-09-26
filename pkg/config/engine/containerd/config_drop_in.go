@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 )
 
@@ -28,6 +29,7 @@ import (
 // The first is the top-level config and the second is an in-memory drop-in config
 // that only contains modifications made to the config.
 type ConfigWithDropIn struct {
+	logger         logger.Interface
 	topLevelConfig *topLevelConfig
 	engine.Interface
 }
@@ -37,14 +39,17 @@ var _ engine.Interface = (*ConfigWithDropIn)(nil)
 // A topLevelConfig stores the original on-disk top-level config.
 // The path to the config is also stored to allow it to be modified if required.
 type topLevelConfig struct {
+	logger                 logger.Interface
 	path                   string
 	containerToHostPathMap map[string]string
 	config                 *Config
 }
 
-func NewConfigWithDropIn(topLevelConfigPath string, containerToHostPathMap map[string]string, tlConfig *Config, dropInConfig engine.Interface) *ConfigWithDropIn {
+func NewConfigWithDropIn(logger logger.Interface, topLevelConfigPath string, containerToHostPathMap map[string]string, tlConfig *Config, dropInConfig engine.Interface) *ConfigWithDropIn {
 	return &ConfigWithDropIn{
+		logger: logger,
 		topLevelConfig: &topLevelConfig{
+			logger:                 logger,
 			path:                   topLevelConfigPath,
 			containerToHostPathMap: containerToHostPathMap,
 			config:                 tlConfig,
@@ -57,6 +62,9 @@ func NewConfigWithDropIn(topLevelConfigPath string, containerToHostPathMap map[s
 // The top-level config is optionally updated to include the required imports
 // to allow the drop-in-file to be created.
 func (c *ConfigWithDropIn) Save(dropInPath string) (int64, error) {
+	if dropInPath == engine.SaveToSTDOUT {
+		c.logger.Infof("Drop-in config:")
+	}
 	bytesWritten, err := c.Interface.Save(dropInPath)
 	if err != nil {
 		return 0, err
@@ -73,7 +81,7 @@ func (c *ConfigWithDropIn) Save(dropInPath string) (int64, error) {
 	}
 
 	// TODO: Only do this if we've actually modified the config.
-	if err := c.topLevelConfig.flush(); err != nil {
+	if _, err := c.topLevelConfig.Save(dropInPath); err != nil {
 		return 0, fmt.Errorf("failed to save top-level config: %w", err)
 	}
 
@@ -88,14 +96,15 @@ func (c *ConfigWithDropIn) RemoveRuntime(name string) error {
 	return c.Interface.RemoveRuntime(name)
 }
 
-// flush saves the top-level config to it's path.
+// flush saves the top-level config to its path.
 // If the config is empty, the file will be deleted.
-func (c *topLevelConfig) flush() error {
-	_, err := c.config.Save(c.path)
-	if err != nil {
-		return fmt.Errorf("failed to flush config to %q: %w", c.path, err)
+func (c *topLevelConfig) Save(dropInPath string) (int64, error) {
+	saveToPath := c.path
+	if dropInPath == engine.SaveToSTDOUT {
+		saveToPath = engine.SaveToSTDOUT
+		c.logger.Infof("Top-level config:")
 	}
-	return nil
+	return c.config.Save(saveToPath)
 }
 
 func (c *topLevelConfig) simplify(dropInFilename string) {
@@ -127,6 +136,11 @@ func (c *topLevelConfig) removeImports(dropInFilename string) {
 }
 
 func (c *topLevelConfig) importPattern(dropInFilename string) string {
+	// TODO: If we make output to STDOUT a property of the config itself, then
+	// we can actually generate the correct import statement.
+	if dropInFilename == engine.SaveToSTDOUT {
+		return "/etc/containerd/config.d/*.toml"
+	}
 	return c.asHostPath(filepath.Dir(dropInFilename)) + "/*.toml"
 }
 

@@ -16,6 +16,12 @@
 
 package engine
 
+const (
+	// SaveToSTDOUT is used to write the specified config to stdout instead of
+	// to a file on disk.
+	SaveToSTDOUT = ""
+)
+
 // Interface defines the API for a runtime config updater.
 type Interface interface {
 	AddRuntime(string, string, bool) error
