@@ -16,13 +16,6 @@ name: Golang
 
 on:
   workflow_call: {}
-  pull_request:
-    types:
-      - opened
-      - synchronize
-    branches:
-      - main
-      - release-*
 
 jobs:
   check:
@@ -84,7 +77,10 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: linux-amd64-cpu4
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -100,4 +96,19 @@ jobs:
         with:
           go-version: ${{ env.GOLANG_VERSION }}
 
-      - run: make build
+      - name: Setup JFrog CLI
+        id: jfrog
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: https://${{ secrets.OIDC_ARTIFACTORY_ENDPOINT }}/
+        with:
+          oidc-provider-name: nvgithub
+          oidc-audience: ${{ secrets.OIDC_ARTIFACTORY_ENDPOINT }}
+      - env:
+          OIDC_USER: ${{ steps.jfrog.outputs.oidc-user }}
+          OIDC_TOKEN: ${{ steps.jfrog.outputs.oidc-token }}
+          OIDC_ARTIFACTORY_ENDPOINT: ${{ secrets.OIDC_ARTIFACTORY_ENDPOINT }}
+        run: |
+          OIDC_USER_ENCODED=$(python3 -c 'import urllib.parse, os; print(urllib.parse.quote_plus(os.environ["OIDC_USER"]))')
+          export GOPROXY="https://${OIDC_USER_ENCODED}:${OIDC_TOKEN}@${OIDC_ARTIFACTORY_ENDPOINT}/artifactory/api/go/edge-go-remote-virtual"
+          make build

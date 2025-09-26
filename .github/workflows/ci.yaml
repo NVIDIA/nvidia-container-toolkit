@@ -35,6 +35,7 @@ jobs:
         run: echo "version=$(echo $GITHUB_SHA | cut -c1-8)" >> "$GITHUB_OUTPUT"
 
   golang:
+    secrets: inherit
     uses: ./.github/workflows/golang.yaml
 
   image:
