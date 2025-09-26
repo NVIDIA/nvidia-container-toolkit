@@ -1,5 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.18.0-rc.5
+- Update go-nvlib to restrict nvidia.com/gpu.coherent devices to devices with an ATS addressing mode.
+
 ## v1.18.0-rc.4
 
 - Add drop-in file support for containerd and crio
