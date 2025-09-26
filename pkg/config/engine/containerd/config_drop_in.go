@@ -167,10 +167,7 @@ func (c *topLevelConfig) removeVersion() {
 
 func (c *topLevelConfig) ensureImports(dropInFilename string) {
 	config := c.config.Tree
-	var currentImports []string
-	if ci, ok := c.config.Get("imports").([]string); ok {
-		currentImports = ci
-	}
+	currentImports, _ := c.config.getStringArrayValue([]string{"imports"})
 
 	requiredImport := c.importPattern(dropInFilename)
 	for _, currentImport := range currentImports {
