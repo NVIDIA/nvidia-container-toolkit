@@ -28,7 +28,9 @@ import (
 
 const (
 	// AttributeMediaExtensions holds the string representation for the media extension MIG profile attribute.
-	AttributeMediaExtensions = "me"
+	AttributeMediaExtensions    = "me"
+	AttributeMediaExtensionsAll = "me.all"
+	AttributeGraphics           = "gfx"
 )
 
 // MigProfile represents a specific MIG profile.
@@ -46,6 +48,7 @@ type MigProfileInfo struct {
 	G              int
 	GB             int
 	Attributes     []string
+	NegAttributes  []string
 	GIProfileID    int
 	CIProfileID    int
 	CIEngProfileID int
@@ -59,14 +62,21 @@ func (d *devicelib) NewMigProfile(giProfileID, ciProfileID, ciEngProfileID int, 
 	switch giProfileID {
 	case nvml.GPU_INSTANCE_PROFILE_1_SLICE,
 		nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV1,
-		nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV2:
+		nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV2,
+		nvml.GPU_INSTANCE_PROFILE_1_SLICE_GFX,
+		nvml.GPU_INSTANCE_PROFILE_1_SLICE_NO_ME,
+		nvml.GPU_INSTANCE_PROFILE_1_SLICE_ALL_ME:
 		giSlices = 1
 	case nvml.GPU_INSTANCE_PROFILE_2_SLICE,
-		nvml.GPU_INSTANCE_PROFILE_2_SLICE_REV1:
+		nvml.GPU_INSTANCE_PROFILE_2_SLICE_REV1,
+		nvml.GPU_INSTANCE_PROFILE_2_SLICE_GFX,
+		nvml.GPU_INSTANCE_PROFILE_2_SLICE_NO_ME,
+		nvml.GPU_INSTANCE_PROFILE_2_SLICE_ALL_ME:
 		giSlices = 2
 	case nvml.GPU_INSTANCE_PROFILE_3_SLICE:
 		giSlices = 3
-	case nvml.GPU_INSTANCE_PROFILE_4_SLICE:
+	case nvml.GPU_INSTANCE_PROFILE_4_SLICE,
+		nvml.GPU_INSTANCE_PROFILE_4_SLICE_GFX:
 		giSlices = 4
 	case nvml.GPU_INSTANCE_PROFILE_6_SLICE:
 		giSlices = 6
@@ -104,6 +114,19 @@ func (d *devicelib) NewMigProfile(giProfileID, ciProfileID, ciEngProfileID int, 
 	case nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV1,
 		nvml.GPU_INSTANCE_PROFILE_2_SLICE_REV1:
 		attrs = append(attrs, AttributeMediaExtensions)
+	case nvml.GPU_INSTANCE_PROFILE_1_SLICE_ALL_ME,
+		nvml.GPU_INSTANCE_PROFILE_2_SLICE_ALL_ME:
+		attrs = append(attrs, AttributeMediaExtensionsAll)
+	case nvml.GPU_INSTANCE_PROFILE_1_SLICE_GFX,
+		nvml.GPU_INSTANCE_PROFILE_2_SLICE_GFX,
+		nvml.GPU_INSTANCE_PROFILE_4_SLICE_GFX:
+		attrs = append(attrs, AttributeGraphics)
+	}
+	var negAttrs []string
+	switch giProfileID {
+	case nvml.GPU_INSTANCE_PROFILE_1_SLICE_NO_ME,
+		nvml.GPU_INSTANCE_PROFILE_2_SLICE_NO_ME:
+		negAttrs = append(negAttrs, AttributeMediaExtensions)
 	}
 
 	p := &MigProfileInfo{
@@ -111,6 +134,7 @@ func (d *devicelib) NewMigProfile(giProfileID, ciProfileID, ciEngProfileID int, 
 		G:              giSlices,
 		GB:             int(getMigMemorySizeGB(deviceMemorySizeBytes, migMemorySizeMB)),
 		Attributes:     attrs,
+		NegAttributes:  negAttrs,
 		GIProfileID:    giProfileID,
 		CIProfileID:    ciProfileID,
 		CIEngProfileID: ciEngProfileID,
@@ -121,7 +145,7 @@ func (d *devicelib) NewMigProfile(giProfileID, ciProfileID, ciEngProfileID int, 
 
 // AssertValidMigProfileFormat checks if the string is in the proper format to represent a MIG profile.
 func (d *devicelib) AssertValidMigProfileFormat(profile string) error {
-	_, _, _, _, err := parseMigProfile(profile)
+	_, err := parseMigProfile(profile)
 	return err
 }
 
@@ -146,6 +170,9 @@ func (p MigProfileInfo) String() string {
 	var suffix string
 	if len(p.Attributes) > 0 {
 		suffix = "+" + strings.Join(p.Attributes, ",")
+	}
+	if len(p.NegAttributes) > 0 {
+		suffix = "-" + strings.Join(p.NegAttributes, ",")
 	}
 	if p.C == p.G {
 		return fmt.Sprintf("%dg.%dgb%s", p.G, p.GB, suffix)
@@ -184,59 +211,89 @@ func (p MigProfileInfo) Equals(other MigProfile) bool {
 
 // Matches checks if a MigProfile matches the string passed in.
 func (p MigProfileInfo) Matches(profile string) bool {
-	c, g, gb, attrs, err := parseMigProfile(profile)
+	migProfileInfo, err := parseMigProfile(profile)
 	if err != nil {
 		return false
 	}
-	if c != p.C {
+	if migProfileInfo.C != p.C {
 		return false
 	}
-	if g != p.G {
+	if migProfileInfo.G != p.G {
 		return false
 	}
-	if gb != p.GB {
+	if migProfileInfo.GB != p.GB {
 		return false
 	}
-	if len(attrs) != len(p.Attributes) {
+	if !matchAttributes(migProfileInfo.Attributes, p.Attributes) {
 		return false
 	}
-	sort.Strings(attrs)
-	sort.Strings(p.Attributes)
-	for i, a := range p.Attributes {
-		if a != attrs[i] {
+	if !matchAttributes(migProfileInfo.NegAttributes, p.NegAttributes) {
+		return false
+	}
+	return true
+}
+
+func matchAttributes(attrs1, attrs2 []string) bool {
+	if len(attrs1) != len(attrs2) {
+		return false
+	}
+	sort.Strings(attrs1)
+	sort.Strings(attrs2)
+	for i, a := range attrs2 {
+		if a != attrs1[i] {
 			return false
 		}
 	}
 	return true
 }
 
-func parseMigProfile(profile string) (int, int, int, []string, error) {
+func parseMigProfile(profile string) (*MigProfileInfo, error) {
 	// If we are handed the empty string, we cannot parse it.
 	if profile == "" {
-		return -1, -1, -1, nil, fmt.Errorf("profile is the empty string")
+		return nil, fmt.Errorf("profile is the empty string")
 	}
 
-	// Split by + to separate out attributes.
+	// Split by +/- to separate out attributes.
 	split := strings.SplitN(profile, "+", 2)
+	negsplit := strings.SplitN(profile, "-", 2)
+	// Make sure we don't get both positive and negative attributes.
+	if len(split) == 2 && len(negsplit) == 2 {
+		return nil, fmt.Errorf("profile '%v' contains both '+/-' attributes", profile)
+	}
+
+	if len(split) == 1 {
+		split = negsplit
+	}
 
 	// Check to make sure the c, g, and gb values match.
 	c, g, gb, err := parseMigProfileFields(split[0])
 	if err != nil {
-		return -1, -1, -1, nil, fmt.Errorf("cannot parse fields of '%v': %v", profile, err)
+		return nil, fmt.Errorf("cannot parse fields of '%v': %v", profile, err)
 	}
 
+	migProfileInfo := &MigProfileInfo{
+		C:  c,
+		G:  g,
+		GB: gb,
+	}
 	// If we have no attributes we are done.
 	if len(split) == 1 {
-		return c, g, gb, nil, nil
+		return migProfileInfo, nil
 	}
 
 	// Make sure we have the same set of attributes.
 	attrs, err := parseMigProfileAttributes(split[1])
 	if err != nil {
-		return -1, -1, -1, nil, fmt.Errorf("cannot parse attributes of '%v': %v", profile, err)
+		return nil, fmt.Errorf("cannot parse attributes of '%v': %v", profile, err)
 	}
 
-	return c, g, gb, attrs, nil
+	if len(negsplit) == 2 {
+		migProfileInfo.NegAttributes = attrs
+		return migProfileInfo, nil
+	}
+
+	migProfileInfo.Attributes = attrs
+	return migProfileInfo, nil
 }
 
 func parseMigProfileField(s string, field string) (int, error) {
@@ -310,8 +367,11 @@ func parseMigProfileAttributes(s string) ([]string, error) {
 		if a[0] >= '0' && a[0] <= '9' {
 			return nil, fmt.Errorf("attribute begins with a number")
 		}
+		if a[0] == '.' || a[len(a)-1] == '.' {
+			return nil, fmt.Errorf("attribute begins/ends with a dot")
+		}
 		for _, c := range a {
-			if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') {
+			if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '.' {
 				return nil, fmt.Errorf("non alpha-numeric character or digit in attribute")
 			}
 		}
