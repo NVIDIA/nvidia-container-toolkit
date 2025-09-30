@@ -36,7 +36,8 @@ test-preinstalled: test
 test-preinstalled: E2E_INSTALL_CTK = false
 test-preinstalled: E2E_SSH_HOST =
 
-
+GINKGO_VERSION = $(shell grep -Eo "github.com/onsi/ginkgo/v2.*$$" ./tests/go.mod | sed -e 's&github.com/onsi/ginkgo/v2[[:space:]]&&g')
+ginkgo: $(GINKGO_BIN)
 $(GINKGO_BIN):
 	mkdir -p $(CURDIR)/bin
-	GOBIN=$(CURDIR)/bin go install github.com/onsi/ginkgo/v2/ginkgo@latest
+	GOBIN=$(CURDIR)/bin go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
