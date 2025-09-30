@@ -215,4 +215,94 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			Expect(ldconfigOut).To(ContainSubstring("/usr/lib64"))
 		})
 	})
+
+	When("Running a container with LD_PRELOAD", Ordered, func() {
+		BeforeAll(func(ctx context.Context) {
+			// Create the source for the poc.
+			_, _, err := r.Run(`cat <<EOF > poc.c
+/**
+Code taken from https://youtu.be/56vcNIh35PA?si=gmh7Cx9P-lNTbl4L&t=328
+**/
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+__attribute__((constructor))
+void init() {
+// Ultra-minimal exploit just create a marker file
+int fd = open("/owned", O_CREAT | O_WRONLY, 0644);
+	if (fd >= 0) {
+		write(fd, "EXPLOITED\n", 10);
+		close(fd);
+	}
+}
+EOF`)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Create the local Dockerfile
+			_, _, err = r.Run(`cat <<EOF > Dockerfile.nvidiascape
+FROM ubuntu AS build
+RUN apt-get update && \
+	apt-get install -y gcc \
+	&& \
+	rm -rf /var/lib/apt/lists/*
+ADD poc.c .
+RUN gcc -shared -fPIC -o poc.so poc.c
+FROM ubuntu
+ENV LD_PRELOAD=/proc/self/cwd/poc.so
+COPY --from=build poc.so /
+EOF`)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Build the test image.
+			_, _, err = r.Run(`docker build -t nvidiascape-test -f Dockerfile.nvidiascape .`)
+			Expect(err).ToNot(HaveOccurred())
+
+			_, _, err = r.Run("rm -f /owned")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterAll(func(ctx context.Context) {
+			_, _, err := r.Run("rm -f poc.c")
+			Expect(err).ToNot(HaveOccurred())
+
+			_, _, err = r.Run("rm -f Dockerfile.nvidiascape")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func(ctx context.Context) {
+			_, _, err := r.Run("rm -f /owned")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should not escape when using CDI", func(ctx context.Context) {
+			_, _, err := r.Run("docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all nvidiascape-test")
+			Expect(err).ToNot(HaveOccurred())
+
+			stdout, stderr, err := r.Run(`cat /owned || echo "Unsuccessful"`)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(stderr).To(BeEmpty())
+			Expect(strings.TrimSpace(stdout)).To(Equal("Unsuccessful"))
+		})
+
+		It("should not escape when using the nvidia-container-runtime", func(ctx context.Context) {
+			_, _, err := r.Run("docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all nvidiascape-test")
+			Expect(err).ToNot(HaveOccurred())
+
+			stdout, stderr, err := r.Run(`cat /owned || echo "Unsuccessful"`)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(stderr).To(BeEmpty())
+			Expect(strings.TrimSpace(stdout)).To(Equal("Unsuccessful"))
+		})
+
+		It("should not escape when using the nvidia-container-runtime-hook", Label("legacy"), func(ctx context.Context) {
+			_, _, err := r.Run("docker run --rm --runtime=runc --gpus=all nvidiascape-test")
+			Expect(err).ToNot(HaveOccurred())
+
+			stdout, stderr, err := r.Run(`cat /owned || echo "Unsuccessful"`)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(stderr).To(BeEmpty())
+			Expect(strings.TrimSpace(stdout)).To(Equal("Unsuccessful"))
+		})
+	})
 })
