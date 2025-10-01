@@ -195,11 +195,18 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 }
 
 // CommandLineSource returns the CLI-based containerd config loader
-func CommandLineSource(hostRoot string, executablePath string) toml.Loader {
+func CommandLineSource(hostRoot string, executablePath string, topLevelConfig string) toml.Loader {
 	if executablePath == "" {
 		executablePath = "containerd"
 	}
-	return toml.FromCommandLine(chrootIfRequired(hostRoot, executablePath, "config", "dump")...)
+
+	var commandLine []string
+	if topLevelConfig != "" {
+		commandLine = []string{executablePath, "--config", topLevelConfig, "config", "dump"}
+	} else {
+		commandLine = []string{executablePath, "config", "dump"}
+	}
+	return toml.FromCommandLine(chrootIfRequired(hostRoot, commandLine...)...)
 }
 
 func chrootIfRequired(hostRoot string, commandLine ...string) []string {

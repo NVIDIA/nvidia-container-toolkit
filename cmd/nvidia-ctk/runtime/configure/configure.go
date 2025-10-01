@@ -368,7 +368,7 @@ func (c *config) resolveConfigSource() (toml.Loader, error) {
 func (c *config) getCommandConfigSource() toml.Loader {
 	switch c.runtime {
 	case "containerd":
-		return containerd.CommandLineSource("", c.executablePath)
+		return containerd.CommandLineSource("", c.executablePath, c.configFilePath)
 	case "crio":
 		return crio.CommandLineSource("", c.executablePath)
 	}

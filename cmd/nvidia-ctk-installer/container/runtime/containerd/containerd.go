@@ -176,7 +176,7 @@ func getRuntimeConfig(o *container.Options, co *Options) (engine.Interface, erro
 		containerd.WithTopLevelConfigPath(o.TopLevelConfigPath),
 		containerd.WithConfigSource(
 			toml.LoadFirst(
-				containerd.CommandLineSource(o.HostRootMount, o.ExecutablePath),
+				containerd.CommandLineSource(o.HostRootMount, o.ExecutablePath, o.TopLevelConfigPath),
 				toml.FromFile(o.TopLevelConfigPath),
 			),
 		),

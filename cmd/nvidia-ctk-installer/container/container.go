@@ -39,8 +39,9 @@ type Options struct {
 	DropInConfig         string
 	DropInConfigHostPath string
 	// TopLevelConfigPath stores the path to the top-level config for the runtime.
-	TopLevelConfigPath string
-	Socket             string
+	TopLevelConfigPath         string
+	TopLevelConfigPathHostPath string
+	Socket                     string
 	// ExecutablePath specifies the path to the container runtime executable.
 	// This is used to extract the current config, for example.
 	// If a HostRootMount is specified, this path is relative to the host root

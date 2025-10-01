@@ -55,6 +55,13 @@ func Flags(opts *Options) []cli.Flag {
 			Sources:     cli.EnvVars("RUNTIME_CONFIG", "CONTAINERD_CONFIG", "DOCKER_CONFIG"),
 		},
 		&cli.StringFlag{
+			Name: "config-host-path",
+			Usage: "When running in a container, this is the path to the runtime config file (--config) on the host. " +
+				"This is used to extract the current config.",
+			Destination: &opts.TopLevelConfigPathHostPath,
+			Sources:     cli.EnvVars("RUNTIME_CONFIG_HOST_PATH"),
+		},
+		&cli.StringFlag{
 			Name:        "drop-in-config",
 			Usage:       "Path to the NVIDIA-specific drop-in config file",
 			Value:       runtimeSpecificDefault,
