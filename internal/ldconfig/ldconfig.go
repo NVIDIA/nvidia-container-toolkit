@@ -80,24 +80,11 @@ func (l *Ldconfig) UpdateLDCache(directories ...string) error {
 		// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
 		// be configured to use a different config file by default.
 		"-f", "/etc/ld.so.conf",
+		"-C", "/etc/ld.so.cache",
 	}
 
-	if l.ldcacheExists() {
-		args = append(args, "-C", "/etc/ld.so.cache")
-	} else {
-		args = append(args, "-N")
-	}
-
-	// If the ld.so.conf.d directory exists, we create a config file there
-	// containing the required directories, otherwise we add the specified
-	// directories to the ldconfig command directly.
-	if l.ldsoconfdDirectoryExists() {
-		err := createLdsoconfdFile(ldsoconfdFilenamePattern, directories...)
-		if err != nil {
-			return fmt.Errorf("failed to update ld.so.conf.d: %w", err)
-		}
-	} else {
-		args = append(args, directories...)
+	if err := createLdsoconfdFile(ldsoconfdFilenamePattern, directories...); err != nil {
+		return fmt.Errorf("failed to update ld.so.conf.d: %w", err)
 	}
 
 	return SafeExec(ldconfigPath, args, nil)
@@ -124,21 +111,6 @@ func (l *Ldconfig) prepareRoot() (string, error) {
 	}
 
 	return ldconfigPath, nil
-}
-
-func (l *Ldconfig) ldcacheExists() bool {
-	if _, err := os.Stat("/etc/ld.so.cache"); err != nil && os.IsNotExist(err) {
-		return false
-	}
-	return true
-}
-
-func (l *Ldconfig) ldsoconfdDirectoryExists() bool {
-	info, err := os.Stat("/etc/ld.so.conf.d")
-	if os.IsNotExist(err) {
-		return false
-	}
-	return info.IsDir()
 }
 
 // createLdsoconfdFile creates a file at /etc/ld.so.conf.d/.
