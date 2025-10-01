@@ -31,6 +31,8 @@ type builder struct {
 	containerAnnotations []string
 
 	containerToHostPathMap map[string]string
+
+	disableDropInConfig bool
 }
 
 // Option defines a function that can be used to configure the config builder
@@ -95,5 +97,12 @@ func WithConfigVersion(configVersion int) Option {
 func WithContainerAnnotations(containerAnnotations ...string) Option {
 	return func(b *builder) {
 		b.containerAnnotations = containerAnnotations
+	}
+}
+
+// WithDisableDropInConfig disables the use of drop-in config files
+func WithDisableDropInConfig(disable bool) Option {
+	return func(b *builder) {
+		b.disableDropInConfig = disable
 	}
 }

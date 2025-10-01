@@ -22,13 +22,21 @@ import (
 )
 
 type builder struct {
-	logger             logger.Interface
-	configSource       toml.Loader
-	topLevelConfigPath string
+	logger              logger.Interface
+	configSource        toml.Loader
+	topLevelConfigPath  string
+	disableDropInConfig bool
 }
 
 // Option defines a function that can be used to configure the config builder
 type Option func(*builder)
+
+// WithDisableDropInConfig disables the use of drop-in config files
+func WithDisableDropInConfig(disable bool) Option {
+	return func(b *builder) {
+		b.disableDropInConfig = disable
+	}
+}
 
 // WithLogger sets the logger for the config builder
 func WithLogger(logger logger.Interface) Option {

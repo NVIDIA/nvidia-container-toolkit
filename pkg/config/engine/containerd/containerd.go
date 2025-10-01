@@ -50,6 +50,7 @@ type configOptions struct {
 	// for the CRI runtime service. The name of this plugin was changed in v3 of the
 	// containerd configuration file.
 	CRIRuntimePluginName string
+	DisableDropInConfig  bool
 }
 
 var _ engine.Interface = (*Config)(nil)
@@ -122,6 +123,10 @@ func New(opts ...Option) (engine.Interface, error) {
 		// We return the sourceConfig as is.
 		return (*ConfigV1)(sourceConfig), nil
 	default:
+		if b.disableDropInConfig {
+			b.logger.Info("Drop-in config files are disabled. Modifying the source config directly.")
+			return sourceConfig, nil
+		}
 		// For other versions, we create a DropInConfig with a reference to the
 		// top-level config if present.
 		topLevelConfig := &Config{

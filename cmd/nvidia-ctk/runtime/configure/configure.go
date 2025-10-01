@@ -302,12 +302,14 @@ func (m command) configureConfigFile(config *config) error {
 			containerd.WithLogger(m.logger),
 			containerd.WithTopLevelConfigPath(config.configFilePath),
 			containerd.WithConfigSource(configSource),
+			containerd.WithDisableDropInConfig(config.dropInConfigPath == ""),
 		)
 	case "crio":
 		cfg, err = crio.New(
 			crio.WithLogger(m.logger),
 			crio.WithTopLevelConfigPath(config.configFilePath),
 			crio.WithConfigSource(configSource),
+			crio.WithDisableDropInConfig(config.dropInConfigPath == ""),
 		)
 	case "docker":
 		cfg, err = docker.New(

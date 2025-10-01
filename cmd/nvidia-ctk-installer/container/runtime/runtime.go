@@ -56,7 +56,7 @@ func Flags(opts *Options) []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:        "drop-in-config",
-			Usage:       "Path to the NVIDIA-specific drop-in config file",
+			Usage:       "Path to the NVIDIA-specific drop-in config file. If this is empty, the top-level config is modified directly.",
 			Value:       runtimeSpecificDefault,
 			Destination: &opts.DropInConfig,
 			Sources:     cli.EnvVars("RUNTIME_DROP_IN_CONFIG"),
