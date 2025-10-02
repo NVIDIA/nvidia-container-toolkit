@@ -163,6 +163,7 @@ var GetBlacklistDeviceCount = GetExcludedDeviceCount
 var GetBlacklistDeviceInfoByIndex = GetExcludedDeviceInfoByIndex
 var nvmlDeviceGetGpuInstancePossiblePlacements = nvmlDeviceGetGpuInstancePossiblePlacements_v1
 var nvmlVgpuInstanceGetLicenseInfo = nvmlVgpuInstanceGetLicenseInfo_v1
+var nvmlDeviceGetDriverModel = nvmlDeviceGetDriverModel_v1
 
 // BlacklistDeviceInfo was replaced by ExcludedDeviceInfo
 type BlacklistDeviceInfo = ExcludedDeviceInfo
@@ -287,5 +288,9 @@ func (l *library) updateVersionedSymbols() {
 	err = l.dl.Lookup("nvmlVgpuInstanceGetLicenseInfo_v2")
 	if err == nil {
 		nvmlVgpuInstanceGetLicenseInfo = nvmlVgpuInstanceGetLicenseInfo_v2
+	}
+	err = l.dl.Lookup("nvmlDeviceGetDriverModel_v2")
+	if err == nil {
+		nvmlDeviceGetDriverModel = nvmlDeviceGetDriverModel_v2
 	}
 }
