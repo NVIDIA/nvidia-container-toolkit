@@ -152,7 +152,6 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 	}
 
 	// Apply the runtime-specific config changes.
-	// TODO: Add the runtime-specific DropInConfigs here.
 	switch runtime {
 	case containerd.Name:
 		if opts.TopLevelConfigPath == runtimeSpecificDefault {
