@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v3"
@@ -178,10 +179,19 @@ func getRuntimeConfig(o *container.Options, co *Options) (engine.Interface, erro
 
 	var loaders []toml.Loader
 	for _, configSource := range o.ConfigSources {
-		switch configSource {
+		parts := strings.SplitN(configSource, "=", 2)
+		source := parts[0]
+		switch source {
 		case "file":
-			loaders = append(loaders, toml.FromFile(o.TopLevelConfigPath))
+			fileSourcePath := o.TopLevelConfigPath
+			if len(parts) > 1 {
+				fileSourcePath = parts[1]
+			}
+			loaders = append(loaders, toml.FromFile(fileSourcePath))
 		case "command":
+			if len(parts) > 1 {
+				log.Warnf("Ignoring additional command argument %q", parts[1])
+			}
 			loaders = append(loaders, containerd.CommandLineSource(o.HostRootMount, o.ExecutablePath))
 		default:
 			return nil, fmt.Errorf("unsupported config source %q", configSource)
