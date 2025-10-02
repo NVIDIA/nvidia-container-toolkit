@@ -8,6 +8,10 @@
 
 - Bump nvidia/cuda to 12.9.1 in /deployments/container
 
+### Changes in libnvidia-container
+- Add clock_gettime to allowed syscalls
+- Add libnvidia-gpucomp.so to the list of compute libs
+
 ## v1.17.8
 
 - Updated the ordering of Mounts in CDI to have a deterministic output. This makes testing more consistent.
