@@ -118,9 +118,12 @@ func Flags(opts *Options) []cli.Flag {
 			Hidden:      true,
 		},
 		&cli.StringSliceFlag{
-			Name:        "config-source",
-			Aliases:     []string{"config-sources"},
-			Usage:       "Specify the config sources for the container runtime. Any combination of [command | file].",
+			Name:    "config-source",
+			Aliases: []string{"config-sources"},
+			Usage: "Specify the config sources for the container runtime. Any combination of " +
+				"[command | file]. " +
+				"When `file` is specified, the absolute path to the file to be used as a config source can " +
+				"be specified as `file=/path/to/source/config.toml",
 			Value:       []string{"command", "file"},
 			Destination: &opts.ConfigSources,
 			Sources:     cli.EnvVars("RUNTIME_CONFIG_SOURCES", "RUNTIME_CONFIG_SOURCE"),
