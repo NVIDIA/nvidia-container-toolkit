@@ -1,5 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
+## Changes in libnvidia-container
+- Add clock_gettime to the set of allowed syscalls under seccomp.
+
 ## v1.18.0-rc.5
 - Fix handling of unrecognised hooks
 - Disable generation of coherent CDI specs by default
