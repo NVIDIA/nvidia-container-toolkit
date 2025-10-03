@@ -117,6 +117,12 @@ func Flags(opts *Options) []cli.Flag {
 			Sources:     cli.EnvVars("NVIDIA_RUNTIME_SET_AS_DEFAULT", "CONTAINERD_SET_AS_DEFAULT", "DOCKER_SET_AS_DEFAULT"),
 			Hidden:      true,
 		},
+		&cli.StringSliceFlag{
+			Name:        "config-source",
+			Usage:       "specify the config sources",
+			Destination: &opts.ConfigSources,
+			Sources:     cli.EnvVars("RUNTIME_CONFIG_SOURCES", "RUNTIME_CONFIG_SOURCE"),
+		},
 	}
 
 	flags = append(flags, containerd.Flags(&opts.containerdOptions)...)
@@ -152,7 +158,6 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 	}
 
 	// Apply the runtime-specific config changes.
-	// TODO: Add the runtime-specific DropInConfigs here.
 	switch runtime {
 	case containerd.Name:
 		if opts.TopLevelConfigPath == runtimeSpecificDefault {
