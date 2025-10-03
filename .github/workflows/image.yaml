@@ -123,7 +123,7 @@ jobs:
           VERSION: ${{ inputs.version }}
           PUSH_ON_BUILD: "true"
           BUILD_MULTI_ARCH_IMAGES: ${{ inputs.build_multi_arch_images }}
-          GOPROXY: ${{ steps.setup-go-proxy.outputs.goproxy }}
+          GOPROXY: ${{ steps.setup-go-proxy.outputs.goproxy-url }}
         run: |
           echo "${VERSION}"
           make -f deployments/container/Makefile build-${{ matrix.target }}
