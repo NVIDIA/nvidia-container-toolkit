@@ -16,13 +16,6 @@ name: Golang
 
 on:
   workflow_call: {}
-  pull_request:
-    types:
-      - opened
-      - synchronize
-    branches:
-      - main
-      - release-*
 
 jobs:
   check:
@@ -84,7 +77,10 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: linux-amd64-cpu4
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -100,4 +96,11 @@ jobs:
         with:
           go-version: ${{ env.GOLANG_VERSION }}
 
-      - run: make build
+      - name: Setup Go Proxy
+        id: setup-go-proxy
+        uses: nv-gha-runners/setup-artifactory-go-proxy@main
+
+      - env:
+          GOPROXY: ${{ steps.setup-go-proxy.outputs.goproxy }}
+        run: |
+          make build

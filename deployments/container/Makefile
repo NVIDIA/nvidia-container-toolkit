@@ -27,6 +27,8 @@ DIST_DIR ?= $(CURDIR)/dist
 ##### Global variables #####
 include $(CURDIR)/versions.mk
 
+GOPROXY ?= https://proxy.golang.org,direct
+
 IMAGE_VERSION := $(VERSION)
 
 IMAGE_TAG ?= $(VERSION)
@@ -88,6 +90,7 @@ $(IMAGE_TARGETS): image-%: $(ARTIFACTS_ROOT)
 		--build-arg GIT_COMMIT_SHORT="$(GIT_COMMIT_SHORT)" \
 		--build-arg GIT_BRANCH="$(GIT_BRANCH)" \
 		--build-arg SOURCE_DATE_EPOCH="$(SOURCE_DATE_EPOCH)" \
+		--build-arg GOPROXY="$(GOPROXY)" \
 		-f $(DOCKERFILE) \
 		$(CURDIR)
 
