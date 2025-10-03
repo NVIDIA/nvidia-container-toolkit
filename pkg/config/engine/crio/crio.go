@@ -62,16 +62,22 @@ func New(opts ...Option) (engine.Interface, error) {
 		b.configSource = toml.FromFile(b.topLevelConfigPath)
 	}
 
-	sourceConfig, err := b.configSource.Load()
+	sourceConfigTree, err := b.configSource.Load()
 	if err != nil {
 		return nil, err
 	}
 
+	sourceConfig := &Config{
+		Tree:   sourceConfigTree,
+		Logger: b.logger,
+	}
+
+	if b.disableDropInConfig {
+		return sourceConfig, nil
+	}
+
 	cfg := &engine.Config{
-		Source: &Config{
-			Tree:   sourceConfig,
-			Logger: b.logger,
-		},
+		Source: sourceConfig,
 		Destination: &Config{
 			Tree:   toml.NewEmpty(),
 			Logger: b.logger,

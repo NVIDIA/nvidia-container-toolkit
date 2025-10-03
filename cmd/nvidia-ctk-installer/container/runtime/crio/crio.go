@@ -222,5 +222,6 @@ func getRuntimeConfig(o *container.Options) (engine.Interface, error) {
 				toml.FromFile(o.TopLevelConfigPath),
 			),
 		),
+		crio.WithDisableDropInConfig(o.DropInConfig == ""),
 	)
 }
