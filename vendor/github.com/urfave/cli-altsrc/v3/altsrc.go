@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"runtime"
 	"strings"
 )
@@ -115,6 +116,23 @@ type ValueSource struct {
 func (vs *ValueSource) Lookup() (string, bool) {
 	maafsc := NewMapAnyAnyURISourceCache(vs.sourcer.SourceURI(), vs.um)
 	if v, ok := NestedVal(vs.key, maafsc.Get()); ok {
+		// Use reflection to check if 'v' is a slice
+		if val := reflect.ValueOf(v); val.Kind() == reflect.Slice {
+			// It's a slice, so create a new string slice of the same size
+			stringSlice := make([]string, val.Len())
+
+			// Iterate over the slice elements
+			for i := 0; i < val.Len(); i++ {
+				// Get the element at index i and convert it to a string
+				elem := val.Index(i).Interface()
+				stringSlice[i] = fmt.Sprintf("%v", elem)
+			}
+
+			// Join the string representations and return
+			return strings.Join(stringSlice, ","), true
+		}
+
+		// Fall back to standard string representation if not a slice
 		return fmt.Sprintf("%[1]v", v), ok
 	}
 
