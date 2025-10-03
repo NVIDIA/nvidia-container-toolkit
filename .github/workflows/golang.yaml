@@ -101,6 +101,6 @@ jobs:
         uses: nv-gha-runners/setup-artifactory-go-proxy@main
 
       - env:
-          GOPROXY: ${{ steps.setup-go-proxy.outputs.goproxy }}
+          GOPROXY: ${{ steps.setup-go-proxy.outputs.goproxy-url }}
         run: |
           make build
