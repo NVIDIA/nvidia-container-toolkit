@@ -221,6 +221,3 @@ create_and_upload "main" "sbsa" "ubuntu18.04-arm64" "centos7-aarch64"
 # Create archive for aarch64 linux distributions
 # NOTE: From the perspective of the NVIDIA Container Toolkit aarch64 is just a duplicate of sbsa
 create_and_upload "main" "aarch64" "ubuntu18.04-arm64" "centos7-aarch64"
-
-# Create archive for ppc64le linux distributions
-create_and_upload "main" "ppc64le" "ubuntu18.04-ppc64le" "centos8-ppc64le"
