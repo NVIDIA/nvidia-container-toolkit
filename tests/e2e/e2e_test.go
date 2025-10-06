@@ -22,6 +22,7 @@ import (
 	"errors"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -36,14 +37,14 @@ var (
 
 	installCTK bool
 
-	imageName string
-	imageTag  string
+	nvidiaContainerToolkitImage string
 
 	sshKey  string
 	sshUser string
 	sshHost string
 	sshPort string
 
+	localCacheDir    string
 	toolkitInstaller *ToolkitInstaller
 )
 
@@ -69,16 +70,30 @@ var _ = BeforeSuite(func() {
 		WithSshUser(sshUser),
 	)
 
-	installer, err := NewToolkitInstaller(
-		WithRunner(runner),
-		WithImage(imageName+":"+imageTag),
-		WithTemplate(dockerInstallTemplate),
+	// Create a tempdir on the runner.
+	tmpdir, _, err := runner.Run("mktemp -d --tmpdir=/tmp nvctk-e2e-test-cacheXXX")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(strings.TrimSpace(tmpdir)).ToNot(BeEmpty())
+
+	localCacheDir = strings.TrimSpace(tmpdir)
+
+	toolkitInstaller, err = NewToolkitInstaller(
+		WithToolkitImage(nvidiaContainerToolkitImage),
+		WithCacheDir(localCacheDir),
 	)
 	Expect(err).ToNot(HaveOccurred())
-	toolkitInstaller = installer
+
+	_, _, err = toolkitInstaller.PrepareCache(runner)
+	Expect(err).ToNot(HaveOccurred())
 
 	if installCTK {
-		err = installer.Install()
+		_, _, err := toolkitInstaller.Install(runner)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, _, err = runner.Run(`sudo nvidia-ctk runtime configure --runtime=docker`)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, _, err = runner.Run(`sudo systemctl restart docker`)
 		Expect(err).ToNot(HaveOccurred())
 	}
 })
@@ -89,10 +104,9 @@ func getTestEnv() {
 
 	installCTK = getEnvVarOrDefault("E2E_INSTALL_CTK", false)
 
-	if installCTK {
-		imageName = getRequiredEnvvar[string]("E2E_IMAGE_NAME")
-		imageTag = getRequiredEnvvar[string]("E2E_IMAGE_TAG")
-	}
+	imageName := getRequiredEnvvar[string]("E2E_IMAGE_NAME")
+	imageTag := getRequiredEnvvar[string]("E2E_IMAGE_TAG")
+	nvidiaContainerToolkitImage = imageName + ":" + imageTag
 
 	sshHost = getEnvVarOrDefault("E2E_SSH_HOST", "")
 	if sshHost != "" {

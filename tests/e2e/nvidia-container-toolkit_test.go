@@ -423,7 +423,7 @@ EOF`)
 		It("should fail when using the nvidia-container-runtime-hook", Label("legacy"), func(ctx context.Context) {
 			_, stderr, err := runner.Run("docker run --rm --runtime=runc --gpus=all firmware-test")
 			Expect(err).To(HaveOccurred())
-			Expect(stderr).To(ContainSubstring("nvidia-container-cli.real: mount error: path error:"))
+			Expect(stderr).To(ContainSubstring(": mount error: path error: /lib/firmware/nvidia/"))
 		})
 	})
 

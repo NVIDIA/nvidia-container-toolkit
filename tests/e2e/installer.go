@@ -19,107 +19,114 @@ package e2e
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"text/template"
 )
 
-// dockerInstallTemplate is a template for installing the NVIDIA Container Toolkit
-// on a host using Docker.
-var dockerInstallTemplate = `
-#! /usr/bin/env bash
+var prepareInstallerCacheTemplate = `
 set -xe
 
-# if the TEMP_DIR is already set, use it
-if [ -f /tmp/ctk_e2e_temp_dir.txt ]; then
-    TEMP_DIR=$(cat /tmp/ctk_e2e_temp_dir.txt)
-else
-    TEMP_DIR="/tmp/ctk_e2e.$(date +%s)_$RANDOM"
-    echo "$TEMP_DIR" > /tmp/ctk_e2e_temp_dir.txt
-fi
+mkdir -p {{.CacheDir}}
 
-# if TEMP_DIR does not exist, create it
-if [ ! -d "$TEMP_DIR" ]; then
-    mkdir -p "$TEMP_DIR"
-fi
+docker run --rm -v {{.CacheDir}}:/cache --entrypoint="sh" {{.ToolkitImage}}-packaging -c "cp -p -R /artifacts/* /cache/"
+`
 
-# Given that docker has an init function that checks for the existence of the
-# nvidia-container-toolkit, we need to create a symlink to the nvidia-container-runtime-hook
-# in the /usr/bin directory.
-# See https://github.com/moby/moby/blob/20a05dabf44934447d1a66cdd616cc803b81d4e2/daemon/nvidia_linux.go#L32-L46
-sudo rm -f /usr/bin/nvidia-container-runtime-hook
-sudo ln -s "$TEMP_DIR/toolkit/nvidia-container-runtime-hook" /usr/bin/nvidia-container-runtime-hook
+var installFromImageTemplate = `
+set -xe
 
-docker run --pid=host --rm -i --privileged	\
-	-v /:/host	\
-	-v /var/run/docker.sock:/var/run/docker.sock	\
-	-v "$TEMP_DIR:$TEMP_DIR"	\
-	-v /etc/docker:/config-root	\
-	{{.Image}}	\
-	--root "$TEMP_DIR"	\
-	--runtime=docker	\
-	--config=/config-root/daemon.json	\
-	--driver-root=/	\
-	--no-daemon	\
-	--restart-mode=systemd
+cd {{.CacheDir}}/packages/ubuntu18.04/amd64
+
+{{if .WithSudo }}sudo {{end}}dpkg -i libnvidia-container1_*_amd64.deb \
+	libnvidia-container-tools_*_amd64.deb \
+	nvidia-container-toolkit-base_*_amd64.deb \
+	nvidia-container-toolkit_*_amd64.deb
+
+cd -
+
+nvidia-container-cli --version
 `
 
 type ToolkitInstaller struct {
-	runner   Runner
-	template string
-
-	Image string
+	ToolkitImage string
+	CacheDir     string
 }
 
 type installerOption func(*ToolkitInstaller)
 
-func WithRunner(r Runner) installerOption {
+func WithToolkitImage(image string) installerOption {
 	return func(i *ToolkitInstaller) {
-		i.runner = r
+		i.ToolkitImage = image
 	}
 }
 
-func WithImage(image string) installerOption {
+func WithCacheDir(cacheDir string) installerOption {
 	return func(i *ToolkitInstaller) {
-		i.Image = image
-	}
-}
-
-func WithTemplate(template string) installerOption {
-	return func(i *ToolkitInstaller) {
-		i.template = template
+		i.CacheDir = cacheDir
 	}
 }
 
 func NewToolkitInstaller(opts ...installerOption) (*ToolkitInstaller, error) {
-	i := &ToolkitInstaller{
-		runner:   localRunner{},
-		template: dockerInstallTemplate,
-	}
+	i := &ToolkitInstaller{}
 
 	for _, opt := range opts {
 		opt(i)
 	}
 
-	if i.Image == "" {
+	if i.ToolkitImage == "" {
 		return nil, fmt.Errorf("image is required")
 	}
 
 	return i, nil
 }
 
-func (i *ToolkitInstaller) Install() error {
-	// Parse the combined template
-	tmpl, err := template.New("installScript").Parse(i.template)
+// PrepareCache ensures that the installer (package) cache is created on the runner.
+// The can be used to ensure that docker is not REQUIRED in an inner container.
+func (i *ToolkitInstaller) PrepareCache(runner Runner) (string, string, error) {
+	renderedScript, err := i.renderScript(prepareInstallerCacheTemplate, false)
 	if err != nil {
-		return fmt.Errorf("error parsing template: %w", err)
+		return "", "", err
 	}
 
+	return runner.Run(renderedScript)
+}
+
+func (i *ToolkitInstaller) Install(runner Runner) (string, string, error) {
+	uid, _, err := runner.Run("id -u")
+	if err != nil {
+		return "", "", err
+	}
+	withSudo := false
+	if strings.TrimSpace(uid) != "0" {
+		withSudo = true
+	}
+	renderedScript, err := i.renderScript(installFromImageTemplate, withSudo)
+	if err != nil {
+		return "", "", err
+	}
+
+	return runner.Run(renderedScript)
+}
+
+func (i *ToolkitInstaller) renderScript(scriptTemplate string, withSudo bool) (string, error) {
+	// Parse the combined template
+	tmpl, err := template.New("template").Parse(scriptTemplate)
+	if err != nil {
+		return "", fmt.Errorf("error parsing template: %w", err)
+	}
+
+	templateInfo := struct {
+		*ToolkitInstaller
+		WithSudo bool
+	}{
+		ToolkitInstaller: i,
+		WithSudo:         withSudo,
+	}
 	// Execute the template
 	var renderedScript bytes.Buffer
-	err = tmpl.Execute(&renderedScript, i)
+	err = tmpl.Execute(&renderedScript, templateInfo)
 	if err != nil {
-		return fmt.Errorf("error executing template: %w", err)
+		return "", fmt.Errorf("error executing template: %w", err)
 	}
 
-	_, _, err = i.runner.Run(renderedScript.String())
-	return err
+	return renderedScript.String(), nil
 }

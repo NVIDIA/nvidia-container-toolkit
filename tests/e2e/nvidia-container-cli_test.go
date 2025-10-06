@@ -139,15 +139,24 @@ var _ = Describe("nvidia-container-cli", Ordered, ContinueOnFailure, Label("libn
 			WithSshUser(sshUser),
 		)
 
-		if installCTK {
-			installer, err := NewToolkitInstaller(
-				WithRunner(runner),
-				WithImage(imageName+":"+imageTag),
-				WithTemplate(dockerInstallTemplate),
-			)
-			Expect(err).ToNot(HaveOccurred())
+		// Create a tempdir on the runner.
+		tmpdir, _, err := runner.Run("mktemp -d --tmpdir=/tmp nvctk-e2e-test-cacheXXX")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(strings.TrimSpace(tmpdir)).ToNot(BeEmpty())
 
-			err = installer.Install()
+		localCacheDir = strings.TrimSpace(tmpdir)
+
+		installer, err := NewToolkitInstaller(
+			WithToolkitImage(nvidiaContainerToolkitImage),
+			WithCacheDir(localCacheDir),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, _, err = installer.PrepareCache(runner)
+		Expect(err).ToNot(HaveOccurred())
+
+		if installCTK {
+			_, _, err = installer.Install(runner)
 			Expect(err).ToNot(HaveOccurred())
 		} else {
 			// If installCTK is false, we use the preinstalled toolkit.
@@ -167,7 +176,6 @@ var _ = Describe("nvidia-container-cli", Ordered, ContinueOnFailure, Label("libn
 		}
 
 		// Capture the host GPU list.
-		var err error
 		hostOutput, _, err = runner.Run("nvidia-smi -L")
 		Expect(err).ToNot(HaveOccurred())
 
@@ -217,7 +225,7 @@ var _ = Describe("nvidia-container-cli", Ordered, ContinueOnFailure, Label("libn
 			err = tmpl.Execute(&toolkitInstall, struct {
 				ToolkitImage string
 			}{
-				ToolkitImage: imageName + ":" + imageTag,
+				ToolkitImage: nvidiaContainerToolkitImage,
 			})
 			Expect(err).ToNot(HaveOccurred())
 
