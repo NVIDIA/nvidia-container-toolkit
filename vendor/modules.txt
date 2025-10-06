@@ -46,7 +46,7 @@ github.com/moby/sys/reexec
 # github.com/moby/sys/symlink v0.3.0
 ## explicit; go 1.17
 github.com/moby/sys/symlink
-# github.com/opencontainers/runc v1.3.1
+# github.com/opencontainers/runc v1.3.2
 ## explicit; go 1.23.0
 github.com/opencontainers/runc/libcontainer/exeseal
 github.com/opencontainers/runc/libcontainer/system
