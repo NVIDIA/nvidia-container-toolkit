@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include:
-  - local: '.common-ci.yml'
-
 default:
+  image: docker
+  services:
+    - name: docker:dind
+      command: ["--experimental"]
   tags:
     - cnt
     - container-dev
@@ -25,6 +26,8 @@ default:
     - type/docker
 
 variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: "/certs"
   # Release "devel"-tagged images off the main branch
@@ -39,19 +42,96 @@ variables:
   KITMAKER_RELEASE_FOLDER: "kitmaker"
   PACKAGE_ARCHIVE_RELEASE_FOLDER: "releases"
 
-.image-pull:
-  stage: image-build
+stages:
+  - pull
+  - scan
+  - release
+  - ngc-publish
+
+.pipeline-trigger-rules:
+  rules:
+    # We trigger the pipeline if started manually
+    - if: $CI_PIPELINE_SOURCE == "web"
+    # We trigger the pipeline on the main branch
+    - if: $CI_COMMIT_BRANCH == "main"
+    # We trigger the pipeline on the release- branches
+    - if: $CI_COMMIT_BRANCH =~ /^release-.*$/
+    # We trigger the pipeline on tags
+    - if: $CI_COMMIT_TAG && $CI_COMMIT_TAG != ""
+
+workflow:
+  rules:
+    # We trigger the pipeline on a merge request
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    # We then add all the regular triggers
+    - !reference [.pipeline-trigger-rules, rules]
+
+# Download the regctl binary for use in the release steps
+.regctl-setup:
+  before_script:
+    - export REGCTL_VERSION=v0.4.5
+    - apk add --no-cache curl
+    - mkdir -p bin
+    - curl -sSLo bin/regctl https://github.com/regclient/regclient/releases/download/${REGCTL_VERSION}/regctl-linux-amd64
+    - chmod a+x bin/regctl
+    - export PATH=$(pwd)/bin:${PATH}
+
+# .copy-images copies the required application and packaging images from the
+# IN_IMAGE="${IN_IMAGE_NAME}:${IN_IMAGE_TAG}${TAG_SUFFIX}"
+# to
+# OUT_IMAGE="${OUT_IMAGE_NAME}:${OUT_IMAGE_TAG}${TAG_SUFFIX}"
+# The script also logs into IN_REGISTRY and OUT_REGISTRY using the supplied
+# username and tokens.
+.copy-images:
+  parallel:
+    matrix:
+      - TAG_SUFFIX: ["-ubuntu20.04", "-ubi8", "-packaging"]
+  before_script:
+    - !reference [.regctl-setup, before_script]
+    - apk add --no-cache make bash
+  variables:
+    REGCTL: regctl
+  script:
+    - |
+      if [ -n ${IN_REGISTRY} ] && [ -n ${IN_REGISTRY_USER} ]; then
+        echo "Logging in to ${IN_REGISTRY}"
+        ${REGCTL} registry login "${IN_REGISTRY}" -u "${IN_REGISTRY_USER}" -p "${IN_REGISTRY_TOKEN}" || exit 1
+      fi
+
+      if [ -n ${OUT_REGISTRY} ] && [ -n ${OUT_REGISTRY_USER} ] && [ "${IN_REGISTRY}" != "${OUT_REGISTRY}" ]; then
+        echo "Logging in to ${OUT_REGISTRY}"
+        ${REGCTL} registry login "${OUT_REGISTRY}" -u "${OUT_REGISTRY_USER}" -p "${OUT_REGISTRY_TOKEN}" || exit 1
+      fi
+
+      export IN_IMAGE="${IN_IMAGE_NAME}:${IN_IMAGE_TAG}${TAG_SUFFIX}"
+      export OUT_IMAGE="${OUT_IMAGE_NAME}:${OUT_IMAGE_TAG}${TAG_SUFFIX}"
+
+      echo "Copying ${IN_IMAGE} to ${OUT_IMAGE}"
+      ${REGCTL} image copy ${IN_IMAGE} ${OUT_IMAGE}
+
+# pull-images pulls images from the public CI registry to the internal CI registry.
+pull-images:
+  extends:
+    - .copy-images
+  stage: pull
   variables:
     IN_REGISTRY: "${STAGING_REGISTRY}"
-    IN_IMAGE_NAME: container-toolkit
-    IN_VERSION: "${STAGING_VERSION}"
+    IN_IMAGE_NAME: ${STAGING_REGISTRY}/container-toolkit
+    IN_IMAGE_TAG: "${STAGING_VERSION}"
+
+    OUT_REGISTRY: "${CI_REGISTRY}"
     OUT_REGISTRY_USER: "${CI_REGISTRY_USER}"
     OUT_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
-    OUT_REGISTRY: "${CI_REGISTRY}"
     OUT_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
-    PUSH_MULTIPLE_TAGS: "false"
+    OUT_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
   # We delay the job start to allow the public pipeline to generate the required images.
   rules:
+    # If the pipeline is triggered from a tag or the WEB UI we don't delay the
+    # start of the pipeline.
+    - if: $CI_COMMIT_TAG || $CI_PIPELINE_SOURCE == "web"
+    # If the pipeline is triggered through other means (i.e. a branch or MR)
+    # we add a 30 minute delay to ensure that the images are available in the
+    # public CI registry.
     - when: delayed
       start_in: 30 minutes
   timeout: 30 minutes
@@ -60,30 +140,6 @@ variables:
     when:
       - job_execution_timeout
       - stuck_or_timeout_failure
-  before_script:
-    - !reference [.regctl-setup, before_script]
-    - apk add --no-cache make bash
-    - >
-      regctl manifest get ${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} --list > /dev/null && echo "${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST}" || ( echo "${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} does not exist" && sleep infinity )
-  script:
-    - regctl registry login "${OUT_REGISTRY}" -u "${OUT_REGISTRY_USER}" -p "${OUT_REGISTRY_TOKEN}"
-    - make -f deployments/container/Makefile IMAGE=${IN_REGISTRY}/${IN_IMAGE_NAME}:${IN_VERSION}-${DIST} OUT_IMAGE=${OUT_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-${DIST} push-${DIST}
-
-image-ubi8:
-  extends:
-    - .dist-ubi8
-    - .image-pull
-
-image-ubuntu20.04:
-  extends:
-    - .dist-ubuntu20.04
-    - .image-pull
-
-# The DIST=packaging target creates an image containing all built packages
-image-packaging:
-  extends:
-    - .dist-packaging
-    - .image-pull
 
 # We skip the integration tests for the internal CI:
 .integration:
@@ -95,27 +151,34 @@ image-packaging:
 
 # The .scan step forms the base of the image scan operation performed before releasing
 # images.
-.scan:
+scan-images:
   stage: scan
+  needs:
+  - pull-images
   image: "${PULSE_IMAGE}"
+  parallel:
+    matrix:
+      - TAG_SUFFIX: ["-ubi8", "-ubuntu20.04"]
+        PLATFORM: ["linux/amd64", "linux/arm64"]
+      - TAG_SUFFIX: "-packaging"
+        PLATFORM: "linux/amd64"
   variables:
-    IMAGE: "${CI_REGISTRY_IMAGE}/container-toolkit:${CI_COMMIT_SHORT_SHA}-${DIST}"
-    IMAGE_ARCHIVE: "container-toolkit-${DIST}-${ARCH}-${CI_JOB_ID}.tar"
-  rules:
-    - if: $SKIP_SCANS != "yes"
-    - when: manual
-  before_script:
-    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
-    # TODO: We should specify the architecture here and scan all architectures
-    - docker pull --platform="${PLATFORM}" "${IMAGE}"
-    - docker save "${IMAGE}" -o "${IMAGE_ARCHIVE}"
-    - AuthHeader=$(echo -n $SSA_CLIENT_ID:$SSA_CLIENT_SECRET | base64 -w0)
-    - >
-      export SSA_TOKEN=$(curl --request POST --header "Authorization: Basic $AuthHeader" --header "Content-Type: application/x-www-form-urlencoded" ${SSA_ISSUER_URL} | jq ".access_token" |  tr -d '"')
-    - if [ -z "$SSA_TOKEN" ]; then exit 1; else echo "SSA_TOKEN set!"; fi
+    IMAGE: "${CI_REGISTRY_IMAGE}/container-toolkit:${CI_COMMIT_SHORT_SHA}"
+    IMAGE_ARCHIVE: "container-toolkit-${CI_JOB_ID}.tar"
+  allow_failure: true
   script:
-    - pulse-cli -n $NSPECT_ID --ssa $SSA_TOKEN scan -i $IMAGE_ARCHIVE -p $CONTAINER_POLICY -o
-    - rm -f "${IMAGE_ARCHIVE}"
+    - |
+      docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
+      export SCAN_IMAGE=${IMAGE}${TAG_SUFFIX}
+      echo "Scanning image ${SCAN_IMAGE} for ${PLATFORM}"
+      docker pull --platform="${PLATFORM}" "${SCAN_IMAGE}"
+      docker save "${SCAN_IMAGE}" -o "${IMAGE_ARCHIVE}"
+      AuthHeader=$(echo -n $SSA_CLIENT_ID:$SSA_CLIENT_SECRET | base64 -w0)
+      export SSA_TOKEN=$(curl --request POST --header "Authorization: Basic $AuthHeader" --header "Content-Type: application/x-www-form-urlencoded" ${SSA_ISSUER_URL} | jq ".access_token" |  tr -d '"')
+      if [ -z "$SSA_TOKEN" ]; then exit 1; else echo "SSA_TOKEN set!"; fi
+
+      pulse-cli -n $NSPECT_ID --ssa $SSA_TOKEN scan -i $IMAGE_ARCHIVE -p $CONTAINER_POLICY -o
+      rm -f "${IMAGE_ARCHIVE}"
   artifacts:
     when: always
     expire_in: 1 week
@@ -126,62 +189,10 @@ image-packaging:
       - vulns.json
       - policy_evaluation.json
 
-# Define the scan targets
-scan-ubuntu20.04-amd64:
-  extends:
-    - .dist-ubuntu20.04
-    - .platform-amd64
-    - .scan
-  needs:
-    - image-ubuntu20.04
-
-scan-ubuntu20.04-arm64:
-  extends:
-    - .dist-ubuntu20.04
-    - .platform-arm64
-    - .scan
-  needs:
-    - image-ubuntu20.04
-    - scan-ubuntu20.04-amd64
-
-scan-ubi8-amd64:
-  extends:
-    - .dist-ubi8
-    - .platform-amd64
-    - .scan
-  needs:
-    - image-ubi8
-
-scan-ubi8-arm64:
-  extends:
-    - .dist-ubi8
-    - .platform-arm64
-    - .scan
-  needs:
-    - image-ubi8
-    - scan-ubi8-amd64
-
-scan-packaging:
-  extends:
-    - .dist-packaging
-    - .scan
-  needs:
-    - image-packaging
-
-# Define external release helpers
-.release:ngc:
-  extends:
-    - .release:external
-  variables:
-    OUT_REGISTRY_USER: "${NGC_REGISTRY_USER}"
-    OUT_REGISTRY_TOKEN: "${NGC_REGISTRY_TOKEN}"
-    OUT_REGISTRY: "${NGC_REGISTRY}"
-    OUT_IMAGE_NAME: "${NGC_REGISTRY_IMAGE}"
-
-.release:packages:
+upload-kitmaker-packages:
   stage: release
   needs:
-    - image-packaging
+    - pull-images
   variables:
     VERSION: "${CI_COMMIT_SHORT_SHA}"
     PACKAGE_REGISTRY: "${CI_REGISTRY}"
@@ -199,107 +210,83 @@ scan-packaging:
     - ./scripts/release-kitmaker-artifactory.sh "${KITMAKER_ARTIFACTORY_REPO}"
     - rm -rf ${ARTIFACTS_DIR}
 
-# Define the package release targets
-release:packages:kitmaker:
+push-images-to-staging:
   extends:
-    - .release:packages
-
-release:archive:
-  extends:
-    - .release:external
+    - .copy-images
+  stage: release
   needs:
-    - image-packaging
+    - scan-images
   variables:
-    VERSION: "${CI_COMMIT_SHORT_SHA}"
-    PACKAGE_REGISTRY: "${CI_REGISTRY}"
-    PACKAGE_REGISTRY_USER: "${CI_REGISTRY_USER}"
-    PACKAGE_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
-    PACKAGE_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
-    PACKAGE_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}-packaging"
-    PACKAGE_ARCHIVE_ARTIFACTORY_REPO: "${ARTIFACTORY_REPO_BASE}-generic-local/${PACKAGE_ARCHIVE_RELEASE_FOLDER}"
-  script:
-    - apk add --no-cache bash git
-    - ./scripts/archive-packages.sh "${PACKAGE_ARCHIVE_ARTIFACTORY_REPO}"
+    IN_REGISTRY: "${CI_REGISTRY}"
+    IN_REGISTRY_USER: "${CI_REGISTRY_USER}"
+    IN_REGISTRY_TOKEN: "${CI_REGISTRY_PASSWORD}"
+    IN_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/container-toolkit"
+    IN_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
 
-release:staging-ubuntu20.04:
-  extends:
-    - .release:staging
-    - .dist-ubuntu20.04
+    OUT_REGISTRY: "${NGC_REGISTRY}"
+    OUT_REGISTRY_USER: "${NGC_REGISTRY_USER}"
+    OUT_REGISTRY_TOKEN: "${NGC_REGISTRY_TOKEN}"
+    OUT_IMAGE_NAME: "${NGC_STAGING_REGISTRY}/container-toolkit"
+    OUT_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+
+.publish-images:
+  stage: ngc-publish
   needs:
-    - image-ubuntu20.04
+    - scan-images
+    - push-images-to-staging
+  image:
+    name: "${CNT_NGC_PUBLISH_IMAGE}"
+    pull_policy: always
+  variables:
 
-# Define the external release targets
-# Release to NGC
-release:ngc-ubuntu20.04:
-  extends:
-    - .dist-ubuntu20.04
-    - .release:ngc
+  variables:
+    GITLAB_ACCESS_TOKEN: "${CNT_GITLAB_TOKEN}"
 
-release:ngc-ubi8:
-  extends:
-    - .dist-ubi8
-    - .release:ngc
+    IN_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+    OUT_IMAGE_TAG: "${CI_COMMIT_TAG}"
 
-release:ngc-packaging:
-  extends:
-    - .dist-packaging
-    - .release:ngc
-
-# Define the external image signing steps for NGC
-# Download the ngc cli binary for use in the sign steps
-.ngccli-setup:
+    VERSION_FILE: "build-info-${CI_PIPELINE_ID}.txt"
+    PROJECT_NAME: "nvidia-container-toolkit"
   before_script:
-    - apt-get update && apt-get install -y curl unzip jq
     - |
-      if [ -z "${NGCCLI_VERSION}" ]; then
-        NGC_VERSION_URL="https://api.ngc.nvidia.com/v2/resources/nvidia/ngc-apps/ngc_cli/versions"
-        # Extract the latest version from the JSON data using jq
-        export NGCCLI_VERSION=$(curl -s $NGC_VERSION_URL | jq -r '.recipe.latestVersionIdStr')
+      if [ -n "${OVERRIDE_PUBLISHING_PROJECT_PATH}" ]; then
+        NGC_PUBLISHING_PROJECT_PATH="${OVERRIDE_PUBLISHING_PROJECT_PATH}"
       fi
-      echo "NGCCLI_VERSION ${NGCCLI_VERSION}"
-    - curl -sSLo ngccli_linux.zip https://api.ngc.nvidia.com/v2/resources/nvidia/ngc-apps/ngc_cli/versions/${NGCCLI_VERSION}/files/ngccli_linux.zip
-    - unzip ngccli_linux.zip
-    - chmod u+x ngc-cli/ngc
 
-# .sign forms the base of the deployment jobs which signs images in the CI registry.
-# This is extended with the image name and version to be deployed.
-.sign:ngc:
-  image: ubuntu:latest
-  stage: sign
+      if [ -z "${NGC_PUBLISHING_PROJECT_PATH}" ]; then
+        echo "NGC_PUBLISHING_PROJECT_PATH not set"
+        exit 1
+      fi
+
+      echo "publishing to ${NGC_PUBLISHING_PROJECT_PATH}"
+
+      rm -f ${VERSION_FILE}
+      echo "${IN_IMAGE_TAG}-ubuntu20.04 ${OUT_IMAGE_TAG}-ubuntu20.04" >> ${VERSION_FILE}
+      echo "${IN_IMAGE_TAG}-ubi8 ${OUT_IMAGE_TAG}-ubi8" >> ${VERSION_FILE}
+      echo "${IN_IMAGE_TAG}-packaging ${OUT_IMAGE_TAG}-packaging" >> ${VERSION_FILE}
+      cat ${VERSION_FILE}
+  script:
+    - cnt-ngc-publish render --project-name "${PROJECT_NAME}" --versions-file "${VERSION_FILE}" --output "${PROJECT_NAME}".yaml
+    - cnt-ngc-publish merge-request --files "${PROJECT_NAME}.yaml"
+  artifacts:
+    paths:
+      - "${VERSION_FILE}"
+      - "${PROJECT_NAME}.yaml"
+
+
+publish-images-to-ngc:
+  extends:
+    - .publish-images
   rules:
     - if: $CI_COMMIT_TAG
+
+# We create a dummy MR that exercises the publishing logic.
+# TODO: This MR should be closed automatically.
+publish-images-dummy:
+  extends:
+    - .publish-images
   variables:
-    NGC_CLI_API_KEY: "${NGC_REGISTRY_TOKEN}"
-    IMAGE_NAME: "${NGC_REGISTRY_IMAGE}"
-    IMAGE_TAG: "${CI_COMMIT_TAG}-${DIST}"
-  retry:
-    max: 2
-  before_script:
-    - !reference [.ngccli-setup, before_script]
-    # We ensure that the IMAGE_NAME and IMAGE_TAG is set
-    - 'echo Image Name: ${IMAGE_NAME} && [[ -n "${IMAGE_NAME}" ]] || exit 1'
-    - 'echo Image Tag: ${IMAGE_TAG} && [[ -n "${IMAGE_TAG}" ]] || exit 1'
-  script:
-    - 'echo "Signing the image ${IMAGE_NAME}:${IMAGE_TAG}"'
-    - ngc-cli/ngc registry image publish --source ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:${IMAGE_TAG} --public --discoverable --allow-guest --sign --org nvidia
-
-sign:ngc-ubuntu20.04:
-  extends:
-    - .dist-ubuntu20.04
-    - .sign:ngc
-  needs:
-    - release:ngc-ubuntu20.04
-
-sign:ngc-ubi8:
-  extends:
-    - .dist-ubi8
-    - .sign:ngc
-  needs:
-    - release:ngc-ubi8
-
-sign:ngc-packaging:
-  extends:
-    - .dist-packaging
-    - .sign:ngc
-  needs:
-    - release:ngc-packaging
+    OVERRIDE_PUBLISHING_PROJECT_PATH: "dl/container-dev/ngc-automation"
+    OUT_IMAGE_TAG: "publish-${CI_COMMIT_SHORT_SHA}"
+  rules:
+    - if: $CI_COMMIT_TAG == null || $CI_COMMIT_TAG == ""
