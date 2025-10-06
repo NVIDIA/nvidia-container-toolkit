@@ -43,13 +43,12 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 
 		if installCTK {
 			installer, err := NewToolkitInstaller(
-				WithRunner(runner),
-				WithImage(imageName+":"+imageTag),
-				WithTemplate(dockerInstallTemplate),
+				WithImage(nvidiaContainerToolkitImage),
+				WithMode(InstallUsingPackagingImage),
 			)
 			Expect(err).ToNot(HaveOccurred())
 
-			err = installer.Install()
+			_, _, err = installer.Install(runner)
 			Expect(err).ToNot(HaveOccurred())
 		}
 

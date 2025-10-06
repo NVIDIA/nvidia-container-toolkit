@@ -22,6 +22,11 @@ import (
 	"text/template"
 )
 
+const (
+	InstallUsingNVIDIACTKInstaller = "nvidia-ctk-installer"
+	InstallUsingPackagingImage     = "packaging-image"
+)
+
 // dockerInstallTemplate is a template for installing the NVIDIA Container Toolkit
 // on a host using Docker.
 var dockerInstallTemplate = `
@@ -53,7 +58,7 @@ docker run --pid=host --rm -i --privileged	\
 	-v /var/run/docker.sock:/var/run/docker.sock	\
 	-v "$TEMP_DIR:$TEMP_DIR"	\
 	-v /etc/docker:/config-root	\
-	{{.Image}}	\
+	{{.ToolkitImage}}	\
 	--root "$TEMP_DIR"	\
 	--runtime=docker	\
 	--config=/config-root/daemon.json	\
@@ -62,37 +67,58 @@ docker run --pid=host --rm -i --privileged	\
 	--restart-mode=systemd
 `
 
-type ToolkitInstaller struct {
-	runner   Runner
-	template string
+var installFromImageTemplate = `
+# Create a temporary directory and rootfs path
+TMPDIR="$(mktemp -d)"
 
+# Expose TMPDIR for the child namespace
+export TMPDIR
+
+docker run --rm -v ${TMPDIR}:/host-tmpdir --entrypoint="sh" {{.ToolkitImage}}-packaging -c "cp -p -R /artifacts/* /host-tmpdir/"
+dpkg -i ${TMPDIR}/packages/ubuntu18.04/amd64/libnvidia-container1_*_amd64.deb ${TMPDIR}/packages/ubuntu18.04/amd64/nvidia-container-toolkit-base_*_amd64.deb ${TMPDIR}/packages/ubuntu18.04/amd64/libnvidia-container-tools_*_amd64.deb
+
+nvidia-container-cli --version
+{{if .ConfigureDocker}}
+nvidia-ctk runtime configure
+{{end}}
+{{if .RestartDocker}}
+systemctl restart docker
+{{end}}
+`
+
+type toolkitInstallerOptions struct {
+	mode  string
 	Image string
 }
 
-type installerOption func(*ToolkitInstaller)
-
-func WithRunner(r Runner) installerOption {
-	return func(i *ToolkitInstaller) {
-		i.runner = r
-	}
+type toolkitInstallerTemplateOptions struct {
+	ToolkitImage    string
+	ConfigureDocker bool
+	RestartDocker   bool
 }
 
+type ToolkitInstaller struct {
+	template string
+	toolkitInstallerTemplateOptions
+}
+
+type installerOption func(*toolkitInstallerOptions)
+
 func WithImage(image string) installerOption {
-	return func(i *ToolkitInstaller) {
+	return func(i *toolkitInstallerOptions) {
 		i.Image = image
 	}
 }
 
-func WithTemplate(template string) installerOption {
-	return func(i *ToolkitInstaller) {
-		i.template = template
+func WithMode(mode string) installerOption {
+	return func(i *toolkitInstallerOptions) {
+		i.mode = mode
 	}
 }
 
 func NewToolkitInstaller(opts ...installerOption) (*ToolkitInstaller, error) {
-	i := &ToolkitInstaller{
-		runner:   localRunner{},
-		template: dockerInstallTemplate,
+	i := &toolkitInstallerOptions{
+		mode: InstallUsingNVIDIACTKInstaller,
 	}
 
 	for _, opt := range opts {
@@ -103,23 +129,53 @@ func NewToolkitInstaller(opts ...installerOption) (*ToolkitInstaller, error) {
 		return nil, fmt.Errorf("image is required")
 	}
 
-	return i, nil
+	template, err := i.getTemplate()
+	if err != nil {
+		return nil, err
+	}
+
+	ti := &ToolkitInstaller{
+		template: template,
+		toolkitInstallerTemplateOptions: toolkitInstallerTemplateOptions{
+			ToolkitImage: i.Image,
+		},
+	}
+	return ti, nil
 }
 
-func (i *ToolkitInstaller) Install() error {
+func (i *ToolkitInstaller) Install(runner Runner) (string, string, error) {
+	renderedScript, err := i.Render()
+	if err != nil {
+		return "", "", err
+	}
+
+	return runner.Run(renderedScript)
+}
+
+func (i *ToolkitInstaller) Render() (string, error) {
 	// Parse the combined template
 	tmpl, err := template.New("installScript").Parse(i.template)
 	if err != nil {
-		return fmt.Errorf("error parsing template: %w", err)
+		return "", fmt.Errorf("error parsing template: %w", err)
 	}
 
 	// Execute the template
 	var renderedScript bytes.Buffer
-	err = tmpl.Execute(&renderedScript, i)
+	err = tmpl.Execute(&renderedScript, i.toolkitInstallerTemplateOptions)
 	if err != nil {
-		return fmt.Errorf("error executing template: %w", err)
+		return "", fmt.Errorf("error executing template: %w", err)
 	}
 
-	_, _, err = i.runner.Run(renderedScript.String())
-	return err
+	return renderedScript.String(), nil
+}
+
+func (i *toolkitInstallerOptions) getTemplate() (string, error) {
+	switch i.mode {
+	case InstallUsingNVIDIACTKInstaller:
+		return dockerInstallTemplate, nil
+	case InstallUsingPackagingImage:
+		return installFromImageTemplate, nil
+	default:
+		return "", fmt.Errorf("unrecognized mode %q", i.mode)
+	}
 }
