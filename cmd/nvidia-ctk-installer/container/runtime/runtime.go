@@ -117,6 +117,17 @@ func Flags(opts *Options) []cli.Flag {
 			Sources:     cli.EnvVars("NVIDIA_RUNTIME_SET_AS_DEFAULT", "CONTAINERD_SET_AS_DEFAULT", "DOCKER_SET_AS_DEFAULT"),
 			Hidden:      true,
 		},
+		&cli.StringSliceFlag{
+			Name:    "config-source",
+			Aliases: []string{"config-sources"},
+			Usage: "Specify the config sources for the container runtime. Any combination of " +
+				"[command | file]. " +
+				"When `file` is specified, the absolute path to the file to be used as a config source can " +
+				"be specified as `file=/path/to/source/config.toml",
+			Value:       []string{"command", "file"},
+			Destination: &opts.ConfigSources,
+			Sources:     cli.EnvVars("RUNTIME_CONFIG_SOURCES", "RUNTIME_CONFIG_SOURCE"),
+		},
 	}
 
 	flags = append(flags, containerd.Flags(&opts.containerdOptions)...)
@@ -144,6 +155,7 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 			logger.Warningf("Ignoring drop-in-config=%q flag for %v", opts.DropInConfig, opts.RuntimeName)
 			opts.DropInConfig = ""
 		}
+		opts.ConfigSources = []string{"file"}
 	case containerd.Name:
 	case crio.Name:
 		if err := opts.crioOptions.Validate(logger, c); err != nil {
@@ -152,7 +164,6 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 	}
 
 	// Apply the runtime-specific config changes.
-	// TODO: Add the runtime-specific DropInConfigs here.
 	switch runtime {
 	case containerd.Name:
 		if opts.TopLevelConfigPath == runtimeSpecificDefault {

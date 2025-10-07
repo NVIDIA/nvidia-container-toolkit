@@ -21,11 +21,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/operator"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 const (
@@ -53,6 +55,8 @@ type Options struct {
 	SetAsDefault  bool
 	RestartMode   string
 	HostRootMount string
+
+	ConfigSources []string
 }
 
 // Configure applies the options to the specified config
@@ -181,4 +185,39 @@ func (o Options) SystemdRestart(service string) error {
 	}
 
 	return nil
+}
+
+// GetConfigLoaders returns the loaders for the requested config sources.
+// Supported config sources can be specified as:
+//
+// * 'file[=path/to/file]': The specified file or the top-level config path is used.
+// * command: The runtime-specific function supplied as an argument is used.
+func (o Options) GetConfigLoaders(commandSourceFunc func(string, string) toml.Loader) ([]toml.Loader, error) {
+	if len(o.ConfigSources) == 0 {
+		return []toml.Loader{toml.Empty}, nil
+	}
+	var loaders []toml.Loader
+	for _, configSource := range o.ConfigSources {
+		parts := strings.SplitN(configSource, "=", 2)
+		source := parts[0]
+		switch source {
+		case "file":
+			fileSourcePath := o.TopLevelConfigPath
+			if len(parts) > 1 {
+				fileSourcePath = parts[1]
+			}
+			loaders = append(loaders, toml.FromFile(fileSourcePath))
+		case "command":
+			if commandSourceFunc == nil {
+				logrus.Warnf("Ignoring command config source")
+			}
+			if len(parts) > 1 {
+				logrus.Warnf("Ignoring additional command argument %q", parts[1])
+			}
+			loaders = append(loaders, commandSourceFunc(o.HostRootMount, o.ExecutablePath))
+		default:
+			return nil, fmt.Errorf("unsupported config source %q", configSource)
+		}
+	}
+	return loaders, nil
 }
