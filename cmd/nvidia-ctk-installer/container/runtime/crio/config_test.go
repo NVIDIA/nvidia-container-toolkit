@@ -621,10 +621,7 @@ plugin_dirs = [
 		},
 	}
 
-	for i, tc := range testCases {
-		if i > 3 {
-			t.SkipNow()
-		}
+	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			// Update any paths as required
 			testRoot := t.TempDir()
