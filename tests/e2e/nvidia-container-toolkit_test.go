@@ -28,31 +28,11 @@ import (
 
 // Integration tests for Docker runtime
 var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
-	var runner Runner
 	var hostDriverVersion string
 	var hostDriverMajor string
 
 	// Install the NVIDIA Container Toolkit
 	BeforeAll(func(ctx context.Context) {
-		runner = NewRunner(
-			WithHost(sshHost),
-			WithPort(sshPort),
-			WithSshKey(sshKey),
-			WithSshUser(sshUser),
-		)
-
-		if installCTK {
-			installer, err := NewToolkitInstaller(
-				WithRunner(runner),
-				WithImage(imageName+":"+imageTag),
-				WithTemplate(dockerInstallTemplate),
-			)
-			Expect(err).ToNot(HaveOccurred())
-
-			err = installer.Install()
-			Expect(err).ToNot(HaveOccurred())
-		}
-
 		driverOutput, _, err := runner.Run("nvidia-smi -q | grep \"Driver Version\"")
 		Expect(err).ToNot(HaveOccurred())
 		parts := strings.SplitN(driverOutput, ":", 2)
@@ -360,9 +340,11 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			_, _, err := runner.Run("docker pull ubuntu")
 			Expect(err).ToNot(HaveOccurred())
 
-			tmpDirPath = GinkgoT().TempDir()
-			_, _, err = runner.Run("mkdir -p " + tmpDirPath)
+			stdout, _, err := runner.Run("mktemp -d --tmpdir=/tmp")
 			Expect(err).ToNot(HaveOccurred())
+			Expect(stdout).ToNot(BeEmpty())
+			Expect(stdout).To(HavePrefix("/tmp"))
+			tmpDirPath = strings.TrimSpace(stdout)
 
 			output, _, err := runner.Run("mount | sort")
 			Expect(err).ToNot(HaveOccurred())

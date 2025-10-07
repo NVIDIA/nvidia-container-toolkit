@@ -21,9 +21,66 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
+	"text/template"
 	"time"
 
 	"golang.org/x/crypto/ssh"
+)
+
+const (
+	outerContainerTemplate = `docker run -d --name {{.ContainerName}} --privileged --runtime=nvidia \
+    -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all \
+    -e NVIDIA_DRIVER_CAPABILITIES=all \
+	{{ range $i, $a := .AdditionalArguments -}}
+	{{ $a }} \
+	{{ end -}}
+	{{.OuterContainerImage}} sleep infinity`
+
+	installDockerTemplate = `
+	export DEBIAN_FRONTEND=noninteractive
+
+	# Add Docker official GPG key:
+	apt-get update
+	apt-get install -y apt-utils ca-certificates curl gnupg2
+	install -m 0755 -d /etc/apt/keyrings
+
+	# Read OS information from /etc/os-release
+	. /etc/os-release
+
+	if [ "${ID}" = "debian" ]; then
+		curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+	else
+		curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+	fi
+	chmod a+r /etc/apt/keyrings/docker.asc
+
+	# Add the repository to Apt sources:
+	if [ "${ID}" = "debian" ]; then
+		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian ${VERSION_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+	else
+		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME:-$VERSION_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+	fi
+	apt-get update
+
+	apt-get install -y docker-ce docker-ce-cli
+
+	# start dockerd in the background
+	dockerd &
+
+	# wait for dockerd to be ready with timeout
+	timeout=30
+	elapsed=0
+	while ! docker info > /dev/null 2>&1 && [ $elapsed -lt $timeout ]; do
+		echo "Waiting for dockerd to be ready..."
+		sleep 1
+		elapsed=$((elapsed + 1))
+	done
+	if [ $elapsed -ge $timeout ]; then
+		echo "Docker failed to start within $timeout seconds"
+		exit 1
+	fi
+	`
 )
 
 type localRunner struct{}
@@ -32,6 +89,11 @@ type remoteRunner struct {
 	sshUser string
 	host    string
 	port    string
+}
+
+type nestedContainerRunner struct {
+	runner        Runner
+	containerName string
 }
 
 type runnerOption func(*remoteRunner)
@@ -77,6 +139,114 @@ func NewRunner(opts ...runnerOption) Runner {
 
 	// Otherwise, return a remote runner
 	return r
+}
+
+// NewNestedContainerRunner creates a new nested container runner.
+// A nested container runs a container inside another container based on a
+// given runner (remote or local).
+func NewNestedContainerRunner(runner Runner, baseImage string, installCTK bool, containerName string) (Runner, error) {
+	additionalContainerArguments := []string{}
+
+	// If a container with the same name exists from a previous test run, remove it first.
+	// Ignore errors as container might not exist
+	_, _, err := runner.Run(fmt.Sprintf("docker rm -f %s 2>/dev/null || true", containerName)) //nolint:errcheck
+	if err != nil {
+		return nil, fmt.Errorf("failed to remove container: %w", err)
+	}
+
+	if !installCTK {
+		// If installCTK is false, we use the preinstalled toolkit.
+		// This means we need to add toolkit libraries and binaries from the "host"
+
+		// TODO: This should be updated for other distributions and other components of the toolkit.
+		output, _, err := runner.Run("ls /lib/**/libnvidia-container*.so.*.*")
+		if err != nil {
+			return nil, fmt.Errorf("failed to list toolkit libraries: %w", err)
+		}
+
+		output = strings.TrimSpace(output)
+		if output == "" {
+			return nil, fmt.Errorf("no toolkit libraries found") //nolint:goerr113
+		}
+
+		for _, lib := range strings.Split(output, "\n") {
+			additionalContainerArguments = append(additionalContainerArguments, "-v "+lib+":"+lib)
+		}
+
+		// Look for NVIDIA binaries in standard locations and mount them as volumes
+		nvidiaBinaries := []string{
+			"nvidia-container-cli",
+			"nvidia-container-runtime",
+			"nvidia-container-runtime-hook",
+			"nvidia-ctk",
+			"nvidia-cdi-hook",
+			"nvidia-container-runtime.cdi",
+			"nvidia-container-runtime.legacy",
+		}
+
+		searchPaths := []string{
+			"/usr/bin",
+			"/usr/sbin",
+			"/usr/local/bin",
+			"/usr/local/sbin",
+		}
+
+		for _, binary := range nvidiaBinaries {
+			for _, searchPath := range searchPaths {
+				binaryPath := searchPath + "/" + binary
+				// Check if the binary exists at this path
+				checkCmd := fmt.Sprintf("test -f %s && echo 'exists'", binaryPath)
+				output, _, err := runner.Run(checkCmd)
+				if err == nil && strings.TrimSpace(output) == "exists" {
+					// Binary found, add it as a volume mount
+					additionalContainerArguments = append(additionalContainerArguments,
+						fmt.Sprintf("-v %s:%s", binaryPath, binaryPath))
+					break // Move to the next binary once found
+				}
+			}
+		}
+	}
+
+	// Mount the /lib/modules directory as a volume to enable the nvidia-cdi-refresh service
+	additionalContainerArguments = append(additionalContainerArguments, "-v /lib/modules:/lib/modules")
+
+	// Launch the container in detached mode.
+	var outerContainerScriptBuilder strings.Builder
+	outerContainerTemplate, err := template.New("outerContainer").Parse(outerContainerTemplate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse start container template: %w", err)
+	}
+	err = outerContainerTemplate.Execute(&outerContainerScriptBuilder, struct {
+		ContainerName       string
+		AdditionalArguments []string
+		OuterContainerImage string
+	}{
+		ContainerName:       containerName,
+		AdditionalArguments: additionalContainerArguments,
+		OuterContainerImage: baseImage,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute start container template: %w", err)
+	}
+
+	outerContainerScript := outerContainerScriptBuilder.String()
+	_, _, err = runner.Run(outerContainerScript)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run start container script: %w", err)
+	}
+
+	// install docker in the nested container
+	_, _, err = runner.Run(fmt.Sprintf("docker exec -u root "+containerName+" bash -c '%s'", installDockerTemplate))
+	if err != nil {
+		return nil, fmt.Errorf("failed to install docker: %w", err)
+	}
+
+	nc := &nestedContainerRunner{
+		runner:        runner,
+		containerName: containerName,
+	}
+
+	return nc, nil
 }
 
 func (l localRunner) Run(script string) (string, string, error) {
@@ -129,6 +299,10 @@ func (r remoteRunner) Run(script string) (string, string, error) {
 
 	// Return stdout as string if no errors
 	return stdout.String(), "", nil
+}
+
+func (r nestedContainerRunner) Run(script string) (string, string, error) {
+	return r.runner.Run(fmt.Sprintf("docker exec -u root "+r.containerName+" bash -c '%s'", script))
 }
 
 // createSshClient creates a ssh client, and retries if it fails to connect
