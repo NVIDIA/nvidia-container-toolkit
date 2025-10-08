@@ -1,5 +1,16 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.18.0-rc.6
+- Remove ppc64le artifacts from build
+- Add support for building artifacts with custom GOPROXY
+- Always update the ldcache in the container.
+
+### Changes in the Toolkit Container
+
+- Bump nvidia/distroless/go to v3.1.13-dev in /deployments/container
+- Allow config sources to be specified for containerd and crio
+- Allow file for config source to be specified explicitly
+
 ## Changes in libnvidia-container
 - Add clock_gettime to the set of allowed syscalls under seccomp.
 
