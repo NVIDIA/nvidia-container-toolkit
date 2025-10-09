@@ -17,7 +17,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli-altsrc/v3 v3.1.0
 	github.com/urfave/cli/v3 v3.4.1
-	golang.org/x/mod v0.28.0
+	golang.org/x/mod v0.29.0
 	golang.org/x/sys v0.36.0
 	tags.cncf.io/container-device-interface v1.0.1
 	tags.cncf.io/container-device-interface/specs-go v1.0.0
