@@ -73,6 +73,8 @@ type options struct {
 		ignorePatterns []string
 	}
 
+	deviceIDs []string
+
 	// the following are used for dependency injection during spec generation.
 	nvmllib nvml.Interface
 }
@@ -232,6 +234,14 @@ func (m command) build() *cli.Command {
 				Destination: &opts.featureFlags,
 				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_FEATURE_FLAGS"),
 			},
+			&cli.StringSliceFlag{
+				Name:        "device-id",
+				Aliases:     []string{"device-ids", "device", "devices"},
+				Usage:       "Restrict generation to the specified device identifiers",
+				Value:       []string{"all"},
+				Destination: &opts.deviceIDs,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_DEVICE_IDS"),
+			},
 		},
 	}
 
@@ -373,7 +383,7 @@ func (m command) generateSpecs(opts *options) ([]generatedSpecs, error) {
 		return nil, fmt.Errorf("failed to create CDI library: %v", err)
 	}
 
-	allDeviceSpecs, err := cdilib.GetDeviceSpecsByID("all")
+	allDeviceSpecs, err := cdilib.GetDeviceSpecsByID(opts.deviceIDs...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device CDI specs: %v", err)
 	}
