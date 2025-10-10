@@ -229,30 +229,56 @@ push-images-to-staging:
     OUT_IMAGE_NAME: "${NGC_STAGING_REGISTRY}/container-toolkit"
     OUT_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
 
+# The .create-version-file job creates a text file consisting of the images
+# that are to be released for this particular version.
+# The container images with the tags:
+#    ${IN_IMAGE_TAG} and ${IN_IMAGE_TAG}-packaging
+# are scheduled for release as
+#    ${OUT_IMAGE_TAG} and ${OUT_IMAGE_TAG}-packaging
+# respectively.
+.create-version-file:
+  variables:
+    VERSION_FILE: "build-info-${CI_PIPELINE_ID}.txt"
+    PROJECT_NAME: "nvidia-container-toolkit"
+
+    IN_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+    OUT_IMAGE_TAG: "${CI_COMMIT_TAG}"
+  before_script:
+    - |
+      if [ -z ${IN_IMAGE_TAG} ]; then
+        echo "IN_IMAGE_TAG not set"
+        exit 1
+      fi
+      if [ -z ${OUT_IMAGE_TAG} ]; then
+        echo "OUT_IMAGE_TAG not set"
+        exit 1
+      fi
+
+      rm -f ${VERSION_FILE}
+      echo "${IN_IMAGE_TAG} ${OUT_IMAGE_TAG}" >> ${VERSION_FILE}
+      echo "${IN_IMAGE_TAG}-packaging ${OUT_IMAGE_TAG}-packaging" >> ${VERSION_FILE}
+      cat ${VERSION_FILE}
+  artifacts:
+    paths:
+      - "${VERSION_FILE}"
+
 .publish-images:
   stage: ngc-publish
   needs:
     - scan-images
     - push-images-to-staging
+  extends:
+    - .create-version-file
   image:
     name: "${CNT_NGC_PUBLISH_IMAGE}"
     pull_policy: always
   variables:
-
-  variables:
     GITLAB_ACCESS_TOKEN: "${CNT_GITLAB_TOKEN}"
-
-    IN_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
-    OUT_IMAGE_TAG: "${CI_COMMIT_TAG}"
-
-    VERSION_FILE: "build-info-${CI_PIPELINE_ID}.txt"
-    PROJECT_NAME: "nvidia-container-toolkit"
-  before_script:
+  script:
     - |
       if [ -n "${OVERRIDE_PUBLISHING_PROJECT_PATH}" ]; then
         NGC_PUBLISHING_PROJECT_PATH="${OVERRIDE_PUBLISHING_PROJECT_PATH}"
       fi
-
       if [ -z "${NGC_PUBLISHING_PROJECT_PATH}" ]; then
         echo "NGC_PUBLISHING_PROJECT_PATH not set"
         exit 1
@@ -260,22 +286,66 @@ push-images-to-staging:
 
       echo "publishing to ${NGC_PUBLISHING_PROJECT_PATH}"
 
-      rm -f ${VERSION_FILE}
-      echo "${IN_IMAGE_TAG} ${OUT_IMAGE_TAG}" >> ${VERSION_FILE}
-      echo "${IN_IMAGE_TAG}-packaging ${OUT_IMAGE_TAG}-packaging" >> ${VERSION_FILE}
-      cat ${VERSION_FILE}
-  script:
-    - cnt-ngc-publish render --project-name "${PROJECT_NAME}" --versions-file "${VERSION_FILE}" --output "${PROJECT_NAME}".yaml
-    - cnt-ngc-publish merge-request --files "${PROJECT_NAME}.yaml"
+      cnt-ngc-publish render --project-name "${PROJECT_NAME}" --versions-file "${VERSION_FILE}" --output "${PROJECT_NAME}".yaml
+      cnt-ngc-publish merge-request --files "${PROJECT_NAME}.yaml"
   artifacts:
     paths:
-      - "${VERSION_FILE}"
       - "${PROJECT_NAME}.yaml"
 
+.update-nspect:
+  stage: ngc-publish
+  needs:
+    - push-images-to-staging
+  extends:
+    - .create-version-file
+  image:
+    name: "${CNT_NGC_PUBLISH_IMAGE}"
+    pull_policy: always
+  variables:
+    REPO_URL: "https://github.com/NVIDIA/nvidia-container-toolkit.git"
+  script:
+    - |
+      if [ -z "${OSRB_BUG_ID}" ]; then
+        echo "OSRB_BUG_ID not set"
+        exit 1
+      fi
+      if [ -z "${RELEASE_VERSION}" ]; then
+        export RELEASE_VERSION="${CI_COMMIT_TAG//-*}"
+      fi
+      cnt-ngc-publish nspect --versions-file "${VERSION_FILE}"
 
+# Update the nspect production environment with the new release
+update-nspect:
+  extends:
+    - .update-nspect
+  rules:
+    - if: $CI_COMMIT_TAG
+  variables:
+    ENV: "prod"
+    NSPECT_CLIENT_ID: "${NSPECT_PROD_CLIENT_ID}"
+    NSPECT_CLIENT_SECRET: "${NSPECT_PROD_CLIENT_SECRET}"
+
+# Update the nspect staging environment to test the nspect publishing logic
+update-nspect-staging:
+  extends:
+    - .update-nspect
+  rules:
+    - if: $CI_COMMIT_TAG == null || $CI_COMMIT_TAG == ""
+  variables:
+    ENV: "stage"
+    RELEASE_VERSION: "test"
+    NSPECT_CLIENT_ID: "${NSPECT_STAGING_CLIENT_ID}"
+    NSPECT_CLIENT_SECRET: "${NSPECT_STAGING_CLIENT_SECRET}"
+    # We override the OUT_IMAGE_TAG so that this is different from the input tag
+    # Note that for actual releases we use the git tag.
+    OUT_IMAGE_TAG: "publish-${CI_COMMIT_SHORT_SHA}"
+
+# Publish the images from the staging registry to NGC.
 publish-images-to-ngc:
   extends:
     - .publish-images
+  needs:
+    - update-nspect
   rules:
     - if: $CI_COMMIT_TAG
 
@@ -284,8 +354,12 @@ publish-images-to-ngc:
 publish-images-dummy:
   extends:
     - .publish-images
-  variables:
-    OVERRIDE_PUBLISHING_PROJECT_PATH: "dl/container-dev/ngc-automation"
-    OUT_IMAGE_TAG: "publish-${CI_COMMIT_SHORT_SHA}"
+  needs:
+    - update-nspect-staging
   rules:
     - if: $CI_COMMIT_TAG == null || $CI_COMMIT_TAG == ""
+  variables:
+    OVERRIDE_PUBLISHING_PROJECT_PATH: "dl/container-dev/ngc-automation"
+    # We override the OUT_IMAGE_TAG so that this is different from the input tag
+    # Note that for actual releases we use the git tag.
+    OUT_IMAGE_TAG: "publish-${CI_COMMIT_SHORT_SHA}"
