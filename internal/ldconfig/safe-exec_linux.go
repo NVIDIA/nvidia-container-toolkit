@@ -25,20 +25,20 @@ import (
 	"syscall"
 
 	"github.com/opencontainers/runc/libcontainer/exeseal"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
 // SafeExec attempts to clone the specified binary (as an memfd, for example) before executing it.
 func SafeExec(path string, args []string, envv []string) error {
 	safeExe, err := cloneBinary(path)
 	if err != nil {
-		//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-		return syscall.Exec(path, args, envv)
+		return syscall.Exec(path, oci.Escape(args), envv) //nolint:gosec
 	}
 	defer safeExe.Close()
 
 	exePath := "/proc/self/fd/" + strconv.Itoa(int(safeExe.Fd()))
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	return syscall.Exec(exePath, args, envv)
+	return syscall.Exec(exePath, oci.Escape(args), envv) //nolint:gosec
 }
 
 func cloneBinary(path string) (*os.File, error) {
