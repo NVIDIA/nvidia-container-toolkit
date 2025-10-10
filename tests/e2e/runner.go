@@ -21,9 +21,18 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
+	"text/template"
 	"time"
 
 	"golang.org/x/crypto/ssh"
+)
+
+const (
+	installPrerequisitesScript = `
+	export DEBIAN_FRONTEND=noninteractive
+	apt-get update && apt-get install -y curl gnupg2
+	`
 )
 
 type localRunner struct{}
@@ -32,6 +41,11 @@ type remoteRunner struct {
 	sshUser string
 	host    string
 	port    string
+}
+
+type nestedContainerRunner struct {
+	runner        Runner
+	containerName string
 }
 
 type runnerOption func(*remoteRunner)
@@ -77,6 +91,110 @@ func NewRunner(opts ...runnerOption) Runner {
 
 	// Otherwise, return a remote runner
 	return r
+}
+
+// NewNestedContainerRunner creates a new nested container runner.
+// A nested container runs a container inside another container based on a
+// given runner (remote or local).
+func NewNestedContainerRunner(runner Runner, baseImage string, installCTK bool, containerName string, cacheDir string) (Runner, error) {
+	// If a container with the same name exists from a previous test run, remove it first.
+	// Ignore errors as container might not exist
+	_, _, err := runner.Run(fmt.Sprintf("docker rm -f %s 2>/dev/null || true", containerName))
+	if err != nil {
+		return nil, fmt.Errorf("failed to remove container: %w", err)
+	}
+
+	var additionalContainerArguments []string
+
+	if cacheDir != "" {
+		additionalContainerArguments = append(additionalContainerArguments,
+			"-v "+cacheDir+":"+cacheDir+":ro",
+		)
+	}
+
+	if !installCTK {
+		// If installCTK is false, we use the preinstalled toolkit.
+		// This means we need to add toolkit libraries and binaries from the "host"
+
+		// TODO: This should be updated for other distributions and other components of the toolkit.
+		output, _, err := runner.Run("ls /lib/**/libnvidia-container*.so.*.*")
+		if err != nil {
+			return nil, fmt.Errorf("failed to list toolkit libraries: %w", err)
+		}
+
+		output = strings.TrimSpace(output)
+		if output == "" {
+			return nil, fmt.Errorf("no toolkit libraries found")
+		}
+
+		for _, lib := range strings.Split(output, "\n") {
+			additionalContainerArguments = append(additionalContainerArguments, "-v "+lib+":"+lib)
+		}
+
+		// Look for NVIDIA binaries in standard locations and mount them as volumes
+		nvidiaBinaries := []string{
+			"nvidia-container-cli",
+			"nvidia-container-runtime",
+			"nvidia-container-runtime-hook",
+			"nvidia-ctk",
+			"nvidia-cdi-hook",
+			"nvidia-container-runtime.cdi",
+			"nvidia-container-runtime.legacy",
+		}
+
+		searchPaths := []string{
+			"/usr/bin",
+			"/usr/sbin",
+			"/usr/local/bin",
+			"/usr/local/sbin",
+		}
+
+		for _, binary := range nvidiaBinaries {
+			for _, searchPath := range searchPaths {
+				binaryPath := searchPath + "/" + binary
+				// Check if the binary exists at this path
+				checkCmd := fmt.Sprintf("test -f %s && echo 'exists'", binaryPath)
+				output, _, err := runner.Run(checkCmd)
+				if err == nil && strings.TrimSpace(output) == "exists" {
+					// Binary found, add it as a volume mount
+					additionalContainerArguments = append(additionalContainerArguments,
+						fmt.Sprintf("-v %s:%s", binaryPath, binaryPath))
+					break // Move to the next binary once found
+				}
+			}
+		}
+	}
+
+	// Mount the /lib/modules directory as a volume to enable the nvidia-cdi-refresh service
+	additionalContainerArguments = append(additionalContainerArguments, "-v /lib/modules:/lib/modules")
+
+	// Launch the container in detached mode.
+	container := outerContainer{
+		Name:                containerName,
+		BaseImage:           baseImage,
+		AdditionalArguments: additionalContainerArguments,
+	}
+
+	script, err := container.Render()
+	if err != nil {
+		return nil, err
+	}
+	_, _, err = runner.Run(script)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run start container script: %w", err)
+	}
+
+	inContainer := &nestedContainerRunner{
+		runner:        runner,
+		containerName: containerName,
+	}
+
+	_, _, err = inContainer.Run(installPrerequisitesScript)
+	if err != nil {
+		return nil, fmt.Errorf("failed to install docker: %w", err)
+	}
+
+	return inContainer, nil
 }
 
 func (l localRunner) Run(script string) (string, string, error) {
@@ -131,6 +249,12 @@ func (r remoteRunner) Run(script string) (string, string, error) {
 	return stdout.String(), "", nil
 }
 
+// Run runs teh specified script in the container using the docker exec command.
+// The script is is run as the root user.
+func (r nestedContainerRunner) Run(script string) (string, string, error) {
+	return r.runner.Run(`docker exec -u root "` + r.containerName + `" bash -c '` + script + `'`)
+}
+
 // createSshClient creates a ssh client, and retries if it fails to connect
 func connectOrDie(sshKey, sshUser, host, port string) (*ssh.Client, error) {
 	var client *ssh.Client
@@ -168,4 +292,38 @@ func connectOrDie(sshKey, sshUser, host, port string) (*ssh.Client, error) {
 	}
 
 	return client, nil
+}
+
+// outerContainerTemplate represents a template to start a container with
+// a name specified.
+// The container is given access to all NVIDIA gpus by explicitly using the
+// nvidia runtime and the `runtime.nvidia.com/gpu=all` device to trigger JIT
+// CDI spec generation.
+// The template also allows for additional arguments to be specified.
+type outerContainer struct {
+	Name                string
+	BaseImage           string
+	AdditionalArguments []string
+}
+
+func (o *outerContainer) Render() (string, error) {
+	tmpl, err := template.New("startContainer").Parse(`docker run -d --name {{.Name}} --privileged --runtime=nvidia \
+-e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all \
+-e NVIDIA_DRIVER_CAPABILITIES=all \
+{{ range $i, $a := .AdditionalArguments -}}
+{{ $a }} \
+{{ end -}}
+{{.BaseImage}} sleep infinity`)
+
+	if err != nil {
+		return "", err
+	}
+
+	var script strings.Builder
+	err = tmpl.Execute(&script, o)
+	if err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return script.String(), nil
 }
