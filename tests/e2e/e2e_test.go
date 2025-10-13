@@ -22,6 +22,7 @@ import (
 	"errors"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,17 +31,21 @@ import (
 
 // Test context
 var (
+	runner Runner
+
 	ctx context.Context
 
 	installCTK bool
 
-	imageName string
-	imageTag  string
+	nvidiaContainerToolkitImage string
 
 	sshKey  string
 	sshUser string
 	sshHost string
 	sshPort string
+
+	localCacheDir    string
+	toolkitInstaller *ToolkitInstaller
 )
 
 func TestMain(t *testing.T) {
@@ -49,12 +54,49 @@ func TestMain(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	ctx = context.Background()
-	getTestEnv()
 
 	RunSpecs(t,
 		suiteName,
 	)
 }
+
+var _ = BeforeSuite(func() {
+	getTestEnv()
+
+	runner = NewRunner(
+		WithHost(sshHost),
+		WithPort(sshPort),
+		WithSshKey(sshKey),
+		WithSshUser(sshUser),
+	)
+
+	// Create a tempdir on the runner.
+	tmpdir, _, err := runner.Run("mktemp -d --tmpdir=/tmp nvctk-e2e-test-cacheXXX")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(strings.TrimSpace(tmpdir)).ToNot(BeEmpty())
+
+	localCacheDir = strings.TrimSpace(tmpdir)
+
+	toolkitInstaller, err = NewToolkitInstaller(
+		WithToolkitImage(nvidiaContainerToolkitImage),
+		WithCacheDir(localCacheDir),
+	)
+	Expect(err).ToNot(HaveOccurred())
+
+	_, _, err = toolkitInstaller.PrepareCache(runner)
+	Expect(err).ToNot(HaveOccurred())
+
+	if installCTK {
+		_, _, err := toolkitInstaller.Install(runner)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, _, err = runner.Run(`sudo nvidia-ctk runtime configure --runtime=docker`)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, _, err = runner.Run(`sudo systemctl restart docker`)
+		Expect(err).ToNot(HaveOccurred())
+	}
+})
 
 // getTestEnv gets the test environment variables
 func getTestEnv() {
@@ -62,10 +104,9 @@ func getTestEnv() {
 
 	installCTK = getEnvVarOrDefault("E2E_INSTALL_CTK", false)
 
-	if installCTK {
-		imageName = getRequiredEnvvar[string]("E2E_IMAGE_NAME")
-		imageTag = getRequiredEnvvar[string]("E2E_IMAGE_TAG")
-	}
+	imageName := getRequiredEnvvar[string]("E2E_IMAGE_NAME")
+	imageTag := getRequiredEnvvar[string]("E2E_IMAGE_TAG")
+	nvidiaContainerToolkitImage = imageName + ":" + imageTag
 
 	sshHost = getEnvVarOrDefault("E2E_SSH_HOST", "")
 	if sshHost != "" {
@@ -73,7 +114,6 @@ func getTestEnv() {
 		sshUser = getRequiredEnvvar[string]("E2E_SSH_USER")
 		sshPort = getEnvVarOrDefault("E2E_SSH_PORT", "22")
 	}
-
 }
 
 // getRequiredEnvvar returns the specified envvar if set or raises an error.
