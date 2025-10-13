@@ -87,7 +87,7 @@ github.com/urfave/cli-altsrc/v3
 github.com/urfave/cli/v3
 # github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
 ## explicit
-# golang.org/x/mod v0.28.0
+# golang.org/x/mod v0.29.0
 ## explicit; go 1.24.0
 golang.org/x/mod/semver
 # golang.org/x/sys v0.36.0
