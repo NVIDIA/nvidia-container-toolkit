@@ -15,7 +15,7 @@
 # This is the dockerfile for building packages on yum-based RPM systems.
 
 ARG BASEIMAGE
-FROM ${BASEIMAGE}
+FROM ${BASEIMAGE} AS build
 
 # centos:stream8 is EOL.
 # We switch to the vault repositories for this base image.
@@ -72,6 +72,26 @@ RUN make PREFIX=${DIST_DIR} cmds
 WORKDIR $DIST_DIR/..
 COPY packaging/rpm .
 COPY deployments/systemd/ ${DIST_DIR}/
+
+FROM quay.io/centos/centos:stream9
+
+RUN yum install -y \
+        ca-certificates \
+        rpm-build && \
+    rm -rf /var/cache/yum/*
+
+ARG PKG_VERS
+ARG PKG_REV
+ARG GIT_COMMIT
+ENV PKG_VERS ${PKG_VERS}
+ENV PKG_REV ${PKG_REV}
+ENV GIT_COMMIT ${GIT_COMMIT}
+
+ENV DIST_DIR=/tmp/nvidia-container-toolkit-$PKG_VERS/SOURCES
+
+WORKDIR $DIST_DIR/..
+COPY --from=build /tmp/nvidia-container-toolkit-$PKG_VERS .
+
 
 CMD arch=$(uname -m) && \
     rpmbuild --clean --target=$arch -bb \
