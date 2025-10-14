@@ -17,36 +17,30 @@
 package tegra
 
 import (
-	"fmt"
-
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
-// newDiscovererFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
-// The constructed discoverer is comprised of a list, with each element in the list being associated with a
-// single CSV files.
-func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
-	if len(o.csvFiles) == 0 {
-		o.logger.Warningf("No CSV files specified")
+func (o options) newDiscovererFromMountSpecs() (discover.Discover, error) {
+	pathsByType := o.MountSpecPathsByType()
+	if len(pathsByType) == 0 {
+		o.logger.Warningf("No mount specs specified")
 		return discover.None{}, nil
 	}
-
-	targetsByType := getTargetsFromCSVFiles(o.logger, o.csvFiles)
 
 	devices := discover.NewCharDeviceDiscoverer(
 		o.logger,
 		o.devRoot,
-		targetsByType[csv.MountSpecDev],
+		pathsByType[csv.MountSpecDev],
 	)
 
 	directories := discover.NewMounts(
 		o.logger,
 		lookup.NewDirectoryLocator(lookup.WithLogger(o.logger), lookup.WithRoot(o.driverRoot)),
 		o.driverRoot,
-		targetsByType[csv.MountSpecDir],
+		pathsByType[csv.MountSpecDir],
 	)
 
 	// We create a discoverer for mounted libraries and add additional .so
@@ -57,14 +51,14 @@ func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
 			o.logger,
 			o.symlinkLocator,
 			o.driverRoot,
-			targetsByType[csv.MountSpecLib],
+			pathsByType[csv.MountSpecLib],
 		),
 		"",
 		o.hookCreator,
 	)
 
 	// We process the explicitly requested symlinks.
-	symlinkTargets := o.ignorePatterns.Apply(targetsByType[csv.MountSpecSym]...)
+	symlinkTargets := pathsByType[csv.MountSpecSym]
 	o.logger.Debugf("Filtered symlink targets: %v", symlinkTargets)
 	symlinks := discover.NewMounts(
 		o.logger,
@@ -85,35 +79,34 @@ func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
 	return d, nil
 }
 
-// getTargetsFromCSVFiles returns the list of mount specs from the specified CSV files.
-// These are aggregated by mount spec type.
-// TODO: We use a function variable here to allow this to be overridden for testing.
-// This should be properly mocked.
-var getTargetsFromCSVFiles = func(logger logger.Interface, files []string) map[csv.MountSpecType][]string {
-	targetsByType := make(map[csv.MountSpecType][]string)
-	for _, filename := range files {
-		targets, err := loadCSVFile(logger, filename)
-		if err != nil {
-			logger.Warningf("Skipping CSV file %v: %v", filename, err)
-			continue
-		}
-		for _, t := range targets {
-			targetsByType[t.Type] = append(targetsByType[t.Type], t.Path)
-		}
+// MountSpecsFromCSVFiles returns a MountSpecPathsByTyper for the specified list
+// of CSV files.
+func MountSpecsFromCSVFiles(logger logger.Interface, csvFiles ...string) MountSpecPathsByTyper {
+	var tts []MountSpecPathsByTyper
+
+	for _, filename := range csvFiles {
+		tts = append(tts, &fromCSVFile{logger, filename})
 	}
-	return targetsByType
+	return Merge(tts...)
 }
 
-// loadCSVFile loads the specified CSV file and returns the list of mount specs
-func loadCSVFile(logger logger.Interface, filename string) ([]*csv.MountSpec, error) {
+type fromCSVFile struct {
+	logger   logger.Interface
+	filename string
+}
+
+// MountSpecPathsByType returns mountspecs defined in the specified CSV file.
+func (t *fromCSVFile) MountSpecPathsByType() MountSpecPathsByType {
 	// Create a discoverer for each file-kind combination
-	targets, err := csv.NewCSVFileParser(logger, filename).Parse()
+	targets, err := csv.NewCSVFileParser(t.logger, t.filename).Parse()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse CSV file: %v", err)
-	}
-	if len(targets) == 0 {
-		return nil, fmt.Errorf("CSV file is empty")
+		t.logger.Warningf("failed to parse CSV file %v: %v", t.filename, err)
+		return nil
 	}
 
-	return targets, nil
+	targetsByType := make(MountSpecPathsByType)
+	for _, t := range targets {
+		targetsByType[t.Type] = append(targetsByType[t.Type], t.Path)
+	}
+	return targetsByType
 }
