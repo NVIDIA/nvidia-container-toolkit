@@ -18,6 +18,8 @@
 package tegra
 
 import (
+	"regexp"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
@@ -80,10 +82,74 @@ type transformMountSpecByPathsByType struct {
 	input MountSpecPathsByTyper
 }
 
+type merge []MountSpecPathsByTyper
+
+// Merge combines the MountSpecPathsByType for the specified sources.
+func Merge(sources ...MountSpecPathsByTyper) MountSpecPathsByTyper {
+	return merge(sources)
+}
+
+// MountSpecPathsByType for a set of merged mount specs combines the list of
+// paths per type.
+func (ts merge) MountSpecPathsByType() MountSpecPathsByType {
+	targetsByType := make(MountSpecPathsByType)
+	for _, t := range ts {
+		if t == nil {
+			continue
+		}
+		for tType, targets := range t.MountSpecPathsByType() {
+			targetsByType[tType] = append(targetsByType[tType], targets...)
+		}
+	}
+	return targetsByType
+}
+
 func (m transformMountSpecByPathsByType) MountSpecPathsByType() MountSpecPathsByType {
 	return m.Apply(m.input).MountSpecPathsByType()
 }
 
 func IgnoreSymlinkMountSpecsByPattern(ignorePatterns ...string) Transformer {
 	return ignoreSymlinkMountSpecPatterns(ignorePatterns)
+}
+
+// OnlyDeviceNodes creates a transformer that will remove any input mounts specs
+// that are not of the `MountSpecDev` type.
+func OnlyDeviceNodes() Transformer {
+	return filterByMountSpecType{
+		csv.MountSpecDir: removeAll{},
+		csv.MountSpecLib: removeAll{},
+		csv.MountSpecSym: removeAll{},
+	}
+}
+
+// WithoutDeviceNodes creates a transformer that will remove entries with type
+// MountSpecDevice from the input.
+func WithoutDeviceNodes() Transformer {
+	return filterByMountSpecType{
+		csv.MountSpecDev: removeAll{},
+	}
+}
+
+// WithoutRegularDeviceNodes creates a transfomer which removes
+// regular `/dev/nvidia[0-9]+` device nodes from the source.
+func WithoutRegularDeviceNodes() Transformer {
+	return filterByMountSpecType{
+		csv.MountSpecDev: &matcherAsFilter{regexp.MustCompile("^/dev/nvidia[0-9]+$")},
+	}
+}
+
+// DeviceNodes creates a set of MountSpecPaths for the specified device nodes.
+// These have the MoutSpecDev type.
+func DeviceNodes(dn ...string) MountSpecPathsByTyper {
+	return MountSpecPathsByType{
+		csv.MountSpecDev: dn,
+	}
+}
+
+// DeviceNodes creates a set of MountSpecPaths for the specified symlinks.
+// These have the MountSpecSym type.
+func Symlinks(s ...string) MountSpecPathsByTyper {
+	return MountSpecPathsByType{
+		csv.MountSpecSym: s,
+	}
 }
