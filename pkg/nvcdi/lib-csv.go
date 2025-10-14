@@ -52,9 +52,13 @@ func (l *csvlib) GetDeviceSpecs() ([]specs.Device, error) {
 		tegra.WithDevRoot(l.devRoot),
 		tegra.WithHookCreator(l.hookCreator),
 		tegra.WithLdconfigPath(l.ldconfigPath),
-		tegra.WithCSVFiles(l.csvFiles),
 		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
-		tegra.WithIngorePatterns(l.csvIgnorePatterns...),
+		tegra.WithMountSpecsByPath(
+			tegra.Transform(
+				tegra.AsIgnorePatternsByType(tegra.Symlinks(l.csvIgnorePatterns...)),
+				tegra.MountSpecsFromCSVFiles(l.logger, l.csvFiles...),
+			),
+		),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for CSV files: %v", err)
