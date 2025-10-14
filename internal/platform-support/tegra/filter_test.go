@@ -25,7 +25,7 @@ import (
 func TestIgnorePatterns(t *testing.T) {
 	testCases := []struct {
 		description   string
-		blockedFilter []string
+		blockedFilter pathPatterns
 		input         []string
 		expected      []string
 	}{

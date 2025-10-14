@@ -56,7 +56,7 @@ func New(opts ...Option) (discover.Discover, error) {
 
 	mountSpecDiscoverer, err := o.newDiscovererFromMountSpecs(o.mountSpecs.MountSpecPathsByType())
 	if err != nil {
-		return nil, fmt.Errorf("failed to create discoverer for mount specs: %w", err)
+		return nil, fmt.Errorf("failed to create discoverer for mount specs: %v", err)
 	}
 
 	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(o.logger, mountSpecDiscoverer, o.hookCreator, o.ldconfigPath)
@@ -75,7 +75,8 @@ func New(opts ...Option) (discover.Discover, error) {
 
 	d := discover.Merge(
 		mountSpecDiscoverer,
-		// The ldcacheUpdateHook is added last to ensure that the created symlinks are included
+		// The ldcacheUpdateHook is added after the mount spec discoverer to
+		// ensure that the symlinks are included.
 		ldcacheUpdateHook,
 		tegraSystemMounts,
 	)
