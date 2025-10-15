@@ -145,6 +145,10 @@ func (l *nvcdilib) getVersionSuffixDriverLibraryMounts(version string) (discover
 }
 
 func (l *nvcdilib) getExplicitDriverLibraryMounts() (discover.Discover, error) {
+	if !l.featureFlags[FeatureEnableExplicitDriverLibraries] {
+		return nil, nil
+	}
+
 	// List of explicit libraries to locate
 	// TODO(ArangoGutierrez): we should load the version of the libraries from
 	// the sandboxutils-filelist or have a way to allow users to specify the
