@@ -77,6 +77,9 @@ const (
 type FeatureFlag string
 
 const (
+	// FeatureEnableExplicitDriverLibraries enables the inclusion of a list of
+	// explicit driver libraries.
+	FeatureEnableExplicitDriverLibraries = FeatureFlag("enable-explicit-driver-libraries")
 	// FeatureDisableNvsandboxUtils disables the use of nvsandboxutils when
 	// querying devices.
 	FeatureDisableNvsandboxUtils = FeatureFlag("disable-nvsandbox-utils")

@@ -82,6 +82,9 @@ func NewToolkitInstaller(opts ...installerOption) (*ToolkitInstaller, error) {
 // PrepareCache ensures that the installer (package) cache is created on the runner.
 // The can be used to ensure that docker is not REQUIRED in an inner container.
 func (i *ToolkitInstaller) PrepareCache(runner Runner) (string, string, error) {
+	if i.ToolkitImage == "disabled:disabled" {
+		return "", "", nil
+	}
 	renderedScript, err := i.renderScript(prepareInstallerCacheTemplate, false)
 	if err != nil {
 		return "", "", err
