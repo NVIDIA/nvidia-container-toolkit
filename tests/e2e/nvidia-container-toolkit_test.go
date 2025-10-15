@@ -516,4 +516,21 @@ EOF`)
 			Expect(strings.TrimSpace(stdout)).To(Equal("Unsuccessful"))
 		})
 	})
+
+	When("Running a container that installs ocl-icd-libopencl1", Ordered, func() {
+		BeforeAll(func(ctx context.Context) {
+			_, _, err := runner.Run("docker pull ubuntu")
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("should succeed when using the nvidia-container-runtime", func(ctx context.Context) {
+			_, _, err := runner.Run(`docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all \
+				ubuntu bash -c "apt-get update && apt-get install -y ocl-icd-libopencl1"`)
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("should succeed when using the nvidia-container-runtime-hook", Label("legacy"), func(ctx context.Context) {
+			_, _, err := runner.Run(`docker run --rm --runtime=runc --gpus=all -e NVIDIA_DRIVER_CAPABILITIES=all \
+				ubuntu bash -c "apt-get update && apt-get install -y ocl-icd-libopencl1"`)
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
 })
