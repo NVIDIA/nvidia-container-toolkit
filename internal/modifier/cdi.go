@@ -172,15 +172,17 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 	seen := make(map[string]bool)
 	for _, device := range devices {
 		mode, id := getModeIdentifier(device)
+		logger.Debugf("Mapped %v to %v: %v", device, mode, id)
 		if !seen[mode] {
 			uniqueModes = append(uniqueModes, mode)
 			seen[mode] = true
 		}
 		if id != "" {
-			perModeIdentifiers[id] = append(perModeIdentifiers[id], id)
+			perModeIdentifiers[mode] = append(perModeIdentifiers[mode], id)
 		}
 	}
 
+	logger.Debugf("Per-mode identifiers: %v", perModeIdentifiers)
 	var modifiers oci.SpecModifiers
 	for _, mode := range uniqueModes {
 		cdilib, err := nvcdi.New(
