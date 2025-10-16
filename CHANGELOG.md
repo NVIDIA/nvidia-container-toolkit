@@ -1,5 +1,9 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.18.0-rc.7
+- Fix bug in device selection in jit-cdi mode
+- Make list of explicit driver libraries opt-in
+
 ## v1.18.0-rc.6
 - Remove ppc64le artifacts from build
 - Add support for building artifacts with custom GOPROXY
