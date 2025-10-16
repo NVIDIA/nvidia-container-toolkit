@@ -51,6 +51,8 @@ const (
 
 	DefaultSocket      = "/var/run/crio/crio.sock"
 	DefaultRestartMode = "systemd"
+
+	DefaultUnconfigureMode = "default-runtime-only"
 )
 
 // Options defines the cri-o specific options.
@@ -182,9 +184,19 @@ func cleanupHook(co *Options) error {
 func cleanupConfig(o *container.Options) error {
 	log.Infof("Reverting config file modifications")
 
+	if o.UnconfigureMode == "none" {
+		log.Infof("Skipping cleanup as unconfigure mode is set to 'none'")
+		return nil
+	}
+
 	cfg, err := getRuntimeConfig(o)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
+	}
+
+	if o.UnconfigureMode == "default-runtime-only" {
+		log.Infof("Removing nvidia as the default runtime if configured")
+		return o.UnsetDefaultRuntime(cfg)
 	}
 
 	err = o.Unconfigure(cfg)

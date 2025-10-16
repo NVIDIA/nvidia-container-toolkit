@@ -121,6 +121,10 @@ func (c *Config) EnableCDI() {
 	*c = config
 }
 
+func (c *Config) UnsetDefaultRuntime(name string) {
+	// to be implemented
+}
+
 // RemoveRuntime removes a runtime from the docker config
 func (c *Config) RemoveRuntime(name string) error {
 	if c == nil {

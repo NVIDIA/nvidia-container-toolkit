@@ -75,6 +75,26 @@ func (c ConfigV1) DefaultRuntime() string {
 	return ""
 }
 
+func (c *ConfigV1) UnsetDefaultRuntime(name string) {
+	if c == nil || c.Tree == nil {
+		return
+	}
+
+	config := *c.Tree
+
+	runtimePath, ok := config.GetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "options", "BinaryName"}).(string)
+	if !ok || runtimePath == "" {
+		runtimePath, _ = config.GetPath([]string{"plugins", "cri", "containerd", "runtimes", name, "options", "Runtime"}).(string)
+	}
+	defaultRuntimePath, ok := config.GetPath([]string{"plugins", "cri", "containerd", "default_runtime", "options", "BinaryName"}).(string)
+	if !ok || defaultRuntimePath == "" {
+		defaultRuntimePath, _ = config.GetPath([]string{"plugins", "cri", "containerd", "default_runtime", "options", "Runtime"}).(string)
+	}
+	if runtimePath != "" && defaultRuntimePath != "" && runtimePath == defaultRuntimePath {
+		config.DeletePath([]string{"plugins", "cri", "containerd", "default_runtime"})
+	}
+}
+
 // RemoveRuntime removes a runtime from the docker config
 func (c *ConfigV1) RemoveRuntime(name string) error {
 	if c == nil || c.Tree == nil {

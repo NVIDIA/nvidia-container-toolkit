@@ -43,6 +43,7 @@ type RuntimeConfigDestination interface {
 	AddRuntimeWithOptions(string, string, bool, interface{}) error
 	EnableCDI()
 	RemoveRuntime(string) error
+	UnsetDefaultRuntime(string)
 	Save(string) (int64, error)
 	String() string
 }
@@ -58,6 +59,11 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 // RemoveRuntime removes a runtime from the destination config.
 func (c *Config) RemoveRuntime(runtime string) error {
 	return c.Destination.RemoveRuntime(runtime)
+}
+
+// UnsetDefaultRuntime removes the default runtime setting from the destination config.
+func (c *Config) UnsetDefaultRuntime(runtime string) {
+	c.Destination.UnsetDefaultRuntime(runtime)
 }
 
 // EnableCDI enables CDI in the destination config.

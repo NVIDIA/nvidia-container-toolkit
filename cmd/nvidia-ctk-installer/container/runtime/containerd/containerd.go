@@ -39,6 +39,8 @@ const (
 	DefaultSocket      = "/run/containerd/containerd.sock"
 	DefaultRestartMode = "signal"
 
+	DefaultUnconfigureMode = "all"
+
 	defaultRuntimeType = "io.containerd.runc.v2"
 )
 
@@ -115,9 +117,19 @@ func Setup(c *cli.Command, o *container.Options, co *Options) error {
 func Cleanup(c *cli.Command, o *container.Options, co *Options) error {
 	log.Infof("Starting 'cleanup' for %v", c.Name)
 
+	if o.UnconfigureMode == "none" {
+		log.Infof("Skipping cleanup as unconfigure mode is set to 'none'")
+		return nil
+	}
+
 	cfg, err := getRuntimeConfig(o, co)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
+	}
+
+	if o.UnconfigureMode == "default-runtime-only" {
+		log.Infof("Removing nvidia as the default runtime if configured")
+		return o.UnsetDefaultRuntime(cfg)
 	}
 
 	err = o.Unconfigure(cfg)

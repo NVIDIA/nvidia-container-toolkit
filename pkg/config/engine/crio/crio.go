@@ -138,6 +138,20 @@ func (c *Config) DefaultRuntime() string {
 	return ""
 }
 
+func (c *Config) UnsetDefaultRuntime(name string) {
+	if c == nil || c.Tree == nil {
+		return
+	}
+
+	config := *c.Tree
+	if runtime, ok := config.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok {
+		if runtime == name {
+			config.DeletePath([]string{"crio", "runtime", "default_runtime"})
+		}
+	}
+	*c.Tree = config
+}
+
 // RemoveRuntime removes a runtime from the cri-o config
 func (c *Config) RemoveRuntime(name string) error {
 	if c == nil {

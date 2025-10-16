@@ -123,6 +123,20 @@ func (c *Config) EnableCDI() {
 	*c.Tree = config
 }
 
+func (c *Config) UnsetDefaultRuntime(name string) {
+	if c == nil || c.Tree == nil {
+		return
+	}
+
+	config := *c.Tree
+	if runtime, ok := config.GetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"}).(string); ok {
+		if runtime == name {
+			config.DeletePath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"})
+		}
+	}
+	*c.Tree = config
+}
+
 // RemoveRuntime removes a runtime from the docker config
 func (c *Config) RemoveRuntime(name string) error {
 	if c == nil || c.Tree == nil {

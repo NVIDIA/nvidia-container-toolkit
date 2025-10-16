@@ -128,6 +128,13 @@ func Flags(opts *Options) []cli.Flag {
 			Destination: &opts.ConfigSources,
 			Sources:     cli.EnvVars("RUNTIME_CONFIG_SOURCES", "RUNTIME_CONFIG_SOURCE"),
 		},
+		&cli.StringFlag{
+			Name:        "unconfigure-mode",
+			Usage:       "Specify how the runtime should be unconfigured; If 'none' is selected nothing will be reverted in the config [ all | default-runtime-only | none ]",
+			Value:       runtimeSpecificDefault,
+			Destination: &opts.UnconfigureMode,
+			Sources:     cli.EnvVars("RUNTIME_UNCONFIGURE_MODE"),
+		},
 	}
 
 	flags = append(flags, containerd.Flags(&opts.containerdOptions)...)
@@ -178,6 +185,9 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 		if opts.RestartMode == runtimeSpecificDefault {
 			opts.RestartMode = containerd.DefaultRestartMode
 		}
+		if opts.UnconfigureMode == runtimeSpecificDefault {
+			opts.UnconfigureMode = containerd.DefaultUnconfigureMode
+		}
 	case crio.Name:
 		if opts.TopLevelConfigPath == runtimeSpecificDefault {
 			opts.TopLevelConfigPath = crio.DefaultConfig
@@ -190,6 +200,9 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 		}
 		if opts.RestartMode == runtimeSpecificDefault {
 			opts.RestartMode = crio.DefaultRestartMode
+		}
+		if opts.UnconfigureMode == runtimeSpecificDefault {
+			opts.UnconfigureMode = crio.DefaultUnconfigureMode
 		}
 	case docker.Name:
 		if opts.TopLevelConfigPath == runtimeSpecificDefault {
@@ -204,6 +217,9 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 		}
 		if opts.RestartMode == runtimeSpecificDefault {
 			opts.RestartMode = docker.DefaultRestartMode
+		}
+		if opts.UnconfigureMode == runtimeSpecificDefault {
+			opts.UnconfigureMode = docker.DefaultUnconfigureMode
 		}
 	default:
 		return fmt.Errorf("undefined runtime %v", runtime)

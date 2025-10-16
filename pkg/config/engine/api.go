@@ -29,6 +29,7 @@ type Interface interface {
 	EnableCDI()
 	GetRuntimeConfig(string) (RuntimeConfig, error)
 	RemoveRuntime(string) error
+	UnsetDefaultRuntime(string)
 	Save(string) (int64, error)
 	String() string
 }

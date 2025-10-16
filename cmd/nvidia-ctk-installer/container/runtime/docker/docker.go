@@ -30,9 +30,10 @@ import (
 const (
 	Name = "docker"
 
-	DefaultConfig      = "/etc/docker/daemon.json"
-	DefaultSocket      = "/var/run/docker.sock"
-	DefaultRestartMode = "signal"
+	DefaultConfig          = "/etc/docker/daemon.json"
+	DefaultSocket          = "/var/run/docker.sock"
+	DefaultRestartMode     = "signal"
+	DefaultUnconfigureMode = "all"
 )
 
 type Options struct{}

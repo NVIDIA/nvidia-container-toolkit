@@ -57,6 +57,8 @@ type Options struct {
 	HostRootMount string
 
 	ConfigSources []string
+
+	UnconfigureMode string
 }
 
 // Configure applies the options to the specified config
@@ -66,6 +68,29 @@ func (o Options) Configure(cfg engine.Interface) error {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
 	return o.flush(cfg)
+}
+
+func (o Options) UnsetDefaultRuntime(cfg engine.Interface) error {
+	runtimes := operator.GetRuntimes(
+		operator.WithNvidiaRuntimeName(o.RuntimeName),
+		operator.WithSetAsDefault(o.SetAsDefault),
+		operator.WithRoot(o.RuntimeDir),
+	)
+	defaultRuntimeName := ""
+	for name, runtime := range runtimes {
+		if runtime.SetAsDefault {
+			defaultRuntimeName = name
+		}
+	}
+	if defaultRuntimeName == "" {
+		return nil
+	}
+
+	cfg.UnsetDefaultRuntime(defaultRuntimeName)
+	if err := o.flush(cfg); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Unconfigure removes the options from the specified config

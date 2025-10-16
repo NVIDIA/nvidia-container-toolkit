@@ -88,6 +88,10 @@ func (c *ConfigWithDropIn) Save(dropInPath string) (int64, error) {
 	return bytesWritten, nil
 }
 
+func (c *ConfigWithDropIn) UnsetDefaultRuntime(name string) {
+	c.Interface.UnsetDefaultRuntime(name)
+}
+
 // RemoveRuntime removes the runtime from both configs.
 func (c *ConfigWithDropIn) RemoveRuntime(name string) error {
 	if err := c.topLevelConfig.RemoveRuntime(name); err != nil {
