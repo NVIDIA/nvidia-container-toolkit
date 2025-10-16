@@ -97,12 +97,23 @@ EOF
 	# remove the generated files
 	rm /var/run/cdi/nvidia.yaml /tmp/nvidia.yaml
 
-	# Touch the nvidia-ctk binary to change the mtime
-	# This will trigger the nvidia-cdi-refresh.path unit to call the
-	# nvidia-cdi-refresh.service unit, simulating a change(update/downgrade) in the nvidia-ctk binary.
-	touch $(which nvidia-ctk)
+        # Simulate a binary upgrade by removing and recreating the file
+        # This mimics package manager behavior during upgrades
+        NVIDIA_CTK_PATH=$(which nvidia-ctk)
+        # Create a backup
+        cp "${NVIDIA_CTK_PATH}" "${NVIDIA_CTK_PATH}.backup"
+        # Remove the original (simulating uninstall/upgrade phase)
+        rm -f "${NVIDIA_CTK_PATH}"
+        # Small delay to ensure systemd detects the removal
+        sleep 0.1
+        # Restore from backup (simulating install phase)
+        cp "${NVIDIA_CTK_PATH}.backup" "${NVIDIA_CTK_PATH}"
+        # Ensure executable permissions
+        chmod +x "${NVIDIA_CTK_PATH}"
+        # Clean up backup
+        rm -f "${NVIDIA_CTK_PATH}.backup"
 
-	# wait for 3 seconds
+        # wait for systemd path unit to detect the change and trigger the service
 	sleep 3
 
 	# Check if the file /var/run/cdi/nvidia.yaml is created
