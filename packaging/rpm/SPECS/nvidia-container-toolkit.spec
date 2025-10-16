@@ -1,6 +1,6 @@
 Name: nvidia-container-toolkit
-Version: %{version}
-Release: %{release}
+Version: %{_version}
+Release: %{_release}
 Group: Development Tools
 
 Vendor: NVIDIA CORPORATION

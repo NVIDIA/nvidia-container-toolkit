@@ -214,10 +214,10 @@ function create_and_upload() {
 }
 
 # Create archive for x86_64 linux distributions
-create_and_upload "main" "x86_64" "ubuntu18.04-amd64" "centos7-x86_64"
+create_and_upload "main" "x86_64" "ubuntu18.04-amd64" "rhel8-x86_64"
 
 # Create archive for sbsa linux distributions
-create_and_upload "main" "sbsa" "ubuntu18.04-arm64" "centos7-aarch64"
+create_and_upload "main" "sbsa" "ubuntu18.04-arm64" "rhel8-aarch64"
 # Create archive for aarch64 linux distributions
 # NOTE: From the perspective of the NVIDIA Container Toolkit aarch64 is just a duplicate of sbsa
-create_and_upload "main" "aarch64" "ubuntu18.04-arm64" "centos7-aarch64"
+create_and_upload "main" "aarch64" "ubuntu18.04-arm64" "rhel8-aarch64"

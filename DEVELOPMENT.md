@@ -18,8 +18,8 @@ In oder to build the packages, the following command is executed
 where `TARGET` is a make target that is valid for each of the sub-components.
 
 These include:
-* `ubuntu18.04-amd64`
-* `centos7-x86_64`
+* `ubuntu20.04-amd64`
+* `rhel8-x86_64`
 
 If no `TARGET` is specified, all valid release targets are built.
 

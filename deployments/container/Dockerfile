@@ -117,7 +117,7 @@ RUN rm -f /etc/yum.repos.d/cuda.repo && rm -f /etc/ld.so.conf.d/nvidia.conf
 RUN dnf install -y cpio
 
 ARG TARGETARCH
-ARG PACKAGE_DIST_RPM=centos7
+ARG PACKAGE_DIST_RPM=rhel8
 
 COPY --from=packaging /artifacts/packages/${PACKAGE_DIST_RPM} /rpm-packages
 

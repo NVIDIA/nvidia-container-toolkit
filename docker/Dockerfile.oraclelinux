@@ -12,26 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is the dockerfile for building packages on yum-based RPM systems.
+# This is the dockerfile for building packages on dnf-based RPM systems.
 
 ARG BASEIMAGE
 FROM ${BASEIMAGE}
 
-# centos:stream8 is EOL.
-# We switch to the vault repositories for this base image.
-ARG BASEIMAGE
-RUN sed -i -e "s|mirrorlist=|#mirrorlist=|g" \
-            -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" \
-                /etc/yum.repos.d/CentOS-*
-
-RUN yum install -y \
+ARG OS_VERSION
+RUN dnf --enablerepo=ol${OS_VERSION}_codeready_builder install -y \
         ca-certificates \
         gcc \
         wget \
         git \
         make \
         rpm-build && \
-    rm -rf /var/cache/yum/*
+    rm -rf /var/cache/dnf/*
 
 ARG GOLANG_VERSION=0.0.0
 RUN set -eux; \
@@ -46,16 +40,16 @@ RUN set -eux; \
     wget -nv -O - https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz \
     | tar -C /usr/local -xz
 
-ENV GOPATH /go
-ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+ENV GOPATH=/go
+ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
 
 # packaging
 ARG PKG_NAME
 ARG PKG_VERS
 ARG PKG_REV
-ENV PKG_NAME ${PKG_NAME}
-ENV PKG_VERS ${PKG_VERS}
-ENV PKG_REV ${PKG_REV}
+ENV PKG_NAME=${PKG_NAME}
+ENV PKG_VERS=${PKG_VERS}
+ENV PKG_REV=${PKG_REV}
 
 # output directory
 ENV DIST_DIR=/tmp/nvidia-container-toolkit-$PKG_VERS/SOURCES
@@ -66,7 +60,7 @@ WORKDIR $GOPATH/src/nvidia-container-toolkit
 COPY . .
 
 ARG GIT_COMMIT
-ENV GIT_COMMIT ${GIT_COMMIT}
+ENV GIT_COMMIT=${GIT_COMMIT}
 RUN make PREFIX=${DIST_DIR} cmds
 
 WORKDIR $DIST_DIR/..
@@ -78,7 +72,7 @@ CMD arch=$(uname -m) && \
              -D "_topdir $PWD" \
              -D "release_date $(date +'%a %b %d %Y')" \
              -D "git_commit ${GIT_COMMIT}" \
-             -D "version ${PKG_VERS}" \
-             -D "release ${PKG_REV}" \
+             -D "_version ${PKG_VERS}" \
+             -D "_release ${PKG_REV}" \
              SPECS/nvidia-container-toolkit.spec && \
     mv RPMS/$arch/*.rpm /dist

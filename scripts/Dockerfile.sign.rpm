@@ -1,3 +1,7 @@
-FROM quay.io/centos/centos:stream9
+FROM oraclelinux:10
 
-RUN yum install -y createrepo rpm-sign pinentry
+RUN dnf --enablerepo=ol10_codeready_builder install -y \
+        createrepo \
+        rpm-sign \
+        pinentry \
+        gnupg2

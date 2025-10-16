@@ -16,11 +16,9 @@
 # to the relevant repositories. This targets forwarded to the build-all-components script
 # can be overridden by specifying command line arguments.
 all=(
-    centos7-aarch64
-    centos7-x86_64
-    centos8-aarch64
-    centos8-ppc64le
-    centos8-x86_64
+    rhel8-aarch64
+    rhel8-ppc64le
+    rhel8-x86_64
     ubuntu18.04-amd64
     ubuntu18.04-arm64
     ubuntu18.04-ppc64le
@@ -33,7 +31,7 @@ function package_type() {
     case ${1} in
     amazonlinux*) pkg_type=rpm
         ;;
-    centos*) pkg_type=rpm
+    rhel*) pkg_type=rpm
         ;;
     debian*) pkg_type=deb
         ;;

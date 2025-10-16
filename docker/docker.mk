@@ -14,10 +14,10 @@
 
 # Supported OSs by architecture
 AMD64_TARGETS := ubuntu22.04 ubuntu20.04 ubuntu18.04 ubuntu16.04 debian10 debian9
-X86_64_TARGETS := centos7 centos8 rhel7 rhel8 amazonlinux2 opensuse-leap15.1
-PPC64LE_TARGETS := ubuntu18.04 ubuntu16.04 centos7 centos8 rhel7 rhel8
+X86_64_TARGETS := rhel8 amazonlinux2 opensuse-leap15.1
+PPC64LE_TARGETS := ubuntu18.04 ubuntu16.04 rhel8
 ARM64_TARGETS := ubuntu22.04 ubuntu20.04 ubuntu18.04
-AARCH64_TARGETS := centos7 centos8 rhel8 amazonlinux2
+AARCH64_TARGETS := rhel8 amazonlinux2
 
 # Define top-level build targets
 docker%: SHELL:=/bin/bash
@@ -91,26 +91,17 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 # private debian target
 --debian%: OS := debian
 
-# private centos target
---centos%: OS := centos
---centos%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
---centos8%: BASEIMAGE = quay.io/centos/centos:stream8
-
 # private amazonlinux target
 --amazonlinux%: OS := amazonlinux
---amazonlinux%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
 
 # private opensuse-leap target
 --opensuse-leap%: OS = opensuse-leap
 --opensuse-leap%: BASEIMAGE = opensuse/leap:$(VERSION)
 
-# private rhel target (actually built on centos)
---rhel%: OS := centos
+# private rhel target (actually built on oraclelinux)
+--rhel%: OS := oraclelinux
 --rhel%: VERSION = $(patsubst rhel%-$(ARCH),%,$(TARGET_PLATFORM))
 --rhel%: ARTIFACTS_DIR = $(DIST_DIR)/rhel$(VERSION)/$(ARCH)
---rhel%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
---rhel8%: BASEIMAGE = quay.io/centos/centos:stream8
-
 
 docker-build-%:
 	@echo "Building for $(TARGET_PLATFORM)"
@@ -120,6 +111,7 @@ docker-build-%:
 	    --platform=linux/$(ARCH) \
 	    --progress=plain \
 	    --build-arg BASEIMAGE="$(BASEIMAGE)" \
+		--build-arg OS_VERSION="$(VERSION)" \
 	    --build-arg GOLANG_VERSION="$(GOLANG_VERSION)" \
 	    --build-arg PKG_NAME="$(LIB_NAME)" \
 	    --build-arg PKG_VERS="$(PACKAGE_VERSION)" \

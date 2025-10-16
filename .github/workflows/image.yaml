@@ -33,15 +33,15 @@ jobs:
         target:
           - ubuntu18.04-arm64
           - ubuntu18.04-amd64
-          - centos7-aarch64
-          - centos7-x86_64
+          - rhel8-aarch64
+          - rhel8-x86_64
         ispr:
           - ${{ github.ref_name != 'main' && !startsWith( github.ref_name, 'release-' ) }}
         exclude:
           - ispr: true
             target: ubuntu18.04-arm64
           - ispr: true
-            target: centos7-aarch64
+            target: rhel8-aarch64
       fail-fast: false
 
     steps:

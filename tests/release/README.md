@@ -26,12 +26,12 @@ will build the `ubuntu18.04-amd64` packages for release and launch a docker cont
 
 The various `apt` workflows can then be tested as if the packages were released to the `libnvidia-container` experimental repository.
 
-The `local-centos8` make target is available for testing the `centos8-x86_64` workflows as representative of `yum`-based installation workflows.
+The `local-rhel8` make target is available for testing the `rhel8-x86_64` workflows as representative of `dnf`-based installation workflows.
 
 
 ### Example
 
-In the `centos8`-based container above we see the following `nvidia-docker2` packages available with the `local-repository` disabled:
+In the `rhel8`-based container above we see the following `nvidia-docker2` packages available with the `local-repository` disabled:
 
 ```bash
 $ yum list --showduplicates nvidia-docker2 | tail -2

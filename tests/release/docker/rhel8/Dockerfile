@@ -1,8 +1,8 @@
-ARG BASEIMAGE=quay.io/centos/centos:stream8
+ARG BASEIMAGE=oraclelinux:8
 FROM ${BASEIMAGE}
 
-RUN yum install -y \
-    yum-utils \
+RUN dnf --enablerepo=ol${OS_VERSION}_codeready_builder install -y \
+    dnf-utils \
     ruby-devel \
     gcc \
     make \
@@ -20,7 +20,7 @@ RUN fpm -s empty \
     -n docker-ce --version 18.06.3.ce-3.el7 \
     -p /tmp/docker.rpm \
     && \
-    yum localinstall -y /tmp/docker.rpm \
+    dnf localinstall -y /tmp/docker.rpm \
     && \
     rm -f /tmp/docker.rpm
 
