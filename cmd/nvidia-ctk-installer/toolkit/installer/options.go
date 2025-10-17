@@ -45,3 +45,9 @@ func WithSourceRoot(sourceRoot string) Option {
 		ti.sourceRoot = sourceRoot
 	}
 }
+
+func WithDefaultRuntimeExecutablePath(path string) Option {
+	return func(ti *ToolkitInstaller) {
+		ti.defaultRuntimeExecutablePath = path
+	}
+}

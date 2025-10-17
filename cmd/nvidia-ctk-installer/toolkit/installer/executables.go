@@ -102,6 +102,12 @@ func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 			w.Envvars[k] = v
 		}
 
+		if len(t.defaultRuntimeExecutablePath) > 0 {
+			w.DefaultRuntimeExecutablePath = t.defaultRuntimeExecutablePath
+		} else {
+			w.DefaultRuntimeExecutablePath = "runc"
+		}
+
 		installers = append(installers, w)
 
 		if executable.symlink == "" {
@@ -119,10 +125,11 @@ func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 }
 
 type wrapper struct {
-	Source            string
-	Envvars           map[string]string
-	WrappedExecutable string
-	CheckModules      bool
+	Source                       string
+	Envvars                      map[string]string
+	WrappedExecutable            string
+	CheckModules                 bool
+	DefaultRuntimeExecutablePath string
 }
 
 type render struct {
@@ -155,8 +162,8 @@ func (w *render) render() (io.Reader, error) {
 {{- if (.CheckModules) }}
 cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
 if [ "${?}" != "0" ]; then
-	echo "nvidia driver modules are not yet loaded, invoking runc directly"
-	exec runc "$@"
+	echo "nvidia driver modules are not yet loaded, invoking {{ .DefaultRuntimeExecutablePath }} directly"
+	exec {{ .DefaultRuntimeExecutablePath }} "$@"
 fi
 {{- end }}
 {{- range $key, $value := .Envvars }}
