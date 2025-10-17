@@ -96,8 +96,7 @@ $(IMAGE_TARGETS): image-%: $(ARTIFACTS_ROOT)
 
 
 PACKAGE_DIST_DEB = ubuntu18.04
-# TODO: This needs to be set to centos8 for ppc64le builds
-PACKAGE_DIST_RPM = centos7
+PACKAGE_DIST_RPM = rhel8
 
 # Handle the default build target.
 .PHONY: build push
@@ -116,7 +115,7 @@ $(TEST_TARGETS): test-%:
 test-packaging: DIST = packaging
 test-packaging:
 	@echo "Testing package image contents"
-	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos7/aarch64" || echo "Missing centos7/aarch64"
-	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/centos7/x86_64" || echo "Missing centos7/x86_64"
+	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/rhel8/aarch64" || echo "Missing rhel8/aarch64"
+	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/rhel8/x86_64"  || echo "Missing rhel8/x86_64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/ubuntu18.04/amd64" || echo "Missing ubuntu18.04/amd64"
 	@$(DOCKER) run --rm $(IMAGE) test -d "/artifacts/packages/ubuntu18.04/arm64" || echo "Missing ubuntu18.04/arm64"

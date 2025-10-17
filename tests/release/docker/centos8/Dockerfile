@@ -1,4 +1,4 @@
-ARG BASEIMAGE=quay.io/centos/centos:stream8
+ARG BASEIMAGE=rockylinux/rockylinux:8
 FROM ${BASEIMAGE}
 
 RUN yum install -y \

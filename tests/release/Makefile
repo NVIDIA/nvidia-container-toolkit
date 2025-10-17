@@ -14,7 +14,7 @@
 
 WORKFLOW ?= nvidia-docker
 
-DISTRIBUTIONS := ubuntu20.04 ubuntu18.04 centos8 fedora35
+DISTRIBUTIONS := ubuntu20.04 ubuntu18.04 rhel8 fedora35
 
 IMAGE_TARGETS := $(patsubst %,image-%, $(DISTRIBUTIONS))
 RUN_TARGETS := $(patsubst %,run-%, $(DISTRIBUTIONS))
@@ -35,7 +35,7 @@ $(IMAGE_TARGETS): image-%: $(DOCKERFILE)
 
 %-ubuntu20.04: ARCH ?= amd64
 %-ubuntu18.04: ARCH ?= amd64
-%-centos8: ARCH ?= x86_64
+%-rhel8: ARCH ?= x86_64
 %-fedora35: ARCH ?= x86_64
 
 PLATFORM_ARGS = --platform=linux/${ARCH}

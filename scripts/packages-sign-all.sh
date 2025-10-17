@@ -61,7 +61,7 @@ function sign() {
     case ${src_dist} in
     amazonlinux*) pkg_type=rpm
         ;;
-    centos* | rpm) pkg_type=rpm
+    centos* | rhel* | rpm) pkg_type=rpm
         ;;
     debian*) pkg_type=deb
         ;;
@@ -100,11 +100,11 @@ for target in ${TARGETS[@]}; do
     echo "checking target=${target}"
     by_package_type=
     case ${target} in
-    ubuntu18.04-* | centos7-*)
-        by_package_type="true"
-        ;;
-    centos8-ppc64le)
+    rhel8-ppc64le)
         by_package_type="false"
+        ;;
+    ubuntu18.04-* | centos* | rhel*)
+        by_package_type="true"
         ;;
     *)
         echo "Skipping target ${target}"

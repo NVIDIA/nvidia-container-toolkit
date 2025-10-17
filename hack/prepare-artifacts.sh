@@ -49,8 +49,8 @@ PACKAGE_VERSION=${PACKAGE_VERSION#v}
 
 tar -czvf ${PACKAGE_ROOT}/nvidia-container-toolkit_${VERSION#v}_deb_amd64.tar.gz ${PACKAGE_ROOT}/packages/ubuntu18.04/amd64/*_${PACKAGE_VERSION}-1_amd64.deb
 tar -czvf ${PACKAGE_ROOT}/nvidia-container-toolkit_${VERSION#v}_deb_arm64.tar.gz ${PACKAGE_ROOT}/packages/ubuntu18.04/arm64/*_${PACKAGE_VERSION}-1_arm64.deb
-tar -czvf ${PACKAGE_ROOT}/nvidia-container-toolkit_${VERSION#v}_rpm_aarch64.tar.gz ${PACKAGE_ROOT}/packages/centos7/aarch64/*-${PACKAGE_VERSION}-1.aarch64.rpm
-tar -czvf ${PACKAGE_ROOT}/nvidia-container-toolkit_${VERSION#v}_rpm_x86_64.tar.gz ${PACKAGE_ROOT}/packages/centos7/x86_64/*-${PACKAGE_VERSION}-1.x86_64.rpm
+tar -czvf ${PACKAGE_ROOT}/nvidia-container-toolkit_${VERSION#v}_rpm_aarch64.tar.gz ${PACKAGE_ROOT}/packages/rhel*/aarch64/*-${PACKAGE_VERSION}-1.aarch64.rpm
+tar -czvf ${PACKAGE_ROOT}/nvidia-container-toolkit_${VERSION#v}_rpm_x86_64.tar.gz ${PACKAGE_ROOT}/packages/rhel*/x86_64/*-${PACKAGE_VERSION}-1.x86_64.rpm
 
 is_command() (
   command -v "$1" >/dev/null

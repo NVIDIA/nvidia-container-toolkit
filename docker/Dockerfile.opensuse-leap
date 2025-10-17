@@ -18,7 +18,7 @@ RUN set -eux; \
         aarch64 | arm64) ARCH='arm64' ;; \
         *) echo "unsupported architecture"; exit 1 ;; \
     esac; \
-    wget -nv -O - https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz \
+    wget -nv -O - https://dl.google.com/go/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz \
     | tar -C /usr/local -xz
 
 ENV GOPATH /go
@@ -53,7 +53,7 @@ CMD arch=$(uname -m) && \
              -D "_topdir $PWD" \
              -D "release_date $(date +'%a %b %d %Y')" \
              -D "git_commit ${GIT_COMMIT}" \
-             -D "version ${PKG_VERS}" \
-             -D "release ${PKG_REV}" \
+             -D "_version ${PKG_VERS}" \
+             -D "_release ${PKG_REV}" \
              SPECS/nvidia-container-toolkit.spec && \
     mv RPMS/$arch/*.rpm /dist
