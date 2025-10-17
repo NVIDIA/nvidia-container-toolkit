@@ -88,7 +88,6 @@ func TestCrioConfigLifecycle(t *testing.T) {
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
 				require.NoFileExists(t, co.TopLevelConfigPath)
-				require.NoFileExists(t, co.DropInConfig)
 				return nil
 			},
 		},
@@ -181,8 +180,6 @@ signature_policy = "/etc/crio/policy.json"
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
 				require.FileExists(t, co.TopLevelConfigPath)
-
-				require.NoFileExists(t, co.DropInConfig)
 
 				actualTopLevel, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
@@ -479,8 +476,6 @@ plugin_dirs = [
 ]
 `
 				require.Equal(t, expected, string(actual))
-
-				require.NoFileExists(t, co.DropInConfig)
 
 				return nil
 			},

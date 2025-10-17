@@ -180,6 +180,10 @@ func cleanupHook(co *Options) error {
 
 // cleanupConfig removes the NVIDIA container runtime from the cri-o config
 func cleanupConfig(o *container.Options) error {
+	if !o.SetAsDefault {
+		return nil
+	}
+
 	log.Infof("Reverting config file modifications")
 
 	cfg, err := getRuntimeConfig(o)
