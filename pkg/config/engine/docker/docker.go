@@ -150,6 +150,39 @@ func (c *Config) RemoveRuntime(name string) error {
 	return nil
 }
 
+// UpdateDefaultRuntime updates the default runtime setting in the config.
+// When action is 'set' the provided runtime name is set as the default.
+// When action is 'unset' we make sure the provided runtime name is not
+// the default.
+func (c *Config) UpdateDefaultRuntime(name string, action string) error {
+	if action != engine.UpdateActionSet && action != engine.UpdateActionUnset {
+		return fmt.Errorf("invalid action %q, valid actions are %q and %q", action, engine.UpdateActionSet, engine.UpdateActionUnset)
+	}
+
+	if c == nil {
+		if action == engine.UpdateActionSet {
+			return fmt.Errorf("config toml is nil")
+		}
+		return nil
+	}
+
+	config := *c
+
+	if action == engine.UpdateActionSet {
+		config["default-runtime"] = name
+	} else {
+		if _, exists := config["default-runtime"]; exists {
+			defaultRuntime := config["default-runtime"].(string)
+			if defaultRuntime == name {
+				config["default-runtime"] = defaultDockerRuntime
+			}
+		}
+	}
+
+	*c = config
+	return nil
+}
+
 // Save writes the config to the specified path
 func (c Config) Save(path string) (int64, error) {
 	output, err := json.MarshalIndent(c, "", "    ")

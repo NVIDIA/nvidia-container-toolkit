@@ -154,3 +154,33 @@ func (c *Config) RemoveRuntime(name string) error {
 	*c.Tree = config
 	return nil
 }
+
+// UpdateDefaultRuntime updates the default runtime setting in the config.
+// When action is 'set' the provided runtime name is set as the default.
+// When action is 'unset' we make sure the provided runtime name is not
+// the default.
+func (c *Config) UpdateDefaultRuntime(name string, action string) error {
+	if action != engine.UpdateActionSet && action != engine.UpdateActionUnset {
+		return fmt.Errorf("invalid action %q, valid actions are %q and %q", action, engine.UpdateActionSet, engine.UpdateActionUnset)
+	}
+
+	if c == nil || c.Tree == nil {
+		if action == engine.UpdateActionSet {
+			return fmt.Errorf("config toml is nil")
+		}
+		return nil
+	}
+
+	config := *c.Tree
+	if action == engine.UpdateActionSet {
+		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"}, name)
+	} else {
+		defaultRuntime, ok := config.GetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"}).(string)
+		if ok && defaultRuntime == name {
+			config.DeletePath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"})
+		}
+	}
+
+	*c.Tree = config
+	return nil
+}
