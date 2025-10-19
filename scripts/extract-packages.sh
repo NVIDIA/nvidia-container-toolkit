@@ -103,5 +103,5 @@ mkdir -p "${ARTIFACTS_DIR}"
 copy-file "${PACKAGE_IMAGE}" "/artifacts/manifest.txt" "${ARTIFACTS_DIR}/manifest.txt"
 
 extract-all ubuntu18.04
-extract-all centos8
-extract-all centos7
+extract-all rhel8
+extract-all rhel7

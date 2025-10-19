@@ -35,7 +35,7 @@ RUN set -eux; \
         aarch64 | arm64) ARCH='arm64' ;; \
         *) echo "unsupported architecture" ; exit 1 ;; \
     esac; \
-    wget -nv -O - https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz \
+    wget -nv -O - https://dl.google.com/go/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz \
     | tar -C /usr/local -xz
 
 
@@ -117,7 +117,7 @@ RUN rm -f /etc/yum.repos.d/cuda.repo && rm -f /etc/ld.so.conf.d/nvidia.conf
 RUN dnf install -y cpio
 
 ARG TARGETARCH
-ARG PACKAGE_DIST_RPM=centos7
+ARG PACKAGE_DIST_RPM=rhel8
 
 COPY --from=packaging /artifacts/packages/${PACKAGE_DIST_RPM} /rpm-packages
 

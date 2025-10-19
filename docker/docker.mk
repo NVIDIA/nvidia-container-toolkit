@@ -94,7 +94,7 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 # private centos target
 --centos%: OS := centos
 --centos%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
---centos8%: BASEIMAGE = quay.io/centos/centos:stream8
+--centos8%: BASEIMAGE = rockylinux/rockylinux:8
 
 # private amazonlinux target
 --amazonlinux%: OS := amazonlinux
@@ -109,8 +109,7 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 --rhel%: VERSION = $(patsubst rhel%-$(ARCH),%,$(TARGET_PLATFORM))
 --rhel%: ARTIFACTS_DIR = $(DIST_DIR)/rhel$(VERSION)/$(ARCH)
 --rhel%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.rpm-yum
---rhel8%: BASEIMAGE = quay.io/centos/centos:stream8
-
+--rhel8%: BASEIMAGE = rockylinux/rockylinux:8
 
 docker-build-%:
 	@echo "Building for $(TARGET_PLATFORM)"
@@ -125,6 +124,7 @@ docker-build-%:
 	    --build-arg PKG_VERS="$(PACKAGE_VERSION)" \
 	    --build-arg PKG_REV="$(PACKAGE_REVISION)" \
 	    --build-arg GIT_COMMIT="$(GIT_COMMIT)" \
+		--build-arg OS_VERSION="$(VERSION)" \
 	    --tag $(BUILDIMAGE) \
 	    --file $(DOCKERFILE) .
 	$(DOCKER) run \

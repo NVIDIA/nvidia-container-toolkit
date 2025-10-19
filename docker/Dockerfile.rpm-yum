@@ -17,12 +17,16 @@
 ARG BASEIMAGE
 FROM ${BASEIMAGE}
 
-# centos:stream8 is EOL.
+# centos:7 is EOL.
 # We switch to the vault repositories for this base image.
-ARG BASEIMAGE
-RUN sed -i -e "s|mirrorlist=|#mirrorlist=|g" \
+ARG OS_VERSION
+RUN if [ "${OS_VERSION}" = "7" ]; then \
+        sed -i -e "s|mirrorlist=|#mirrorlist=|g" \
             -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" \
-                /etc/yum.repos.d/CentOS-*
+                /etc/yum.repos.d/CentOS-*; \
+    else \
+        true; \
+    fi
 
 RUN yum install -y \
         ca-certificates \
@@ -43,7 +47,7 @@ RUN set -eux; \
         aarch64 | arm64) ARCH='arm64' ;; \
         *) echo "unsupported architecture"; exit 1 ;; \
     esac; \
-    wget -nv -O - https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz \
+    wget -nv -O - https://dl.google.com/go/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz \
     | tar -C /usr/local -xz
 
 ENV GOPATH /go
@@ -78,7 +82,7 @@ CMD arch=$(uname -m) && \
              -D "_topdir $PWD" \
              -D "release_date $(date +'%a %b %d %Y')" \
              -D "git_commit ${GIT_COMMIT}" \
-             -D "version ${PKG_VERS}" \
-             -D "release ${PKG_REV}" \
+             -D "_version ${PKG_VERS}" \
+             -D "_release ${PKG_REV}" \
              SPECS/nvidia-container-toolkit.spec && \
     mv RPMS/$arch/*.rpm /dist
