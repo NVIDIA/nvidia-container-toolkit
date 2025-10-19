@@ -41,6 +41,8 @@ type ToolkitInstaller struct {
 	artifactRoot *artifactRoot
 
 	ensureTargetDirectory Installer
+
+	defaultRuntimeExecutablePath string
 }
 
 var _ Installer = (*ToolkitInstaller)(nil)

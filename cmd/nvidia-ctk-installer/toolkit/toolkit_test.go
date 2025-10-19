@@ -156,7 +156,7 @@ containerEdits:
 			)
 			require.NoError(t, ti.ValidateOptions(&options))
 
-			err := ti.Install(&cli.Command{}, &options)
+			err := ti.Install(&cli.Command{}, &options, "containerd")
 			if tc.expectedError == nil {
 				require.NoError(t, err)
 			} else {

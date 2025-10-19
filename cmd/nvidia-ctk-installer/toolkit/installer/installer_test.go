@@ -113,9 +113,10 @@ func TestToolkitInstaller(t *testing.T) {
 		},
 	}
 	i := ToolkitInstaller{
-		logger:                logger,
-		artifactRoot:          r,
-		ensureTargetDirectory: createDirectory,
+		logger:                       logger,
+		artifactRoot:                 r,
+		ensureTargetDirectory:        createDirectory,
+		defaultRuntimeExecutablePath: "runc",
 	}
 
 	err := i.Install("/foo/bar/baz")

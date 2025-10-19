@@ -211,7 +211,7 @@ func (a *app) Run(c *cli.Command, o *options) error {
 		o.toolkitOptions.ContainerRuntimeRuntimes = lowlevelRuntimePaths
 	}
 
-	err = a.toolkit.Install(c, &o.toolkitOptions)
+	err = a.toolkit.Install(c, &o.toolkitOptions, o.runtime)
 	if err != nil {
 		return fmt.Errorf("unable to install toolkit: %v", err)
 	}

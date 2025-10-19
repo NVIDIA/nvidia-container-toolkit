@@ -33,7 +33,8 @@ func TestWrapperRender(t *testing.T) {
 		{
 			description: "executable is added",
 			w: &wrapper{
-				WrappedExecutable: "some-runtime",
+				WrappedExecutable:            "some-runtime",
+				DefaultRuntimeExecutablePath: "runc",
 			},
 			expected: `#! /bin/sh
 	/dest-dir/some-runtime \
@@ -43,8 +44,9 @@ func TestWrapperRender(t *testing.T) {
 		{
 			description: "module check is added",
 			w: &wrapper{
-				WrappedExecutable: "some-runtime",
-				CheckModules:      true,
+				WrappedExecutable:            "some-runtime",
+				CheckModules:                 true,
+				DefaultRuntimeExecutablePath: "runc",
 			},
 			expected: `#! /bin/sh
 cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
@@ -63,6 +65,7 @@ fi
 				Envvars: map[string]string{
 					"PATH": "/foo/bar/baz",
 				},
+				DefaultRuntimeExecutablePath: "runc",
 			},
 			expected: `#! /bin/sh
 PATH=/foo/bar/baz \

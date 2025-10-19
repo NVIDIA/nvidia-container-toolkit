@@ -26,6 +26,7 @@ import (
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/pkg/parser"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit/installer"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -281,7 +282,7 @@ func (t *Installer) ValidateOptions(opts *Options) error {
 
 // Install installs the components of the NVIDIA container toolkit.
 // Any existing installation is removed.
-func (t *Installer) Install(cli *cli.Command, opts *Options) error {
+func (t *Installer) Install(cli *cli.Command, opts *Options, runtime string) error {
 	if t == nil {
 		return fmt.Errorf("toolkit installer is not initilized")
 	}
@@ -295,11 +296,27 @@ func (t *Installer) Install(cli *cli.Command, opts *Options) error {
 		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error removing toolkit directory: %v", err))
 	}
 
+	var defaultRuntimeExecutable string
+	if len(opts.ContainerRuntimeRuntimes) > 0 {
+		defaultRuntimeExecutable = opts.ContainerRuntimeRuntimes[0]
+	}
+
+	// If opts.ContainerRuntimeRuntimes is empty (highly unlikely), we fall back to either runc or crun
+	// depending on the runtime
+	if len(defaultRuntimeExecutable) == 0 {
+		if runtime == crio.Name {
+			defaultRuntimeExecutable = "crun"
+		} else {
+			defaultRuntimeExecutable = "runc"
+		}
+	}
+
 	// Create a toolkit installer to actually install the toolkit components.
 	toolkit, err := installer.New(
 		installer.WithLogger(t.logger),
 		installer.WithSourceRoot(t.sourceRoot),
 		installer.WithIgnoreErrors(opts.ignoreErrors),
+		installer.WithDefaultRuntimeExecutablePath(defaultRuntimeExecutable),
 	)
 	if err != nil {
 		if !opts.ignoreErrors {
@@ -307,6 +324,7 @@ func (t *Installer) Install(cli *cli.Command, opts *Options) error {
 		}
 		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("could not create toolkit installer: %w", err))
 	}
+
 	if err := toolkit.Install(t.toolkitRoot); err != nil {
 		if !opts.ignoreErrors {
 			return fmt.Errorf("could not install toolkit components: %w", err)
