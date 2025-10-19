@@ -24,6 +24,7 @@ import (
 type builder struct {
 	logger             logger.Interface
 	configSource       toml.Loader
+	configDestination  toml.Loader
 	topLevelConfigPath string
 }
 
@@ -48,5 +49,12 @@ func WithTopLevelConfigPath(path string) Option {
 func WithConfigSource(configSource toml.Loader) Option {
 	return func(b *builder) {
 		b.configSource = configSource
+	}
+}
+
+// WithConfigDestination sets the TOML destination for the config.
+func WithConfigDestination(configDestination toml.Loader) Option {
+	return func(b *builder) {
+		b.configDestination = configDestination
 	}
 }

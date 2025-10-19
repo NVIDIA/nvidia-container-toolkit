@@ -133,7 +133,7 @@ func setupHook(o *container.Options, co *Options) error {
 func setupConfig(o *container.Options) error {
 	log.Infof("Updating config file")
 
-	cfg, err := getRuntimeConfig(o)
+	cfg, err := getRuntimeConfig(o, false)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
@@ -180,16 +180,24 @@ func cleanupHook(co *Options) error {
 
 // cleanupConfig removes the NVIDIA container runtime from the cri-o config
 func cleanupConfig(o *container.Options) error {
+	if !o.SetAsDefault {
+		return nil
+	}
+
 	log.Infof("Reverting config file modifications")
 
-	cfg, err := getRuntimeConfig(o)
+	cfg, err := getRuntimeConfig(o, true)
 	if err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	err = o.Unconfigure(cfg)
+	err = cfg.UpdateDefaultRuntime(o.RuntimeName, engine.UpdateActionUnset)
 	if err != nil {
-		return fmt.Errorf("unable to unconfigure cri-o: %v", err)
+		return fmt.Errorf("failed to unset %q as the default runtime: %w", o.RuntimeName, err)
+	}
+
+	if err := o.Flush(cfg); err != nil {
+		return err
 	}
 
 	err = RestartCrio(o)
@@ -206,24 +214,35 @@ func RestartCrio(o *container.Options) error {
 }
 
 func GetLowlevelRuntimePaths(o *container.Options) ([]string, error) {
-	cfg, err := getRuntimeConfig(o)
+	cfg, err := getRuntimeConfig(o, false)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load crio config: %w", err)
 	}
 	return engine.GetBinaryPathsForRuntimes(cfg), nil
 }
 
-func getRuntimeConfig(o *container.Options) (engine.Interface, error) {
+func getRuntimeConfig(o *container.Options, loadDestinationConfig bool) (engine.Interface, error) {
 	loaders, err := o.GetConfigLoaders(crio.CommandLineSource)
 	if err != nil {
 		return nil, err
 	}
-	return crio.New(
+
+	options := []crio.Option{
 		crio.WithTopLevelConfigPath(o.TopLevelConfigPath),
 		crio.WithConfigSource(
 			toml.LoadFirst(
 				loaders...,
 			),
 		),
-	)
+	}
+
+	if loadDestinationConfig {
+		destinationConfigPath := o.TopLevelConfigPath
+		if o.DropInConfig != "" {
+			destinationConfigPath = o.DropInConfig
+		}
+		options = append(options, crio.WithConfigDestination(toml.FromFile(destinationConfigPath)))
+	}
+
+	return crio.New(options...)
 }

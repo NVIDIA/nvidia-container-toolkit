@@ -96,6 +96,14 @@ func (c *ConfigWithDropIn) RemoveRuntime(name string) error {
 	return c.Interface.RemoveRuntime(name)
 }
 
+// UpdateDefaultRuntime updates the default runtime setting in the drop-in config.
+// When action is 'set' the provided runtime name is set as the default.
+// When action is 'unset' we make sure the provided runtime name is not
+// the default.
+func (c *ConfigWithDropIn) UpdateDefaultRuntime(name string, action string) error {
+	return c.Interface.UpdateDefaultRuntime(name, action)
+}
+
 // flush saves the top-level config to its path.
 // If the config is empty, the file will be deleted.
 func (c *topLevelConfig) Save(dropInPath string) (int64, error) {

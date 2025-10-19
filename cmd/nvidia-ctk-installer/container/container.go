@@ -65,7 +65,7 @@ func (o Options) Configure(cfg engine.Interface) error {
 	if err != nil {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
-	return o.flush(cfg)
+	return o.Flush(cfg)
 }
 
 // Unconfigure removes the options from the specified config
@@ -75,7 +75,7 @@ func (o Options) Unconfigure(cfg engine.Interface) error {
 		return fmt.Errorf("unable to update config: %v", err)
 	}
 
-	if err := o.flush(cfg); err != nil {
+	if err := o.Flush(cfg); err != nil {
 		return err
 	}
 
@@ -93,8 +93,8 @@ func (o Options) Unconfigure(cfg engine.Interface) error {
 	return nil
 }
 
-// flush flushes the specified config to disk
-func (o Options) flush(cfg engine.Interface) error {
+// Flush flushes the specified config to disk
+func (o Options) Flush(cfg engine.Interface) error {
 	filepath := o.DropInConfig
 	if filepath == "" {
 		filepath = o.TopLevelConfigPath

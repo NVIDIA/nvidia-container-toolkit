@@ -120,6 +120,10 @@ func (c *ConfigV1) RemoveRuntime(name string) error {
 	return nil
 }
 
+func (c *ConfigV1) UpdateDefaultRuntime(name string, action string) error {
+	return fmt.Errorf("this method is not implemented")
+}
+
 // Save writes the config to a file
 func (c ConfigV1) Save(path string) (int64, error) {
 	return (Config)(c).Save(path)

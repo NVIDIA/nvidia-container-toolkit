@@ -20,6 +20,12 @@ const (
 	// SaveToSTDOUT is used to write the specified config to stdout instead of
 	// to a file on disk.
 	SaveToSTDOUT = ""
+	// UpdateActionSet is used as an argument to UpdateDefaultRuntime
+	// when setting a runtime handler as the default in the config
+	UpdateActionSet = "set"
+	// UpdateActionUnset is used as an argument to UpdateDefaultRuntime
+	// when unsetting a runtime handler as the default in the config
+	UpdateActionUnset = "unset"
 )
 
 // Interface defines the API for a runtime config updater.
@@ -29,6 +35,7 @@ type Interface interface {
 	EnableCDI()
 	GetRuntimeConfig(string) (RuntimeConfig, error)
 	RemoveRuntime(string) error
+	UpdateDefaultRuntime(string, string) error
 	Save(string) (int64, error)
 	String() string
 }

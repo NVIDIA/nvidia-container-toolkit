@@ -67,13 +67,23 @@ func New(opts ...Option) (engine.Interface, error) {
 		return nil, err
 	}
 
+	var destinationConfig *toml.Tree
+	if b.configDestination != nil {
+		destinationConfig, err = b.configDestination.Load()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		destinationConfig = toml.NewEmpty()
+	}
+
 	cfg := &engine.Config{
 		Source: &Config{
 			Tree:   sourceConfig,
 			Logger: b.logger,
 		},
 		Destination: &Config{
-			Tree:   toml.NewEmpty(),
+			Tree:   destinationConfig,
 			Logger: b.logger,
 		},
 	}
@@ -160,6 +170,38 @@ func (c *Config) RemoveRuntime(name string) error {
 				break
 			}
 			config.DeletePath(remainingPath)
+		}
+	}
+
+	*c.Tree = config
+	return nil
+}
+
+// UpdateDefaultRuntime updates the default runtime setting in the config.
+// When action is 'set' the provided runtime name is set as the default.
+// When action is 'unset' we make sure the provided runtime name is not
+// the default.
+func (c *Config) UpdateDefaultRuntime(name string, action string) error {
+	if action != engine.UpdateActionSet && action != engine.UpdateActionUnset {
+		return fmt.Errorf("invalid action %q, valid actions are %q and %q", action, engine.UpdateActionSet, engine.UpdateActionUnset)
+	}
+
+	if c == nil || c.Tree == nil {
+		if action == engine.UpdateActionSet {
+			return fmt.Errorf("config toml is nil")
+		}
+		return nil
+	}
+
+	config := *c.Tree
+
+	if action == engine.UpdateActionSet {
+		config.SetPath([]string{"crio", "runtime", "default_runtime"}, name)
+	} else {
+		if runtime, ok := config.GetPath([]string{"crio", "runtime", "default_runtime"}).(string); ok {
+			if runtime == name {
+				config.DeletePath([]string{"crio", "runtime", "default_runtime"})
+			}
 		}
 	}
 

@@ -88,7 +88,30 @@ func TestCrioConfigLifecycle(t *testing.T) {
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
 				require.NoFileExists(t, co.TopLevelConfigPath)
-				require.NoFileExists(t, co.DropInConfig)
+				// drop-in file not removed on cleanup
+				actual, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
+
+				expected := `
+[crio]
+
+  [crio.runtime]
+
+    [crio.runtime.runtimes]
+
+      [crio.runtime.runtimes.nvidia]
+        runtime_path = "/usr/bin/nvidia-container-runtime"
+        runtime_type = "oci"
+
+      [crio.runtime.runtimes.nvidia-cdi]
+        runtime_path = "/usr/bin/nvidia-container-runtime.cdi"
+        runtime_type = "oci"
+
+      [crio.runtime.runtimes.nvidia-legacy]
+        runtime_path = "/usr/bin/nvidia-container-runtime.legacy"
+        runtime_type = "oci"
+`
+				require.Equal(t, expected, string(actual))
 				return nil
 			},
 		},
@@ -182,8 +205,6 @@ signature_policy = "/etc/crio/policy.json"
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
 				require.FileExists(t, co.TopLevelConfigPath)
 
-				require.NoFileExists(t, co.DropInConfig)
-
 				actualTopLevel, err := os.ReadFile(co.TopLevelConfigPath)
 				require.NoError(t, err)
 
@@ -203,6 +224,37 @@ signature_policy = "/etc/crio/policy.json"
 `
 				require.Equal(t, expectedTopLevel, string(actualTopLevel))
 
+				// drop-in file not removed on cleanup
+				require.FileExists(t, co.DropInConfig)
+				actual, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
+
+				expected := `
+[crio]
+
+  [crio.runtime]
+
+    [crio.runtime.runtimes]
+
+      [crio.runtime.runtimes.nvidia]
+        monitor_path = "/usr/libexec/crio/conmon"
+        runtime_path = "/usr/bin/nvidia-container-runtime"
+        runtime_root = "/run/crun"
+        runtime_type = "oci"
+
+      [crio.runtime.runtimes.nvidia-cdi]
+        monitor_path = "/usr/libexec/crio/conmon"
+        runtime_path = "/usr/bin/nvidia-container-runtime.cdi"
+        runtime_root = "/run/crun"
+        runtime_type = "oci"
+
+      [crio.runtime.runtimes.nvidia-legacy]
+        monitor_path = "/usr/libexec/crio/conmon"
+        runtime_path = "/usr/bin/nvidia-container-runtime.legacy"
+        runtime_root = "/run/crun"
+        runtime_type = "oci"
+`
+				require.Equal(t, expected, string(actual))
 				return nil
 			},
 		},
@@ -312,8 +364,33 @@ runtime_type = "oci"
 
 				require.Equal(t, expectedTopLevel, string(actualTopLevel))
 
-				require.NoFileExists(t, co.DropInConfig)
+				// drop-in file not removed on cleanup
+				// default_runtime setting removed from drop-in
+				require.FileExists(t, co.DropInConfig)
+				actual, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
 
+				expected := `
+[crio]
+
+  [crio.runtime]
+
+    [crio.runtime.runtimes]
+
+      [crio.runtime.runtimes.nvidia]
+        runtime_path = "/usr/bin/nvidia-container-runtime"
+        runtime_type = "oci"
+
+      [crio.runtime.runtimes.nvidia-cdi]
+        runtime_path = "/usr/bin/nvidia-container-runtime.cdi"
+        runtime_type = "oci"
+
+      [crio.runtime.runtimes.nvidia-legacy]
+        runtime_path = "/usr/bin/nvidia-container-runtime.legacy"
+        runtime_type = "oci"
+`
+
+				require.Equal(t, expected, string(actual))
 				return nil
 			},
 		},
@@ -480,7 +557,37 @@ plugin_dirs = [
 `
 				require.Equal(t, expected, string(actual))
 
-				require.NoFileExists(t, co.DropInConfig)
+				// drop-in file not removed on cleanup
+				require.FileExists(t, co.DropInConfig)
+				actualDropIn, err := os.ReadFile(co.DropInConfig)
+				require.NoError(t, err)
+
+				expectedDropIn := `
+[crio]
+
+  [crio.runtime]
+
+    [crio.runtime.runtimes]
+
+      [crio.runtime.runtimes.nvidia]
+        monitor_path = "/usr/libexec/crio/conmon"
+        runtime_path = "/usr/bin/nvidia-container-runtime"
+        runtime_root = "/run/crun"
+        runtime_type = "oci"
+
+      [crio.runtime.runtimes.nvidia-cdi]
+        monitor_path = "/usr/libexec/crio/conmon"
+        runtime_path = "/usr/bin/nvidia-container-runtime.cdi"
+        runtime_root = "/run/crun"
+        runtime_type = "oci"
+
+      [crio.runtime.runtimes.nvidia-legacy]
+        monitor_path = "/usr/libexec/crio/conmon"
+        runtime_path = "/usr/bin/nvidia-container-runtime.legacy"
+        runtime_root = "/run/crun"
+        runtime_type = "oci"
+`
+				require.Equal(t, expectedDropIn, string(actualDropIn))
 
 				return nil
 			},
