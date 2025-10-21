@@ -55,7 +55,7 @@ updates:
 
 # The release branch(es):
   - package-ecosystem: "gomod"
-    target-branch: release-1.17
+    target-branch: release-1.18
     directories:
     - "/"
     # We don't update development or test dependencies on release branches
@@ -81,7 +81,7 @@ updates:
         - k8s.io/klog/*
 
   - package-ecosystem: "docker"
-    target-branch: release-1.17
+    target-branch: release-1.18
     directories:
     # CUDA image
     - "/deployments/container"
@@ -101,7 +101,7 @@ updates:
     - maintenance
 
   - package-ecosystem: "github-actions"
-    target-branch: release-1.17
+    target-branch: release-1.18
     directory: "/"
     schedule:
       interval: "weekly"
