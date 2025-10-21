@@ -165,9 +165,6 @@ for target in ${targets[@]}; do
     ubuntu18.04-* | centos7-*)
         by_package_type="true"
         ;;
-    centos8-ppc64le)
-        by_package_type="false"
-        ;;
     *)
         echo "Skipping target ${target}"
         continue
