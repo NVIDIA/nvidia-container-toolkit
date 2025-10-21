@@ -1,8 +1,13 @@
 # NVIDIA Container Toolkit Changelog
 
-## v1.18.0-rc.7
+## v1.18.0
 - Fix bug in device selection in jit-cdi mode
 - Make list of explicit driver libraries opt-in
+
+### Changes in the Toolkit Container
+- Invoke the actual default low-level runtime in the nvidia-ctk wrapper script
+- Remove default_runtime from cri-o config on cleanup
+- Do not remove cri-o drop-in file on shutdown.
 
 ## v1.18.0-rc.6
 - Remove ppc64le artifacts from build
