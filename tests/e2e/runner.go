@@ -100,7 +100,7 @@ func NewRunner(opts ...runnerOption) Runner {
 // NewNestedContainerRunner creates a new nested container runner.
 // A nested container runs a container inside another container based on a
 // given runner (remote or local).
-func NewNestedContainerRunner(runner Runner, baseImage string, installCTK bool, containerName string, cacheDir string) (Runner, error) {
+func NewNestedContainerRunner(runner Runner, baseImage string, mountToolkitFromHost bool, containerName string, cacheDir string) (Runner, error) {
 	// If a container with the same name exists from a previous test run, remove it first.
 	// Ignore errors as container might not exist
 	_, _, err := runner.Run(fmt.Sprintf("docker rm -f %s 2>/dev/null || true", containerName))
@@ -116,7 +116,8 @@ func NewNestedContainerRunner(runner Runner, baseImage string, installCTK bool, 
 		)
 	}
 
-	if !installCTK {
+	if mountToolkitFromHost {
+		// TODO: This is actually ONLY needed for the CLI tests.
 		// If installCTK is false, we use the preinstalled toolkit.
 		// This means we need to add toolkit libraries and binaries from the "host"
 
@@ -312,7 +313,7 @@ type outerContainer struct {
 }
 
 func (o *outerContainer) Render() (string, error) {
-	tmpl, err := template.New("startContainer").Parse(`docker run -d --name {{.Name}} --privileged --runtime=nvidia \
+	tmpl, err := template.New("startContainer").Parse(`docker run -d --name {{.Name}} --privileged \
 -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all \
 -e NVIDIA_DRIVER_CAPABILITIES=all \
 {{ range $i, $a := .AdditionalArguments -}}
