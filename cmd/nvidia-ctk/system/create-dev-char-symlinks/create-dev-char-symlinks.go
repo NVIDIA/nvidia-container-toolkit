@@ -115,10 +115,6 @@ func (m command) build() *cli.Command {
 }
 
 func (m command) validateFlags(cfg *config) error {
-	if cfg.createAll {
-		return fmt.Errorf("create-all and watch are mutually exclusive")
-	}
-
 	if cfg.loadKernelModules && !cfg.createAll {
 		m.logger.Warning("load-kernel-modules is only applicable when create-all is set; ignoring")
 		cfg.loadKernelModules = false
