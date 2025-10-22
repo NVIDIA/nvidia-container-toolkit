@@ -27,3 +27,13 @@ type Locator interface {
 
 // ErrNotFound indicates that a specified pattern or file could not be found.
 var ErrNotFound = errors.New("not found")
+
+type always string
+
+const Always = always("always")
+
+var _ Locator = (*always)(nil)
+
+func (l always) Locate(s string) ([]string, error) {
+	return []string{s}, nil
+}

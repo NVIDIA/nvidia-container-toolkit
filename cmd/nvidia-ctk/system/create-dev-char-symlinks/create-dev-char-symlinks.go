@@ -19,8 +19,6 @@ package devchar
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/urfave/cli/v3"
 
@@ -155,7 +153,6 @@ func (m command) run(cfg *config) error {
 
 type linkCreator struct {
 	logger            logger.Interface
-	lister            nodeLister
 	driverRoot        string
 	devRoot           string
 	devCharPath       string
@@ -163,6 +160,8 @@ type linkCreator struct {
 	createAll         bool
 	createDeviceNodes bool
 	loadKernelModules bool
+
+	devicesLib *nvdevices.Interface
 }
 
 // Creator is an interface for creating symlinks to /dev/nv* devices in /dev/char.
@@ -174,6 +173,8 @@ type Creator interface {
 type Option func(*linkCreator)
 
 // NewSymlinkCreator creates a new linkCreator.
+//
+// Deprecated: Use the `nvdevices` package instead.
 func NewSymlinkCreator(opts ...Option) (Creator, error) {
 	c := linkCreator{}
 	for _, opt := range opts {
@@ -192,52 +193,34 @@ func NewSymlinkCreator(opts ...Option) (Creator, error) {
 		c.devCharPath = defaultDevCharPath
 	}
 
-	if err := c.setup(); err != nil {
-		return nil, err
-	}
-
-	if c.createAll {
-		lister, err := newAllPossible(c.logger, c.devRoot)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create all possible device lister: %v", err)
-		}
-		c.lister = lister
-	} else {
-		c.lister = existing{c.logger, c.devRoot}
-	}
-	return c, nil
-}
-
-func (m linkCreator) setup() error {
-	if !m.loadKernelModules && !m.createDeviceNodes {
-		return nil
-	}
-
-	if m.loadKernelModules {
+	if c.loadKernelModules {
 		modules := nvmodules.New(
-			nvmodules.WithLogger(m.logger),
-			nvmodules.WithDryRun(m.dryRun),
-			nvmodules.WithRoot(m.driverRoot),
+			nvmodules.WithLogger(c.logger),
+			nvmodules.WithDryRun(c.dryRun),
+			nvmodules.WithRoot(c.driverRoot),
 		)
 		if err := modules.LoadAll(); err != nil {
-			return fmt.Errorf("failed to load NVIDIA kernel modules: %v", err)
+			return nil, fmt.Errorf("failed to load NVIDIA kernel modules: %v", err)
 		}
 	}
 
-	if m.createDeviceNodes {
-		devices, err := nvdevices.New(
-			nvdevices.WithLogger(m.logger),
-			nvdevices.WithDryRun(m.dryRun),
-			nvdevices.WithDevRoot(m.devRoot),
-		)
-		if err != nil {
-			return err
-		}
+	devices, err := nvdevices.New(
+		nvdevices.WithLogger(c.logger),
+		nvdevices.WithDryRun(c.dryRun),
+		nvdevices.WithDevRoot(c.driverRoot),
+	)
+	if err != nil {
+		return nil, err
+	}
+	c.devicesLib = devices
+
+	if c.createDeviceNodes {
 		if err := devices.CreateNVIDIAControlDevices(); err != nil {
-			return fmt.Errorf("failed to create NVIDIA device nodes: %v", err)
+			return nil, fmt.Errorf("failed to create NVIDIA device nodes: %v", err)
 		}
 	}
-	return nil
+
+	return c, nil
 }
 
 // WithDriverRoot sets the driver root path.
@@ -299,42 +282,5 @@ func WithCreateDeviceNodes(createDeviceNodes bool) Option {
 
 // CreateLinks creates symlinks for all NVIDIA device nodes found in the driver root.
 func (m linkCreator) CreateLinks() error {
-	deviceNodes, err := m.lister.DeviceNodes()
-	if err != nil {
-		return fmt.Errorf("failed to get device nodes: %v", err)
-	}
-
-	if len(deviceNodes) != 0 && !m.dryRun {
-		err := os.MkdirAll(m.devCharPath, 0755)
-		if err != nil {
-			return fmt.Errorf("failed to create directory %s: %v", m.devCharPath, err)
-		}
-	}
-
-	for _, deviceNode := range deviceNodes {
-		target := deviceNode.path
-		linkPath := filepath.Join(m.devCharPath, deviceNode.devCharName())
-
-		m.logger.Infof("Creating link %s => %s", linkPath, target)
-		if m.dryRun {
-			continue
-		}
-
-		err = os.Symlink(target, linkPath)
-		if err != nil {
-			m.logger.Warningf("Could not create symlink: %v", err)
-		}
-	}
-
-	return nil
-}
-
-type deviceNode struct {
-	path  string
-	major uint32
-	minor uint32
-}
-
-func (d deviceNode) devCharName() string {
-	return fmt.Sprintf("%d:%d", d.major, d.minor)
+	return m.devicesLib.CreateDevCharSymlinks(m.devCharPath, !m.createAll)
 }

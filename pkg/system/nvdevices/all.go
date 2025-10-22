@@ -14,7 +14,7 @@
 # limitations under the License.
 **/
 
-package devchar
+package nvdevices
 
 import (
 	"fmt"
@@ -32,6 +32,20 @@ type allPossible struct {
 	devRoot      string
 	deviceMajors devices.Devices
 	migCaps      nvcaps.MigCaps
+}
+
+type nodeLister interface {
+	DeviceNodes() ([]deviceNode, error)
+}
+
+type deviceNode struct {
+	path  string
+	major uint32
+	minor uint32
+}
+
+func (d deviceNode) devCharName() string {
+	return fmt.Sprintf("%d:%d", d.major, d.minor)
 }
 
 // newAllPossible returns a new allPossible device node lister.
