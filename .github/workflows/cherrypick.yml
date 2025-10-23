@@ -17,7 +17,7 @@ name: Cherry-Pick
 on:
   issue_comment:
     types: [created]
-  pull_request:
+  pull_request_target:
     types: [closed]
 
 permissions:
@@ -59,15 +59,16 @@ jobs:
     runs-on: ubuntu-latest
     # Run when PR is merged and has cherry-pick labels
     if: |
-      github.event_name == 'pull_request' &&
+      github.event_name == 'pull_request_target' &&
       github.event.pull_request.merged == true &&
       contains(join(github.event.pull_request.labels.*.name, ','), 'cherry-pick/')
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      - name: Checkout base branch repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.base.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract target branches from PR labels
