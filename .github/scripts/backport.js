@@ -29,7 +29,6 @@ const { data: pullRequest } = await github.rest.pulls.get({
 
 const prTitle = pullRequest.title;
 const prAuthor = pullRequest.user.login;
-const isMerged = pullRequest.merged;
 
 // Get all commits from the PR
 const { data: commits } = await github.rest.pulls.listCommits({
@@ -115,18 +114,13 @@ for (const targetBranch of branches) {
     // Create pull request
     const commitList = commits.map(c => `- \`${c.sha.substring(0, 7)}\` ${c.commit.message.split('\n')[0]}`).join('\n');
     
-    // Build PR body based on conflict status and merge status
+    // Build PR body based on conflict status
     let prBody = `🤖 **Automated backport of #${prNumber} to \`${targetBranch}\`**\n\n`;
-    
-    // Add merge status indicator
-    if (!isMerged) {
-      prBody += `⚠️ **Note:** The source PR #${prNumber} is not yet merged. This backport was created from the current state of the PR and may need updates if more commits are added before merge.\n\n`;
-    }
     
     if (hasConflicts) {
       prBody += `⚠️ **This PR has merge conflicts that need manual resolution.**
 
-Original PR: #${prNumber} ${isMerged ? '(merged)' : '(not yet merged)'}
+Original PR: #${prNumber}
 Original Author: @${prAuthor}
 
 **Cherry-picked commits (${commits.length}):**
@@ -154,7 +148,7 @@ git push --force-with-lease origin ${backportBranch}
     } else {
       prBody += `✅ Cherry-pick completed successfully with no conflicts.
 
-Original PR: #${prNumber} ${isMerged ? '(merged)' : '(not yet merged)'}
+Original PR: #${prNumber}
 Original Author: @${prAuthor}
 
 **Cherry-picked commits (${commits.length}):**
