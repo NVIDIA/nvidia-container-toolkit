@@ -44,6 +44,36 @@ func TestConfigureLifecycle(t *testing.T) {
 	}{
 		// Containerd v2 test cases
 		{
+			description: "containerd: config exists with imports",
+			args: []string{
+				"--runtime", "containerd",
+				"--config", "{{ .testRoot }}/etc/containerd/config.toml",
+				"--drop-in-config", "{{ .testRoot }}/etc/containerd/conf.d/99-nvidia.toml",
+			},
+			prepareEnvironment: func(t *testing.T, testRoot string) error {
+				configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
+				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+
+				initialConfig := `version = 2
+imports = ["/foo/bar/*.toml"]
+`
+				return os.WriteFile(configPath, []byte(initialConfig), 0600)
+			},
+			assertConditions: func(t *testing.T, testRoot string) error {
+				mainConfig := filepath.Join(testRoot, "etc/containerd/config.toml")
+				content, err := os.ReadFile(mainConfig)
+				require.NoError(t, err)
+
+				expectedTemplate := `imports = ["/foo/bar/*.toml", "{{ .testRoot }}/etc/containerd/conf.d/*.toml"]
+version = 2
+`
+				expected := strings.ReplaceAll(expectedTemplate, "{{ .testRoot }}", testRoot)
+
+				require.Equal(t, expected, string(content))
+				return nil
+			},
+		},
+		{
 			description: "containerd: v2 config does not exist with drop-in",
 			args: []string{
 				"--runtime", "containerd",
