@@ -17,46 +17,27 @@
 module.exports = async ({ github, context, core }) => {
   let branches = [];
 
-  // Get PR number
-  const prNumber = context.payload.pull_request?.number || context.payload.issue?.number;
+  // Get PR labels
+  const labels = context.payload.pull_request?.labels || [];
 
-  if (!prNumber) {
-    core.warning('Could not determine PR number from event - skipping backport');
+  if (labels.length === 0) {
+    core.info('No labels found on PR - skipping backport');
     return [];
   }
 
-  // Check PR body
-  if (context.payload.pull_request?.body) {
-    const prBody = context.payload.pull_request.body;
-    // Strict ASCII, anchored; allow X.Y or X.Y.Z
-    // Support multiple space-separated branches on one line
-    const lineMatches = prBody.matchAll(/^\/cherry-pick\s+(.+)$/gmi);
-    for (const match of lineMatches) {
-      const branchMatches = match[1].matchAll(/release-\d+\.\d+(?:\.\d+)?/g);
-      branches.push(...Array.from(branchMatches, m => m[0]));
+  // Extract branches from cherry-pick/* labels
+  const cherryPickPattern = /^cherry-pick\/(release-\d+\.\d+(?:\.\d+)?)$/;
+  
+  for (const label of labels) {
+    const match = label.name.match(cherryPickPattern);
+    if (match) {
+      branches.push(match[1]);
+      core.info(`Found cherry-pick label: ${label.name} -> ${match[1]}`);
     }
   }
-
-  // Check all comments
-  const comments = await github.rest.issues.listComments({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    issue_number: prNumber
-  });
-
-  for (const comment of comments.data) {
-    const lineMatches = comment.body.matchAll(/^\/cherry-pick\s+(.+)$/gmi);
-    for (const match of lineMatches) {
-      const branchMatches = match[1].matchAll(/release-\d+\.\d+(?:\.\d+)?/g);
-      branches.push(...Array.from(branchMatches, m => m[0]));
-    }
-  }
-
-  // Deduplicate
-  branches = [...new Set(branches)];
 
   if (branches.length === 0) {
-    core.info('No cherry-pick requests found - skipping backport');
+    core.info('No cherry-pick labels found - skipping backport');
     return [];
   }
 
