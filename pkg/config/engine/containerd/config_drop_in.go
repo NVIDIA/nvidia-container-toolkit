@@ -173,12 +173,35 @@ func (c *topLevelConfig) removeVersion() {
 	c.config.Delete("version")
 }
 
+func (c *topLevelConfig) getCurrentImports() []string {
+	rawImports := c.config.Get("imports")
+	if rawImports == nil {
+		return nil
+	}
+
+	if importsStringSlice, ok := rawImports.([]string); ok {
+		return importsStringSlice
+	}
+
+	importsAnySlice, ok := rawImports.([]any)
+	if !ok {
+		return nil
+	}
+	var importsStringSlice []string
+	for _, importAny := range importsAnySlice {
+		importString, ok := importAny.(string)
+		if !ok {
+			continue
+		}
+		importsStringSlice = append(importsStringSlice, importString)
+	}
+
+	return importsStringSlice
+}
+
 func (c *topLevelConfig) ensureImports(dropInFilename string) {
 	config := c.config.Tree
-	var currentImports []string
-	if ci, ok := c.config.Get("imports").([]string); ok {
-		currentImports = ci
-	}
+	currentImports := c.getCurrentImports()
 
 	requiredImport := c.importPattern(dropInFilename)
 	for _, currentImport := range currentImports {
