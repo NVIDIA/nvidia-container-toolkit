@@ -132,7 +132,6 @@ func (m command) build() *cli.Command {
 				Destination: &opts.mode,
 				Sources: cli.NewValueSourceChain(
 					cli.EnvVar("NVIDIA_CTK_CDI_GENERATE_MODE"),
-					m.config.ValueFrom("nvidia-container-runtime.mode"),
 				),
 			},
 			&cli.StringFlag{
