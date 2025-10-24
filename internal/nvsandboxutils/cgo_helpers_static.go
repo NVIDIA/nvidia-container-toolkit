@@ -19,7 +19,7 @@ package nvsandboxutils
 var cgoAllocsUnknown = new(struct{})
 
 func clen(n []byte) int {
-	for i := 0; i < len(n); i++ {
+	for i := range n {
 		if n[i] == 0 {
 			return i
 		}
