@@ -170,7 +170,7 @@ func TestToolkitInstaller(t *testing.T) {
 				wrapper: `#! /bin/sh
 cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
 if [ "${?}" != "0" ]; then
-	echo "nvidia driver modules are not yet loaded, invoking runc directly"
+	echo "nvidia driver modules are not yet loaded, invoking runc directly" >&2
 	exec runc "$@"
 fi
 NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
@@ -185,7 +185,7 @@ PATH=/foo/bar/baz:$PATH \
 				wrapper: `#! /bin/sh
 cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
 if [ "${?}" != "0" ]; then
-	echo "nvidia driver modules are not yet loaded, invoking runc directly"
+	echo "nvidia driver modules are not yet loaded, invoking runc directly" >&2
 	exec runc "$@"
 fi
 NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
@@ -200,7 +200,7 @@ PATH=/foo/bar/baz:$PATH \
 				wrapper: `#! /bin/sh
 cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
 if [ "${?}" != "0" ]; then
-	echo "nvidia driver modules are not yet loaded, invoking runc directly"
+	echo "nvidia driver modules are not yet loaded, invoking runc directly" >&2
 	exec runc "$@"
 fi
 NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
