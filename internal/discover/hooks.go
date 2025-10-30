@@ -31,6 +31,7 @@ const (
 	AllHooks = HookName("all")
 
 	// A ChmodHook is used to set the file mode of the specified paths.
+	//
 	// Deprecated: The chmod hook is deprecated and will be removed in a future release.
 	ChmodHook = HookName("chmod")
 	// A CreateSymlinksHook is used to create symlinks in the container.
