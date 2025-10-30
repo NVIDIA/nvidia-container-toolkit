@@ -51,7 +51,7 @@ func TestWrapperRender(t *testing.T) {
 			expected: `#! /bin/sh
 cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
 if [ "${?}" != "0" ]; then
-	echo "nvidia driver modules are not yet loaded, invoking runc directly"
+	echo "nvidia driver modules are not yet loaded, invoking runc directly" >&2
 	exec runc "$@"
 fi
 	/dest-dir/some-runtime \
