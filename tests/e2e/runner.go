@@ -30,9 +30,13 @@ import (
 
 const (
 	installPrerequisitesScript = `
-	export DEBIAN_FRONTEND=noninteractive
-	apt-get update && apt-get install -y curl gnupg2
-	`
+set -e
+export DEBIAN_FRONTEND=noninteractive
+
+# Install prerequisites
+apt-get update
+apt-get install -y curl gnupg2
+`
 )
 
 type localRunner struct{}
@@ -179,6 +183,7 @@ func NewNestedContainerRunner(runner Runner, baseImage string, installCTK bool, 
 	if err != nil {
 		return nil, err
 	}
+
 	_, _, err = runner.Run(script)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run start container script: %w", err)
@@ -191,7 +196,7 @@ func NewNestedContainerRunner(runner Runner, baseImage string, installCTK bool, 
 
 	_, _, err = inContainer.Run(installPrerequisitesScript)
 	if err != nil {
-		return nil, fmt.Errorf("failed to install docker: %w", err)
+		return nil, fmt.Errorf("failed to install prerequisites: %w", err)
 	}
 
 	return inContainer, nil
