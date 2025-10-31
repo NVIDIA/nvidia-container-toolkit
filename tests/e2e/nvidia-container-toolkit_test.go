@@ -543,4 +543,31 @@ EOF`)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
+
+	When("running a container an ubuntu container with specific ld.so.conf ordering", Ordered, func() {
+		var (
+			expectedOutput string
+		)
+		BeforeAll(func(ctx context.Context) {
+			_, _, err := runner.Run(`docker build -t libordering \
+            - <<EOF
+FROM ubuntu
+ENV NVIDIA_VISIBLE_DEVICES=all
+RUN mkdir -p /extra/lib
+RUN cp /usr/lib/$(uname -m)-linux-gnu/libc.so.? /extra/lib/
+RUN echo "/extra/lib" > /etc/ld.so.conf.d/00-xxx.conf
+RUN ldconfig
+EOF`)
+			Expect(err).ToNot(HaveOccurred())
+
+			expectedOutput, _, err = runner.Run(`docker run --rm --runtime=runc libordering bash -c "ldconfig -p | grep libc.so."`)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should not change the ordering of libraries", func(ctx context.Context) {
+			output, _, err := runner.Run(`docker run --rm --runtime=nvidia libordering bash -c "ldconfig -p | grep libc.so."`)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output).To(Equal(expectedOutput))
+		})
+	})
 })
