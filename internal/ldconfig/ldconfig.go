@@ -18,11 +18,13 @@
 package ldconfig
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
@@ -38,9 +40,11 @@ const (
 )
 
 type Ldconfig struct {
-	ldconfigPath string
-	inRoot       string
-	directories  []string
+	ldconfigPath          string
+	inRoot                string
+	isDebianLikeHost      bool
+	isDebianLikeContainer bool
+	directories           []string
 }
 
 // NewRunner creates an exec.Cmd that can be used to run ldconfig.
@@ -49,6 +53,9 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 		id,
 		"--ldconfig-path", strings.TrimPrefix(config.NormalizeLDConfigPath("@"+ldconfigPath), "@"),
 		"--container-root", containerRoot,
+	}
+	if isDebian() {
+		args = append(args, "--is-debian-like-host")
 	}
 	args = append(args, additionalargs...)
 
@@ -66,6 +73,10 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 //	--ldconfig-path=LDCONFIG_PATH	the path to ldconfig on the host
 //	--container-root=CONTAINER_ROOT	the path in which ldconfig must be run
 //
+// The following flags are optional:
+//
+//	--is-debian-like-host	Indicates that the host system is debian-based.
+//
 // The remaining args are folders where soname symlinks need to be created.
 func NewFromArgs(args ...string) (*Ldconfig, error) {
 	if len(args) < 1 {
@@ -74,6 +85,7 @@ func NewFromArgs(args ...string) (*Ldconfig, error) {
 	fs := flag.NewFlagSet(args[1], flag.ExitOnError)
 	ldconfigPath := fs.String("ldconfig-path", "", "the path to ldconfig on the host")
 	containerRoot := fs.String("container-root", "", "the path in which ldconfig must be run")
+	isDebianLikeHost := fs.Bool("is-debian-like-host", false, "the hook is running from a Debian-like host")
 	if err := fs.Parse(args[1:]); err != nil {
 		return nil, err
 	}
@@ -86,9 +98,11 @@ func NewFromArgs(args ...string) (*Ldconfig, error) {
 	}
 
 	l := &Ldconfig{
-		ldconfigPath: *ldconfigPath,
-		inRoot:       *containerRoot,
-		directories:  fs.Args(),
+		ldconfigPath:          *ldconfigPath,
+		inRoot:                *containerRoot,
+		isDebianLikeHost:      *isDebianLikeHost,
+		isDebianLikeContainer: isDebian(),
+		directories:           fs.Args(),
 	}
 	return l, nil
 }
@@ -99,15 +113,21 @@ func (l *Ldconfig) UpdateLDCache() error {
 		return err
 	}
 
+	// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
+	// be configured to use a different config file by default.
+	const topLevelLdsoconfFilePath = "/etc/ld.so.conf"
+	filteredDirectories, err := l.filterDirectories(topLevelLdsoconfFilePath, l.directories...)
+	if err != nil {
+		return err
+	}
+
 	args := []string{
 		filepath.Base(ldconfigPath),
-		// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
-		// be configured to use a different config file by default.
-		"-f", "/etc/ld.so.conf",
+		"-f", topLevelLdsoconfFilePath,
 		"-C", "/etc/ld.so.cache",
 	}
 
-	if err := createLdsoconfdFile(ldsoconfdFilenamePattern, l.directories...); err != nil {
+	if err := createLdsoconfdFile(ldsoconfdFilenamePattern, filteredDirectories...); err != nil {
 		return fmt.Errorf("failed to update ld.so.conf.d: %w", err)
 	}
 
@@ -135,6 +155,22 @@ func (l *Ldconfig) prepareRoot() (string, error) {
 	}
 
 	return ldconfigPath, nil
+}
+
+func (l *Ldconfig) filterDirectories(configFilePath string, directories ...string) ([]string, error) {
+	ldconfigDirs, err := l.getLdsoconfDirectories(configFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var filtered []string
+	for _, d := range directories {
+		if _, ok := ldconfigDirs[d]; ok {
+			continue
+		}
+		filtered = append(filtered, d)
+	}
+	return filtered, nil
 }
 
 // createLdsoconfdFile creates a file at /etc/ld.so.conf.d/.
@@ -176,4 +212,122 @@ func createLdsoconfdFile(pattern string, dirs ...string) error {
 	}
 
 	return nil
+}
+
+// getLdsoconfDirectories returns a map of ldsoconf directories to the conf
+// files that refer to the directory.
+func (l *Ldconfig) getLdsoconfDirectories(configFilePath string) (map[string]struct{}, error) {
+	ldconfigDirs := make(map[string]struct{})
+	for _, d := range l.getSystemSerachPaths() {
+		ldconfigDirs[d] = struct{}{}
+	}
+
+	processedConfFiles := make(map[string]bool)
+	ldsoconfFilenames := []string{configFilePath}
+	for len(ldsoconfFilenames) > 0 {
+		ldsoconfFilename := ldsoconfFilenames[0]
+		ldsoconfFilenames = ldsoconfFilenames[1:]
+		if processedConfFiles[ldsoconfFilename] {
+			continue
+		}
+		processedConfFiles[ldsoconfFilename] = true
+
+		if len(ldsoconfFilename) == 0 {
+			continue
+		}
+		directories, includedFilenames, err := processLdsoconfFile(ldsoconfFilename)
+		if err != nil {
+			return nil, err
+		}
+		ldsoconfFilenames = append(ldsoconfFilenames, includedFilenames...)
+		for _, d := range directories {
+			ldconfigDirs[d] = struct{}{}
+		}
+	}
+	return ldconfigDirs, nil
+}
+
+func (l *Ldconfig) getSystemSerachPaths() []string {
+	if l.isDebianLikeContainer {
+		debianSystemSearchPaths()
+	}
+	return nonDebianSystemSearchPaths()
+}
+
+// processLdsoconfFile extracts the list of directories and included configs
+// from the specified file.
+func processLdsoconfFile(ldsoconfFilename string) ([]string, []string, error) {
+	ldsoconf, err := os.Open(ldsoconfFilename)
+	if os.IsNotExist(err) {
+		return nil, nil, nil
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	defer ldsoconf.Close()
+
+	var directories []string
+	var includedFilenames []string
+	scanner := bufio.NewScanner(ldsoconf)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		switch {
+		case strings.HasPrefix(line, "#") || len(line) == 0:
+			continue
+		case strings.HasPrefix(line, "include "):
+			include, err := filepath.Glob(strings.TrimPrefix(line, "include "))
+			if err != nil {
+				// We ignore invalid includes.
+				// TODO: How does ldconfig handle this?
+				continue
+			}
+			includedFilenames = append(includedFilenames, include...)
+		default:
+			directories = append(directories, line)
+		}
+	}
+	return directories, includedFilenames, nil
+}
+
+func isDebian() bool {
+	info, err := os.Stat("/etc/debian_version")
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
+}
+
+// nonDebianSystemSearchPaths returns the system search paths for non-Debian
+// systems.
+//
+// This list was taken from the output of:
+//
+//	docker run --rm -ti redhat/ubi9 /usr/lib/ld-linux-aarch64.so.1 --help | grep -A6 "Shared library search path"
+func nonDebianSystemSearchPaths() []string {
+	return []string{"/lib64", "/usr/lib64"}
+}
+
+// debianSystemSearchPaths returns the system search paths for Debian-like
+// systems.
+//
+// This list was taken from the output of:
+//
+//	docker run --rm -ti ubuntu /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1 --help | grep -A6 "Shared library search path"
+func debianSystemSearchPaths() []string {
+	var paths []string
+	switch runtime.GOARCH {
+	case "amd64":
+		paths = append(paths,
+			"/lib/x86_64-linux-gnu",
+			"/usr/lib/x86_64-linux-gnu",
+		)
+	case "arm64":
+		paths = append(paths,
+			"/lib/aarch64-linux-gnu",
+			"/usr/lib/aarch64-linux-gnu",
+		)
+	}
+	paths = append(paths, "/lib", "/usr/lib")
+
+	return paths
 }
