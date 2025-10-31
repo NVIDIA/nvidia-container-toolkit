@@ -18,6 +18,7 @@
 package ldconfig
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -75,19 +76,79 @@ func (l *Ldconfig) UpdateLDCache(directories ...string) error {
 		return err
 	}
 
+	// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
+	// be configured to use a different config file by default.
+	configFilePath := "/etc/ld.so.conf"
+	filteredDirectories, err := l.filterDirectories(configFilePath, directories...)
+	if err != nil {
+		return err
+	}
+
 	args := []string{
 		filepath.Base(ldconfigPath),
-		// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
-		// be configured to use a different config file by default.
-		"-f", "/etc/ld.so.conf",
+		"-f", configFilePath,
 		"-C", "/etc/ld.so.cache",
 	}
 
-	if err := createLdsoconfdFile(ldsoconfdFilenamePattern, directories...); err != nil {
+	if err := createLdsoconfdFile(ldsoconfdFilenamePattern, filteredDirectories...); err != nil {
 		return fmt.Errorf("failed to update ld.so.conf.d: %w", err)
 	}
 
 	return SafeExec(ldconfigPath, args, nil)
+}
+
+func (l *Ldconfig) filterDirectories(configFilePath string, directories ...string) ([]string, error) {
+	processedConfFiles := make(map[string]bool)
+	ldconfigFilenames := []string{configFilePath}
+
+	ldconfigDirs := make(map[string]string)
+	for len(ldconfigFilenames) > 0 {
+		ldconfigFilename := ldconfigFilenames[0]
+		ldconfigFilenames = ldconfigFilenames[1:]
+		if processedConfFiles[ldconfigFilename] {
+			continue
+		}
+		processedConfFiles[ldconfigFilename] = true
+
+		if len(ldconfigFilename) == 0 {
+			continue
+		}
+
+		ldsoconf, err := os.Open(ldconfigFilename)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		defer ldsoconf.Close()
+
+		scanner := bufio.NewScanner(ldsoconf)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			switch {
+			case strings.HasPrefix(line, "#") || len(line) == 0:
+				continue
+			case strings.HasPrefix(line, "include "):
+				includes, err := filepath.Glob(strings.TrimPrefix(line, "include "))
+				if err != nil {
+					return nil, err
+				}
+				ldconfigFilenames = append(ldconfigFilenames, includes...)
+			default:
+				ldconfigDirs[line] = ldconfigFilename
+			}
+		}
+	}
+
+	var filtered []string
+	for _, d := range directories {
+		if _, ok := ldconfigDirs[d]; ok {
+			continue
+		}
+		filtered = append(filtered, d)
+	}
+	return filtered, nil
 }
 
 func (l *Ldconfig) prepareRoot() (string, error) {
