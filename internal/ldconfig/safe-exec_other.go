@@ -18,11 +18,14 @@
 
 package ldconfig
 
-import "syscall"
+import (
+	"syscall"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+)
 
 // SafeExec is not implemented on non-linux systems and forwards directly to the
 // Exec syscall.
 func SafeExec(path string, args []string, envv []string) error {
-	//nolint:gosec // TODO: Can we harden this so that there is less risk of command injection
-	return syscall.Exec(path, args, envv)
+	return syscall.Exec(path, oci.Escape(args), envv) //nolint:gosec
 }
