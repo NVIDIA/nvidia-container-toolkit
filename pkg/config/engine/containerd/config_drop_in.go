@@ -147,7 +147,7 @@ func (c *topLevelConfig) importPattern(dropInFilename string) string {
 	// TODO: If we make output to STDOUT a property of the config itself, then
 	// we can actually generate the correct import statement.
 	if dropInFilename == engine.SaveToSTDOUT {
-		return "/etc/containerd/config.d/*.toml"
+		return "/etc/containerd/conf.d/*.toml"
 	}
 	return c.asHostPath(filepath.Dir(dropInFilename)) + "/*.toml"
 }

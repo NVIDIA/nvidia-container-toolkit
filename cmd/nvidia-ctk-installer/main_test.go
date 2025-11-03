@@ -286,7 +286,7 @@ swarm-resource = ""
 [nvidia-ctk]
   path = "{{ .toolkitRoot }}/toolkit/nvidia-ctk"
 `,
-			expectedRuntimeConfig: `imports = ["{{ .testRoot }}/config.d/*.toml"]
+			expectedRuntimeConfig: `imports = ["{{ .testRoot }}/conf.d/*.toml"]
 version = 2
 `,
 			expectedDropInRuntimeConfig: `version = 2
@@ -375,7 +375,7 @@ swarm-resource = ""
 [nvidia-ctk]
   path = "{{ .toolkitRoot }}/toolkit/nvidia-ctk"
 `,
-			expectedRuntimeConfig: `imports = ["{{ .testRoot }}/config.d/*.toml"]
+			expectedRuntimeConfig: `imports = ["{{ .testRoot }}/conf.d/*.toml"]
 version = 2
 `,
 			expectedDropInRuntimeConfig: `version = 2
@@ -425,7 +425,7 @@ version = 2
 
 			cdiOutputDir := filepath.Join(testRoot, "/var/run/cdi")
 			runtimeConfigFile := filepath.Join(testRoot, "config.file")
-			runtimeDropInConfigFile := filepath.Join(testRoot, "config.d/config.toml")
+			runtimeDropInConfigFile := filepath.Join(testRoot, "conf.d/config.toml")
 
 			toolkitRoot := filepath.Join(testRoot, "toolkit-test")
 			toolkitConfigFile := filepath.Join(toolkitRoot, "toolkit/.config/nvidia-container-runtime/config.toml")
