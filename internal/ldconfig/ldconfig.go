@@ -135,22 +135,28 @@ func (l *Ldconfig) UpdateLDCache() error {
 }
 
 func (l *Ldconfig) prepareRoot() (string, error) {
+	root, err := os.OpenRoot(l.inRoot)
+	if err != nil {
+		return "", fmt.Errorf("failed to open root: %w", err)
+	}
+	defer root.Close()
+
 	// To prevent leaking the parent proc filesystem, we create a new proc mount
 	// in the specified root.
-	if err := mountProc(l.inRoot); err != nil {
+	if err := mountProc(root); err != nil {
 		return "", fmt.Errorf("error mounting /proc: %w", err)
 	}
 
 	// We mount the host ldconfig before we pivot root since host paths are not
 	// visible after the pivot root operation.
-	ldconfigPath, err := mountLdConfig(l.ldconfigPath, l.inRoot)
+	ldconfigPath, err := mountLdConfig(l.ldconfigPath, root)
 	if err != nil {
 		return "", fmt.Errorf("error mounting host ldconfig: %w", err)
 	}
 
 	// We pivot to the container root for the new process, this further limits
 	// access to the host.
-	if err := pivotRoot(l.inRoot); err != nil {
+	if err := pivotRoot(root.Name()); err != nil {
 		return "", fmt.Errorf("error running pivot_root: %w", err)
 	}
 

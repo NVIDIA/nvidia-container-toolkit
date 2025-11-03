@@ -90,7 +90,13 @@ func run(_ context.Context, _ *cli.Command, cfg *options) error {
 		return fmt.Errorf("failed to determined container root: %w", err)
 	}
 
-	return createParamsFileInContainer(containerRootDirPath, modifiedParamsFileContents)
+	containerRoot, err := os.OpenRoot(containerRootDirPath)
+	if err != nil {
+		return fmt.Errorf("failed to open root: %w", err)
+	}
+	defer containerRoot.Close()
+
+	return createParamsFileInContainer(containerRoot, modifiedParamsFileContents)
 }
 
 func getModifiedNVIDIAParamsContents() ([]byte, error) {
