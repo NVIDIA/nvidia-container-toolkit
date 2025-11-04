@@ -183,7 +183,7 @@ var _ = Describe("containerd", Ordered, ContinueOnFailure, Label("container-runt
 			When("configuring containerd", func() {
 				It("should add NVIDIA runtime using drop-in config without modifying the main config", func(ctx context.Context) {
 					// Configure containerd using nvidia-ctk
-					_, _, err := nestedContainerRunner.Run(`nvidia-ctk runtime configure --runtime=containerd --config=/etc/containerd/config.toml --drop-in-config=/etc/containerd/conf.d/99-nvidia.toml --set-as-default --cdi.enabled`)
+					_, _, err := nestedContainerRunner.Run(`nvidia-ctk runtime configure --runtime=containerd --set-as-default --cdi.enabled`)
 					Expect(err).ToNot(HaveOccurred(), "Failed to configure containerd")
 
 					topLevelConfigContents, _, err := nestedContainerRunner.Run("cat /etc/containerd/config.toml")
@@ -324,7 +324,7 @@ EOF
 
 					It("should preserve kata as default when --set-as-default=false", func(ctx context.Context) {
 						// Configure without setting as default
-						_, _, err := nestedContainerRunner.Run(`nvidia-ctk runtime configure --runtime=containerd --config=/etc/containerd/config.toml --drop-in-config=/etc/containerd/conf.d/99-nvidia.toml --config-source=file --set-as-default=false --cdi.enabled`)
+						_, _, err := nestedContainerRunner.Run(`nvidia-ctk runtime configure --runtime=containerd --config-source=file --set-as-default=false --cdi.enabled`)
 						Expect(err).ToNot(HaveOccurred(), "Failed to configure containerd")
 
 						// Restart containerd
@@ -348,7 +348,7 @@ EOF
 
 					It("should set nvidia as default when --set-as-default=true", func(ctx context.Context) {
 						// Configure with nvidia as default
-						_, _, err := nestedContainerRunner.Run(`nvidia-ctk runtime configure --runtime=containerd --config=/etc/containerd/config.toml --drop-in-config=/etc/containerd/conf.d/99-nvidia.toml --config-source=file --set-as-default --cdi.enabled`)
+						_, _, err := nestedContainerRunner.Run(`nvidia-ctk runtime configure --runtime=containerd --config-source=file --set-as-default --cdi.enabled`)
 						Expect(err).ToNot(HaveOccurred(), "Failed to configure containerd")
 
 						// Restart containerd
@@ -400,7 +400,7 @@ EOF
 					Expect(err).ToNot(HaveOccurred())
 
 					// Configure containerd using nvidia-ctk
-					_, _, err = nestedContainerRunner.Run(`nvidia-ctk runtime configure --runtime=containerd --config=/etc/containerd/config.toml --drop-in-config=/etc/containerd/conf.d/99-nvidia.toml --cdi.enabled`)
+					_, _, err = nestedContainerRunner.Run(`nvidia-ctk runtime configure --runtime=containerd --cdi.enabled`)
 					Expect(err).ToNot(HaveOccurred(), "Failed to configure containerd")
 
 					// Verify the drop-in config uses v3 format
@@ -503,7 +503,7 @@ EOF
 					Expect(err).ToNot(HaveOccurred())
 
 					// Configure containerd using nvidia-ctk
-					_, _, err = nestedContainerRunner.Run(`nvidia-ctk runtime configure --runtime=containerd --config=/etc/containerd/config.toml --drop-in-config=/etc/containerd/conf.d/99-nvidia.toml`)
+					_, _, err = nestedContainerRunner.Run(`nvidia-ctk runtime configure --runtime=containerd`)
 					Expect(err).ToNot(HaveOccurred(), "Failed to configure containerd")
 
 					// Restart containerd to load the new configuration
