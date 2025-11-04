@@ -183,6 +183,11 @@ func WithFeatureFlags[T string | FeatureFlag](featureFlags ...T) Option {
 			o.featureFlags = make(map[FeatureFlag]bool)
 		}
 		for _, featureFlag := range featureFlags {
+			// The initial release of the FeatureDisableNvsandboxUtils feature
+			// flag included a typo which we handle here.
+			if string(featureFlag) == "disable-nvsandbox-utils" {
+				featureFlag = T(FeatureDisableNvsandboxUtils)
+			}
 			o.featureFlags[FeatureFlag(featureFlag)] = true
 		}
 	}
