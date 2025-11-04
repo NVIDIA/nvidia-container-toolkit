@@ -16,6 +16,8 @@
 
 package config
 
+import "github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
+
 // RuntimeConfig stores the config options for the NVIDIA Container Runtime
 type RuntimeConfig struct {
 	DebugFilePath string `toml:"debug"`
@@ -31,6 +33,7 @@ type RuntimeConfig struct {
 type modesConfig struct {
 	CSV    csvModeConfig    `toml:"csv"`
 	CDI    cdiModeConfig    `toml:"cdi"`
+	JitCDI jitCDIModeConfig `toml:"jit-cdi,omitempty"`
 	Legacy legacyModeConfig `toml:"legacy"`
 }
 
@@ -41,6 +44,11 @@ type cdiModeConfig struct {
 	DefaultKind string `toml:"default-kind"`
 	// AnnotationPrefixes sets the allowed prefixes for CDI annotation-based device injection
 	AnnotationPrefixes []string `toml:"annotation-prefixes"`
+}
+
+type jitCDIModeConfig struct {
+	// NVCDIFeatureFlags sets a list of nvcdi features explicitly.
+	NVCDIFeatureFlags []nvcdi.FeatureFlag `toml:"nvcdi-feature-flags,omitempty"`
 }
 
 type csvModeConfig struct {

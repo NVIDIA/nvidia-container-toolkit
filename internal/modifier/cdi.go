@@ -192,6 +192,7 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 			nvcdi.WithVendor(automaticDeviceVendor),
 			nvcdi.WithClass(perModeDeviceClass[mode]),
 			nvcdi.WithMode(mode),
+			nvcdi.WithFeatureFlags(cfg.NVIDIAContainerRuntimeConfig.Modes.JitCDI.NVCDIFeatureFlags...),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct CDI library for mode %q: %w", mode, err)
