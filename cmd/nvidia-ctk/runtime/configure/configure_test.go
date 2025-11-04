@@ -78,7 +78,7 @@ version = 2
 			args: []string{
 				"--runtime", "containerd",
 				"--config", "{{ .testRoot }}/etc/containerd/config.toml",
-				"--drop-in-config", "{{ .testRoot }}/etc/containerd/config.d/99-nvidia.toml",
+				"--drop-in-config", "{{ .testRoot }}/etc/containerd/conf.d/99-nvidia.toml",
 			},
 			assertConditions: func(t *testing.T, testRoot string) error {
 				// Verify main config was created with imports
@@ -91,7 +91,7 @@ version = 2
 				require.Contains(t, string(content), "version = 2")
 
 				// Verify drop-in was created
-				dropIn := filepath.Join(testRoot, "etc/containerd/config.d/99-nvidia.toml")
+				dropIn := filepath.Join(testRoot, "etc/containerd/conf.d/99-nvidia.toml")
 				require.FileExists(t, dropIn)
 
 				dropInContent, err := os.ReadFile(dropIn)
@@ -107,7 +107,7 @@ version = 2
 			args: []string{
 				"--runtime", "containerd",
 				"--config", "{{ .testRoot }}/etc/containerd/config.toml",
-				"--drop-in-config", "{{ .testRoot }}/etc/containerd/config.d/99-nvidia.toml",
+				"--drop-in-config", "{{ .testRoot }}/etc/containerd/conf.d/99-nvidia.toml",
 				"--nvidia-set-as-default",
 			},
 			prepareEnvironment: func(t *testing.T, testRoot string) error {
@@ -138,7 +138,7 @@ version = 2
 				require.Contains(t, string(content), "imports")
 
 				// Verify drop-in was created with nvidia as default
-				dropIn := filepath.Join(testRoot, "etc/containerd/config.d/99-nvidia.toml")
+				dropIn := filepath.Join(testRoot, "etc/containerd/conf.d/99-nvidia.toml")
 				require.FileExists(t, dropIn)
 
 				dropInContent, err := os.ReadFile(dropIn)
@@ -158,7 +158,7 @@ version = 2
 						args: []string{
 							"--runtime", "containerd",
 							"--config", "{{ .testRoot }}/etc/containerd/config.toml",
-							"--drop-in-config", "{{ .testRoot }}/etc/containerd/config.d/99-nvidia.toml",
+							"--drop-in-config", "{{ .testRoot }}/etc/containerd/conf.d/99-nvidia.toml",
 						},
 						prepareEnvironment: func(t *testing.T, testRoot string) error {
 							configPath := filepath.Join(testRoot, "etc/containerd/config.toml")
@@ -192,11 +192,11 @@ version = 2
 			args: []string{
 				"--runtime", "containerd",
 				"--config", "{{ .testRoot }}/etc/containerd/config.toml",
-				"--drop-in-config", "{{ .testRoot }}/etc/containerd/config.d/99-nvidia.toml",
+				"--drop-in-config", "{{ .testRoot }}/etc/containerd/conf.d/99-nvidia.toml",
 				"--cdi.enabled",
 			},
 			assertConditions: func(t *testing.T, testRoot string) error {
-				dropIn := filepath.Join(testRoot, "etc/containerd/config.d/99-nvidia.toml")
+				dropIn := filepath.Join(testRoot, "etc/containerd/conf.d/99-nvidia.toml")
 				content, err := os.ReadFile(dropIn)
 				require.NoError(t, err)
 				require.Contains(t, string(content), "enable_cdi = true")
@@ -208,12 +208,12 @@ version = 2
 			args: []string{
 				"--runtime", "containerd",
 				"--config", "{{ .testRoot }}/etc/containerd/config.toml",
-				"--drop-in-config", "{{ .testRoot }}/etc/containerd/config.d/99-nvidia.toml",
+				"--drop-in-config", "{{ .testRoot }}/etc/containerd/conf.d/99-nvidia.toml",
 				"--nvidia-runtime-name", "gpu",
 				"--nvidia-runtime-path", "/custom/path/nvidia-container-runtime",
 			},
 			assertConditions: func(t *testing.T, testRoot string) error {
-				dropIn := filepath.Join(testRoot, "etc/containerd/config.d/99-nvidia.toml")
+				dropIn := filepath.Join(testRoot, "etc/containerd/conf.d/99-nvidia.toml")
 				content, err := os.ReadFile(dropIn)
 				require.NoError(t, err)
 				require.Contains(t, string(content), "[plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.gpu]")
@@ -430,14 +430,14 @@ runtime_type = "oci"
 				"--dry-run",
 				"--runtime", "containerd",
 				"--config", "{{ .testRoot }}/etc/containerd/config.toml",
-				"--drop-in-config", "{{ .testRoot }}/etc/containerd/config.d/99-nvidia.toml",
+				"--drop-in-config", "{{ .testRoot }}/etc/containerd/conf.d/99-nvidia.toml",
 			},
 			assertConditions: func(t *testing.T, testRoot string) error {
 				// Verify no files were created
 				mainConfig := filepath.Join(testRoot, "etc/containerd/config.toml")
 				require.NoFileExists(t, mainConfig)
 
-				dropIn := filepath.Join(testRoot, "etc/containerd/config.d/99-nvidia.toml")
+				dropIn := filepath.Join(testRoot, "etc/containerd/conf.d/99-nvidia.toml")
 				require.NoFileExists(t, dropIn)
 
 				return nil
@@ -542,7 +542,7 @@ func TestConfigureCommandLineSource(t *testing.T) {
 				"--config-source", "command",
 				"--executable-path", "{{ .testRoot }}/bin/containerd",
 				"--config", "{{ .testRoot }}/etc/containerd/config.toml",
-				"--drop-in-config", "{{ .testRoot }}/etc/containerd/config.d/99-nvidia.toml",
+				"--drop-in-config", "{{ .testRoot }}/etc/containerd/conf.d/99-nvidia.toml",
 			},
 			prepareEnvironment: func(t *testing.T, testRoot string) error {
 				// Create a mock containerd executable that outputs config
@@ -581,7 +581,7 @@ fi
 			},
 			assertConditions: func(t *testing.T, testRoot string) error {
 				// Should create drop-in with nvidia runtime
-				dropIn := filepath.Join(testRoot, "etc/containerd/config.d/99-nvidia.toml")
+				dropIn := filepath.Join(testRoot, "etc/containerd/conf.d/99-nvidia.toml")
 				require.FileExists(t, dropIn)
 
 				content, err := os.ReadFile(dropIn)
