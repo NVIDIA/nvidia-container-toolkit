@@ -1,6 +1,7 @@
 name: Stale issues and pull requests
 
 on:
+  workflow_dispatch:
   schedule:
   - cron: "21 4 * * *"
 
@@ -26,4 +27,4 @@ jobs:
         days-before-issue-close: 30
         days-before-pr-close: 30
         remove-stale-when-updated: true
-        operations-per-run: 300
+        operations-per-run: 1000
