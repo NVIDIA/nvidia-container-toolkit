@@ -181,7 +181,7 @@ func Test_cdiModeIdentfiersFromDevices(t *testing.T) {
 			description: "empty device list",
 			devices:     []string{},
 			expected: &cdiModeIdentifiers{
-				modes:             []string{"auto"},
+				modes:             nil,
 				idsByMode:         map[string][]string{},
 				deviceClassByMode: map[string]string{"auto": "gpu"},
 			},
@@ -208,7 +208,7 @@ func Test_cdiModeIdentfiersFromDevices(t *testing.T) {
 			description: "device with explicit mode",
 			devices:     []string{"mode=gds,id=foo"},
 			expected: &cdiModeIdentifiers{
-				modes:             []string{"auto", "gds"},
+				modes:             []string{"gds"},
 				idsByMode:         map[string][]string{"gds": {"foo"}},
 				deviceClassByMode: map[string]string{"auto": "gpu"},
 			},
@@ -231,7 +231,7 @@ func Test_cdiModeIdentfiersFromDevices(t *testing.T) {
 			devices:     []string{"mode=nvswitch"},
 			expected: &cdiModeIdentifiers{
 				modes:             []string{"nvswitch"},
-				idsByMode:         map[string][]string{"nvswitch": {}},
+				idsByMode:         map[string][]string{},
 				deviceClassByMode: map[string]string{"auto": "gpu"},
 			},
 		},
@@ -239,7 +239,7 @@ func Test_cdiModeIdentfiersFromDevices(t *testing.T) {
 			description: "duplicate modes",
 			devices:     []string{"mode=gds,id=x", "mode=gds,id=y", "mode=gds"},
 			expected: &cdiModeIdentifiers{
-				modes:             []string{"auto", "gds"},
+				modes:             []string{"gds"},
 				idsByMode:         map[string][]string{"gds": {"x", "y"}},
 				deviceClassByMode: map[string]string{"auto": "gpu"},
 			},
