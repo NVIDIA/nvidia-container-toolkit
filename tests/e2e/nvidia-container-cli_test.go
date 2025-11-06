@@ -78,7 +78,7 @@ var _ = Describe("nvidia-container-cli", Ordered, ContinueOnFailure, Label("libn
 
 	BeforeAll(func(ctx context.Context) {
 		var err error
-		nestedContainerRunner, err = NewNestedContainerRunner(runner, "ubuntu", installCTK, containerName, localCacheDir)
+		nestedContainerRunner, err = NewNestedContainerRunner(runner, "ubuntu", !installCTK, containerName, localCacheDir, true)
 		Expect(err).ToNot(HaveOccurred())
 
 		if installCTK {

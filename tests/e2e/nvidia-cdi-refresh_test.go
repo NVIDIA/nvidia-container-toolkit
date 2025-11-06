@@ -132,9 +132,7 @@ var _ = Describe("nvidia-cdi-refresh", Ordered, ContinueOnFailure, Label("system
 
 	BeforeAll(func(ctx context.Context) {
 		var err error
-		// TODO: We set installCTK to true here to SKIP the mounting of the files from the host.
-		// The test here does NOT require the host toolkit.
-		systemdRunner, err = NewNestedContainerRunner(runner, outerContainerImage, true, containerName, localCacheDir)
+		systemdRunner, err = NewNestedContainerRunner(runner, outerContainerImage, false, containerName, localCacheDir, true)
 		Expect(err).ToNot(HaveOccurred())
 		for range 10 {
 			state, _, err := systemdRunner.Run(getSystemStateScript)

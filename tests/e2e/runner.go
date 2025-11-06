@@ -30,9 +30,12 @@ import (
 
 const (
 	installPrerequisitesScript = `
-	export DEBIAN_FRONTEND=noninteractive
-	apt-get update && apt-get install -y curl gnupg2
-	`
+set -e
+export DEBIAN_FRONTEND=noninteractive
+# Install prerequisites
+apt-get update
+apt-get install -y curl gnupg2
+`
 )
 
 type localRunner struct{}
@@ -96,7 +99,7 @@ func NewRunner(opts ...runnerOption) Runner {
 // NewNestedContainerRunner creates a new nested container runner.
 // A nested container runs a container inside another container based on a
 // given runner (remote or local).
-func NewNestedContainerRunner(runner Runner, baseImage string, installCTK bool, containerName string, cacheDir string) (Runner, error) {
+func NewNestedContainerRunner(runner Runner, baseImage string, mountToolkitFromHost bool, containerName string, cacheDir string, requiresGPUs bool) (Runner, error) {
 	// If a container with the same name exists from a previous test run, remove it first.
 	// Ignore errors as container might not exist
 	_, _, err := runner.Run(fmt.Sprintf("docker rm -f %s 2>/dev/null || true", containerName))
@@ -106,13 +109,24 @@ func NewNestedContainerRunner(runner Runner, baseImage string, installCTK bool, 
 
 	var additionalContainerArguments []string
 
+	if requiresGPUs {
+		// If the container requires access to GPUs we explicitly add the nvidia
+		// runtime and set `NVIDIA_VISIBLE_DEVICES` to trigger jit-cdi spec
+		// generation.
+		additionalContainerArguments = append(additionalContainerArguments,
+			"--runtime=nvidia",
+			"-e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all",
+		)
+	}
+
 	if cacheDir != "" {
 		additionalContainerArguments = append(additionalContainerArguments,
 			"-v "+cacheDir+":"+cacheDir+":ro",
 		)
 	}
 
-	if !installCTK {
+	if mountToolkitFromHost {
+		// TODO: This is actually ONLY needed for the CLI tests.
 		// If installCTK is false, we use the preinstalled toolkit.
 		// This means we need to add toolkit libraries and binaries from the "host"
 
@@ -179,6 +193,7 @@ func NewNestedContainerRunner(runner Runner, baseImage string, installCTK bool, 
 	if err != nil {
 		return nil, err
 	}
+
 	_, _, err = runner.Run(script)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run start container script: %w", err)
@@ -191,7 +206,7 @@ func NewNestedContainerRunner(runner Runner, baseImage string, installCTK bool, 
 
 	_, _, err = inContainer.Run(installPrerequisitesScript)
 	if err != nil {
-		return nil, fmt.Errorf("failed to install docker: %w", err)
+		return nil, fmt.Errorf("failed to install prerequisites: %w", err)
 	}
 
 	return inContainer, nil
@@ -296,10 +311,6 @@ func connectOrDie(sshKey, sshUser, host, port string) (*ssh.Client, error) {
 
 // outerContainerTemplate represents a template to start a container with
 // a name specified.
-// The container is given access to all NVIDIA gpus by explicitly using the
-// nvidia runtime and the `runtime.nvidia.com/gpu=all` device to trigger JIT
-// CDI spec generation.
-// The template also allows for additional arguments to be specified.
 type outerContainer struct {
 	Name                string
 	BaseImage           string
@@ -307,9 +318,7 @@ type outerContainer struct {
 }
 
 func (o *outerContainer) Render() (string, error) {
-	tmpl, err := template.New("startContainer").Parse(`docker run -d --name {{.Name}} --privileged --runtime=nvidia \
--e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all \
--e NVIDIA_DRIVER_CAPABILITIES=all \
+	tmpl, err := template.New("startContainer").Parse(`docker run -d --name {{.Name}} --privileged \
 {{ range $i, $a := .AdditionalArguments -}}
 {{ $a }} \
 {{ end -}}

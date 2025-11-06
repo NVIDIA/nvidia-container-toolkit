@@ -34,12 +34,20 @@ docker run --rm -v {{.CacheDir}}:/cache --entrypoint="sh" {{.ToolkitImage}}-pack
 var installFromImageTemplate = `
 set -xe
 
-cd {{.CacheDir}}/packages/ubuntu18.04/amd64
+arch="$(uname -m)"
+case "${arch##*-}" in
+	x86_64 | amd64) ARCH='amd64' ;;
+	ppc64el | ppc64le) ARCH='ppc64le' ;;
+	aarch64 | arm64) ARCH='arm64' ;;
+	*) echo "unsupported architecture" ; exit 1 ;;
+esac
 
-{{if .WithSudo }}sudo {{end}}dpkg -i libnvidia-container1_*_amd64.deb \
-	libnvidia-container-tools_*_amd64.deb \
-	nvidia-container-toolkit-base_*_amd64.deb \
-	nvidia-container-toolkit_*_amd64.deb
+cd {{.CacheDir}}/packages/ubuntu18.04/${ARCH}
+
+{{if .WithSudo }}sudo {{end}}dpkg -i libnvidia-container1_*_${ARCH}.deb \
+	libnvidia-container-tools_*_${ARCH}.deb \
+	nvidia-container-toolkit-base_*_${ARCH}.deb \
+	nvidia-container-toolkit_*_${ARCH}.deb
 
 cd -
 
