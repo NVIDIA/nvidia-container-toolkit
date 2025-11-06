@@ -23,7 +23,7 @@ Type=oneshot
 # Values from Environment will be replaced if defined in EnvironmentFile
 Environment=NVIDIA_CTK_CDI_OUTPUT_FILE_PATH=/var/run/cdi/nvidia.yaml
 EnvironmentFile=-/etc/nvidia-container-toolkit/nvidia-cdi-refresh.env
-ExecCondition=/usr/bin/grep -qE '/nvidia.ko' /lib/modules/%v/modules.dep
+ExecCondition=/usr/bin/grep -qE '/(nvidia|nvidia-current)\.ko[:]' /lib/modules/%v/modules.dep
 ExecStart=/usr/bin/nvidia-ctk cdi generate
 CapabilityBoundingSet=CAP_SYS_MODULE CAP_SYS_ADMIN CAP_MKNOD
 
