@@ -212,7 +212,7 @@ type cdiModeIdentifiers struct {
 func cdiModeIdentfiersFromDevices(devices ...string) *cdiModeIdentifiers {
 	perModeIdentifiers := make(map[string][]string)
 	perModeDeviceClass := map[string]string{"auto": automaticDeviceClass}
-	uniqueModes := []string{"auto"}
+	var uniqueModes []string
 	seen := make(map[string]bool)
 	for _, device := range devices {
 		mode, id := getModeIdentifier(device)
