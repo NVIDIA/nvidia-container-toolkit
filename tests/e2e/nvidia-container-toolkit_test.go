@@ -198,6 +198,16 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ldconfigOut).To(ContainSubstring("/usr/local/cuda-12.9/compat/"))
 		})
+
+		It("should create a single ld.so.conf.d config file", func(ctx context.Context) {
+			lsout, _, err := runner.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all nvcr.io/nvidia/cuda:12.9.0-base-ubi8 bash -c \"ls -l /etc/ld.so.conf.d/00-compat-*.conf\"")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(lsout).To(WithTransform(
+				func(s string) []string {
+					return strings.Split(strings.TrimSpace(s), "\n")
+				}, HaveLen(1),
+			))
+		})
 	})
 
 	When("Disabling device node creation", Ordered, func() {
