@@ -37,6 +37,12 @@ const (
 	// higher precedence than other libraries on the system, but lower than
 	// the 00-cuda-compat that is included in some containers.
 	ldsoconfdFilenamePattern = "00-nvcr-*.conf"
+	// ldsoconfdSystemDirsFilenamePattern specifies the filename pattern for the drop-in conf file
+	// that includes the expected system directories for the container.
+	// This is chosen to have a high likelihood of being lexicographically last in
+	// in the list of config files, since system search paths should be
+	// considered last.
+	ldsoconfdSystemDirsFilenamePattern = "zz-nvcr-*.conf"
 	// defaultTopLevelLdsoconfFilePath is the standard location of the top-level ld.so.conf file.
 	// Most container images based on a distro will have this file, but distroless container images
 	// may not.
@@ -63,7 +69,7 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 		"--ldconfig-path", strings.TrimPrefix(config.NormalizeLDConfigPath("@"+ldconfigPath), "@"),
 		"--container-root", containerRoot,
 	}
-	if isDebian() {
+	if isDebianLike() {
 		args = append(args, "--is-debian-like-host")
 	}
 	args = append(args, additionalargs...)
@@ -76,7 +82,8 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 // This struct is used to perform operations on the ldcache and libraries in a
 // particular root (e.g. a container).
 //
-// args[0] is the reexec initializer function name
+// args[0] is the reexec initializer function name and is required.
+//
 // The following flags are required:
 //
 //	--ldconfig-path=LDCONFIG_PATH	the path to ldconfig on the host
@@ -84,17 +91,22 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 //
 // The following flags are optional:
 //
-//	--is-debian-like-host	Indicates that the host system is debian-based.
+//	--is-debian-like-host	Indicates that the host system is debian-like (e.g. Debian, Ubuntu)
+//	                     	as opposed to non-Debian-like (e.g. RHEL, Fedora)
+//	                     	See https://github.com/NVIDIA/nvidia-container-toolkit/pull/1444
 //
 // The remaining args are folders where soname symlinks need to be created.
 func NewFromArgs(args ...string) (*Ldconfig, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("incorrect arguments: %v", args)
 	}
-	fs := flag.NewFlagSet(args[1], flag.ExitOnError)
+	fs := flag.NewFlagSet("ldconfig-options", flag.ExitOnError)
 	ldconfigPath := fs.String("ldconfig-path", "", "the path to ldconfig on the host")
 	containerRoot := fs.String("container-root", "", "the path in which ldconfig must be run")
-	isDebianLikeHost := fs.Bool("is-debian-like-host", false, "the hook is running from a Debian-like host")
+	isDebianLikeHost := fs.Bool("is-debian-like-host", false, `indicates that the host system is debian-based.
+This allows us to handle the case where there are  differences in behavior
+between the ldconfig from the host (as executed from an update-ldcache hook) and
+ldconfig in the container. Such differences include system search paths.`)
 	if err := fs.Parse(args[1:]); err != nil {
 		return nil, err
 	}
@@ -122,10 +134,14 @@ func (l *Ldconfig) UpdateLDCache() error {
 	}
 
 	// `prepareRoot` pivots to the container root, so can now set the container "debian-ness".
-	l.isDebianLikeContainer = isDebian()
+	l.isDebianLikeContainer = isDebianLike()
 
-	// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
-	// be configured to use a different config file by default.
+	// Ensure that the top-level config file used specifies includes the
+	// defaultLdsoconfDir drop-in config folder.
+	if err := ensureLdsoconfFile(defaultTopLevelLdsoconfFilePath, defaultLdsoconfdDir); err != nil {
+		return fmt.Errorf("failed to ensure ld.so.conf file: %w", err)
+	}
+
 	filteredDirectories, err := l.filterDirectories(defaultTopLevelLdsoconfFilePath, l.directories...)
 	if err != nil {
 		return err
@@ -137,11 +153,20 @@ func (l *Ldconfig) UpdateLDCache() error {
 		"-C", "/etc/ld.so.cache",
 	}
 
-	if err := ensureLdsoconfFile(defaultTopLevelLdsoconfFilePath, defaultLdsoconfdDir); err != nil {
-		return fmt.Errorf("failed to ensure ld.so.conf file: %w", err)
-	}
 	if err := createLdsoconfdFile(defaultLdsoconfdDir, ldsoconfdFilenamePattern, filteredDirectories...); err != nil {
-		return fmt.Errorf("failed to create ld.so.conf.d drop-in file: %w", err)
+		return fmt.Errorf("failed to write %s drop-in: %w", ldsoconfdFilenamePattern, err)
+	}
+
+	// In most cases, the hook will be executing a host ldconfig that may be configured widely
+	// differently from what the container image expects.
+	// The common case is Debian-like (e.g. Debian, Ubuntu) vs non-Debian-like (e.g. RHEL, Fedora).
+	// But there are also hosts that configure ldconfig to search in a glibc prefix
+	// (e.g. /usr/lib/glibc). To avoid all these cases, write the container's expected system search
+	// paths to a drop-in conf file that is likely to be last in lexicographic order. Entries in the
+	// top-level ld.so.conf file may be processed after this drop-in, but this hook does not modify
+	// the top-level file if it exists.
+	if err := createLdsoconfdFile(defaultLdsoconfdDir, ldsoconfdSystemDirsFilenamePattern, l.getSystemSearchPaths()...); err != nil {
+		return fmt.Errorf("failed to write %s drop-in: %w", ldsoconfdSystemDirsFilenamePattern, err)
 	}
 
 	return SafeExec(ldconfigPath, args, nil)
@@ -188,6 +213,7 @@ func (l *Ldconfig) filterDirectories(configFilePath string, directories ...strin
 			continue
 		}
 		filtered = append(filtered, d)
+		ldconfigDirs[d] = struct{}{}
 	}
 	return filtered, nil
 }
@@ -323,7 +349,10 @@ func processLdsoconfFile(ldsoconfFilename string) ([]string, []string, error) {
 	return directories, includedFilenames, nil
 }
 
-func isDebian() bool {
+// isDebianLike returns true if a Debian-like distribution is detected.
+// Debian-like distributions include Debian and Ubuntu, whereas non-Debian-like
+// distributions include RHEL and Fedora.
+func isDebianLike() bool {
 	info, err := os.Stat("/etc/debian_version")
 	if err != nil {
 		return false
@@ -331,22 +360,85 @@ func isDebian() bool {
 	return !info.IsDir()
 }
 
-// nonDebianSystemSearchPaths returns the system search paths for non-Debian
-// systems.
+// nonDebianSystemSearchPaths returns the system search paths for non-Debian-like systems.
+// (note that Debian-like systems include Ubuntu systems)
 //
-// This list was taken from the output of:
+// glibc ldconfig's calls `add_system_dir` with `SLIBDIR` and `LIBDIR` (if they are not equal). On
+// aarch64 and x86_64, `add_system_dir` is a macro that scans the provided path. If the path ends
+// with "/lib64" (or "/libx32", x86_64 only), it strips those suffixes. Then it registers the
+// resulting path. Then if the path ends with "/lib", it registers "path"+"64" (and "path"+"x32",
+// x86_64 only).
 //
-//	docker run --rm -ti redhat/ubi9 /usr/lib/ld-linux-aarch64.so.1 --help | grep -A6 "Shared library search path"
+// By default, "LIBDIR" is "/usr/lib" and "SLIBDIR" is "/lib". Note that on modern distributions,
+// "/lib" is usually a symlink to "/usr/lib" and "/lib64" to "/usr/lib64". ldconfig resolves
+// symlinks and skips duplicate directory entries.
+//
+// To get the list of system paths, you can invoke the dynamic linker with `--list-diagnostics` and
+// look for "path.system_dirs". For example
+//
+// $ docker run --rm -ti fedora bash -c "uname -m;\$(find . | grep /ld-linux) --list-diagnostics | grep path.system_dirs"
+// x86_64
+// path.system_dirs[0x0]="/lib64/"
+// path.system_dirs[0x1]="/usr/lib64/"
+//
+// $ docker run --rm -ti redhat/ubi9 bash -c "uname -m;\$(find . | grep /ld-linux) --list-diagnostics | grep path.system_dirs"
+// x86_64
+// path.system_dirs[0x0]="/lib64/"
+// path.system_dirs[0x1]="/usr/lib64/"
+//
+// On most distributions, including Fedora and derivatives, this yields the following
+// ldconfig system search paths.
+//
+// TODO: Add other architectures that have custom `add_system_dir` macros (e.g. riscv)
+// TODO: Replace with executing the container's dynamlic linker with `--list-diagnostics`?
 func nonDebianSystemSearchPaths() []string {
-	return []string{"/lib64", "/usr/lib64"}
+	var paths []string
+	paths = append(paths, "/lib", "/usr/lib")
+	switch runtime.GOARCH {
+	case "amd64":
+		paths = append(paths,
+			"/lib64",
+			"/usr/lib64",
+			"/libx32",
+			"/usr/libx32",
+		)
+	case "arm64":
+		paths = append(paths,
+			"/lib64",
+			"/usr/lib64",
+		)
+	}
+	return paths
 }
 
-// debianSystemSearchPaths returns the system search paths for Debian-like
-// systems.
+// debianSystemSearchPaths returns the system search paths for Debian-like systems.
+// (note that Debian-like systems include Ubuntu systems)
 //
-// This list was taken from the output of:
+// Debian (and derivatives) apply their multi-arch patch to glibc, which modifies ldconfig to
+// use the same set of system paths as the dynamic linker. These paths are going to include the
+// multi-arch directory _and_ by default "/lib" and "/usr/lib" for compatibility.
 //
-//	docker run --rm -ti ubuntu /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1 --help | grep -A6 "Shared library search path"
+// To get the list of system paths, you can invoke the dynamic linker with `--list-diagnostics` and
+// look for "path.system_dirs". For example
+//
+// $ docker run --rm -ti ubuntu bash -c "uname -m;\$(find . | grep /ld-linux | head -1) --list-diagnostics | grep path.system_dirs"
+// x86_64
+// path.system_dirs[0x0]="/lib/x86_64-linux-gnu/"
+// path.system_dirs[0x1]="/usr/lib/x86_64-linux-gnu/"
+// path.system_dirs[0x2]="/lib/"
+// path.system_dirs[0x3]="/usr/lib/"
+//
+// $ docker run --rm -ti debian  bash -c "uname -m;\$(find . | grep /ld-linux | head -1) --list-diagnostics | grep path.system_dirs"
+// x86_64
+// path.system_dirs[0x0]="/lib/x86_64-linux-gnu/"
+// path.system_dirs[0x1]="/usr/lib/x86_64-linux-gnu/"
+// path.system_dirs[0x2]="/lib/"
+// path.system_dirs[0x3]="/usr/lib/"
+//
+// This yields the following ldconfig system search paths.
+//
+// TODO: Add other architectures that have custom `add_system_dir` macros (e.g. riscv)
+// TODO: Replace with executing the container's dynamlic linker with `--list-diagnostics`?
 func debianSystemSearchPaths() []string {
 	var paths []string
 	switch runtime.GOARCH {
@@ -362,6 +454,5 @@ func debianSystemSearchPaths() []string {
 		)
 	}
 	paths = append(paths, "/lib", "/usr/lib")
-
 	return paths
 }
