@@ -570,4 +570,23 @@ EOF`)
 			Expect(output).To(Equal(expectedOutput))
 		})
 	})
+
+	When("running a ubi9 container", Ordered, func() {
+		var (
+			expectedOutput string
+		)
+		BeforeAll(func(ctx context.Context) {
+			_, _, err := runner.Run(`docker pull redhat/ubi9`)
+			Expect(err).ToNot(HaveOccurred())
+
+			expectedOutput, _, err = runner.Run(`docker run --rm --runtime=runc redhat/ubi9 bash -c "ldconfig -p | grep libc.so."`)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should include the system libraries when using the nvidia-container-runtime", func(ctx context.Context) {
+			output, _, err := runner.Run(`docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all redhat/ubi9 bash -c "ldconfig -p | grep libc.so."`)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output).To(Equal(expectedOutput))
+		})
+	})
 })

@@ -76,7 +76,8 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 // This struct is used to perform operations on the ldcache and libraries in a
 // particular root (e.g. a container).
 //
-// args[0] is the reexec initializer function name
+// args[0] is the reexec initializer function name and is required.
+//
 // The following flags are required:
 //
 //	--ldconfig-path=LDCONFIG_PATH	the path to ldconfig on the host
@@ -85,16 +86,20 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 // The following flags are optional:
 //
 //	--is-debian-like-host	Indicates that the host system is debian-based.
+//							See https://github.com/NVIDIA/nvidia-container-toolkit/pull/1444
 //
 // The remaining args are folders where soname symlinks need to be created.
 func NewFromArgs(args ...string) (*Ldconfig, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("incorrect arguments: %v", args)
 	}
-	fs := flag.NewFlagSet(args[1], flag.ExitOnError)
+	fs := flag.NewFlagSet("ldconfig-options", flag.ExitOnError)
 	ldconfigPath := fs.String("ldconfig-path", "", "the path to ldconfig on the host")
 	containerRoot := fs.String("container-root", "", "the path in which ldconfig must be run")
-	isDebianLikeHost := fs.Bool("is-debian-like-host", false, "the hook is running from a Debian-like host")
+	isDebianLikeHost := fs.Bool("is-debian-like-host", false, `indicates that the host system is debian-based.
+This allows us to handle the case where there are  differences in behavior
+between the ldconfig from the host (as executed from an update-ldcache hook) and
+ldconfig in the container. Such differences include system search paths.`)
 	if err := fs.Parse(args[1:]); err != nil {
 		return nil, err
 	}
@@ -126,7 +131,7 @@ func (l *Ldconfig) UpdateLDCache() error {
 
 	// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
 	// be configured to use a different config file by default.
-	filteredDirectories, err := l.filterDirectories(defaultTopLevelLdsoconfFilePath, l.directories...)
+	filteredDirectories, ldconfigDirs, err := l.filterDirectories(defaultTopLevelLdsoconfFilePath, l.directories...)
 	if err != nil {
 		return err
 	}
@@ -135,6 +140,19 @@ func (l *Ldconfig) UpdateLDCache() error {
 		filepath.Base(ldconfigPath),
 		"-f", defaultTopLevelLdsoconfFilePath,
 		"-C", "/etc/ld.so.cache",
+	}
+	// If we are running in a non-debian container on a debian host we also
+	// need to add the system directories for non-debian hosts to the list of
+	// folders processed by ldconfig.
+	// We only do this if they are not already tracked, since the folders on
+	// on the command line have a higher priority than folders in ld.so.conf.
+	if l.isDebianLikeHost && !l.isDebianLikeContainer {
+		for _, systemSearchPath := range l.getSystemSearchPaths() {
+			if _, ok := ldconfigDirs[systemSearchPath]; ok {
+				continue
+			}
+			args = append(args, "/lib64", "/usr/lib64")
+		}
 	}
 
 	if err := ensureLdsoconfFile(defaultTopLevelLdsoconfFilePath, defaultLdsoconfdDir); err != nil {
@@ -176,10 +194,10 @@ func (l *Ldconfig) prepareRoot() (string, error) {
 	return ldconfigPath, nil
 }
 
-func (l *Ldconfig) filterDirectories(configFilePath string, directories ...string) ([]string, error) {
+func (l *Ldconfig) filterDirectories(configFilePath string, directories ...string) ([]string, map[string]struct{}, error) {
 	ldconfigDirs, err := l.getLdsoconfDirectories(configFilePath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var filtered []string
@@ -188,8 +206,9 @@ func (l *Ldconfig) filterDirectories(configFilePath string, directories ...strin
 			continue
 		}
 		filtered = append(filtered, d)
+		ldconfigDirs[d] = struct{}{}
 	}
-	return filtered, nil
+	return filtered, ldconfigDirs, nil
 }
 
 // createLdsoconfdFile creates a ld.so.conf.d drop-in file with the specified directories on each

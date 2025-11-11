@@ -118,7 +118,7 @@ include INCLUDED_PATTERN*
 			l := &Ldconfig{
 				isDebianLikeContainer: true,
 			}
-			filtered, err := l.filterDirectories(topLevelConfPath, tc.input...)
+			filtered, _, err := l.filterDirectories(topLevelConfPath, tc.input...)
 
 			require.NoError(t, err)
 			require.Equal(t, tc.expected, filtered)
