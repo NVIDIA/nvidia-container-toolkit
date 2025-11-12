@@ -170,3 +170,86 @@ func TestDeviceRequests(t *testing.T) {
 		})
 	}
 }
+
+func Test_cdiModeIdentfiersFromDevices(t *testing.T) {
+	testCases := []struct {
+		description string
+		devices     []string
+		expected    *cdiModeIdentifiers
+	}{
+		{
+			description: "empty device list",
+			devices:     []string{},
+			expected: &cdiModeIdentifiers{
+				modes:             nil,
+				idsByMode:         map[string][]string{},
+				deviceClassByMode: map[string]string{"auto": "gpu"},
+			},
+		},
+		{
+			description: "single automatic device",
+			devices:     []string{"0"},
+			expected: &cdiModeIdentifiers{
+				modes:             []string{"auto"},
+				idsByMode:         map[string][]string{"auto": {"0"}},
+				deviceClassByMode: map[string]string{"auto": "gpu"},
+			},
+		},
+		{
+			description: "multiple automatic devices",
+			devices:     []string{"0", "1"},
+			expected: &cdiModeIdentifiers{
+				modes:             []string{"auto"},
+				idsByMode:         map[string][]string{"auto": {"0", "1"}},
+				deviceClassByMode: map[string]string{"auto": "gpu"},
+			},
+		},
+		{
+			description: "device with explicit mode",
+			devices:     []string{"mode=gds,id=foo"},
+			expected: &cdiModeIdentifiers{
+				modes:             []string{"gds"},
+				idsByMode:         map[string][]string{"gds": {"foo"}},
+				deviceClassByMode: map[string]string{"auto": "gpu"},
+			},
+		},
+		{
+			description: "mixed auto and explicit",
+			devices:     []string{"0", "mode=gds,id=foo", "mode=gdrcopy,id=bar"},
+			expected: &cdiModeIdentifiers{
+				modes: []string{"auto", "gds", "gdrcopy"},
+				idsByMode: map[string][]string{
+					"auto":    {"0"},
+					"gds":     {"foo"},
+					"gdrcopy": {"bar"},
+				},
+				deviceClassByMode: map[string]string{"auto": "gpu"},
+			},
+		},
+		{
+			description: "device with only mode, no id",
+			devices:     []string{"mode=nvswitch"},
+			expected: &cdiModeIdentifiers{
+				modes:             []string{"nvswitch"},
+				idsByMode:         map[string][]string{},
+				deviceClassByMode: map[string]string{"auto": "gpu"},
+			},
+		},
+		{
+			description: "duplicate modes",
+			devices:     []string{"mode=gds,id=x", "mode=gds,id=y", "mode=gds"},
+			expected: &cdiModeIdentifiers{
+				modes:             []string{"gds"},
+				idsByMode:         map[string][]string{"gds": {"x", "y"}},
+				deviceClassByMode: map[string]string{"auto": "gpu"},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			result := cdiModeIdentfiersFromDevices(tc.devices...)
+			require.EqualValues(t, tc.expected, result)
+		})
+	}
+}

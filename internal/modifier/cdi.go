@@ -166,31 +166,17 @@ func filterAutomaticDevices(devices []string) []string {
 func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, devices []string) (oci.SpecModifier, error) {
 	logger.Debugf("Generating in-memory CDI specs for devices %v", devices)
 
-	perModeIdentifiers := make(map[string][]string)
-	perModeDeviceClass := map[string]string{"auto": automaticDeviceClass}
-	uniqueModes := []string{"auto"}
-	seen := make(map[string]bool)
-	for _, device := range devices {
-		mode, id := getModeIdentifier(device)
-		logger.Debugf("Mapped %v to %v: %v", device, mode, id)
-		if !seen[mode] {
-			uniqueModes = append(uniqueModes, mode)
-			seen[mode] = true
-		}
-		if id != "" {
-			perModeIdentifiers[mode] = append(perModeIdentifiers[mode], id)
-		}
-	}
+	cdiModeIdentifiers := cdiModeIdentfiersFromDevices(devices...)
 
-	logger.Debugf("Per-mode identifiers: %v", perModeIdentifiers)
+	logger.Debugf("Per-mode identifiers: %v", cdiModeIdentifiers)
 	var modifiers oci.SpecModifiers
-	for _, mode := range uniqueModes {
+	for _, mode := range cdiModeIdentifiers.modes {
 		cdilib, err := nvcdi.New(
 			nvcdi.WithLogger(logger),
 			nvcdi.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path),
 			nvcdi.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
 			nvcdi.WithVendor(automaticDeviceVendor),
-			nvcdi.WithClass(perModeDeviceClass[mode]),
+			nvcdi.WithClass(cdiModeIdentifiers.deviceClassByMode[mode]),
 			nvcdi.WithMode(mode),
 			nvcdi.WithFeatureFlags(cfg.NVIDIAContainerRuntimeConfig.Modes.JitCDI.NVCDIFeatureFlags...),
 		)
@@ -198,7 +184,7 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 			return nil, fmt.Errorf("failed to construct CDI library for mode %q: %w", mode, err)
 		}
 
-		spec, err := cdilib.GetSpec(perModeIdentifiers[mode]...)
+		spec, err := cdilib.GetSpec(cdiModeIdentifiers.idsByMode[mode]...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate CDI spec for mode %q: %w", mode, err)
 		}
@@ -215,6 +201,35 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 	}
 
 	return modifiers, nil
+}
+
+type cdiModeIdentifiers struct {
+	modes             []string
+	idsByMode         map[string][]string
+	deviceClassByMode map[string]string
+}
+
+func cdiModeIdentfiersFromDevices(devices ...string) *cdiModeIdentifiers {
+	perModeIdentifiers := make(map[string][]string)
+	perModeDeviceClass := map[string]string{"auto": automaticDeviceClass}
+	var uniqueModes []string
+	seen := make(map[string]bool)
+	for _, device := range devices {
+		mode, id := getModeIdentifier(device)
+		if !seen[mode] {
+			uniqueModes = append(uniqueModes, mode)
+			seen[mode] = true
+		}
+		if id != "" {
+			perModeIdentifiers[mode] = append(perModeIdentifiers[mode], id)
+		}
+	}
+
+	return &cdiModeIdentifiers{
+		modes:             uniqueModes,
+		idsByMode:         perModeIdentifiers,
+		deviceClassByMode: perModeDeviceClass,
+	}
 }
 
 func getModeIdentifier(device string) (string, string) {
