@@ -120,7 +120,7 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 	if err != nil {
 		return nil, fmt.Errorf("failed to get driver version: %w", err)
 	}
-	cudaLibRoot, err := driver.GetLibcudaParentDir()
+	cudaLibRoot, err := driver.GetDriverLibDirectory()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get libcuda.so parent directory: %w", err)
 	}
