@@ -47,7 +47,13 @@ func TestLocate(t *testing.T) {
 		{
 			description:   "no-ldcache searches /usr/lib64",
 			libcudaPath:   "/usr/lib64/libcuda.so.123.34",
-			expected:      "/usr/lib64/libcuda.so.123.34",
+			expected:      "/usr/lib64",
+			expectedError: nil,
+		},
+		{
+			description:   "no-ldcache searches /usr/lib64 for libnvidia-ml.so.",
+			libcudaPath:   "/usr/lib64/libnvidia-ml.so.123.34",
+			expected:      "/usr/lib64",
 			expectedError: nil,
 		},
 	}
@@ -62,11 +68,11 @@ func TestLocate(t *testing.T) {
 				WithDriverRoot(driverRoot),
 			)
 
-			libcudasoPath, err := l.GetLibcudasoPath()
+			driverLibraryPath, err := l.GetDriverLibDirectory()
 			require.ErrorIs(t, err, tc.expectedError)
 
 			// NOTE: We need to strip `/private` on MacOs due to symlink resolution
-			stripped := strings.TrimPrefix(libcudasoPath, "/private")
+			stripped := strings.TrimPrefix(driverLibraryPath, "/private")
 
 			require.Equal(t, tc.expected, stripped)
 		})
