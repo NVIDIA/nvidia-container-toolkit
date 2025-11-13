@@ -19,11 +19,13 @@ package nvdevices
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
 var errInvalidDeviceNode = errors.New("invalid device node")
@@ -100,6 +102,67 @@ func (m *Interface) CreateNVIDIADevice(node string) error {
 	}
 
 	return m.createDeviceNode(filepath.Join("dev", node), int(major), int(minor))
+}
+
+// CreateDevCharSymlinks creates symlinks at the specified path NVIDIA device nodes.
+// If existingOnly is set to false, symlinks will be created for ALL possible devices.
+func (m *Interface) CreateDevCharSymlinks(devCharPath string, existingOnly bool) error {
+	if devCharPath == "" || devCharPath == "/" {
+		return fmt.Errorf("invalid /dev/char path: %q", devCharPath)
+	}
+	lister, err := newAllPossible(m.logger, m.devRoot)
+	if err != nil {
+		return fmt.Errorf("failed to create all possible device lister: %v", err)
+	}
+
+	deviceNodes, err := lister.DeviceNodes()
+	if err != nil {
+		return fmt.Errorf("failed to get device nodes: %v", err)
+	}
+
+	var deviceNodeLocator lookup.Locator
+	if existingOnly {
+		deviceNodeLocator = lookup.NewCharDeviceLocator(
+			lookup.WithLogger(m.logger),
+			lookup.WithRoot(m.devRoot),
+			lookup.WithCount(1),
+			lookup.WithOptional(true),
+		)
+	} else {
+		deviceNodeLocator = lookup.Always
+	}
+
+	var parentCreated bool
+	for _, deviceNode := range deviceNodes {
+		target := deviceNode.path
+		// TODO: This assumes that the majors for the kernel modules align with
+		// the majors for the actual device nodes.
+		linkPath := filepath.Join(devCharPath, deviceNode.devCharName())
+
+		candidates, err := deviceNodeLocator.Locate(target)
+		if err != nil || len(candidates) == 0 {
+			m.logger.Debugf("Ignoring non-existing device node %q", target)
+		}
+
+		m.logger.Infof("Creating link %s => %s", linkPath, target)
+		if m.dryRun {
+			continue
+		}
+
+		if !parentCreated {
+			err := os.MkdirAll(devCharPath, 0755)
+			if err != nil {
+				return fmt.Errorf("failed to create directory %s: %v", devCharPath, err)
+			}
+			parentCreated = true
+		}
+
+		if err := os.Symlink(target, linkPath); err != nil {
+			m.logger.Warningf("Could not create symlink: %v", err)
+		}
+	}
+
+	return nil
 }
 
 // createDeviceNode creates the specified device node with the require major and minor numbers.
