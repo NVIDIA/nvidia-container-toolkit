@@ -52,6 +52,11 @@ linters:
       # TODO: We should address each of the following integer overflows.
       - path: (.+)\.go$
         text: 'G115: integer overflow conversion(.+)'
+      # Specify syntax required for CGO symbol lookup in Go wrapper program.
+      - linters:
+          - gocritic
+        path: cmd/nvidia-ctk-installer-wrapper/main.go
+        text: could simplify
     paths:
       - third_party$
       - builtin$
