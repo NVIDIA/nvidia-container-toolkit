@@ -108,7 +108,7 @@ func (c *Config) getStringArrayValue(path []string) ([]string, error) {
 	return annotations, nil
 }
 
-// DefaultRuntime returns the default runtime for the cri-o config
+// DefaultRuntime returns the default runtime for the containerd config.
 func (c Config) DefaultRuntime() string {
 	if runtime, ok := c.GetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "default_runtime_name"}).(string); ok {
 		return runtime
@@ -123,7 +123,7 @@ func (c *Config) EnableCDI() {
 	*c.Tree = config
 }
 
-// RemoveRuntime removes a runtime from the docker config
+// RemoveRuntime removes a runtime from the containerd config.
 func (c *Config) RemoveRuntime(name string) error {
 	if c == nil || c.Tree == nil {
 		return nil

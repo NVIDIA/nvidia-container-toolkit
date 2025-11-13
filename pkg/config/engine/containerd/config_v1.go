@@ -67,7 +67,7 @@ func (c *ConfigV1) AddRuntimeWithOptions(name string, path string, setAsDefault 
 	return nil
 }
 
-// DefaultRuntime returns the default runtime for the cri-o config
+// DefaultRuntime returns the default runtime for the containerd config.
 func (c ConfigV1) DefaultRuntime() string {
 	if runtime, ok := c.GetPath([]string{"plugins", "cri", "containerd", "default_runtime_name"}).(string); ok {
 		return runtime
@@ -75,7 +75,7 @@ func (c ConfigV1) DefaultRuntime() string {
 	return ""
 }
 
-// RemoveRuntime removes a runtime from the docker config
+// RemoveRuntime removes a runtime from the containerd config.
 func (c *ConfigV1) RemoveRuntime(name string) error {
 	if c == nil || c.Tree == nil {
 		return nil
