@@ -17,7 +17,13 @@
 
 package tegra
 
-import "github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
+import (
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
+)
 
 // A MountSpecPathsByTyper provides a function to return mount specs paths by
 // mount type.
@@ -94,6 +100,53 @@ func (m filterMountSpecs) MountSpecPathsByType() MountSpecPathsByType {
 	}
 
 	return ms
+}
+
+type stripDeviceNodes struct {
+	from MountSpecPathsByTyper
+}
+
+// WithoutRegularDeviceNodes creates a MountSpecPathsByTyper which removes
+// regular `/dev/nvidia[0-9]+` device nodes from the source.
+func WithoutRegularDeviceNodes(from MountSpecPathsByTyper) MountSpecPathsByTyper {
+	return &stripDeviceNodes{from}
+}
+
+// MountSpecPathsByType returns the source mount specs with regular nvidia
+// device nodes removed from the source.
+func (d *stripDeviceNodes) MountSpecPathsByType() MountSpecPathsByType {
+	ms := d.from.MountSpecPathsByType()
+	if len(ms) == 0 {
+		return ms
+	}
+
+	filtered := d.Apply(ms[csv.MountSpecDev]...)
+	ms[csv.MountSpecDev] = filtered
+
+	return ms
+}
+
+func (d *stripDeviceNodes) Apply(input ...string) []string {
+	var filtered []string
+	for _, name := range input {
+		if d.Match(name) {
+			continue
+		}
+		filtered = append(filtered, name)
+	}
+	return filtered
+}
+
+// Match returns true if name is a REGULAR NVIDIA GPU device node.
+func (d *stripDeviceNodes) Match(name string) bool {
+	pattern := "/dev/nvidia*"
+	if match, _ := filepath.Match(pattern, name); !match {
+		return false
+	}
+	suffix := strings.TrimPrefix(name, "/dev/nvidia")
+	// Check whether path has the form /dev/nvidia%d
+	_, err := strconv.Atoi(suffix)
+	return err == nil
 }
 
 // DeviceNodes creates a set of MountSpecPaths for the specified device nodes.

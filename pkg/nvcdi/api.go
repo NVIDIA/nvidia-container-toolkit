@@ -88,4 +88,8 @@ const (
 	// FeatureEnableCoherentAnnotations enables the addition of annotations
 	// coherent or non-coherent devices.
 	FeatureEnableCoherentAnnotations = FeatureFlag("enable-coherent-annotations")
+
+	// FeatureDisableMultipleCSVDevices disables the handling of multiple devices
+	// in CSV mode.
+	FeatureDisableMultipleCSVDevices = FeatureFlag("disable-multiple-csv-devices")
 )
