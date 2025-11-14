@@ -21,6 +21,7 @@ package ldconfig
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 )
 
@@ -28,11 +29,11 @@ func pivotRoot(newroot string) error {
 	return fmt.Errorf("not supported")
 }
 
-func mountLdConfig(hostLdconfigPath string, containerRootDirPath string) (string, error) {
+func mountLdConfig(hostLdconfigPath string, containerRoot *os.Root) (string, error) {
 	return "", fmt.Errorf("not supported")
 }
 
-func mountProc(newroot string) error {
+func mountProc(newroot *os.Root) error {
 	return fmt.Errorf("not supported")
 }
 

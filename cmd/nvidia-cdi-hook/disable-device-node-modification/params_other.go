@@ -19,8 +19,11 @@
 
 package disabledevicenodemodification
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
-func createParamsFileInContainer(containerRootDirPath string, contents []byte) error {
+func createParamsFileInContainer(containerRootDirPath *os.Root, contents []byte) error {
 	return fmt.Errorf("not supported")
 }

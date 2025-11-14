@@ -20,7 +20,6 @@
 package ldconfig
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -28,7 +27,7 @@ import (
 	"strconv"
 	"syscall"
 
-	securejoin "github.com/cyphar/filepath-securejoin"
+	"github.com/google/uuid"
 	"github.com/moby/sys/reexec"
 
 	"github.com/opencontainers/runc/libcontainer/utils"
@@ -102,27 +101,28 @@ func pivotRoot(rootfs string) error {
 // mountLdConfig mounts the host ldconfig to the mount namespace of the hook.
 // We use WithProcfd to perform the mount operations to ensure that the changes
 // are persisted across the pivot root.
-func mountLdConfig(hostLdconfigPath string, containerRootDirPath string) (string, error) {
+func mountLdConfig(hostLdconfigPath string, containerRoot *os.Root) (string, error) {
+	containerRootDirPath := containerRoot.Name()
+
 	hostLdconfigInfo, err := os.Stat(hostLdconfigPath)
 	if err != nil {
 		return "", fmt.Errorf("error reading host ldconfig: %w", err)
 	}
 
-	hookScratchDirPath := "/var/run/nvidia-ctk-hook"
+	hookScratchDirPath := "/run/nvidia-ctk-hook/" + uuid.NewString()
 	ldconfigPath := filepath.Join(hookScratchDirPath, "ldconfig")
-	if err := utils.MkdirAllInRoot(containerRootDirPath, hookScratchDirPath, 0755); err != nil {
+	if err := containerRoot.MkdirAll(hookScratchDirPath[1:], 0755); err != nil {
 		return "", fmt.Errorf("error creating hook scratch folder: %w", err)
 	}
 
 	err = utils.WithProcfd(containerRootDirPath, hookScratchDirPath, func(hookScratchDirFdPath string) error {
 		return createTmpFs(hookScratchDirFdPath, int(hostLdconfigInfo.Size()))
-
 	})
 	if err != nil {
 		return "", fmt.Errorf("error creating tmpfs: %w", err)
 	}
 
-	if _, err := createFileInRoot(containerRootDirPath, ldconfigPath, hostLdconfigInfo.Mode()); err != nil {
+	if _, err := containerRoot.OpenFile(ldconfigPath[1:], os.O_CREATE|os.O_RDWR|os.O_TRUNC, hostLdconfigInfo.Mode()); err != nil {
 		return "", fmt.Errorf("error creating ldconfig: %w", err)
 	}
 
@@ -136,43 +136,13 @@ func mountLdConfig(hostLdconfigPath string, containerRootDirPath string) (string
 	return ldconfigPath, nil
 }
 
-func createFileInRoot(containerRootDirPath string, destinationPath string, mode os.FileMode) (string, error) {
-	dest, err := securejoin.SecureJoin(containerRootDirPath, destinationPath)
-	if err != nil {
-		return "", err
-	}
-	// Make the parent directory.
-	destDir, destBase := filepath.Split(dest)
-	destDirFd, err := utils.MkdirAllInRootOpen(containerRootDirPath, destDir, 0755)
-	if err != nil {
-		return "", fmt.Errorf("error creating parent dir: %w", err)
-	}
-	defer destDirFd.Close()
-	// Make the target file. We want to avoid opening any file that is
-	// already there because it could be a "bad" file like an invalid
-	// device or hung tty that might cause a DoS, so we use mknodat.
-	// destBase does not contain any "/" components, and mknodat does
-	// not follow trailing symlinks, so we can safely just call mknodat
-	// here.
-	if err := unix.Mknodat(int(destDirFd.Fd()), destBase, unix.S_IFREG|uint32(mode), 0); err != nil {
-		// If we get EEXIST, there was already an inode there and
-		// we can consider that a success.
-		if !errors.Is(err, unix.EEXIST) {
-			return "", fmt.Errorf("error creating empty file: %w", err)
-		}
-	}
-	return dest, nil
-}
-
 // mountProc mounts a clean proc filesystem in the new root.
-func mountProc(newroot string) error {
-	target, err := securejoin.SecureJoin(newroot, "proc")
-	if err != nil {
+func mountProc(newroot *os.Root) error {
+	if err := newroot.MkdirAll("proc", 0755); err != nil {
 		return err
 	}
-	if err := utils.MkdirAllInRoot(newroot, target, 0755); err != nil {
-		return err
-	}
+
+	target := filepath.Join(newroot.Name(), "proc")
 	return unix.Mount("proc", target, "proc", 0, "")
 }
 
