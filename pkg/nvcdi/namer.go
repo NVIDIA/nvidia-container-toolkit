@@ -105,12 +105,6 @@ type convert struct {
 	nvmlUUIDer
 }
 
-type uuidIgnored struct{}
-
-func (m uuidIgnored) GetUUID() (string, error) {
-	return "", nil
-}
-
 type uuidUnsupported struct{}
 
 func (m convert) GetUUID() (string, error) {
