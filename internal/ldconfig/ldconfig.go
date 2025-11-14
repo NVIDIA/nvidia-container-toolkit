@@ -224,7 +224,7 @@ func createLdsoconfdFile(pattern string, dirs ...string) error {
 // files that refer to the directory.
 func (l *Ldconfig) getLdsoconfDirectories(configFilePath string) (map[string]struct{}, error) {
 	ldconfigDirs := make(map[string]struct{})
-	for _, d := range l.getSystemSerachPaths() {
+	for _, d := range l.getSystemSearchPaths() {
 		ldconfigDirs[d] = struct{}{}
 	}
 
@@ -253,9 +253,9 @@ func (l *Ldconfig) getLdsoconfDirectories(configFilePath string) (map[string]str
 	return ldconfigDirs, nil
 }
 
-func (l *Ldconfig) getSystemSerachPaths() []string {
+func (l *Ldconfig) getSystemSearchPaths() []string {
 	if l.isDebianLikeContainer {
-		debianSystemSearchPaths()
+		return debianSystemSearchPaths()
 	}
 	return nonDebianSystemSearchPaths()
 }
