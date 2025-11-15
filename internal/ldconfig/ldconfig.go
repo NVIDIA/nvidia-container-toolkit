@@ -255,7 +255,7 @@ func (l *Ldconfig) getLdsoconfDirectories(configFilePath string) (map[string]str
 
 func (l *Ldconfig) getSystemSerachPaths() []string {
 	if l.isDebianLikeContainer {
-		debianSystemSearchPaths()
+		return debianSystemSearchPaths()
 	}
 	return nonDebianSystemSearchPaths()
 }
