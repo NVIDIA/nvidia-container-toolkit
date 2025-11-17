@@ -37,6 +37,15 @@ const (
 	// higher precedence than other libraries on the system, but lower than
 	// the 00-cuda-compat that is included in some containers.
 	ldsoconfdFilenamePattern = "00-nvcr-*.conf"
+	// defaultTopLevelLdsoconfFilePath is the standard location of the top-level ld.so.conf file.
+	// Most container images based on a distro will have this file, but distroless container images
+	// may not.
+	defaultTopLevelLdsoconfFilePath = "/etc/ld.so.conf"
+	// defaultLdsoconfdDir is the standard location for the ld.so.conf.d drop-in directory. Most
+	// container images based on a distro will have this directory included by the top-level
+	// ld.so.conf file, but some may not. And some container images may not have a top-level
+	// ld.so.conf file at all.
+	defaultLdsoconfdDir = "/etc/ld.so.conf.d"
 )
 
 type Ldconfig struct {
@@ -115,20 +124,22 @@ func (l *Ldconfig) UpdateLDCache() error {
 
 	// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
 	// be configured to use a different config file by default.
-	const topLevelLdsoconfFilePath = "/etc/ld.so.conf"
-	filteredDirectories, err := l.filterDirectories(topLevelLdsoconfFilePath, l.directories...)
+	filteredDirectories, err := l.filterDirectories(defaultTopLevelLdsoconfFilePath, l.directories...)
 	if err != nil {
 		return err
 	}
 
 	args := []string{
 		filepath.Base(ldconfigPath),
-		"-f", topLevelLdsoconfFilePath,
+		"-f", defaultTopLevelLdsoconfFilePath,
 		"-C", "/etc/ld.so.cache",
 	}
 
-	if err := createLdsoconfdFile(ldsoconfdFilenamePattern, filteredDirectories...); err != nil {
-		return fmt.Errorf("failed to update ld.so.conf.d: %w", err)
+	if err := ensureLdsoconfFile(defaultTopLevelLdsoconfFilePath, defaultLdsoconfdDir); err != nil {
+		return fmt.Errorf("failed to ensure ld.so.conf file: %w", err)
+	}
+	if err := createLdsoconfdFile(defaultLdsoconfdDir, ldsoconfdFilenamePattern, filteredDirectories...); err != nil {
+		return fmt.Errorf("failed to create ld.so.conf.d drop-in file: %w", err)
 	}
 
 	return SafeExec(ldconfigPath, args, nil)
@@ -179,19 +190,15 @@ func (l *Ldconfig) filterDirectories(configFilePath string, directories ...strin
 	return filtered, nil
 }
 
-// createLdsoconfdFile creates a file at /etc/ld.so.conf.d/.
-// The file is created at /etc/ld.so.conf.d/{{ .pattern }} using `CreateTemp` and
-// contains the specified directories on each line.
-func createLdsoconfdFile(pattern string, dirs ...string) error {
+// createLdsoconfdFile creates a ld.so.conf.d drop-in file with the specified directories on each
+// line. The file is created at `ldsoconfdDir`/{{ .pattern }} using `CreateTemp`.
+func createLdsoconfdFile(ldsoconfdDir, pattern string, dirs ...string) error {
 	if len(dirs) == 0 {
 		return nil
 	}
-
-	ldsoconfdDir := "/etc/ld.so.conf.d"
 	if err := os.MkdirAll(ldsoconfdDir, 0755); err != nil {
 		return fmt.Errorf("failed to create ld.so.conf.d: %w", err)
 	}
-
 	configFile, err := os.CreateTemp(ldsoconfdDir, pattern)
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %w", err)
@@ -205,7 +212,7 @@ func createLdsoconfdFile(pattern string, dirs ...string) error {
 		if added[dir] {
 			continue
 		}
-		_, err = fmt.Fprintf(configFile, "%s\n", dir)
+		_, err := fmt.Fprintf(configFile, "%s\n", dir)
 		if err != nil {
 			return fmt.Errorf("failed to update config file: %w", err)
 		}
@@ -217,6 +224,25 @@ func createLdsoconfdFile(pattern string, dirs ...string) error {
 		return fmt.Errorf("failed to chmod config file: %w", err)
 	}
 
+	return nil
+}
+
+// ensureLdsoconfFile creates a "standard" top-level ld.so.conf file if none exists.
+//
+// The created file will contain a single include statement for "`ldsoconfdDir`/*.conf".
+func ensureLdsoconfFile(topLevelLdsoconfFilePath, ldsoconfdDir string) error {
+	configFile, err := os.OpenFile(topLevelLdsoconfFilePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0644)
+	if err != nil {
+		if os.IsExist(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to create top-level ld.so.conf file: %w", err)
+	}
+	defer configFile.Close()
+	_, err = configFile.WriteString("include " + ldsoconfdDir + "/*.conf\n")
+	if err != nil {
+		return fmt.Errorf("failed to write to top-level ld.so.conf file: %w", err)
+	}
 	return nil
 }
 
