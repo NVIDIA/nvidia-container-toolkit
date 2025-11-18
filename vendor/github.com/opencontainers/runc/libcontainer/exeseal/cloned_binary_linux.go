@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
+	"github.com/opencontainers/runc/internal/pathrs"
 	"github.com/opencontainers/runc/libcontainer/system"
 )
 
@@ -71,7 +72,7 @@ func sealFile(f **os.File) error {
 	// When sealing an O_TMPFILE-style descriptor we need to
 	// re-open the path as O_PATH to clear the existing write
 	// handle we have.
-	opath, err := os.OpenFile(fmt.Sprintf("/proc/self/fd/%d", (*f).Fd()), unix.O_PATH|unix.O_CLOEXEC, 0)
+	opath, err := pathrs.Reopen(*f, unix.O_PATH|unix.O_CLOEXEC)
 	if err != nil {
 		return fmt.Errorf("reopen tmpfile: %w", err)
 	}
@@ -125,7 +126,7 @@ func getSealableFile(comment, tmpDir string) (file *os.File, sealFn SealFunc, er
 	// First, try an executable memfd (supported since Linux 3.17).
 	file, sealFn, err = Memfd(comment)
 	if err == nil {
-		return
+		return file, sealFn, err
 	}
 	logrus.Debugf("memfd cloned binary failed, falling back to O_TMPFILE: %v", err)
 
@@ -154,7 +155,7 @@ func getSealableFile(comment, tmpDir string) (file *os.File, sealFn SealFunc, er
 			file.Close()
 			continue
 		}
-		return
+		return file, sealFn, err
 	}
 	logrus.Debugf("O_TMPFILE cloned binary failed, falling back to mktemp(): %v", err)
 	// Finally, try a classic unlinked temporary file.
@@ -168,7 +169,7 @@ func getSealableFile(comment, tmpDir string) (file *os.File, sealFn SealFunc, er
 			file.Close()
 			continue
 		}
-		return
+		return file, sealFn, err
 	}
 	return nil, nil, fmt.Errorf("could not create sealable file for cloned binary: %w", err)
 }
