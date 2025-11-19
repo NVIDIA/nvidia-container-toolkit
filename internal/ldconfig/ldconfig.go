@@ -156,17 +156,15 @@ func (l *Ldconfig) UpdateLDCache() error {
 		return fmt.Errorf("failed to write %s drop-in: %w", ldsoconfdFilenamePattern, err)
 	}
 
-	if l.isDebianLikeHost != l.isDebianLikeContainer {
-		// In most cases, the hook will be executing a host ldconfig that may be configured widely
-		// differently from what the container image expects. The common case is Debian vs non-Debian.
-		// But there are also hosts that configure ldconfig to search in a glibc prefix
-		// (e.g. /usr/lib/glibc). To avoid all these cases, write the container's expected system search
-		// paths to a drop-in conf file that is likely to be last in lexicographic order. Entries in the
-		// top-level ld.so.conf file may be processed after this drop-in, but this hook does not modify
-		// the top-level file if it exists.
-		if err := createLdsoconfdFile(defaultLdsoconfdDir, ldsoconfdSystemDirsFilenamePattern, l.getSystemSearchPaths()...); err != nil {
-			return fmt.Errorf("failed to write %s drop-in: %w", ldsoconfdSystemDirsFilenamePattern, err)
-		}
+	// In most cases, the hook will be executing a host ldconfig that may be configured widely
+	// differently from what the container image expects. The common case is Debian vs non-Debian.
+	// But there are also hosts that configure ldconfig to search in a glibc prefix
+	// (e.g. /usr/lib/glibc). To avoid all these cases, write the container's expected system search
+	// paths to a drop-in conf file that is likely to be last in lexicographic order. Entries in the
+	// top-level ld.so.conf file may be processed after this drop-in, but this hook does not modify
+	// the top-level file if it exists.
+	if err := createLdsoconfdFile(defaultLdsoconfdDir, ldsoconfdSystemDirsFilenamePattern, l.getSystemSearchPaths()...); err != nil {
+		return fmt.Errorf("failed to write %s drop-in: %w", ldsoconfdSystemDirsFilenamePattern, err)
 	}
 
 	return SafeExec(ldconfigPath, args, nil)
@@ -388,10 +386,23 @@ func isDebian() bool {
 // TODO: Add other architectures that have custom `add_system_dir` macros (e.g. riscv)
 // TODO: Replace with executing the container's dynamlic linker with `--list-diagnostics`?
 func nonDebianSystemSearchPaths() []string {
-	return []string{
-		"/lib64",
-		"/usr/lib64",
+	var paths []string
+	paths = append(paths, "/lib", "/usr/lib")
+	switch runtime.GOARCH {
+	case "amd64":
+		paths = append(paths,
+			"/lib64",
+			"/usr/lib64",
+			"/libx32",
+			"/usr/libx32",
+		)
+	case "arm64":
+		paths = append(paths,
+			"/lib64",
+			"/usr/lib64",
+		)
 	}
+	return paths
 }
 
 // debianSystemSearchPaths returns the system search paths for Debian-like systems.
