@@ -131,7 +131,7 @@ func TestCompatLibs(t *testing.T) {
 			c := command{
 				logger: logger,
 			}
-			containerForwardCompatDir, err := c.getContainerForwardCompatDir(containerRoot(containerRootDir), tc.hostDriverVersion)
+			containerForwardCompatDir, err := c.getContainerForwardCompatDir(containerRoot(containerRootDir), defaultCudaCompatPath, tc.hostDriverVersion)
 			require.NoError(t, err)
 			require.EqualValues(t, tc.expectedContainerForwardCompatDir, containerForwardCompatDir)
 		})
