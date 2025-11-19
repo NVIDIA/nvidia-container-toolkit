@@ -19,6 +19,7 @@ package ldconfig
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -121,6 +122,127 @@ include INCLUDED_PATTERN*
 
 			require.NoError(t, err)
 			require.Equal(t, tc.expected, filtered)
+		})
+	}
+}
+
+func TestCreateLdsoconfdFile(t *testing.T) {
+	testCases := []struct {
+		description     string
+		pattern         string
+		dirs            []string
+		expectedContent []string
+	}{
+		{
+			description:     "empty directories",
+			pattern:         "test-*.conf",
+			dirs:            []string{},
+			expectedContent: nil,
+		},
+		{
+			description: "single directory",
+			pattern:     "test-*.conf",
+			dirs:        []string{"/usr/local/lib"},
+			expectedContent: []string{
+				"/usr/local/lib",
+			},
+		},
+		{
+			description: "multiple directories",
+			pattern:     "test-*.conf",
+			dirs:        []string{"/usr/local/lib", "/opt/lib", "/usr/lib64"},
+			expectedContent: []string{
+				"/usr/local/lib",
+				"/opt/lib",
+				"/usr/lib64",
+			},
+		},
+		{
+			description: "duplicate directories",
+			pattern:     "test-*.conf",
+			dirs:        []string{"/usr/local/lib", "/opt/lib", "/usr/local/lib"},
+			expectedContent: []string{
+				"/usr/local/lib",
+				"/opt/lib",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			tmpDir := t.TempDir()
+
+			err := createLdsoconfdFile(tmpDir, tc.pattern, tc.dirs...)
+			require.NoError(t, err)
+
+			if len(tc.expectedContent) == 0 {
+				entries, err := os.ReadDir(tmpDir)
+				require.NoError(t, err)
+				require.Empty(t, entries)
+				return
+			}
+
+			entries, err := os.ReadDir(tmpDir)
+			require.NoError(t, err)
+			require.Len(t, entries, 1)
+			createdFile := filepath.Join(tmpDir, entries[0].Name())
+
+			info, err := os.Stat(createdFile)
+			require.NoError(t, err)
+			require.Equal(t, os.FileMode(0644), info.Mode().Perm())
+
+			content, err := os.ReadFile(createdFile)
+			require.NoError(t, err)
+			lines := strings.Split(strings.TrimSpace(string(content)), "\n")
+			require.Equal(t, tc.expectedContent, lines)
+		})
+	}
+}
+
+func TestEnsureLdsoconfFile(t *testing.T) {
+	testCases := []struct {
+		description     string
+		existingContent string
+		ldsoconfdDir    string
+		expectCreation  bool
+		expectedContent string
+	}{
+		{
+			description:     "creates file when none exists",
+			existingContent: "",
+			ldsoconfdDir:    "/custom/ld.so.conf.d",
+			expectCreation:  true,
+			expectedContent: "include /custom/ld.so.conf.d/*.conf\n",
+		},
+		{
+			description:     "does not modify existing file",
+			existingContent: "# custom config\n/usr/local/lib\n",
+			ldsoconfdDir:    "/etc/ld.so.conf.d",
+			expectCreation:  false,
+			expectedContent: "# custom config\n/usr/local/lib\n",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			confFilePath := filepath.Join(tmpDir, "ld.so.conf")
+
+			if tc.existingContent != "" {
+				err := os.WriteFile(confFilePath, []byte(tc.existingContent), 0644) //nolint:gosec
+				require.NoError(t, err)
+			}
+
+			err := ensureLdsoconfFile(confFilePath, tc.ldsoconfdDir)
+			require.NoError(t, err)
+
+			info, err := os.Stat(confFilePath)
+			require.NoError(t, err)
+			require.Equal(t, os.FileMode(0644), info.Mode().Perm())
+
+			content, err := os.ReadFile(confFilePath)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedContent, string(content))
 		})
 	}
 }
