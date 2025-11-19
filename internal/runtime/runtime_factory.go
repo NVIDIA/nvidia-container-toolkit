@@ -141,6 +141,8 @@ func initRuntimeModeAndImage(logger logger.Interface, cfg *config.Config, ociSpe
 	modeResolver := info.NewRuntimeModeResolver(
 		info.WithLogger(logger),
 		info.WithImage(&image),
+		// TODO: Add a feature flag.
+		info.WithForceCSVModeForTegraSystems(false),
 	)
 	mode := modeResolver.ResolveRuntimeMode(cfg.NVIDIAContainerRuntimeConfig.Mode)
 	// We update the mode here so that we can continue passing just the config to other functions.

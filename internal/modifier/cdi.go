@@ -65,7 +65,7 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		automaticDevices = append(automaticDevices, withUniqueDevices(gatedDevices(image)).DeviceRequests()...)
 		automaticDevices = append(automaticDevices, withUniqueDevices(imexDevices(image)).DeviceRequests()...)
 
-		automaticModifier, err := newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
+		automaticModifier, err := newAutomaticCDISpecModifier(logger, cfg, image, automaticDevices)
 		if err == nil {
 			return automaticModifier, nil
 		}
@@ -163,9 +163,10 @@ func filterAutomaticDevices(devices []string) []string {
 	return automatic
 }
 
-func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, devices []string) (oci.SpecModifier, error) {
+func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, devices []string) (oci.SpecModifier, error) {
 	logger.Debugf("Generating in-memory CDI specs for devices %v", devices)
 
+	csvFileList := getCSVFileList(cfg, image)
 	cdiModeIdentifiers := cdiModeIdentfiersFromDevices(devices...)
 
 	logger.Debugf("Per-mode identifiers: %v", cdiModeIdentifiers)
@@ -179,6 +180,7 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 			nvcdi.WithClass(cdiModeIdentifiers.deviceClassByMode[mode]),
 			nvcdi.WithMode(mode),
 			nvcdi.WithFeatureFlags(cfg.NVIDIAContainerRuntimeConfig.Modes.JitCDI.NVCDIFeatureFlags...),
+			nvcdi.WithCSVFiles(csvFileList),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct CDI library for mode %q: %w", mode, err)

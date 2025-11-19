@@ -55,34 +55,34 @@ func TestResolveAutoMode(t *testing.T) {
 			expectedMode: "jit-cdi",
 		},
 		{
-			description: "non-nvml, non-tegra, nvgpu resolves to csv",
+			description: "non-nvml, non-tegra, nvgpu resolves to jit-cdi",
 			mode:        "auto",
 			info: map[string]bool{
 				"nvml":  false,
 				"tegra": false,
 				"nvgpu": true,
 			},
-			expectedMode: "csv",
+			expectedMode: "jit-cdi",
 		},
 		{
-			description: "non-nvml, tegra, non-nvgpu resolves to csv",
+			description: "non-nvml, tegra, non-nvgpu resolves to jit-cdi",
 			mode:        "auto",
 			info: map[string]bool{
 				"nvml":  false,
 				"tegra": true,
 				"nvgpu": false,
 			},
-			expectedMode: "csv",
+			expectedMode: "jit-cdi",
 		},
 		{
-			description: "non-nvml, tegra, nvgpu resolves to csv",
+			description: "non-nvml, tegra, nvgpu resolves to jit-cdi",
 			mode:        "auto",
 			info: map[string]bool{
 				"nvml":  false,
 				"tegra": true,
 				"nvgpu": true,
 			},
-			expectedMode: "csv",
+			expectedMode: "jit-cdi",
 		},
 		{
 			description: "nvml, non-tegra, non-nvgpu resolves to jit-cdi",
@@ -95,14 +95,14 @@ func TestResolveAutoMode(t *testing.T) {
 			expectedMode: "jit-cdi",
 		},
 		{
-			description: "nvml, non-tegra, nvgpu resolves to csv",
+			description: "nvml, non-tegra, nvgpu resolves to jit-cdi",
 			mode:        "auto",
 			info: map[string]bool{
 				"nvml":  true,
 				"tegra": false,
 				"nvgpu": true,
 			},
-			expectedMode: "csv",
+			expectedMode: "jit-cdi",
 		},
 		{
 			description: "nvml, tegra, non-nvgpu resolves to jit-cdi",
@@ -115,14 +115,14 @@ func TestResolveAutoMode(t *testing.T) {
 			expectedMode: "jit-cdi",
 		},
 		{
-			description: "nvml, tegra, nvgpu resolves to csv",
+			description: "nvml, tegra, nvgpu resolves to jit-cdi",
 			mode:        "auto",
 			info: map[string]bool{
 				"nvml":  true,
 				"tegra": true,
 				"nvgpu": true,
 			},
-			expectedMode: "csv",
+			expectedMode: "jit-cdi",
 		},
 		{
 			description:  "cdi devices resolves to cdi",
@@ -154,7 +154,7 @@ func TestResolveAutoMode(t *testing.T) {
 			expectedMode: "jit-cdi",
 		},
 		{
-			description: "at least one non-cdi device resolves to csv",
+			description: "at least one non-cdi device resolves to jit-cdi",
 			mode:        "auto",
 			envmap: map[string]string{
 				"NVIDIA_VISIBLE_DEVICES": "nvidia.com/gpu=0,0",
@@ -164,7 +164,7 @@ func TestResolveAutoMode(t *testing.T) {
 				"tegra": true,
 				"nvgpu": false,
 			},
-			expectedMode: "csv",
+			expectedMode: "jit-cdi",
 		},
 		{
 			description: "cdi mount devices resolves to CDI",
