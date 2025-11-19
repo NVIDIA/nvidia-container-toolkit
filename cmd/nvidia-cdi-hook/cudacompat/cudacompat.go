@@ -128,10 +128,6 @@ func (m command) getContainerForwardCompatDir(containerRoot containerRoot, hostD
 		m.logger.Debugf("No CUDA forward compatibility libraries directory in container")
 		return "", nil
 	}
-	if !containerRoot.hasPath("/etc/ld.so.cache") {
-		m.logger.Debugf("The container does not have an LDCache")
-		return "", nil
-	}
 
 	libs, err := containerRoot.globFiles(filepath.Join(cudaCompatPath, "libcuda.so.*.*"))
 	if err != nil {
