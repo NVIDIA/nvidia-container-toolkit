@@ -98,11 +98,10 @@ func NewFromArgs(args ...string) (*Ldconfig, error) {
 	}
 
 	l := &Ldconfig{
-		ldconfigPath:          *ldconfigPath,
-		inRoot:                *containerRoot,
-		isDebianLikeHost:      *isDebianLikeHost,
-		isDebianLikeContainer: isDebian(),
-		directories:           fs.Args(),
+		ldconfigPath:     *ldconfigPath,
+		inRoot:           *containerRoot,
+		isDebianLikeHost: *isDebianLikeHost,
+		directories:      fs.Args(),
 	}
 	return l, nil
 }
@@ -112,6 +111,9 @@ func (l *Ldconfig) UpdateLDCache() error {
 	if err != nil {
 		return err
 	}
+
+	// `prepareRoot` pivots to the container root, so can now set the container "debian-ness".
+	l.isDebianLikeContainer = isDebian()
 
 	// Explicitly specify using /etc/ld.so.conf since the host's ldconfig may
 	// be configured to use a different config file by default.
@@ -224,7 +226,7 @@ func createLdsoconfdFile(pattern string, dirs ...string) error {
 // files that refer to the directory.
 func (l *Ldconfig) getLdsoconfDirectories(configFilePath string) (map[string]struct{}, error) {
 	ldconfigDirs := make(map[string]struct{})
-	for _, d := range l.getSystemSerachPaths() {
+	for _, d := range l.getSystemSearchPaths() {
 		ldconfigDirs[d] = struct{}{}
 	}
 
@@ -253,9 +255,9 @@ func (l *Ldconfig) getLdsoconfDirectories(configFilePath string) (map[string]str
 	return ldconfigDirs, nil
 }
 
-func (l *Ldconfig) getSystemSerachPaths() []string {
+func (l *Ldconfig) getSystemSearchPaths() []string {
 	if l.isDebianLikeContainer {
-		debianSystemSearchPaths()
+		return debianSystemSearchPaths()
 	}
 	return nonDebianSystemSearchPaths()
 }
