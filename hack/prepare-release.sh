@@ -20,58 +20,25 @@ this=`basename $0`
 
 usage () {
 cat << EOF
-Usage: $this [-h] [-a] RELEASE_VERSION
+Prepare for an NVIDIA Container Toolkit release
+
+Usage: $this [-h] --previous-version <previous_version> --version <version>
 
 Options:
-  --previous-version    specify the previous version (default: latest tag)
+  --previous-version    specify the previous version
+  --version             specify the version for this release.
   --help/-h             show this help and exit
 
 Example:
 
-  $this {{ VERSION }}
+  $this --previous-version {{ PREVIOUS_VERSION}} --version {{ VERSION }}
 
 EOF
 }
 
-validate_semver() {
-    local version=$1
-    local semver_regex="^v([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$"
-
-    if [[ $version =~ $semver_regex ]]; then
-        major=${BASH_REMATCH[1]}
-        minor=${BASH_REMATCH[2]}
-        patch=${BASH_REMATCH[3]}
-
-        # Check if major, minor, and patch are numeric
-        if ! [[ $major =~ ^[0-9]+$ ]] || ! [[ $minor =~ ^[0-9]+$ ]] || ! [[ $patch =~ ^[0-9]+$ ]]; then
-            echo "Invalid SemVer format: $version"
-            return 1
-        fi
-
-        # Validate prerelease if present
-        if [[ ! -z "${BASH_REMATCH[5]}" ]]; then
-            prerelease=${BASH_REMATCH[5]}
-            prerelease_regex="^([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)$"
-            if ! [[ $prerelease =~ $prerelease_regex ]]; then
-                echo "Invalid SemVer format: $version"
-                return 1
-            fi
-        fi
-
-        echo "Valid SemVer format: $version"
-        return 0
-    else
-        echo "Invalid SemVer format: $version"
-        return 1
-    fi
-}
-
-#
-# Parse command line
-#
-no_patching=
-previous_version=$(git describe --tags $(git rev-list --tags --max-count=1))
 # Parse command line options
+previous_version=
+version=
 while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
@@ -79,52 +46,32 @@ while [[ $# -gt 0 ]]; do
             previous_version="$2"
             shift 2
             ;;
-        --help/-h)  usage
+        --version)
+            version="$2"
+            shift 2
+            ;;
+        --help/-h)
+            usage
             exit 0
             ;;
-        *) break
+        *)  usage
+            exit 1
             ;;
     esac
 done
 
 # Check that no extra args were provided
-if [ $# -ne 1 ]; then
-    if [ $# -lt 1 ]; then
-        echo -e "ERROR: too few arguments\n"
-    else
-        echo -e "ERROR: unknown arguments: ${@:3}\n"
-    fi
+if [ -z "$version" ]; then
+    echo -e "ERROR: --version is required"
     usage
     exit 1
 fi
 
-release=$1
-shift 1
-
-container_image=nvcr.io/nvidia/k8s-device-plugin:$release
-
-#
-# Check/parse release number
-#
-if [ -z "$release" ]; then
-    echo -e "ERROR: missing RELEASE_VERSION\n"
+if [ -z $previous_version ]; then
+    echo -e "ERROR: --previous-version is required"
     usage
     exit 1
 fi
-
-# validate the release version
-if ! validate_semver $release; then
-    echo -e "ERROR: invalid RELEASE_VERSION\n"
-    exit 1
-fi
-semver=${release:1}
-
-# validate the previous version
-if ! validate_semver $previous_version; then
-    echo -e "ERROR: invalid PREVIOUS_VERSION\n"
-    exit 1
-fi
-pre_semver=${previous_version:1}
 
 #
 # Modify files in the repo to point to new release
@@ -137,10 +84,10 @@ else
     SED="sed"
 fi
 
-# TODO: We need to ensure that this tooling also works on `release-*` branches.
 if [[ "$FORCE" != "yes" ]]; then
-    if [[ "$(git rev-parse --abbrev-ref HEAD)" != "main" ]]; then
-        echo "Release scripts should be run on 'main'"
+    current_head=$(git rev-parse --abbrev-ref HEAD)
+    if [[ "${current_head}" != "main" || "${current_head}" != release-* ]]; then
+        echo "Release scripts should be run on 'main' or on a 'release-*' branch"
         exit 1
     fi
     git fetch
@@ -155,39 +102,40 @@ fi
 
 # Create a release issue.
 echo "Creating release tracking issue"
-cat RELEASE.md | sed "s/{{ .VERSION }}/$release/g" | \
+cat RELEASE.md | sed "s/{{ .VERSION }}/${version}/g" | \
     gh issue create -F - \
-        -R NVIDIA/cloud-native-team \
-        --title "Release nvidia-container-toolkit $release" \
-        --label release
+        -R NVIDIA/nvidia-container-toolkit \
+        --title "Release nvidia-container-toolkit ${version}" \
+        --label release \
+        --milestone ${version}
 
-echo "Creating a version bump branch: bump-release-${release}"
-git checkout -f -b bump-release-${release}
+echo "Creating a version bump branch: bump-release-${version}"
+git checkout -f -b bump-release-${version}
 
 # Patch versions.mk
 LIB_VERSION=${release%-*}
 LIB_VERSION=${LIB_VERSION#v}
 if [[ ${release} == v*-rc.* ]]; then
-    LIB_TAG_STRING=" ${release#*-}"
+    LIB_TAG_STRING=" ${version#*-}"
 else
     LIB_TAG_STRING=
 fi
 
-echo Patching versions.mk to refer to $release
+echo Patching versions.mk to refer to ${version}
 $SED -i "s/^LIB_VERSION.*$/LIB_VERSION := $LIB_VERSION/" versions.mk
 $SED -i "s/^LIB_TAG.*$/LIB_TAG :=$LIB_TAG_STRING/" versions.mk
 
 git add versions.mk
-git commit -s -m "Bump version for $release release"
+git commit -s -m "Bump version for ${version} release"
 
-if [[ $release != *-rc.* ]]; then
+if [[ ${version} != *-rc.* ]]; then
     # Patch README.md
-    echo Patching README.md to refer to $release
-    $SED -E -i -e "s/([^[:space:]])$previous_version([^[:alnum:]]|$)/\1$release\2/g" README.md
+    echo Patching README.md to refer to ${version}
+    $SED -E -i -e "s/([^[:space:]])$previous_version([^[:alnum:]]|$)/\1${version}\2/g" README.md
     $SED -E -i -e "s/$pre_semver/$semver/g" README.md
 
     git add -u README.md
-    git commit -s -m "Bump version to $release in README"
+    git commit -s -m "Bump version to ${version} in README"
 else
     echo "Skipping README update for prerelease version"
 fi
