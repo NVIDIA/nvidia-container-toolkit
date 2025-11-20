@@ -20,14 +20,17 @@
 package ldconfig
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/google/uuid"
+	"github.com/moby/sys/mountinfo"
 	"github.com/moby/sys/reexec"
 
 	"github.com/opencontainers/runc/libcontainer/utils"
@@ -92,6 +95,86 @@ func pivotRoot(rootfs string) error {
 	}
 
 	// Switch back to our shiny new root.
+	if err := unix.Chdir("/"); err != nil {
+		return &os.PathError{Op: "chdir", Path: "/", Err: err}
+	}
+	return nil
+}
+
+// msMoveRoot is used in cases where pivot root is not supported.
+// This includes initramfs filesystems where the root is read-only.
+// This is adapted from the implementation here:
+//
+//	https://github.com/opencontainers/runc/blob/e89a29929c775025419ab0d218a43588b4c12b9a/libcontainer/rootfs_linux.go#L1115
+//
+// With the `mount` and `unmount` calls changed to direct unix.Mount and unix.Unmount calls.
+func msMoveRoot(rootfs string) error {
+	// Before we move the root and chroot we have to mask all "full" sysfs and
+	// procfs mounts which exist on the host. This is because while the kernel
+	// has protections against mounting procfs if it has masks, when using
+	// chroot(2) the *host* procfs mount is still reachable in the mount
+	// namespace and the kernel permits procfs mounts inside --no-pivot
+	// containers.
+	//
+	// Users shouldn't be using --no-pivot except in exceptional circumstances,
+	// but to avoid such a trivial security flaw we apply a best-effort
+	// protection here. The kernel only allows a mount of a pseudo-filesystem
+	// like procfs or sysfs if there is a *full* mount (the root of the
+	// filesystem is mounted) without any other locked mount points covering a
+	// subtree of the mount.
+	//
+	// So we try to unmount (or mount tmpfs on top of) any mountpoint which is
+	// a full mount of either sysfs or procfs (since those are the most
+	// concerning filesystems to us).
+	mountinfos, err := mountinfo.GetMounts(func(info *mountinfo.Info) (skip, stop bool) {
+		// Collect every sysfs and procfs filesystem, except for those which
+		// are non-full mounts or are inside the rootfs of the container.
+		if info.Root != "/" ||
+			(info.FSType != "proc" && info.FSType != "sysfs") ||
+			strings.HasPrefix(info.Mountpoint, rootfs) {
+			skip = true
+		}
+		return
+	})
+	if err != nil {
+		return err
+	}
+	for _, info := range mountinfos {
+		p := info.Mountpoint
+		// Be sure umount events are not propagated to the host.
+		if err := unix.Mount("", p, "", unix.MS_SLAVE|unix.MS_REC, ""); err != nil {
+			if errors.Is(err, unix.ENOENT) {
+				// If the mountpoint doesn't exist that means that we've
+				// already blasted away some parent directory of the mountpoint
+				// and so we don't care about this error.
+				continue
+			}
+			return err
+		}
+		if err := unix.Unmount(p, unix.MNT_DETACH); err != nil {
+			if !errors.Is(err, unix.EINVAL) && !errors.Is(err, unix.EPERM) {
+				return err
+			} else {
+				// If we have not privileges for umounting (e.g. rootless), then
+				// cover the path.
+				if err := unix.Mount("tmpfs", p, "tmpfs", 0, ""); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// Move the rootfs on top of "/" in our mount namespace.
+	if err := unix.Mount(rootfs, "/", "", unix.MS_MOVE, ""); err != nil {
+		return err
+	}
+	return chroot()
+}
+
+func chroot() error {
+	if err := unix.Chroot("."); err != nil {
+		return &os.PathError{Op: "chroot", Path: ".", Err: err}
+	}
 	if err := unix.Chdir("/"); err != nil {
 		return &os.PathError{Op: "chdir", Path: "/", Err: err}
 	}

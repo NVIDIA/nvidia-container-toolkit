@@ -29,6 +29,10 @@ func pivotRoot(newroot string) error {
 	return fmt.Errorf("not supported")
 }
 
+func msMoveRoot(rootfs string) error {
+	return fmt.Errorf("not supported")
+}
+
 func mountLdConfig(hostLdconfigPath string, containerRoot *os.Root) (string, error) {
 	return "", fmt.Errorf("not supported")
 }
