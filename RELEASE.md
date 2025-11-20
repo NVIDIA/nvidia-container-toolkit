@@ -7,7 +7,7 @@ The NVIDIA Container Toolkit consists of the following artifacts:
 
 # Release Process Checklist:
 - [ ] Create a release PR:
-    - [ ] Run the `./hack/prepare-release.sh` script to update the version in all the needed files. This also creates a [release issue](https://github.com/NVIDIA/cloud-native-team/issues?q=is%3Aissue+is%3Aopen+label%3Arelease)
+    - [ ] Run the `./hack/prepare-release.sh` script to update the version in all the needed files. This also creates a [release issue](https://github.com/NVIDIA/nvidia-container-toolkit/issues?q=is%3Aissue+is%3Aopen+label%3Arelease)
     - [ ] Run the `./hack/generate-changelog.sh` script to generate the a draft changelog and update `CHANGELOG.md` with the changes.
     - [ ] Create a PR from the created `bump-release-{{ .VERSION }}` branch.
 - [ ] Merge the release PR
