@@ -86,7 +86,7 @@ fi
 
 if [[ "$FORCE" != "yes" ]]; then
     current_head=$(git rev-parse --abbrev-ref HEAD)
-    if [[ "${current_head}" != "main" || "${current_head}" != release-* ]]; then
+    if [[ "${current_head}" != "main" && "${current_head}" != release-* ]]; then
         echo "Release scripts should be run on 'main' or on a 'release-*' branch"
         exit 1
     fi
