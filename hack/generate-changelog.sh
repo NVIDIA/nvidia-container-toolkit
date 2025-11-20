@@ -19,12 +19,13 @@ this=`basename $0`
 
 usage () {
 cat << EOF
-Generate a changelog for the specified tag
-Usage: $this --reference <tag> [--remote <remote_name>]
+Generate a changelog for an NVIDIA Container Toolkit release
+
+Usage: $this [-h] --previous-version <previous_version> --version <version>
 
 Options:
-  --since     specify the tag to start the changelog from (default: latest tag)
-  --version   specify the version to be released
+  --previous-version    specify the previous version
+  --version             specify the version for this release.
   --help/-h   show this help and exit
 
 EOF
@@ -33,26 +34,24 @@ EOF
 LIB_VERSION=$(awk -F= '/^LIB_VERSION/ { print $2 }' versions.mk | tr -d '[:space:]')
 LIB_TAG=$(awk -F= '/^LIB_TAG/ { print $2 }' versions.mk | tr -d '[:space:]')
 
-VERSION="v${LIB_VERSION}${LIB_TAG:+-${LIB_TAG}}"
->&2 echo "VERSION=$VERSION"
+version="v${LIB_VERSION}${LIB_TAG:+-${LIB_TAG}}"
+>&2 echo "version=$version"
 
-REFERENCE=
-
+previous_version=
 # Parse command line options
 while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
-        --since)
-        REFERENCE="$2"
-        shift # past argument
-        shift # past value
+        --previous-version)
+        previous_version="$2"
+        shift 2
         ;;
         --version)
-        VERSION="$2"
-        shift # past argument
-        shift # past value
+        version="$2"
+        shift 2
         ;;
-        --help/-h)  usage
+        --help/-h)
+            usage
             exit 0
             ;;
         *)  usage
@@ -61,44 +60,47 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Check that no extra args were provided
+if [ -z "$release" ]; then
+    echo -e "ERROR: --version is required"
+    usage
+    exit 1
+fi
+
+if [ -z ${previous_version} ]; then
+    echo -e "ERROR: --previous-version is required"
+    usage
+    exit 1
+fi
+
 # Fetch the latest tags from the remote
 remote=$( git remote -v | grep -E "NVIDIA/nvidia-container-toolkit(\.git)?\s" | grep -oE "^[a-z]+" | sort -u )
 >&2 echo "Detected remote as '${remote}'"
 git fetch ${remote} --tags
 
-SHA=$(git rev-parse ${VERSION})
+SHA=$(git rev-parse ${version})
 if [[ $? -ne 0 ]]; then
     SHA="HEAD"
 fi
 
-# if REFERENCE is not set, get the latest tag
-if [ -z "$REFERENCE" ]; then
-    most_recent_tag=$(git tag --sort=-creatordate | head -1)
-    if [ "${VERSION}" == "${most_recent_tag}" ]; then
-        REFERENCE=$(git tag --sort=-creatordate | head -2 | tail -1)
-    else
-        REFERENCE=${most_recent_tag}
-    fi
-fi
-
->&2 echo "Using ${REFERENCE} as previous version"
+>&2 echo "Using ${previous_version} as previous version"
 
 # Print the changelog
 echo "## What's Changed"
 echo ""
-if [[ ${VERSION} != v*-rc.* ]]; then
-echo "- Promote $REFERENCE to $VERSION"
+if [[ ${version} != v*-rc.* && ${previous_version} == v*-rc.* ]]; then
+echo "- Promote ${previous_version} to $version"
 fi
 
 # Iterate over the commit messages and ignore the ones that start with "Merge" or "Bump"
-git log --pretty=format:"%s" $REFERENCE..$SHA -- ':!deployments/container' ':!tools' | grep -Ev "(^Merge )|(^Bump)|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g'
+git log --pretty=format:"%s" ${previous_version}..$SHA -- ':!deployments/container' ':!tools' | grep -Ev "(^Merge )|(^Bump)|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g'
 
 echo ""
 echo "### Changes in the Toolkit Container"
 echo ""
-git log --pretty=format:"%s" $REFERENCE..$SHA -- deployments/container tools | grep -Ev "(^Merge )|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g'
+git log --pretty=format:"%s" ${previous_version}..$SHA -- deployments/container tools | grep -Ev "(^Merge )|(no-rel-?note)|(^---)" |  sed 's/^\(.*\)/- \1/g'
 
-LIB_NVIDIA_CONTAINER_REFERENCE=$( git ls-tree $REFERENCE third_party/libnvidia-container --object-only )
+LIB_NVIDIA_CONTAINER_REFERENCE=$( git ls-tree ${previous_version} third_party/libnvidia-container --object-only )
 LIB_NVIDIA_CONTAINER_VERSION=$( git ls-tree $SHA third_party/libnvidia-container --object-only )
 
 echo ""
@@ -109,5 +111,5 @@ git -C third_party/libnvidia-container log --pretty=format:"%s" $LIB_NVIDIA_CONT
 echo ""
 fi
 
-echo "**Full Changelog**: https://github.com/NVIDIA/nvidia-container-toolkit/compare/${REFERENCE}...${VERSION}"
+echo "**Full Changelog**: https://github.com/NVIDIA/nvidia-container-toolkit/compare/${previous_version}...${version}"
 echo ""
