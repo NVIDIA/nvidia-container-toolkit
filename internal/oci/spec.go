@@ -20,8 +20,6 @@ import (
 	"fmt"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
-
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 // SpecModifier defines an interface for modifying a (raw) OCI spec
@@ -49,17 +47,24 @@ type Spec interface {
 
 // NewSpec creates fileSpec based on the command line arguments passed to the
 // application using the specified logger.
-func NewSpec(logger logger.Interface, args []string) (Spec, error) {
+func NewSpec(args []string, opts ...Option) (Spec, error) {
+	o := &options{
+		allowUnkownFields: false,
+	}
+	for _, opt := range opts {
+		opt(o)
+	}
+
 	bundleDir, err := GetBundleDir(args)
 	if err != nil {
 		return nil, fmt.Errorf("error getting bundle directory: %v", err)
 	}
-	logger.Debugf("Using bundle directory: %v", bundleDir)
+	o.logger.Debugf("Using bundle directory: %v", bundleDir)
 
 	ociSpecPath := GetSpecFilePath(bundleDir)
-	logger.Infof("Using OCI specification file path: %v", ociSpecPath)
+	o.logger.Infof("Using OCI specification file path: %v", ociSpecPath)
 
-	ociSpec := NewFileSpec(ociSpecPath)
+	ociSpec := NewFileSpec(ociSpecPath, !o.allowUnkownFields)
 
 	return ociSpec, nil
 }

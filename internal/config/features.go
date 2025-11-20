@@ -25,6 +25,11 @@ type features struct {
 	// If this feature flag is not set to 'true' only host-rooted config paths
 	// (i.e. paths starting with an '@' are considered valid)
 	AllowLDConfigFromContainer *feature `toml:"allow-ldconfig-from-container,omitempty"`
+	// AllowUnknownOCISpecFields allows the nvidia-container-runtime to ignore
+	// unknown fields when loading the config (OCI spec) associated with a
+	// container.
+	// If this is enabled, these fields are silently dropped.
+	AllowUnknownOCISpecFields *feature `toml:"allow-unknown-oci-spec-fields,omitempty"`
 	// DisableCUDACompatLibHook, when enabled skips the injection of a specific
 	// hook to process CUDA compatibility libraries.
 	//
