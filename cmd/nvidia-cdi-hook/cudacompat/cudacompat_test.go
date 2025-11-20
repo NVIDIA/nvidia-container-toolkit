@@ -44,7 +44,8 @@ func TestCompatLibs(t *testing.T) {
 			contents: map[string]string{
 				"/usr/local/cuda/compat/libcuda.so.333.88.99": "",
 			},
-			hostDriverVersion: "222.55.66",
+			hostDriverVersion:                 "222.55.66",
+			expectedContainerForwardCompatDir: "/usr/local/cuda/compat",
 		},
 		{
 			description: "compat lib is newer; ldcache",
