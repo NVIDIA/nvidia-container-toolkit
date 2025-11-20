@@ -70,7 +70,7 @@ for (const targetBranch of branches) {
       const commitMessage = commit.commit.message.split('\n')[0];
       core.info(`Cherry-picking commit ${i + 1}/${commits.length}: ${commitSha.substring(0, 7)} - ${commitMessage}`);
       try {
-        execSync(`git cherry-pick -x ${commitSha}`, { 
+        execSync(`git cherry-pick -m 1 -x ${commitSha}`, { 
           encoding: 'utf-8',
           stdio: 'pipe'
         });
