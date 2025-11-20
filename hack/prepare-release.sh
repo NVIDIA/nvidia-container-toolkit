@@ -157,7 +157,7 @@ fi
 echo "Creating release tracking issue"
 cat RELEASE.md | sed "s/{{ .VERSION }}/$release/g" | \
     gh issue create -F - \
-        -R NVIDIA/cloud-native-team \
+        -R NVIDIA/nvidia-container-toolkit \
         --title "Release nvidia-container-toolkit $release" \
         --label release
 
