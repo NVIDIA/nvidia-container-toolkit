@@ -40,6 +40,9 @@ github.com/google/uuid
 ## explicit
 # github.com/kr/pretty v0.3.1
 ## explicit; go 1.12
+# github.com/moby/sys/capability v0.4.0
+## explicit; go 1.21
+github.com/moby/sys/capability
 # github.com/moby/sys/reexec v0.1.0
 ## explicit; go 1.18
 github.com/moby/sys/reexec
@@ -52,11 +55,11 @@ github.com/opencontainers/runc/internal/pathrs
 github.com/opencontainers/runc/libcontainer/exeseal
 github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/utils
-# github.com/opencontainers/runtime-spec v1.2.1
+# github.com/opencontainers/runtime-spec v1.3.0
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
-# github.com/opencontainers/runtime-tools v0.9.1-0.20221107090550-2e043c6bd626
-## explicit; go 1.16
+# github.com/opencontainers/runtime-tools v0.9.1-0.20251114084447-edf4cb3d2116
+## explicit; go 1.21
 github.com/opencontainers/runtime-tools/generate
 github.com/opencontainers/runtime-tools/generate/seccomp
 github.com/opencontainers/runtime-tools/validate/capabilities
@@ -77,9 +80,6 @@ github.com/sirupsen/logrus/hooks/test
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/assert/yaml
 github.com/stretchr/testify/require
-# github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
-## explicit
-github.com/syndtr/gocapability/capability
 # github.com/urfave/cli-altsrc/v3 v3.1.0
 ## explicit; go 1.23.2
 github.com/urfave/cli-altsrc/v3
@@ -104,8 +104,8 @@ gopkg.in/yaml.v3
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
-# tags.cncf.io/container-device-interface v1.0.1
-## explicit; go 1.20
+# tags.cncf.io/container-device-interface v1.0.2-0.20251114135136-1b24d969689f
+## explicit; go 1.21
 tags.cncf.io/container-device-interface/internal/validation
 tags.cncf.io/container-device-interface/internal/validation/k8s
 tags.cncf.io/container-device-interface/pkg/cdi
