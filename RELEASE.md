@@ -12,13 +12,13 @@ The NVIDIA Container Toolkit consists of the following artifacts:
     - [ ] Create a PR from the created `bump-release-{{ .VERSION }}` branch.
 - [ ] Merge the release PR
 - [ ] Tag the release and push the tag to the `internal` mirror:
-    - [ ] Image release pipeline: https://gitlab-master.nvidia.com/dl/container-dev/container-toolkit/-/pipelines/16466098
 - [ ] Wait for the image release to complete.
 - [ ] Push the tag to the the upstream GitHub repo.
-- [ ] Wait for the [`Release`](https://github.com/NVIDIA/k8s-device-plugin/actions/workflows/release.yaml) GitHub Action to complete
-- [ ] Publish the [draft release](https://github.com/NVIDIA/k8s-device-plugin/releases) created by the GitHub Action
+- [ ] Wait for the [`Release`](https://github.com/NVIDIA/nvidia-container-toolkit/actions/workflows/release.yaml) GitHub Action to complete
+- [ ] Publish the [draft release](https://github.com/NVIDIA/nvidia-container-toolkit/releases) created by the GitHub Action
 - [ ] Publish the packages to the gh-pages branch of the libnvidia-container repo
 - [ ] Create a KitPick
+- [ ] For non-experimental releases, schedule the package for publication to the CUDA Downloads repositories.
 
 ## Troubleshooting
 
