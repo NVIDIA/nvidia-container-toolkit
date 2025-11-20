@@ -53,9 +53,10 @@ type RuntimeModeResolver interface {
 type modeResolver struct {
 	logger logger.Interface
 	// TODO: This only needs to consider the requested devices.
-	image             *image.CUDA
-	propertyExtractor info.PropertyExtractor
-	defaultMode       RuntimeMode
+	image                       *image.CUDA
+	propertyExtractor           info.PropertyExtractor
+	defaultMode                 RuntimeMode
+	forceCSVModeForTegraSystems bool
 }
 
 type Option func(*modeResolver)
@@ -63,6 +64,12 @@ type Option func(*modeResolver)
 func WithDefaultMode(defaultMode RuntimeMode) Option {
 	return func(mr *modeResolver) {
 		mr.defaultMode = defaultMode
+	}
+}
+
+func WithForceCSVModeForTegraSystems(forceCSVModeForTegraSystems bool) Option {
+	return func(mr *modeResolver) {
+		mr.forceCSVModeForTegraSystems = forceCSVModeForTegraSystems
 	}
 }
 
@@ -130,7 +137,10 @@ func (m *modeResolver) ResolveRuntimeMode(mode string) (rmode RuntimeMode) {
 	case info.PlatformNVML, info.PlatformWSL:
 		return m.defaultMode
 	case info.PlatformTegra:
-		return CSVRuntimeMode
+		if m.forceCSVModeForTegraSystems {
+			return CSVRuntimeMode
+		}
+		return JitCDIRuntimeMode
 	}
 	return m.defaultMode
 }

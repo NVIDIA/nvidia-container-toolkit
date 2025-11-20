@@ -44,14 +44,7 @@ func NewCSVModifier(logger logger.Interface, cfg *config.Config, container image
 		return nil, fmt.Errorf("requirements not met: %v", err)
 	}
 
-	csvFiles, err := csv.GetFileList(cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.MountSpecPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get list of CSV files: %v", err)
-	}
-
-	if container.Getenv(image.EnvVarNvidiaRequireJetpack) != "csv-mounts=all" {
-		csvFiles = csv.BaseFilesOnly(csvFiles)
-	}
+	csvFiles := getCSVFileList(cfg, container)
 
 	cdilib, err := nvcdi.New(
 		nvcdi.WithLogger(logger),
@@ -105,4 +98,15 @@ func checkRequirements(logger logger.Interface, image image.CUDA) error {
 	}
 
 	return r.Assert()
+}
+
+func getCSVFileList(cfg *config.Config, container image.CUDA) []string {
+	csvFiles, err := csv.GetFileList(cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.MountSpecPath)
+	if err != nil {
+		return nil
+	}
+	if container.Getenv(image.EnvVarNvidiaRequireJetpack) != "csv-mounts=all" {
+		csvFiles = csv.BaseFilesOnly(csvFiles)
+	}
+	return csvFiles
 }
