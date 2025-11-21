@@ -1,5 +1,26 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.18.1
+- Fix update of ldcache for non-matching host and container distros
+- Use enable-cuda-compat hook when ldcache does not exist
+- Fix update of ldcache if container does not have an ld.so.conf file
+- Switch to go 1.25 os.Root
+- Filter already tracked directories from ldcache update
+- Fix duplicate specs for jit-cdi mode
+- Correct typo in nvsandboxutils feature flag
+- Allow nvcdi FeatureFlags to be configured for jit-cdi mode
+- Fix trigger of CDI refresh service
+- Update rpm package to have 256bit digests
+- Fix containerd drop-in config path
+- Redirect log message to stderr in nvidia runtime wrapper script
+- Fix handling of existing imports in containerd
+- Don't read cdi generate mode from runtime mode
+- Fix bug in create-dev-char-symlinks command
+
+### Changes in the Toolkit Container
+
+- Bump nvidia/distroless/go to v3.2.1-dev in /deployments/container
+
 ## v1.18.0
 - Fix bug in device selection in jit-cdi mode
 - Make list of explicit driver libraries opt-in
