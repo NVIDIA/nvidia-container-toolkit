@@ -218,7 +218,8 @@ type Installer struct {
 
 	sourceRoot string
 	// toolkitRoot specifies the destination path at which the toolkit is installed.
-	toolkitRoot string
+	toolkitRoot        string
+	wrapperProgramPath string
 }
 
 // NewInstaller creates an installer for the NVIDIA Container Toolkit.
@@ -317,6 +318,7 @@ func (t *Installer) Install(cli *cli.Command, opts *Options, runtime string) err
 		installer.WithSourceRoot(t.sourceRoot),
 		installer.WithIgnoreErrors(opts.ignoreErrors),
 		installer.WithDefaultRuntimeExecutablePath(defaultRuntimeExecutable),
+		installer.WithWrapperProgramPath(t.wrapperProgramPath),
 	)
 	if err != nil {
 		if !opts.ignoreErrors {
