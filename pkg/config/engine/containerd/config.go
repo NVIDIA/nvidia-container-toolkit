@@ -123,7 +123,14 @@ func (c *Config) EnableCDI() {
 	*c.Tree = config
 }
 
-// RemoveRuntime removes a runtime from the containerd config.
+// EnableNRI sets the enable_cdi field in the Containerd config to true.
+func (c *Config) EnableNRI() {
+	config := *c.Tree
+	config.SetPath([]string{"plugins", "io.containerd.nri.v1.nri", "disable"}, false)
+	*c.Tree = config
+}
+
+// RemoveRuntime removes a runtime from the containerd config
 func (c *Config) RemoveRuntime(name string) error {
 	if c == nil || c.Tree == nil {
 		return nil
