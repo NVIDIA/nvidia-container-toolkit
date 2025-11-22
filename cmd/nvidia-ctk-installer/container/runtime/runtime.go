@@ -17,8 +17,10 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 
+	nriapi "github.com/containerd/nri/pkg/api"
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
@@ -32,8 +34,9 @@ import (
 const (
 	defaultSetAsDefault = true
 	// defaultRuntimeName specifies the NVIDIA runtime to be use as the default runtime if setting the default runtime is enabled
-	defaultRuntimeName   = "nvidia"
-	defaultHostRootMount = "/host"
+	defaultRuntimeName        = "nvidia"
+	defaultHostRootMount      = "/host"
+	defaultNRIPluginIdx  uint = 10
 
 	runtimeSpecificDefault = "RUNTIME_SPECIFIC_DEFAULT"
 )
@@ -93,6 +96,33 @@ func Flags(opts *Options) []cli.Flag {
 			Usage:       "Enable CDI in the configured runt	ime",
 			Destination: &opts.EnableCDI,
 			Sources:     cli.EnvVars("RUNTIME_ENABLE_CDI"),
+		},
+		&cli.BoolFlag{
+			Name:        "enable-nri-in-runtime",
+			Usage:       "Enable NRI in the configured runtime",
+			Destination: &opts.EnableNRI,
+			Value:       false,
+			Sources:     cli.EnvVars("RUNTIME_ENABLE_NRI"),
+		},
+		&cli.UintFlag{
+			Name:        "nri-plugin-index",
+			Usage:       "Specify the plugin index to register to NRI",
+			Value:       defaultNRIPluginIdx,
+			Destination: &opts.NRIPluginIndex,
+			Sources:     cli.EnvVars("RUNTIME_NRI_PLUGIN_INDEX"),
+			Action: func(ctx context.Context, c *cli.Command, u uint) error {
+				if u > 99 {
+					return fmt.Errorf("nri-plugin-index must be in the range [0,99]")
+				}
+				return nil
+			},
+		},
+		&cli.StringFlag{
+			Name:        "nri-socket",
+			Usage:       "Specify the path to the NRI socket file to register the NRI plugin server",
+			Value:       nriapi.DefaultSocketPath,
+			Destination: &opts.NRISocket,
+			Sources:     cli.EnvVars("RUNTIME_NRI_SOCKET"),
 		},
 		&cli.StringFlag{
 			Name:        "host-root",
@@ -213,6 +243,11 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 }
 
 func Setup(c *cli.Command, opts *Options, runtime string) error {
+	// if NRI is enabled, we don't need to modify the container runtime config TOML.
+	if opts.EnableNRI {
+		return nil
+	}
+
 	switch runtime {
 	case containerd.Name:
 		return containerd.Setup(c, &opts.Options, &opts.containerdOptions)

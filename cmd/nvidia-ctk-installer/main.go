@@ -7,11 +7,13 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sys/unix"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime/nri"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -73,7 +75,7 @@ type app struct {
 	toolkit *toolkit.Installer
 }
 
-// NewApp creates the CLI app fro the specified options.
+// NewApp creates the CLI app from the specified options.
 func NewApp(logger logger.Interface) *cli.Command {
 	a := app{
 		logger: logger,
@@ -93,8 +95,8 @@ func (a app) build() *cli.Command {
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			return ctx, a.Before(cmd, &options)
 		},
-		Action: func(_ context.Context, cmd *cli.Command) error {
-			return a.Run(cmd, &options)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return a.Run(ctx, cmd, &options)
 		},
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
@@ -194,7 +196,7 @@ func (a *app) validateFlags(c *cli.Command, o *options) error {
 // Run installs the NVIDIA Container Toolkit and updates the requested runtime.
 // If the application is run as a daemon, the application waits and unconfigures
 // the runtime on termination.
-func (a *app) Run(c *cli.Command, o *options) error {
+func (a *app) Run(ctx context.Context, c *cli.Command, o *options) error {
 	err := a.initialize(o.pidFile)
 	if err != nil {
 		return fmt.Errorf("unable to initialize: %v", err)
@@ -222,6 +224,14 @@ func (a *app) Run(c *cli.Command, o *options) error {
 	}
 
 	if !o.noDaemon {
+		if o.runtimeOptions.EnableNRI {
+			nriPlugin, err := a.startNRIPluginServer(ctx, o.runtimeOptions)
+			if err != nil {
+				a.logger.Errorf("unable to start NRI plugin server: %v", err)
+			}
+			defer nriPlugin.Stop()
+		}
+
 		err = a.waitForSignal()
 		if err != nil {
 			return fmt.Errorf("unable to wait for signal: %v", err)
@@ -285,6 +295,37 @@ func (a *app) waitForSignal() error {
 	waitingForSignal <- true
 	<-signalReceived
 	return nil
+}
+
+func (a *app) startNRIPluginServer(ctx context.Context, opts runtime.Options) (*nri.Plugin, error) {
+	a.logger.Infof("Starting the NRI Plugin server....")
+
+	const (
+		maxRetryAttempts = 5
+		retryBackoff     = 2 * time.Second
+	)
+
+	plugin := nri.NewPlugin(ctx, a.logger)
+	retriable := func() error {
+		return plugin.Start(ctx, opts.NRISocket, fmt.Sprintf("%02d", opts.NRIPluginIndex))
+	}
+	var err error
+	for i := 0; i < maxRetryAttempts; i++ {
+		err = retriable()
+		if err == nil {
+			break
+		}
+		a.logger.Warningf("Attempt %d - error starting the NRI plugin: %v", i+1, err)
+		if i == maxRetryAttempts-1 {
+			break
+		}
+		time.Sleep(retryBackoff)
+	}
+	if err != nil {
+		a.logger.Errorf("Max retries reached %d/%d, aborting", maxRetryAttempts, maxRetryAttempts)
+		return nil, err
+	}
+	return plugin, nil
 }
 
 func (a *app) shutdown(pidFile string) {
