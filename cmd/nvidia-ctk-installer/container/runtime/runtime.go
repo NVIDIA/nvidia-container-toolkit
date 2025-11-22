@@ -228,9 +228,13 @@ type Configurer interface {
 }
 
 type runtime string
+type noopRuntimeConfigurer struct{}
 
 // NewConfigurer is a factory method for creating a runtime configurer.
-func NewConfigurer(name string) Configurer {
+func NewConfigurer(name string, nriEnabled bool) Configurer {
+	if nriEnabled {
+		return &noopRuntimeConfigurer{}
+	}
 	return runtime(name)
 }
 
@@ -271,4 +275,16 @@ func (r runtime) GetLowlevelRuntimePaths(opts *Options) ([]string, error) {
 	default:
 		return nil, fmt.Errorf("undefined runtime %v", r)
 	}
+}
+
+func (r noopRuntimeConfigurer) Cleanup(_ *cli.Command, _ *Options) error {
+	return nil
+}
+
+func (r noopRuntimeConfigurer) GetLowlevelRuntimePaths(_ *Options) ([]string, error) {
+	return nil, nil
+}
+
+func (r noopRuntimeConfigurer) Setup(_ *cli.Command, _ *Options) error {
+	return nil
 }
