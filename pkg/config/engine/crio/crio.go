@@ -222,6 +222,11 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 // EnableCDI is a no-op for CRI-O since it always enabled where supported.
 func (c *Config) EnableCDI() {}
 
+func (c *Config) EnableNRI() {
+	config := *c.Tree
+	config.SetPath([]string{"crio", "nri", "enable_nri"}, true)
+}
+
 // CommandLineSource returns the CLI-based crio config loader
 func CommandLineSource(hostRoot string, executablePath string) toml.Loader {
 	if executablePath == "" {

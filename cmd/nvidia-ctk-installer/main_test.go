@@ -444,6 +444,7 @@ version = 2
 				"--pid-file=" + filepath.Join(testRoot, "toolkit.pid"),
 				"--restart-mode=none",
 				"--toolkit-source-root=" + filepath.Join(artifactRoot, "deb"),
+				"--enable-nri-in-runtime=false",
 			}
 
 			err := app.Run(context.Background(), append(testArgs, tc.args...))
