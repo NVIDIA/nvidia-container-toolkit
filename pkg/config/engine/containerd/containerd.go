@@ -27,6 +27,7 @@ import (
 const (
 	defaultConfigVersion = 2
 	defaultRuntimeType   = "io.containerd.runc.v2"
+	nriPluginName        = "io.containerd.nri.v1.nri"
 )
 
 // Config represents the containerd config

@@ -145,3 +145,9 @@ func (c *ConfigV1) EnableCDI() {
 	config.SetPath([]string{"plugins", "cri", "containerd", "enable_cdi"}, true)
 	*c.Tree = config
 }
+
+func (c *ConfigV1) EnableNRI() {
+	config := *c.Tree
+	config.SetPath([]string{"plugins", nriPluginName, "disable"}, false)
+	*c.Tree = config
+}
