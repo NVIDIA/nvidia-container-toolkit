@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/containerd/nri/pkg/stub"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sys/unix"
 
@@ -70,7 +71,8 @@ func main() {
 type app struct {
 	logger logger.Interface
 
-	toolkit *toolkit.Installer
+	pluginStub stub.Stub
+	toolkit    *toolkit.Installer
 }
 
 // NewApp creates the CLI app fro the specified options.
@@ -93,8 +95,8 @@ func (a app) build() *cli.Command {
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			return ctx, a.Before(cmd, &options)
 		},
-		Action: func(_ context.Context, cmd *cli.Command) error {
-			return a.Run(cmd, &options)
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return a.Run(ctx, cmd, &options)
 		},
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
@@ -194,7 +196,7 @@ func (a *app) validateFlags(c *cli.Command, o *options) error {
 // Run installs the NVIDIA Container Toolkit and updates the requested runtime.
 // If the application is run as a daemon, the application waits and unconfigures
 // the runtime on termination.
-func (a *app) Run(c *cli.Command, o *options) error {
+func (a *app) Run(ctx context.Context, c *cli.Command, o *options) error {
 	err := a.initialize(o.pidFile)
 	if err != nil {
 		return fmt.Errorf("unable to initialize: %v", err)
@@ -222,6 +224,14 @@ func (a *app) Run(c *cli.Command, o *options) error {
 	}
 
 	if !o.noDaemon {
+		if o.runtimeOptions.EnableNRI {
+			go func() {
+				err = a.startNRIPluginServer(ctx, &o.runtimeOptions)
+				if err != nil {
+					a.logger.Errorf("unable to start runtime plugin server: %v", err)
+				}
+			}()
+		}
 		err = a.waitForSignal()
 		if err != nil {
 			return fmt.Errorf("unable to wait for signal: %v", err)
@@ -290,6 +300,11 @@ func (a *app) waitForSignal() error {
 func (a *app) shutdown(pidFile string) {
 	a.logger.Infof("Shutting Down")
 
+	if a.pluginStub != nil {
+		a.logger.Infof("Stopping NRI plugin server...")
+		a.pluginStub.Stop()
+	}
+
 	err := os.Remove(pidFile)
 	if err != nil {
 		a.logger.Warningf("Unable to remove pidfile: %v", err)
@@ -326,4 +341,15 @@ func (a *app) resolvePackageType(hostRoot string, packageType string) (rPackageT
 	}
 
 	return "deb", nil
+}
+
+func (a *app) startNRIPluginServer(ctx context.Context, opts *runtime.Options) error {
+	a.logger.Info("Starting NRI Plugin server...")
+	plugin, err := runtime.StartNRIPlugin(ctx, opts)
+	if plugin == nil || err != nil {
+		a.logger.Errorf("Failed to start NRI plugin server: %v", err)
+		return fmt.Errorf("unable to setup NRI plugin server: %w", err)
+	}
+	a.pluginStub = plugin.Stub
+	return nil
 }

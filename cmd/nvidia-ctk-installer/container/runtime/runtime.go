@@ -17,14 +17,19 @@
 package runtime
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"strings"
 
+	"github.com/containerd/nri/pkg/stub"
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime/containerd"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime/crio"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime/docker"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime/nri"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
@@ -34,6 +39,8 @@ const (
 	// defaultRuntimeName specifies the NVIDIA runtime to be use as the default runtime if setting the default runtime is enabled
 	defaultRuntimeName   = "nvidia"
 	defaultHostRootMount = "/host"
+	defaultNRIPluginIdx  = "10"
+	defaultNRISocket     = "/var/run/nri/nri.sock"
 
 	runtimeSpecificDefault = "RUNTIME_SPECIFIC_DEFAULT"
 )
@@ -93,6 +100,27 @@ func Flags(opts *Options) []cli.Flag {
 			Usage:       "Enable CDI in the configured runt	ime",
 			Destination: &opts.EnableCDI,
 			Sources:     cli.EnvVars("RUNTIME_ENABLE_CDI"),
+		},
+		&cli.BoolFlag{
+			Name:        "enable-nri-in-runtime",
+			Usage:       "Enable NRI in the configured runtime",
+			Destination: &opts.EnableNRI,
+			Value:       true,
+			Sources:     cli.EnvVars("RUNTIME_ENABLE_NRI"),
+		},
+		&cli.StringFlag{
+			Name:        "nri-plugin-index",
+			Usage:       "Specify the plugin index to register to NRI",
+			Value:       defaultNRIPluginIdx,
+			Destination: &opts.NRIPluginIndex,
+			Sources:     cli.EnvVars("RUNTIME_NRI_PLUGIN_INDEX"),
+		},
+		&cli.StringFlag{
+			Name:        "nri-socket",
+			Usage:       "Specify the path to the NRI socket file to register the NRI plugin server",
+			Value:       defaultNRISocket,
+			Destination: &opts.NRISocket,
+			Sources:     cli.EnvVars("RUNTIME_NRI_SOCKET"),
 		},
 		&cli.StringFlag{
 			Name:        "host-root",
@@ -249,4 +277,58 @@ func GetLowlevelRuntimePaths(opts *Options, runtime string) ([]string, error) {
 	default:
 		return nil, fmt.Errorf("undefined runtime %v", runtime)
 	}
+}
+
+func StartNRIPlugin(ctx context.Context, opts *Options) (*nri.Plugin, error) {
+
+	socketPaths := getNRISocketPaths(opts)
+	p := &nri.Plugin{}
+	var errs []error
+	var nriSocketConnSuccess bool
+	for _, socketPath := range socketPaths {
+		var pluginOpts []stub.Option
+		pluginOpts = append(pluginOpts, stub.WithPluginIdx(opts.NRIPluginIndex))
+		pluginOpts = append(pluginOpts, stub.WithSocketPath(opts.HostRootMount+socketPath))
+		var err error
+		if p.Stub, err = stub.New(p, pluginOpts...); err != nil {
+			errs = append(errs, fmt.Errorf("failed to initialise plugin at %s: %w", socketPath, err))
+			continue
+		}
+
+		fmt.Printf("Attempting to connect to %s\n", opts.HostRootMount+socketPath)
+		err = p.Stub.Run(ctx)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("plugin exited with error %w", err))
+		} else {
+			nriSocketConnSuccess = true
+			break
+		}
+	}
+
+	if !nriSocketConnSuccess {
+		return nil, errors.Join(errs...)
+	}
+
+	return p, nil
+}
+
+func getNRISocketPaths(opts *Options) []string {
+	var socketPaths []string
+
+	origSocketPath := opts.NRISocket
+	if len(origSocketPath) == 0 {
+		origSocketPath = defaultNRISocket
+	}
+
+	socketPaths = append(socketPaths, origSocketPath)
+	socketPathSuffix, found := strings.CutPrefix(origSocketPath, "/var/run/")
+	if found {
+		fallbackSocketPath := fmt.Sprintf("%s/%s", "/run", socketPathSuffix)
+		socketPaths = append(socketPaths, fallbackSocketPath)
+	}
+	return socketPaths
+}
+
+func StopNRIPlugin(plugin *nri.Plugin) {
+	plugin.Stub.Stop()
 }
