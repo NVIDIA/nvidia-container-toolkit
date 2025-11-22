@@ -121,6 +121,11 @@ func (c *Config) EnableCDI() {
 	*c = config
 }
 
+// EnableNRI enables the NRI feature in the docker config
+func (c *Config) EnableNRI() {
+	// NRI is not implemented in docker
+}
+
 // RemoveRuntime removes a runtime from the docker config
 func (c *Config) RemoveRuntime(name string) error {
 	if c == nil {
