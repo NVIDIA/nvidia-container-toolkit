@@ -123,7 +123,7 @@ func (c *Config) EnableCDI() {
 	*c.Tree = config
 }
 
-// RemoveRuntime removes a runtime from the containerd config.
+// RemoveRuntime removes a runtime from the containerd config
 func (c *Config) RemoveRuntime(name string) error {
 	if c == nil || c.Tree == nil {
 		return nil

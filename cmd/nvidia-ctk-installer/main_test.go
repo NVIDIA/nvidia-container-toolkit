@@ -436,6 +436,7 @@ version = 2
 				"nvidia-ctk-installer",
 				"--toolkit-install-dir=" + toolkitRoot,
 				"--no-daemon",
+				"--enable-nri-plugin=false",
 				"--cdi-output-dir=" + cdiOutputDir,
 				"--config=" + runtimeConfigFile,
 				"--drop-in-config=" + runtimeDropInConfigFile,
