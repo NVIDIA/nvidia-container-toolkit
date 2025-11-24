@@ -18,6 +18,11 @@ ConditionPathExists=|/usr/bin/nvidia-smi
 ConditionPathExists=|/usr/sbin/nvidia-smi
 ConditionPathExists=/usr/bin/nvidia-ctk
 
+# We difine nvidia-perisistenced.service as an (After) Requisite to ensure that this
+# serivce only starts if that is already started.
+Requisite=nvidia-persistenced.service
+After=nvidia-persistenced.service
+
 [Service]
 Type=oneshot
 # Values from Environment will be replaced if defined in EnvironmentFile
