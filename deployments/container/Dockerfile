@@ -77,7 +77,7 @@ RUN for arch in $(ls /artifacts/packages/centos7-src/); do \
         # For each package in the source folder we recreate a package to update
         # the digests to 256-bit since we're running in a ubi9 container.
         for src_package in $(ls /artifacts/packages/centos7-src/${arch}/*.rpm); do \
-            fpm -s rpm -t rpm ${src_package}; \
+            fpm -s rpm -t rpm --rpm-digest=sha256 ${src_package}; \
         done; \
     done; \
     rm -rf /artifacts/packages/centos7-src
