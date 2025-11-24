@@ -51,3 +51,9 @@ func WithDefaultRuntimeExecutablePath(path string) Option {
 		ti.defaultRuntimeExecutablePath = path
 	}
 }
+
+func WithWrapperProgramPath(path string) Option {
+	return func(ti *ToolkitInstaller) {
+		ti.wrapperProgramPath = path
+	}
+}
