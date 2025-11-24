@@ -28,16 +28,28 @@ import (
 type fileSpec struct {
 	memorySpec
 	path string
+	loader
 }
+
+type loader bool
+
+const (
+	strictLoader = loader(true)
+)
 
 var _ Spec = (*fileSpec)(nil)
 
 // NewFileSpec creates an object that encapsulates a file-backed OCI spec.
 // This can be used to read from the file, modify the spec, and write to the
 // same file.
-func NewFileSpec(filepath string) Spec {
+func NewFileSpec(filepath string, isStrict bool) Spec {
+	var loader loader
+	if isStrict {
+		loader = strictLoader
+	}
 	oci := fileSpec{
-		path: filepath,
+		path:   filepath,
+		loader: loader,
 	}
 
 	return &oci
@@ -52,7 +64,7 @@ func (s *fileSpec) Load() (*specs.Spec, error) {
 	}
 	defer specFile.Close()
 
-	spec, err := LoadFrom(specFile)
+	spec, err := s.loadFrom(specFile)
 	if err != nil {
 		return nil, fmt.Errorf("error loading OCI specification from file: %v", err)
 	}
@@ -61,8 +73,11 @@ func (s *fileSpec) Load() (*specs.Spec, error) {
 }
 
 // LoadFrom reads the contents of the OCI spec from the specified io.Reader.
-func LoadFrom(reader io.Reader) (*specs.Spec, error) {
+func (isStrict loader) loadFrom(reader io.Reader) (*specs.Spec, error) {
 	decoder := json.NewDecoder(reader)
+	if isStrict {
+		decoder.DisallowUnknownFields()
+	}
 
 	var spec specs.Spec
 

@@ -56,26 +56,10 @@ func ReadContainerState(reader io.Reader) (*State, error) {
 	return &s, nil
 }
 
-// LoadSpec loads the OCI spec associated with the container state
-func (s *State) LoadSpec() (*specs.Spec, error) {
-	specFilePath := GetSpecFilePath(s.Bundle)
-	specFile, err := os.Open(specFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open OCI spec file: %v", err)
-	}
-	defer specFile.Close()
-
-	spec, err := LoadFrom(specFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load OCI spec: %v", err)
-	}
-	return spec, nil
-}
-
 // GetContainerRoot returns the root for the container from the associated spec. If the spec is not yet loaded, it is
 // loaded and cached.
 func (s *State) GetContainerRoot() (string, error) {
-	spec, err := s.LoadSpec()
+	spec, err := s.loadMinimalSpec()
 	if err != nil {
 		return "", err
 	}
@@ -90,4 +74,28 @@ func (s *State) GetContainerRoot() (string, error) {
 	}
 
 	return filepath.Join(s.Bundle, containerRoot), nil
+}
+
+// loadMinimalSpec loads a reduced OCI spec associated with the container state.
+func (s *State) loadMinimalSpec() (*minimalSpec, error) {
+	specFilePath := GetSpecFilePath(s.Bundle)
+	specFile, err := os.Open(specFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open OCI spec file: %v", err)
+	}
+	defer specFile.Close()
+
+	ms := &minimalSpec{}
+	if err := json.NewDecoder(specFile).Decode(ms); err != nil {
+		return nil, fmt.Errorf("failed to load minimal OCI spec: %v", err)
+	}
+	return ms, nil
+}
+
+// A minimalSpec is used to return desired properties from the container config.
+// We define this here instead of using specs.Spec as is to avoid decoding
+// unneeded fields in container lifecycle hooks.
+type minimalSpec struct {
+	// Root configures the container's root filesystem.
+	Root *specs.Root `json:"root,omitempty"`
 }

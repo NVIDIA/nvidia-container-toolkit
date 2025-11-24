@@ -42,7 +42,10 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 		return lowLevelRuntime, nil
 	}
 
-	ociSpec, err := oci.NewSpec(logger, argv)
+	ociSpec, err := oci.NewSpec(argv,
+		oci.WithLogger(logger),
+		oci.WithAllowUnknownFields(cfg.Features.AllowUnknownOCISpecFields.IsEnabled()),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing OCI specification: %v", err)
 	}
