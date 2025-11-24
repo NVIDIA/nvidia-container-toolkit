@@ -49,12 +49,15 @@ type Options struct {
 	// mount.
 	ExecutablePath string
 	// EnabledCDI indicates whether CDI should be enabled.
-	EnableCDI     bool
-	RuntimeName   string
-	RuntimeDir    string
-	SetAsDefault  bool
-	RestartMode   string
-	HostRootMount string
+	EnableCDI      bool
+	EnableNRI      bool
+	RuntimeName    string
+	RuntimeDir     string
+	SetAsDefault   bool
+	RestartMode    string
+	HostRootMount  string
+	NRIPluginIndex string
+	NRISocket      string
 
 	ConfigSources []string
 }
@@ -126,6 +129,10 @@ func (o Options) UpdateConfig(cfg engine.Interface) error {
 
 	if o.EnableCDI {
 		cfg.EnableCDI()
+	}
+
+	if o.EnableNRI {
+		cfg.EnableNRI()
 	}
 
 	return nil

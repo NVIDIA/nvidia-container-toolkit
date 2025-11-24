@@ -33,6 +33,7 @@ type Interface interface {
 	AddRuntime(string, string, bool) error
 	DefaultRuntime() string
 	EnableCDI()
+	EnableNRI()
 	GetRuntimeConfig(string) (RuntimeConfig, error)
 	RemoveRuntime(string) error
 	UpdateDefaultRuntime(string, string) error
