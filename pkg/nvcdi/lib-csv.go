@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
-	"strings"
 
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"github.com/google/uuid"
 
@@ -303,7 +303,7 @@ func isIntegratedGPU(d nvml.Device) (bool, error) {
 		if ret != nvml.SUCCESS {
 			return false, fmt.Errorf("failed to get device name: %v", ret)
 		}
-		return isIntegratedGPUName(name), nil
+		return info.IsIntegratedGPUName(name), nil
 	}
 	if ret != nvml.SUCCESS {
 		return false, fmt.Errorf("failed to get PCI info: %v", ret)
@@ -316,19 +316,4 @@ func isIntegratedGPU(d nvml.Device) (bool, error) {
 		return false, nil
 	}
 	return pciInfo.Device == 0, nil
-}
-
-// isIntegratedGPUName returns true if the specified device name is associated
-// with a known iGPU.
-//
-// TODO: Consider making go-nvlib/pkg/nvlib/info/isIntegratedGPUName public
-// instead.
-func isIntegratedGPUName(name string) bool {
-	if strings.Contains(name, "(nvgpu)") {
-		return true
-	}
-	if strings.Contains(name, "NVIDIA Thor") {
-		return true
-	}
-	return false
 }
