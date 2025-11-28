@@ -115,6 +115,7 @@ type NvidiaPCIDevice struct {
 	DeviceName string
 	Driver     string
 	IommuGroup int
+	IommuFD    string
 	NumaNode   int
 	Config     *ConfigSpace
 	Resources  MemoryResources
@@ -292,6 +293,12 @@ func (p *nvpci) getGPUByPciBusID(address string, cache map[string]*NvidiaPCIDevi
 		return nil, fmt.Errorf("unable to detect IOMMU group for %s: %w", address, err)
 	}
 
+	iommuFD, err := getIOMMUFD(devicePath)
+	if err != nil {
+		// log a warning, do not return an error as this host may not have iommufd configured/supported
+		p.logger.Warningf("unable to detect IOMMU FD for %s: %v", address, err)
+	}
+
 	numa, err := os.ReadFile(path.Join(devicePath, "numa_node"))
 	if err != nil {
 		return nil, fmt.Errorf("unable to read PCI NUMA node for %s: %v", address, err)
@@ -376,6 +383,7 @@ func (p *nvpci) getGPUByPciBusID(address string, cache map[string]*NvidiaPCIDevi
 		Device:     uint16(deviceID),
 		Driver:     driver,
 		IommuGroup: int(iommuGroup),
+		IommuFD:    iommuFD,
 		NumaNode:   int(numaNode),
 		Config:     config,
 		Resources:  resources,
@@ -521,6 +529,22 @@ func getDriver(devicePath string) (string, error) {
 		return filepath.Base(driver), nil
 	}
 	return "", err
+}
+
+func getIOMMUFD(devicePath string) (string, error) {
+	content, err := os.ReadDir(path.Join(devicePath, "vfio-dev"))
+	if err != nil {
+		return "", err
+	}
+	for _, c := range content {
+		if !c.IsDir() {
+			continue
+		}
+		if strings.HasPrefix(c.Name(), "vfio") {
+			return c.Name(), nil
+		}
+	}
+	return "", fmt.Errorf("no iommufd device found")
 }
 
 func getIOMMUGroup(devicePath string) (int64, error) {

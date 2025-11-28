@@ -35,9 +35,5 @@ type PropertyExtractor interface {
 	HasDXCore() (bool, string)
 	HasNvml() (bool, string)
 	HasTegraFiles() (bool, string)
-	// Deprecated: Use HasTegraFiles instead.
-	IsTegraSystem() (bool, string)
-	// Deprecated: Use HasOnlyIntegratedGPUs
-	UsesOnlyNVGPUModule() (bool, string)
-	HasOnlyIntegratedGPUs() (bool, string)
+	HasAnIntegratedGPU() (bool, string)
 }
