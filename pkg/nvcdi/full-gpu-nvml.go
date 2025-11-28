@@ -37,7 +37,8 @@ type fullGPUDeviceSpecGenerator struct {
 	uuid  string
 	index int
 
-	featureFlags map[FeatureFlag]bool
+	featureFlags          map[FeatureFlag]bool
+	additionalDiscoverers []discover.Discover
 }
 
 var _ DeviceSpecGenerator = (*fullGPUDeviceSpecGenerator)(nil)
@@ -141,12 +142,17 @@ func (l *fullGPUDeviceSpecGenerator) getDeviceEdits() (*cdi.ContainerEdits, erro
 		return nil, err
 	}
 
+	var discoverers []discover.Discover
+
 	deviceDiscoverer, err := l.newFullGPUDiscoverer(device)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
 	}
+	discoverers = append(discoverers, deviceDiscoverer)
 
-	editsForDevice, err := edits.FromDiscoverer(deviceDiscoverer)
+	discoverers = append(discoverers, l.additionalDiscoverers...)
+
+	editsForDevice, err := edits.FromDiscoverer(discover.Merge(discoverers...))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for device: %v", err)
 	}

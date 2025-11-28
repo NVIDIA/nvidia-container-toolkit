@@ -452,6 +452,10 @@ containerEdits:
 	for _, tc := range testCases {
 		// Apply overrides for all test cases:
 		tc.options.nvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
+		if tc.options.deviceIDs == nil {
+			tc.options.deviceIDs = []string{"all"}
+			tc.expectedOptions.deviceIDs = []string{"all"}
+		}
 
 		t.Run(tc.description, func(t *testing.T) {
 			c := command{
