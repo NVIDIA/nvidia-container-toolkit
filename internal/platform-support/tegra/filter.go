@@ -50,7 +50,6 @@ func (p filterByMountSpecType) Apply(input MountSpecPathsByTyper) MountSpecPaths
 		}
 		ms[t] = filter.apply(ms[t]...)
 	}
-
 	return ms
 }
 

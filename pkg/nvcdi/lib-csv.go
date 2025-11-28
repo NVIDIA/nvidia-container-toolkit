@@ -85,10 +85,9 @@ func (l *csvlib) mixedDeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, 
 // platform-specific CSV files.
 type csvDeviceGenerator struct {
 	*csvlib
-	index                 int
-	uuid                  string
-	onlyDeviceNodes       []string
-	additionalDeviceNodes []string
+	index               int
+	uuid                string
+	specificDeviceNodes []string
 }
 
 func (l *csvDeviceGenerator) GetUUID() (string, error) {
@@ -97,31 +96,11 @@ func (l *csvDeviceGenerator) GetUUID() (string, error) {
 
 // GetDeviceSpecs returns the CDI device specs for a single device.
 func (l *csvDeviceGenerator) GetDeviceSpecs() ([]specs.Device, error) {
-	mountSpecs := tegra.MountSpecsFromCSVFiles(l.logger, l.csvFiles...)
-	if len(l.onlyDeviceNodes) > 0 {
-		mountSpecs = tegra.Merge(
-			tegra.Transform(tegra.WithoutRegularDeviceNodes(), mountSpecs),
-			tegra.DeviceNodes(l.onlyDeviceNodes...),
-		)
-	}
-	d, err := tegra.New(
-		tegra.WithLogger(l.logger),
-		tegra.WithDriverRoot(l.driverRoot),
-		tegra.WithDevRoot(l.devRoot),
-		tegra.WithHookCreator(l.hookCreator),
-		tegra.WithLdconfigPath(l.ldconfigPath),
-		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
-		tegra.WithMountSpecsByPath(
-			tegra.Transform(
-				tegra.AsIgnorePatternsByType(tegra.Symlinks(l.csvIgnorePatterns...)),
-				mountSpecs,
-			),
-		),
-	)
+	deviceNodeDiscoverer, err := l.deviceNodeDiscoverer()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create discoverer for CSV files: %v", err)
+		return nil, fmt.Errorf("failed to create discoverer for device nodes from CSV files: %w", err)
 	}
-	e, err := edits.FromDiscoverer(d)
+	e, err := edits.FromDiscoverer(deviceNodeDiscoverer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for CSV files: %v", err)
 	}
@@ -142,9 +121,57 @@ func (l *csvDeviceGenerator) GetDeviceSpecs() ([]specs.Device, error) {
 	return deviceSpecs, nil
 }
 
+func (l *csvDeviceGenerator) deviceNodeDiscoverer() (discover.Discover, error) {
+	mountSpecs := tegra.Transform(
+		// We remove the regular (nvidia[0-9]+) device nodes.
+		tegra.WithoutRegularDeviceNodes(),
+		tegra.Transform(
+			// We remove non-device nodes.
+			tegra.OnlyDeviceNodes(),
+			tegra.MountSpecsFromCSVFiles(l.logger, l.csvFiles...),
+		),
+	)
+	if len(l.specificDeviceNodes) > 0 {
+		// If required, we add the specific device nodes for this device.
+		mountSpecs = tegra.Merge(
+			mountSpecs,
+			tegra.DeviceNodes(l.specificDeviceNodes...),
+		)
+	}
+	return tegra.New(
+		tegra.WithLogger(l.logger),
+		tegra.WithDriverRoot(l.driverRoot),
+		tegra.WithDevRoot(l.devRoot),
+		tegra.WithHookCreator(l.hookCreator),
+		tegra.WithLdconfigPath(l.ldconfigPath),
+		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
+		tegra.WithMountSpecsByPath(mountSpecs),
+	)
+}
+
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
+// These include the driver files -- i.e. the non-device nodes.
 func (l *csvlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	return edits.FromDiscoverer(discover.None{})
+	mountSpecs := tegra.Transform(
+		tegra.AsIgnorePatternsByType(tegra.Symlinks(l.csvIgnorePatterns...)),
+		tegra.Transform(
+			tegra.WithoutDeviceNodes(),
+			tegra.MountSpecsFromCSVFiles(l.logger, l.csvFiles...),
+		),
+	)
+	driverDiscoverer, err := tegra.New(
+		tegra.WithLogger(l.logger),
+		tegra.WithDriverRoot(l.driverRoot),
+		tegra.WithDevRoot(l.devRoot),
+		tegra.WithHookCreator(l.hookCreator),
+		tegra.WithLdconfigPath(l.ldconfigPath),
+		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
+		tegra.WithMountSpecsByPath(mountSpecs),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create driver discoverer from CSV files: %w", err)
+	}
+	return edits.FromDiscoverer(driverDiscoverer)
 }
 
 func (l *mixedcsvlib) DeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, error) {
@@ -223,24 +250,41 @@ func (l *mixedcsvlib) deviceSpecGeneratorForId(id device.Identifier) (DeviceSpec
 }
 
 func (l *mixedcsvlib) csvDeviceSpecGenerator(index int, uuid string, device nvml.Device) (DeviceSpecGenerator, error) {
-	var additionalDeviceNodes []string
 	isIntegrated, err := isIntegratedGPU(device)
 	if err != nil {
 		return nil, fmt.Errorf("is-integrated check failed for device (index=%v,uuid=%v)", index, uuid)
 	}
-	if !isIntegrated {
-		additionalDeviceNodes = []string{
-			"/dev/nvidia-uvm",
-			"/dev/nvidia-uvm-tools",
-		}
-	}
+
 	g := &csvDeviceGenerator{
-		csvlib:                (*csvlib)(l),
-		index:                 index,
-		uuid:                  uuid,
-		onlyDeviceNodes:       []string{fmt.Sprintf("/dev/nvidia%d", index)},
-		additionalDeviceNodes: additionalDeviceNodes,
+		csvlib:              (*csvlib)(l),
+		index:               index,
+		uuid:                uuid,
+		specificDeviceNodes: []string{fmt.Sprintf("/dev/nvidia%d", index)},
 	}
+
+	if !isIntegrated {
+		csvDeviceNodeDiscoverer, err := g.deviceNodeDiscoverer()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create discoverer for devices nodes: %w", err)
+		}
+
+		// If this is not an integrated GPU, we also create a spec generator for
+		// the full GPU.
+		dgpu := (*nvmllib)(l).withInit(&fullGPUDeviceSpecGenerator{
+			nvmllib: (*nvmllib)(l),
+			uuid:    uuid,
+			index:   index,
+			// For the CSV case, we include the control device nodes at a
+			// device level.
+			additionalDiscoverers: []discover.Discover{
+				(*nvmllib)(l).controlDeviceNodeDiscoverer(),
+				csvDeviceNodeDiscoverer,
+			},
+			featureFlags: l.featureFlags,
+		})
+		return dgpu, nil
+	}
+
 	return g, nil
 }
 
