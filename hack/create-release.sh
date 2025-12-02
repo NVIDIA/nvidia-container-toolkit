@@ -29,13 +29,12 @@ fi
 REPOSITORY=NVIDIA/nvidia-container-toolkit
 
 echo "Creating draft release"
-./hack/generate-changelog.sh --version ${VERSION} | \
-    gh release create ${VERSION} --notes-file "-" \
-                --draft \
-                --title "${VERSION}" \
-                -R "${REPOSITORY}" \
-                --verify-tag \
-                --prerelease
+gh release create ${VERSION} \
+            --draft \
+            --title "${VERSION}" \
+            -R "${REPOSITORY}" \
+            --verify-tag \
+            --prerelease
 
 echo "Uploading release artifacts for ${VERSION}"
 

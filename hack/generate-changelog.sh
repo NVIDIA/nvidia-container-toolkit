@@ -31,12 +31,7 @@ Options:
 EOF
 }
 
-LIB_VERSION=$(awk -F= '/^LIB_VERSION/ { print $2 }' versions.mk | tr -d '[:space:]')
-LIB_TAG=$(awk -F= '/^LIB_TAG/ { print $2 }' versions.mk | tr -d '[:space:]')
-
-version="v${LIB_VERSION}${LIB_TAG:+-${LIB_TAG}}"
->&2 echo "version=$version"
-
+version=
 previous_version=
 # Parse command line options
 while [[ $# -gt 0 ]]; do
@@ -60,8 +55,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Check that no extra args were provided
-if [ -z "$release" ]; then
+# Check that the required args were provided.
+if [ -z ${version} ]; then
     echo -e "ERROR: --version is required"
     usage
     exit 1
@@ -72,6 +67,9 @@ if [ -z ${previous_version} ]; then
     usage
     exit 1
 fi
+
+>&2 echo "version=$version, previous_version=$previous_version"
+>&2 echo "
 
 # Fetch the latest tags from the remote
 remote=$( git remote -v | grep -E "NVIDIA/nvidia-container-toolkit(\.git)?\s" | grep -oE "^[a-z]+" | sort -u )
