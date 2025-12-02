@@ -60,18 +60,20 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Check that no extra args were provided
-if [ -z "$version" ]; then
+# Check that the required args were provided.
+if [ -z ${version} ]; then
     echo -e "ERROR: --version is required"
     usage
     exit 1
 fi
 
-if [ -z $previous_version ]; then
+if [ -z ${previous_version} ]; then
     echo -e "ERROR: --previous-version is required"
     usage
     exit 1
 fi
+
+>&2 echo "version=$version, previous_version=$previous_version"
 
 #
 # Modify files in the repo to point to new release
