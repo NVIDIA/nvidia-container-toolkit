@@ -198,7 +198,7 @@ func mountLdConfig(hostLdconfigPath string, containerRoot *os.Root) (string, err
 		return "", fmt.Errorf("error creating hook scratch folder: %w", err)
 	}
 
-	err = utils.WithProcfd(containerRootDirPath, hookScratchDirPath, func(hookScratchDirFdPath string) error {
+	err = utils.WithProcfd(containerRootDirPath, hookScratchDirPath, func(hookScratchDirFdPath string) error { //nolint:staticcheck // TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
 		return createTmpFs(hookScratchDirFdPath, int(hostLdconfigInfo.Size()))
 	})
 	if err != nil {
@@ -209,7 +209,7 @@ func mountLdConfig(hostLdconfigPath string, containerRoot *os.Root) (string, err
 		return "", fmt.Errorf("error creating ldconfig: %w", err)
 	}
 
-	err = utils.WithProcfd(containerRootDirPath, ldconfigPath, func(ldconfigFdPath string) error {
+	err = utils.WithProcfd(containerRootDirPath, ldconfigPath, func(ldconfigFdPath string) error { //nolint:staticcheck // TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
 		return unix.Mount(hostLdconfigPath, ldconfigFdPath, "", unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_PRIVATE|unix.MS_NOSYMFOLLOW, "")
 	})
 	if err != nil {
