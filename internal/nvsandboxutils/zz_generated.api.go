@@ -20,13 +20,13 @@ package nvsandboxutils
 
 // The variables below represent package level methods from the library type.
 var (
-	ErrorString = libnvsandboxutils.ErrorString
+	ErrorString      = libnvsandboxutils.ErrorString
 	GetDriverVersion = libnvsandboxutils.GetDriverVersion
-	GetFileContent = libnvsandboxutils.GetFileContent
-	GetGpuResource = libnvsandboxutils.GetGpuResource
-	Init = libnvsandboxutils.Init
-	LookupSymbol = libnvsandboxutils.LookupSymbol
-	Shutdown = libnvsandboxutils.Shutdown
+	GetFileContent   = libnvsandboxutils.GetFileContent
+	GetGpuResource   = libnvsandboxutils.GetGpuResource
+	Init             = libnvsandboxutils.Init
+	LookupSymbol     = libnvsandboxutils.LookupSymbol
+	Shutdown         = libnvsandboxutils.Shutdown
 )
 
 // Interface represents the interface for the library type.
