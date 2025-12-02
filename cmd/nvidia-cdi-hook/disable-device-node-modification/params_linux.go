@@ -37,7 +37,8 @@ func createParamsFileInContainer(containerRoot *os.Root, contents []byte) error 
 		return fmt.Errorf("error creating hook scratch folder: %w", err)
 	}
 
-	err := utils.WithProcfd(containerRootDirPath, hookScratchDirPath, func(hookScratchDirFdPath string) error {
+	// TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
+	err := utils.WithProcfd(containerRootDirPath, hookScratchDirPath, func(hookScratchDirFdPath string) error { //nolint:staticcheck
 		return createTmpFs(hookScratchDirFdPath, len(contents))
 	})
 	if err != nil {
@@ -49,7 +50,8 @@ func createParamsFileInContainer(containerRoot *os.Root, contents []byte) error 
 		return fmt.Errorf("error creating modified params file: %w", err)
 	}
 
-	err = utils.WithProcfd(containerRootDirPath, modifiedParamsFilePath, func(modifiedParamsFileFdPath string) error {
+	// TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
+	err = utils.WithProcfd(containerRootDirPath, modifiedParamsFilePath, func(modifiedParamsFileFdPath string) error { //nolint:staticcheck
 		modifiedParamsFile, err := os.OpenFile(modifiedParamsFileFdPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0444)
 		if err != nil {
 			return fmt.Errorf("failed to open modified params file: %w", err)
@@ -60,7 +62,8 @@ func createParamsFileInContainer(containerRoot *os.Root, contents []byte) error 
 			return fmt.Errorf("failed to write temporary params file: %w", err)
 		}
 
-		err = utils.WithProcfd(containerRootDirPath, nvidiaDriverParamsPath, func(nvidiaDriverParamsFdPath string) error {
+		// TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
+		err = utils.WithProcfd(containerRootDirPath, nvidiaDriverParamsPath, func(nvidiaDriverParamsFdPath string) error { //nolint:staticcheck
 			return unix.Mount(modifiedParamsFileFdPath, nvidiaDriverParamsFdPath, "", unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_PRIVATE|unix.MS_NOSYMFOLLOW, "")
 		})
 		if err != nil {
