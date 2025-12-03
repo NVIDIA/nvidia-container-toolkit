@@ -60,15 +60,13 @@ func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType)
 	)
 
 	// We process the explicitly requested symlinks.
-	symlinkTargets := o.ignorePatterns.Apply(targetsByType[csv.MountSpecSym]...)
-	o.logger.Debugf("Filtered symlink targets: %v", symlinkTargets)
 	symlinks := discover.NewMounts(
 		o.logger,
 		o.symlinkLocator,
 		o.driverRoot,
-		symlinkTargets,
+		targetsByType[csv.MountSpecSym],
 	)
-	createSymlinks := o.createCSVSymlinkHooks(symlinkTargets)
+	createSymlinks := o.createCSVSymlinkHooks(targetsByType[csv.MountSpecSym])
 
 	d := discover.Merge(
 		devices,

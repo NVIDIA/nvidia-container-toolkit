@@ -19,11 +19,13 @@ package tegra
 import (
 	"path/filepath"
 	"strings"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
-type ignoreMountSpecPatterns []string
+type ignoreSymlinkMountSpecPatterns []string
 
-func (d ignoreMountSpecPatterns) Match(name string) bool {
+func (d ignoreSymlinkMountSpecPatterns) match(name string) bool {
 	for _, pattern := range d {
 		target := name
 		if strings.HasPrefix(pattern, "**/") {
@@ -37,13 +39,23 @@ func (d ignoreMountSpecPatterns) Match(name string) bool {
 	return false
 }
 
-func (d ignoreMountSpecPatterns) Apply(input ...string) []string {
+func (d ignoreSymlinkMountSpecPatterns) filter(input ...string) []string {
 	var filtered []string
 	for _, name := range input {
-		if d.Match(name) {
+		if d.match(name) {
 			continue
 		}
 		filtered = append(filtered, name)
 	}
 	return filtered
+}
+
+func (d ignoreSymlinkMountSpecPatterns) Apply(input MountSpecPathsByTyper) MountSpecPathsByTyper {
+	ms := input.MountSpecPathsByType()
+
+	if symlinks, ok := ms[csv.MountSpecSym]; ok {
+		ms[csv.MountSpecSym] = d.filter(symlinks...)
+	}
+
+	return ms
 }

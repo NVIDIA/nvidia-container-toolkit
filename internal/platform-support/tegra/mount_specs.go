@@ -21,8 +21,49 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
+type MountSpecPathsByTyper interface {
+	MountSpecPathsByType() MountSpecPathsByType
+}
+
 // MountSpecPathsByType define the per-type paths that define the entities
 // (e.g. device nodes, directories, libraries, symlinks) that are required for
 // gpu use on Tegra-based systems.
 // These are typically populated from CSV files defined by the platform owner.
 type MountSpecPathsByType map[csv.MountSpecType][]string
+
+var _ MountSpecPathsByTyper = (MountSpecPathsByType)(nil)
+
+// MountSpecPathsByType for a variable of type MountSpecPathsByType returns the
+// underlying data structure.
+// This allows for using this type in functions such as Merge and Filter.
+func (m MountSpecPathsByType) MountSpecPathsByType() MountSpecPathsByType {
+	return m
+}
+
+// A Transformer modifies a specified set of mount specs by type.
+// The output of a transformer is itself a set of mount specs by type.
+type Transformer interface {
+	Apply(MountSpecPathsByTyper) MountSpecPathsByTyper
+}
+
+// Transform applies the specified transforms to a set of mount specs by type.
+// The result is itself a set of mount specs by type.
+func Transform(input MountSpecPathsByTyper, t Transformer) MountSpecPathsByTyper {
+	return transformMountSpecByPathsByType{
+		Transformer: t,
+		input:       input,
+	}
+}
+
+type transformMountSpecByPathsByType struct {
+	Transformer
+	input MountSpecPathsByTyper
+}
+
+func (m transformMountSpecByPathsByType) MountSpecPathsByType() MountSpecPathsByType {
+	return m.Apply(m.input).MountSpecPathsByType()
+}
+
+func IgnoreSymlinkMountSpecsByPattern(ignorePatterns ...string) Transformer {
+	return ignoreSymlinkMountSpecPatterns(ignorePatterns)
+}
