@@ -24,7 +24,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 )
 
-// New creates a new tegra discoverer using the supplied options.
+// New creates a new tegra discoverer using the supplied functional options.
 func New(opts ...Option) (discover.Discover, error) {
 	o := &options{}
 	for _, opt := range opts {
@@ -54,12 +54,12 @@ func New(opts ...Option) (discover.Discover, error) {
 		o.resolveSymlink = symlinks.Resolve
 	}
 
-	csvDiscoverer, err := o.newDiscovererFromCSVFiles()
+	mountSpecDiscoverer, err := o.newDiscovererFromMountSpecs(o.mountSpecs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
+		return nil, fmt.Errorf("failed to create discoverer for mount specs: %w", err)
 	}
 
-	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(o.logger, csvDiscoverer, o.hookCreator, o.ldconfigPath)
+	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(o.logger, mountSpecDiscoverer, o.hookCreator, o.ldconfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ldcach update hook discoverer: %v", err)
 	}
@@ -74,7 +74,7 @@ func New(opts ...Option) (discover.Discover, error) {
 	)
 
 	d := discover.Merge(
-		csvDiscoverer,
+		mountSpecDiscoverer,
 		// The ldcacheUpdateHook is added last to ensure that the created symlinks are included
 		ldcacheUpdateHook,
 		tegraSystemMounts,

@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
@@ -184,19 +183,16 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 	hookCreator := discover.NewHookCreator()
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			defer setGetTargetsFromCSVFiles(tc.moutSpecs)()
-
 			o := options{
 				logger:              logger,
 				hookCreator:         hookCreator,
-				csvFiles:            []string{"dummy"},
 				ignorePatterns:      tc.ignorePatterns,
 				symlinkLocator:      tc.symlinkLocator,
 				symlinkChainLocator: tc.symlinkChainLocator,
 				resolveSymlink:      tc.symlinkResolver,
 			}
 
-			d, err := o.newDiscovererFromCSVFiles()
+			d, err := o.newDiscovererFromMountSpecs(tc.moutSpecs)
 			require.ErrorIs(t, err, tc.expectedError)
 
 			hooks, err := d.Hooks()
@@ -208,16 +204,5 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 			require.EqualValues(t, tc.expectedMounts, mounts)
 
 		})
-	}
-}
-
-func setGetTargetsFromCSVFiles(override MountSpecPathsByType) func() {
-	original := getTargetsFromCSVFiles
-	getTargetsFromCSVFiles = func(logger logger.Interface, files []string) MountSpecPathsByType {
-		return override
-	}
-
-	return func() {
-		getTargetsFromCSVFiles = original
 	}
 }

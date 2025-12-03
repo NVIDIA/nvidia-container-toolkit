@@ -25,7 +25,7 @@ import (
 
 type options struct {
 	logger             logger.Interface
-	csvFiles           []string
+	mountSpecs         MountSpecPathsByType
 	driverRoot         string
 	devRoot            string
 	hookCreator        discover.HookCreator
@@ -65,13 +65,6 @@ func WithDevRoot(devRoot string) Option {
 	}
 }
 
-// WithCSVFiles sets the CSV files for the discoverer.
-func WithCSVFiles(csvFiles []string) Option {
-	return func(o *options) {
-		o.csvFiles = csvFiles
-	}
-}
-
 // WithHookCreator sets the hook creator for the discoverer.
 func WithHookCreator(hookCreator discover.HookCreator) Option {
 	return func(o *options) {
@@ -97,5 +90,11 @@ func WithLibrarySearchPaths(librarySearchPaths ...string) Option {
 func WithIngorePatterns(ignorePatterns ...string) Option {
 	return func(o *options) {
 		o.ignorePatterns = ignoreMountSpecPatterns(ignorePatterns)
+	}
+}
+
+func WithMountSpecs(mountSpecs MountSpecPathsByType) Option {
+	return func(o *options) {
+		o.mountSpecs = mountSpecs
 	}
 }
