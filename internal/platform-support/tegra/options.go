@@ -23,7 +23,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
-type tegraOptions struct {
+type options struct {
 	logger             logger.Interface
 	csvFiles           []string
 	driverRoot         string
@@ -41,18 +41,18 @@ type tegraOptions struct {
 }
 
 // Option defines a functional option for configuring a Tegra discoverer.
-type Option func(*tegraOptions)
+type Option func(*options)
 
 // WithLogger sets the logger for the discoverer.
 func WithLogger(logger logger.Interface) Option {
-	return func(o *tegraOptions) {
+	return func(o *options) {
 		o.logger = logger
 	}
 }
 
 // WithDriverRoot sets the driver root for the discoverer.
 func WithDriverRoot(driverRoot string) Option {
-	return func(o *tegraOptions) {
+	return func(o *options) {
 		o.driverRoot = driverRoot
 	}
 }
@@ -60,42 +60,42 @@ func WithDriverRoot(driverRoot string) Option {
 // WithDevRoot sets the /dev root.
 // If this is unset, the driver root is assumed.
 func WithDevRoot(devRoot string) Option {
-	return func(o *tegraOptions) {
+	return func(o *options) {
 		o.devRoot = devRoot
 	}
 }
 
 // WithCSVFiles sets the CSV files for the discoverer.
 func WithCSVFiles(csvFiles []string) Option {
-	return func(o *tegraOptions) {
+	return func(o *options) {
 		o.csvFiles = csvFiles
 	}
 }
 
 // WithHookCreator sets the hook creator for the discoverer.
 func WithHookCreator(hookCreator discover.HookCreator) Option {
-	return func(o *tegraOptions) {
+	return func(o *options) {
 		o.hookCreator = hookCreator
 	}
 }
 
 // WithLdconfigPath sets the path to the ldconfig program
 func WithLdconfigPath(ldconfigPath string) Option {
-	return func(o *tegraOptions) {
+	return func(o *options) {
 		o.ldconfigPath = ldconfigPath
 	}
 }
 
 // WithLibrarySearchPaths sets the library search paths for the discoverer.
 func WithLibrarySearchPaths(librarySearchPaths ...string) Option {
-	return func(o *tegraOptions) {
+	return func(o *options) {
 		o.librarySearchPaths = librarySearchPaths
 	}
 }
 
 // WithIngorePatterns sets patterns to ignore in the CSV files
 func WithIngorePatterns(ignorePatterns ...string) Option {
-	return func(o *tegraOptions) {
+	return func(o *options) {
 		o.ignorePatterns = ignoreMountSpecPatterns(ignorePatterns)
 	}
 }

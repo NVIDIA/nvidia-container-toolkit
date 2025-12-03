@@ -28,7 +28,7 @@ import (
 // newDiscovererFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
 // The constructed discoverer is comprised of a list, with each element in the list being associated with a
 // single CSV files.
-func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
+func (o options) newDiscovererFromCSVFiles() (discover.Discover, error) {
 	if len(o.csvFiles) == 0 {
 		o.logger.Warningf("No CSV files specified")
 		return discover.None{}, nil
