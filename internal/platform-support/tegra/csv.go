@@ -35,6 +35,15 @@ func (o options) newDiscovererFromCSVFiles() (discover.Discover, error) {
 	}
 
 	targetsByType := getTargetsFromCSVFiles(o.logger, o.csvFiles)
+	return o.newDiscovererFromMountSpecs(targetsByType)
+}
+
+// newDiscovererFromMountSpecs creates a discoverer for the specified mount specs.
+func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType) (discover.Discover, error) {
+	if len(targetsByType) == 0 {
+		o.logger.Warningf("No mount specs specified")
+		return discover.None{}, nil
+	}
 
 	devices := discover.NewCharDeviceDiscoverer(
 		o.logger,
@@ -89,8 +98,8 @@ func (o options) newDiscovererFromCSVFiles() (discover.Discover, error) {
 // These are aggregated by mount spec type.
 // TODO: We use a function variable here to allow this to be overridden for testing.
 // This should be properly mocked.
-var getTargetsFromCSVFiles = func(logger logger.Interface, files []string) map[csv.MountSpecType][]string {
-	targetsByType := make(map[csv.MountSpecType][]string)
+var getTargetsFromCSVFiles = func(logger logger.Interface, files []string) MountSpecPathsByType {
+	targetsByType := make(MountSpecPathsByType)
 	for _, filename := range files {
 		targets, err := loadCSVFile(logger, filename)
 		if err != nil {
