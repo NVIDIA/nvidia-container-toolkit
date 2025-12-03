@@ -25,19 +25,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
-// newDiscovererFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
-// The constructed discoverer is comprised of a list, with each element in the list being associated with a
-// single CSV files.
-func (o options) newDiscovererFromCSVFiles() (discover.Discover, error) {
-	if len(o.csvFiles) == 0 {
-		o.logger.Warningf("No CSV files specified")
-		return discover.None{}, nil
-	}
-
-	targetsByType := getTargetsFromCSVFiles(o.logger, o.csvFiles)
-	return o.newDiscovererFromMountSpecs(targetsByType)
-}
-
 // newDiscovererFromMountSpecs creates a discoverer for the specified mount specs.
 func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType) (discover.Discover, error) {
 	if len(targetsByType) == 0 {
@@ -94,13 +81,11 @@ func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType)
 	return d, nil
 }
 
-// getTargetsFromCSVFiles returns the list of mount specs from the specified CSV files.
-// These are aggregated by mount spec type.
-// TODO: We use a function variable here to allow this to be overridden for testing.
-// This should be properly mocked.
-var getTargetsFromCSVFiles = func(logger logger.Interface, files []string) MountSpecPathsByType {
+// MountSpecsFromCSVFiles returns a MountSpecPathsByTyper for the specified list
+// of CSV files.
+func MountSpecsFromCSVFiles(logger logger.Interface, csvFilePaths ...string) MountSpecPathsByType {
 	targetsByType := make(MountSpecPathsByType)
-	for _, filename := range files {
+	for _, filename := range csvFilePaths {
 		targets, err := loadCSVFile(logger, filename)
 		if err != nil {
 			logger.Warningf("Skipping CSV file %v: %v", filename, err)

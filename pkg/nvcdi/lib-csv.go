@@ -52,8 +52,8 @@ func (l *csvlib) GetDeviceSpecs() ([]specs.Device, error) {
 		tegra.WithDevRoot(l.devRoot),
 		tegra.WithHookCreator(l.hookCreator),
 		tegra.WithLdconfigPath(l.ldconfigPath),
-		tegra.WithCSVFiles(l.csvFiles),
 		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
+		tegra.WithMountSpecs(tegra.MountSpecsFromCSVFiles(l.logger, l.csvFiles...)),
 		tegra.WithIngorePatterns(l.csvIgnorePatterns...),
 	)
 	if err != nil {
