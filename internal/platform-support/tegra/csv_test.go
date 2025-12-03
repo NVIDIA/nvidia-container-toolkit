@@ -188,7 +188,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			defer setGetTargetsFromCSVFiles(tc.moutSpecs)()
 
-			o := tegraOptions{
+			o := options{
 				logger:              logger,
 				hookCreator:         hookCreator,
 				csvFiles:            []string{"dummy"},

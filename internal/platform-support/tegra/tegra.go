@@ -26,7 +26,7 @@ import (
 
 // New creates a new tegra discoverer using the supplied options.
 func New(opts ...Option) (discover.Discover, error) {
-	o := &tegraOptions{}
+	o := &options{}
 	for _, opt := range opts {
 		opt(o)
 	}
