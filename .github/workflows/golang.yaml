@@ -16,6 +16,13 @@ name: Golang
 
 on:
   workflow_call: {}
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    branches:
+      - main
+      - release-*
 
 jobs:
   check:
@@ -77,7 +84,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: linux-amd64-cpu4
+    runs-on: ${{ ( github.event_name == 'pull_request' ) && 'ubuntu-latest' || 'linux-amd64-cpu4' }}
     permissions:
       contents: read
       id-token: write
@@ -97,10 +104,11 @@ jobs:
           go-version: ${{ env.GOLANG_VERSION }}
 
       - name: Setup Go Proxy
+        if: ${{ !( github.event_name == 'pull_request' ) }}
         id: setup-go-proxy
         uses: nv-gha-runners/setup-artifactory-go-proxy@main
 
       - env:
-          GOPROXY: ${{ steps.setup-go-proxy.outputs.goproxy-url }}
+          GOPROXY: ${{ ( github.event_name == 'pull_request' )  && '' || steps.setup-go-proxy.outputs.goproxy-url }}
         run: |
           make build
