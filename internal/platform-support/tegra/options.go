@@ -25,19 +25,19 @@ import (
 
 type options struct {
 	logger             logger.Interface
-	mountSpecs         MountSpecPathsByType
 	driverRoot         string
 	devRoot            string
 	hookCreator        discover.HookCreator
 	ldconfigPath       string
 	librarySearchPaths []string
-	ignorePatterns     ignoreMountSpecPatterns
 
 	// The following can be overridden for testing
 	symlinkLocator      lookup.Locator
 	symlinkChainLocator lookup.Locator
 	// TODO: This should be replaced by a regular mock
 	resolveSymlink func(string) (string, error)
+
+	mountSpecs MountSpecPathsByTyper
 }
 
 // Option defines a functional option for configuring a Tegra discoverer.
@@ -86,14 +86,7 @@ func WithLibrarySearchPaths(librarySearchPaths ...string) Option {
 	}
 }
 
-// WithIngorePatterns sets patterns to ignore in the CSV files
-func WithIngorePatterns(ignorePatterns ...string) Option {
-	return func(o *options) {
-		o.ignorePatterns = ignoreMountSpecPatterns(ignorePatterns)
-	}
-}
-
-func WithMountSpecs(mountSpecs MountSpecPathsByType) Option {
+func WithMountSpecs(mountSpecs MountSpecPathsByTyper) Option {
 	return func(o *options) {
 		o.mountSpecs = mountSpecs
 	}

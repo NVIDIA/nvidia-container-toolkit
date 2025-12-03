@@ -54,7 +54,7 @@ func New(opts ...Option) (discover.Discover, error) {
 		o.resolveSymlink = symlinks.Resolve
 	}
 
-	mountSpecDiscoverer, err := o.newDiscovererFromMountSpecs(o.mountSpecs)
+	mountSpecDiscoverer, err := o.newDiscovererFromMountSpecs(o.mountSpecs.MountSpecPathsByType())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for mount specs: %w", err)
 	}

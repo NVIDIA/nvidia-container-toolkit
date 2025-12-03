@@ -186,13 +186,17 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 			o := options{
 				logger:              logger,
 				hookCreator:         hookCreator,
-				ignorePatterns:      tc.ignorePatterns,
 				symlinkLocator:      tc.symlinkLocator,
 				symlinkChainLocator: tc.symlinkChainLocator,
 				resolveSymlink:      tc.symlinkResolver,
 			}
 
-			d, err := o.newDiscovererFromMountSpecs(tc.moutSpecs)
+			mountSpecs := Transform(
+				tc.moutSpecs,
+				IgnoreSymlinkMountSpecsByPattern(tc.ignorePatterns...),
+			)
+
+			d, err := o.newDiscovererFromMountSpecs(mountSpecs.MountSpecPathsByType())
 			require.ErrorIs(t, err, tc.expectedError)
 
 			hooks, err := d.Hooks()
