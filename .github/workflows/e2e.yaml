@@ -42,11 +42,17 @@ jobs:
         ispr:
           - ${{ github.ref_name != 'main' && !startsWith( github.ref_name, 'release-' ) }}
         driver_branch:
-          - 550
-          - 575
+          # LTS branch. EOL June 2026
+          - 535
+          # Production branch. EOL February 2026
+          - 570
+          # LTS branch. EOL August 2028
+          - 580
         exclude:
           - ispr: true
-            driver_branch: 575
+            driver_branch: 570
+          - ispr: true
+            driver_branch: 580
     steps:
       - name: Check out code
         uses: actions/checkout@v6
