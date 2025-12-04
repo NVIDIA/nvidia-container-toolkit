@@ -84,6 +84,13 @@ func (m *MockNvpci) AddMockA100(address string, numaNode int, sriov *SriovInfo) 
 		return err
 	}
 
+	vfioDev := filepath.Join(deviceDir, "vfio-dev")
+	vfioFD := filepath.Join(vfioDev, "vfio8")
+	err = os.MkdirAll(vfioFD, 0755)
+	if err != nil {
+		return err
+	}
+
 	iommuGroup := 20
 	_, err = os.Create(filepath.Join(deviceDir, strconv.Itoa(iommuGroup)))
 	if err != nil {
