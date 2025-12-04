@@ -25,7 +25,7 @@ import (
 func TestIgnorePatterns(t *testing.T) {
 	testCases := []struct {
 		description   string
-		blockedFilter []string
+		blockedFilter pathPatterns
 		input         []string
 		expected      []string
 	}{
@@ -50,7 +50,7 @@ func TestIgnorePatterns(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			filtered := ignoreMountSpecPatterns(tc.blockedFilter).Apply(tc.input...)
+			filtered := ignoreSymlinkMountSpecPatterns(tc.blockedFilter).filter(tc.input...)
 			require.ElementsMatch(t, tc.expected, filtered)
 		})
 	}

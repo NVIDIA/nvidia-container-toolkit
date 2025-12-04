@@ -48,13 +48,13 @@ func (p platformResolver) ResolvePlatform() Platform {
 	hasNVML, reason := p.propertyExtractor.HasNvml()
 	p.logger.Debugf("Is NVML-based system? %v: %v", hasNVML, reason)
 
-	hasOnlyIntegratedGPUs, reason := p.propertyExtractor.HasOnlyIntegratedGPUs()
-	p.logger.Debugf("Has only integrated GPUs? %v: %v", hasOnlyIntegratedGPUs, reason)
+	hasAnIntegratedGPU, reason := p.propertyExtractor.HasAnIntegratedGPU()
+	p.logger.Debugf("Has an integrated GPU? %v: %v", hasAnIntegratedGPU, reason)
 
 	switch {
 	case hasDXCore:
 		return PlatformWSL
-	case (hasTegraFiles && !hasNVML), hasOnlyIntegratedGPUs:
+	case (hasTegraFiles && !hasNVML), hasAnIntegratedGPU:
 		return PlatformTegra
 	case hasNVML:
 		return PlatformNVML
