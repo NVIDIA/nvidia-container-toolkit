@@ -25,6 +25,9 @@ type MountSpecPathsByTyper interface {
 	MountSpecPathsByType() MountSpecPathsByType
 }
 
+// moutSpecPathsByTypers represents a collection of MountSpecPathsByTyper
+type mountSpecPathsByTypers []MountSpecPathsByTyper
+
 // MountSpecPathsByType define the per-type paths that define the entities
 // (e.g. device nodes, directories, libraries, symlinks) that are required for
 // gpu use on Tegra-based systems.
@@ -32,12 +35,29 @@ type MountSpecPathsByTyper interface {
 type MountSpecPathsByType map[csv.MountSpecType][]string
 
 var _ MountSpecPathsByTyper = (MountSpecPathsByType)(nil)
+var _ MountSpecPathsByTyper = (mountSpecPathsByTypers)(nil)
 
 // MountSpecPathsByType for a variable of type MountSpecPathsByType returns the
 // underlying data structure.
 // This allows for using this type in functions such as Merge and Filter.
 func (m MountSpecPathsByType) MountSpecPathsByType() MountSpecPathsByType {
 	return m
+}
+
+// MountSpecPathsByType returns the combination of mount specs by type for the
+// collection.
+func (collection mountSpecPathsByTypers) MountSpecPathsByType() MountSpecPathsByType {
+	merged := make(MountSpecPathsByType)
+	for _, t := range collection {
+		if t == nil {
+			continue
+		}
+		for tType, targets := range t.MountSpecPathsByType() {
+			merged[tType] = append(merged[tType], targets...)
+		}
+	}
+	return merged
+
 }
 
 // A Transformer modifies a specified set of mount specs by type.
