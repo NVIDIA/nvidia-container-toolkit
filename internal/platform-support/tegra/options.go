@@ -86,8 +86,8 @@ func WithLibrarySearchPaths(librarySearchPaths ...string) Option {
 	}
 }
 
-func WithMountSpecs(mountSpecs MountSpecPathsByTyper) Option {
+func WithMountSpecs(mountSpecs ...MountSpecPathsByTyper) Option {
 	return func(o *options) {
-		o.mountSpecs = mountSpecs
+		o.mountSpecs = mountSpecPathsByTypers(mountSpecs)
 	}
 }

@@ -82,18 +82,21 @@ func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType)
 // MountSpecsFromCSVFiles returns a MountSpecPathsByTyper for the specified list
 // of CSV files.
 func MountSpecsFromCSVFiles(logger logger.Interface, csvFilePaths ...string) MountSpecPathsByType {
-	targetsByType := make(MountSpecPathsByType)
+	var mountSpecs mountSpecPathsByTypers
+
 	for _, filename := range csvFilePaths {
 		targets, err := loadCSVFile(logger, filename)
 		if err != nil {
 			logger.Warningf("Skipping CSV file %v: %v", filename, err)
 			continue
 		}
+		targetsByType := make(MountSpecPathsByType)
 		for _, t := range targets {
 			targetsByType[t.Type] = append(targetsByType[t.Type], t.Path)
 		}
+		mountSpecs = append(mountSpecs, targetsByType)
 	}
-	return targetsByType
+	return mountSpecs.MountSpecPathsByType()
 }
 
 // loadCSVFile loads the specified CSV file and returns the list of mount specs
