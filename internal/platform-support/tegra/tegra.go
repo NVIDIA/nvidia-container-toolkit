@@ -80,15 +80,6 @@ func New(opts ...Option) (discover.Discover, error) {
 		return nil, fmt.Errorf("failed to create CSV discoverer: %v", err)
 	}
 
-	// TODO: Set the version here.
-	version := ""
-	cudaCompatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(o.logger, o.hookCreator, version)
-
-	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(o.logger, csvDiscoverer, o.hookCreator, o.ldconfigPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create ldcach update hook discoverer: %v", err)
-	}
-
 	tegraSystemMounts := discover.NewMounts(
 		o.logger,
 		lookup.NewFileLocator(lookup.WithLogger(o.logger)),
@@ -100,9 +91,6 @@ func New(opts ...Option) (discover.Discover, error) {
 
 	d := discover.Merge(
 		csvDiscoverer,
-		cudaCompatLibHookDiscoverer,
-		// The ldcacheUpdateHook is added last to ensure that the created symlinks are included
-		ldcacheUpdateHook,
 		tegraSystemMounts,
 	)
 
