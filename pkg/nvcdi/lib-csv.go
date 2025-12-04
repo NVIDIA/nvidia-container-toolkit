@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
@@ -101,12 +102,12 @@ func (l *csvDeviceGenerator) GetDeviceSpecs() ([]specs.Device, error) {
 	}
 	e, err := edits.FromDiscoverer(deviceNodeDiscoverer)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create container edits for CSV files: %v", err)
+		return nil, fmt.Errorf("failed to create container edits for CSV files: %w", err)
 	}
 
 	names, err := l.deviceNamers.GetDeviceNames(l.index, l)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get device name: %v", err)
+		return nil, fmt.Errorf("failed to get device name: %w", err)
 	}
 	var deviceSpecs []specs.Device
 	for _, name := range names {
@@ -157,22 +158,7 @@ func (l *csvDeviceGenerator) deviceNodeDiscoverer() (discover.Discover, error) {
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
 // These explicitly do not include any device nodes.
 func (l *csvlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	mountSpecs := tegra.Transform(
-		tegra.Transform(
-			tegra.MountSpecsFromCSVFiles(l.logger, l.csvFiles...),
-			tegra.WithoutDeviceNodes(),
-		),
-		tegra.IgnoreSymlinkMountSpecsByPattern(l.csvIgnorePatterns...),
-	)
-	driverDiscoverer, err := tegra.New(
-		tegra.WithLogger(l.logger),
-		tegra.WithDriverRoot(l.driverRoot),
-		tegra.WithDevRoot(l.devRoot),
-		tegra.WithHookCreator(l.hookCreator),
-		tegra.WithLdconfigPath(l.ldconfigPath),
-		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
-		tegra.WithMountSpecs(mountSpecs),
-	)
+	driverDiscoverer, err := l.driverDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create driver discoverer from CSV files: %w", err)
 	}
@@ -320,4 +306,94 @@ func isIntegratedGPU(d nvml.Device) (bool, error) {
 		return false, nil
 	}
 	return pciInfo.Device == 0, nil
+}
+
+func (l *csvlib) driverDiscoverer() (discover.Discover, error) {
+	mountSpecs := tegra.Transform(
+		tegra.Transform(
+			tegra.MountSpecsFromCSVFiles(l.logger, l.csvFiles...),
+			tegra.WithoutDeviceNodes(),
+		),
+		tegra.IgnoreSymlinkMountSpecsByPattern(l.csvIgnorePatterns...),
+	)
+	driverDiscoverer, err := tegra.New(
+		tegra.WithLogger(l.logger),
+		tegra.WithDriverRoot(l.driverRoot),
+		tegra.WithDevRoot(l.devRoot),
+		tegra.WithHookCreator(l.hookCreator),
+		tegra.WithLdconfigPath(l.ldconfigPath),
+		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
+		tegra.WithMountSpecs(mountSpecs),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create discoverer from CSV files: %w", err)
+	}
+
+	cudaCompatDiscoverer := l.cudaCompatDiscoverer()
+
+	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(l.logger, driverDiscoverer, l.hookCreator, l.ldconfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ldcache update hook discoverer: %w", err)
+	}
+
+	d := discover.Merge(
+		driverDiscoverer,
+		cudaCompatDiscoverer,
+		// The ldcacheUpdateHook is added last to ensure that the created symlinks are included
+		ldcacheUpdateHook,
+	)
+	return d, nil
+}
+
+// cudaCompatDiscoverer returns a discoverer for the CUDA forward compat hook
+// on Tegra-based systems.
+// If the system has NVML available, this is used to determine the driver
+// version to be passed to the hook.
+// On Orin-based systems, the compat library root in the container is also set.
+func (l *csvlib) cudaCompatDiscoverer() discover.Discover {
+	hasNvml, _ := l.infolib.HasNvml()
+	if !hasNvml {
+		return nil
+	}
+
+	ret := l.nvmllib.Init()
+	if ret != nvml.SUCCESS {
+		l.logger.Warningf("Failed to initialize NVML: %v", ret)
+		return nil
+	}
+	defer func() {
+		_ = l.nvmllib.Shutdown()
+	}()
+
+	version, ret := l.nvmllib.SystemGetDriverVersion()
+	if ret != nvml.SUCCESS {
+		l.logger.Warningf("Failed to get driver version: %v", ret)
+		return nil
+	}
+
+	var names []string
+	err := l.devicelib.VisitDevices(func(i int, d device.Device) error {
+		name, ret := d.GetName()
+		if ret != nvml.SUCCESS {
+			return fmt.Errorf("device %v: %v", i, ret)
+		}
+		names = append(names, name)
+		return nil
+	})
+	if err != nil {
+		l.logger.Warningf("Failed to get device names: %v", err)
+		return nil
+	}
+
+	var cudaCompatContainerRoot string
+	for _, name := range names {
+		// TODO: Should this be overridable through a feature flag / config option?
+		if strings.Contains(name, "Orin (nvgpu)") {
+			// TODO: This should probably be a constant or configurable.
+			cudaCompatContainerRoot = "/usr/local/cuda/compat-orin"
+			break
+		}
+	}
+
+	return discover.NewCUDACompatHookDiscoverer(l.logger, l.hookCreator, version, cudaCompatContainerRoot)
 }
