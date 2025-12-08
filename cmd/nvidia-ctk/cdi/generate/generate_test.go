@@ -18,6 +18,7 @@ package generate
 
 import (
 	"bytes"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -47,6 +48,27 @@ func TestGenerateSpec(t *testing.T) {
 		expectedError         error
 		expectedSpec          string
 	}{
+		{
+			description: "invalid device id",
+			options: options{
+				format:     "yaml",
+				mode:       "nvml",
+				vendor:     "example.com",
+				class:      "device",
+				deviceIDs:  []string{"99"},
+				driverRoot: driverRoot,
+			},
+			expectedOptions: options{
+				format:            "yaml",
+				mode:              "nvml",
+				vendor:            "example.com",
+				class:             "device",
+				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
+				deviceIDs:         []string{"99"},
+				driverRoot:        driverRoot,
+			},
+			expectedError: fmt.Errorf("failed to create device CDI specs: failed to construct device spec generators: failed to get device handle from index: ERROR_INVALID_ARGUMENT"),
+		},
 		{
 			description: "default",
 			options: options{
@@ -452,6 +474,10 @@ containerEdits:
 	for _, tc := range testCases {
 		// Apply overrides for all test cases:
 		tc.options.nvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
+		if tc.options.deviceIDs == nil {
+			tc.options.deviceIDs = []string{"all"}
+			tc.expectedOptions.deviceIDs = []string{"all"}
+		}
 
 		t.Run(tc.description, func(t *testing.T) {
 			c := command{
@@ -481,7 +507,7 @@ containerEdits:
 			tc.options.nvmllib = server
 
 			specs, err := c.generateSpecs(&tc.options)
-			require.ErrorIs(t, err, tc.expectedError)
+			require.EqualValues(t, err, tc.expectedError)
 
 			var buf bytes.Buffer
 			for _, spec := range specs {
