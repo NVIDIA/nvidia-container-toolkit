@@ -45,7 +45,9 @@ type command struct {
 
 type options struct {
 	hostDriverVersion string
-	containerSpec     string
+	// containerSpec allows the path to the container spec to be specified for
+	// testing.
+	containerSpec string
 }
 
 // NewCommand constructs a cuda-compat command with the specified logger
