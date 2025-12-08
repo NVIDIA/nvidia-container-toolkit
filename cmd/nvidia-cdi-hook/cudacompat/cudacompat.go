@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	cudaCompatPath = "/usr/local/cuda/compat"
+	defaultCudaCompatPath = "/usr/local/cuda/compat"
 	// cudaCompatLdsoconfdFilenamePattern specifies the pattern for the filename
 	// in ld.so.conf.d that includes a reference to the CUDA compat path.
 	// The 00-compat prefix is chosen to ensure that these libraries have a
@@ -44,8 +44,11 @@ type command struct {
 }
 
 type options struct {
-	hostDriverVersion string
-	containerSpec     string
+	cudaCompatContainerRoot string
+	hostDriverVersion       string
+	// containerSpec allows the path to the container spec to be specified for
+	// testing.
+	containerSpec string
 }
 
 // NewCommand constructs a cuda-compat command with the specified logger
@@ -75,6 +78,12 @@ func (m command) build() *cli.Command {
 				Name:        "host-driver-version",
 				Usage:       "Specify the host driver version. If the CUDA compat libraries detected in the container do not have a higher MAJOR version, the hook is a no-op.",
 				Destination: &cfg.hostDriverVersion,
+			},
+			&cli.StringFlag{
+				Name:        "cuda-compat-container-root",
+				Usage:       "Specify the folder in which CUDA compat libraries are located in the container",
+				Value:       defaultCudaCompatPath,
+				Destination: &cfg.cudaCompatContainerRoot,
 			},
 			&cli.StringFlag{
 				Name:        "container-spec",
@@ -108,7 +117,7 @@ func (m command) run(_ *cli.Command, cfg *options) error {
 		return fmt.Errorf("failed to determined container root: %w", err)
 	}
 
-	containerForwardCompatDir, err := m.getContainerForwardCompatDir(containerRoot(containerRootDir), cfg.hostDriverVersion)
+	containerForwardCompatDir, err := m.getContainerForwardCompatDir(containerRoot(containerRootDir), cfg.cudaCompatContainerRoot, cfg.hostDriverVersion)
 	if err != nil {
 		return fmt.Errorf("failed to get container forward compat directory: %w", err)
 	}
@@ -119,17 +128,17 @@ func (m command) run(_ *cli.Command, cfg *options) error {
 	return m.createLdsoconfdFile(containerRoot(containerRootDir), cudaCompatLdsoconfdFilenamePattern, containerForwardCompatDir)
 }
 
-func (m command) getContainerForwardCompatDir(containerRoot containerRoot, hostDriverVersion string) (string, error) {
+func (m command) getContainerForwardCompatDir(containerRoot containerRoot, cudaCompatRoot string, hostDriverVersion string) (string, error) {
 	if hostDriverVersion == "" {
 		m.logger.Debugf("Host driver version not specified")
 		return "", nil
 	}
-	if !containerRoot.hasPath(cudaCompatPath) {
+	if !containerRoot.hasPath(cudaCompatRoot) {
 		m.logger.Debugf("No CUDA forward compatibility libraries directory in container")
 		return "", nil
 	}
 
-	libs, err := containerRoot.globFiles(filepath.Join(cudaCompatPath, "libcuda.so.*.*"))
+	libs, err := containerRoot.globFiles(filepath.Join(cudaCompatRoot, "libcuda.so.*.*"))
 	if err != nil {
 		m.logger.Warningf("Failed to find CUDA compat library: %w", err)
 		return "", nil
