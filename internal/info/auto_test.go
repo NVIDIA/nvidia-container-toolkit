@@ -215,13 +215,10 @@ func TestResolveAutoMode(t *testing.T) {
 				HasDXCoreFunc: func() (bool, string) {
 					return tc.info["dxcore"], "dxcore"
 				},
-				IsTegraSystemFunc: func() (bool, string) {
-					return tc.info["tegra"], "tegra"
-				},
 				HasTegraFilesFunc: func() (bool, string) {
 					return tc.info["tegra"], "tegra"
 				},
-				HasOnlyIntegratedGPUsFunc: func() (bool, string) {
+				HasAnIntegratedGPUFunc: func() (bool, string) {
 					return tc.info["nvgpu"], "nvgpu"
 				},
 			}

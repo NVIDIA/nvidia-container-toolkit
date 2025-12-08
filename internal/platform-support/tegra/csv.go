@@ -25,16 +25,12 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
-// newDiscovererFromCSVFiles creates a discoverer for the specified CSV files. A logger is also supplied.
-// The constructed discoverer is comprised of a list, with each element in the list being associated with a
-// single CSV files.
-func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
-	if len(o.csvFiles) == 0 {
-		o.logger.Warningf("No CSV files specified")
+// newDiscovererFromMountSpecs creates a discoverer for the specified mount specs.
+func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType) (discover.Discover, error) {
+	if len(targetsByType) == 0 {
+		o.logger.Warningf("No mount specs specified")
 		return discover.None{}, nil
 	}
-
-	targetsByType := getTargetsFromCSVFiles(o.logger, o.csvFiles)
 
 	devices := discover.NewCharDeviceDiscoverer(
 		o.logger,
@@ -64,15 +60,13 @@ func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
 	)
 
 	// We process the explicitly requested symlinks.
-	symlinkTargets := o.ignorePatterns.Apply(targetsByType[csv.MountSpecSym]...)
-	o.logger.Debugf("Filtered symlink targets: %v", symlinkTargets)
 	symlinks := discover.NewMounts(
 		o.logger,
 		o.symlinkLocator,
 		o.driverRoot,
-		symlinkTargets,
+		targetsByType[csv.MountSpecSym],
 	)
-	createSymlinks := o.createCSVSymlinkHooks(symlinkTargets)
+	createSymlinks := o.createCSVSymlinkHooks(targetsByType[csv.MountSpecSym])
 
 	d := discover.Merge(
 		devices,
@@ -85,23 +79,24 @@ func (o tegraOptions) newDiscovererFromCSVFiles() (discover.Discover, error) {
 	return d, nil
 }
 
-// getTargetsFromCSVFiles returns the list of mount specs from the specified CSV files.
-// These are aggregated by mount spec type.
-// TODO: We use a function variable here to allow this to be overridden for testing.
-// This should be properly mocked.
-var getTargetsFromCSVFiles = func(logger logger.Interface, files []string) map[csv.MountSpecType][]string {
-	targetsByType := make(map[csv.MountSpecType][]string)
-	for _, filename := range files {
+// MountSpecsFromCSVFiles returns a MountSpecPathsByTyper for the specified list
+// of CSV files.
+func MountSpecsFromCSVFiles(logger logger.Interface, csvFilePaths ...string) MountSpecPathsByType {
+	var mountSpecs mountSpecPathsByTypers
+
+	for _, filename := range csvFilePaths {
 		targets, err := loadCSVFile(logger, filename)
 		if err != nil {
 			logger.Warningf("Skipping CSV file %v: %v", filename, err)
 			continue
 		}
+		targetsByType := make(MountSpecPathsByType)
 		for _, t := range targets {
 			targetsByType[t.Type] = append(targetsByType[t.Type], t.Path)
 		}
+		mountSpecs = append(mountSpecs, targetsByType)
 	}
-	return targetsByType
+	return mountSpecs.MountSpecPathsByType()
 }
 
 // loadCSVFile loads the specified CSV file and returns the list of mount specs

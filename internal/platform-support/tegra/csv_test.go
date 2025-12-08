@@ -24,17 +24,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
 func TestDiscovererFromCSVFiles(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 	testCases := []struct {
 		description         string
-		moutSpecs           map[csv.MountSpecType][]string
+		moutSpecs           MountSpecPathsByType
 		ignorePatterns      []string
 		symlinkLocator      lookup.Locator
 		symlinkChainLocator lookup.Locator
@@ -49,7 +46,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 			// TODO: This current resolves to two mounts that are the same.
 			// These are deduplicated at a later stage. We could consider deduplicating earlier in the pipeline.
 			description: "symlink is resolved to target; mounts and symlink are created",
-			moutSpecs: map[csv.MountSpecType][]string{
+			moutSpecs: MountSpecPathsByType{
 				"lib": {"/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so"},
 				"sym": {"/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so"},
 			},
@@ -105,7 +102,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 			// TODO: This current resolves to two mounts that are the same.
 			// These are deduplicated at a later stage. We could consider deduplicating earlier in the pipeline.
 			description: "single glob filter does not remove symlink mounts",
-			moutSpecs: map[csv.MountSpecType][]string{
+			moutSpecs: MountSpecPathsByType{
 				"lib": {"/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so"},
 				"sym": {"/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so"},
 			},
@@ -160,7 +157,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 		},
 		{
 			description: "** filter removes symlink mounts",
-			moutSpecs: map[csv.MountSpecType][]string{
+			moutSpecs: MountSpecPathsByType{
 				"lib": {"/usr/lib/aarch64-linux-gnu/tegra/libv4l2_nvargus.so"},
 				"sym": {"/usr/lib/aarch64-linux-gnu/libv4l/plugins/nv/libv4l2_nvargus.so"},
 			},
@@ -186,19 +183,20 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 	hookCreator := discover.NewHookCreator()
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			defer setGetTargetsFromCSVFiles(tc.moutSpecs)()
-
-			o := tegraOptions{
+			o := options{
 				logger:              logger,
 				hookCreator:         hookCreator,
-				csvFiles:            []string{"dummy"},
-				ignorePatterns:      tc.ignorePatterns,
 				symlinkLocator:      tc.symlinkLocator,
 				symlinkChainLocator: tc.symlinkChainLocator,
 				resolveSymlink:      tc.symlinkResolver,
+
+				mountSpecs: Transform(
+					tc.moutSpecs,
+					IgnoreSymlinkMountSpecsByPattern(tc.ignorePatterns...),
+				),
 			}
 
-			d, err := o.newDiscovererFromCSVFiles()
+			d, err := o.newDiscovererFromMountSpecs(o.mountSpecs.MountSpecPathsByType())
 			require.ErrorIs(t, err, tc.expectedError)
 
 			hooks, err := d.Hooks()
@@ -210,16 +208,5 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 			require.EqualValues(t, tc.expectedMounts, mounts)
 
 		})
-	}
-}
-
-func setGetTargetsFromCSVFiles(override map[csv.MountSpecType][]string) func() {
-	original := getTargetsFromCSVFiles
-	getTargetsFromCSVFiles = func(logger logger.Interface, files []string) map[csv.MountSpecType][]string {
-		return override
-	}
-
-	return func() {
-		getTargetsFromCSVFiles = original
 	}
 }
