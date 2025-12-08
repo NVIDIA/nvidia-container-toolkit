@@ -38,13 +38,15 @@ type options struct {
 	toolkitInstallDir string
 
 	noDaemon    bool
-	runtime     string
 	pidFile     string
 	sourceRoot  string
 	packageType string
 
 	toolkitOptions toolkit.Options
-	runtimeOptions runtime.Options
+
+	noRuntimeConfig bool
+	runtime         string
+	runtimeOptions  runtime.Options
 }
 
 func (o options) toolkitRoot() string {
@@ -103,10 +105,19 @@ func (a app) build() *cli.Command {
 				Destination: &options.noDaemon,
 				Sources:     cli.EnvVars("NO_DAEMON"),
 			},
+			&cli.BoolFlag{
+				Name: "no-runtime-config",
+				Usage: "Disables the configuration of a container runtime. This is used in cases where the runtime has " +
+					"already been configured for use with the toolkit, and the installer is only used to deploy the " +
+					"components of the NVIDIA Container Toolkit.",
+				Destination: &options.noRuntimeConfig,
+				Sources:     cli.EnvVars("NO_RUNTIME_CONFIG"),
+			},
 			&cli.StringFlag{
-				Name:        "runtime",
-				Aliases:     []string{"r"},
-				Usage:       "the runtime to setup on this node. One of {'docker', 'crio', 'containerd'}",
+				Name:    "runtime",
+				Aliases: []string{"r"},
+				Usage: "the runtime to setup on this node. One of {'docker', 'crio', 'containerd'}. " +
+					"This setting is ignored if --no-runtime-config is specified.",
 				Value:       defaultRuntime,
 				Destination: &options.runtime,
 				Sources:     cli.EnvVars("RUNTIME"),
@@ -181,9 +192,11 @@ func (a *app) validateFlags(c *cli.Command, o *options) error {
 	if err := a.toolkit.ValidateOptions(&o.toolkitOptions); err != nil {
 		return err
 	}
+
 	if err := o.runtimeOptions.Validate(a.logger, c, o.runtime, o.toolkitRoot(), &o.toolkitOptions); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -197,7 +210,7 @@ func (a *app) Run(c *cli.Command, o *options) error {
 	}
 	defer a.shutdown(o.pidFile)
 
-	runtimeConfigurer := runtime.NewConfigurer(o.runtime)
+	runtimeConfigurer := runtime.NewConfigurer(o.runtime, o.noRuntimeConfig)
 
 	if len(o.toolkitOptions.ContainerRuntimeRuntimes) == 0 {
 		lowlevelRuntimePaths, err := runtimeConfigurer.GetLowlevelRuntimePaths(&o.runtimeOptions)
