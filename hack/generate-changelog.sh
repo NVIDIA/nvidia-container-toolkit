@@ -69,7 +69,6 @@ if [ -z ${previous_version} ]; then
 fi
 
 >&2 echo "version=$version, previous_version=$previous_version"
->&2 echo "
 
 # Fetch the latest tags from the remote
 remote=$( git remote -v | grep -E "NVIDIA/nvidia-container-toolkit(\.git)?\s" | grep -oE "^[a-z]+" | sort -u )
