@@ -37,6 +37,7 @@ func createParamsFileInContainer(containerRoot *os.Root, contents []byte) error 
 		return fmt.Errorf("error creating hook scratch folder: %w", err)
 	}
 
+	//nolint:staticcheck // TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
 	err := utils.WithProcfd(containerRootDirPath, hookScratchDirPath, func(hookScratchDirFdPath string) error {
 		return createTmpFs(hookScratchDirFdPath, len(contents))
 	})
@@ -49,6 +50,7 @@ func createParamsFileInContainer(containerRoot *os.Root, contents []byte) error 
 		return fmt.Errorf("error creating modified params file: %w", err)
 	}
 
+	//nolint:staticcheck // TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
 	err = utils.WithProcfd(containerRootDirPath, modifiedParamsFilePath, func(modifiedParamsFileFdPath string) error {
 		modifiedParamsFile, err := os.OpenFile(modifiedParamsFileFdPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0444)
 		if err != nil {
@@ -60,6 +62,7 @@ func createParamsFileInContainer(containerRoot *os.Root, contents []byte) error 
 			return fmt.Errorf("failed to write temporary params file: %w", err)
 		}
 
+		//nolint:staticcheck // TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
 		err = utils.WithProcfd(containerRootDirPath, nvidiaDriverParamsPath, func(nvidiaDriverParamsFdPath string) error {
 			return unix.Mount(modifiedParamsFileFdPath, nvidiaDriverParamsFdPath, "", unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_PRIVATE|unix.MS_NOSYMFOLLOW, "")
 		})
