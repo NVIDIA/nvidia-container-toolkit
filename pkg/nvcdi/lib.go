@@ -21,6 +21,7 @@ import (
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
+	"github.com/NVIDIA/go-nvlib/pkg/nvpci"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
@@ -53,6 +54,8 @@ type nvcdilib struct {
 
 	driver  *root.Driver
 	infolib info.Interface
+
+	nvpcilib nvpci.Interface
 
 	mergedDeviceOptions []transform.MergedDeviceOption
 
@@ -140,6 +143,14 @@ func New(opts ...Option) (Interface, error) {
 			l.class = classImexChannel
 		}
 		factory = (*imexlib)(l)
+	case ModeVfio:
+		if l.class == "" {
+			l.class = "pgpu"
+		}
+		if l.nvpcilib == nil {
+			l.nvpcilib = nvpci.New()
+		}
+		factory = (*vfiolib)(l)
 	default:
 		return nil, fmt.Errorf("unknown mode %q", l.mode)
 	}
