@@ -28,6 +28,10 @@ type Config struct {
 	Destination RuntimeConfigDestination
 }
 
+func (c *Config) EnableNRI() {
+	c.Destination.EnableNRI()
+}
+
 // A RuntimeConfigSource allows runtime-specific settings to be READ from a
 // config.
 type RuntimeConfigSource interface {
@@ -42,6 +46,7 @@ type RuntimeConfigSource interface {
 type RuntimeConfigDestination interface {
 	AddRuntimeWithOptions(string, string, bool, interface{}) error
 	EnableCDI()
+	EnableNRI()
 	RemoveRuntime(string) error
 	UpdateDefaultRuntime(string, string) error
 	Save(string) (int64, error)
