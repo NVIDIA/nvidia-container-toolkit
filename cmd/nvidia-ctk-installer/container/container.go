@@ -199,12 +199,12 @@ func (o Options) GetConfigLoaders(commandSourceFunc func(string, string) toml.Lo
 	var loaders []toml.Loader
 	for _, configSource := range o.ConfigSources {
 		parts := strings.SplitN(configSource, "=", 2)
-		source := parts[0]
+		source := strings.TrimSpace(parts[0])
 		switch source {
 		case "file":
 			fileSourcePath := o.TopLevelConfigPath
 			if len(parts) > 1 {
-				fileSourcePath = parts[1]
+				fileSourcePath = strings.TrimSpace(parts[1])
 			}
 			loaders = append(loaders, toml.FromFile(fileSourcePath))
 		case "command":
