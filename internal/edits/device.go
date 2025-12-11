@@ -72,10 +72,11 @@ func (d device) fromPathOrDefault() *specs.DeviceNode {
 	}
 
 	return &specs.DeviceNode{
-		HostPath: d.HostPath,
-		Path:     d.Path,
-		Major:    dn.Major,
-		Minor:    dn.Minor,
-		FileMode: &dn.FileMode,
+		HostPath:    d.HostPath,
+		Path:        d.Path,
+		Major:       dn.Major,
+		Minor:       dn.Minor,
+		FileMode:    &dn.FileMode,
+		Permissions: string(dn.Permissions),
 	}
 }
