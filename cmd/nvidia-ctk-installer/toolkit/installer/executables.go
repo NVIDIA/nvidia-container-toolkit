@@ -18,16 +18,12 @@
 package installer
 
 import (
-	"bytes"
-	"fmt"
-	"html/template"
-	"io"
 	"path/filepath"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/operator"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit/installer/wrappercore"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 )
 
@@ -35,7 +31,8 @@ type executable struct {
 	requiresKernelModule bool
 	path                 string
 	symlink              string
-	env                  map[string]string
+	argv                 []string
+	envm                 map[string]string
 }
 
 func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, error) {
@@ -53,7 +50,7 @@ func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 		e := executable{
 			path:                 runtime.Path,
 			requiresKernelModule: true,
-			env: map[string]string{
+			envm: map[string]string{
 				config.FilePathOverrideEnvVar: configFilePath,
 			},
 		}
@@ -62,7 +59,7 @@ func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 	executables = append(executables,
 		executable{
 			path: "nvidia-container-cli",
-			env:  map[string]string{"LD_LIBRARY_PATH": destDir + ":$LD_LIBRARY_PATH"},
+			envm: map[string]string{"<LD_LIBRARY_PATH": destDir},
 		},
 	)
 
@@ -70,7 +67,7 @@ func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 		executable{
 			path:    "nvidia-container-runtime-hook",
 			symlink: "nvidia-container-toolkit",
-			env: map[string]string{
+			envm: map[string]string{
 				config.FilePathOverrideEnvVar: configFilePath,
 			},
 		},
@@ -87,25 +84,25 @@ func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 			return nil, err
 		}
 
-		wrappedExecutableFilename := filepath.Base(executablePath)
-		dotRealFilename := wrappedExecutableFilename + ".real"
-
 		w := &wrapper{
-			Source:            executablePath,
-			WrappedExecutable: dotRealFilename,
-			CheckModules:      executable.requiresKernelModule,
-			Envvars: map[string]string{
-				"PATH": strings.Join([]string{destDir, "$PATH"}, ":"),
+			Source:             executablePath,
+			WrapperProgramPath: t.wrapperProgramPath,
+			Config: wrappercore.WrapperConfig{
+				Argv: executable.argv,
+				Envm: map[string]string{
+					"<PATH": destDir,
+				},
+				RequiresKernelModule: executable.requiresKernelModule,
 			},
 		}
-		for k, v := range executable.env {
-			w.Envvars[k] = v
+		for k, v := range executable.envm {
+			w.Config.Envm[k] = v
 		}
 
 		if len(t.defaultRuntimeExecutablePath) > 0 {
-			w.DefaultRuntimeExecutablePath = t.defaultRuntimeExecutablePath
+			w.Config.DefaultRuntimeExecutablePath = t.defaultRuntimeExecutablePath
 		} else {
-			w.DefaultRuntimeExecutablePath = "runc"
+			w.Config.DefaultRuntimeExecutablePath = "runc"
 		}
 
 		installers = append(installers, w)
@@ -121,66 +118,4 @@ func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 	}
 
 	return installers, nil
-
-}
-
-type wrapper struct {
-	Source                       string
-	Envvars                      map[string]string
-	WrappedExecutable            string
-	CheckModules                 bool
-	DefaultRuntimeExecutablePath string
-}
-
-type render struct {
-	*wrapper
-	DestDir string
-}
-
-func (w *wrapper) Install(destDir string) error {
-	// Copy the executable with a .real extension.
-	mode, err := installFile(w.Source, filepath.Join(destDir, w.WrappedExecutable))
-	if err != nil {
-		return err
-	}
-
-	// Create a wrapper file.
-	r := render{
-		wrapper: w,
-		DestDir: destDir,
-	}
-	content, err := r.render()
-	if err != nil {
-		return fmt.Errorf("failed to render wrapper: %w", err)
-	}
-	wrapperFile := filepath.Join(destDir, filepath.Base(w.Source))
-	return installContent(content, wrapperFile, mode|0111)
-}
-
-func (w *render) render() (io.Reader, error) {
-	wrapperTemplate := `#! /bin/sh
-{{- if (.CheckModules) }}
-cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
-if [ "${?}" != "0" ]; then
-	echo "nvidia driver modules are not yet loaded, invoking {{ .DefaultRuntimeExecutablePath }} directly" >&2
-	exec {{ .DefaultRuntimeExecutablePath }} "$@"
-fi
-{{- end }}
-{{- range $key, $value := .Envvars }}
-{{$key}}={{$value}} \
-{{- end }}
-	{{ .DestDir }}/{{ .WrappedExecutable }} \
-		"$@"
-`
-
-	var content bytes.Buffer
-	tmpl, err := template.New("wrapper").Parse(wrapperTemplate)
-	if err != nil {
-		return nil, err
-	}
-	if err := tmpl.Execute(&content, w); err != nil {
-		return nil, err
-	}
-
-	return &content, nil
 }
