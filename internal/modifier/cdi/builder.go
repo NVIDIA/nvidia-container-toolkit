@@ -27,10 +27,11 @@ import (
 )
 
 type builder struct {
-	logger   logger.Interface
-	specDirs []string
-	devices  []string
-	cdiSpec  *specs.Spec
+	logger    logger.Interface
+	specDirs  []string
+	devices   []string
+	cdiSpec   *specs.Spec
+	mknodOnly bool
 }
 
 // Option represents a functional option for creating a CDI mofifier.
@@ -56,7 +57,8 @@ func (m builder) build() (oci.SpecModifier, error) {
 
 	if m.cdiSpec != nil {
 		modifier := fromCDISpec{
-			cdiSpec: &cdi.Spec{Spec: m.cdiSpec},
+			cdiSpec:   &cdi.Spec{Spec: m.cdiSpec},
+			mknodOnly: m.mknodOnly,
 		}
 		return modifier, nil
 	}
@@ -69,6 +71,7 @@ func (m builder) build() (oci.SpecModifier, error) {
 		return nil, fmt.Errorf("failed to create CDI registry: %v", err)
 	}
 
+	// FIXME: cannot edit, vendor lib, mknodOnly has no effect in this case
 	modifier := fromRegistry{
 		logger:   m.logger,
 		registry: registry,
@@ -103,5 +106,12 @@ func WithDevices(devices ...string) Option {
 func WithSpec(spec *specs.Spec) Option {
 	return func(b *builder) {
 		b.cdiSpec = spec
+	}
+}
+
+// WithSpec sets the mknodOnly for the CDI modifier builder.
+func WithMknodOnly(mknodOnly bool) Option {
+	return func(b *builder) {
+		b.mknodOnly = mknodOnly
 	}
 }
