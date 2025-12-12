@@ -27,6 +27,10 @@ type RuntimeConfig struct {
 	Runtimes []string    `toml:"runtimes"`
 	Mode     string      `toml:"mode"`
 	Modes    modesConfig `toml:"modes"`
+	// Close to the "no-cgroups" bool when using the legacy mode with the hooks. Not stricly equivalent since we add
+	// the mknod permission, due to some constraint in the CDI spec
+	// https://github.com/cncf-tags/container-device-interface/issues/300
+	MknodOnly bool `toml:"mknod-only"`
 }
 
 // modesConfig defines (optional) per-mode configs
