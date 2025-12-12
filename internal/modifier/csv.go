@@ -72,6 +72,7 @@ func NewCSVModifier(logger logger.Interface, cfg *config.Config, container image
 	return cdi.New(
 		cdi.WithLogger(logger),
 		cdi.WithSpec(spec.Raw()),
+		cdi.WithMknodOnly(cfg.NVIDIAContainerRuntimeConfig.MknodOnly),
 	)
 }
 

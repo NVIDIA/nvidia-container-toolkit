@@ -27,15 +27,31 @@ import (
 
 // fromCDISpec represents the modifications performed from a raw CDI spec.
 type fromCDISpec struct {
-	cdiSpec *cdi.Spec
+	cdiSpec   *cdi.Spec
+	mknodOnly bool
 }
 
 var _ oci.SpecModifier = (*fromCDISpec)(nil)
 
-// Modify applies the mofiications defined by the raw CDI spec to the incomming OCI spec.
+// Modify applies the mofications defined by the raw CDI spec to the incomming OCI spec.
 func (m fromCDISpec) Modify(spec *specs.Spec) error {
 	for _, device := range m.cdiSpec.Devices {
 		device := device
+		if m.mknodOnly {
+			for i := range device.ContainerEdits.DeviceNodes {
+				// We cannot set an empty string as this will be translated to rwm in the OCI spec generation
+				// see here:
+				// https://github.com/NVIDIA/nvidia-container-toolkit/blob/786aa3baf25bf0acd26ae48b5934fa5d503fa1ec/vendor/tags.cncf.io/container-device-interface/pkg/cdi/container-edits.go#L110
+				// Since we use the CDI implem above and we can actually pass any arbitrary string, for some oci compatible
+				// runtimes like runc we could set "_", and this would have the intended effect (no permissions) but
+				// this relies on two successive flaws in the CDI/OCI specs implems
+				// (non repect of the CDI spec in the implem above + non respect of the OCI spec in the underlying runtime)
+				// Let's just add the mknod right as a trade off:
+				// container users should not go really far it this is all they are allowed to do
+				device.ContainerEdits.DeviceNodes[i].Permissions = "m"
+			}
+		}
+
 		cdiDevice := cdi.Device{
 			Device: &device,
 		}
