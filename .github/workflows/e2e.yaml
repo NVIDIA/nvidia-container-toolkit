@@ -94,7 +94,7 @@ jobs:
           make -f tests/e2e/Makefile test
 
       - name: Archive Ginkgo logs
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ginkgo-logs-${{ matrix.driver_branch }}
           path: ginkgo.json
