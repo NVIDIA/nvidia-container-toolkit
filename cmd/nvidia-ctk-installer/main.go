@@ -28,7 +28,6 @@ const (
 	defaultRuntime = "docker"
 )
 
-var availableRuntimes = map[string]struct{}{"docker": {}, "crio": {}, "containerd": {}}
 var defaultLowLevelRuntimes = []string{"runc", "crun"}
 
 var waitingForSignal = make(chan bool, 1)
@@ -175,9 +174,6 @@ func (a *app) validateFlags(c *cli.Command, o *options) error {
 	if o.toolkitInstallDir == "" {
 		return fmt.Errorf("the install root must be specified")
 	}
-	if _, exists := availableRuntimes[o.runtime]; !exists {
-		return fmt.Errorf("unknown runtime: %v", o.runtime)
-	}
 	if filepath.Base(o.pidFile) != toolkitPidFilename {
 		return fmt.Errorf("invalid toolkit.pid path %v", o.pidFile)
 	}
@@ -185,9 +181,11 @@ func (a *app) validateFlags(c *cli.Command, o *options) error {
 	if err := a.toolkit.ValidateOptions(&o.toolkitOptions); err != nil {
 		return err
 	}
+
 	if err := o.runtimeOptions.Validate(a.logger, c, o.runtime, o.toolkitRoot(), &o.toolkitOptions); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -200,6 +198,8 @@ func (a *app) Run(c *cli.Command, o *options) error {
 		return fmt.Errorf("unable to initialize: %v", err)
 	}
 	defer a.shutdown(o.pidFile)
+
+	runtime := runtime.Runtime(o.runtime)
 
 	if len(o.toolkitOptions.ContainerRuntimeRuntimes) == 0 {
 		lowlevelRuntimePaths, err := runtime.GetLowlevelRuntimePaths(&o.runtimeOptions, o.runtime)
@@ -216,21 +216,22 @@ func (a *app) Run(c *cli.Command, o *options) error {
 		return fmt.Errorf("unable to install toolkit: %v", err)
 	}
 
-	err = runtime.Setup(c, &o.runtimeOptions, o.runtime)
+	err = runtime.Setup(c, &o.runtimeOptions)
 	if err != nil {
 		return fmt.Errorf("unable to setup runtime: %v", err)
 	}
+	if o.noDaemon {
+		return nil
+	}
 
-	if !o.noDaemon {
-		err = a.waitForSignal()
-		if err != nil {
-			return fmt.Errorf("unable to wait for signal: %v", err)
-		}
+	err = a.waitForSignal()
+	if err != nil {
+		return fmt.Errorf("unable to wait for signal: %v", err)
+	}
 
-		err = runtime.Cleanup(c, &o.runtimeOptions, o.runtime)
-		if err != nil {
-			return fmt.Errorf("unable to cleanup runtime: %v", err)
-		}
+	err = runtime.Cleanup(c, &o.runtimeOptions, o.runtime)
+	if err != nil {
+		return fmt.Errorf("unable to cleanup runtime: %v", err)
 	}
 
 	return nil

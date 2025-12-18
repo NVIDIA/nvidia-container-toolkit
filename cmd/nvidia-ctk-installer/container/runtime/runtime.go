@@ -138,6 +138,18 @@ func Flags(opts *Options) []cli.Flag {
 
 // Validate checks whether the specified options are valid
 func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime string, toolkitRoot string, to *toolkit.Options) error {
+	// Check that the specified runtime is supported.
+	switch runtime {
+	case containerd.Name:
+	case crio.Name:
+	case docker.Name:
+	case string(None):
+		// If the none runtime is selected, we bypass any additional validations.
+		return nil
+	default:
+		return fmt.Errorf("invalid runtime %q; expected one of [containerd | crio | docker | none]", runtime)
+	}
+
 	// We set this option here to ensure that it is available in future calls.
 	opts.RuntimeDir = toolkitRoot
 
@@ -212,33 +224,42 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 	return nil
 }
 
-func Setup(c *cli.Command, opts *Options, runtime string) error {
-	switch runtime {
+type Runtime string
+
+// A None runtime is used to disable runtime configuration.
+const None Runtime = "none"
+
+func (r Runtime) Setup(c *cli.Command, opts *Options) error {
+	switch string(r) {
 	case containerd.Name:
 		return containerd.Setup(c, &opts.Options, &opts.containerdOptions)
 	case crio.Name:
 		return crio.Setup(c, &opts.Options, &opts.crioOptions)
 	case docker.Name:
 		return docker.Setup(c, &opts.Options)
+	case string(None):
+		return nil
 	default:
-		return fmt.Errorf("undefined runtime %v", runtime)
+		return fmt.Errorf("undefined runtime %v", r)
 	}
 }
 
-func Cleanup(c *cli.Command, opts *Options, runtime string) error {
-	switch runtime {
+func (r Runtime) Cleanup(c *cli.Command, opts *Options, runtime string) error {
+	switch string(r) {
 	case containerd.Name:
 		return containerd.Cleanup(c, &opts.Options, &opts.containerdOptions)
 	case crio.Name:
 		return crio.Cleanup(c, &opts.Options, &opts.crioOptions)
 	case docker.Name:
 		return docker.Cleanup(c, &opts.Options)
+	case string(None):
+		return nil
 	default:
 		return fmt.Errorf("undefined runtime %v", runtime)
 	}
 }
 
-func GetLowlevelRuntimePaths(opts *Options, runtime string) ([]string, error) {
+func (r Runtime) GetLowlevelRuntimePaths(opts *Options, runtime string) ([]string, error) {
 	switch runtime {
 	case containerd.Name:
 		return containerd.GetLowlevelRuntimePaths(&opts.Options, &opts.containerdOptions)
@@ -246,6 +267,8 @@ func GetLowlevelRuntimePaths(opts *Options, runtime string) ([]string, error) {
 		return crio.GetLowlevelRuntimePaths(&opts.Options)
 	case docker.Name:
 		return docker.GetLowlevelRuntimePaths(&opts.Options)
+	case string(None):
+		return nil, nil
 	default:
 		return nil, fmt.Errorf("undefined runtime %v", runtime)
 	}
