@@ -93,7 +93,8 @@ jobs:
           E2E_SSH_HOST: ${{ steps.holodeck_public_dns_name.outputs.result }}
         run: |
           e2e_ssh_key=$(mktemp)
-          echo "${{ secrets.AWS_SSH_KEY }}" > "$e2e_ssh_key"
+          trap 'rm -f "$e2e_ssh_key"' EXIT
+          printf '%s' "${{ secrets.AWS_SSH_KEY }}" > "$e2e_ssh_key"
           chmod 600 "$e2e_ssh_key"
           export E2E_SSH_KEY="$e2e_ssh_key"
 
