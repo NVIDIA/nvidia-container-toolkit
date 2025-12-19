@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sys/unix"
 
@@ -28,11 +29,15 @@ const (
 	defaultRuntime = "docker"
 )
 
-var availableRuntimes = map[string]struct{}{"docker": {}, "crio": {}, "containerd": {}}
-var defaultLowLevelRuntimes = []string{"runc", "crun"}
+var (
+	availableRuntimes       = map[string]struct{}{"docker": {}, "crio": {}, "containerd": {}}
+	defaultLowLevelRuntimes = []string{"runc", "crun"}
+)
 
-var waitingForSignal = make(chan bool, 1)
-var signalReceived = make(chan bool, 1)
+var (
+	waitingForSignal = make(chan bool, 1)
+	signalReceived   = make(chan bool, 1)
+)
 
 // options stores the command line arguments
 type options struct {
@@ -46,6 +51,8 @@ type options struct {
 
 	toolkitOptions toolkit.Options
 	runtimeOptions runtime.Options
+
+	debug bool
 }
 
 func (o options) toolkitRoot() string {
@@ -143,6 +150,14 @@ func (a app) build() *cli.Command {
 				Destination: &options.pidFile,
 				Sources:     cli.EnvVars("TOOLKIT_PID_FILE", "PID_FILE"),
 			},
+			&cli.BoolFlag{
+				Name:        "debug",
+				Aliases:     []string{"d"},
+				Value:       false,
+				Usage:       "enable debug-level log",
+				Destination: &options.debug,
+				Sources:     cli.EnvVars("TOOLKIT_DEBUG"),
+			},
 		},
 	}
 
@@ -154,6 +169,11 @@ func (a app) build() *cli.Command {
 }
 
 func (a *app) Before(c *cli.Command, o *options) error {
+	if o.debug {
+		if l, ok := a.logger.(*logrus.Logger); ok {
+			l.SetLevel(logrus.DebugLevel)
+		}
+	}
 	if o.sourceRoot == "" {
 		sourceRoot, err := a.resolveSourceRoot(o.runtimeOptions.HostRootMount, o.packageType)
 		if err != nil {
@@ -240,7 +260,7 @@ func (a *app) initialize(pidFile string) error {
 	a.logger.Infof("Initializing")
 
 	if dir := filepath.Dir(pidFile); dir != "" {
-		err := os.MkdirAll(dir, 0755)
+		err := os.MkdirAll(dir, 0o755)
 		if err != nil {
 			return fmt.Errorf("unable to create folder for pidfile: %w", err)
 		}
