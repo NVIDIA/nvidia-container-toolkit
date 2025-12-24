@@ -34,6 +34,8 @@ const (
 	// defaultRuntimeName specifies the NVIDIA runtime to be use as the default runtime if setting the default runtime is enabled
 	defaultRuntimeName   = "nvidia"
 	defaultHostRootMount = "/host"
+	defaultNRIPluginIdx  = "10"
+	defaultNRISocket     = "/var/run/nri/nri.sock"
 
 	runtimeSpecificDefault = "RUNTIME_SPECIFIC_DEFAULT"
 )
@@ -93,6 +95,27 @@ func Flags(opts *Options) []cli.Flag {
 			Usage:       "Enable CDI in the configured runt	ime",
 			Destination: &opts.EnableCDI,
 			Sources:     cli.EnvVars("RUNTIME_ENABLE_CDI"),
+		},
+		&cli.BoolFlag{
+			Name:        "enable-nri-in-runtime",
+			Usage:       "Enable NRI in the configured runtime",
+			Destination: &opts.EnableNRI,
+			Value:       true,
+			Sources:     cli.EnvVars("RUNTIME_ENABLE_NRI"),
+		},
+		&cli.StringFlag{
+			Name:        "nri-plugin-index",
+			Usage:       "Specify the plugin index to register to NRI",
+			Value:       defaultNRIPluginIdx,
+			Destination: &opts.NRIPluginIndex,
+			Sources:     cli.EnvVars("RUNTIME_NRI_PLUGIN_INDEX"),
+		},
+		&cli.StringFlag{
+			Name:        "nri-socket",
+			Usage:       "Specify the path to the NRI socket file to register the NRI plugin server",
+			Value:       defaultNRISocket,
+			Destination: &opts.NRISocket,
+			Sources:     cli.EnvVars("RUNTIME_NRI_SOCKET"),
 		},
 		&cli.StringFlag{
 			Name:        "host-root",
