@@ -51,3 +51,25 @@ func (m List) Modify(spec *specs.Spec) error {
 	}
 	return nil
 }
+
+func (m List) AddDeviceCgroupRules(spec *specs.Spec) error {
+	for _, mm := range m {
+		if mm == nil {
+			continue
+		}
+		err := mm.AddDeviceCgroupRules(spec)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m List) WithDeviceResolver(resolver oci.DeviceResolver) {
+	for _, mm := range m {
+		if mm == nil {
+			continue
+		}
+		mm.WithDeviceResolver(resolver)
+	}
+}

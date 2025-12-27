@@ -64,3 +64,9 @@ func (m fromRegistry) Modify(spec *specs.Spec) error {
 
 	return nil
 }
+
+func (m fromRegistry) AddDeviceCgroupRules(spec *specs.Spec) error {
+	return nil
+}
+
+func (m fromRegistry) WithDeviceResolver(resolver oci.DeviceResolver) {}

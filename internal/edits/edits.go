@@ -123,3 +123,9 @@ func (e *edits) Modify(spec *ociSpecs.Spec) error {
 
 	return e.Apply(spec)
 }
+
+func (e *edits) AddDeviceCgroupRules(spec *ociSpecs.Spec) error {
+	return nil
+}
+
+func (e *edits) WithDeviceResolver(resolver oci.DeviceResolver) {}

@@ -73,6 +73,12 @@ func (m nvidiaContainerRuntimeHookRemover) Modify(spec *specs.Spec) error {
 	return nil
 }
 
+func (m nvidiaContainerRuntimeHookRemover) AddDeviceCgroupRules(spec *specs.Spec) error {
+	return nil
+}
+
+func (m nvidiaContainerRuntimeHookRemover) WithDeviceResolver(resolver oci.DeviceResolver) {}
+
 // isNVIDIAContainerRuntimeHook checks if the provided hook is an nvidia-container-runtime-hook
 // or nvidia-container-toolkit hook. These are included, for example, by the non-experimental
 // nvidia-container-runtime or docker when specifying the --gpus flag.

@@ -32,7 +32,7 @@ type fromCDISpec struct {
 
 var _ oci.SpecModifier = (*fromCDISpec)(nil)
 
-// Modify applies the mofiications defined by the raw CDI spec to the incomming OCI spec.
+// Modify applies the modifications defined by the raw CDI spec to the incoming OCI spec.
 func (m fromCDISpec) Modify(spec *specs.Spec) error {
 	for _, device := range m.cdiSpec.Devices {
 		device := device
@@ -46,3 +46,9 @@ func (m fromCDISpec) Modify(spec *specs.Spec) error {
 
 	return m.cdiSpec.ApplyEdits(spec)
 }
+
+func (m fromCDISpec) AddDeviceCgroupRules(spec *specs.Spec) error {
+	return nil
+}
+
+func (m fromCDISpec) WithDeviceResolver(resolver oci.DeviceResolver) {}

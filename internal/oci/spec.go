@@ -27,6 +27,8 @@ type SpecModifier interface {
 	// Modify is a method that accepts a pointer to an OCI Spec and returns an
 	// error. The intention is that the function would modify the spec in-place.
 	Modify(*specs.Spec) error
+	AddDeviceCgroupRules(spec *specs.Spec) error
+	WithDeviceResolver(DeviceResolver)
 }
 
 // SpecModifiers is a collection of OCI Spec modifiers that can be treated as a
@@ -80,4 +82,22 @@ func (ms SpecModifiers) Modify(s *specs.Spec) error {
 		}
 	}
 	return nil
+}
+
+func (ms SpecModifiers) AddDeviceCgroupRules(spec *specs.Spec) error {
+	for _, m := range ms {
+		if m == nil {
+			continue
+		}
+		if err := m.AddDeviceCgroupRules(spec); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (ms SpecModifiers) WithDeviceResolver(resolver DeviceResolver) {
+	for _, m := range ms {
+		m.WithDeviceResolver(resolver)
+	}
 }

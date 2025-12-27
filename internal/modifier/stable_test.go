@@ -26,6 +26,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -151,7 +152,6 @@ func TestAddHookModifier(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 
 		logHook.Reset()
 
@@ -170,4 +170,23 @@ func TestAddHookModifier(t *testing.T) {
 		})
 	}
 
+}
+
+func TestAddAllGPUDevicesWithMock(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	mockResolver := oci.NewMockDeviceResolver()
+
+	m := NewStableRuntimeModifier(logger, "")
+	m.WithDeviceResolver(mockResolver)
+
+	spec := &specs.Spec{
+		Linux: &specs.Linux{
+			Resources: &specs.LinuxResources{},
+		},
+	}
+
+	err := m.AddDeviceCgroupRules(spec)
+	require.NoError(t, err)
+	require.Equal(t, 3, len(spec.Linux.Resources.Devices)) // nvidia0, nvidia1, nvidia2
 }

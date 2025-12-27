@@ -52,3 +52,9 @@ func (m discoverModifier) Modify(spec *specs.Spec) error {
 
 	return specEdits.Modify(spec)
 }
+
+func (m discoverModifier) AddDeviceCgroupRules(spec *specs.Spec) error {
+	return nil
+}
+
+func (m discoverModifier) WithDeviceResolver(resolver oci.DeviceResolver) {}
