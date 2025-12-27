@@ -92,15 +92,19 @@ func (m stableRuntimeModifier) Modify(spec *specs.Spec) error {
 
 func (m *stableRuntimeModifier) AddDeviceCgroupRules(spec *specs.Spec) error {
 
-	if spec.Linux == nil {
-		return nil
-	}
-
 	visibleDevices := getEnvVar(spec, visibleDevicesEnvvar)
 
 	if visibleDevices == "" || visibleDevices == visibleDevicesVoid || visibleDevices == visibleDevicesNone {
 		m.logger.Warning("NVIDIA_VISIBLE_DEVICES is void/none/empty, skipping cgroup rules")
 		return nil
+	}
+
+	if spec.Linux == nil {
+		spec.Linux = &specs.Linux{}
+	}
+
+	if spec.Linux.Resources == nil {
+		spec.Linux.Resources = &specs.LinuxResources{}
 	}
 
 	if err := addCommonDevices(m, spec); err != nil {
