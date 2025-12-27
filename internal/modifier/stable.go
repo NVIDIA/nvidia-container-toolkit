@@ -166,7 +166,7 @@ func addGPUDevices(m *stableRuntimeModifier, spec *specs.Spec, visibleDevices st
 			return addAllGPUDevices(m, spec)
 		}
 
-		devicePaths, err := resolveDevicePaths(m, device)
+		devicePaths, err := resolveDevicePaths(device)
 		if err != nil {
 			return fmt.Errorf("failed to resolve device %s: %v", device, err)
 		}
@@ -195,12 +195,12 @@ func addAllGPUDevices(m *stableRuntimeModifier, spec *specs.Spec) error {
 	for _, devicePath := range matches {
 		rule, err := m.deviceResolver.DevicePathToRule(devicePath)
 		if err != nil {
-			continue
+			return fmt.Errorf("failed to add device %s: %v", devicePath, err)
 		}
 		spec.Linux.Resources.Devices = append(spec.Linux.Resources.Devices, *rule)
 	}
 
-	capsMatches, _ := m.deviceResolver.GlobDevices("/dev/nvidia-caps/nvidia-cap[0-9]*")
+	capsMatches, _ := m.deviceResolver.GlobDevices("nvidia-caps/nvidia-cap[0-9]*")
 	for _, devicePath := range capsMatches {
 		rule, err := m.deviceResolver.DevicePathToRule(devicePath)
 		if err != nil {
@@ -212,7 +212,7 @@ func addAllGPUDevices(m *stableRuntimeModifier, spec *specs.Spec) error {
 	return nil
 }
 
-func resolveDevicePaths(m *stableRuntimeModifier, device string) ([]string, error) {
+func resolveDevicePaths(device string) ([]string, error) {
 	var paths []string
 
 	if idx, err := strconv.Atoi(device); err == nil {
