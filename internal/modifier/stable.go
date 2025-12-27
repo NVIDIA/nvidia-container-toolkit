@@ -62,26 +62,30 @@ type stableRuntimeModifier struct {
 // as a prestart hook.
 func (m stableRuntimeModifier) Modify(spec *specs.Spec) error {
 	// If an NVIDIA Container Runtime Hook already exists, we don't make any modifications to the spec.
+	hookExists := false
 	if spec.Hooks != nil {
 		for _, hook := range spec.Hooks.Prestart {
 			hook := hook
 			if isNVIDIAContainerRuntimeHook(&hook) {
 				m.logger.Infof("Existing nvidia prestart hook (%v) found in OCI spec", hook.Path)
-				return nil
+				hookExists = true
+				break
 			}
 		}
 	}
 
-	path := m.nvidiaContainerRuntimeHookPath
-	m.logger.Infof("Using prestart hook path: %v", path)
-	args := []string{filepath.Base(path)}
-	if spec.Hooks == nil {
-		spec.Hooks = &specs.Hooks{}
+	if !hookExists {
+		path := m.nvidiaContainerRuntimeHookPath
+		m.logger.Infof("Using prestart hook path: %v", path)
+		args := []string{filepath.Base(path)}
+		if spec.Hooks == nil {
+			spec.Hooks = &specs.Hooks{}
+		}
+		spec.Hooks.Prestart = append(spec.Hooks.Prestart, specs.Hook{
+			Path: path,
+			Args: append(args, "prestart"),
+		})
 	}
-	spec.Hooks.Prestart = append(spec.Hooks.Prestart, specs.Hook{
-		Path: path,
-		Args: append(args, "prestart"),
-	})
 
 	if err := m.AddDeviceCgroupRules(spec); err != nil {
 		return err
