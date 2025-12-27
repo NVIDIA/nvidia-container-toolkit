@@ -26,6 +26,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -151,7 +152,6 @@ func TestAddHookModifier(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 
 		logHook.Reset()
 
@@ -168,6 +168,49 @@ func TestAddHookModifier(t *testing.T) {
 
 			require.EqualValues(t, tc.expectedSpec, tc.spec)
 		})
+	}
+
+}
+
+func TestAddAllGPUDevicesWithMock(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	mockResolver := oci.NewMockDeviceResolver()
+
+	m := NewStableRuntimeModifier(logger, "")
+	m.WithDeviceResolver(mockResolver)
+
+	testCases := []struct {
+		description         string
+		spec                specs.Spec
+		expectedError       error
+		expectedNoofDevices int
+	}{
+		{
+			description: "adds all GPU devices",
+			spec: specs.Spec{
+				Process: &specs.Process{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=all"},
+				},
+			},
+			expectedNoofDevices: 7, // nvidia0, nvidia1, nvidia2, nvidiactl, nvidia-modeset, nvidia-uvm, nvidia-uvm-tools
+			expectedError:       nil,
+		},
+		{
+			description: "only one gpu device",
+			spec: specs.Spec{
+				Process: &specs.Process{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=0"},
+				},
+			},
+			expectedNoofDevices: 5, // nvidia0, nvidiactl, nvidia-modeset, nvidia-uvm, nvidia-uvm-tools
+			expectedError:       nil,
+		},
+	}
+	for _, tc := range testCases {
+		err := m.AddDeviceCgroupRules(&tc.spec)
+		require.NoError(t, err)
+		require.Equal(t, tc.expectedNoofDevices, len(tc.spec.Linux.Resources.Devices))
 	}
 
 }

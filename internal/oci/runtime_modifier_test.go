@@ -161,3 +161,9 @@ type modiferMock struct{}
 func (m modiferMock) Modify(*specs.Spec) error {
 	return nil
 }
+
+func (m modiferMock) AddDeviceCgroupRules(spec *specs.Spec) error {
+	return nil
+}
+
+func (m modiferMock) WithDeviceResolver(resolver DeviceResolver) {}

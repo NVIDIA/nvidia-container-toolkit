@@ -177,3 +177,9 @@ func (m modifier) Modify(spec *specs.Spec) error {
 	}
 	return m.modifierError
 }
+
+func (m modifier) AddDeviceCgroupRules(spec *specs.Spec) error {
+	return nil
+}
+
+func (m modifier) WithDeviceResolver(resolver DeviceResolver) {}
