@@ -72,7 +72,12 @@ func (l *csvlib) usePureCSVDeviceSpecGenerator() bool {
 	}
 	defer asNvmlLib.tryShutdown()
 
-	return false
+	numDevices, ret := l.nvmllib.DeviceGetCount()
+	if ret != nvml.SUCCESS {
+		return true
+	}
+
+	return numDevices <= 1
 }
 
 func (l *csvlib) purecsvDeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, error) {
