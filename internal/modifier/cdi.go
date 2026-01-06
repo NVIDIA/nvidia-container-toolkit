@@ -55,29 +55,34 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		logger.Debugf("No devices requested; no modification required.")
 		return nil, nil
 	}
-	logger.Debugf("Creating CDI modifier for devices: %v", devices)
 
 	automaticDevices := filterAutomaticDevices(devices)
 	if len(automaticDevices) != len(devices) && len(automaticDevices) > 0 {
 		return nil, fmt.Errorf("requesting a CDI device with vendor 'runtime.nvidia.com' is not supported when requesting other CDI devices")
 	}
 	if len(automaticDevices) > 0 {
-		automaticDevices = append(automaticDevices, withUniqueDevices(gatedDevices(image)).DeviceRequests()...)
-		automaticDevices = append(automaticDevices, withUniqueDevices(imexDevices(image)).DeviceRequests()...)
-
-		automaticModifier, err := newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
-		if err == nil {
-			return automaticModifier, nil
+		logger.Debugf("Using automatic CDI modfier for devices %v", automaticDevices)
+		modifier, err := newJitCDIModifier(logger, cfg, image, automaticDevices)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create the automatic CDI modifier: %w", err)
 		}
-		logger.Warningf("Failed to create the automatic CDI modifier: %w", err)
-		logger.Debugf("Falling back to the standard CDI modifier")
+		return modifier, nil
 	}
 
+	logger.Debugf("Creating CDI modifier for devices: %v", devices)
 	return cdi.New(
 		cdi.WithLogger(logger),
 		cdi.WithDevices(devices...),
 		cdi.WithSpecDirs(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs...),
 	)
+}
+
+// newJitCDIModifier creates a modifier that for a generated in-memory CDI spec for the specified CDI devices.
+func newJitCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, automaticDevices []string) (oci.SpecModifier, error) {
+	automaticDevices = append(automaticDevices, withUniqueDevices(gatedDevices(image)).DeviceRequests()...)
+	automaticDevices = append(automaticDevices, withUniqueDevices(imexDevices(image)).DeviceRequests()...)
+
+	return newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
 }
 
 type deviceRequestor interface {
