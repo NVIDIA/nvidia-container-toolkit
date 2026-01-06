@@ -17,8 +17,8 @@ require (
 	github.com/urfave/cli/v3 v3.4.1
 	golang.org/x/mod v0.29.0
 	golang.org/x/sys v0.37.0
-	tags.cncf.io/container-device-interface v1.0.2-0.20251114135136-1b24d969689f
-	tags.cncf.io/container-device-interface/specs-go v1.0.0
+	tags.cncf.io/container-device-interface v1.1.0
+	tags.cncf.io/container-device-interface/specs-go v1.1.0
 )
 
 require (
