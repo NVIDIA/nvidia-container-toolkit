@@ -63,7 +63,7 @@ jobs:
           ./scripts/build-packages.sh ${{ matrix.target }}
 
       - name: 'Upload Artifacts'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           compression-level: 0
           name: toolkit-container-${{ matrix.target }}-${{ github.run_id }}
