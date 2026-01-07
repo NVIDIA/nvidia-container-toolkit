@@ -30,6 +30,7 @@ import (
 var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 	var hostDriverVersion string
 	var hostDriverMajor string
+	var hostOutput string
 
 	// Install the NVIDIA Container Toolkit
 	BeforeAll(func(ctx context.Context) {
@@ -41,6 +42,9 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 		hostDriverVersion = strings.TrimSpace(parts[1])
 		Expect(hostDriverVersion).ToNot(BeEmpty())
 		hostDriverMajor = strings.SplitN(hostDriverVersion, ".", 2)[0]
+
+		hostOutput, _, err = runner.Run("nvidia-smi -L")
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	// GPUs are accessible in a container: Running nvidia-smi -L inside the
@@ -48,13 +52,7 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 	// container. This means that the following commands must all produce
 	// the same output
 	When("running nvidia-smi -L", Ordered, func() {
-		var hostOutput string
-		var err error
-
 		BeforeAll(func(ctx context.Context) {
-			hostOutput, _, err = runner.Run("nvidia-smi -L")
-			Expect(err).ToNot(HaveOccurred())
-
 			_, _, err := runner.Run("docker pull ubuntu")
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -587,6 +585,32 @@ EOF`)
 			output, _, err := runner.Run(`docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all redhat/ubi9 bash -c "ldconfig -p | grep libc.so."`)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
+		})
+	})
+
+	When("running an alpine container", Ordered, func() {
+		BeforeAll(func(ctx context.Context) {
+			_, _, err := runner.Run(`docker build -t alpinecompat \
+            - <<EOF
+FROM alpine
+ENV NVIDIA_VISIBLE_DEVICES=all
+RUN apk add --no-cache gcompat
+EOF`)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("nvidia-smi should succeed when using the nvidia-container-runtime", func(ctx context.Context) {
+			output, _, err := runner.Run(`docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all \
+				alpinecompat nvidia-smi -L`)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output).To(Equal(hostOutput))
+		})
+
+		It("nvidia-smi should succeed when using the nvidia-container-runtime-hook", Label("legacy"), func(ctx context.Context) {
+			output, _, err := runner.Run(`docker run --rm --runtime=runc --gpus=all \
+				alpinecompat nvidia-smi -L`)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output).To(Equal(hostOutput))
 		})
 	})
 })
