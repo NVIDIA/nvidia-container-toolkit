@@ -74,6 +74,7 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		cdi.WithLogger(logger),
 		cdi.WithDevices(devices...),
 		cdi.WithSpecDirs(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs...),
+		cdi.WithMknodOnly(cfg.NVIDIAContainerRuntimeConfig.MknodOnly),
 	)
 }
 
@@ -197,6 +198,7 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 		cdiDeviceRequestor, err := cdi.New(
 			cdi.WithLogger(logger),
 			cdi.WithSpec(spec.Raw()),
+			cdi.WithMknodOnly(cfg.NVIDIAContainerRuntimeConfig.MknodOnly),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct CDI modifier for mode %q: %w", mode, err)
