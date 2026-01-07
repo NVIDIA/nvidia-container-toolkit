@@ -130,6 +130,10 @@ func WithoutDeviceNodes() Transformer {
 	}
 }
 
+func Without(m MountSpecPathsByTyper) Transformer {
+	return filterByMountSpecPathsByTyper{m}
+}
+
 // WithoutRegularDeviceNodes creates a transfomer which removes
 // regular `/dev/nvidia[0-9]+` device nodes from the source.
 func WithoutRegularDeviceNodes() Transformer {

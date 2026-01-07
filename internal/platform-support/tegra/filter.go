@@ -77,6 +77,9 @@ type matcherAsFilter struct {
 }
 
 type filterByMountSpecType map[csv.MountSpecType]filter
+type filterByMountSpecPathsByTyper struct {
+	MountSpecPathsByTyper
+}
 
 type pathPatterns []string
 type pathPattern string
@@ -123,6 +126,14 @@ func (p filterByMountSpecType) Apply(input MountSpecPathsByTyper) MountSpecPaths
 		ms[t] = filter.apply(ms[t]...)
 	}
 	return ms
+}
+
+func (p filterByMountSpecPathsByTyper) Apply(input MountSpecPathsByTyper) MountSpecPathsByTyper {
+	f := make(filterByMountSpecType)
+	for t, p := range p.MountSpecPathsByType() {
+		f[t] = &matcherAsFilter{pathPatterns(p)}
+	}
+	return f.Apply(input)
 }
 
 // apply uses a matcher to filter an input string.
