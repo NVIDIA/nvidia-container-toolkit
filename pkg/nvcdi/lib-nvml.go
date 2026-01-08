@@ -66,6 +66,9 @@ func (l *nvmllib) DeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, erro
 func (l *nvmllib) getDeviceSpecGeneratorsForIDs(ids ...string) (DeviceSpecGenerator, error) {
 	var identifiers []device.Identifier
 	for _, id := range ids {
+		if id == "none" {
+			return DeviceSpecGenerators{}, nil
+		}
 		if id == "all" {
 			return l.getDeviceSpecGeneratorsForAllDevices()
 		}
