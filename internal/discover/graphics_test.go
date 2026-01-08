@@ -17,10 +17,14 @@
 package discover
 
 import (
+	"path/filepath"
+	"strings"
 	"testing"
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
 func TestGraphicsLibrariesDiscoverer(t *testing.T) {
@@ -160,6 +164,87 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 			require.EqualValues(t, tc.expectedHooks, hooks)
 			require.Len(t, tc.libraries.calls.Mounts, 2)
 			require.Len(t, tc.libraries.calls.Hooks, 0)
+		})
+	}
+}
+
+func TestDrmDevicesByPath(t *testing.T) {
+	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
+	moduleRoot, err := test.GetModuleRoot()
+	require.NoError(t, err)
+	devRoot := filepath.Join(moduleRoot, "testdata", "lookup", "rootfs-drm")
+
+	logger, _ := testlog.NewNullLogger()
+	hookCreator := NewHookCreator()
+
+	testCases := []struct {
+		description   string
+		devices       Discover
+		devRoot       string
+		expectedError error
+		expectedHooks []Hook
+	}{
+		{
+			description: "no devices",
+			devices:     &DiscoverMock{},
+		},
+		{
+			description: "single device",
+			devices: &DiscoverMock{
+				DevicesFunc: func() ([]Device, error) {
+					devices := []Device{
+						{
+							HostPath: "/dev/dri/card0",
+						},
+						{
+							HostPath: "/dev/dri/renderD128",
+						},
+					}
+					return devices, nil
+				},
+			},
+			expectedHooks: []Hook{
+				{
+					Lifecycle: "createContainer",
+					Path:      "/usr/bin/nvidia-cdi-hook",
+					Args: []string{
+						"nvidia-cdi-hook", "create-symlinks",
+						"--link", "../card0::{{ .DevRoot }}/dev/dri/by-path/pci-0000:07:00.0-card",
+						"--link", "../renderD128::{{ .DevRoot }}/dev/dri/by-path/pci-0000:07:00.0-render",
+					},
+					Env: []string{"NVIDIA_CTK_DEBUG=false"},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+
+		for _, h := range tc.expectedHooks {
+			for i := range h.Args {
+				h.Args[i] = strings.ReplaceAll(h.Args[i], "{{ .DevRoot }}", devRoot)
+			}
+		}
+
+		t.Run(tc.description, func(t *testing.T) {
+			d := newCreateDRMByPathSymlinks(logger, tc.devices, devRoot, hookCreator)
+
+			devices, err := d.Devices()
+			require.NoError(t, err)
+			require.Empty(t, devices)
+
+			envVars, err := d.EnvVars()
+			require.NoError(t, err)
+			require.Empty(t, envVars)
+
+			mounts, err := d.Mounts()
+			require.NoError(t, err)
+			require.Empty(t, mounts)
+
+			hooks, err := d.Hooks()
+			require.EqualValues(t, tc.expectedError, err)
+
+			require.EqualValues(t, tc.expectedHooks, hooks)
 		})
 	}
 }
