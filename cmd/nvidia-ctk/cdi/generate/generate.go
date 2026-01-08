@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/urfave/cli/v3"
@@ -281,6 +282,11 @@ func (m command) validateFlags(c *cli.Command, opts *options) error {
 		if hook == "all" {
 			return fmt.Errorf("enabling all hooks is not supported")
 		}
+	}
+
+	if slices.Contains(opts.deviceIDs, "none") && !opts.noAllDevice {
+		m.logger.Warning("Disabling generation of 'all' device")
+		opts.noAllDevice = true
 	}
 	return nil
 }
