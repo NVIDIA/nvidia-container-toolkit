@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/onsi/ginkgo/v2 v2.27.3
-	github.com/onsi/gomega v1.38.3
+	github.com/onsi/gomega v1.39.0
 	github.com/pelletier/go-toml v1.9.5
 	golang.org/x/crypto v0.46.0
 )
