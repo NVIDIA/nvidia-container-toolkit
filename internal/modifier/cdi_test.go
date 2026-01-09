@@ -149,6 +149,18 @@ func TestDeviceRequests(t *testing.T) {
 			},
 			expectedDevices: []string{"nvidia.com/gpu=example.com/device"},
 		},
+		{
+			description: "NVIDIA_VISIBLE_DEVICES=none",
+			input: cdiDeviceRequestor{
+				defaultKind: "runtime.nvidia.com/gpu",
+			},
+			spec: &specs.Spec{
+				Process: &specs.Process{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=none"},
+				},
+			},
+			expectedDevices: []string{"runtime.nvidia.com/gpu=none"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -241,6 +253,15 @@ func Test_cdiModeIdentfiersFromDevices(t *testing.T) {
 			expected: &cdiModeIdentifiers{
 				modes:             []string{"gds"},
 				idsByMode:         map[string][]string{"gds": {"x", "y"}},
+				deviceClassByMode: map[string]string{"auto": "gpu"},
+			},
+		},
+		{
+			description: "NVIDIA_VISIBLE_DEVICES=none",
+			devices:     []string{"none"},
+			expected: &cdiModeIdentifiers{
+				modes:             []string{"auto"},
+				idsByMode:         map[string][]string{"auto": {"none"}},
 				deviceClassByMode: map[string]string{"auto": "gpu"},
 			},
 		},

@@ -86,6 +86,12 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(containerOutput).To(Equal(hostOutput))
 		})
+
+		It("should show no devices when NVIDIA_VISIBLE_DEVICES=none", func(ctx context.Context) {
+			containerOutput, _, err := runner.Run("docker run --rm -i --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=none ubuntu nvidia-smi -L")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(strings.TrimSpace(containerOutput)).To(Equal("No devices found."))
+		})
 	})
 
 	// A vectorAdd sample runs in a container with access to all GPUs.

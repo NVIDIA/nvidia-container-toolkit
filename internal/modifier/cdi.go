@@ -110,6 +110,9 @@ func (c *cdiDeviceRequestor) DeviceRequests() []string {
 	}
 	var devices []string
 	for _, name := range c.image.VisibleDevices() {
+		if name == "" {
+			name = "none"
+		}
 		if !parser.IsQualifiedName(name) {
 			name = fmt.Sprintf("%s=%s", c.defaultKind, name)
 		}
