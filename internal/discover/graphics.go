@@ -307,12 +307,7 @@ func (d drmDevicesByPath) Hooks() ([]Hook, error) {
 		return nil, nil
 	}
 
-	var args []string
-	for _, l := range links {
-		args = append(args, "--link", l)
-	}
-
-	hook := d.hookCreator.Create("create-symlinks", args...)
+	hook := d.hookCreator.Create("create-symlinks", links...)
 
 	return hook.Hooks()
 }
