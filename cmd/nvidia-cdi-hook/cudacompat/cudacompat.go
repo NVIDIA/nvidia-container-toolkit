@@ -169,15 +169,21 @@ func (m command) getContainerForwardCompatDir(containerRoot containerRoot, o *op
 }
 
 func (m command) useCompatLibraries(libcudaCompatPath string, hostDriverVersion string) (bool, error) {
+	driverMajor, err := extractMajorVersion(hostDriverVersion)
+	if err != nil {
+		return false, fmt.Errorf("failed to extract major version from %q: %v", hostDriverVersion, err)
+	}
+
+	// First check the elf header.
+	cudaCompatHeader, _ := GetCUDACompatElfHeader(libcudaCompatPath)
+	if cudaCompatHeader != nil {
+		return cudaCompatHeader.UseCompat(driverMajor), nil
+	}
+
 	compatDriverVersion := strings.TrimPrefix(filepath.Base(libcudaCompatPath), "libcuda.so.")
 	compatMajor, err := extractMajorVersion(compatDriverVersion)
 	if err != nil {
 		return false, fmt.Errorf("failed to extract major version from %q: %v", compatDriverVersion, err)
-	}
-
-	driverMajor, err := extractMajorVersion(hostDriverVersion)
-	if err != nil {
-		return false, fmt.Errorf("failed to extract major version from %q: %v", hostDriverVersion, err)
 	}
 
 	if driverMajor < compatMajor {
