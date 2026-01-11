@@ -117,7 +117,7 @@ func (m command) run(_ *cli.Command, o *options) error {
 		return fmt.Errorf("failed to determined container root: %w", err)
 	}
 
-	containerForwardCompatDir, err := m.getContainerForwardCompatDir(containerRoot(containerRootDir), o.cudaCompatContainerRoot, o.hostDriverVersion)
+	containerForwardCompatDir, err := m.getContainerForwardCompatDir(containerRoot(containerRootDir), o)
 	if err != nil {
 		return fmt.Errorf("failed to get container forward compat directory: %w", err)
 	}
@@ -128,17 +128,17 @@ func (m command) run(_ *cli.Command, o *options) error {
 	return m.createLdsoconfdFile(containerRoot(containerRootDir), cudaCompatLdsoconfdFilenamePattern, containerForwardCompatDir)
 }
 
-func (m command) getContainerForwardCompatDir(containerRoot containerRoot, cudaCompatRoot string, hostDriverVersion string) (string, error) {
-	if hostDriverVersion == "" {
+func (m command) getContainerForwardCompatDir(containerRoot containerRoot, o *options) (string, error) {
+	if o.hostDriverVersion == "" {
 		m.logger.Debugf("Host driver version not specified")
 		return "", nil
 	}
-	if !containerRoot.hasPath(cudaCompatRoot) {
+	if !containerRoot.hasPath(o.cudaCompatContainerRoot) {
 		m.logger.Debugf("No CUDA forward compatibility libraries directory in container")
 		return "", nil
 	}
 
-	libs, err := containerRoot.globFiles(filepath.Join(cudaCompatRoot, "libcuda.so.*.*"))
+	libs, err := containerRoot.globFiles(filepath.Join(o.cudaCompatContainerRoot, "libcuda.so.*.*"))
 	if err != nil {
 		m.logger.Warningf("Failed to find CUDA compat library: %w", err)
 		return "", nil
@@ -154,24 +154,38 @@ func (m command) getContainerForwardCompatDir(containerRoot containerRoot, cudaC
 		return "", nil
 	}
 
-	compatDriverVersion := strings.TrimPrefix(filepath.Base(libs[0]), "libcuda.so.")
+	libCudaCompatPath := libs[0]
+
+	useCompatLibs, err := m.useCompatLibraries(libCudaCompatPath, o.hostDriverVersion)
+	if err != nil {
+		return "", err
+	}
+	if !useCompatLibs {
+		return "", nil
+	}
+
+	resolvedCompatDir := strings.TrimPrefix(filepath.Dir(libCudaCompatPath), string(containerRoot))
+	return resolvedCompatDir, nil
+}
+
+func (m command) useCompatLibraries(libcudaCompatPath string, hostDriverVersion string) (bool, error) {
+	compatDriverVersion := strings.TrimPrefix(filepath.Base(libcudaCompatPath), "libcuda.so.")
 	compatMajor, err := extractMajorVersion(compatDriverVersion)
 	if err != nil {
-		return "", fmt.Errorf("failed to extract major version from %q: %v", compatDriverVersion, err)
+		return false, fmt.Errorf("failed to extract major version from %q: %v", compatDriverVersion, err)
 	}
 
 	driverMajor, err := extractMajorVersion(hostDriverVersion)
 	if err != nil {
-		return "", fmt.Errorf("failed to extract major version from %q: %v", hostDriverVersion, err)
+		return false, fmt.Errorf("failed to extract major version from %q: %v", hostDriverVersion, err)
 	}
 
-	if driverMajor >= compatMajor {
-		m.logger.Debugf("Compat major version is not greater than the host driver major version (%v >= %v)", hostDriverVersion, compatDriverVersion)
-		return "", nil
+	if driverMajor < compatMajor {
+		return true, nil
 	}
 
-	resolvedCompatDir := strings.TrimPrefix(filepath.Dir(libs[0]), string(containerRoot))
-	return resolvedCompatDir, nil
+	m.logger.Debugf("Compat major version is not greater than the host driver major version (%v >= %v)", hostDriverVersion, compatDriverVersion)
+	return false, nil
 }
 
 // createLdsoconfdFile creates a file at /etc/ld.so.conf.d/ in the specified root.
