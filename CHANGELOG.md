@@ -1,5 +1,17 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.18.2
+- Generate none device spec
+- fix: Skip device node injection if NVIDIA_VISIBLE_DEVICES=none
+- fix: Fix arguments when creating DRM device symlinks
+- Fix library paths in Apline containers
+- fix: Return error on JIT CDI spec generation failure
+- Fix trigger of CDI refresh service
+
+### Changes in the Toolkit Container
+
+- Bump nvidia/distroless/go to v3.2.2-dev in /deployments/container
+
 ## v1.18.1
 - Fix update of ldcache for non-matching host and container distros
 - Use enable-cuda-compat hook when ldcache does not exist
