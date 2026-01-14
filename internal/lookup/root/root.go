@@ -25,7 +25,7 @@ import (
 	"sync"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup"
 )
 
 // Driver represents a filesystem in which a set of drivers or devices is defined.
