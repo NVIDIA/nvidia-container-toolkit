@@ -28,7 +28,6 @@ const (
 	defaultRuntime = "docker"
 )
 
-var availableRuntimes = map[string]struct{}{"docker": {}, "crio": {}, "containerd": {}}
 var defaultLowLevelRuntimes = []string{"runc", "crun"}
 
 var waitingForSignal = make(chan bool, 1)
@@ -39,13 +38,15 @@ type options struct {
 	toolkitInstallDir string
 
 	noDaemon    bool
-	runtime     string
 	pidFile     string
 	sourceRoot  string
 	packageType string
 
 	toolkitOptions toolkit.Options
-	runtimeOptions runtime.Options
+
+	noRuntimeConfig bool
+	runtime         string
+	runtimeOptions  runtime.Options
 }
 
 func (o options) toolkitRoot() string {
@@ -104,10 +105,19 @@ func (a app) build() *cli.Command {
 				Destination: &options.noDaemon,
 				Sources:     cli.EnvVars("NO_DAEMON"),
 			},
+			&cli.BoolFlag{
+				Name: "no-runtime-config",
+				Usage: "Disables the configuration of a container runtime. This is used in cases where the runtime has " +
+					"already been configured for use with the toolkit, and the installer is only used to deploy the " +
+					"components of the NVIDIA Container Toolkit.",
+				Destination: &options.noRuntimeConfig,
+				Sources:     cli.EnvVars("NO_RUNTIME_CONFIG"),
+			},
 			&cli.StringFlag{
-				Name:        "runtime",
-				Aliases:     []string{"r"},
-				Usage:       "the runtime to setup on this node. One of {'docker', 'crio', 'containerd'}",
+				Name:    "runtime",
+				Aliases: []string{"r"},
+				Usage: "the runtime to setup on this node. One of {'docker', 'crio', 'containerd'}. " +
+					"This setting is ignored if --no-runtime-config is specified.",
 				Value:       defaultRuntime,
 				Destination: &options.runtime,
 				Sources:     cli.EnvVars("RUNTIME"),
@@ -175,9 +185,6 @@ func (a *app) validateFlags(c *cli.Command, o *options) error {
 	if o.toolkitInstallDir == "" {
 		return fmt.Errorf("the install root must be specified")
 	}
-	if _, exists := availableRuntimes[o.runtime]; !exists {
-		return fmt.Errorf("unknown runtime: %v", o.runtime)
-	}
 	if filepath.Base(o.pidFile) != toolkitPidFilename {
 		return fmt.Errorf("invalid toolkit.pid path %v", o.pidFile)
 	}
@@ -185,9 +192,11 @@ func (a *app) validateFlags(c *cli.Command, o *options) error {
 	if err := a.toolkit.ValidateOptions(&o.toolkitOptions); err != nil {
 		return err
 	}
+
 	if err := o.runtimeOptions.Validate(a.logger, c, o.runtime, o.toolkitRoot(), &o.toolkitOptions); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -201,8 +210,10 @@ func (a *app) Run(c *cli.Command, o *options) error {
 	}
 	defer a.shutdown(o.pidFile)
 
+	runtimeConfigurer := runtime.NewConfigurer(o.runtime, o.noRuntimeConfig)
+
 	if len(o.toolkitOptions.ContainerRuntimeRuntimes) == 0 {
-		lowlevelRuntimePaths, err := runtime.GetLowlevelRuntimePaths(&o.runtimeOptions, o.runtime)
+		lowlevelRuntimePaths, err := runtimeConfigurer.GetLowlevelRuntimePaths(&o.runtimeOptions)
 		if err != nil {
 			return fmt.Errorf("unable to determine runtime options: %w", err)
 		}
@@ -216,21 +227,23 @@ func (a *app) Run(c *cli.Command, o *options) error {
 		return fmt.Errorf("unable to install toolkit: %v", err)
 	}
 
-	err = runtime.Setup(c, &o.runtimeOptions, o.runtime)
+	err = runtimeConfigurer.Setup(c, &o.runtimeOptions)
 	if err != nil {
 		return fmt.Errorf("unable to setup runtime: %v", err)
 	}
 
-	if !o.noDaemon {
-		err = a.waitForSignal()
-		if err != nil {
-			return fmt.Errorf("unable to wait for signal: %v", err)
-		}
+	if o.noDaemon {
+		return nil
+	}
 
-		err = runtime.Cleanup(c, &o.runtimeOptions, o.runtime)
-		if err != nil {
-			return fmt.Errorf("unable to cleanup runtime: %v", err)
-		}
+	err = a.waitForSignal()
+	if err != nil {
+		return fmt.Errorf("unable to wait for signal: %v", err)
+	}
+
+	err = runtimeConfigurer.Cleanup(c, &o.runtimeOptions)
+	if err != nil {
+		return fmt.Errorf("unable to cleanup runtime: %v", err)
 	}
 
 	return nil
