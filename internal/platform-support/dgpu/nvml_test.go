@@ -22,17 +22,18 @@ import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"github.com/NVIDIA/go-nvml/pkg/nvml/mock"
-	testlog "github.com/sirupsen/logrus/hooks/test"
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 )
 
 // TODO: In order to properly test this, we need a mechanism to inject /
 // override the char device discoverer.
 func TestNewNvmlDGPUDiscoverer(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 
 	nvmllib := &mock.Interface{}
 	devicelib := device.New(
@@ -88,7 +89,7 @@ func TestNewNvmlDGPUDiscoverer(t *testing.T) {
 }
 
 func TestNewNvmlMIGDiscoverer(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 
 	nvmllib := &mock.Interface{}
 	devicelib := device.New(

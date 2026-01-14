@@ -15,7 +15,6 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
@@ -191,13 +190,4 @@ func main() {
 		flag.Usage()
 		os.Exit(2)
 	}
-}
-
-// logInterceptor implements the logger.Interface to allow for logging from executable.
-type logInterceptor struct {
-	logger.NullLogger
-}
-
-func (l *logInterceptor) Infof(format string, args ...interface{}) {
-	log.Printf(format, args...)
 }

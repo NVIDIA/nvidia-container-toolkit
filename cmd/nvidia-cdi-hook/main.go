@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
 	cli "github.com/urfave/cli/v3"
 
@@ -39,13 +40,13 @@ type options struct {
 }
 
 func main() {
-	logger := logrus.New()
+	log := logrus.New()
 
 	// Create a options struct to hold the parsed environment variables or command line flags
 	opts := options{}
 
 	// Create the top-level CLI
-	c := commands.ConfigureCDIHookCommand(logger, &cli.Command{
+	c := commands.ConfigureCDIHookCommand(logger.FromLogrus(log), &cli.Command{
 		Name:    "NVIDIA CDI Hook",
 		Usage:   "Command to structure files for usage inside a container, called as hooks from a container runtime, defined in a CDI yaml file",
 		Version: info.GetVersionString(),
@@ -58,7 +59,7 @@ func main() {
 			if opts.Quiet {
 				logLevel = logrus.ErrorLevel
 			}
-			logger.SetLevel(logLevel)
+			log.SetLevel(logLevel)
 			return ctx, nil
 		},
 		Flags: []cli.Flag{
@@ -83,7 +84,7 @@ func main() {
 	// Run the CLI
 	err := c.Run(context.Background(), os.Args)
 	if err != nil {
-		logger.Errorf("%v", err)
+		log.Errorf("%v", err)
 		os.Exit(1)
 	}
 }

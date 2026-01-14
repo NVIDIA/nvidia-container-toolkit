@@ -26,8 +26,12 @@ import (
 
 // New returns a new logger
 func New() Interface {
+	return FromLogrus(logrus.StandardLogger())
+}
+
+func FromLogrus(l *logrus.Logger) Interface {
 	return Interface{
-		logrusr.New(logrus.StandardLogger()),
+		logrusr.New(l),
 	}
 }
 
@@ -47,7 +51,7 @@ func (l Interface) Infof(format string, a ...any) {
 }
 
 func (l Interface) Warningf(format string, a ...any) {
-	l.Info(fmt.Sprintf("WARNING: "+format, a...))
+	l.V(3).Info(fmt.Sprintf(format, a...))
 }
 
 func (l Interface) Tracef(format string, a ...any) {

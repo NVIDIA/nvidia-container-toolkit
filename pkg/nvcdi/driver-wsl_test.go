@@ -20,15 +20,15 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-
-	testlog "github.com/sirupsen/logrus/hooks/test"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 func TestNvidiaSMISymlinkHook(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 	hookCreator := discover.NewHookCreator()
 
 	errMounts := errors.New("mounts error")

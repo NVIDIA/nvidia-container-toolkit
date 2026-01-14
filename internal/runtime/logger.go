@@ -33,20 +33,20 @@ import (
 
 // Logger adds a way to manage output to a log file to a logrus.Logger
 type Logger struct {
-	logger.Interface
-	previousLogger logger.Interface
+	*logrus.Logger
+	previousLogger *logrus.Logger
 	logFiles       []*os.File
 }
 
 // NewLogger creates an empty logger
 func NewLogger() *Logger {
 	return &Logger{
-		Interface: logger.New(),
+		Logger: logrus.New(),
 	}
 }
 
 // Update constructs a Logger with a preddefined formatter
-func (l *Logger) Update(filename string, logLevel string, argv []string) {
+func (l *Logger) Update(filename string, logLevel string, argv []string) logger.Interface {
 
 	configFromArgs := parseArgs(argv)
 
@@ -119,10 +119,12 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) {
 	}
 
 	*l = Logger{
-		Interface:      newLogger,
-		previousLogger: l.Interface,
+		Logger:         newLogger,
+		previousLogger: l.Logger,
 		logFiles:       logFiles,
 	}
+
+	return logger.FromLogrus(newLogger)
 }
 
 // Reset closes the log file (if any) and resets the logger output to what it
@@ -133,7 +135,7 @@ func (l *Logger) Reset() error {
 		if previous == nil {
 			previous = logrus.New()
 		}
-		l.Interface = previous
+		l.Logger = previous
 		l.previousLogger = nil
 		l.logFiles = nil
 	}()

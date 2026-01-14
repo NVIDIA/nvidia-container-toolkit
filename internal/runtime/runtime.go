@@ -47,7 +47,7 @@ func (r rt) Run(argv []string) (rerr error) {
 	if err != nil {
 		return fmt.Errorf("error loading config: %v", err)
 	}
-	r.logger.Update(
+	l := r.logger.Update(
 		cfg.NVIDIAContainerRuntimeConfig.DebugFilePath,
 		cfg.NVIDIAContainerRuntimeConfig.LogLevel,
 		argv,
@@ -67,19 +67,19 @@ func (r rt) Run(argv []string) (rerr error) {
 		cfg.NVIDIAContainerRuntimeConfig.Mode = r.modeOverride
 	}
 	//nolint:staticcheck  // TODO(elezar): We should swith the nvidia-container-runtime from using nvidia-ctk to using nvidia-cdi-hook.
-	cfg.NVIDIACTKConfig.Path = config.ResolveNVIDIACTKPath(&logger.NullLogger{}, cfg.NVIDIACTKConfig.Path)
-	cfg.NVIDIAContainerRuntimeHookConfig.Path = config.ResolveNVIDIAContainerRuntimeHookPath(&logger.NullLogger{}, cfg.NVIDIAContainerRuntimeHookConfig.Path)
+	cfg.NVIDIACTKConfig.Path = config.ResolveNVIDIACTKPath(logger.NullLogger(), cfg.NVIDIACTKConfig.Path)
+	cfg.NVIDIAContainerRuntimeHookConfig.Path = config.ResolveNVIDIAContainerRuntimeHookPath(logger.NullLogger(), cfg.NVIDIAContainerRuntimeHookConfig.Path)
 
 	// Log the config at Trace to allow for debugging if required.
 	r.logger.Tracef("Running with config: %+v", cfg)
 
 	driver := root.New(
-		root.WithLogger(r.logger),
+		root.WithLogger(l),
 		root.WithDriverRoot(cfg.NVIDIAContainerCLIConfig.Root),
 	)
 
 	r.logger.Tracef("Command line arguments: %v", argv)
-	runtime, err := newNVIDIAContainerRuntime(r.logger, cfg, argv, driver)
+	runtime, err := newNVIDIAContainerRuntime(l, cfg, argv, driver)
 	if err != nil {
 		return fmt.Errorf("failed to create NVIDIA Container Runtime: %v", err)
 	}

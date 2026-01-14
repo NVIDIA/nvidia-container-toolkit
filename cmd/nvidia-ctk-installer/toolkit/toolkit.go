@@ -253,7 +253,7 @@ func (t *Installer) ValidateOptions(opts *Options) error {
 	opts.CDI.class = class
 
 	if opts.CDI.Enabled && opts.CDI.outputDir == "" {
-		t.logger.Warning("Skipping CDI spec generation (no output directory specified)")
+		t.logger.Info("Skipping CDI spec generation (no output directory specified)")
 		opts.CDI.Enabled = false
 	}
 
@@ -320,28 +320,28 @@ func (t *Installer) Install(cli *cli.Command, opts *Options, runtime string) err
 		if !opts.ignoreErrors {
 			return fmt.Errorf("could not create toolkit installer: %w", err)
 		}
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("could not create toolkit installer: %w", err))
+		t.logger.Error(err, "could not create toolkit installer; ignoring")
 	}
 
 	if err := toolkit.Install(t.toolkitRoot); err != nil {
 		if !opts.ignoreErrors {
 			return fmt.Errorf("could not install toolkit components: %w", err)
 		}
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("could not install toolkit components: %w", err))
+		t.logger.Error(err, "could not install toolkit components; ignoring")
 	}
 
 	err = t.installToolkitConfig(cli, opts, toolkit.ConfigFilePath(t.toolkitRoot))
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
 	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error installing NVIDIA container toolkit config: %v", err))
+		t.logger.Error(err, "could not install NVIDIA Container Toolkit config; ignoring")
 	}
 
 	err = t.createDeviceNodes(opts)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error creating device nodes: %v", err)
 	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error creating device nodes: %v", err))
+		t.logger.Error(err, "could not create device nodes; ignoring")
 	}
 
 	nvidiaCDIHookPath := filepath.Join(t.toolkitRoot, "nvidia-cdi-hook")
@@ -349,7 +349,7 @@ func (t *Installer) Install(cli *cli.Command, opts *Options, runtime string) err
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error generating CDI specification: %v", err)
 	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error generating CDI specification: %v", err))
+		t.logger.Error(err, "could not generate CID specification; ignoring")
 	}
 
 	return nil
@@ -365,7 +365,7 @@ func (t *Installer) installToolkitConfig(c *cli.Command, opts *Options, toolkitC
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("could not create required directories: %v", err)
 	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("could not create required directories: %v", err))
+		t.logger.Error(err, "could not create required directories; ignoring")
 	}
 	nvidiaContainerCliExecutablePath := filepath.Join(t.toolkitRoot, "nvidia-container-cli")
 	nvidiaCTKPath := filepath.Join(t.toolkitRoot, "nvidia-ctk")

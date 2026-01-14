@@ -140,7 +140,7 @@ func (m command) getContainerForwardCompatDir(containerRoot containerRoot, cudaC
 
 	libs, err := containerRoot.globFiles(filepath.Join(cudaCompatRoot, "libcuda.so.*.*"))
 	if err != nil {
-		m.logger.Warningf("Failed to find CUDA compat library: %w", err)
+		m.logger.Warningf("Failed to find CUDA compat library: %v", err)
 		return "", nil
 	}
 

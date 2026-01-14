@@ -21,14 +21,15 @@ import (
 	"strings"
 	"testing"
 
-	testlog "github.com/sirupsen/logrus/hooks/test"
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
 func TestGraphicsLibrariesDiscoverer(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 	hookCreator := NewHookCreator()
 
 	testCases := []struct {
@@ -174,7 +175,7 @@ func TestDrmDevicesByPath(t *testing.T) {
 	require.NoError(t, err)
 	devRoot := filepath.Join(moduleRoot, "testdata", "lookup", "rootfs-drm")
 
-	logger, _ := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 	hookCreator := NewHookCreator()
 
 	testCases := []struct {

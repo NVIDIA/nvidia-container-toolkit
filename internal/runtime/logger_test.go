@@ -28,9 +28,9 @@ func TestLogger(t *testing.T) {
 
 	l.Update("", "debug", nil)
 
-	ll := l.Interface.(*logrus.Logger)
+	ll := l.Logger
 	require.Equal(t, logrus.DebugLevel, ll.Level)
 
-	lp := l.previousLogger.(*logrus.Logger)
+	lp := l.previousLogger
 	require.Equal(t, logrus.InfoLevel, lp.Level)
 }

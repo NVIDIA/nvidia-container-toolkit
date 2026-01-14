@@ -20,13 +20,15 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/go-logr/logr/testr"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 func TestExec(t *testing.T) {
-	logger, hook := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 
 	testCases := []struct {
 		description   string
@@ -88,8 +90,6 @@ func TestExec(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		hook.Reset()
-
 		t.Run(tc.description, func(t *testing.T) {
 			runtimeMock := &RuntimeMock{}
 			specMock := &SpecMock{
@@ -141,7 +141,7 @@ func TestExec(t *testing.T) {
 }
 
 func TestNilModiferReturnsRuntime(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 
 	runtimeMock := &RuntimeMock{}
 	specMock := &SpecMock{}

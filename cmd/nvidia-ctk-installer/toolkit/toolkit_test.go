@@ -28,13 +28,14 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
 func TestInstall(t *testing.T) {
 	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
-	logger := testr.New()
+	logger := logger.Interface{Logger: testr.New(t)}
 
 	moduleRoot, err := test.GetModuleRoot()
 	require.NoError(t, err)
