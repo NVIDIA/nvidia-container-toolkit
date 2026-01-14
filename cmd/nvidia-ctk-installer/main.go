@@ -221,16 +221,18 @@ func (a *app) Run(c *cli.Command, o *options) error {
 		return fmt.Errorf("unable to setup runtime: %v", err)
 	}
 
-	if !o.noDaemon {
-		err = a.waitForSignal()
-		if err != nil {
-			return fmt.Errorf("unable to wait for signal: %v", err)
-		}
+	if o.noDaemon {
+		return nil
+	}
 
-		err = runtime.Cleanup(c, &o.runtimeOptions, o.runtime)
-		if err != nil {
-			return fmt.Errorf("unable to cleanup runtime: %v", err)
-		}
+	err = a.waitForSignal()
+	if err != nil {
+		return fmt.Errorf("unable to wait for signal: %v", err)
+	}
+
+	err = runtime.Cleanup(c, &o.runtimeOptions, o.runtime)
+	if err != nil {
+		return fmt.Errorf("unable to cleanup runtime: %v", err)
 	}
 
 	return nil
