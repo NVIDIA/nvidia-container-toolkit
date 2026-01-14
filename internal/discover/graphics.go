@@ -124,7 +124,6 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 	}
 	// We use the driver version as a pattern for matching libraries.
 	// This pattern is used to identify libraries that are part of the driver.
-	cudaVersionPattern := driverVersion
 	cudaLibRoot, err := driver.GetDriverLibDirectory()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get libcuda.so parent directory: %w", err)
@@ -145,8 +144,8 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 			// * libnvidia-allocator.so.RM_VERSION
 			// * libnvidia-vulkan-producer.so.RM_VERSION
 			// but need to be handled for the legacy case too.
-			"libnvidia-allocator.so." + cudaVersionPattern,
-			"libnvidia-vulkan-producer.so." + cudaVersionPattern,
+			"libnvidia-allocator.so." + driverVersion,
+			"libnvidia-vulkan-producer.so." + driverVersion,
 		},
 	)
 
@@ -161,7 +160,7 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 		driver.Root,
 		[]string{
 			"nvidia_drv.so",
-			"libglxserver_nvidia.so." + cudaVersionPattern,
+			"libglxserver_nvidia.so." + driverVersion,
 		},
 	)
 
