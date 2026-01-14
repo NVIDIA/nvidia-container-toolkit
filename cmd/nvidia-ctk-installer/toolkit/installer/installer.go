@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit/installer/wrappercore"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
@@ -43,6 +44,8 @@ type ToolkitInstaller struct {
 	ensureTargetDirectory Installer
 
 	defaultRuntimeExecutablePath string
+
+	wrapperProgramPath string
 }
 
 var _ Installer = (*ToolkitInstaller)(nil)
@@ -65,6 +68,22 @@ func New(opts ...Option) (*ToolkitInstaller, error) {
 			return nil, err
 		}
 		t.artifactRoot = artifactRoot
+	}
+	if t.wrapperProgramPath == "" {
+		// The wrapper program will be next to the installer in the release container images. For
+		// testing, a pre-made test ELF (see mktestelf) is in the testdata artifact root.
+		executable, err := os.Executable()
+		if err != nil {
+			return nil, err
+		}
+		wrapperProgramPath := filepath.Join(filepath.Dir(executable), wrappercore.InstallerWrapperFilename)
+		if _, err := os.Stat(wrapperProgramPath); err != nil {
+			wrapperProgramPath = filepath.Join(t.artifactRoot.path, wrappercore.InstallerWrapperFilename)
+			if _, err := os.Stat(wrapperProgramPath); err != nil {
+				return nil, fmt.Errorf("failed to find wrapper program: %w", err)
+			}
+		}
+		t.wrapperProgramPath = wrapperProgramPath
 	}
 
 	if t.ensureTargetDirectory == nil {
