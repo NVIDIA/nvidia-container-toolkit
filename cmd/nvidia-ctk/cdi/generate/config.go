@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 
 	altsrc "github.com/urfave/cli-altsrc/v3"
 	"github.com/urfave/cli/v3"

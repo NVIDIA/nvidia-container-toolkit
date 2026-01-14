@@ -30,7 +30,7 @@ import (
 
 	"github.com/prometheus/procfs"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 )
 
 const (
