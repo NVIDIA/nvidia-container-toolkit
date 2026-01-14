@@ -20,14 +20,15 @@ import (
 	"fmt"
 	"testing"
 
-	testlog "github.com/sirupsen/logrus/hooks/test"
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
 func TestCharDevices(t *testing.T) {
-	logger, logHook := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 
 	testCases := []struct {
 		description          string
@@ -59,8 +60,6 @@ func TestCharDevices(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		logHook.Reset()
-
 		t.Run(tc.description, func(t *testing.T) {
 			tc.input.logger = logger
 

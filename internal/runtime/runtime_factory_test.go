@@ -24,11 +24,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-logr/logr/testr"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
@@ -64,7 +65,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestFactoryMethod(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 	driver := root.New(
 		root.WithDriverRoot("/nvidia/driver/root"),
 	)
@@ -168,7 +169,7 @@ func TestFactoryMethod(t *testing.T) {
 }
 
 func TestNewSpecModifier(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 	driver := root.New(
 		root.WithDriverRoot("/nvidia/driver/root"),
 	)

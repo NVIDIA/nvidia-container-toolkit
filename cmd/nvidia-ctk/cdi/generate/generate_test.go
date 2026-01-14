@@ -25,10 +25,11 @@ import (
 
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"github.com/NVIDIA/go-nvml/pkg/nvml/mock/dgxa100"
-	testlog "github.com/sirupsen/logrus/hooks/test"
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/require"
 	"tags.cncf.io/container-device-interface/specs-go"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -39,7 +40,7 @@ func TestGenerateSpec(t *testing.T) {
 
 	driverRoot := filepath.Join(moduleRoot, "testdata", "lookup", "rootfs-1")
 
-	logger, _ := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 	testCases := []struct {
 		description           string
 		options               options

@@ -45,7 +45,7 @@ func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, hookCrea
 	}
 	defer func() {
 		if err := dxcore.Shutdown(); err != nil {
-			logger.Warningf("failed to shutdown dxcore: %w", err)
+			logger.Warningf("failed to shutdown dxcore: %v", err)
 		}
 	}()
 

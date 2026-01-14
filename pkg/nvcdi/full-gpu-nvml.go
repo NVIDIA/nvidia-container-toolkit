@@ -92,7 +92,7 @@ func (l *fullGPUDeviceSpecGenerator) GetDeviceSpecs() ([]specs.Device, error) {
 
 	annotations, err := l.getDeviceAnnotations()
 	if err != nil {
-		l.logger.Warning("Ignoring error getting device annotations for device(s) %v: %v", names, err)
+		l.logger.Warningf("Ignoring error getting device annotations for device(s) %v: %v", names, err)
 		annotations = nil
 	}
 	var deviceSpecs []specs.Device

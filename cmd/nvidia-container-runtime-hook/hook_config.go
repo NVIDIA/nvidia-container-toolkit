@@ -8,9 +8,12 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/go-logr/stdr"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 // hookConfig wraps the toolkit config.
@@ -130,7 +133,7 @@ func (c *hookConfig) assertModeIsLegacy() error {
 	}
 
 	mr := info.NewRuntimeModeResolver(
-		info.WithLogger(&logInterceptor{}),
+		info.WithLogger(logger.Interface{Logger: stdr.New(log.Default())}),
 		info.WithImage(&c.containerConfig.Image),
 		info.WithDefaultMode(info.LegacyRuntimeMode),
 	)

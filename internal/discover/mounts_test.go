@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func TestMountsReturnsEmptyDevices(t *testing.T) {
@@ -45,7 +45,7 @@ func TestMounts(t *testing.T) {
 		"rprivate",
 	}
 
-	logger, _ := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 
 	testCases := []struct {
 		description    string

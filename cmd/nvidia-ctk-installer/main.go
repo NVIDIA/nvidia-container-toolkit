@@ -59,7 +59,7 @@ func main() {
 	// Run the CLI
 	logger.Infof("Starting %v", c.Name)
 	if err := c.Run(context.Background(), os.Args); err != nil {
-		logger.Errorf("error running %v: %v", c.Name, err)
+		logger.Error(err, "cmd", c.Name)
 		os.Exit(1)
 	}
 

@@ -22,10 +22,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-logr/logr/testr"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -62,7 +63,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAddHookModifier(t *testing.T) {
-	logger, logHook := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 
 	testHookPath := filepath.Join(cfg.binPath, "nvidia-container-runtime-hook")
 
@@ -152,8 +153,6 @@ func TestAddHookModifier(t *testing.T) {
 
 	for _, tc := range testCases {
 		tc := tc
-
-		logHook.Reset()
 
 		t.Run(tc.description, func(t *testing.T) {
 

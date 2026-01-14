@@ -116,12 +116,12 @@ func (m command) build() *cli.Command {
 
 func (m command) validateFlags(cfg *config) error {
 	if cfg.loadKernelModules && !cfg.createAll {
-		m.logger.Warning("load-kernel-modules is only applicable when create-all is set; ignoring")
+		m.logger.Info("WARNING: load-kernel-modules is only applicable when create-all is set; ignoring")
 		cfg.loadKernelModules = false
 	}
 
 	if cfg.createDeviceNodes && !cfg.createAll {
-		m.logger.Warning("create-device-nodes is only applicable when create-all is set; ignoring")
+		m.logger.Info("Warning: create-device-nodes is only applicable when create-all is set; ignoring")
 		cfg.createDeviceNodes = false
 	}
 
@@ -171,12 +171,11 @@ type Option func(*linkCreator)
 
 // NewSymlinkCreator creates a new linkCreator.
 func NewSymlinkCreator(opts ...Option) (Creator, error) {
-	c := linkCreator{}
+	c := linkCreator{
+		logger: logger.New(),
+	}
 	for _, opt := range opts {
 		opt(&c)
-	}
-	if c.logger == nil {
-		c.logger = logger.New()
 	}
 	if c.driverRoot == "" {
 		c.driverRoot = "/"

@@ -46,7 +46,7 @@ type options struct {
 }
 
 func main() {
-	logger := logrus.New()
+	log := logrus.New()
 
 	// Create a options struct to hold the parsed environment variables or command line flags
 	opts := options{}
@@ -68,12 +68,12 @@ func main() {
 			if opts.Quiet {
 				logLevel = logrus.ErrorLevel
 			}
-			logger.SetLevel(logLevel)
+			log.SetLevel(logLevel)
 
 			return ctx, nil
 		},
 		// Define the subcommands
-		Commands: getCommands(logger, &opts.Config),
+		Commands: getCommands(logger.FromLogrus(log), &opts.Config),
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:        "debug",
@@ -100,7 +100,7 @@ func main() {
 	// Run the CLI
 	err := c.Run(context.Background(), os.Args)
 	if err != nil {
-		logger.Errorf("%v", err)
+		log.Errorf("%v", err)
 		os.Exit(1)
 	}
 }

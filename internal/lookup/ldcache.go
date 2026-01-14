@@ -53,7 +53,7 @@ func NewLdcacheLocator(opts ...Option) Locator {
 		}
 		candidates, err := chain.Locate(library)
 		if err != nil {
-			b.logger.Errorf("error processing library %s from ldcache: %v", library, err)
+			b.logger.Error(err, "error processing library from ldcach", "library", library)
 			continue
 		}
 

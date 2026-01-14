@@ -11,10 +11,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-logr/logr/testr"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
@@ -130,6 +131,8 @@ func TestGoodInput(t *testing.T) {
 
 // NVIDIA prestart hook already present in config file
 func TestDuplicateHook(t *testing.T) {
+	logger := logger.Interface{Logger: testr.New(t)}
+
 	err := cfg.generateNewRuntimeSpec()
 	if err != nil {
 		t.Fatal(err)
@@ -142,7 +145,7 @@ func TestDuplicateHook(t *testing.T) {
 	}
 
 	t.Logf("inserting nvidia prestart hook to config.json")
-	if err = addNVIDIAHook(&spec); err != nil {
+	if err = addNVIDIAHook(logger, &spec); err != nil {
 		t.Fatal(err)
 	}
 
@@ -175,8 +178,7 @@ func TestDuplicateHook(t *testing.T) {
 
 // addNVIDIAHook is a basic wrapper for an addHookModifier that is used for
 // testing.
-func addNVIDIAHook(spec *specs.Spec) error {
-	logger, _ := testlog.NewNullLogger()
+func addNVIDIAHook(logger logger.Interface, spec *specs.Spec) error {
 	m := modifier.NewStableRuntimeModifier(logger, nvidiaHook)
 	return m.Modify(spec)
 }

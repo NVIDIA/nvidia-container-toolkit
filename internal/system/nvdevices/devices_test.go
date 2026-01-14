@@ -20,14 +20,15 @@ import (
 	"errors"
 	"testing"
 
-	testlog "github.com/sirupsen/logrus/hooks/test"
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info/proc/devices"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 func TestCreateControlDevices(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
+	logger := logger.Interface{Logger: testr.New(t)}
 
 	nvidiaDevices := devices.New(
 		devices.WithDeviceToMajor(map[string]int{

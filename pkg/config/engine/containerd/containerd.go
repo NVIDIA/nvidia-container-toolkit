@@ -74,14 +74,12 @@ func (c *containerdCfgRuntime) GetBinaryPath() string {
 // New creates a containerd config with the specified options
 func New(opts ...Option) (engine.Interface, error) {
 	b := &builder{
+		logger:        logger.New(),
 		configVersion: defaultConfigVersion,
 		runtimeType:   defaultRuntimeType,
 	}
 	for _, opt := range opts {
 		opt(b)
-	}
-	if b.logger == nil {
-		b.logger = logger.New()
 	}
 	if b.configSource == nil {
 		b.configSource = toml.FromFile(b.topLevelConfigPath)

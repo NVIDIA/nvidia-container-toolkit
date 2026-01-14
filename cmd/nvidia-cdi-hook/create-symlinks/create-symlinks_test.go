@@ -6,9 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	testlog "github.com/sirupsen/logrus/hooks/test"
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
 )
 
@@ -133,7 +134,7 @@ func TestCreateLink(t *testing.T) {
 			require.NoError(t, makeFs(containerRoot, tc.containerContents...))
 
 			// nvidia-cdi-hook create-symlinks --link linkSpec
-			err := getTestCommand().createLink(containerRoot, tc.link.target, tc.link.path)
+			err := getTestCommand(t).createLink(containerRoot, tc.link.target, tc.link.path)
 			// TODO: We may be able to replace this with require.ErrorIs.
 			if tc.expectedCreateError != nil {
 				require.Error(t, err)
@@ -166,7 +167,7 @@ func TestCreateLinkRelativePath(t *testing.T) {
 	require.NoError(t, makeFs(containerRoot, dirOrLink{path: "/lib/"}))
 
 	// nvidia-cdi-hook create-symlinks --link libfoo.so.1::/lib/libfoo.so
-	err := getTestCommand().createLink(containerRoot, "libfoo.so.1", "/lib/libfoo.so")
+	err := getTestCommand(t).createLink(containerRoot, "libfoo.so.1", "/lib/libfoo.so")
 	require.NoError(t, err)
 
 	target, err := symlinks.Resolve(filepath.Join(containerRoot, "/lib/libfoo.so"))
@@ -183,7 +184,7 @@ func TestCreateLinkAbsolutePath(t *testing.T) {
 	require.NoError(t, makeFs(containerRoot, dirOrLink{path: "/lib/"}))
 
 	// nvidia-cdi-hook create-symlinks --link /lib/libfoo.so.1::/lib/libfoo.so
-	err := getTestCommand().createLink(containerRoot, "/lib/libfoo.so.1", "/lib/libfoo.so")
+	err := getTestCommand(t).createLink(containerRoot, "/lib/libfoo.so.1", "/lib/libfoo.so")
 	require.NoError(t, err)
 
 	target, err := symlinks.Resolve(filepath.Join(containerRoot, "/lib/libfoo.so"))
@@ -218,7 +219,7 @@ func TestCreateLinkAlreadyExists(t *testing.T) {
 			require.NoError(t, makeFs(containerRoot, tc.containerContents...))
 
 			// nvidia-cdi-hook create-symlinks --link libfoo.so.1::/lib/libfoo.so
-			err := getTestCommand().createLink(containerRoot, "libfoo.so.1", "/lib/libfoo.so")
+			err := getTestCommand(t).createLink(containerRoot, "libfoo.so.1", "/lib/libfoo.so")
 			require.NoError(t, err)
 			target, err := symlinks.Resolve(filepath.Join(containerRoot, "lib/libfoo.so"))
 			require.NoError(t, err)
@@ -253,7 +254,7 @@ func TestCreateLinkOutOfBounds(t *testing.T) {
 	require.Equal(t, hostRoot, path)
 
 	// nvidia-cdi-hook create-symlinks --link ../libfoo.so.1::/lib/foo/libfoo.so
-	_ = getTestCommand().createLink(containerRoot, "../libfoo.so.1", "/lib/foo/libfoo.so")
+	_ = getTestCommand(t).createLink(containerRoot, "../libfoo.so.1", "/lib/foo/libfoo.so")
 	require.NoError(t, err)
 
 	target, err := symlinks.Resolve(filepath.Join(containerRoot, hostRoot, "libfoo.so"))
@@ -289,9 +290,8 @@ func makeFs(tmpdir string, fs ...dirOrLink) error {
 }
 
 // getTestCommand creates a command for running tests against.
-func getTestCommand() *command {
-	logger, _ := testlog.NewNullLogger()
+func getTestCommand(t *testing.T) *command {
 	return &command{
-		logger: logger,
+		logger: logger.Interface{Logger: testr.New(t)},
 	}
 }

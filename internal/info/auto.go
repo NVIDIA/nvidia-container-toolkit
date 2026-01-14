@@ -86,13 +86,11 @@ func WithPropertyExtractor(propertyExtractor info.PropertyExtractor) Option {
 
 func NewRuntimeModeResolver(opts ...Option) RuntimeModeResolver {
 	r := &modeResolver{
+		logger:      logger.New(),
 		defaultMode: JitCDIRuntimeMode,
 	}
 	for _, opt := range opts {
 		opt(r)
-	}
-	if r.logger == nil {
-		r.logger = &logger.NullLogger{}
 	}
 
 	return r

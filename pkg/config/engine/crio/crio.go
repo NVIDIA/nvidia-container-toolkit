@@ -51,12 +51,11 @@ var _ engine.Interface = (*Config)(nil)
 
 // New creates a cri-o config with the specified options
 func New(opts ...Option) (engine.Interface, error) {
-	b := &builder{}
+	b := &builder{
+		logger: logger.New(),
+	}
 	for _, opt := range opts {
 		opt(b)
-	}
-	if b.logger == nil {
-		b.logger = logger.New()
 	}
 	if b.configSource == nil {
 		b.configSource = toml.FromFile(b.topLevelConfigPath)
