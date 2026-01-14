@@ -197,8 +197,10 @@ func (a *app) Run(c *cli.Command, o *options) error {
 	}
 	defer a.shutdown(o.pidFile)
 
+	runtimeConfigurer := runtime.NewConfigurer(o.runtime)
+
 	if len(o.toolkitOptions.ContainerRuntimeRuntimes) == 0 {
-		lowlevelRuntimePaths, err := runtime.GetLowlevelRuntimePaths(&o.runtimeOptions, o.runtime)
+		lowlevelRuntimePaths, err := runtimeConfigurer.GetLowlevelRuntimePaths(&o.runtimeOptions)
 		if err != nil {
 			return fmt.Errorf("unable to determine runtime options: %w", err)
 		}
@@ -212,7 +214,7 @@ func (a *app) Run(c *cli.Command, o *options) error {
 		return fmt.Errorf("unable to install toolkit: %v", err)
 	}
 
-	err = runtime.Setup(c, &o.runtimeOptions, o.runtime)
+	err = runtimeConfigurer.Setup(c, &o.runtimeOptions)
 	if err != nil {
 		return fmt.Errorf("unable to setup runtime: %v", err)
 	}
@@ -226,7 +228,7 @@ func (a *app) Run(c *cli.Command, o *options) error {
 		return fmt.Errorf("unable to wait for signal: %v", err)
 	}
 
-	err = runtime.Cleanup(c, &o.runtimeOptions, o.runtime)
+	err = runtimeConfigurer.Cleanup(c, &o.runtimeOptions)
 	if err != nil {
 		return fmt.Errorf("unable to cleanup runtime: %v", err)
 	}
