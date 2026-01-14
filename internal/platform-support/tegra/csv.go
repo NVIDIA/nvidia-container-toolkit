@@ -21,8 +21,8 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup"
 )
 
 // newDiscovererFromMountSpecs creates a discoverer for the specified mount specs.

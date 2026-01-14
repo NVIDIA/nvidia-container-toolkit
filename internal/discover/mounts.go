@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup"
 )
 
 // mounts is a generic discoverer for Mounts. It is customized by specifying the
