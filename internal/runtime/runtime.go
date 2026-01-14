@@ -23,10 +23,10 @@ import (
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup/root"
 )
 
 // Run is an entry point that allows for idiomatic handling of errors
