@@ -33,7 +33,6 @@ const (
 	defaultNRIPluginIdx uint = 10
 )
 
-var availableRuntimes = map[string]struct{}{"docker": {}, "crio": {}, "containerd": {}}
 var defaultLowLevelRuntimes = []string{"runc", "crun"}
 
 var waitingForSignal = make(chan bool, 1)
@@ -211,9 +210,6 @@ func (a *app) Before(c *cli.Command, o *options) error {
 func (a *app) validateFlags(c *cli.Command, o *options) error {
 	if o.toolkitInstallDir == "" {
 		return fmt.Errorf("the install root must be specified")
-	}
-	if _, exists := availableRuntimes[o.runtime]; !exists {
-		return fmt.Errorf("unknown runtime: %v", o.runtime)
 	}
 	if filepath.Base(o.pidFile) != toolkitPidFilename {
 		return fmt.Errorf("invalid toolkit.pid path %v", o.pidFile)

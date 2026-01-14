@@ -138,6 +138,15 @@ func Flags(opts *Options) []cli.Flag {
 
 // Validate checks whether the specified options are valid
 func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime string, toolkitRoot string, to *toolkit.Options) error {
+	// Check that the specified runtime is supported.
+	switch runtime {
+	case containerd.Name:
+	case crio.Name:
+	case docker.Name:
+	default:
+		return fmt.Errorf("invalid runtime %q; expected one of [containerd | crio | docker]", runtime)
+	}
+
 	// We set this option here to ensure that it is available in future calls.
 	opts.RuntimeDir = toolkitRoot
 
