@@ -47,12 +47,11 @@ type Driver struct {
 
 // New creates a new Driver root using the specified options.
 func New(opts ...Option) *Driver {
-	o := &options{}
+	o := &options{
+		logger: logger.New(),
+	}
 	for _, opt := range opts {
 		opt(o)
-	}
-	if o.logger == nil {
-		o.logger = logger.New()
 	}
 
 	var driverVersion string

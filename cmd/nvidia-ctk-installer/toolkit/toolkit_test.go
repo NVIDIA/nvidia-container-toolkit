@@ -23,7 +23,7 @@ import (
 	"strings"
 	"testing"
 
-	testlog "github.com/sirupsen/logrus/hooks/test"
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
 
@@ -34,7 +34,7 @@ import (
 
 func TestInstall(t *testing.T) {
 	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
-	logger, _ := testlog.NewNullLogger()
+	logger := testr.New()
 
 	moduleRoot, err := test.GetModuleRoot()
 	require.NoError(t, err)

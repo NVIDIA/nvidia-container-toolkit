@@ -102,13 +102,11 @@ func NewForMigDevice(d device.Device, mig device.MigDevice, opts ...Option) (dis
 }
 
 func new(opts ...Option) *options {
-	o := &options{}
+	o := &options{
+		logger: logger.New(),
+	}
 	for _, opt := range opts {
 		opt(o)
-	}
-
-	if o.logger == nil {
-		o.logger = logger.New()
 	}
 
 	if o.migCaps == nil {

@@ -38,6 +38,7 @@ type Option func(*builder) error
 func New(opt ...Option) (CUDA, error) {
 	b := &builder{
 		CUDA: CUDA{
+			logger:                   logger.New(),
 			acceptEnvvarUnprivileged: true,
 		},
 	}
@@ -47,9 +48,6 @@ func New(opt ...Option) (CUDA, error) {
 		}
 	}
 
-	if b.logger == nil {
-		b.logger = logger.New()
-	}
 	if b.env == nil {
 		b.env = make(map[string]string)
 	}

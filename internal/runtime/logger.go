@@ -41,7 +41,7 @@ type Logger struct {
 // NewLogger creates an empty logger
 func NewLogger() *Logger {
 	return &Logger{
-		Interface: logrus.New(),
+		Interface: logger.New(),
 	}
 }
 

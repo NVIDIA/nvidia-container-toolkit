@@ -223,13 +223,11 @@ type Installer struct {
 
 // NewInstaller creates an installer for the NVIDIA Container Toolkit.
 func NewInstaller(opts ...Option) *Installer {
-	i := &Installer{}
+	i := &Installer{
+		logger: logger.New(),
+	}
 	for _, opt := range opts {
 		opt(i)
-	}
-
-	if i.logger == nil {
-		i.logger = logger.New()
 	}
 
 	return i
@@ -293,7 +291,7 @@ func (t *Installer) Install(cli *cli.Command, opts *Options, runtime string) err
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error removing toolkit directory: %v", err)
 	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error removing toolkit directory: %v", err))
+		t.logger.Error(err, "Ignoring error removing toolkit directory")
 	}
 
 	var defaultRuntimeExecutable string

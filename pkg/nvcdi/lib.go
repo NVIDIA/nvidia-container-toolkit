@@ -65,15 +65,14 @@ type nvcdilib struct {
 
 // New creates a new nvcdi library
 func New(opts ...Option) (Interface, error) {
-	l := &nvcdilib{}
+	l := &nvcdilib{
+		logger: logger.New(),
+	}
 	for _, opt := range opts {
 		opt(l)
 	}
 	if l.mode == "" {
 		l.mode = ModeAuto
-	}
-	if l.logger == nil {
-		l.logger = logger.New()
 	}
 	if len(l.deviceNamers) == 0 {
 		indexNamer, _ := NewDeviceNamer(DeviceNameStrategyIndex)

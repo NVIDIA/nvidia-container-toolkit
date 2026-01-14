@@ -16,35 +16,40 @@
 
 package logger
 
-import "github.com/sirupsen/logrus"
+import (
+	"fmt"
+
+	"github.com/bombsimon/logrusr/v4"
+	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
+)
 
 // New returns a new logger
 func New() Interface {
-	return logrus.StandardLogger()
+	return Interface{
+		logrusr.New(logrus.StandardLogger()),
+	}
 }
 
 // NullLogger is a logger that does nothing
-type NullLogger struct{}
+func NullLogger() Interface {
+	return Interface{
+		logr.Discard(),
+	}
+}
 
-var _ Interface = (*NullLogger)(nil)
+func (l Interface) Debugf(format string, a ...any) {
+	l.V(4).Info(fmt.Sprintf(format, a...))
+}
 
-// Debugf is a no-op for the null logger
-func (l *NullLogger) Debugf(string, ...interface{}) {}
+func (l Interface) Infof(format string, a ...any) {
+	l.Info(fmt.Sprintf(format, a...))
+}
 
-// Errorf is a no-op for the null logger
-func (l *NullLogger) Errorf(string, ...interface{}) {}
+func (l Interface) Warningf(format string, a ...any) {
+	l.Info(fmt.Sprintf("WARNING: "+format, a...))
+}
 
-// Info is a no-op for the null logger
-func (l *NullLogger) Info(...interface{}) {}
-
-// Infof is a no-op for the null logger
-func (l *NullLogger) Infof(string, ...interface{}) {}
-
-// Warning is a no-op for the null logger
-func (l *NullLogger) Warning(...interface{}) {}
-
-// Warningf is a no-op for the null logger
-func (l *NullLogger) Warningf(string, ...interface{}) {}
-
-// Tracef is a no-op for the null logger
-func (l *NullLogger) Tracef(string, ...interface{}) {}
+func (l Interface) Tracef(format string, a ...any) {
+	l.V(6).Info(fmt.Sprintf(format, a...))
+}

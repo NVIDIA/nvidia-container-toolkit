@@ -89,12 +89,11 @@ func WithOptional(optional bool) Option {
 }
 
 func newBuilder(opts ...Option) *builder {
-	o := &builder{}
+	o := &builder{
+		logger: logger.New(),
+	}
 	for _, opt := range opts {
 		opt(o)
-	}
-	if o.logger == nil {
-		o.logger = logger.New()
 	}
 	if o.filter == nil {
 		o.filter = assertFile

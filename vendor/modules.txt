@@ -18,6 +18,9 @@ github.com/NVIDIA/go-nvml/pkg/dl
 github.com/NVIDIA/go-nvml/pkg/nvml
 github.com/NVIDIA/go-nvml/pkg/nvml/mock
 github.com/NVIDIA/go-nvml/pkg/nvml/mock/dgxa100
+# github.com/bombsimon/logrusr/v4 v4.1.0
+## explicit; go 1.17
+github.com/bombsimon/logrusr/v4
 # github.com/cyphar/filepath-securejoin v0.6.1
 ## explicit; go 1.18
 github.com/cyphar/filepath-securejoin
@@ -38,6 +41,11 @@ github.com/davecgh/go-spew/spew
 # github.com/fsnotify/fsnotify v1.7.0
 ## explicit; go 1.17
 github.com/fsnotify/fsnotify
+# github.com/go-logr/logr v1.4.3
+## explicit; go 1.18
+github.com/go-logr/logr
+github.com/go-logr/logr/funcr
+github.com/go-logr/logr/testr
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid

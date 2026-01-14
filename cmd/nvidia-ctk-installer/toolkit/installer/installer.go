@@ -50,15 +50,13 @@ var _ Installer = (*ToolkitInstaller)(nil)
 // New creates a toolkit installer with the specified options.
 func New(opts ...Option) (*ToolkitInstaller, error) {
 	t := &ToolkitInstaller{
+		logger:     logger.New(),
 		sourceRoot: "/",
 	}
 	for _, opt := range opts {
 		opt(t)
 	}
 
-	if t.logger == nil {
-		t.logger = logger.New()
-	}
 	if t.artifactRoot == nil {
 		artifactRoot, err := newArtifactRoot(t.logger, t.sourceRoot)
 		if err != nil {

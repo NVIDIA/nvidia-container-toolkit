@@ -35,14 +35,13 @@ type Interface struct {
 
 // New constructs a new Interface struct with the specified options.
 func New(opts ...Option) *Interface {
-	m := &Interface{}
+	m := &Interface{
+		logger: logger.New(),
+	}
 	for _, opt := range opts {
 		opt(m)
 	}
 
-	if m.logger == nil {
-		m.logger = logger.New()
-	}
 	if m.root == "" {
 		m.root = "/"
 	}
