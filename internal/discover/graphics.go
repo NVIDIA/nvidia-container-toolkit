@@ -111,6 +111,8 @@ type graphicsDriverLibraries struct {
 	Discover
 	// driverVersion is the version of the driver that is being used.
 	driverVersion string
+	logger        logger.Interface
+	hookCreator   HookCreator
 }
 
 var _ Discover = (*graphicsDriverLibraries)(nil)
