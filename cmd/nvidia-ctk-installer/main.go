@@ -260,25 +260,27 @@ func (a *app) Run(ctx context.Context, c *cli.Command, o *options) error {
 		}
 	}
 
-	if !o.noDaemon {
-		if o.enableNRIPlugin {
-			nriPlugin, err := a.startNRIPluginServer(ctx, o)
-			if err != nil {
-				a.logger.Errorf("unable to start NRI plugin server: %v", err)
-			}
-			defer nriPlugin.Stop()
-		}
+	if o.noDaemon {
+		return nil
+	}
 
-		err = a.waitForSignal()
+	if o.enableNRIPlugin {
+		nriPlugin, err := a.startNRIPluginServer(ctx, o)
 		if err != nil {
-			return fmt.Errorf("unable to wait for signal: %v", err)
+			a.logger.Errorf("unable to start NRI plugin server: %v", err)
 		}
+		defer nriPlugin.Stop()
+	}
 
-		if !o.enableNRIPlugin {
-			err = runtime.Cleanup(c, &o.runtimeOptions, o.runtime)
-			if err != nil {
-				return fmt.Errorf("unable to cleanup runtime: %v", err)
-			}
+	err = a.waitForSignal()
+	if err != nil {
+		return fmt.Errorf("unable to wait for signal: %v", err)
+	}
+
+	if !o.enableNRIPlugin {
+		err = runtime.Cleanup(c, &o.runtimeOptions, o.runtime)
+		if err != nil {
+			return fmt.Errorf("unable to cleanup runtime: %v", err)
 		}
 	}
 
