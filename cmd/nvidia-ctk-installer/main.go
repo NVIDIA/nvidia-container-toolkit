@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	nriapi "github.com/containerd/nri/pkg/api"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sys/unix"
 
@@ -28,6 +29,8 @@ const (
 	toolkitSubDir            = "toolkit"
 
 	defaultRuntime = "docker"
+
+	defaultNRIPluginIdx uint = 10
 )
 
 var defaultLowLevelRuntimes = []string{"runc", "crun"}
@@ -44,6 +47,10 @@ type options struct {
 	pidFile     string
 	sourceRoot  string
 	packageType string
+
+	EnableNRI      bool
+	NRIPluginIndex uint
+	NRISocket      string
 
 	toolkitOptions toolkit.Options
 	runtimeOptions runtime.Options
@@ -144,6 +151,33 @@ func (a app) build() *cli.Command {
 				Destination: &options.pidFile,
 				Sources:     cli.EnvVars("TOOLKIT_PID_FILE", "PID_FILE"),
 			},
+			&cli.BoolFlag{
+				Name:        "enable-nri-in-runtime",
+				Usage:       "Enable NRI in the configured runtime",
+				Destination: &options.EnableNRI,
+				Value:       false,
+				Sources:     cli.EnvVars("RUNTIME_ENABLE_NRI"),
+			},
+			&cli.UintFlag{
+				Name:        "nri-plugin-index",
+				Usage:       "Specify the plugin index to register to NRI",
+				Value:       defaultNRIPluginIdx,
+				Destination: &options.NRIPluginIndex,
+				Sources:     cli.EnvVars("RUNTIME_NRI_PLUGIN_INDEX"),
+				Action: func(ctx context.Context, c *cli.Command, u uint) error {
+					if u > 99 {
+						return fmt.Errorf("nri-plugin-index must be in the range [0,99]")
+					}
+					return nil
+				},
+			},
+			&cli.StringFlag{
+				Name:        "nri-socket",
+				Usage:       "Specify the path to the NRI socket file to register the NRI plugin server",
+				Value:       nriapi.DefaultSocketPath,
+				Destination: &options.NRISocket,
+				Sources:     cli.EnvVars("RUNTIME_NRI_SOCKET"),
+			},
 		},
 	}
 
@@ -199,7 +233,7 @@ func (a *app) Run(ctx context.Context, c *cli.Command, o *options) error {
 	}
 	defer a.shutdown(o.pidFile)
 
-	runtimeConfigurer := runtime.NewConfigurer(o.runtime, o.runtimeOptions.EnableNRI)
+	runtimeConfigurer := runtime.NewConfigurer(o.runtime, o.EnableNRI)
 
 	if len(o.toolkitOptions.ContainerRuntimeRuntimes) == 0 {
 		lowlevelRuntimePaths, err := runtimeConfigurer.GetLowlevelRuntimePaths(&o.runtimeOptions)
@@ -225,8 +259,8 @@ func (a *app) Run(ctx context.Context, c *cli.Command, o *options) error {
 		return nil
 	}
 
-	if o.runtimeOptions.EnableNRI {
-		nriPlugin, err := a.startNRIPluginServer(ctx, o.runtimeOptions)
+	if o.EnableNRI {
+		nriPlugin, err := a.startNRIPluginServer(ctx, o)
 		if err != nil {
 			a.logger.Errorf("unable to start NRI plugin server: %v", err)
 		}
@@ -297,7 +331,7 @@ func (a *app) waitForSignal() error {
 	return nil
 }
 
-func (a *app) startNRIPluginServer(ctx context.Context, opts runtime.Options) (*nri.Plugin, error) {
+func (a *app) startNRIPluginServer(ctx context.Context, opts *options) (*nri.Plugin, error) {
 	a.logger.Infof("Starting the NRI Plugin server....")
 
 	const (

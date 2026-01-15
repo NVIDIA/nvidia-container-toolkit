@@ -49,15 +49,12 @@ type Options struct {
 	// mount.
 	ExecutablePath string
 	// EnabledCDI indicates whether CDI should be enabled.
-	EnableCDI      bool
-	EnableNRI      bool
-	RuntimeName    string
-	RuntimeDir     string
-	SetAsDefault   bool
-	RestartMode    string
-	HostRootMount  string
-	NRIPluginIndex uint
-	NRISocket      string
+	EnableCDI     bool
+	RuntimeName   string
+	RuntimeDir    string
+	SetAsDefault  bool
+	RestartMode   string
+	HostRootMount string
 
 	ConfigSources []string
 }
