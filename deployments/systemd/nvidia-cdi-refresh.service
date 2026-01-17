@@ -27,5 +27,13 @@ ExecCondition=/usr/bin/grep -qE '/(nvidia|nvidia-current)\\.ko' /lib/modules/%v/
 ExecStart=/usr/bin/nvidia-ctk cdi generate
 CapabilityBoundingSet=CAP_SYS_MODULE CAP_SYS_ADMIN CAP_MKNOD
 
+# We set the service to restart on failure to ensure that a CDI spec is
+# eventually generated.
+Restart=on-failure
+RestartSec=1s
+# Limit the number of successive restarts to 5.
+StartLimitBurst=5
+StartLimitIntervalSec=6s
+
 [Install]
 WantedBy=multi-user.target
