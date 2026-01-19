@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"reflect"
 	"slices"
 	"unicode"
 )
@@ -140,13 +139,20 @@ func (cmd *Command) run(ctx context.Context, osArgs []string) (_ context.Context
 	}
 
 	var rargs Args = &stringSliceArgs{v: osArgs}
+	var args Args = &stringSliceArgs{rargs.Tail()}
+
+	if cmd.isCompletionCommand || cmd.Name == helpName {
+		tracef("special command detected, skipping pre-parse (cmd=%[1]q)", cmd.Name)
+		cmd.parsedArgs = args
+		return ctx, cmd.Action(ctx, cmd)
+	}
+
 	for _, f := range cmd.allFlags() {
 		if err := f.PreParse(); err != nil {
 			return ctx, err
 		}
 	}
 
-	var args Args = &stringSliceArgs{rargs.Tail()}
 	var err error
 
 	if cmd.SkipFlagParsing {
@@ -252,6 +258,7 @@ func (cmd *Command) run(ctx context.Context, osArgs []string) (_ context.Context
 
 		if cmd.SuggestCommandFunc != nil && name != "--" {
 			name = cmd.SuggestCommandFunc(cmd.Commands, name)
+			tracef("suggested command name=%1[q] (cmd=%[2]q)", name, cmd.Name)
 		}
 		subCmd = cmd.Command(name)
 		if subCmd == nil {
@@ -263,14 +270,13 @@ func (cmd *Command) run(ctx context.Context, osArgs []string) (_ context.Context
 			}
 
 			if isFlagName || hasDefault {
-				argsWithDefault := cmd.argsWithDefaultCommand(args)
+				argsWithDefault := cmd.argsWithDefaultCommand(cmd.parsedArgs)
 				tracef("using default command args=%[1]q (cmd=%[2]q)", argsWithDefault, cmd.Name)
-				if !reflect.DeepEqual(args, argsWithDefault) {
-					subCmd = cmd.Command(argsWithDefault.First())
-				}
+				subCmd = cmd.Command(argsWithDefault.First())
+				cmd.parsedArgs = argsWithDefault
 			}
 		}
-	} else if cmd.parent == nil && cmd.DefaultCommand != "" {
+	} else if cmd.DefaultCommand != "" {
 		tracef("no positional args present; checking default command %[1]q (cmd=%[2]q)", cmd.DefaultCommand, cmd.Name)
 
 		if dc := cmd.Command(cmd.DefaultCommand); dc != cmd {

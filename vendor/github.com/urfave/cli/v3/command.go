@@ -161,6 +161,8 @@ type Command struct {
 	globaHelpFlagAdded bool
 	// whether global version flag was added
 	globaVersionFlagAdded bool
+	// whether this is a completion command
+	isCompletionCommand bool
 }
 
 // FullName returns the full name of the command.
@@ -334,14 +336,10 @@ func (cmd *Command) handleExitCoder(ctx context.Context, err error) error {
 }
 
 func (cmd *Command) argsWithDefaultCommand(oldArgs Args) Args {
-	if cmd.DefaultCommand != "" {
-		rawArgs := append([]string{cmd.DefaultCommand}, oldArgs.Slice()...)
-		newArgs := &stringSliceArgs{v: rawArgs}
+	rawArgs := append([]string{cmd.DefaultCommand}, oldArgs.Slice()...)
+	newArgs := &stringSliceArgs{v: rawArgs}
 
-		return newArgs
-	}
-
-	return oldArgs
+	return newArgs
 }
 
 // Root returns the Command at the root of the graph
