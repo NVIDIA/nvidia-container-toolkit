@@ -116,12 +116,12 @@ func (m command) build() *cli.Command {
 
 func (m command) validateFlags(cfg *config) error {
 	if cfg.loadKernelModules && !cfg.createAll {
-		m.logger.Warning("load-kernel-modules is only applicable when create-all is set; ignoring")
+		m.logger.Warningf("load-kernel-modules is only applicable when create-all is set; ignoring")
 		cfg.loadKernelModules = false
 	}
 
 	if cfg.createDeviceNodes && !cfg.createAll {
-		m.logger.Warning("create-device-nodes is only applicable when create-all is set; ignoring")
+		m.logger.Warningf("create-device-nodes is only applicable when create-all is set; ignoring")
 		cfg.createDeviceNodes = false
 	}
 

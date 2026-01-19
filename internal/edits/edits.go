@@ -108,7 +108,7 @@ func (e *edits) Modify(spec *ociSpecs.Spec) error {
 		return nil
 	}
 
-	e.logger.Info("Mounts:")
+	e.logger.Infof("Mounts:")
 	for _, mount := range e.Mounts {
 		e.logger.Infof("Mounting %v at %v", mount.HostPath, mount.ContainerPath)
 	}

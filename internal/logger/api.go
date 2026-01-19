@@ -20,9 +20,7 @@ package logger
 type Interface interface {
 	Debugf(string, ...interface{})
 	Errorf(string, ...interface{})
-	Info(...interface{})
 	Infof(string, ...interface{})
-	Warning(...interface{})
 	Warningf(string, ...interface{})
 	Tracef(string, ...interface{})
 }

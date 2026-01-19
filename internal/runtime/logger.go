@@ -53,7 +53,7 @@ func (l *Logger) Update(filename string, logLevel string, argv []string) {
 	level, logLevelError := configFromArgs.getLevel(logLevel)
 	defer func() {
 		if logLevelError != nil {
-			l.Warning(logLevelError)
+			l.Warningf("Error getting log level: %v", logLevelError)
 		}
 	}()
 

@@ -255,7 +255,7 @@ func (t *Installer) ValidateOptions(opts *Options) error {
 	opts.CDI.class = class
 
 	if opts.CDI.Enabled && opts.CDI.outputDir == "" {
-		t.logger.Warning("Skipping CDI spec generation (no output directory specified)")
+		t.logger.Warningf("Skipping CDI spec generation (no output directory specified)")
 		opts.CDI.Enabled = false
 	}
 
@@ -270,7 +270,7 @@ func (t *Installer) ValidateOptions(opts *Options) error {
 		}
 	}
 	if !opts.CDI.Enabled && !isDisabled {
-		t.logger.Info("disabling device node creation since --cdi-enabled=false")
+		t.logger.Infof("disabling device node creation since --cdi-enabled=false")
 		isDisabled = true
 	}
 	if isDisabled {
@@ -510,7 +510,7 @@ func (t *Installer) generateCDISpec(opts *Options, nvidiaCDIHookPath string) err
 	if !opts.CDI.Enabled {
 		return nil
 	}
-	t.logger.Info("Generating CDI spec for management containers")
+	t.logger.Infof("Generating CDI spec for management containers")
 	cdilib, err := nvcdi.New(
 		nvcdi.WithLogger(t.logger),
 		nvcdi.WithMode(nvcdi.ModeManagement),
