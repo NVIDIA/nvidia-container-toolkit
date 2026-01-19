@@ -430,7 +430,7 @@ version = 2
 			toolkitRoot := filepath.Join(testRoot, "toolkit-test")
 			toolkitConfigFile := filepath.Join(toolkitRoot, "toolkit/.config/nvidia-container-runtime/config.toml")
 
-			app := NewApp(logger)
+			app := NewApp(WithLogger(logger))
 
 			testArgs := []string{
 				"nvidia-ctk-installer",

@@ -15,7 +15,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
@@ -52,7 +51,7 @@ type options struct {
 	toolkitOptions toolkit.Options
 	runtimeOptions runtime.Options
 
-	debug bool
+	logVerbosity int
 }
 
 func (o options) toolkitRoot() string {
@@ -60,8 +59,8 @@ func (o options) toolkitRoot() string {
 }
 
 func main() {
-	logger := logger.New()
-	c := NewApp(logger)
+	logger := logrus.StandardLogger()
+	c := NewApp(WithLogger(logger))
 
 	// Run the CLI
 	logger.Infof("Starting %v", c.Name)
@@ -74,21 +73,29 @@ func main() {
 }
 
 // An app represents the nvidia-ctk-installer.
-type app struct {
-	logger logger.Interface
+type Option func(*app)
 
+func WithLogger(logger *logrus.Logger) Option {
+	return func(b *app) {
+		b.logger = logger
+	}
+}
+
+type app struct {
+	logger  *logrus.Logger
 	toolkit *toolkit.Installer
 }
 
 // NewApp creates the CLI app fro the specified options.
-func NewApp(logger logger.Interface) *cli.Command {
-	a := app{
-		logger: logger,
+func NewApp(opts ...Option) *cli.Command {
+	a := &app{}
+	for _, o := range opts {
+		o(a)
 	}
-	return a.build()
-}
+	if a.logger == nil {
+		a.logger = logrus.StandardLogger()
+	}
 
-func (a app) build() *cli.Command {
 	options := options{
 		toolkitOptions: toolkit.Options{},
 	}
@@ -150,13 +157,11 @@ func (a app) build() *cli.Command {
 				Destination: &options.pidFile,
 				Sources:     cli.EnvVars("TOOLKIT_PID_FILE", "PID_FILE"),
 			},
-			&cli.BoolFlag{
-				Name:        "debug",
-				Aliases:     []string{"d"},
-				Value:       false,
-				Usage:       "enable debug-level log",
-				Destination: &options.debug,
-				Sources:     cli.EnvVars("TOOLKIT_DEBUG"),
+			&cli.IntFlag{
+				Name:        "log-versbosity",
+				Aliases:     []string{"v"},
+				Destination: &options.logVerbosity,
+				Sources:     cli.EnvVars("LOG_VERBOSITY"),
 			},
 		},
 	}
@@ -169,11 +174,10 @@ func (a app) build() *cli.Command {
 }
 
 func (a *app) Before(c *cli.Command, o *options) error {
-	if o.debug {
-		if l, ok := a.logger.(*logrus.Logger); ok {
-			l.SetLevel(logrus.DebugLevel)
-		}
+	if c.IsSet("log-verbosity") {
+		a.logger.SetLevel(logrus.Level(o.logVerbosity))
 	}
+
 	if o.sourceRoot == "" {
 		sourceRoot, err := a.resolveSourceRoot(o.runtimeOptions.HostRootMount, o.packageType)
 		if err != nil {
@@ -260,7 +264,7 @@ func (a *app) initialize(pidFile string) error {
 	a.logger.Infof("Initializing")
 
 	if dir := filepath.Dir(pidFile); dir != "" {
-		err := os.MkdirAll(dir, 0o755)
+		err := os.MkdirAll(dir, 0755)
 		if err != nil {
 			return fmt.Errorf("unable to create folder for pidfile: %w", err)
 		}
