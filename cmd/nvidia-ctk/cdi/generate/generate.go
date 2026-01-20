@@ -302,7 +302,7 @@ func (m command) validateFlags(c *cli.Command, opts *options) error {
 	}
 
 	if slices.Contains(opts.deviceIDs, "none") && !opts.noAllDevice {
-		m.logger.Warning("Disabling generation of 'all' device")
+		m.logger.Warningf("Disabling generation of 'all' device")
 		opts.noAllDevice = true
 	}
 	return nil
