@@ -49,7 +49,6 @@ func TestIPCMounts(t *testing.T) {
 				HostPath: "/host/path",
 				Path:     "/host/path",
 				Options: []string{
-					"ro",
 					"nosuid",
 					"nodev",
 					"rbind",
