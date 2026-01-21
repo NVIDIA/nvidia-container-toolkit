@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"strings"
 	"sync"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
@@ -82,23 +81,12 @@ func (c *hookConfig) getConfigOption(fieldName string) string {
 	return v
 }
 
-// getSwarmResourceEnvvars returns the swarm resource envvars for the config.
-func (c *hookConfig) getSwarmResourceEnvvars() []string {
-	if c == nil || c.SwarmResource == "" {
-		return nil
+// getSwarmResource returns the swarm resource envvars for the config.
+func (c *hookConfig) getSwarmResource() string {
+	if c == nil {
+		return ""
 	}
-
-	candidates := strings.Split(c.SwarmResource, ",")
-
-	var envvars []string
-	for _, c := range candidates {
-		trimmed := strings.TrimSpace(c)
-		if len(trimmed) > 0 {
-			envvars = append(envvars, trimmed)
-		}
-	}
-
-	return envvars
+	return c.SwarmResource
 }
 
 // nvidiaContainerCliCUDACompatModeFlags returns required --cuda-compat-mode

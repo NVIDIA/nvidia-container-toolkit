@@ -246,7 +246,7 @@ func (hookConfig *hookConfig) getContainerConfig() (config *containerConfig) {
 		image.WithDisableRequire(hookConfig.DisableRequire),
 		image.WithAcceptDeviceListAsVolumeMounts(hookConfig.AcceptDeviceListAsVolumeMounts),
 		image.WithAcceptEnvvarUnprivileged(hookConfig.AcceptEnvvarUnprivileged),
-		image.WithPreferredVisibleDevicesEnvVars(hookConfig.getSwarmResourceEnvvars()...),
+		image.WithPreferredVisibleDevicesEnvVars(hookConfig.getSwarmResource()),
 		image.WithIgnoreImexChannelRequests(hookConfig.Features.IgnoreImexChannelRequests.IsEnabled()),
 	)
 	if err != nil {
