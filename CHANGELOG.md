@@ -1,11 +1,12 @@
 # NVIDIA Container Toolkit Changelog
 
 ## v1.18.2
-- Generate none device spec
-- fix: Skip device node injection if NVIDIA_VISIBLE_DEVICES=none
-- fix: Fix arguments when creating DRM device symlinks
+- Allow nvidia-cdi-refresh.service to be restarted
+- Remove ro mount option from IPC sockets
+- Skip device node injection if NVIDIA_VISIBLE_DEVICES=none
+- Fix arguments when creating DRM device symlinks
 - Fix library paths in Apline containers
-- fix: Return error on JIT CDI spec generation failure
+- Return error on JIT CDI spec generation failure
 - Fix trigger of CDI refresh service
 
 ### Changes in the Toolkit Container
