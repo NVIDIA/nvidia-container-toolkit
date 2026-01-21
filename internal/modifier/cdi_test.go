@@ -174,6 +174,21 @@ func TestDeviceRequests(t *testing.T) {
 			},
 			expectedDevices: []string{"runtime.nvidia.com/gpu=none"},
 		},
+		{
+			description: "SWARM_RESOURCE envvar is used over NVIDIA_VISIBLE_DEVICES",
+			input: cdiDeviceRequestor{
+				defaultKind: "runtime.nvidia.com/gpu",
+			},
+			imageOptions: []image.Option{
+				image.WithPreferredVisibleDevicesEnvVars("SWARM_RESOURCE"),
+			},
+			spec: &specs.Spec{
+				Process: &specs.Process{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=all", "SWARM_RESOURCE=GPU1"},
+				},
+			},
+			expectedDevices: []string{"runtime.nvidia.com/gpu=GPU1"},
+		},
 	}
 
 	for _, tc := range testCases {

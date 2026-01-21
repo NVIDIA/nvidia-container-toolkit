@@ -156,7 +156,17 @@ func WithMounts(mounts []specs.Mount) Option {
 // should take precedence over the default NVIDIA_VISIBLE_DEVICES.
 func WithPreferredVisibleDevicesEnvVars(preferredVisibleDeviceEnvVars ...string) Option {
 	return func(b *builder) error {
-		b.preferredVisibleDeviceEnvVars = preferredVisibleDeviceEnvVars
+		var normalized []string
+		for _, e := range preferredVisibleDeviceEnvVars {
+			candidates := strings.Split(e, ",")
+			for _, c := range candidates {
+				trimmed := strings.TrimSpace(c)
+				if len(trimmed) > 0 {
+					normalized = append(normalized, trimmed)
+				}
+			}
+		}
+		b.preferredVisibleDeviceEnvVars = normalized
 		return nil
 	}
 }
