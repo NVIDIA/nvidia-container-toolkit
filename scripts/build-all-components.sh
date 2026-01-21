@@ -47,10 +47,12 @@ echo "Building ${TARGET} for all packages to ${DIST_DIR}"
 : "${NVIDIA_CONTAINER_TOOLKIT_ROOT:=${PROJECT_ROOT}}"
 
 
-"${SCRIPTS_DIR}/get-component-versions.sh"
-
 if [[ -z "${NVIDIA_CONTAINER_TOOLKIT_VERSION}" || -z "${LIBNVIDIA_CONTAINER_VERSION}" ]]; then
 eval $(${SCRIPTS_DIR}/get-component-versions.sh)
+fi
+
+if [[ -z "${GOLANG_VERSION}" ]]; then
+    GOLANG_VERSION=$(${PROJECT_ROOT}/hack/golang-version.sh)
 fi
 
 # Build libnvidia-container
@@ -58,6 +60,7 @@ if [[ -z ${SKIP_LIBNVIDIA_CONTAINER} ]]; then
     make -C "${LIBNVIDIA_CONTAINER_ROOT}" -f mk/docker.mk \
         LIB_VERSION=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
         LIB_TAG=${NVIDIA_CONTAINER_TOOLKIT_TAG} \
+        GOLANG_VERSION=${GOLANG_VERSION} \
         "${TARGET}"
 fi
 
