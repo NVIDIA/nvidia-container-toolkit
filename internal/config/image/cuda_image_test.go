@@ -779,7 +779,7 @@ func TestCDIDeviceRequestsFromAnnotations(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			image, err := New(
-				WithAnnotationsPrefixes(tc.prefixes),
+				WithAnnotationsPrefixes(tc.prefixes...),
 				WithAnnotations(tc.annotations),
 			)
 			require.NoError(t, err)
