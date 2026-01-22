@@ -173,14 +173,23 @@ func (l *csvDeviceGenerator) deviceNodeMountSpecs() tegra.MountSpecPathsByTyper 
 	// nodes that we detect and only look for the node associated with the
 	// index.
 	case "dgpu":
-		return tegra.Merge(
+		return tegra.Transform(
 			tegra.Transform(
 				mountSpecs,
 				// We remove the regular (nvidia[0-9]+) device nodes.
+				// The device nodes for the GPU are discovered for the full GPU.
 				tegra.WithoutRegularDeviceNodes(),
 			),
-			// We add the specific device node for this device.
-			tegra.DeviceNodes(fmt.Sprintf("/dev/nvidia%d", l.index)),
+			// We also ignore control device nodes since these are included in
+			// the full GPU spec generator.
+			tegra.Without(
+				tegra.DeviceNodes(
+					"/dev/nvidia-modeset",
+					"/dev/nvidia-uvm-tools",
+					"/dev/nvidia-uvm",
+					"/dev/nvidiactl",
+				),
+			),
 		)
 	case "igpu":
 		return tegra.Merge(

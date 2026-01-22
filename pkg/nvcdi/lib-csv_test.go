@@ -30,6 +30,8 @@ import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"github.com/NVIDIA/go-nvml/pkg/nvml/mock"
+	"github.com/NVIDIA/go-nvml/pkg/nvml/mock/gpus"
+	"github.com/NVIDIA/go-nvml/pkg/nvml/mock/server"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 	"tags.cncf.io/container-device-interface/specs-go"
@@ -83,7 +85,6 @@ func TestDeviceSpecGenerators(t *testing.T) {
 					ContainerEdits: specs.ContainerEdits{
 						DeviceNodes: []*specs.DeviceNode{
 							{Path: "/dev/nvidia0", HostPath: "/dev/nvidia0"},
-							{Path: "/dev/nvidia1", HostPath: "/dev/nvidia1"},
 						},
 					},
 				},
@@ -97,46 +98,14 @@ func TestDeviceSpecGenerators(t *testing.T) {
 				infolib: &infoInterfaceMock{
 					HasNvmlFunc: func() (bool, string) { return true, "forced" },
 				},
-				nvmllib: &mock.Interface{
-					InitFunc: func() nvml.Return {
-						return nvml.SUCCESS
-					},
-					ShutdownFunc: func() nvml.Return {
-						return nvml.SUCCESS
-					},
-					DeviceGetCountFunc: func() (int, nvml.Return) {
-						return 2, nvml.SUCCESS
-					},
-					DeviceGetHandleByIndexFunc: func(n int) (nvml.Device, nvml.Return) {
-						switch n {
-						case 0:
-							device := &mock.Device{
-								GetUUIDFunc: func() (string, nvml.Return) {
-									return "GPU-0", nvml.SUCCESS
-								},
-								GetPciInfoFunc: func() (nvml.PciInfo, nvml.Return) {
-									return nvml.PciInfo{
-										Bus: 1,
-									}, nvml.SUCCESS
-								},
-							}
-							return device, nvml.SUCCESS
-						case 1:
-							device := &mock.Device{
-								GetUUIDFunc: func() (string, nvml.Return) {
-									return "GPU-1", nvml.SUCCESS
-								},
-								GetPciInfoFunc: func() (nvml.PciInfo, nvml.Return) {
-									return nvml.PciInfo{
-										Bus: 3,
-									}, nvml.SUCCESS
-								},
-							}
-							return device, nvml.SUCCESS
-						}
-						return nil, nvml.ERROR_INVALID_ARGUMENT
-					},
-				},
+				nvmllib: server.NewServerWithGPUs(
+					"580.00",
+					"",
+					0,
+					gpus.THOR_IGX,
+					// TODO: This should be an RTX device.
+					gpus.A30_PCIE_24GB,
+				),
 			},
 			expectedDeviceSpecs: []specs.Device{
 				{
@@ -144,6 +113,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 					ContainerEdits: specs.ContainerEdits{
 						DeviceNodes: []*specs.DeviceNode{
 							{Path: "/dev/nvidia0", HostPath: "/dev/nvidia0"},
+							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
 							{Path: "/dev/nvidia2", HostPath: "/dev/nvidia2"},
 						},
 					},
@@ -153,6 +123,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 					ContainerEdits: specs.ContainerEdits{
 						DeviceNodes: []*specs.DeviceNode{
 							{Path: "/dev/nvidia1", HostPath: "/dev/nvidia1"},
+							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
 						},
 					},
 				},

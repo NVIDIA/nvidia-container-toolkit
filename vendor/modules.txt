@@ -12,12 +12,14 @@ github.com/NVIDIA/go-nvlib/pkg/nvpci
 github.com/NVIDIA/go-nvlib/pkg/nvpci/bytes
 github.com/NVIDIA/go-nvlib/pkg/nvpci/mmio
 github.com/NVIDIA/go-nvlib/pkg/pciids
-# github.com/NVIDIA/go-nvml v0.13.0-1
+# github.com/NVIDIA/go-nvml v0.13.0-1 => ../go-nvml
 ## explicit; go 1.20
 github.com/NVIDIA/go-nvml/pkg/dl
 github.com/NVIDIA/go-nvml/pkg/nvml
 github.com/NVIDIA/go-nvml/pkg/nvml/mock
 github.com/NVIDIA/go-nvml/pkg/nvml/mock/dgxa100
+github.com/NVIDIA/go-nvml/pkg/nvml/mock/gpus
+github.com/NVIDIA/go-nvml/pkg/nvml/mock/server
 # github.com/containerd/log v0.1.0
 ## explicit; go 1.20
 github.com/containerd/log
@@ -243,3 +245,4 @@ tags.cncf.io/container-device-interface/pkg/parser
 # tags.cncf.io/container-device-interface/specs-go v1.1.0
 ## explicit; go 1.19
 tags.cncf.io/container-device-interface/specs-go
+# github.com/NVIDIA/go-nvml => ../go-nvml
