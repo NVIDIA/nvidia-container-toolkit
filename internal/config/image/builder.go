@@ -87,7 +87,7 @@ func WithAnnotations(annotations map[string]string) Option {
 	}
 }
 
-func WithAnnotationsPrefixes(annotationsPrefixes []string) Option {
+func WithAnnotationsPrefixes(annotationsPrefixes ...string) Option {
 	return func(b *builder) error {
 		b.annotationsPrefixes = annotationsPrefixes
 		return nil

@@ -170,7 +170,7 @@ func TestDeviceRequests(t *testing.T) {
 			tc.spec,
 			image.WithAcceptDeviceListAsVolumeMounts(true),
 			image.WithAcceptEnvvarUnprivileged(true),
-			image.WithAnnotationsPrefixes(tc.prefixes),
+			image.WithAnnotationsPrefixes(tc.prefixes...),
 		)
 		require.NoError(t, err)
 		tc.input.image = image

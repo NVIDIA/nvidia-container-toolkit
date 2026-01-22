@@ -134,7 +134,7 @@ func initRuntimeModeAndImage(logger logger.Interface, cfg *config.Config, ociSpe
 		image.WithLogger(logger),
 		image.WithAcceptDeviceListAsVolumeMounts(cfg.AcceptDeviceListAsVolumeMounts),
 		image.WithAcceptEnvvarUnprivileged(cfg.AcceptEnvvarUnprivileged),
-		image.WithAnnotationsPrefixes(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes),
+		image.WithAnnotationsPrefixes(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes...),
 		image.WithIgnoreImexChannelRequests(cfg.Features.IgnoreImexChannelRequests.IsEnabled()),
 	)
 	if err != nil {
