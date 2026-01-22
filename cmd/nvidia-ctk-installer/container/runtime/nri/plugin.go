@@ -43,14 +43,16 @@ type Plugin struct {
 	ctx    context.Context
 	logger logger.Interface
 
-	stub stub.Stub
+	namespace string
+	stub      stub.Stub
 }
 
 // NewPlugin creates a new NRI plugin for injecting CDI devices
-func NewPlugin(ctx context.Context, logger logger.Interface) *Plugin {
+func NewPlugin(ctx context.Context, logger logger.Interface, namespace string) *Plugin {
 	return &Plugin{
-		ctx:    ctx,
-		logger: logger,
+		ctx:       ctx,
+		logger:    logger,
+		namespace: namespace,
 	}
 }
 
@@ -69,25 +71,31 @@ func (p *Plugin) injectCDIDevices(pod *api.PodSandbox, ctr *api.Container, a *ap
 	ctx := p.ctx
 	pluginLogger := p.stub.Logger()
 
-	devices := parseCDIDevices(pod, nriCDIAnnotationDomain, ctr.Name)
+	devices := p.parseCDIDevices(pod, nriCDIAnnotationDomain, ctr.Name)
 	if len(devices) == 0 {
 		pluginLogger.Debugf(ctx, "%s: no CDI devices annotated...", containerName(pod, ctr))
 		return nil
 	}
 
+	pluginLogger.Infof(ctx, "%s: injecting CDI devices %v...", containerName(pod, ctr), devices)
 	for _, name := range devices {
 		a.AddCDIDevice(
 			&api.CDIDevice{
 				Name: name,
 			},
 		)
-		pluginLogger.Infof(ctx, "%s: injected CDI device %q...", containerName(pod, ctr), name)
 	}
 
 	return nil
 }
 
-func parseCDIDevices(pod *api.PodSandbox, key, container string) []string {
+// parseCDIDevices processes the podSpec and determines which containers which need CDI devices injected to them
+func (p *Plugin) parseCDIDevices(pod *api.PodSandbox, key, container string) []string {
+	if p.namespace != pod.Namespace {
+		p.logger.Debugf("pod %s/%s is not in the toolkit's namespace %s. Skipping CDI device injection...", pod.Namespace, pod.Name, p.namespace)
+		return nil
+	}
+
 	cdiDeviceNames, ok := plugin.GetEffectiveAnnotation(pod, key, container)
 	if !ok {
 		return nil
