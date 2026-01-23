@@ -125,6 +125,56 @@ func TestDeviceSpecGenerators(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:  "thor device with dGPU",
+			rootfsFolder: "rootfs-thor-dgpu",
+			lib: &csvlib{
+				// test-case specific
+				infolib: &infoInterfaceMock{
+					HasNvmlFunc: func() (bool, string) { return true, "forced" },
+				},
+				nvmllib: mockIGXServer(),
+			},
+			expectedDeviceSpecs: []specs.Device{
+				{
+					Name: "0",
+					ContainerEdits: specs.ContainerEdits{
+						DeviceNodes: []*specs.DeviceNode{
+							{Path: "/dev/nvidia0", HostPath: "/dev/nvidia0"},
+							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
+							{Path: "/dev/nvidia2", HostPath: "/dev/nvidia2"},
+						},
+					},
+				},
+				{
+					Name: "1",
+					ContainerEdits: specs.ContainerEdits{
+						DeviceNodes: []*specs.DeviceNode{
+							{Path: "/dev/nvidia1", HostPath: "/dev/nvidia1"},
+							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
+						},
+					},
+				},
+			},
+			expectedCommonEdits: &cdi.ContainerEdits{
+				ContainerEdits: &specs.ContainerEdits{
+					Hooks: []*specs.Hook{
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-driver-version=540.3.0"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "update-ldcache"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -178,4 +228,70 @@ func stripRoot[T any](root string, v T) T {
 		panic(err)
 	}
 	return modified
+}
+
+// TODO: We should move this mock to go-nvml/mock
+func mockIGXServer() nvml.Interface {
+	thor := &mock.Device{
+		GetNameFunc: func() (string, nvml.Return) {
+			return "NVIDIA Thor", nvml.SUCCESS
+		},
+		GetUUIDFunc: func() (string, nvml.Return) {
+			return "GPU-0", nvml.SUCCESS
+		},
+		GetPciInfoFunc: func() (nvml.PciInfo, nvml.Return) {
+			return nvml.PciInfo{
+				Bus: 1,
+			}, nvml.SUCCESS
+		},
+	}
+	rtx := &mock.Device{
+		GetNameFunc: func() (string, nvml.Return) {
+			return "RTX Pro 6000", nvml.SUCCESS
+		},
+		GetUUIDFunc: func() (string, nvml.Return) {
+			return "GPU-1", nvml.SUCCESS
+		},
+		GetPciInfoFunc: func() (nvml.PciInfo, nvml.Return) {
+			return nvml.PciInfo{
+				Bus: 3,
+			}, nvml.SUCCESS
+		},
+		GetMinorNumberFunc: func() (int, nvml.Return) {
+			return 1, nvml.SUCCESS
+		},
+	}
+
+	return &mock.Interface{
+		InitFunc: func() nvml.Return {
+			return nvml.SUCCESS
+		},
+		ShutdownFunc: func() nvml.Return {
+			return nvml.SUCCESS
+		},
+		SystemGetDriverVersionFunc: func() (string, nvml.Return) {
+			return "540.3.0", nvml.SUCCESS
+		},
+		DeviceGetCountFunc: func() (int, nvml.Return) {
+			return 2, nvml.SUCCESS
+		},
+		DeviceGetHandleByIndexFunc: func(n int) (nvml.Device, nvml.Return) {
+			switch n {
+			case 0:
+				return thor, nvml.SUCCESS
+			case 1:
+				return rtx, nvml.SUCCESS
+			}
+			return nil, nvml.ERROR_INVALID_ARGUMENT
+		},
+		DeviceGetHandleByUUIDFunc: func(s string) (nvml.Device, nvml.Return) {
+			switch s {
+			case "GPU-0":
+				return thor, nvml.SUCCESS
+			case "GPU-1":
+				return rtx, nvml.SUCCESS
+			}
+			return nil, nvml.ERROR_INVALID_ARGUMENT
+		},
+	}
 }

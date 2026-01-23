@@ -93,9 +93,6 @@ func (l *csvlib) purecsvDeviceSpecGenerators(ids ...string) (DeviceSpecGenerator
 		csvlib: l,
 		index:  0,
 		uuid:   "",
-		// We set noFilterDeviceNodes to true to ensure that the /dev/nvidia[0-1]
-		// device nodes in the CSV files on the system are consumed as-is.
-		noFilterDeviceNodes: true,
 	}
 	return g, nil
 }
@@ -108,10 +105,17 @@ func (l *csvlib) mixedDeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, 
 // platform-specific CSV files.
 type csvDeviceGenerator struct {
 	*csvlib
-	index               int
-	uuid                string
-	noFilterDeviceNodes bool
+	index int
+	uuid  string
+	mode  csvGeneratorMode
 }
+
+type csvGeneratorMode string
+
+const (
+	iGPUGeneratorMode = csvGeneratorMode("igpu")
+	dGPUGeneratorMode = csvGeneratorMode("dgpu")
+)
 
 func (l *csvDeviceGenerator) GetUUID() (string, error) {
 	return l.uuid, nil
@@ -154,18 +158,6 @@ func (l *csvDeviceGenerator) GetDeviceSpecs() ([]specs.Device, error) {
 //   - The device node (i.e. /dev/nvidia{{ .index }}) associated with this
 //     particular device is added to the set of device nodes to be discovered.
 func (l *csvDeviceGenerator) deviceNodeDiscoverer() (discover.Discover, error) {
-	mountSpecs := tegra.Transform(
-		tegra.MountSpecsFromCSVFiles(l.logger, l.csvFiles...),
-		// We remove non-device nodes.
-		tegra.OnlyDeviceNodes(),
-	)
-	if !l.noFilterDeviceNodes {
-		mountSpecs = tegra.Transform(
-			mountSpecs,
-			// We remove the regular (nvidia[0-9]+) device nodes.
-			tegra.WithoutRegularDeviceNodes(),
-		)
-	}
 	return tegra.New(
 		tegra.WithLogger(l.logger),
 		tegra.WithDriverRoot(l.driverRoot),
@@ -173,12 +165,50 @@ func (l *csvDeviceGenerator) deviceNodeDiscoverer() (discover.Discover, error) {
 		tegra.WithHookCreator(l.hookCreator),
 		tegra.WithLdconfigPath(l.ldconfigPath),
 		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
-		tegra.WithMountSpecs(
-			mountSpecs,
-			// We add the specific device node for this device.
-			tegra.DeviceNodes(fmt.Sprintf("/dev/nvidia%d", l.index)),
-		),
+		tegra.WithMountSpecs(l.deviceNodeMountSpecs()),
 	)
+}
+
+func (l *csvDeviceGenerator) deviceNodeMountSpecs() tegra.MountSpecPathsByTyper {
+	mountSpecs := tegra.Transform(
+		tegra.MountSpecsFromCSVFiles(l.logger, l.csvFiles...),
+		// We remove non-device nodes.
+		tegra.OnlyDeviceNodes(),
+	)
+	switch l.mode {
+	case dGPUGeneratorMode:
+		return tegra.Transform(
+			mountSpecs,
+			// For a dGPU we remove all regular device nodes (nvidia[0-9]+)
+			// from the list of device nodes taken from the CSV mount specs.
+			// The device nodes for the GPU are discovered for the full GPU.
+			tegra.WithoutRegularDeviceNodes(),
+			// We also ignore control device nodes since these are included in
+			// the full GPU spec generator.
+			tegra.Without(
+				tegra.DeviceNodes(
+					"/dev/nvidia-modeset",
+					"/dev/nvidia-uvm-tools",
+					"/dev/nvidia-uvm",
+					"/dev/nvidiactl",
+				),
+			),
+		)
+	case iGPUGeneratorMode:
+		return tegra.Merge(
+			tegra.Transform(
+				mountSpecs,
+				// We remove the /dev/nvidia1 device node.
+				// TODO: This assumes that the dGPU has the index 1 and remove
+				// it from the set of device nodes.
+				tegra.Without(tegra.DeviceNodes("/dev/nvidia1")),
+			),
+			// We add the display device from the iGPU.
+			tegra.DeviceNodes("/dev/nvidia2"),
+		)
+	default:
+		return mountSpecs
+	}
 }
 
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
@@ -272,35 +302,56 @@ func (l *mixedcsvlib) csvDeviceSpecGenerator(index int, uuid string, device nvml
 		return nil, fmt.Errorf("is-integrated check failed for device (index=%v,uuid=%v)", index, uuid)
 	}
 
+	if isIntegrated {
+		return l.iGPUDeviceSpecGenerator(index, uuid)
+	}
+
+	return l.dGPUDeviceSpecGenerator(index, uuid)
+}
+
+func (l *mixedcsvlib) dGPUDeviceSpecGenerator(index int, uuid string) (DeviceSpecGenerator, error) {
+	if index != 1 {
+		return nil, fmt.Errorf("unexpected device index for dGPU: %d", index)
+	}
 	g := &csvDeviceGenerator{
 		csvlib: (*csvlib)(l),
 		index:  index,
 		uuid:   uuid,
+		mode:   dGPUGeneratorMode,
 	}
 
-	if !isIntegrated {
-		csvDeviceNodeDiscoverer, err := g.deviceNodeDiscoverer()
-		if err != nil {
-			return nil, fmt.Errorf("failed to create discoverer for devices nodes: %w", err)
-		}
-
-		// If this is not an integrated GPU, we also create a spec generator for
-		// the full GPU.
-		dgpu := (*nvmllib)(l).withInit(&fullGPUDeviceSpecGenerator{
-			nvmllib: (*nvmllib)(l),
-			uuid:    uuid,
-			index:   index,
-			// For the CSV case, we include the control device nodes at a
-			// device level.
-			additionalDiscoverers: []discover.Discover{
-				(*nvmllib)(l).controlDeviceNodeDiscoverer(),
-				csvDeviceNodeDiscoverer,
-			},
-			featureFlags: l.featureFlags,
-		})
-		return dgpu, nil
+	csvDeviceNodeDiscoverer, err := g.deviceNodeDiscoverer()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create discoverer for devices nodes: %w", err)
 	}
 
+	// If this is not an integrated GPU, we also create a spec generator for
+	// the full GPU.
+	dgpu := (*nvmllib)(l).withInit(&fullGPUDeviceSpecGenerator{
+		nvmllib: (*nvmllib)(l),
+		uuid:    uuid,
+		index:   index,
+		// For the CSV case, we include the control device nodes at a
+		// device level.
+		additionalDiscoverers: []discover.Discover{
+			(*nvmllib)(l).controlDeviceNodeDiscoverer(),
+			csvDeviceNodeDiscoverer,
+		},
+		featureFlags: l.featureFlags,
+	})
+	return dgpu, nil
+}
+
+func (l *mixedcsvlib) iGPUDeviceSpecGenerator(index int, uuid string) (DeviceSpecGenerator, error) {
+	if index != 0 {
+		return nil, fmt.Errorf("unexpected device index for iGPU: %d", index)
+	}
+	g := &csvDeviceGenerator{
+		csvlib: (*csvlib)(l),
+		index:  index,
+		uuid:   uuid,
+		mode:   iGPUGeneratorMode,
+	}
 	return g, nil
 }
 

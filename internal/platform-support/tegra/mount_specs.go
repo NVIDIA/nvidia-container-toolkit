@@ -70,11 +70,23 @@ type Transformer interface {
 
 // Transform applies the specified transforms to a set of mount specs by type.
 // The result is itself a set of mount specs by type.
-func Transform(input MountSpecPathsByTyper, t Transformer) MountSpecPathsByTyper {
+func Transform(input MountSpecPathsByTyper, t ...Transformer) MountSpecPathsByTyper {
 	return transformMountSpecByPathsByType{
-		Transformer: t,
+		Transformer: allTransformers(t),
 		input:       input,
 	}
+}
+
+type allTransformers []Transformer
+
+func (ts allTransformers) Apply(input MountSpecPathsByTyper) MountSpecPathsByTyper {
+	for _, t := range ts {
+		if t == nil {
+			continue
+		}
+		input = t.Apply(input)
+	}
+	return input
 }
 
 type transformMountSpecByPathsByType struct {
@@ -128,6 +140,10 @@ func WithoutDeviceNodes() Transformer {
 	return filterByMountSpecType{
 		csv.MountSpecDev: removeAll{},
 	}
+}
+
+func Without(m MountSpecPathsByTyper) Transformer {
+	return filterByMountSpecPathsByTyper{m}
 }
 
 // WithoutRegularDeviceNodes creates a transfomer which removes
