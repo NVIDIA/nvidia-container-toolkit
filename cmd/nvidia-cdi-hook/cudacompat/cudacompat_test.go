@@ -32,19 +32,23 @@ func TestCompatLibs(t *testing.T) {
 	testCases := []struct {
 		description                       string
 		contents                          map[string]string
-		hostDriverVersion                 string
+		options                           options
 		expectedContainerForwardCompatDir string
 	}{
 		{
-			description:       "empty root",
-			hostDriverVersion: "222.55.66",
+			description: "empty root",
+			options: options{
+				hostDriverVersion: "222.55.66",
+			},
 		},
 		{
 			description: "compat lib is newer; no ldcache",
 			contents: map[string]string{
 				"/usr/local/cuda/compat/libcuda.so.333.88.99": "",
 			},
-			hostDriverVersion:                 "222.55.66",
+			options: options{
+				hostDriverVersion: "222.55.66",
+			},
 			expectedContainerForwardCompatDir: "/usr/local/cuda/compat",
 		},
 		{
@@ -53,7 +57,9 @@ func TestCompatLibs(t *testing.T) {
 				"/etc/ld.so.cache": "",
 				"/usr/local/cuda/compat/libcuda.so.333.88.99": "",
 			},
-			hostDriverVersion:                 "222.55.66",
+			options: options{
+				hostDriverVersion: "222.55.66",
+			},
 			expectedContainerForwardCompatDir: "/usr/local/cuda/compat",
 		},
 		{
@@ -62,7 +68,9 @@ func TestCompatLibs(t *testing.T) {
 				"/etc/ld.so.cache": "",
 				"/usr/local/cuda/compat/libcuda.so.111.88.99": "",
 			},
-			hostDriverVersion:                 "222.55.66",
+			options: options{
+				hostDriverVersion: "222.55.66",
+			},
 			expectedContainerForwardCompatDir: "",
 		},
 		{
@@ -71,7 +79,9 @@ func TestCompatLibs(t *testing.T) {
 				"/etc/ld.so.cache": "",
 				"/usr/local/cuda/compat/libcuda.so.222.88.99": "",
 			},
-			hostDriverVersion:                 "222.55.66",
+			options: options{
+				hostDriverVersion: "222.55.66",
+			},
 			expectedContainerForwardCompatDir: "",
 		},
 		{
@@ -80,7 +90,9 @@ func TestCompatLibs(t *testing.T) {
 				"/etc/ld.so.cache": "",
 				"/usr/local/cuda/compat/libcuda.so.222.88.99": "",
 			},
-			hostDriverVersion:                 "99.55.66",
+			options: options{
+				hostDriverVersion: "99.55.66",
+			},
 			expectedContainerForwardCompatDir: "/usr/local/cuda/compat",
 		},
 		{
@@ -89,7 +101,9 @@ func TestCompatLibs(t *testing.T) {
 				"/etc/ld.so.cache": "",
 				"/usr/local/cuda/compat/libcuda.so.222.88.99": "",
 			},
-			hostDriverVersion: "",
+			options: options{
+				hostDriverVersion: "",
+			},
 		},
 		{
 			description: "symlinks are followed",
@@ -98,7 +112,9 @@ func TestCompatLibs(t *testing.T) {
 				"/etc/alternatives/cuda/compat/libcuda.so.333.88.99": "",
 				"/usr/local/cuda": "symlink=/etc/alternatives/cuda",
 			},
-			hostDriverVersion:                 "222.55.66",
+			options: options{
+				hostDriverVersion: "222.55.66",
+			},
 			expectedContainerForwardCompatDir: "/etc/alternatives/cuda/compat",
 		},
 		{
@@ -108,12 +124,30 @@ func TestCompatLibs(t *testing.T) {
 				"/compat/libcuda.so.333.88.99": "",
 				"/usr/local/cuda":              "symlink=../../../../../../",
 			},
-			hostDriverVersion:                 "222.55.66",
+			options: options{
+				hostDriverVersion: "222.55.66",
+			},
 			expectedContainerForwardCompatDir: "/compat",
+		},
+		{
+			description: "specified compat path is used",
+			contents: map[string]string{
+				"/usr/local/cuda/compat/libcuda.so.111.88.99":       "",
+				"/usr/local/cuda/compat-other/libcuda.so.333.88.99": "",
+			},
+			options: options{
+				cudaCompatContainerRoot: "/usr/local/cuda/compat-other",
+				hostDriverVersion:       "222.55.66",
+			},
+			expectedContainerForwardCompatDir: "/usr/local/cuda/compat-other",
 		},
 	}
 
 	for _, tc := range testCases {
+		if tc.options.cudaCompatContainerRoot == "" {
+			tc.options.cudaCompatContainerRoot = defaultCudaCompatPath
+		}
+
 		t.Run(tc.description, func(t *testing.T) {
 			containerRootDir := t.TempDir()
 			for name, contents := range tc.contents {
@@ -131,7 +165,7 @@ func TestCompatLibs(t *testing.T) {
 			c := command{
 				logger: logger,
 			}
-			containerForwardCompatDir, err := c.getContainerForwardCompatDir(containerRoot(containerRootDir), defaultCudaCompatPath, tc.hostDriverVersion)
+			containerForwardCompatDir, err := c.getContainerForwardCompatDir(containerRoot(containerRootDir), &tc.options)
 			require.NoError(t, err)
 			require.EqualValues(t, tc.expectedContainerForwardCompatDir, containerForwardCompatDir)
 		})

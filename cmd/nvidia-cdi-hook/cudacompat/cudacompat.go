@@ -61,36 +61,36 @@ func NewCommand(logger logger.Interface) *cli.Command {
 
 // build the enable-cuda-compat command
 func (m command) build() *cli.Command {
-	cfg := options{}
+	options := &options{}
 
 	// Create the 'enable-cuda-compat' command
 	c := cli.Command{
 		Name:  "enable-cuda-compat",
 		Usage: "This hook ensures that the folder containing the CUDA compat libraries is added to the ldconfig search path if required.",
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-			return ctx, m.validateFlags(cmd, &cfg)
+			return ctx, m.validateFlags(cmd, options)
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return m.run(cmd, &cfg)
+			return m.run(cmd, options)
 		},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "host-driver-version",
 				Usage:       "Specify the host driver version. If the CUDA compat libraries detected in the container do not have a higher MAJOR version, the hook is a no-op.",
-				Destination: &cfg.hostDriverVersion,
+				Destination: &options.hostDriverVersion,
 			},
 			&cli.StringFlag{
 				Name:        "cuda-compat-container-root",
 				Usage:       "Specify the folder in which CUDA compat libraries are located in the container",
 				Value:       defaultCudaCompatPath,
-				Destination: &cfg.cudaCompatContainerRoot,
+				Destination: &options.cudaCompatContainerRoot,
 			},
 			&cli.StringFlag{
 				Name:        "container-spec",
 				Hidden:      true,
 				Category:    "testing-only",
 				Usage:       "Specify the path to the OCI container spec. If empty or '-' the spec will be read from STDIN",
-				Destination: &cfg.containerSpec,
+				Destination: &options.containerSpec,
 			},
 		},
 	}
@@ -98,16 +98,16 @@ func (m command) build() *cli.Command {
 	return &c
 }
 
-func (m command) validateFlags(cmd *cli.Command, cfg *options) error {
+func (m command) validateFlags(_ *cli.Command, _ *options) error {
 	return nil
 }
 
-func (m command) run(_ *cli.Command, cfg *options) error {
-	if cfg.hostDriverVersion == "" {
+func (m command) run(_ *cli.Command, o *options) error {
+	if o.hostDriverVersion == "" {
 		return nil
 	}
 
-	s, err := oci.LoadContainerState(cfg.containerSpec)
+	s, err := oci.LoadContainerState(o.containerSpec)
 	if err != nil {
 		return fmt.Errorf("failed to load container state: %w", err)
 	}
@@ -117,7 +117,7 @@ func (m command) run(_ *cli.Command, cfg *options) error {
 		return fmt.Errorf("failed to determined container root: %w", err)
 	}
 
-	containerForwardCompatDir, err := m.getContainerForwardCompatDir(containerRoot(containerRootDir), cfg.cudaCompatContainerRoot, cfg.hostDriverVersion)
+	containerForwardCompatDir, err := m.getContainerForwardCompatDir(containerRoot(containerRootDir), o)
 	if err != nil {
 		return fmt.Errorf("failed to get container forward compat directory: %w", err)
 	}
@@ -128,17 +128,17 @@ func (m command) run(_ *cli.Command, cfg *options) error {
 	return m.createLdsoconfdFile(containerRoot(containerRootDir), cudaCompatLdsoconfdFilenamePattern, containerForwardCompatDir)
 }
 
-func (m command) getContainerForwardCompatDir(containerRoot containerRoot, cudaCompatRoot string, hostDriverVersion string) (string, error) {
-	if hostDriverVersion == "" {
+func (m command) getContainerForwardCompatDir(containerRoot containerRoot, o *options) (string, error) {
+	if o.hostDriverVersion == "" {
 		m.logger.Debugf("Host driver version not specified")
 		return "", nil
 	}
-	if !containerRoot.hasPath(cudaCompatRoot) {
+	if !containerRoot.hasPath(o.cudaCompatContainerRoot) {
 		m.logger.Debugf("No CUDA forward compatibility libraries directory in container")
 		return "", nil
 	}
 
-	libs, err := containerRoot.globFiles(filepath.Join(cudaCompatRoot, "libcuda.so.*.*"))
+	libs, err := containerRoot.globFiles(filepath.Join(o.cudaCompatContainerRoot, "libcuda.so.*.*"))
 	if err != nil {
 		m.logger.Warningf("Failed to find CUDA compat library: %w", err)
 		return "", nil
@@ -154,24 +154,44 @@ func (m command) getContainerForwardCompatDir(containerRoot containerRoot, cudaC
 		return "", nil
 	}
 
-	compatDriverVersion := strings.TrimPrefix(filepath.Base(libs[0]), "libcuda.so.")
-	compatMajor, err := extractMajorVersion(compatDriverVersion)
-	if err != nil {
-		return "", fmt.Errorf("failed to extract major version from %q: %v", compatDriverVersion, err)
-	}
+	libCudaCompatPath := libs[0]
 
-	driverMajor, err := extractMajorVersion(hostDriverVersion)
+	useCompatLibs, err := m.useCompatLibraries(libCudaCompatPath, o.hostDriverVersion)
 	if err != nil {
-		return "", fmt.Errorf("failed to extract major version from %q: %v", hostDriverVersion, err)
+		return "", err
 	}
-
-	if driverMajor >= compatMajor {
-		m.logger.Debugf("Compat major version is not greater than the host driver major version (%v >= %v)", hostDriverVersion, compatDriverVersion)
+	if !useCompatLibs {
 		return "", nil
 	}
 
-	resolvedCompatDir := strings.TrimPrefix(filepath.Dir(libs[0]), string(containerRoot))
+	resolvedCompatDir := strings.TrimPrefix(filepath.Dir(libCudaCompatPath), string(containerRoot))
 	return resolvedCompatDir, nil
+}
+
+func (m command) useCompatLibraries(libcudaCompatPath string, hostDriverVersion string) (bool, error) {
+	driverMajor, err := extractMajorVersion(hostDriverVersion)
+	if err != nil {
+		return false, fmt.Errorf("failed to extract major version from %q: %v", hostDriverVersion, err)
+	}
+
+	// First check the elf header.
+	cudaCompatHeader, _ := GetCUDACompatElfHeader(libcudaCompatPath)
+	if cudaCompatHeader != nil {
+		return cudaCompatHeader.UseCompat(driverMajor), nil
+	}
+
+	compatDriverVersion := strings.TrimPrefix(filepath.Base(libcudaCompatPath), "libcuda.so.")
+	compatMajor, err := extractMajorVersion(compatDriverVersion)
+	if err != nil {
+		return false, fmt.Errorf("failed to extract major version from %q: %v", compatDriverVersion, err)
+	}
+
+	if driverMajor < compatMajor {
+		return true, nil
+	}
+
+	m.logger.Debugf("Compat major version is not greater than the host driver major version (%v >= %v)", hostDriverVersion, compatDriverVersion)
+	return false, nil
 }
 
 // createLdsoconfdFile creates a file at /etc/ld.so.conf.d/ in the specified root.
