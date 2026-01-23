@@ -478,7 +478,7 @@ func TestGetNvidiaConfig(t *testing.T) {
 			image, _ := image.New(
 				image.WithEnvMap(tc.env),
 				image.WithPrivileged(tc.privileged),
-				image.WithPreferredVisibleDevicesEnvVars(tc.hookConfig.getSwarmResourceEnvvars()...),
+				image.WithPreferredVisibleDevicesEnvVars(tc.hookConfig.getSwarmResource()),
 			)
 
 			// Wrap the call to getNvidiaConfig() in a closure.

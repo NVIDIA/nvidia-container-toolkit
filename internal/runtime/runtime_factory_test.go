@@ -29,6 +29,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
@@ -341,6 +343,104 @@ func TestNewSpecModifier(t *testing.T) {
 			err = m.Modify(tc.spec)
 			require.NoError(t, err)
 			require.EqualValues(t, tc.expectedSpec, tc.spec)
+		})
+	}
+}
+
+func TestInitRuntimeModeAndImage(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	testCases := []struct {
+		decription       string
+		config           config.Config
+		ociSpec          oci.Spec
+		expectedError    error
+		expectedMode     info.RuntimeMode
+		assertValidImage func(*testing.T, *image.CUDA)
+	}{
+		{
+			decription: "image with NVIDIA visible devices",
+			config: config.Config{
+				AcceptEnvvarUnprivileged: true,
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Mode: "nvml",
+				},
+			},
+			ociSpec: &oci.SpecMock{
+				LoadFunc: func() (*specs.Spec, error) {
+					s := &specs.Spec{
+						Process: &specs.Process{
+							Env: []string{"NVIDIA_VISIBLE_DEVICES=all"},
+						},
+					}
+					return s, nil
+				},
+			},
+			expectedMode: "nvml",
+			assertValidImage: func(t *testing.T, c *image.CUDA) {
+				require.EqualValues(t, []string{"all"}, c.VisibleDevices())
+			},
+		},
+		{
+			decription: "image with DOCKER_SWARM envars",
+			config: config.Config{
+				AcceptEnvvarUnprivileged: true,
+				SwarmResource:            "DOCKER_SWARM",
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Mode: "nvml",
+				},
+			},
+			ociSpec: &oci.SpecMock{
+				LoadFunc: func() (*specs.Spec, error) {
+					s := &specs.Spec{
+						Process: &specs.Process{
+							Env: []string{"NVIDIA_VISIBLE_DEVICES=all", "DOCKER_SWARM=GPU1"},
+						},
+					}
+					return s, nil
+				},
+			},
+			expectedMode: "nvml",
+			assertValidImage: func(t *testing.T, c *image.CUDA) {
+				require.EqualValues(t, []string{"GPU1"}, c.VisibleDevices())
+			},
+		},
+		{
+			decription: "image with multiple DOCKER_SWARM envars",
+			config: config.Config{
+				AcceptEnvvarUnprivileged: true,
+				SwarmResource:            "DOCKER_SWARM,ANOTHER_SWARM",
+				NVIDIAContainerRuntimeConfig: config.RuntimeConfig{
+					Mode: "nvml",
+				},
+			},
+			ociSpec: &oci.SpecMock{
+				LoadFunc: func() (*specs.Spec, error) {
+					s := &specs.Spec{
+						Process: &specs.Process{
+							Env: []string{"NVIDIA_VISIBLE_DEVICES=all", "DOCKER_SWARM=GPU1", "ANOTHER_SWARM=GPU2"},
+						},
+					}
+					return s, nil
+				},
+			},
+			expectedMode: "nvml",
+			assertValidImage: func(t *testing.T, c *image.CUDA) {
+				require.EqualValues(t, []string{"GPU1", "GPU2"}, c.VisibleDevices())
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.decription, func(t *testing.T) {
+			mode, cudaImage, err := initRuntimeModeAndImage(logger, &tc.config, tc.ociSpec)
+
+			require.EqualValues(t, tc.expectedError, err)
+			require.EqualValues(t, tc.expectedMode, mode)
+
+			if tc.assertValidImage != nil {
+				tc.assertValidImage(t, cudaImage)
+			}
 		})
 	}
 }

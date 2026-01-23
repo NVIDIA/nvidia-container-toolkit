@@ -33,7 +33,7 @@ func TestDeviceRequests(t *testing.T) {
 		description     string
 		input           cdiDeviceRequestor
 		spec            *specs.Spec
-		prefixes        []string
+		imageOptions    []image.Option
 		expectedDevices []string
 	}{
 		{
@@ -84,7 +84,9 @@ func TestDeviceRequests(t *testing.T) {
 		},
 		{
 			description: "no matching annotations",
-			prefixes:    []string{"not-prefix/"},
+			imageOptions: []image.Option{
+				image.WithAnnotationsPrefixes("not-prefix/"),
+			},
 			spec: &specs.Spec{
 				Annotations: map[string]string{
 					"prefix/foo": "example.com/device=bar",
@@ -93,7 +95,9 @@ func TestDeviceRequests(t *testing.T) {
 		},
 		{
 			description: "single matching annotation",
-			prefixes:    []string{"prefix/"},
+			imageOptions: []image.Option{
+				image.WithAnnotationsPrefixes("prefix/"),
+			},
 			spec: &specs.Spec{
 				Annotations: map[string]string{
 					"prefix/foo": "example.com/device=bar",
@@ -103,18 +107,23 @@ func TestDeviceRequests(t *testing.T) {
 		},
 		{
 			description: "multiple matching annotations",
-			prefixes:    []string{"prefix/", "another-prefix/"},
+			imageOptions: []image.Option{
+				image.WithAnnotationsPrefixes("prefix/", "another-prefix/"),
+			},
 			spec: &specs.Spec{
 				Annotations: map[string]string{
 					"prefix/foo":         "example.com/device=bar",
 					"another-prefix/bar": "example.com/device=baz",
 				},
 			},
+
 			expectedDevices: []string{"example.com/device=baz", "example.com/device=bar"},
 		},
 		{
 			description: "multiple matching annotations with duplicate devices",
-			prefixes:    []string{"prefix/", "another-prefix/"},
+			imageOptions: []image.Option{
+				image.WithAnnotationsPrefixes("prefix/", "another-prefix/"),
+			},
 			spec: &specs.Spec{
 				Annotations: map[string]string{
 					"prefix/foo":         "example.com/device=bar",
@@ -128,7 +137,9 @@ func TestDeviceRequests(t *testing.T) {
 			input: cdiDeviceRequestor{
 				defaultKind: "nvidia.com/gpu",
 			},
-			prefixes: []string{"prefix/"},
+			imageOptions: []image.Option{
+				image.WithAnnotationsPrefixes("prefix/"),
+			},
 			spec: &specs.Spec{
 				Annotations: map[string]string{
 					"prefix/foo": "device",
@@ -141,7 +152,9 @@ func TestDeviceRequests(t *testing.T) {
 			input: cdiDeviceRequestor{
 				defaultKind: "nvidia.com/gpu",
 			},
-			prefixes: []string{"prefix/"},
+			imageOptions: []image.Option{
+				image.WithAnnotationsPrefixes("prefix/"),
+			},
 			spec: &specs.Spec{
 				Annotations: map[string]string{
 					"prefix/foo": "example.com/device",
@@ -161,6 +174,21 @@ func TestDeviceRequests(t *testing.T) {
 			},
 			expectedDevices: []string{"runtime.nvidia.com/gpu=none"},
 		},
+		{
+			description: "SWARM_RESOURCE envvar is used over NVIDIA_VISIBLE_DEVICES",
+			input: cdiDeviceRequestor{
+				defaultKind: "runtime.nvidia.com/gpu",
+			},
+			imageOptions: []image.Option{
+				image.WithPreferredVisibleDevicesEnvVars("SWARM_RESOURCE"),
+			},
+			spec: &specs.Spec{
+				Process: &specs.Process{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=all", "SWARM_RESOURCE=GPU1"},
+				},
+			},
+			expectedDevices: []string{"runtime.nvidia.com/gpu=GPU1"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -168,9 +196,13 @@ func TestDeviceRequests(t *testing.T) {
 
 		image, err := image.NewCUDAImageFromSpec(
 			tc.spec,
-			image.WithAcceptDeviceListAsVolumeMounts(true),
-			image.WithAcceptEnvvarUnprivileged(true),
-			image.WithAnnotationsPrefixes(tc.prefixes),
+			append(
+				[]image.Option{
+					// TODO: We should pull these into the testcase options.
+					image.WithAcceptDeviceListAsVolumeMounts(true),
+					image.WithAcceptEnvvarUnprivileged(true),
+				},
+				tc.imageOptions...)...,
 		)
 		require.NoError(t, err)
 		tc.input.image = image

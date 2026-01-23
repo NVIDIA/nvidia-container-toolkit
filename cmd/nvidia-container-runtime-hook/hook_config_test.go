@@ -23,7 +23,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
 
@@ -104,55 +103,6 @@ func TestGetHookConfig(t *testing.T) {
 			getHookConfig()
 
 			require.EqualValues(t, tc.expectedDriverCapabilities, cfg.SupportedDriverCapabilities)
-		})
-	}
-}
-
-func TestGetSwarmResourceEnvvars(t *testing.T) {
-	testCases := []struct {
-		value    string
-		expected []string
-	}{
-		{
-			value:    "",
-			expected: nil,
-		},
-		{
-			value:    " ",
-			expected: nil,
-		},
-		{
-			value:    "single",
-			expected: []string{"single"},
-		},
-		{
-			value:    "single ",
-			expected: []string{"single"},
-		},
-		{
-			value:    "one,two",
-			expected: []string{"one", "two"},
-		},
-		{
-			value:    "one ,two",
-			expected: []string{"one", "two"},
-		},
-		{
-			value:    "one, two",
-			expected: []string{"one", "two"},
-		},
-	}
-
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			c := &hookConfig{
-				Config: &config.Config{
-					SwarmResource: tc.value,
-				},
-			}
-
-			envvars := c.getSwarmResourceEnvvars()
-			require.EqualValues(t, tc.expected, envvars)
 		})
 	}
 }
