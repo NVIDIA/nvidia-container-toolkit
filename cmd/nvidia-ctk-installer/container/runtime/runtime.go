@@ -138,6 +138,15 @@ func Flags(opts *Options) []cli.Flag {
 
 // Validate checks whether the specified options are valid
 func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime string, toolkitRoot string, to *toolkit.Options) error {
+	// Check that the specified runtime is supported.
+	switch runtime {
+	case containerd.Name:
+	case crio.Name:
+	case docker.Name:
+	default:
+		return fmt.Errorf("invalid runtime %q; expected one of [containerd | crio | docker]", runtime)
+	}
+
 	// We set this option here to ensure that it is available in future calls.
 	opts.RuntimeDir = toolkitRoot
 
@@ -212,8 +221,25 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 	return nil
 }
 
-func Setup(c *cli.Command, opts *Options, runtime string) error {
-	switch runtime {
+type Configurer interface {
+	Cleanup(*cli.Command, *Options) error
+	GetLowlevelRuntimePaths(*Options) ([]string, error)
+	Setup(*cli.Command, *Options) error
+}
+
+type runtime string
+type noopRuntimeConfigurer struct{}
+
+// NewConfigurer is a factory method for creating a runtime configurer.
+func NewConfigurer(name string, noConfigureRuntime bool, nriEnabled bool) Configurer {
+	if noConfigureRuntime || nriEnabled {
+		return &noopRuntimeConfigurer{}
+	}
+	return runtime(name)
+}
+
+func (r runtime) Setup(c *cli.Command, opts *Options) error {
+	switch string(r) {
 	case containerd.Name:
 		return containerd.Setup(c, &opts.Options, &opts.containerdOptions)
 	case crio.Name:
@@ -221,12 +247,12 @@ func Setup(c *cli.Command, opts *Options, runtime string) error {
 	case docker.Name:
 		return docker.Setup(c, &opts.Options)
 	default:
-		return fmt.Errorf("undefined runtime %v", runtime)
+		return fmt.Errorf("undefined runtime %v", r)
 	}
 }
 
-func Cleanup(c *cli.Command, opts *Options, runtime string) error {
-	switch runtime {
+func (r runtime) Cleanup(c *cli.Command, opts *Options) error {
+	switch string(r) {
 	case containerd.Name:
 		return containerd.Cleanup(c, &opts.Options, &opts.containerdOptions)
 	case crio.Name:
@@ -234,12 +260,12 @@ func Cleanup(c *cli.Command, opts *Options, runtime string) error {
 	case docker.Name:
 		return docker.Cleanup(c, &opts.Options)
 	default:
-		return fmt.Errorf("undefined runtime %v", runtime)
+		return fmt.Errorf("undefined runtime %v", r)
 	}
 }
 
-func GetLowlevelRuntimePaths(opts *Options, runtime string) ([]string, error) {
-	switch runtime {
+func (r runtime) GetLowlevelRuntimePaths(opts *Options) ([]string, error) {
+	switch string(r) {
 	case containerd.Name:
 		return containerd.GetLowlevelRuntimePaths(&opts.Options, &opts.containerdOptions)
 	case crio.Name:
@@ -247,6 +273,18 @@ func GetLowlevelRuntimePaths(opts *Options, runtime string) ([]string, error) {
 	case docker.Name:
 		return docker.GetLowlevelRuntimePaths(&opts.Options)
 	default:
-		return nil, fmt.Errorf("undefined runtime %v", runtime)
+		return nil, fmt.Errorf("undefined runtime %v", r)
 	}
+}
+
+func (r noopRuntimeConfigurer) Cleanup(_ *cli.Command, _ *Options) error {
+	return nil
+}
+
+func (r noopRuntimeConfigurer) GetLowlevelRuntimePaths(_ *Options) ([]string, error) {
+	return nil, nil
+}
+
+func (r noopRuntimeConfigurer) Setup(_ *cli.Command, _ *Options) error {
+	return nil
 }
