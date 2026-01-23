@@ -50,6 +50,7 @@ type options struct {
 	enableNRIPlugin bool
 	nriPluginIndex  uint
 	nriSocket       string
+	nriNamespace    string
 
 	toolkitOptions toolkit.Options
 
@@ -151,6 +152,12 @@ func (a app) build() *cli.Command {
 				Sources:     cli.EnvVars("NRI_SOCKET"),
 			},
 			&cli.StringFlag{
+				Name:        "nri-namespace",
+				Usage:       "Specify the kubernetes namespace the toolkit's NRI plugin is running in.",
+				Destination: &options.nriNamespace,
+				Sources:     cli.EnvVars("NRI_NAMESPACE"),
+			},
+			&cli.StringFlag{
 				Name:    "runtime",
 				Aliases: []string{"r"},
 				Usage: "the runtime to setup on this node. One of {'docker', 'crio', 'containerd'}. " +
@@ -224,6 +231,10 @@ func (a *app) validateFlags(c *cli.Command, o *options) error {
 	}
 	if filepath.Base(o.pidFile) != toolkitPidFilename {
 		return fmt.Errorf("invalid toolkit.pid path %v", o.pidFile)
+	}
+
+	if o.enableNRIPlugin && len(o.nriNamespace) == 0 {
+		return fmt.Errorf("the NRI namespace must be specified when the NRI plugin is enabled")
 	}
 
 	if err := a.toolkit.ValidateOptions(&o.toolkitOptions); err != nil {
@@ -353,7 +364,7 @@ func (a *app) startNRIPluginServer(ctx context.Context, opts *options) (*nri.Plu
 		retryBackoff     = 2 * time.Second
 	)
 
-	plugin := nri.NewPlugin(ctx, a.logger)
+	plugin := nri.NewPlugin(ctx, a.logger, opts.nriNamespace)
 	retriable := func() error {
 		return plugin.Start(ctx, opts.nriSocket, fmt.Sprintf("%02d", opts.nriPluginIndex))
 	}
