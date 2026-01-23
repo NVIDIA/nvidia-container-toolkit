@@ -1,5 +1,81 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.19.0-rc.2
+
+- fix: Ensure that iGPU device nodes includes /dev/nvidia2
+- restrict NRI injection of CDI devices to pods in the toolkit's namespace
+- test: Add test for CSV-based device spec generation
+- fix: Add docker swarm support to jit-cdi mode
+- feat: Check ELF note for CUDA compat
+- Refactor enable-cuda-compat hook
+- fix: Allow nvidia-cdi-refresh.service to be restarted
+- fix: permissions sync
+- fix(discover): remove ro mount option from IPC sockets
+- Simplify logger.Interface
+- Add --no-runtime-config option to toolkit installer
+- Add interface for runtime configuration to installer
+- implement NRI plugin server to inject management CDI devices
+- Generate none device spec
+- fix: Fix arguments when creating DRM device symlinks
+- fix: Skip device node injection if NVIDIA_VISIBLE_DEVICES=none
+- test: Add failing test for NVIDIA_VISIBLE_DEVICES=none
+- Fix library paths in Apline containers
+- fix: Use pure CSV mode when a single device is found
+- fix: Don't filter device nodes when disable-multiple-csv-devices is enabled
+- trim extraneous whitespaces when parsing comma-separated config sources
+- fix: Return error on JIT CDI spec generation failure
+
+### Changes in the Toolkit Container
+
+- Bump nvidia/distroless/go in /deployments/container
+- Bump nvidia/distroless/go in /deployments/container
+
+### Changes in libnvidia-container
+
+- Add tooling to auto-bump golang version
+- Allow GOLANG_VERSION to be overridden
+
+## v1.19.0-rc.1
+
+- Add enable-cuda-compat on Tegra-based systems
+- Add --cuda-compat-container-root
+- Add --device-id flag to nvidia-ctk cdi generate command
+- Handle multiple GPUs in CDI spec generation from CSV
+- Fix trigger of CDI refresh service
+- Add --no-all-device option to nvidia-ctk cd generate
+- Default to strict decoding of OCI runtime spec
+- Load minimal spec to extract container root
+- Allow update-ldcache to work when pivot-root is not supported
+- Extract device information from host path if possible
+- Fix update of ldcache for non-matching host and container distros
+- Use enable-cuda-compat hook when ldcache does not exist
+- ldconfig: Create ld.so.conf file if missing
+- ldconfig: Determine container "debian-ness" after root pivot
+- Add missing return in `getSystemSearchPaths` for debian like containers
+- Use requested devices for CSV CDI spec generation
+- Also consider libnvidia-ml.so for extracting driver version
+- Switch to go 1.25 os.Root
+- Filter already tracked directories from ldcache update
+- Correct typo in nvsandboxutils feature flag
+- Allow nvcdi FeatureFlags to be configured for jit-cdi mode
+- Fix duplicate specs for jit-cdi mode
+- Fix trigger of CDI refresh service
+- Update rpm package to have 256bit digests
+- Fix generate tests when cdi hook exists in path
+- Fix containerd drop-in config path
+- Redirect log message to stderr in nvidia runtime wrapper script
+- chore: fix issues raised by govet and gocritic
+- Fix handling of existing imports in containerd
+- Don't read cdi generate mode from runtime mode
+- Fix bug in create-dev-char-symlinks command
+- Fix typo in nvidia-container-runtime's README
+
+### Changes in the Toolkit Container
+
+- Update rpm package to have 256bit digests
+- Bump nvidia/distroless/go in /deployments/container
+- Bump nvidia/distroless/go in /deployments/container
+
 ## v1.18.0
 - Fix bug in device selection in jit-cdi mode
 - Make list of explicit driver libraries opt-in
