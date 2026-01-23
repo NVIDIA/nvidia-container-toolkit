@@ -103,26 +103,19 @@ func TestDeviceSpecGenerators(t *testing.T) {
 						DeviceNodes: []*specs.DeviceNode{
 							{Path: "/dev/nvidia0", HostPath: "/dev/nvidia0"},
 						},
+						Hooks: []*specs.Hook{
+							{
+								HookName: "createContainer",
+								Path:     "/usr/bin/nvidia-cdi-hook",
+								Args:     []string{"nvidia-cdi-hook", "update-ldcache"},
+								Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+							},
+						},
 					},
 				},
 			},
 			expectedCommonEdits: &cdi.ContainerEdits{
-				ContainerEdits: &specs.ContainerEdits{
-					Hooks: []*specs.Hook{
-						{
-							HookName: "createContainer",
-							Path:     "/usr/bin/nvidia-cdi-hook",
-							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-driver-version=540.3.0", "--cuda-compat-container-root=/usr/local/cuda/compat-orin"},
-							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
-						},
-						{
-							HookName: "createContainer",
-							Path:     "/usr/bin/nvidia-cdi-hook",
-							Args:     []string{"nvidia-cdi-hook", "update-ldcache"},
-							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
-						},
-					},
-				},
+				ContainerEdits: &specs.ContainerEdits{},
 			},
 		},
 	}

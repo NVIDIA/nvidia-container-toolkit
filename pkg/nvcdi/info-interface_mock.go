@@ -19,20 +19,26 @@ var _ infoInterface = &infoInterfaceMock{}
 //
 //		// make and configure a mocked infoInterface
 //		mockedinfoInterface := &infoInterfaceMock{
-//			HasAnIntegratedGPUFunc: func() (bool, string) {
-//				panic("mock out the HasAnIntegratedGPU method")
-//			},
 //			HasDXCoreFunc: func() (bool, string) {
 //				panic("mock out the HasDXCore method")
 //			},
 //			HasNvmlFunc: func() (bool, string) {
 //				panic("mock out the HasNvml method")
 //			},
+//			HasOnlyIntegratedGPUsFunc: func() (bool, string) {
+//				panic("mock out the HasOnlyIntegratedGPUs method")
+//			},
 //			HasTegraFilesFunc: func() (bool, string) {
 //				panic("mock out the HasTegraFiles method")
 //			},
+//			IsTegraSystemFunc: func() (bool, string) {
+//				panic("mock out the IsTegraSystem method")
+//			},
 //			ResolvePlatformFunc: func() info.Platform {
 //				panic("mock out the ResolvePlatform method")
+//			},
+//			UsesOnlyNVGPUModuleFunc: func() (bool, string) {
+//				panic("mock out the UsesOnlyNVGPUModule method")
 //			},
 //		}
 //
@@ -41,75 +47,58 @@ var _ infoInterface = &infoInterfaceMock{}
 //
 //	}
 type infoInterfaceMock struct {
-	// HasAnIntegratedGPUFunc mocks the HasAnIntegratedGPU method.
-	HasAnIntegratedGPUFunc func() (bool, string)
-
 	// HasDXCoreFunc mocks the HasDXCore method.
 	HasDXCoreFunc func() (bool, string)
 
 	// HasNvmlFunc mocks the HasNvml method.
 	HasNvmlFunc func() (bool, string)
 
+	// HasOnlyIntegratedGPUsFunc mocks the HasOnlyIntegratedGPUs method.
+	HasOnlyIntegratedGPUsFunc func() (bool, string)
+
 	// HasTegraFilesFunc mocks the HasTegraFiles method.
 	HasTegraFilesFunc func() (bool, string)
+
+	// IsTegraSystemFunc mocks the IsTegraSystem method.
+	IsTegraSystemFunc func() (bool, string)
 
 	// ResolvePlatformFunc mocks the ResolvePlatform method.
 	ResolvePlatformFunc func() info.Platform
 
+	// UsesOnlyNVGPUModuleFunc mocks the UsesOnlyNVGPUModule method.
+	UsesOnlyNVGPUModuleFunc func() (bool, string)
+
 	// calls tracks calls to the methods.
 	calls struct {
-		// HasAnIntegratedGPU holds details about calls to the HasAnIntegratedGPU method.
-		HasAnIntegratedGPU []struct {
-		}
 		// HasDXCore holds details about calls to the HasDXCore method.
 		HasDXCore []struct {
 		}
 		// HasNvml holds details about calls to the HasNvml method.
 		HasNvml []struct {
 		}
+		// HasOnlyIntegratedGPUs holds details about calls to the HasOnlyIntegratedGPUs method.
+		HasOnlyIntegratedGPUs []struct {
+		}
 		// HasTegraFiles holds details about calls to the HasTegraFiles method.
 		HasTegraFiles []struct {
+		}
+		// IsTegraSystem holds details about calls to the IsTegraSystem method.
+		IsTegraSystem []struct {
 		}
 		// ResolvePlatform holds details about calls to the ResolvePlatform method.
 		ResolvePlatform []struct {
 		}
+		// UsesOnlyNVGPUModule holds details about calls to the UsesOnlyNVGPUModule method.
+		UsesOnlyNVGPUModule []struct {
+		}
 	}
-	lockHasAnIntegratedGPU sync.RWMutex
-	lockHasDXCore          sync.RWMutex
-	lockHasNvml            sync.RWMutex
-	lockHasTegraFiles      sync.RWMutex
-	lockResolvePlatform    sync.RWMutex
-}
-
-// HasAnIntegratedGPU calls HasAnIntegratedGPUFunc.
-func (mock *infoInterfaceMock) HasAnIntegratedGPU() (bool, string) {
-	callInfo := struct {
-	}{}
-	mock.lockHasAnIntegratedGPU.Lock()
-	mock.calls.HasAnIntegratedGPU = append(mock.calls.HasAnIntegratedGPU, callInfo)
-	mock.lockHasAnIntegratedGPU.Unlock()
-	if mock.HasAnIntegratedGPUFunc == nil {
-		var (
-			bOut bool
-			sOut string
-		)
-		return bOut, sOut
-	}
-	return mock.HasAnIntegratedGPUFunc()
-}
-
-// HasAnIntegratedGPUCalls gets all the calls that were made to HasAnIntegratedGPU.
-// Check the length with:
-//
-//	len(mockedinfoInterface.HasAnIntegratedGPUCalls())
-func (mock *infoInterfaceMock) HasAnIntegratedGPUCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockHasAnIntegratedGPU.RLock()
-	calls = mock.calls.HasAnIntegratedGPU
-	mock.lockHasAnIntegratedGPU.RUnlock()
-	return calls
+	lockHasDXCore             sync.RWMutex
+	lockHasNvml               sync.RWMutex
+	lockHasOnlyIntegratedGPUs sync.RWMutex
+	lockHasTegraFiles         sync.RWMutex
+	lockIsTegraSystem         sync.RWMutex
+	lockResolvePlatform       sync.RWMutex
+	lockUsesOnlyNVGPUModule   sync.RWMutex
 }
 
 // HasDXCore calls HasDXCoreFunc.
@@ -174,6 +163,37 @@ func (mock *infoInterfaceMock) HasNvmlCalls() []struct {
 	return calls
 }
 
+// HasOnlyIntegratedGPUs calls HasOnlyIntegratedGPUsFunc.
+func (mock *infoInterfaceMock) HasOnlyIntegratedGPUs() (bool, string) {
+	callInfo := struct {
+	}{}
+	mock.lockHasOnlyIntegratedGPUs.Lock()
+	mock.calls.HasOnlyIntegratedGPUs = append(mock.calls.HasOnlyIntegratedGPUs, callInfo)
+	mock.lockHasOnlyIntegratedGPUs.Unlock()
+	if mock.HasOnlyIntegratedGPUsFunc == nil {
+		var (
+			bOut bool
+			sOut string
+		)
+		return bOut, sOut
+	}
+	return mock.HasOnlyIntegratedGPUsFunc()
+}
+
+// HasOnlyIntegratedGPUsCalls gets all the calls that were made to HasOnlyIntegratedGPUs.
+// Check the length with:
+//
+//	len(mockedinfoInterface.HasOnlyIntegratedGPUsCalls())
+func (mock *infoInterfaceMock) HasOnlyIntegratedGPUsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockHasOnlyIntegratedGPUs.RLock()
+	calls = mock.calls.HasOnlyIntegratedGPUs
+	mock.lockHasOnlyIntegratedGPUs.RUnlock()
+	return calls
+}
+
 // HasTegraFiles calls HasTegraFilesFunc.
 func (mock *infoInterfaceMock) HasTegraFiles() (bool, string) {
 	callInfo := struct {
@@ -205,6 +225,37 @@ func (mock *infoInterfaceMock) HasTegraFilesCalls() []struct {
 	return calls
 }
 
+// IsTegraSystem calls IsTegraSystemFunc.
+func (mock *infoInterfaceMock) IsTegraSystem() (bool, string) {
+	callInfo := struct {
+	}{}
+	mock.lockIsTegraSystem.Lock()
+	mock.calls.IsTegraSystem = append(mock.calls.IsTegraSystem, callInfo)
+	mock.lockIsTegraSystem.Unlock()
+	if mock.IsTegraSystemFunc == nil {
+		var (
+			bOut bool
+			sOut string
+		)
+		return bOut, sOut
+	}
+	return mock.IsTegraSystemFunc()
+}
+
+// IsTegraSystemCalls gets all the calls that were made to IsTegraSystem.
+// Check the length with:
+//
+//	len(mockedinfoInterface.IsTegraSystemCalls())
+func (mock *infoInterfaceMock) IsTegraSystemCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockIsTegraSystem.RLock()
+	calls = mock.calls.IsTegraSystem
+	mock.lockIsTegraSystem.RUnlock()
+	return calls
+}
+
 // ResolvePlatform calls ResolvePlatformFunc.
 func (mock *infoInterfaceMock) ResolvePlatform() info.Platform {
 	callInfo := struct {
@@ -232,5 +283,36 @@ func (mock *infoInterfaceMock) ResolvePlatformCalls() []struct {
 	mock.lockResolvePlatform.RLock()
 	calls = mock.calls.ResolvePlatform
 	mock.lockResolvePlatform.RUnlock()
+	return calls
+}
+
+// UsesOnlyNVGPUModule calls UsesOnlyNVGPUModuleFunc.
+func (mock *infoInterfaceMock) UsesOnlyNVGPUModule() (bool, string) {
+	callInfo := struct {
+	}{}
+	mock.lockUsesOnlyNVGPUModule.Lock()
+	mock.calls.UsesOnlyNVGPUModule = append(mock.calls.UsesOnlyNVGPUModule, callInfo)
+	mock.lockUsesOnlyNVGPUModule.Unlock()
+	if mock.UsesOnlyNVGPUModuleFunc == nil {
+		var (
+			bOut bool
+			sOut string
+		)
+		return bOut, sOut
+	}
+	return mock.UsesOnlyNVGPUModuleFunc()
+}
+
+// UsesOnlyNVGPUModuleCalls gets all the calls that were made to UsesOnlyNVGPUModule.
+// Check the length with:
+//
+//	len(mockedinfoInterface.UsesOnlyNVGPUModuleCalls())
+func (mock *infoInterfaceMock) UsesOnlyNVGPUModuleCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockUsesOnlyNVGPUModule.RLock()
+	calls = mock.calls.UsesOnlyNVGPUModule
+	mock.lockUsesOnlyNVGPUModule.RUnlock()
 	return calls
 }
