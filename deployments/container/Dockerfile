@@ -53,35 +53,6 @@ ARG VERSION="N/A"
 ARG GIT_COMMIT="unknown"
 RUN make PREFIX=/artifacts/bin cmd-nvidia-ctk-installer
 
-# The rpmdigests stage updates the existing rpm packages to have 256bit digests.
-# This is done using fpm.
-FROM nvcr.io/nvidia/cuda:13.0.1-base-ubi9 AS rpmdigests
-
-RUN dnf install -y \
-    rubygems \
-    ruby-devel \
-    yum-utils \
-    rpm-build \
-    && gem install --no-document fpm
-
-ARG ARTIFACTS_ROOT
-COPY ${ARTIFACTS_ROOT}/centos7 /artifacts/packages/centos7-src
-
-WORKDIR /artifacts/packages/centos7
-
-# For each architecture from the source we find all packages and update the
-# digests.
-RUN for arch in $(ls /artifacts/packages/centos7-src/); do \
-        mkdir -p /artifacts/packages/centos7/${arch}; \
-        cd /artifacts/packages/centos7/${arch}; \
-        # For each package in the source folder we recreate a package to update
-        # the digests to 256-bit since we're running in a ubi9 container.
-        for src_package in $(ls /artifacts/packages/centos7-src/${arch}/*.rpm); do \
-            fpm -s rpm -t rpm --rpm-digest=sha256 ${src_package}; \
-        done; \
-    done; \
-    rm -rf /artifacts/packages/centos7-src
-
 # The packaging stage collects the deb and rpm packages built for
 # supported architectures.
 FROM nvcr.io/nvidia/distroless/go:v4.0.0-dev AS packaging
@@ -92,7 +63,7 @@ RUN ln -s /busybox/sh /bin/sh
 
 ARG ARTIFACTS_ROOT
 COPY ${ARTIFACTS_ROOT}/ubuntu18.04 /artifacts/packages/ubuntu18.04
-COPY --from=rpmdigests /artifacts/packages/centos7 /artifacts/packages/centos7
+COPY ${ARTIFACTS_ROOT}/centos7 /artifacts/packages/centos7
 
 # build-args are added to the manifest.txt file below.
 ARG PACKAGE_VERSION
