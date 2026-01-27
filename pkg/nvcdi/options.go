@@ -131,14 +131,14 @@ func WithMergedDeviceOptions(opts ...transform.MergedDeviceOption) Option {
 // WithCSVFiles sets the CSV files for the library
 func WithCSVFiles(csvFiles []string) Option {
 	return func(o *nvcdilib) {
-		o.csvFiles = csvFiles
+		o.csv.Files = csvFiles
 	}
 }
 
 // WithCSVIgnorePatterns sets the ignore patterns for entries in the CSV files.
 func WithCSVIgnorePatterns(csvIgnorePatterns []string) Option {
 	return func(o *nvcdilib) {
-		o.csvIgnorePatterns = csvIgnorePatterns
+		o.csv.IgnorePatterns = csvIgnorePatterns
 	}
 }
 

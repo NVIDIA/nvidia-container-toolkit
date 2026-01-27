@@ -188,7 +188,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 
 		tc.lib.driverRoot = driverRoot
 		tc.lib.devRoot = driverRoot
-		tc.lib.csvFiles = []string{
+		tc.lib.csv.Files = []string{
 			filepath.Join(driverRoot, "/etc/nvidia-container-runtime/host-files-for-container.d/devices.csv"),
 			filepath.Join(driverRoot, "/etc/nvidia-container-runtime/host-files-for-container.d/drivers.csv"),
 		}
