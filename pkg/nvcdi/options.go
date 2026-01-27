@@ -142,6 +142,14 @@ func WithCSVIgnorePatterns(csvIgnorePatterns []string) Option {
 	}
 }
 
+// WithCSVCompatContainerRoot sets the compat root to use for the container in
+// the case of nvgpu-only devices.
+func WithCSVCompatContainerRoot(csvCompatContainerRoot string) Option {
+	return func(o *nvcdilib) {
+		o.csv.CompatContainerRoot = csvCompatContainerRoot
+	}
+}
+
 // WithConfigSearchPaths sets the search paths for config files.
 func WithConfigSearchPaths(paths []string) Option {
 	return func(o *nvcdilib) {

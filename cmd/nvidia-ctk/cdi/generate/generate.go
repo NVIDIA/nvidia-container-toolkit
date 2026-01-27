@@ -70,8 +70,9 @@ type options struct {
 	featureFlags []string
 
 	csv struct {
-		files          []string
-		ignorePatterns []string
+		files               []string
+		ignorePatterns      []string
+		CompatContainerRoot string
 	}
 
 	noAllDevice bool
@@ -211,6 +212,12 @@ func (m command) build() *cli.Command {
 				Usage:       "specify a pattern the CSV mount specifications.",
 				Destination: &opts.csv.ignorePatterns,
 				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CSV_IGNORE_PATTERNS"),
+			},
+			&cli.StringFlag{
+				Name:        "csv.compat-container-root",
+				Usage:       "specify the container folder to use for CUDA Forward Compatibility in non-standard containers",
+				Destination: &opts.csv.CompatContainerRoot,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_CSV_CONTAINER_COMPAT_ROOT"),
 			},
 			&cli.StringSliceFlag{
 				Name:    "disable-hook",
@@ -384,6 +391,7 @@ func (m command) generateSpecs(opts *options) ([]generatedSpecs, error) {
 		nvcdi.WithLibrarySearchPaths(opts.librarySearchPaths),
 		nvcdi.WithCSVFiles(opts.csv.files),
 		nvcdi.WithCSVIgnorePatterns(opts.csv.ignorePatterns),
+		nvcdi.WithCSVCompatContainerRoot(opts.csv.CompatContainerRoot),
 		nvcdi.WithDisabledHooks(opts.disabledHooks...),
 		nvcdi.WithEnabledHooks(opts.enabledHooks...),
 		nvcdi.WithFeatureFlags(opts.featureFlags...),

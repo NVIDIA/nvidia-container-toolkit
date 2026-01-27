@@ -63,38 +63,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 				infolib: &infoInterfaceMock{
 					HasNvmlFunc: func() (bool, string) { return true, "forced" },
 				},
-				// TODO: Replace this with a system-specific implementation once available.
-				nvmllib: &mock.Interface{
-					InitFunc: func() nvml.Return {
-						return nvml.SUCCESS
-					},
-					ShutdownFunc: func() nvml.Return {
-						return nvml.SUCCESS
-					},
-					SystemGetDriverVersionFunc: func() (string, nvml.Return) {
-						return "540.3.0", nvml.SUCCESS
-					},
-					DeviceGetCountFunc: func() (int, nvml.Return) {
-						return 1, nvml.SUCCESS
-					},
-					DeviceGetHandleByIndexFunc: func(n int) (nvml.Device, nvml.Return) {
-						if n != 0 {
-							return nil, nvml.ERROR_INVALID_ARGUMENT
-						}
-						device := &mock.Device{
-							GetUUIDFunc: func() (string, nvml.Return) {
-								return "GPU-orin", nvml.SUCCESS
-							},
-							GetNameFunc: func() (string, nvml.Return) {
-								return "Orin (nvgpu)", nvml.SUCCESS
-							},
-							GetPciInfoFunc: func() (nvml.PciInfo, nvml.Return) {
-								return nvml.PciInfo{}, nvml.ERROR_NOT_SUPPORTED
-							},
-						}
-						return device, nvml.SUCCESS
-					},
-				},
+				nvmllib: mockOrinServer(),
 			},
 			expectedDeviceSpecs: []specs.Device{
 				{
@@ -113,6 +82,48 @@ func TestDeviceSpecGenerators(t *testing.T) {
 							HookName: "createContainer",
 							Path:     "/usr/bin/nvidia-cdi-hook",
 							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-driver-version=540.3.0", "--cuda-compat-container-root=/usr/local/cuda/compat-orin"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "update-ldcache"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:  "single orin CSV device; custom container compat root",
+			rootfsFolder: "rootfs-orin",
+			lib: &csvlib{
+				// test-case specific
+				infolib: &infoInterfaceMock{
+					HasNvmlFunc: func() (bool, string) { return true, "forced" },
+				},
+				nvmllib: mockOrinServer(),
+				csv: csvOptions{
+					CompatContainerRoot: "/another/compat/root",
+				},
+			},
+			expectedDeviceSpecs: []specs.Device{
+				{
+					Name: "0",
+					ContainerEdits: specs.ContainerEdits{
+						DeviceNodes: []*specs.DeviceNode{
+							{Path: "/dev/nvidia0", HostPath: "/dev/nvidia0"},
+						},
+					},
+				},
+			},
+			expectedCommonEdits: &cdi.ContainerEdits{
+				ContainerEdits: &specs.ContainerEdits{
+					Hooks: []*specs.Hook{
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-driver-version=540.3.0", "--cuda-compat-container-root=/another/compat/root"},
 							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
 						},
 						{
@@ -192,6 +203,9 @@ func TestDeviceSpecGenerators(t *testing.T) {
 			filepath.Join(driverRoot, "/etc/nvidia-container-runtime/host-files-for-container.d/devices.csv"),
 			filepath.Join(driverRoot, "/etc/nvidia-container-runtime/host-files-for-container.d/drivers.csv"),
 		}
+		if tc.lib.csv.CompatContainerRoot == "" {
+			tc.lib.csv.CompatContainerRoot = defaultOrinCompatContainerRoot
+		}
 
 		t.Run(tc.description, func(t *testing.T) {
 			generator, err := tc.lib.DeviceSpecGenerators("all")
@@ -228,6 +242,41 @@ func stripRoot[T any](root string, v T) T {
 		panic(err)
 	}
 	return modified
+}
+
+// TODO: We should move this mock to go-nvml/mock
+func mockOrinServer() nvml.Interface {
+	return &mock.Interface{
+		InitFunc: func() nvml.Return {
+			return nvml.SUCCESS
+		},
+		ShutdownFunc: func() nvml.Return {
+			return nvml.SUCCESS
+		},
+		SystemGetDriverVersionFunc: func() (string, nvml.Return) {
+			return "540.3.0", nvml.SUCCESS
+		},
+		DeviceGetCountFunc: func() (int, nvml.Return) {
+			return 1, nvml.SUCCESS
+		},
+		DeviceGetHandleByIndexFunc: func(n int) (nvml.Device, nvml.Return) {
+			if n != 0 {
+				return nil, nvml.ERROR_INVALID_ARGUMENT
+			}
+			device := &mock.Device{
+				GetUUIDFunc: func() (string, nvml.Return) {
+					return "GPU-orin", nvml.SUCCESS
+				},
+				GetNameFunc: func() (string, nvml.Return) {
+					return "Orin (nvgpu)", nvml.SUCCESS
+				},
+				GetPciInfoFunc: func() (nvml.PciInfo, nvml.Return) {
+					return nvml.PciInfo{}, nvml.ERROR_NOT_SUPPORTED
+				},
+			}
+			return device, nvml.SUCCESS
+		},
+	}
 }
 
 // TODO: We should move this mock to go-nvml/mock

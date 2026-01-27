@@ -36,9 +36,14 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
+const (
+	defaultOrinCompatContainerRoot = "/usr/local/cuda/compat-orin"
+)
+
 type csvOptions struct {
-	Files          []string
-	IgnorePatterns []string
+	Files               []string
+	IgnorePatterns      []string
+	CompatContainerRoot string
 }
 
 type csvlib nvcdilib
@@ -51,6 +56,9 @@ var _ deviceSpecGeneratorFactory = (*csvlib)(nil)
 func (l *nvcdilib) asCSVLib() *csvlib {
 	if len(l.csv.Files) == 0 {
 		l.csv.Files = csv.DefaultFileList()
+	}
+	if l.csv.CompatContainerRoot == "" {
+		l.csv.CompatContainerRoot = defaultOrinCompatContainerRoot
 	}
 	return (*csvlib)(l)
 }
@@ -481,7 +489,7 @@ func (l *csvlib) cudaCompatDiscoverer() discover.Discover {
 		// TODO: Should this be overridable through a feature flag / config option?
 		if strings.Contains(name, "Orin (nvgpu)") {
 			// TODO: This should probably be a constant or configurable.
-			cudaCompatContainerRoot = "/usr/local/cuda/compat-orin"
+			cudaCompatContainerRoot = l.csv.CompatContainerRoot
 			break
 		}
 	}
