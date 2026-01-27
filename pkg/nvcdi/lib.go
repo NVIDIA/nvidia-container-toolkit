@@ -27,7 +27,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
 
@@ -45,8 +44,7 @@ type nvcdilib struct {
 	configSearchPaths  []string
 	librarySearchPaths []string
 
-	csvFiles          []string
-	csvIgnorePatterns []string
+	csv csvOptions
 
 	vendor string
 	class  string
@@ -115,10 +113,7 @@ func New(opts ...Option) (Interface, error) {
 	var factory deviceSpecGeneratorFactory
 	switch l.resolveMode() {
 	case ModeCSV:
-		if len(l.csvFiles) == 0 {
-			l.csvFiles = csv.DefaultFileList()
-		}
-		factory = (*csvlib)(l)
+		factory = l.asCSVLib()
 	case ModeManagement:
 		if l.vendor == "" {
 			l.vendor = "management.nvidia.com"
