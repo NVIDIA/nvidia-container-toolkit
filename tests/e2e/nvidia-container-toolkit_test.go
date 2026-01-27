@@ -24,16 +24,26 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"golang.org/x/mod/semver"
 )
 
 // Integration tests for Docker runtime
 var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
+	var dockerVersion string
 	var hostDriverVersion string
 	var hostDriverMajor string
 	var hostOutput string
 
 	// Install the NVIDIA Container Toolkit
 	BeforeAll(func(ctx context.Context) {
+		// Get the docker version output in the form:
+		// Docker version 29.1.3, build f52814d
+		versionOutput, _, err := runner.Run("docker --version")
+		GinkgoLogr.Info(fmt.Sprintf("Extracted docker version string as: %q", versionOutput))
+		Expect(err).ToNot(HaveOccurred())
+		dockerVersion = "v" + strings.TrimPrefix(strings.SplitN(versionOutput, ",", 2)[0], "Docker version ")
+
 		driverOutput, _, err := runner.Run("nvidia-smi -q | grep \"Driver Version\"")
 		Expect(err).ToNot(HaveOccurred())
 		parts := strings.SplitN(driverOutput, ":", 2)
@@ -430,14 +440,32 @@ EOF`)
 		})
 
 		It("should not fail when using the nvidia-container-runtime", func(ctx context.Context) {
-			_, _, err := runner.Run("docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all firmware-test")
+			output, _, err := runner.Run("docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all firmware-test")
 			Expect(err).ToNot(HaveOccurred())
+			Expect(output).To(BeEmpty())
 		})
 
 		It("should fail when using the nvidia-container-runtime-hook", Label("legacy"), func(ctx context.Context) {
-			_, stderr, err := runner.Run("docker run --rm --runtime=runc --gpus=all firmware-test")
+			// Prior to Docker v29.2.0, the --gpus flag would inject the nvidia-container-runtime-hook.
+			if semver.Compare(dockerVersion, "v29.2.0") >= 0 {
+				Skip(fmt.Sprintf("This test requires Docker < v29.2.0. Found %s", dockerVersion))
+			}
+			output, stderr, err := runner.Run("docker run --rm --runtime=runc --gpus=all firmware-test")
 			Expect(err).To(HaveOccurred())
+			Expect(output).To(BeEmpty())
 			Expect(stderr).To(ContainSubstring(": mount error: path error: /lib/firmware/nvidia/"))
+		})
+
+		It("should not fail when the --gpus flag is handled as a CDI request", func(ctx context.Context) {
+			// As of Docker v29.2.0, the --gpus flag is handled as a CDI
+			// device request if CDI specs are available.
+			if semver.Compare(dockerVersion, "v29.2.0") < 0 {
+				Skip(fmt.Sprintf("This test requires Docker >= v29.2.0. Found %s", dockerVersion))
+			}
+			output, stderr, err := runner.Run("docker run --rm --runtime=runc --gpus=all firmware-test")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output).To(BeEmpty())
+			Expect(stderr).To(BeEmpty())
 		})
 	})
 
