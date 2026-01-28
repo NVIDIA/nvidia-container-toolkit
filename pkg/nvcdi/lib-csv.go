@@ -33,13 +33,35 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 )
 
-type csvlib nvcdilib
+const (
+	defaultOrinCompatContainerRoot = "/usr/local/cuda/compat-orin"
+)
 
+type csvOptions struct {
+	Files               []string
+	IgnorePatterns      []string
+	CompatContainerRoot string
+}
+
+type csvlib nvcdilib
 type mixedcsvlib nvcdilib
 
 var _ deviceSpecGeneratorFactory = (*csvlib)(nil)
+
+// asCSVLib sets any CSV-specific defaults and casts the nvcdilib instance as a
+// *csvlib.
+func (l *nvcdilib) asCSVLib() *csvlib {
+	if len(l.csv.Files) == 0 {
+		l.csv.Files = csv.DefaultFileList()
+	}
+	if l.csv.CompatContainerRoot == "" {
+		l.csv.CompatContainerRoot = defaultOrinCompatContainerRoot
+	}
+	return (*csvlib)(l)
+}
 
 // DeviceSpecGenerators creates a set of generators for the specified set of
 // devices.
@@ -171,7 +193,7 @@ func (l *csvDeviceGenerator) deviceNodeDiscoverer() (discover.Discover, error) {
 
 func (l *csvDeviceGenerator) deviceNodeMountSpecs() tegra.MountSpecPathsByTyper {
 	mountSpecs := tegra.Transform(
-		tegra.MountSpecsFromCSVFiles(l.logger, l.csvFiles...),
+		tegra.MountSpecsFromCSVFiles(l.logger, l.csv.Files...),
 		// We remove non-device nodes.
 		tegra.OnlyDeviceNodes(),
 	)
@@ -388,10 +410,10 @@ func isIntegratedGPU(d nvml.Device) (bool, error) {
 func (l *csvlib) driverDiscoverer() (discover.Discover, error) {
 	mountSpecs := tegra.Transform(
 		tegra.Transform(
-			tegra.MountSpecsFromCSVFiles(l.logger, l.csvFiles...),
+			tegra.MountSpecsFromCSVFiles(l.logger, l.csv.Files...),
 			tegra.WithoutDeviceNodes(),
 		),
-		tegra.IgnoreSymlinkMountSpecsByPattern(l.csvIgnorePatterns...),
+		tegra.IgnoreSymlinkMountSpecsByPattern(l.csv.IgnorePatterns...),
 	)
 	driverDiscoverer, err := tegra.New(
 		tegra.WithLogger(l.logger),
@@ -467,7 +489,7 @@ func (l *csvlib) cudaCompatDiscoverer() discover.Discover {
 		// TODO: Should this be overridable through a feature flag / config option?
 		if strings.Contains(name, "Orin (nvgpu)") {
 			// TODO: This should probably be a constant or configurable.
-			cudaCompatContainerRoot = "/usr/local/cuda/compat-orin"
+			cudaCompatContainerRoot = l.csv.CompatContainerRoot
 			break
 		}
 	}
