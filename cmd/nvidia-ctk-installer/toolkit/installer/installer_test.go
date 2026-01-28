@@ -19,6 +19,7 @@ package installer
 
 import (
 	"bytes"
+	"debug/elf"
 	"fmt"
 	"io"
 	"io/fs"
@@ -29,6 +30,8 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit/installer/testutil"
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit/installer/wrappercore"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
 )
 
@@ -36,9 +39,9 @@ func TestToolkitInstaller(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
 	type contentCall struct {
-		wrapper string
-		path    string
-		mode    fs.FileMode
+		config *wrappercore.WrapperConfig
+		path   string
+		mode   fs.FileMode
 	}
 	var contentCalls []contentCall
 
@@ -51,10 +54,18 @@ func TestToolkitInstaller(t *testing.T) {
 			if _, err := b.ReadFrom(reader); err != nil {
 				return err
 			}
+			elfFile, err := elf.NewFile(bytes.NewReader(b.Bytes()))
+			require.NoError(t, err)
+			section := elfFile.Section(wrappercore.InstallerWrapperConfigELFSectionName)
+			require.NotNil(t, section)
+			sectionData, err := section.Data()
+			require.NoError(t, err)
+			config, err := wrappercore.ReadWrapperConfigSection(sectionData)
+			require.NoError(t, err)
 			contents := contentCall{
-				wrapper: b.String(),
-				path:    s,
-				mode:    fileMode,
+				config: config,
+				path:   s,
+				mode:   fileMode,
 			}
 
 			contentCalls = append(contentCalls, contents)
@@ -117,6 +128,7 @@ func TestToolkitInstaller(t *testing.T) {
 		artifactRoot:                 r,
 		ensureTargetDirectory:        createDirectory,
 		defaultRuntimeExecutablePath: "runc",
+		wrapperProgramPath:           testutil.WriteTestELF(t, wrappercore.InstallerWrapperConfigELFSectionName),
 	}
 
 	err := i.Install("/foo/bar/baz")
@@ -167,85 +179,80 @@ func TestToolkitInstaller(t *testing.T) {
 			{
 				path: "/foo/bar/baz/nvidia-container-runtime",
 				mode: 0777,
-				wrapper: `#! /bin/sh
-cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
-if [ "${?}" != "0" ]; then
-	echo "nvidia driver modules are not yet loaded, invoking runc directly" >&2
-	exec runc "$@"
-fi
-NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
-PATH=/foo/bar/baz:$PATH \
-	/foo/bar/baz/nvidia-container-runtime.real \
-		"$@"
-`,
+				config: &wrappercore.WrapperConfig{
+					RequiresKernelModule:         true,
+					DefaultRuntimeExecutablePath: "runc",
+					Envm: map[string]string{
+						"NVIDIA_CTK_CONFIG_FILE_PATH": "/foo/bar/baz/.config/nvidia-container-runtime/config.toml",
+						"<PATH":                       "/foo/bar/baz",
+					},
+				},
 			},
 			{
 				path: "/foo/bar/baz/nvidia-container-runtime.cdi",
 				mode: 0777,
-				wrapper: `#! /bin/sh
-cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
-if [ "${?}" != "0" ]; then
-	echo "nvidia driver modules are not yet loaded, invoking runc directly" >&2
-	exec runc "$@"
-fi
-NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
-PATH=/foo/bar/baz:$PATH \
-	/foo/bar/baz/nvidia-container-runtime.cdi.real \
-		"$@"
-`,
+				config: &wrappercore.WrapperConfig{
+					RequiresKernelModule:         true,
+					DefaultRuntimeExecutablePath: "runc",
+					Envm: map[string]string{
+						"NVIDIA_CTK_CONFIG_FILE_PATH": "/foo/bar/baz/.config/nvidia-container-runtime/config.toml",
+						"<PATH":                       "/foo/bar/baz",
+					},
+				},
 			},
 			{
 				path: "/foo/bar/baz/nvidia-container-runtime.legacy",
 				mode: 0777,
-				wrapper: `#! /bin/sh
-cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
-if [ "${?}" != "0" ]; then
-	echo "nvidia driver modules are not yet loaded, invoking runc directly" >&2
-	exec runc "$@"
-fi
-NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
-PATH=/foo/bar/baz:$PATH \
-	/foo/bar/baz/nvidia-container-runtime.legacy.real \
-		"$@"
-`,
+				config: &wrappercore.WrapperConfig{
+					RequiresKernelModule:         true,
+					DefaultRuntimeExecutablePath: "runc",
+					Envm: map[string]string{
+						"NVIDIA_CTK_CONFIG_FILE_PATH": "/foo/bar/baz/.config/nvidia-container-runtime/config.toml",
+						"<PATH":                       "/foo/bar/baz",
+					},
+				},
 			},
 			{
 				path: "/foo/bar/baz/nvidia-ctk",
 				mode: 0777,
-				wrapper: `#! /bin/sh
-PATH=/foo/bar/baz:$PATH \
-	/foo/bar/baz/nvidia-ctk.real \
-		"$@"
-`,
+				config: &wrappercore.WrapperConfig{
+					DefaultRuntimeExecutablePath: "runc",
+					Envm: map[string]string{
+						"<PATH": "/foo/bar/baz",
+					},
+				},
 			},
 			{
 				path: "/foo/bar/baz/nvidia-cdi-hook",
 				mode: 0777,
-				wrapper: `#! /bin/sh
-PATH=/foo/bar/baz:$PATH \
-	/foo/bar/baz/nvidia-cdi-hook.real \
-		"$@"
-`,
+				config: &wrappercore.WrapperConfig{
+					DefaultRuntimeExecutablePath: "runc",
+					Envm: map[string]string{
+						"<PATH": "/foo/bar/baz",
+					},
+				},
 			},
 			{
 				path: "/foo/bar/baz/nvidia-container-cli",
 				mode: 0777,
-				wrapper: `#! /bin/sh
-LD_LIBRARY_PATH=/foo/bar/baz:$LD_LIBRARY_PATH \
-PATH=/foo/bar/baz:$PATH \
-	/foo/bar/baz/nvidia-container-cli.real \
-		"$@"
-`,
+				config: &wrappercore.WrapperConfig{
+					DefaultRuntimeExecutablePath: "runc",
+					Envm: map[string]string{
+						"<LD_LIBRARY_PATH": "/foo/bar/baz",
+						"<PATH":            "/foo/bar/baz",
+					},
+				},
 			},
 			{
 				path: "/foo/bar/baz/nvidia-container-runtime-hook",
 				mode: 0777,
-				wrapper: `#! /bin/sh
-NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
-PATH=/foo/bar/baz:$PATH \
-	/foo/bar/baz/nvidia-container-runtime-hook.real \
-		"$@"
-`,
+				config: &wrappercore.WrapperConfig{
+					DefaultRuntimeExecutablePath: "runc",
+					Envm: map[string]string{
+						"NVIDIA_CTK_CONFIG_FILE_PATH": "/foo/bar/baz/.config/nvidia-container-runtime/config.toml",
+						"<PATH":                       "/foo/bar/baz",
+					},
+				},
 			},
 		},
 	)
