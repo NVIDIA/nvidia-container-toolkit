@@ -71,3 +71,6 @@ make -C "${NVIDIA_CONTAINER_TOOLKIT_ROOT}" \
     LIBNVIDIA_CONTAINER_TAG="${NVIDIA_CONTAINER_TOOLKIT_TAG}" \
         "${TARGET}"
 fi
+
+# Repackage RPMs if required.
+"${SCRIPTS_DIR}/repackage-rpms.sh" "${TARGET}"
