@@ -32,6 +32,9 @@ func NewLibraryLocator(opts ...Option) Locator {
 	opts = append(opts,
 		WithSearchPaths([]string{
 			"/",
+			"/usr/local/glibc/usr/lib",
+			"/usr/local/glibc/lib",
+			"/usr/local/glibc/lib64",
 			"/usr/lib64",
 			"/usr/lib/x86_64-linux-gnu",
 			"/usr/lib/aarch64-linux-gnu",
