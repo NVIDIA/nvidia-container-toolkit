@@ -33,10 +33,11 @@ const (
 	defaultNRIPluginIdx uint = 10
 )
 
-var defaultLowLevelRuntimes = []string{"runc", "crun"}
-
-var waitingForSignal = make(chan bool, 1)
-var signalReceived = make(chan bool, 1)
+var (
+	defaultLowLevelRuntimes = []string{"runc", "crun"}
+	waitingForSignal        = make(chan bool, 1)
+	signalReceived          = make(chan bool, 1)
+)
 
 // options stores the command line arguments
 type options struct {
