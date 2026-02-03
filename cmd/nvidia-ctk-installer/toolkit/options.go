@@ -38,3 +38,9 @@ func WithSourceRoot(sourceRoot string) Option {
 		i.sourceRoot = sourceRoot
 	}
 }
+
+func WithWrapperProgramPath(path string) Option {
+	return func(i *Installer) {
+		i.wrapperProgramPath = path
+	}
+}

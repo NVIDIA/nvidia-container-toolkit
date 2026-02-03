@@ -52,6 +52,7 @@ RUN mkdir -p /artifacts/bin
 ARG VERSION="N/A"
 ARG GIT_COMMIT="unknown"
 RUN make PREFIX=/artifacts/bin cmd-nvidia-ctk-installer
+RUN make PREFIX=/artifacts/bin cmd-nvidia-ctk-installer-wrapper
 
 # The packaging stage collects the deb and rpm packages built for
 # supported architectures.
