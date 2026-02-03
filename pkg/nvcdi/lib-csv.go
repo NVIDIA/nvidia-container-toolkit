@@ -475,20 +475,24 @@ func (l *csvlib) getEnableCUDACompatHookOptions() (*discover.EnableCUDACompatHoo
 		_ = l.nvmllib.Shutdown()
 	}()
 
-	hostDriverVersion, ret := l.nvmllib.SystemGetDriverVersion()
-	if ret != nvml.SUCCESS {
-		return nil, fmt.Errorf("failed to get driver version: %v", ret)
-	}
-
 	if !l.hasOrinDevices() {
+		hostDriverVersion, ret := l.nvmllib.SystemGetDriverVersion()
+		if ret != nvml.SUCCESS {
+			return nil, fmt.Errorf("failed to get driver version: %v", ret)
+		}
 		f := &discover.EnableCUDACompatHookOptions{
 			HostDriverVersion: hostDriverVersion,
 		}
 		return f, nil
 	}
 
+	hostCUDAVersion, err := l.getCUDAVersionString()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get host CUDA version: %v", ret)
+	}
+
 	f := &discover.EnableCUDACompatHookOptions{
-		HostDriverVersion:       hostDriverVersion,
+		HostCUDAVersion:         hostCUDAVersion,
 		CUDACompatContainerRoot: l.csv.CompatContainerRoot,
 	}
 	return f, nil
@@ -516,4 +520,15 @@ func (l *csvlib) hasOrinDevices() bool {
 	}
 
 	return false
+}
+
+func (l *csvlib) getCUDAVersionString() (string, error) {
+	v, ret := l.nvmllib.SystemGetCudaDriverVersion()
+	if ret != nvml.SUCCESS {
+		return "", ret
+	}
+	major := v / 1000
+	minor := v % 1000 / 10
+
+	return fmt.Sprintf("%d.%d", major, minor), nil
 }

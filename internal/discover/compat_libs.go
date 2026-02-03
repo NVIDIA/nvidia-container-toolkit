@@ -10,6 +10,7 @@ import (
 // when creating the enable-cuda-compat hook.
 type EnableCUDACompatHookOptions struct {
 	HostDriverVersion       string
+	HostCUDAVersion         string
 	CUDACompatContainerRoot string
 }
 
@@ -26,6 +27,9 @@ func (o *EnableCUDACompatHookOptions) args() []string {
 	var args []string
 	if o.HostDriverVersion != "" && !strings.Contains(o.HostDriverVersion, "*") {
 		args = append(args, "--host-driver-version="+o.HostDriverVersion)
+	}
+	if o.HostCUDAVersion != "" {
+		args = append(args, "--host-cuda-version="+o.HostCUDAVersion)
 	}
 	if o.CUDACompatContainerRoot != "" {
 		args = append(args, "--cuda-compat-container-root="+o.CUDACompatContainerRoot)

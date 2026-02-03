@@ -84,7 +84,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 						{
 							HookName: "createContainer",
 							Path:     "/usr/bin/nvidia-cdi-hook",
-							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-driver-version=540.3.0", "--cuda-compat-container-root=/usr/local/cuda/compat_orin"},
+							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-cuda-version=13.1", "--cuda-compat-container-root=/usr/local/cuda/compat_orin"},
 							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
 						},
 						{
@@ -126,7 +126,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 						{
 							HookName: "createContainer",
 							Path:     "/usr/bin/nvidia-cdi-hook",
-							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-driver-version=540.3.0", "--cuda-compat-container-root=/another/compat/root"},
+							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-cuda-version=13.1", "--cuda-compat-container-root=/another/compat/root"},
 							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
 						},
 						{
@@ -260,6 +260,9 @@ func mockOrinServer() nvml.Interface {
 		},
 		SystemGetDriverVersionFunc: func() (string, nvml.Return) {
 			return "540.3.0", nvml.SUCCESS
+		},
+		SystemGetCudaDriverVersionFunc: func() (int, nvml.Return) {
+			return 13010, nvml.SUCCESS
 		},
 		DeviceGetCountFunc: func() (int, nvml.Return) {
 			return 1, nvml.SUCCESS
