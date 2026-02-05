@@ -450,26 +450,51 @@ func (l *csvlib) driverDiscoverer() (discover.Discover, error) {
 // version to be passed to the hook.
 // On Orin-based systems, the compat library root in the container is also set.
 func (l *csvlib) cudaCompatDiscoverer() discover.Discover {
+	c, err := l.getEnableCUDACompatHookOptions()
+	if err != nil {
+		l.logger.Warningf("Skipping CUDA Forward Compat hook creation: %v", err)
+	}
+	if c == nil {
+		return nil
+	}
+
+	return discover.NewCUDACompatHookDiscoverer(l.logger, l.hookCreator, c)
+}
+
+func (l *csvlib) getEnableCUDACompatHookOptions() (*discover.EnableCUDACompatHookOptions, error) {
 	hasNvml, _ := l.infolib.HasNvml()
 	if !hasNvml {
-		return nil
+		return nil, nil
 	}
 
 	ret := l.nvmllib.Init()
 	if ret != nvml.SUCCESS {
-		l.logger.Warningf("Failed to initialize NVML: %v", ret)
-		return nil
+		return nil, fmt.Errorf("failed to initialize NVML: %v", ret)
 	}
 	defer func() {
 		_ = l.nvmllib.Shutdown()
 	}()
 
-	version, ret := l.nvmllib.SystemGetDriverVersion()
+	hostDriverVersion, ret := l.nvmllib.SystemGetDriverVersion()
 	if ret != nvml.SUCCESS {
-		l.logger.Warningf("Failed to get driver version: %v", ret)
-		return nil
+		return nil, fmt.Errorf("failed to get driver version: %v", ret)
 	}
 
+	if !l.hasOrinDevices() {
+		f := &discover.EnableCUDACompatHookOptions{
+			HostDriverVersion: hostDriverVersion,
+		}
+		return f, nil
+	}
+
+	f := &discover.EnableCUDACompatHookOptions{
+		HostDriverVersion:       hostDriverVersion,
+		CUDACompatContainerRoot: l.csv.CompatContainerRoot,
+	}
+	return f, nil
+}
+
+func (l *csvlib) hasOrinDevices() bool {
 	var names []string
 	err := l.devicelib.VisitDevices(func(i int, d device.Device) error {
 		name, ret := d.GetName()
@@ -480,19 +505,15 @@ func (l *csvlib) cudaCompatDiscoverer() discover.Discover {
 		return nil
 	})
 	if err != nil {
-		l.logger.Warningf("Failed to get device names: %v", err)
-		return nil
+		l.logger.Warningf("Failed to get device names: %v; assuming non-orin devices", err)
+		return false
 	}
 
-	var cudaCompatContainerRoot string
 	for _, name := range names {
-		// TODO: Should this be overridable through a feature flag / config option?
 		if strings.Contains(name, "Orin (nvgpu)") {
-			// TODO: This should probably be a constant or configurable.
-			cudaCompatContainerRoot = l.csv.CompatContainerRoot
-			break
+			return true
 		}
 	}
 
-	return discover.NewCUDACompatHookDiscoverer(l.logger, l.hookCreator, version, cudaCompatContainerRoot)
+	return false
 }
