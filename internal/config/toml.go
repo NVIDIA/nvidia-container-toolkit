@@ -27,7 +27,24 @@ import (
 )
 
 // Toml is a type for the TOML representation of a config.
-type Toml toml.Tree
+type Toml struct {
+	tree *toml.Tree
+	// valuesSet allows us to trac expliclitly set values so that we can
+	// properly uncomment defaults.
+	valuesSet map[string]bool
+}
+
+func TreeFromMap(m map[string]any) (*Toml, error) {
+	tree, err := toml.TreeFromMap(m)
+	if err != nil {
+		return nil, err
+	}
+	return fromTree(tree), nil
+}
+
+func fromTree(t *toml.Tree) *Toml {
+	return &Toml{tree: t, valuesSet: make(map[string]bool)}
+}
 
 type options struct {
 	configFile string
@@ -103,7 +120,13 @@ func loadConfigTomlFrom(reader io.Reader) (*Toml, error) {
 	if err != nil {
 		return nil, err
 	}
-	return (*Toml)(tree), nil
+
+	t := &Toml{
+		tree:      tree,
+		valuesSet: make(map[string]bool),
+	}
+
+	return t, nil
 }
 
 // Config returns the typed config associated with the toml tree.
@@ -136,7 +159,7 @@ func (t *Toml) configNoOverrides() (*Config, error) {
 
 // Unmarshal wraps the toml.Tree Unmarshal function.
 func (t *Toml) Unmarshal(v interface{}) error {
-	return (*toml.Tree)(t).Unmarshal(v)
+	return t.tree.Unmarshal(v)
 }
 
 // Save saves the config to the specified Writer.
@@ -158,7 +181,7 @@ func (t Toml) contents() ([]byte, error) {
 	buffer := bytes.NewBuffer(nil)
 
 	enc := toml.NewEncoder(buffer).Indentation("")
-	if err := enc.Encode((*toml.Tree)(commented)); err != nil {
+	if err := enc.Encode(commented.tree); err != nil {
 		return nil, fmt.Errorf("invalid config: %v", err)
 	}
 	return t.format(buffer.Bytes())
@@ -175,33 +198,35 @@ func (t Toml) format(contents []byte) ([]byte, error) {
 
 // Delete deletes the specified key from the TOML config.
 func (t *Toml) Delete(key string) error {
-	return (*toml.Tree)(t).Delete(key)
+	delete(t.valuesSet, key)
+	return t.tree.Delete(key)
 }
 
 // Get returns the value for the specified key.
 func (t *Toml) Get(key string) interface{} {
-	return (*toml.Tree)(t).Get(key)
+	return t.tree.Get(key)
 }
 
 // GetDefault returns the value for the specified key and falls back to the default value if the Get call fails
 func (t *Toml) GetDefault(key string, def interface{}) interface{} {
-	return (*toml.Tree)(t).GetDefault(key, def)
+	return t.tree.GetDefault(key, def)
 }
 
 // Set sets the specified key to the specified value in the TOML config.
 func (t *Toml) Set(key string, value interface{}) {
-	(*toml.Tree)(t).Set(key, value)
+	t.tree.Set(key, value)
+	t.valuesSet[key] = true
 }
 
 // WriteTo encode the Tree as Toml and writes it to the writer w.
 // Returns the number of bytes written in case of success, or an error if anything happened.
 func (t *Toml) WriteTo(w io.Writer) (int64, error) {
-	return (*toml.Tree)(t).WriteTo(w)
+	return t.tree.WriteTo(w)
 }
 
 // commentDefaults applies the required comments for default values to the Toml.
 func (t *Toml) commentDefaults() *Toml {
-	asToml := (*toml.Tree)(t)
+	asToml := t.tree
 	commentedDefaults := map[string]interface{}{
 		"swarm-resource": "DOCKER_RESOURCE_GPU",
 		"accept-nvidia-visible-devices-envvar-when-unprivileged": true,
@@ -215,13 +240,19 @@ func (t *Toml) commentDefaults() *Toml {
 		"nvidia-container-runtime.debug":                         "/var/log/nvidia-container-runtime.log",
 	}
 	for k, v := range commentedDefaults {
+		// If a value has been explicitly set, we don't check whether it should
+		// be commented.
+		if t.valuesSet[k] {
+			continue
+		}
 		set := asToml.Get(k)
 		if !shouldComment(k, v, set) {
 			continue
 		}
 		asToml.SetWithComment(k, "", true, v)
 	}
-	return (*Toml)(asToml)
+	t.tree = asToml
+	return t
 }
 
 func shouldComment(key string, defaultValue interface{}, setTo interface{}) bool {
