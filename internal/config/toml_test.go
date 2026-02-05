@@ -21,7 +21,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pelletier/go-toml"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,7 +36,7 @@ func TestTomlSave(t *testing.T) {
 				t, _ := defaultToml()
 				// TODO: We handle the ldconfig path specifically, since this is platform
 				// dependent.
-				(*toml.Tree)(t).Set("nvidia-container-cli.ldconfig", "OVERRIDDEN")
+				t.Set("nvidia-container-cli.ldconfig", "OVERRIDDEN")
 				return t
 			}(),
 			expected: `
@@ -60,6 +59,62 @@ load-kmods = true
 
 [nvidia-container-runtime]
 #debug = "/var/log/nvidia-container-runtime.log"
+log-level = "info"
+mode = "auto"
+runtimes = ["runc", "crun"]
+
+[nvidia-container-runtime.modes]
+
+[nvidia-container-runtime.modes.cdi]
+annotation-prefixes = ["cdi.k8s.io/"]
+default-kind = "nvidia.com/gpu"
+spec-dirs = ["/etc/cdi", "/var/run/cdi"]
+
+[nvidia-container-runtime.modes.csv]
+mount-spec-path = "/etc/nvidia-container-runtime/host-files-for-container.d"
+
+[nvidia-container-runtime.modes.legacy]
+cuda-compat-mode = "ldconfig"
+
+[nvidia-container-runtime-hook]
+path = "nvidia-container-runtime-hook"
+skip-mode-detection = false
+
+[nvidia-ctk]
+path = "nvidia-ctk"
+`,
+		},
+		{
+			description: "set debug to default uncomments",
+			config: func() *Toml {
+				t, _ := defaultToml()
+				// TODO: We handle the ldconfig path specifically, since this is platform
+				// dependent.
+				t.Set("nvidia-container-cli.ldconfig", "OVERRIDDEN")
+				t.Set("nvidia-container-cli.debug", "/var/log/nvidia-container-toolkit.log")
+				t.Set("nvidia-container-runtime.debug", "/var/log/nvidia-container-runtime.log")
+				return t
+			}(),
+			expected: `
+#accept-nvidia-visible-devices-as-volume-mounts = false
+#accept-nvidia-visible-devices-envvar-when-unprivileged = true
+disable-require = false
+supported-driver-capabilities = "compat32,compute,display,graphics,ngx,utility,video"
+#swarm-resource = "DOCKER_RESOURCE_GPU"
+
+[nvidia-container-cli]
+debug = "/var/log/nvidia-container-toolkit.log"
+environment = []
+#ldcache = "/etc/ld.so.cache"
+ldconfig = "OVERRIDDEN"
+load-kmods = true
+#no-cgroups = false
+#path = "/usr/bin/nvidia-container-cli"
+#root = "/run/nvidia/driver"
+#user = "root:video"
+
+[nvidia-container-runtime]
+debug = "/var/log/nvidia-container-runtime.log"
 log-level = "info"
 mode = "auto"
 runtimes = ["runc", "crun"]
@@ -186,9 +241,8 @@ func TestTomlContents(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			tree, err := toml.TreeFromMap(tc.contents)
+			cfg, err := TreeFromMap(tc.contents)
 			require.NoError(t, err)
-			cfg := (*Toml)(tree)
 			contents, err := cfg.contents()
 			require.NoError(t, err)
 
@@ -262,7 +316,7 @@ func TestConfigFromToml(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			tomlCfg := fromMap(tc.contents)
+			tomlCfg, _ := TreeFromMap(tc.contents)
 			config, err := tomlCfg.Config()
 			require.ErrorIs(t, err, tc.expectedError)
 			require.EqualValues(t, tc.expectedConfig, config)
@@ -270,11 +324,7 @@ func TestConfigFromToml(t *testing.T) {
 	}
 }
 
-func fromMap(c map[string]interface{}) *Toml {
-	tree, _ := toml.TreeFromMap(c)
-	return (*Toml)(tree)
-}
-
 func createEmpty() *Toml {
-	return fromMap(nil)
+	t, _ := TreeFromMap(nil)
+	return t
 }
