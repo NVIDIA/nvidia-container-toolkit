@@ -23,7 +23,6 @@ import (
 )
 
 func TestSetFlagToKeyValue(t *testing.T) {
-	// TODO: We need to enable this test again since switching to reflect.
 	testCases := []struct {
 		description      string
 		setFlag          string

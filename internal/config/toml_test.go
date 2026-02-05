@@ -21,7 +21,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pelletier/go-toml"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,7 +36,7 @@ func TestTomlSave(t *testing.T) {
 				t, _ := defaultToml()
 				// TODO: We handle the ldconfig path specifically, since this is platform
 				// dependent.
-				(*toml.Tree)(t).Set("nvidia-container-cli.ldconfig", "OVERRIDDEN")
+				t.Set("nvidia-container-cli.ldconfig", "OVERRIDDEN")
 				return t
 			}(),
 			expected: `
@@ -242,9 +241,8 @@ func TestTomlContents(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			tree, err := toml.TreeFromMap(tc.contents)
+			cfg, err := TreeFromMap(tc.contents)
 			require.NoError(t, err)
-			cfg := (*Toml)(tree)
 			contents, err := cfg.contents()
 			require.NoError(t, err)
 
@@ -318,7 +316,7 @@ func TestConfigFromToml(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			tomlCfg := fromMap(tc.contents)
+			tomlCfg, _ := TreeFromMap(tc.contents)
 			config, err := tomlCfg.Config()
 			require.ErrorIs(t, err, tc.expectedError)
 			require.EqualValues(t, tc.expectedConfig, config)
@@ -326,11 +324,7 @@ func TestConfigFromToml(t *testing.T) {
 	}
 }
 
-func fromMap(c map[string]interface{}) *Toml {
-	tree, _ := toml.TreeFromMap(c)
-	return (*Toml)(tree)
-}
-
 func createEmpty() *Toml {
-	return fromMap(nil)
+	t, _ := TreeFromMap(nil)
+	return t
 }
