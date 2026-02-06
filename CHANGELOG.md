@@ -1,6 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
 ## v1.19.0-rc.3
+- Remove restart logic from nvidia-cdi-refresh.service.
 - fix: Set device node GID in CDI specs
 - fix: Log actual CDI spec version
 - Make internal/system packages public
