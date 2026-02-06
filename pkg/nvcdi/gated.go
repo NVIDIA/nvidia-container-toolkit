@@ -23,7 +23,6 @@ import (
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 )
 
 type gatedlib nvcdilib
@@ -40,7 +39,7 @@ func (l *gatedlib) GetDeviceSpecs() ([]specs.Device, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for mode %q: %w", l.mode, err)
 	}
-	edits, err := edits.FromDiscoverer(discoverer)
+	edits, err := l.editsFactory.FromDiscoverer(discoverer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits: %w", err)
 	}
@@ -70,5 +69,5 @@ func (l *gatedlib) getModeDiscoverer() (discover.Discover, error) {
 
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
 func (l *gatedlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	return edits.FromDiscoverer(discover.None{})
+	return l.editsFactory.FromDiscoverer(discover.None{})
 }

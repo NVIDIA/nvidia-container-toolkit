@@ -31,7 +31,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra"
 )
 
@@ -127,7 +126,7 @@ func (l *csvDeviceGenerator) GetDeviceSpecs() ([]specs.Device, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for device nodes from CSV files: %w", err)
 	}
-	e, err := edits.FromDiscoverer(deviceNodeDiscoverer)
+	e, err := l.editsFactory.FromDiscoverer(deviceNodeDiscoverer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for CSV files: %w", err)
 	}
@@ -218,7 +217,7 @@ func (l *csvlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create driver discoverer from CSV files: %w", err)
 	}
-	return edits.FromDiscoverer(driverDiscoverer)
+	return l.editsFactory.FromDiscoverer(driverDiscoverer)
 }
 
 func (l *mixedcsvlib) DeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, error) {

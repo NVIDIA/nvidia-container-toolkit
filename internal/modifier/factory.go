@@ -21,6 +21,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 )
@@ -31,6 +32,8 @@ type Factory struct {
 	driver      *root.Driver
 	hookCreator discover.HookCreator
 	image       *image.CUDA
+
+	editsFactory edits.Factory
 }
 
 type FactoryOption func(*Factory)
@@ -40,6 +43,11 @@ func NewFactory(opts ...FactoryOption) *Factory {
 	for _, opt := range opts {
 		opt(f)
 	}
+
+	if f.editsFactory == nil {
+		f.editsFactory = edits.NewFactory(edits.WithLogger(f.logger))
+	}
+
 	return f
 }
 

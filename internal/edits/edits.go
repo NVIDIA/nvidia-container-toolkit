@@ -23,6 +23,7 @@ import (
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 const (
@@ -33,14 +34,34 @@ const (
 
 type Factory interface {
 	New() *cdi.ContainerEdits
+	FromDiscoverer(discover.Discover) (*cdi.ContainerEdits, error)
 }
 
 type empty string
 
+type factory struct {
+	logger logger.Interface
+}
+
 var _ Factory = (*empty)(nil)
 
-// FromDiscoverer creates CDI container edits for the specified discoverer.
-func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
+type Option func(*factory)
+
+func NewFactory(opts ...Option) Factory {
+	f := &factory{
+		logger: &logger.NullLogger{},
+	}
+	for _, opt := range opts {
+		opt(f)
+	}
+	return f
+}
+
+func (f *factory) New() *cdi.ContainerEdits {
+	return EmptyFactory.New()
+}
+
+func (f *factory) FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 	devices, err := d.Devices()
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover devices: %v", err)
@@ -91,4 +112,15 @@ func (e empty) New() *cdi.ContainerEdits {
 		ContainerEdits: &specs.ContainerEdits{},
 	}
 	return &c
+}
+
+// FromDiscoverer creates a set of empty CDI container edits for ANY discoverer.
+func (e empty) FromDiscoverer(_ discover.Discover) (*cdi.ContainerEdits, error) {
+	return e.New(), nil
+}
+
+func WithLogger(logger logger.Interface) Option {
+	return func(f *factory) {
+		f.logger = logger
+	}
 }

@@ -28,16 +28,18 @@ import (
 )
 
 type discoverModifier struct {
-	logger     logger.Interface
-	discoverer discover.Discover
+	logger       logger.Interface
+	editsFactory edits.Factory
+	discoverer   discover.Discover
 }
 
 // NewModifierFromDiscoverer creates a modifier that applies the discovered
 // modifications to an OCI spec if required by the runtime wrapper.
 func (f *Factory) NewModifierFromDiscoverer(d discover.Discover) (oci.SpecModifier, error) {
 	m := discoverModifier{
-		logger:     f.logger,
-		discoverer: d,
+		logger:       f.logger,
+		editsFactory: f.editsFactory,
+		discoverer:   d,
 	}
 	return &m, nil
 }
@@ -45,7 +47,7 @@ func (f *Factory) NewModifierFromDiscoverer(d discover.Discover) (oci.SpecModifi
 // Modify applies the modifications required by discoverer to the incomming OCI spec.
 // These modifications are applied in-place.
 func (m discoverModifier) Modify(spec *ocispecs.Spec) error {
-	specEdits, err := edits.FromDiscoverer(m.discoverer)
+	specEdits, err := m.editsFactory.FromDiscoverer(m.discoverer)
 	if err != nil {
 		return fmt.Errorf("failed to get required container edits: %v", err)
 	}
