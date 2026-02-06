@@ -25,6 +25,20 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
 
+const (
+	// An EmptyFactory is an edits factory that always returns empty CDI
+	// container edits.
+	EmptyFactory = empty("empty")
+)
+
+type Factory interface {
+	New() *cdi.ContainerEdits
+}
+
+type empty string
+
+var _ Factory = (*empty)(nil)
+
 // FromDiscoverer creates CDI container edits for the specified discoverer.
 func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 	devices, err := d.Devices()
@@ -47,7 +61,7 @@ func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 		return nil, fmt.Errorf("failed to discover hooks: %v", err)
 	}
 
-	c := NewContainerEdits()
+	c := EmptyFactory.New()
 	for _, d := range devices {
 		edits, err := device(d).toEdits()
 		if err != nil {
@@ -71,8 +85,8 @@ func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 	return c, nil
 }
 
-// NewContainerEdits is a utility function to create a CDI ContainerEdits struct.
-func NewContainerEdits() *cdi.ContainerEdits {
+// New creates a set of empty CDI container edits for an empty factory.
+func (e empty) New() *cdi.ContainerEdits {
 	c := cdi.ContainerEdits{
 		ContainerEdits: &specs.ContainerEdits{},
 	}
