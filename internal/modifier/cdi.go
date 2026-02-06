@@ -40,19 +40,19 @@ const (
 // NewCDIModifier creates an OCI spec modifier that determines the modifications to make based on the
 // CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES environment variable is
 // used to select the devices to include.
-func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, isJitCDI bool) (oci.SpecModifier, error) {
-	defaultKind := cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind
+func (f *Factory) NewCDIModifier(isJitCDI bool) (oci.SpecModifier, error) {
+	defaultKind := f.cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind
 	if isJitCDI {
 		defaultKind = automaticDeviceKind
 	}
 	deviceRequestor := newCDIDeviceRequestor(
-		logger,
-		image,
+		f.logger,
+		f.image,
 		defaultKind,
 	)
 	devices := deviceRequestor.DeviceRequests()
 	if len(devices) == 0 {
-		logger.Debugf("No devices requested; no modification required.")
+		f.logger.Debugf("No devices requested; no modification required.")
 		return nil, nil
 	}
 
@@ -61,27 +61,28 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUD
 		return nil, fmt.Errorf("requesting a CDI device with vendor 'runtime.nvidia.com' is not supported when requesting other CDI devices")
 	}
 	if len(automaticDevices) > 0 {
-		logger.Debugf("Using automatic CDI modfier for devices %v", automaticDevices)
-		modifier, err := newJitCDIModifier(logger, cfg, image, automaticDevices)
+		f.logger.Debugf("Using automatic CDI modfier for devices %v", automaticDevices)
+		modifier, err := newJitCDIModifier(f.logger, f.cfg, f.image, automaticDevices)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create the automatic CDI modifier: %w", err)
 		}
 		return modifier, nil
 	}
 
-	logger.Debugf("Creating CDI modifier for devices: %v", devices)
+	f.logger.Debugf("Creating CDI modifier for devices: %v", devices)
 	return cdi.New(
-		cdi.WithLogger(logger),
+		cdi.WithLogger(f.logger),
 		cdi.WithDevices(devices...),
-		cdi.WithSpecDirs(cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs...),
+		cdi.WithSpecDirs(f.cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs...),
 	)
 }
 
 // newJitCDIModifier creates a modifier that for a generated in-memory CDI spec for the specified CDI devices.
-func newJitCDIModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, automaticDevices []string) (oci.SpecModifier, error) {
-	automaticDevices = append(automaticDevices, withUniqueDevices(gatedDevices(image)).DeviceRequests()...)
-	automaticDevices = append(automaticDevices, withUniqueDevices(imexDevices(image)).DeviceRequests()...)
-
+func newJitCDIModifier(logger logger.Interface, cfg *config.Config, image *image.CUDA, automaticDevices []string) (oci.SpecModifier, error) {
+	if image != nil {
+		automaticDevices = append(automaticDevices, withUniqueDevices(gatedDevices(*image)).DeviceRequests()...)
+		automaticDevices = append(automaticDevices, withUniqueDevices(imexDevices(*image)).DeviceRequests()...)
+	}
 	return newAutomaticCDISpecModifier(logger, cfg, automaticDevices)
 }
 
@@ -90,12 +91,12 @@ type deviceRequestor interface {
 }
 
 type cdiDeviceRequestor struct {
-	image       image.CUDA
 	logger      logger.Interface
+	image       *image.CUDA
 	defaultKind string
 }
 
-func newCDIDeviceRequestor(logger logger.Interface, image image.CUDA, defaultKind string) deviceRequestor {
+func newCDIDeviceRequestor(logger logger.Interface, image *image.CUDA, defaultKind string) deviceRequestor {
 	c := &cdiDeviceRequestor{
 		logger:      logger,
 		image:       image,
