@@ -28,12 +28,13 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup/symlinks"
 )
 
 func TestInstall(t *testing.T) {
-	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
+	defer devices.SetAllForTest()()
 	logger, _ := testlog.NewNullLogger()
 
 	moduleRoot, err := test.GetModuleRoot()

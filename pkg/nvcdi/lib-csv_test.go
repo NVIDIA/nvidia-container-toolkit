@@ -31,12 +31,14 @@ import (
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
 func TestDeviceSpecGenerators(t *testing.T) {
-	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
+	defer devices.SetAllForTest()()
+
 	moduleRoot, err := test.GetModuleRoot()
 	require.NoError(t, err)
 

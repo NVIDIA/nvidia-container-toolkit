@@ -20,8 +20,7 @@ import (
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
-	"github.com/opencontainers/runc/libcontainer/devices"
-
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
 

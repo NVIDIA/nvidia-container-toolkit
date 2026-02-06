@@ -10,6 +10,7 @@ require (
 	github.com/moby/sys/mountinfo v0.7.2
 	github.com/moby/sys/reexec v0.1.0
 	github.com/moby/sys/symlink v0.3.0
+	github.com/opencontainers/cgroups v0.0.6
 	github.com/opencontainers/runc v1.4.0
 	github.com/opencontainers/runtime-spec v1.3.0
 	github.com/pelletier/go-toml v1.9.5
@@ -36,7 +37,6 @@ require (
 	github.com/knqyf263/go-plugin v0.9.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/moby/sys/capability v0.4.0 // indirect
-	github.com/opencontainers/cgroups v0.0.6 // indirect
 	github.com/opencontainers/runtime-tools v0.9.1-0.20251114084447-edf4cb3d2116 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect

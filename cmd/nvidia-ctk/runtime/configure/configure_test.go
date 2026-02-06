@@ -27,11 +27,13 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 )
 
 // TestConfigureLifecycle tests the complete configure command lifecycle for all runtimes
 func TestConfigureLifecycle(t *testing.T) {
-	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
+	defer devices.SetAllForTest()()
 
 	logger, _ := testlog.NewNullLogger()
 
@@ -522,7 +524,7 @@ runtime_type = "oci"
 
 // TestConfigureCommandLineSource tests using command source for config
 func TestConfigureCommandLineSource(t *testing.T) {
-	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
+	defer devices.SetAllForTest()()
 
 	logger, _ := testlog.NewNullLogger()
 
