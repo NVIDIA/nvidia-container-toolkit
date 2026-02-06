@@ -19,34 +19,11 @@ package edits
 import (
 	"fmt"
 
-	ociSpecs "github.com/opencontainers/runtime-spec/specs-go"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
-
-type edits struct {
-	cdi.ContainerEdits
-	logger logger.Interface
-}
-
-// NewSpecEdits creates a SpecModifier that defines the required OCI spec edits (as CDI ContainerEdits) from the specified
-// discoverer.
-func NewSpecEdits(logger logger.Interface, d discover.Discover) (oci.SpecModifier, error) {
-	c, err := FromDiscoverer(d)
-	if err != nil {
-		return nil, fmt.Errorf("error constructing container edits: %v", err)
-	}
-	e := edits{
-		ContainerEdits: *c,
-		logger:         logger,
-	}
-
-	return &e, nil
-}
 
 // FromDiscoverer creates CDI container edits for the specified discoverer.
 func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
@@ -100,26 +77,4 @@ func NewContainerEdits() *cdi.ContainerEdits {
 		ContainerEdits: &specs.ContainerEdits{},
 	}
 	return &c
-}
-
-// Modify applies the defined edits to the incoming OCI spec
-func (e *edits) Modify(spec *ociSpecs.Spec) error {
-	if e == nil || e.ContainerEdits.ContainerEdits == nil {
-		return nil
-	}
-
-	e.logger.Infof("Mounts:")
-	for _, mount := range e.Mounts {
-		e.logger.Infof("Mounting %v at %v", mount.HostPath, mount.ContainerPath)
-	}
-	e.logger.Infof("Devices:")
-	for _, device := range e.DeviceNodes {
-		e.logger.Infof("Injecting %v", device.Path)
-	}
-	e.logger.Infof("Hooks:")
-	for _, hook := range e.Hooks {
-		e.logger.Infof("Injecting %v %v", hook.Path, hook.Args)
-	}
-
-	return e.Apply(spec)
 }
