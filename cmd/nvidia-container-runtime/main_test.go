@@ -15,6 +15,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
@@ -177,7 +178,13 @@ func TestDuplicateHook(t *testing.T) {
 // testing.
 func addNVIDIAHook(spec *specs.Spec) error {
 	logger, _ := testlog.NewNullLogger()
-	m := modifier.NewStableRuntimeModifier(logger, nvidiaHook)
+	cfg := &config.Config{}
+	cfg.NVIDIAContainerRuntimeHookConfig.Path = nvidiaHook
+	f := modifier.NewFactory(
+		modifier.WithLogger(logger),
+		modifier.WithConfig(cfg),
+	)
+	m := f.NewStableRuntimeModifier()
 	return m.Modify(spec)
 }
 

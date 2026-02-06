@@ -73,28 +73,34 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		return nil, err
 	}
 
-	modeModifier, err := newModeModifier(logger, mode, cfg, *image)
-	if err != nil {
-		return nil, err
-	}
-
 	hookCreator := discover.NewHookCreator(discover.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path))
+	modifierFactory := modifier.NewFactory(
+		modifier.WithLogger(logger),
+		modifier.WithConfig(cfg),
+		modifier.WithImage(image),
+		modifier.WithDriver(driver),
+		modifier.WithHookCreator(hookCreator),
+	)
 
 	var modifiers modifier.List
 	for _, modifierType := range supportedModifierTypes(mode) {
 		switch modifierType {
 		case "mode":
+			modeModifier, err := newModeModifier(modifierFactory, mode)
+			if err != nil {
+				return nil, err
+			}
 			modifiers = append(modifiers, modeModifier)
 		case "nvidia-hook-remover":
-			modifiers = append(modifiers, modifier.NewNvidiaContainerRuntimeHookRemover(logger))
+			modifiers = append(modifiers, modifierFactory.NewNvidiaContainerRuntimeHookRemover())
 		case "graphics":
-			graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, *image, driver, hookCreator)
+			graphicsModifier, err := modifierFactory.NewGraphicsModifier()
 			if err != nil {
 				return nil, err
 			}
 			modifiers = append(modifiers, graphicsModifier)
 		case "feature-gated":
-			featureGatedModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, *image, driver, hookCreator)
+			featureGatedModifier, err := modifierFactory.NewFeatureGatedModifier()
 			if err != nil {
 				return nil, err
 			}
@@ -105,17 +111,17 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 	return modifiers, nil
 }
 
-func newModeModifier(logger logger.Interface, mode info.RuntimeMode, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
+func newModeModifier(modifierFactory *modifier.Factory, mode info.RuntimeMode) (oci.SpecModifier, error) {
 	switch mode {
 	case info.LegacyRuntimeMode:
-		return modifier.NewStableRuntimeModifier(logger, cfg.NVIDIAContainerRuntimeHookConfig.Path), nil
+		return modifierFactory.NewStableRuntimeModifier(), nil
 	case info.CSVRuntimeMode:
-		return modifier.NewCSVModifier(logger, cfg, image)
+		return modifierFactory.NewCSVModifier()
 	case info.CDIRuntimeMode, info.JitCDIRuntimeMode:
-		return modifier.NewCDIModifier(logger, cfg, image, mode == info.JitCDIRuntimeMode)
+		return modifierFactory.NewCDIModifier(mode == info.JitCDIRuntimeMode)
 	}
 
-	return nil, fmt.Errorf("invalid runtime mode: %v", cfg.NVIDIAContainerRuntimeConfig.Mode)
+	return nil, fmt.Errorf("invalid runtime mode: %v", mode)
 }
 
 // initRuntimeModeAndImage constructs an image from the specified OCI runtime
