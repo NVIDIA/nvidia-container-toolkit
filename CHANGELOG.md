@@ -1,5 +1,24 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.19.0-rc.3
+- fix: Set device node GID in CDI specs
+- fix: Log actual CDI spec version
+- Make internal/system packages public
+- Move config to api
+- Make internal lookup package exportable
+- fix: Allow config options to be set to default values
+- test: Add failing test for setting debug log
+- test: Adjust e2e test for Docker 29.2.0
+
+### Changes in the Toolkit Container
+
+- build(deps): Bump nvidia/distroless/go to v4.0.1-dev in /deployments/container
+- Replace repackaging using fpm with rpmrebuild
+
+### Changes in libnvidia-container
+
+- Add libnvidia-tileiras.so to the list of compute libs
+
 ## v1.19.0-rc.2
 
 - fix: Ensure that iGPU device nodes includes /dev/nvidia2
