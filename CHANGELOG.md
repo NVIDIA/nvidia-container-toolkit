@@ -1,5 +1,7 @@
 # NVIDIA Container Toolkit Changelog
 
+- Remove restart logic from nvidia-cdi-refresh.service.
+
 ## v1.18.2
 - Allow nvidia-cdi-refresh.service to be restarted
 - Remove ro mount option from IPC sockets

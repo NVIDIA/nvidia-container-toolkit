@@ -17,9 +17,7 @@ Description=Refresh NVIDIA CDI specification file
 ConditionPathExists=|/usr/bin/nvidia-smi
 ConditionPathExists=|/usr/sbin/nvidia-smi
 ConditionPathExists=/usr/bin/nvidia-ctk
-# Limit the number of successive restarts to 5 in 10 seconds.
-StartLimitBurst=5
-StartLimitIntervalSec=10s
+After=multi-user.target
 
 [Service]
 Type=oneshot
@@ -29,10 +27,6 @@ EnvironmentFile=-/etc/nvidia-container-toolkit/nvidia-cdi-refresh.env
 ExecCondition=/usr/bin/grep -qE '/(nvidia|nvidia-current)\\.ko' /lib/modules/%v/modules.dep
 ExecStart=/usr/bin/nvidia-ctk cdi generate
 CapabilityBoundingSet=CAP_SYS_MODULE CAP_SYS_ADMIN CAP_MKNOD
-# We set the service to restart on failure to ensure that a CDI spec is
-# eventually generated.
-Restart=on-failure
-RestartSec=1s
 
 [Install]
 WantedBy=multi-user.target
