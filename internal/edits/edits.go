@@ -40,7 +40,8 @@ type Factory interface {
 type empty string
 
 type factory struct {
-	logger logger.Interface
+	logger                         logger.Interface
+	noAdditionalGIDsForDeviceNodes bool
 }
 
 var _ Factory = (*empty)(nil)
@@ -85,7 +86,7 @@ func (f *factory) FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, erro
 
 	c := EmptyFactory.New()
 	for _, d := range devices {
-		edits, err := device(d).toEdits()
+		edits, err := f.device(d).toEdits()
 		if err != nil {
 			return nil, fmt.Errorf("failed to created container edits for device: %v", err)
 		}
@@ -107,6 +108,13 @@ func (f *factory) FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, erro
 	return c, nil
 }
 
+func (f *factory) device(d discover.Device) *device {
+	return &device{
+		Device:           d,
+		noAdditionalGIDs: f.noAdditionalGIDsForDeviceNodes,
+	}
+}
+
 // New creates a set of empty CDI container edits for an empty factory.
 func (e empty) New() *cdi.ContainerEdits {
 	c := cdi.ContainerEdits{
@@ -123,5 +131,11 @@ func (e empty) FromDiscoverer(_ discover.Discover) (*cdi.ContainerEdits, error) 
 func WithLogger(logger logger.Interface) Option {
 	return func(f *factory) {
 		f.logger = logger
+	}
+}
+
+func WithNoAdditionalGIDsForDeviceNodes(noAdditionalGIDsForDeviceNodes bool) Option {
+	return func(f *factory) {
+		f.noAdditionalGIDsForDeviceNodes = noAdditionalGIDsForDeviceNodes
 	}
 }

@@ -27,7 +27,10 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
 
-type device discover.Device
+type device struct {
+	discover.Device
+	noAdditionalGIDs bool
+}
 
 // toEdits converts a discovered device to CDI Container Edits.
 func (d device) toEdits() (*cdi.ContainerEdits, error) {
@@ -116,6 +119,9 @@ func ptrIfNonZero[T uint32 | os.FileMode](id T) *T {
 // getAdditionalGIDs returns the group id of the device if the device is not world read/writable.
 // If the information cannot be extracted or an error occurs, 0 is returned.
 func (d *device) getAdditionalGIDs(dn *specs.DeviceNode) []uint32 {
+	if d.noAdditionalGIDs {
+		return nil
+	}
 	// Handle the underdefined cases where we do not have enough information to
 	// extract the GID for the device OR whether the additional GID is required.
 	if dn == nil || dn.GID == nil || *dn.GID == 0 {

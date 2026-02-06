@@ -18,6 +18,7 @@ package modifier
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"tags.cncf.io/container-device-interface/pkg/parser"
@@ -174,8 +175,12 @@ func filterAutomaticDevices(devices []string) []string {
 func (f *Factory) newAutomaticCDISpecModifier(devices []string) (oci.SpecModifier, error) {
 	f.logger.Debugf("Generating in-memory CDI specs for devices %v", devices)
 
-	cdiModeIdentifiers := cdiModeIdentfiersFromDevices(devices...)
+	nvcdiFeatureFlags := slices.Clone(f.cfg.NVIDIAContainerRuntimeConfig.Modes.JitCDI.NVCDIFeatureFlags)
+	if f.cfg.Features.NoAdditionalGIDsForDeviceNodes.IsEnabled() {
+		nvcdiFeatureFlags = append(nvcdiFeatureFlags, nvcdi.FeatureNoAdditionalGIDsForDeviceNodes)
+	}
 
+	cdiModeIdentifiers := cdiModeIdentfiersFromDevices(devices...)
 	f.logger.Debugf("Per-mode identifiers: %v", cdiModeIdentifiers)
 	var modifiers oci.SpecModifiers
 	for _, mode := range cdiModeIdentifiers.modes {
@@ -186,7 +191,7 @@ func (f *Factory) newAutomaticCDISpecModifier(devices []string) (oci.SpecModifie
 			nvcdi.WithVendor(automaticDeviceVendor),
 			nvcdi.WithClass(cdiModeIdentifiers.deviceClassByMode[mode]),
 			nvcdi.WithMode(mode),
-			nvcdi.WithFeatureFlags(f.cfg.NVIDIAContainerRuntimeConfig.Modes.JitCDI.NVCDIFeatureFlags...),
+			nvcdi.WithFeatureFlags(nvcdiFeatureFlags...),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct CDI library for mode %q: %w", mode, err)

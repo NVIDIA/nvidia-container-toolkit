@@ -96,12 +96,47 @@ func TestDeviceToSpec(t *testing.T) {
 				GID:         ptrIfNonZero[uint32](44),
 			},
 		},
+		{
+			description: "device with additional GIDs",
+			device: discover.Device{
+				Path: "/foo",
+			},
+			deviceslib: &devices.InterfaceMock{
+				DeviceFromPathFunc: func(path, permissions string) (*devices.Device, error) {
+					if path != "/foo" {
+						return nil, fmt.Errorf("not found %v", path)
+					}
+					cd := &config.Device{
+						Rule: config.Rule{
+							Major:       100,
+							Minor:       200,
+							Permissions: config.Permissions("w"),
+						},
+						FileMode: 0660 | os.ModeCharDevice,
+						Uid:      11,
+						Gid:      44,
+					}
+
+					return (*devices.Device)(cd), nil
+				},
+			},
+			expected: &specs.DeviceNode{
+				Path:        "/foo",
+				HostPath:    "",
+				Permissions: "w",
+				Major:       100,
+				Minor:       200,
+				FileMode:    to.Ptr(0660 | os.ModeCharDevice),
+				GID:         ptrIfNonZero[uint32](44),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
+		f := factory{}
 		t.Run(tc.description, func(t *testing.T) {
 			defer devices.SetInterfaceForTests(tc.deviceslib)()
-			spec, err := device(tc.device).toSpec()
+			spec, err := f.device(tc.device).toSpec()
 			require.NoError(t, err)
 			require.EqualValues(t, tc.expected, spec)
 		})
@@ -115,6 +150,10 @@ func TestGetAdditionalGIDs(t *testing.T) {
 		deviceNode             *specs.DeviceNode
 		expectedAdditionalGIDs []uint32
 	}{
+		{
+			description: "feature disabled",
+			device:      &device{noAdditionalGIDs: true},
+		},
 		{
 			description: "device node has no GID",
 			device:      &device{},
