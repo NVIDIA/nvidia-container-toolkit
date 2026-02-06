@@ -19,6 +19,7 @@ package nvcdi
 import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
+	"github.com/NVIDIA/go-nvlib/pkg/nvpci"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
@@ -40,6 +41,13 @@ func WithDeviceLib(devicelib device.Interface) Option {
 func WithInfoLib(infolib info.Interface) Option {
 	return func(l *nvcdilib) {
 		l.infolib = infolib
+	}
+}
+
+// WithPCILib sets the PCI library to be used for CDI spec generation.
+func WithPCILib(pcilib nvpci.Interface) Option {
+	return func(l *nvcdilib) {
+		l.nvpcilib = pcilib
 	}
 }
 
