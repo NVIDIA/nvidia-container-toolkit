@@ -26,6 +26,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -62,7 +63,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAddHookModifier(t *testing.T) {
-	logger, logHook := testlog.NewNullLogger()
+	logger, _ := testlog.NewNullLogger()
 
 	testHookPath := filepath.Join(cfg.binPath, "nvidia-container-runtime-hook")
 
@@ -150,14 +151,15 @@ func TestAddHookModifier(t *testing.T) {
 		},
 	}
 
+	cfg := &config.Config{}
+	cfg.NVIDIAContainerRuntimeHookConfig.Path = testHookPath
+	factory := NewFactory(
+		WithLogger(logger),
+		WithConfig(cfg),
+	)
 	for _, tc := range testCases {
-		tc := tc
-
-		logHook.Reset()
-
 		t.Run(tc.description, func(t *testing.T) {
-
-			m := NewStableRuntimeModifier(logger, testHookPath)
+			m := factory.NewStableRuntimeModifier()
 
 			err := m.Modify(&tc.spec)
 			if tc.expectedError != nil {

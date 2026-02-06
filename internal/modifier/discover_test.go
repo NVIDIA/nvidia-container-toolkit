@@ -130,9 +130,12 @@ func TestDiscoverModifier(t *testing.T) {
 		},
 	}
 
+	factory := NewFactory(
+		WithLogger(logger),
+	)
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			m, err := NewModifierFromDiscoverer(logger, tc.discover)
+			m, err := factory.NewModifierFromDiscoverer(tc.discover)
 			require.NoError(t, err)
 
 			err = m.Modify(tc.spec)

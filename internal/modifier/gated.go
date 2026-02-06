@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
@@ -36,43 +35,44 @@ import (
 //	NVIDIA_GDRCOPY=enabled
 //
 // If not devices are selected, no changes are made.
-func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, driver *root.Driver, hookCreator discover.HookCreator) (oci.SpecModifier, error) {
-	if devices := image.VisibleDevices(); len(devices) == 0 {
-		logger.Infof("No modification required; no devices requested")
+func (f *Factory) NewFeatureGatedModifier() (oci.SpecModifier, error) {
+	if devices := f.image.VisibleDevices(); len(devices) == 0 {
+		f.logger.Infof("No modification required; no devices requested")
 		return nil, nil
 	}
 
 	var discoverers []discover.Discover
 
-	driverRoot := cfg.NVIDIAContainerCLIConfig.Root
-	devRoot := cfg.NVIDIAContainerCLIConfig.Root
+	// TODO: This should be f.driver.Root.
+	driverRoot := f.cfg.NVIDIAContainerCLIConfig.Root
+	devRoot := f.cfg.NVIDIAContainerCLIConfig.Root
 
-	if image.Getenv("NVIDIA_GDS") == "enabled" {
-		d, err := discover.NewGDSDiscoverer(logger, driverRoot, devRoot)
+	if f.image.Getenv("NVIDIA_GDS") == "enabled" {
+		d, err := discover.NewGDSDiscoverer(f.logger, driverRoot, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDS devices: %w", err)
 		}
 		discoverers = append(discoverers, d)
 	}
 
-	if image.Getenv("NVIDIA_MOFED") == "enabled" {
-		d, err := discover.NewMOFEDDiscoverer(logger, devRoot)
+	if f.image.Getenv("NVIDIA_MOFED") == "enabled" {
+		d, err := discover.NewMOFEDDiscoverer(f.logger, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for MOFED devices: %w", err)
 		}
 		discoverers = append(discoverers, d)
 	}
 
-	if image.Getenv("NVIDIA_NVSWITCH") == "enabled" {
-		d, err := discover.NewNvSwitchDiscoverer(logger, devRoot)
+	if f.image.Getenv("NVIDIA_NVSWITCH") == "enabled" {
+		d, err := discover.NewNvSwitchDiscoverer(f.logger, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for NVSWITCH devices: %w", err)
 		}
 		discoverers = append(discoverers, d)
 	}
 
-	if image.Getenv("NVIDIA_GDRCOPY") == "enabled" {
-		d, err := discover.NewGDRCopyDiscoverer(logger, devRoot)
+	if f.image.Getenv("NVIDIA_GDRCOPY") == "enabled" {
+		d, err := discover.NewGDRCopyDiscoverer(f.logger, devRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDRCopy devices: %w", err)
 		}
@@ -80,15 +80,15 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 	}
 
 	// If the feature flag has explicitly been toggled, we don't make any modification.
-	if !cfg.Features.DisableCUDACompatLibHook.IsEnabled() {
-		cudaCompatDiscoverer, err := getCudaCompatModeDiscoverer(logger, cfg, driver, hookCreator)
+	if !f.cfg.Features.DisableCUDACompatLibHook.IsEnabled() {
+		cudaCompatDiscoverer, err := getCudaCompatModeDiscoverer(f.logger, f.cfg, f.driver, f.hookCreator)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct CUDA Compat discoverer: %w", err)
 		}
 		discoverers = append(discoverers, cudaCompatDiscoverer)
 	}
 
-	return NewModifierFromDiscoverer(logger, discover.Merge(discoverers...))
+	return f.NewModifierFromDiscoverer(discover.Merge(discoverers...))
 }
 
 func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, driver *root.Driver, hookCreator discover.HookCreator) (discover.Discover, error) {
