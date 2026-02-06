@@ -68,7 +68,9 @@ type nvcdilib struct {
 
 // New creates a new nvcdi library
 func New(opts ...Option) (Interface, error) {
-	l := &nvcdilib{}
+	l := &nvcdilib{
+		featureFlags: make(map[FeatureFlag]bool),
+	}
 	for _, opt := range opts {
 		opt(l)
 	}
@@ -81,6 +83,7 @@ func New(opts ...Option) (Interface, error) {
 	if l.editsFactory == nil {
 		l.editsFactory = edits.NewFactory(
 			edits.WithLogger(l.logger),
+			edits.WithNoAdditionalGIDsForDeviceNodes(l.featureFlags[FeatureNoAdditionalGIDsForDeviceNodes]),
 		)
 	}
 	if len(l.deviceNamers) == 0 {

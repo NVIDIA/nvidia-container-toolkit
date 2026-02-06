@@ -177,6 +177,11 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 
 	cdiModeIdentifiers := cdiModeIdentfiersFromDevices(devices...)
 
+	nvcdiFeatureFlags := cfg.NVIDIAContainerRuntimeConfig.Modes.JitCDI.NVCDIFeatureFlags
+	if cfg.Features.NoAdditionalGIDsForDeviceNodes.IsEnabled() {
+		nvcdiFeatureFlags = append(nvcdiFeatureFlags, nvcdi.FeatureDisableMultipleCSVDevices)
+	}
+
 	logger.Debugf("Per-mode identifiers: %v", cdiModeIdentifiers)
 	var modifiers oci.SpecModifiers
 	for _, mode := range cdiModeIdentifiers.modes {
@@ -187,7 +192,7 @@ func newAutomaticCDISpecModifier(logger logger.Interface, cfg *config.Config, de
 			nvcdi.WithVendor(automaticDeviceVendor),
 			nvcdi.WithClass(cdiModeIdentifiers.deviceClassByMode[mode]),
 			nvcdi.WithMode(mode),
-			nvcdi.WithFeatureFlags(cfg.NVIDIAContainerRuntimeConfig.Modes.JitCDI.NVCDIFeatureFlags...),
+			nvcdi.WithFeatureFlags(nvcdiFeatureFlags...),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct CDI library for mode %q: %w", mode, err)

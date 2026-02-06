@@ -92,4 +92,8 @@ const (
 	// FeatureDisableMultipleCSVDevices disables the handling of multiple devices
 	// in CSV mode.
 	FeatureDisableMultipleCSVDevices = FeatureFlag("disable-multiple-csv-devices")
+
+	// NoAdditionalGIDsForDeviceNodes disables the injection of additional GIDs
+	// for a device node when the node is not readable by the user.
+	FeatureNoAdditionalGIDsForDeviceNodes = FeatureFlag("no-additional-gids-for-device-nodes")
 )
