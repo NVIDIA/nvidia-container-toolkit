@@ -20,8 +20,8 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/symlinks"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup/symlinks"
 )
 
 // New creates a new tegra discoverer using the supplied functional options.

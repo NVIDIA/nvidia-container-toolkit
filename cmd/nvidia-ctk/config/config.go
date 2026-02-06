@@ -26,9 +26,9 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 	createdefault "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/create-default"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk/config/flags"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/config"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
