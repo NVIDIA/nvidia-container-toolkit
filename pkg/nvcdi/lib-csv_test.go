@@ -34,6 +34,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test/to"
 )
@@ -187,6 +188,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 		driverRoot := filepath.Join(lookupRoot, tc.rootfsFolder)
 
 		tc.lib.logger = logger
+		tc.lib.editsFactory = edits.NewFactory(edits.WithLogger(logger))
 		tc.lib.deviceNamers = []DeviceNamer{deviceNameIndex{}}
 		tc.lib.hookCreator = discover.NewHookCreator()
 

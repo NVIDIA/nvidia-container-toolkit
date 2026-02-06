@@ -26,7 +26,6 @@ import (
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 )
 
 type imexlib nvcdilib
@@ -44,7 +43,7 @@ const (
 
 // GetCommonEdits returns an empty set of edits for IMEX devices.
 func (l *imexlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	return edits.FromDiscoverer(discover.None{})
+	return l.editsFactory.FromDiscoverer(discover.None{})
 }
 
 // DeviceSpecGenerators returns the CDI device spec generators for the specified

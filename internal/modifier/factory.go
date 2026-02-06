@@ -25,6 +25,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
@@ -38,6 +39,8 @@ type Factory struct {
 	hookCreator discover.HookCreator
 	image       *image.CUDA
 	runtimeMode info.RuntimeMode
+
+	editsFactory edits.Factory
 }
 
 // A Factory also implements the oci.SpecModifier interface.
@@ -59,6 +62,11 @@ func createFactory(opts ...Option) *Factory {
 	for _, opt := range opts {
 		opt(f)
 	}
+
+	if f.editsFactory == nil {
+		f.editsFactory = edits.NewFactory(edits.WithLogger(f.logger))
+	}
+
 	return f
 }
 

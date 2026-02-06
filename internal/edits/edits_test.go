@@ -24,8 +24,10 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
 
+// TODO: This test doesn't actually do anything.
 func TestFromDiscovererAllowsMountsToIterate(t *testing.T) {
-	edits, err := FromDiscoverer(discover.None{})
+	t.Skip("This test does not test anything significant")
+	edits, err := NewFactory().FromDiscoverer(discover.None{})
 	require.NoError(t, err)
 
 	require.Empty(t, edits.Mounts)

@@ -24,6 +24,7 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
@@ -61,6 +62,8 @@ type nvcdilib struct {
 	disabledHooks []discover.HookName
 	enabledHooks  []discover.HookName
 	hookCreator   discover.HookCreator
+
+	editsFactory edits.Factory
 }
 
 // New creates a new nvcdi library
@@ -74,6 +77,11 @@ func New(opts ...Option) (Interface, error) {
 	}
 	if l.logger == nil {
 		l.logger = logger.New()
+	}
+	if l.editsFactory == nil {
+		l.editsFactory = edits.NewFactory(
+			edits.WithLogger(l.logger),
+		)
 	}
 	if len(l.deviceNamers) == 0 {
 		indexNamer, _ := NewDeviceNamer(DeviceNameStrategyIndex)

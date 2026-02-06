@@ -26,7 +26,6 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/dgpu"
 )
 
@@ -146,7 +145,7 @@ func (l *fullGPUDeviceSpecGenerator) getDeviceEdits() (*cdi.ContainerEdits, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
 	}
-	editsForDevice, err := edits.FromDiscoverer(deviceDiscoverer)
+	editsForDevice, err := l.editsFactory.FromDiscoverer(deviceDiscoverer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for device: %v", err)
 	}
