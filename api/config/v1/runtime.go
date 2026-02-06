@@ -53,6 +53,9 @@ type jitCDIModeConfig struct {
 
 type csvModeConfig struct {
 	MountSpecPath string `toml:"mount-spec-path"`
+	// CompatContainerRoot specifies the compat root used when the the standard
+	// CUDA compat libraries should not be used.
+	CompatContainerRoot string `toml:"compat-container-root,omitempty"`
 }
 
 type legacyModeConfig struct {

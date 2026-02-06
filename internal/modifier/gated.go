@@ -107,7 +107,7 @@ func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, dr
 		return nil, fmt.Errorf("failed to get driver version: %w", err)
 	}
 
-	compatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(logger, hookCreator, version, "")
+	compatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(logger, hookCreator, &discover.EnableCUDACompatHookOptions{HostDriverVersion: version})
 	// For non-legacy modes we return the hook as is. These modes *should* already include the update-ldcache hook.
 	if cfg.NVIDIAContainerRuntimeConfig.Mode != "legacy" {
 		return compatLibHookDiscoverer, nil

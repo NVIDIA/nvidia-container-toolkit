@@ -46,6 +46,7 @@ type command struct {
 type options struct {
 	cudaCompatContainerRoot string
 	hostDriverVersion       string
+	hostCudaVersion         string
 	// containerSpec allows the path to the container spec to be specified for
 	// testing.
 	containerSpec string
@@ -80,6 +81,11 @@ func (m command) build() *cli.Command {
 				Destination: &options.hostDriverVersion,
 			},
 			&cli.StringFlag{
+				Name:        "host-cuda-version",
+				Usage:       "Specify the CUDA version supported by the host driver.",
+				Destination: &options.hostCudaVersion,
+			},
+			&cli.StringFlag{
 				Name:        "cuda-compat-container-root",
 				Usage:       "Specify the folder in which CUDA compat libraries are located in the container",
 				Value:       defaultCudaCompatPath,
@@ -103,7 +109,9 @@ func (m command) validateFlags(_ *cli.Command, _ *options) error {
 }
 
 func (m command) run(_ *cli.Command, o *options) error {
-	if o.hostDriverVersion == "" {
+	// If neither the host driver version nor the host cuda version is specified
+	// the hook is a no-op.
+	if o.hostDriverVersion == "" && o.hostCudaVersion == "" {
 		return nil
 	}
 
@@ -129,8 +137,8 @@ func (m command) run(_ *cli.Command, o *options) error {
 }
 
 func (m command) getContainerForwardCompatDir(containerRoot containerRoot, o *options) (string, error) {
-	if o.hostDriverVersion == "" {
-		m.logger.Debugf("Host driver version not specified")
+	if o.hostDriverVersion == "" && o.hostCudaVersion == "" {
+		m.logger.Debugf("Neither a host driver version nor a host CUDA version was specified")
 		return "", nil
 	}
 	if !containerRoot.hasPath(o.cudaCompatContainerRoot) {
@@ -156,7 +164,7 @@ func (m command) getContainerForwardCompatDir(containerRoot containerRoot, o *op
 
 	libCudaCompatPath := libs[0]
 
-	useCompatLibs, err := m.useCompatLibraries(libCudaCompatPath, o.hostDriverVersion)
+	useCompatLibs, err := m.useCompatLibraries(libCudaCompatPath, o.hostDriverVersion, o.hostCudaVersion)
 	if err != nil {
 		return "", err
 	}
@@ -168,16 +176,24 @@ func (m command) getContainerForwardCompatDir(containerRoot containerRoot, o *op
 	return resolvedCompatDir, nil
 }
 
-func (m command) useCompatLibraries(libcudaCompatPath string, hostDriverVersion string) (bool, error) {
+func (m command) useCompatLibraries(libcudaCompatPath string, hostDriverVersion string, hostCUDAVersion string) (bool, error) {
 	driverMajor, err := extractMajorVersion(hostDriverVersion)
 	if err != nil {
 		return false, fmt.Errorf("failed to extract major version from %q: %v", hostDriverVersion, err)
 	}
 
-	// First check the elf header.
+	// First check the ELF header. If this is present, we use the ELF header to
+	// determine whether the CUDA compat libraries in the container should be
+	// used.
 	cudaCompatHeader, _ := GetCUDACompatElfHeader(libcudaCompatPath)
 	if cudaCompatHeader != nil {
-		return cudaCompatHeader.UseCompat(driverMajor), nil
+		return cudaCompatHeader.UseCompat(driverMajor, hostCUDAVersion), nil
+	}
+
+	// If no CUDA Compat ELF header is available, and NO host driver version
+	// was specified, we don't use the CUDA compat libraries in the container.
+	if hostDriverVersion == "" {
+		return false, nil
 	}
 
 	compatDriverVersion := strings.TrimPrefix(filepath.Base(libcudaCompatPath), "libcuda.so.")
@@ -241,6 +257,9 @@ func (m command) createLdsoconfdFile(in containerRoot, pattern string, dirs ...s
 
 // extractMajorVersion parses a version string and returns the major version as an int.
 func extractMajorVersion(version string) (int, error) {
+	if version == "" {
+		return 0, nil
+	}
 	majorString := strings.SplitN(version, ".", 2)[0]
 	return strconv.Atoi(majorString)
 }
