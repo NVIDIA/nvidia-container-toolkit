@@ -20,16 +20,20 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/opencontainers/cgroups/devices/config"
 	"github.com/stretchr/testify/require"
 	"tags.cncf.io/container-device-interface/specs-go"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
 
 func TestDeviceToSpec(t *testing.T) {
 	testCases := []struct {
-		device   discover.Device
-		expected *specs.DeviceNode
+		description string
+		device      discover.Device
+		deviceslib  devices.Interface
+		expected    *specs.DeviceNode
 	}{
 		{
 			device: discover.Device{
@@ -58,10 +62,43 @@ func TestDeviceToSpec(t *testing.T) {
 				HostPath: "/not/foo",
 			},
 		},
+		{
+			description: "device with device properties",
+			device: discover.Device{
+				Path: "/foo",
+			},
+			deviceslib: &devices.InterfaceMock{
+				DeviceFromPathFunc: func(path, permissions string) (*devices.Device, error) {
+					if path != "/foo" {
+						return nil, fmt.Errorf("not found %v", path)
+					}
+					cd := &config.Device{
+						Rule: config.Rule{
+							Major:       100,
+							Minor:       200,
+							Permissions: config.Permissions("w"),
+						},
+						Uid: 11,
+						Gid: 44,
+					}
+
+					return (*devices.Device)(cd), nil
+				},
+			},
+			expected: &specs.DeviceNode{
+				Path:        "/foo",
+				HostPath:    "",
+				Permissions: "w",
+				Major:       100,
+				Minor:       200,
+				GID:         ptrIfNonZero[uint32](44),
+			},
+		},
 	}
 
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			defer devices.SetInterfaceForTests(tc.deviceslib)()
 			spec, err := device(tc.device).toSpec()
 			require.NoError(t, err)
 			require.EqualValues(t, tc.expected, spec)

@@ -24,6 +24,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -169,7 +170,7 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 }
 
 func TestDrmDevicesByPath(t *testing.T) {
-	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
+	defer devices.SetAllForTest()()
 	moduleRoot, err := test.GetModuleRoot()
 	require.NoError(t, err)
 	devRoot := filepath.Join(moduleRoot, "testdata", "lookup", "rootfs-drm")

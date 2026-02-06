@@ -17,8 +17,7 @@
 package lookup
 
 import (
-	"fmt"
-	"os"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 )
 
 const (
@@ -28,11 +27,7 @@ const (
 // NewCharDeviceLocator creates a Locator that can be used to find char devices at the specified root. A logger is
 // also specified.
 func NewCharDeviceLocator(opts ...Option) Locator {
-	filter := assertCharDevice
-	// TODO: We should have a better way to inject this logic than this envvar.
-	if os.Getenv("__NVCT_TESTING_DEVICES_ARE_FILES") == "true" {
-		filter = assertFile
-	}
+	filter := devices.AssertCharDevice
 
 	opts = append(opts,
 		WithSearchPaths("", devRoot),
@@ -41,16 +36,4 @@ func NewCharDeviceLocator(opts ...Option) Locator {
 	return NewFileLocator(
 		opts...,
 	)
-}
-
-// assertCharDevice checks whether the specified path is a char device and returns an error if this is not the case.
-func assertCharDevice(filename string) error {
-	info, err := os.Lstat(filename)
-	if err != nil {
-		return fmt.Errorf("error getting info: %v", err)
-	}
-	if info.Mode()&os.ModeCharDevice == 0 {
-		return fmt.Errorf("%v is not a char device", filename)
-	}
-	return nil
 }

@@ -26,11 +26,13 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
 func TestApp(t *testing.T) {
-	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
+	defer devices.SetAllForTest()()
+
 	logger, _ := testlog.NewNullLogger()
 
 	moduleRoot, err := test.GetModuleRoot()

@@ -29,11 +29,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"tags.cncf.io/container-device-interface/specs-go"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
 func TestGenerateSpec(t *testing.T) {
-	t.Setenv("__NVCT_TESTING_DEVICES_ARE_FILES", "true")
+	defer devices.SetAllForTest()()
+
 	moduleRoot, err := test.GetModuleRoot()
 	require.NoError(t, err)
 
