@@ -65,8 +65,7 @@ func TestDeviceToSpec(t *testing.T) {
 		{
 			description: "device with device properties",
 			device: discover.Device{
-				Path:     "/foo",
-				HostPath: "/foo",
+				Path: "/foo",
 			},
 			deviceslib: &devices.InterfaceMock{
 				DeviceFromPathFunc: func(path, permissions string) (*devices.Device, error) {

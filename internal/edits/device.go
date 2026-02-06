@@ -64,7 +64,11 @@ func (d device) toSpec() (*specs.DeviceNode, error) {
 // If this fails a minimal device is returned so that this information can be
 // queried by the container runtime such as containerd.
 func (d device) fromPathOrDefault() *specs.DeviceNode {
-	dn, err := devices.DeviceFromPath(d.HostPath, "rwm")
+	path := d.HostPath
+	if path == "" {
+		path = d.Path
+	}
+	dn, err := devices.DeviceFromPath(path, "rwm")
 	if err != nil {
 		return &specs.DeviceNode{
 			HostPath: d.HostPath,
