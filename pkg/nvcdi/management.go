@@ -38,8 +38,8 @@ func (l *managementlib) DeviceSpecGenerators(...string) (DeviceSpecGenerator, er
 }
 
 // GetDeviceSpecs returns the CDI device specs for a single all device.
-func (m *managementlib) GetDeviceSpecs() ([]specs.Device, error) {
-	devices, err := m.newManagementDeviceDiscoverer()
+func (l *managementlib) GetDeviceSpecs() ([]specs.Device, error) {
+	devices, err := l.newManagementDeviceDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
 	}
@@ -61,21 +61,21 @@ func (m *managementlib) GetDeviceSpecs() ([]specs.Device, error) {
 }
 
 // GetCommonEdits returns the common edits for use in managementlib containers.
-func (m *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	if m.nvsandboxutilslib != nil {
-		if r := m.nvsandboxutilslib.Init(m.driverRoot); r != nvsandboxutils.SUCCESS {
-			m.logger.Warningf("Failed to init nvsandboxutils: %v; ignoring", r)
-			m.nvsandboxutilslib = nil
+func (l *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
+	if l.nvsandboxutilslib != nil {
+		if r := l.nvsandboxutilslib.Init(l.driverRoot); r != nvsandboxutils.SUCCESS {
+			l.logger.Warningf("Failed to init nvsandboxutils: %v; ignoring", r)
+			l.nvsandboxutilslib = nil
 		}
 		defer func() {
-			if m.nvsandboxutilslib == nil {
+			if l.nvsandboxutilslib == nil {
 				return
 			}
-			_ = m.nvsandboxutilslib.Shutdown()
+			_ = l.nvsandboxutilslib.Shutdown()
 		}()
 	}
 
-	driver, err := (*nvcdilib)(m).newDriverVersionDiscoverer()
+	driver, err := (*nvcdilib)(l).newDriverVersionDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create driver library discoverer: %v", err)
 	}
@@ -94,10 +94,10 @@ type managementDiscoverer struct {
 
 // newManagementDeviceDiscoverer returns a discover.Discover that discovers device nodes for use in managementlib containers.
 // NVML is not used to query devices and all device nodes are returned.
-func (m *managementlib) newManagementDeviceDiscoverer() (discover.Discover, error) {
+func (l *managementlib) newManagementDeviceDiscoverer() (discover.Discover, error) {
 	deviceNodes := discover.NewCharDeviceDiscoverer(
-		m.logger,
-		m.devRoot,
+		l.logger,
+		l.devRoot,
 		[]string{
 			"/dev/nvidia*",
 			"/dev/nvidia-caps/nvidia-cap*",
@@ -110,9 +110,9 @@ func (m *managementlib) newManagementDeviceDiscoverer() (discover.Discover, erro
 	)
 
 	deviceFolderPermissionHooks := newDeviceFolderPermissionHookDiscoverer(
-		m.logger,
-		m.devRoot,
-		m.hookCreator,
+		l.logger,
+		l.devRoot,
+		l.hookCreator,
 		deviceNodes,
 	)
 
