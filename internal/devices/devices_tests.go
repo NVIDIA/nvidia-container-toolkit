@@ -18,14 +18,35 @@
 package devices
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/opencontainers/cgroups/devices/config"
 )
 
+//go:generate moq -rm -fmt=goimports -out devices_mock.go . Interface
+type Interface interface {
+	DeviceFromPath(string, string) (*Device, error)
+	AssertCharDevice(string) error
+}
+
+type testDefaults struct{}
+
+var _ Interface = (*testDefaults)(nil)
+
 func SetAllForTest() func() {
+	d := &testDefaults{}
+	return SetInterfaceForTests(d)
+}
+
+func SetInterfaceForTests(m Interface) func() {
+	if m == nil {
+		return SetAllForTest()
+	}
 	funcs := []func(){
-		SetDeviceFromPathForTest(nil),
-		SetAssertCharDeviceForTest(nil),
+		SetDeviceFromPathForTest(m.DeviceFromPath),
+		SetAssertCharDeviceForTest(m.AssertCharDevice),
 	}
 	return func() {
 		for _, f := range funcs {
@@ -36,11 +57,7 @@ func SetAllForTest() func() {
 
 func SetDeviceFromPathForTest(testFunc func(string, string) (*Device, error)) func() {
 	current := deviceFromPathStub
-	if testFunc != nil {
-		deviceFromPathStub = testFunc
-	} else {
-		deviceFromPathStub = deviceFromPathTestDefault
-	}
+	deviceFromPathStub = testFunc
 	return func() {
 		deviceFromPathStub = current
 	}
@@ -48,21 +65,45 @@ func SetDeviceFromPathForTest(testFunc func(string, string) (*Device, error)) fu
 
 func SetAssertCharDeviceForTest(testFunc func(string) error) func() {
 	current := assertCharDeviceStub
-	if testFunc != nil {
-		assertCharDeviceStub = testFunc
-	} else {
-		assertCharDeviceStub = assertCharDeviceTestDefault
-	}
+	assertCharDeviceStub = testFunc
 	return func() {
 		assertCharDeviceStub = current
 	}
 }
 
-func deviceFromPathTestDefault(path string, permissions string) (*Device, error) {
-	return nil, fmt.Errorf("not implemented")
+type testDevice struct {
+	Device
 }
 
-func assertCharDeviceTestDefault(path string) error {
+func (t *testDevice) load() error {
+	deviceFile, err := os.Open(t.Path)
+	if err != nil {
+		return err
+	}
+	defer deviceFile.Close()
+
+	decoder := json.NewDecoder(deviceFile)
+	return decoder.Decode(&t)
+}
+
+func (t *testDefaults) DeviceFromPath(path string, permissions string) (*Device, error) {
+	device := testDevice{
+		Device: Device{
+			Path: path,
+			Rule: config.Rule{
+				Permissions: config.Permissions(permissions),
+			},
+		},
+	}
+
+	if err := device.load(); err != nil {
+		return nil, err
+	}
+
+	return &device.Device, nil
+}
+
+func (t *testDefaults) AssertCharDevice(path string) error {
 	info, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("error getting info for %v: %v", path, err)

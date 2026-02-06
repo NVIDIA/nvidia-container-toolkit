@@ -17,6 +17,8 @@
 package edits
 
 import (
+	"os"
+
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
@@ -91,14 +93,15 @@ func (d device) fromPathOrDefault() *specs.DeviceNode {
 		Path:        d.Path,
 		Major:       dn.Major,
 		Minor:       dn.Minor,
-		FileMode:    &dn.FileMode,
+		FileMode:    ptrIfNonZero(dn.FileMode),
 		Permissions: string(dn.Permissions),
 		GID:         ptrIfNonZero(dn.Gid),
 	}
 }
 
-func ptrIfNonZero(id uint32) *uint32 {
-	if id == 0 {
+func ptrIfNonZero[T uint32 | os.FileMode](id T) *T {
+	var zero T
+	if id == zero {
 		return nil
 	}
 	return &id
