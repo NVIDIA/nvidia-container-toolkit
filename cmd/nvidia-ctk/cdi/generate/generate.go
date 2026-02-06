@@ -316,10 +316,12 @@ func (m command) run(opts *options) error {
 
 	var errs error
 	for _, spec := range specs {
-		m.logger.Infof("Generated CDI spec with version %v", spec.Raw().Version)
-
 		errs = errors.Join(errs, spec.Save(opts.output))
+		// We query the raw spec version after calling spec.Save since this may
+		// update the spec version to the minimum required version.
+		m.logger.Infof("Generated CDI spec with version %v", spec.Raw().Version)
 	}
+
 	return errs
 }
 
