@@ -46,6 +46,8 @@ const (
 	ModeImex = Mode("imex")
 	// ModeNvswitch configures the CDI spec generator to generate a spec for the available nvswitch devices.
 	ModeNvswitch = Mode("nvswitch")
+	// ModeVfio configures the CDI spec generator to generate a VFIO spec.
+	ModeVfio = Mode("vfio")
 )
 
 type modeConstraint interface {
@@ -72,6 +74,7 @@ func getModes() modes {
 			ModeMofed,
 			ModeNvml,
 			ModeNvswitch,
+			ModeVfio,
 			ModeWsl,
 		}
 		lookup := make(map[Mode]bool)
