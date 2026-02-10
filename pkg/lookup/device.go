@@ -38,9 +38,7 @@ func NewCharDeviceLocator(opts ...Option) Locator {
 		WithSearchPaths("", devRoot),
 		WithFilter(filter),
 	)
-	return NewFileLocator(
-		opts...,
-	)
+	return newBuilder(opts...).build()
 }
 
 // assertCharDevice checks whether the specified path is a char device and returns an error if this is not the case.

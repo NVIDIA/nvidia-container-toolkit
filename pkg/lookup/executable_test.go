@@ -69,9 +69,14 @@ func TestExecutableLocator(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			e := newExecutableLocator(logger, tc.root, tc.paths...)
+			required, ok := newExecutableLocator(logger, tc.root, tc.paths...).Locator.(*requiredLocator)
+			require.True(t, ok)
 
-			require.EqualValues(t, tc.expectedPrefixes, e.prefixes)
+			f, ok := required.wraps.(*file)
+			require.True(t, ok)
+
+			require.True(t, ok)
+			require.EqualValues(t, tc.expectedPrefixes, f.prefixes)
 		})
 	}
 }

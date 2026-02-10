@@ -18,19 +18,17 @@ package lookup
 
 import "fmt"
 
-// A null locator always returns an empty response.
-type null struct {
+const (
+	notFound = notFoundLocator("")
+)
+
+// A notFoundLocator always returns an ErrNotFound error.
+type notFoundLocator string
+
+func (l notFoundLocator) Locate(s string) ([]string, error) {
+	return nil, l.NewError(s)
 }
 
-// Locate always returns empty for a null locator.
-func (l *null) Locate(string) ([]string, error) {
-	return nil, nil
-}
-
-// A notFound locator always returns an ErrNotFound error.
-type notFound struct {
-}
-
-func (l *notFound) Locate(s string) ([]string, error) {
-	return nil, fmt.Errorf("%s: %w", s, ErrNotFound)
+func (l notFoundLocator) NewError(s string) error {
+	return fmt.Errorf("%s: %w", s, ErrNotFound)
 }
