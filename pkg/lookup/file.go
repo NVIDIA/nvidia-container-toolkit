@@ -27,6 +27,8 @@ import (
 // file can be used to locate file (or file-like elements) at a specified set of
 // prefixes. The validity of a file is determined by a filter function.
 type file struct {
+	// logger logger.Interface
+	// filter func(string) error
 	builder
 	prefixes []string
 }
@@ -38,7 +40,6 @@ type builder struct {
 	searchPaths []string
 	filter      func(string) error
 	count       int
-	isOptional  bool
 }
 
 // Option defines a function for passing builder to the NewFileLocator() call
@@ -80,14 +81,6 @@ func WithCount(count int) Option {
 	}
 }
 
-// WithOptional sets the optional flag for the file locator
-// If the optional flag is set, the locator will not return an error if the file is not found.
-func WithOptional(optional bool) Option {
-	return func(f *builder) {
-		f.isOptional = optional
-	}
-}
-
 func newBuilder(opts ...Option) *builder {
 	o := &builder{}
 	for _, opt := range opts {
@@ -102,22 +95,18 @@ func newBuilder(opts ...Option) *builder {
 	return o
 }
 
-func (o builder) build() *file {
+func (o builder) build() Locator {
 	f := file{
 		builder: o,
 		// Since the `Locate` implementations rely on the root already being specified we update
 		// the prefixes to include the root.
 		prefixes: getSearchPrefixes(o.root, o.searchPaths...),
 	}
-	return &f
+	return asRequired(&f)
 }
 
 // NewFileLocator creates a Locator that can be used to find files with the specified builder.
 func NewFileLocator(opts ...Option) Locator {
-	return newFileLocator(opts...)
-}
-
-func newFileLocator(opts ...Option) *file {
 	return newBuilder(opts...).build()
 }
 
@@ -184,9 +173,6 @@ visit:
 		}
 	}
 
-	if !p.isOptional && len(filenames) == 0 {
-		return nil, fmt.Errorf("pattern %v %w", pattern, ErrNotFound)
-	}
 	return filenames, nil
 }
 

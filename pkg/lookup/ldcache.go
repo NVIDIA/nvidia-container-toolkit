@@ -44,10 +44,7 @@ func NewLdcacheLocator(opts ...Option) Locator {
 	cache, err := ldcache.New(b.logger, b.root)
 	if err != nil {
 		b.logger.Warningf("Failed to load ldcache: %v", err)
-		if b.isOptional {
-			return &null{}
-		}
-		return &notFound{}
+		return notFound
 	}
 
 	var libraries []string
@@ -62,10 +59,9 @@ func NewLdcacheLocator(opts ...Option) Locator {
 	}
 
 	l := &ldcacheLocator{
-		logger:     b.logger,
-		root:       b.root,
-		isOptional: b.isOptional,
-		libraries:  libraries,
+		logger:    b.logger,
+		root:      b.root,
+		libraries: libraries,
 	}
 
 	return AsUnique(WithEvaluatedSymlinks(l))
@@ -87,7 +83,7 @@ func (l *ldcacheLocator) Locate(pattern string) ([]string, error) {
 		matches = append(matches, library)
 	}
 
-	if len(matches) == 0 && !l.isOptional {
+	if len(matches) == 0 {
 		return nil, fmt.Errorf("%s: %w", pattern, ErrNotFound)
 	}
 
