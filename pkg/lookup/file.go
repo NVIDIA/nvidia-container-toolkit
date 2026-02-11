@@ -20,20 +20,34 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
 
 // file can be used to locate file (or file-like elements) at a specified set of
 // prefixes. The validity of a file is determined by a filter function.
 type file struct {
-	// logger logger.Interface
-	// filter func(string) error
-	builder
+	logger   logger.Interface
+	count    int
+	filter   func(string) error
 	prefixes []string
 }
 
 // NewFileLocator creates a Locator that can be used to find files with the specified builder.
 func NewFileLocator(opts ...Option) Locator {
-	return newBuilder(opts...).build()
+	return NewFactory(opts...).NewFileLocator()
+}
+
+func (o Factory) NewFileLocator() Locator {
+	f := file{
+		logger: o.logger,
+		filter: o.filter,
+		count:  o.count,
+		// Since the `Locate` implementations rely on the root already being specified we update
+		// the prefixes to include the root.
+		prefixes: getSearchPrefixes(o.root, o.searchPaths...),
+	}
+	return asRequired(&f)
 }
 
 // getSearchPrefixes generates a list of unique paths to be searched by a file locator.

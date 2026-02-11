@@ -27,9 +27,8 @@ import (
 )
 
 type ldcacheLocator struct {
-	logger     logger.Interface
-	root       string
-	isOptional bool
+	logger logger.Interface
+	root   string
 
 	libraries []string
 }
@@ -39,11 +38,13 @@ var _ Locator = (*ldcacheLocator)(nil)
 // NewLdcacheLocator creates a locator that allows libraries to be found using
 // the ldcache.
 func NewLdcacheLocator(opts ...Option) Locator {
-	b := newBuilder(opts...)
+	return NewFactory(opts...).NewLdcacheLocator()
+}
 
-	cache, err := ldcache.New(b.logger, b.root)
+func (f *Factory) NewLdcacheLocator() Locator {
+	cache, err := ldcache.New(f.logger, f.root)
 	if err != nil {
-		b.logger.Warningf("Failed to load ldcache: %v", err)
+		f.logger.Warningf("Failed to load ldcache: %v", err)
 		return notFound
 	}
 
@@ -58,8 +59,8 @@ func NewLdcacheLocator(opts ...Option) Locator {
 	}
 
 	l := &ldcacheLocator{
-		logger:    b.logger,
-		root:      b.root,
+		logger:    f.logger,
+		root:      f.root,
 		libraries: libraries,
 	}
 
