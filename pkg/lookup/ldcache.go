@@ -27,9 +27,8 @@ import (
 )
 
 type ldcacheLocator struct {
-	logger     logger.Interface
-	root       string
-	isOptional bool
+	logger logger.Interface
+	root   string
 
 	libraries []string
 }
