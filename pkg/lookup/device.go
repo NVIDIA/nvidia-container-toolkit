@@ -33,5 +33,5 @@ func NewCharDeviceLocator(opts ...Option) Locator {
 		WithSearchPaths("/", "/dev"),
 		WithFilter(filter),
 	)
-	return newBuilder(opts...).build()
+	return NewFactory(opts...).NewFileLocator()
 }

@@ -36,10 +36,10 @@ type symlink struct {
 
 // NewSymlinkChainLocator creats a locator that can be used for locating files through symlinks.
 func NewSymlinkChainLocator(opts ...Option) Locator {
-	b := newBuilder(opts...)
+	f := NewFactory(opts...)
 	l := &symlinkChain{
-		logger:  b.logger,
-		locator: b.build(),
+		logger:  f.logger,
+		locator: f.NewFileLocator(),
 	}
 
 	return l
@@ -47,8 +47,8 @@ func NewSymlinkChainLocator(opts ...Option) Locator {
 
 // NewSymlinkLocator creats a locator that can be used for locating files through symlinks.
 func NewSymlinkLocator(opts ...Option) Locator {
-	f := newBuilder(opts...).build()
-	return AsUnique(WithEvaluatedSymlinks(f))
+	f := NewFactory(opts...)
+	return AsUnique(WithEvaluatedSymlinks(f.NewFileLocator()))
 }
 
 // WithEvaluatedSymlinks wraps a locator in one that ensures that returned

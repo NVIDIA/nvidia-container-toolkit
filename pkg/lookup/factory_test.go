@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewBuilder(t *testing.T) {
+func TestNewFactory(t *testing.T) {
 	testCases := []struct {
 		desciption          string
 		options             []Option
@@ -40,10 +40,10 @@ func TestNewBuilder(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desciption, func(t *testing.T) {
-			b := newBuilder(
+			f := NewFactory(
 				tc.options...,
 			)
-			require.EqualValues(t, tc.expectedSearchPaths, b.searchPaths)
+			require.EqualValues(t, tc.expectedSearchPaths, f.searchPaths)
 		})
 	}
 }

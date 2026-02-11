@@ -19,8 +19,8 @@ package lookup
 
 import "github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
-// builder defines the builder for a file locator.
-type builder struct {
+// Factory defines a builder for locators.
+type Factory struct {
 	logger      logger.Interface
 	root        string
 	searchPaths []string
@@ -28,11 +28,10 @@ type builder struct {
 	count       int
 }
 
-// Option defines a function for passing builder to the NewFileLocator() call
-type Option func(*builder)
+type Option func(*Factory)
 
-func newBuilder(opts ...Option) *builder {
-	o := &builder{}
+func NewFactory(opts ...Option) *Factory {
+	o := &Factory{}
 	for _, opt := range opts {
 		opt(o)
 	}
@@ -45,33 +44,23 @@ func newBuilder(opts ...Option) *builder {
 	return o
 }
 
-func (o builder) build() Locator {
-	f := file{
-		builder: o,
-		// Since the `Locate` implementations rely on the root already being specified we update
-		// the prefixes to include the root.
-		prefixes: getSearchPrefixes(o.root, o.searchPaths...),
-	}
-	return asRequired(&f)
-}
-
 // WithRoot sets the root for the file locator
 func WithRoot(root string) Option {
-	return func(f *builder) {
+	return func(f *Factory) {
 		f.root = root
 	}
 }
 
 // WithLogger sets the logger for the file locator
 func WithLogger(logger logger.Interface) Option {
-	return func(f *builder) {
+	return func(f *Factory) {
 		f.logger = logger
 	}
 }
 
 // WithSearchPaths sets the search paths for the file locator.
 func WithSearchPaths(paths ...string) Option {
-	return func(f *builder) {
+	return func(f *Factory) {
 		f.searchPaths = NormalizePaths(paths...)
 	}
 }
@@ -79,14 +68,14 @@ func WithSearchPaths(paths ...string) Option {
 // WithFilter sets the filter for the file locator
 // The filter is called for each candidate file and candidates that return nil are considered.
 func WithFilter(assert func(string) error) Option {
-	return func(f *builder) {
+	return func(f *Factory) {
 		f.filter = assert
 	}
 }
 
 // WithCount sets the maximum number of candidates to discover
 func WithCount(count int) Option {
-	return func(f *builder) {
+	return func(f *Factory) {
 		f.count = count
 	}
 }

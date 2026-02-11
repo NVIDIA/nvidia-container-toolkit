@@ -36,7 +36,7 @@ func NewExecutableLocator(logger logger.Interface, root string) Locator {
 }
 
 func newExecutableLocator(logger logger.Interface, root string, paths ...string) *executable {
-	b := newBuilder(
+	f := NewFactory(
 		WithLogger(logger),
 		WithRoot(root),
 		WithSearchPaths(paths...),
@@ -45,7 +45,7 @@ func newExecutableLocator(logger logger.Interface, root string, paths ...string)
 	)
 
 	e := &executable{
-		Locator: b.build(),
+		Locator: f.NewFileLocator(),
 	}
 	return e
 }

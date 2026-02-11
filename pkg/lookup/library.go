@@ -18,17 +18,16 @@ package lookup
 
 // NewLibraryLocator creates a library locator using the specified options.
 func NewLibraryLocator(opts ...Option) Locator {
-	b := newBuilder(opts...)
+	f := NewFactory(opts...)
 
 	// If search paths are already specified, we return a locator for the specified search paths.
-	if len(b.searchPaths) > 0 {
+	if len(f.searchPaths) > 0 {
 		return NewSymlinkLocator(
-			WithLogger(b.logger),
-			WithSearchPaths(b.searchPaths...),
+			WithLogger(f.logger),
+			WithSearchPaths(f.searchPaths...),
 			WithRoot("/"),
 		)
 	}
-
 	opts = append(opts,
 		WithSearchPaths([]string{
 			"/",
