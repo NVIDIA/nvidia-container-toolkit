@@ -19,39 +19,36 @@ package modifier
 import (
 	"fmt"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
 // NewGraphicsModifier constructs a modifier that injects graphics-related modifications into an OCI runtime specification.
 // The value of the NVIDIA_DRIVER_CAPABILITIES environment variable is checked to determine if this modification should be made.
-func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, container image.CUDA, driver *root.Driver, hookCreator discover.HookCreator) (oci.SpecModifier, error) {
-	devices, reason := requiresGraphicsModifier(container)
+func (f *Factory) NewGraphicsModifier() (oci.SpecModifier, error) {
+	devices, reason := requiresGraphicsModifier(*f.image)
 	if len(devices) == 0 {
-		logger.Infof("No graphics modifier required; %v", reason)
+		f.logger.Infof("No graphics modifier required; %v", reason)
 		return nil, nil
 	}
 
 	mounts, err := discover.NewGraphicsMountsDiscoverer(
-		logger,
-		driver,
-		hookCreator,
+		f.logger,
+		f.driver,
+		f.hookCreator,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mounts discoverer: %v", err)
 	}
 
 	// In standard usage, the devRoot is the same as the driver.Root.
-	devRoot := driver.Root
+	devRoot := f.driver.Root
 	drmNodes, err := discover.NewDRMNodesDiscoverer(
-		logger,
+		f.logger,
 		image.NewVisibleDevices(devices...),
 		devRoot,
-		hookCreator,
+		f.hookCreator,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct discoverer: %v", err)
@@ -61,7 +58,7 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, container 
 		drmNodes,
 		mounts,
 	)
-	return NewModifierFromDiscoverer(logger, d)
+	return f.NewModifierFromDiscoverer(d)
 }
 
 // requiresGraphicsModifier determines whether a graphics modifier is required.

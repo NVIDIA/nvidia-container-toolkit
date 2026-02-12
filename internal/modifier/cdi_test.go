@@ -205,7 +205,7 @@ func TestDeviceRequests(t *testing.T) {
 				tc.imageOptions...)...,
 		)
 		require.NoError(t, err)
-		tc.input.image = image
+		tc.input.image = &image
 
 		t.Run(tc.description, func(t *testing.T) {
 			devices := tc.input.DeviceRequests()

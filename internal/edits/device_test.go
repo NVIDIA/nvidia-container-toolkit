@@ -61,8 +61,9 @@ func TestDeviceToSpec(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
+		f := factory{}
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			spec, err := device(tc.device).toSpec()
+			spec, err := f.device(tc.device).toSpec()
 			require.NoError(t, err)
 			require.EqualValues(t, tc.expected, spec)
 		})

@@ -47,6 +47,9 @@ type features struct {
 	// possibly bypassing other checks by an orchestration system such as
 	// kubernetes.
 	IgnoreImexChannelRequests *feature `toml:"ignore-imex-channel-requests,omitempty"`
+	// NoAdditionalGIDsForDeviceNodes disables the injection of additional GIDs
+	// for a device node when the node is not readable by the user.
+	NoAdditionalGIDsForDeviceNodes *feature `toml:"no-additional-gids-for-device-nodes,omitempty"`
 }
 
 type feature bool
