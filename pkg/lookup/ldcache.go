@@ -35,13 +35,9 @@ type ldcacheLocator struct {
 
 var _ Locator = (*ldcacheLocator)(nil)
 
-// NewLdcacheLocator creates a locator that allows libraries to be found using
+// newLdcacheLocator creates a locator that allows libraries to be found using
 // the ldcache.
-func NewLdcacheLocator(opts ...Option) Locator {
-	return NewFactory(opts...).NewLdcacheLocator()
-}
-
-func (f *Factory) NewLdcacheLocator() Locator {
+func (f *Factory) newLdcacheLocator() Locator {
 	cache, err := ldcache.New(f.logger, f.root)
 	if err != nil {
 		f.logger.Warningf("Failed to load ldcache: %v", err)
