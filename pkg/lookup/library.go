@@ -48,7 +48,7 @@ func NewLibraryLocator(opts ...Option) Locator {
 
 	l := First(
 		symlinkLocator,
-		NewLdcacheLocator(opts...),
+		f.newLdcacheLocator(),
 	)
 	return l
 }
