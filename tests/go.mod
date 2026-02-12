@@ -9,7 +9,7 @@ require (
 	github.com/onsi/gomega v1.39.1
 	github.com/pelletier/go-toml v1.9.5
 	golang.org/x/crypto v0.48.0
-	golang.org/x/mod v0.32.0
+	golang.org/x/mod v0.33.0
 )
 
 require (
