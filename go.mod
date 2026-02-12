@@ -19,7 +19,7 @@ require (
 	github.com/urfave/cli-altsrc/v3 v3.1.0
 	github.com/urfave/cli/v3 v3.6.2
 	golang.org/x/mod v0.33.0
-	golang.org/x/sys v0.40.0
+	golang.org/x/sys v0.41.0
 	tags.cncf.io/container-device-interface v1.1.0
 	tags.cncf.io/container-device-interface/specs-go v1.1.0
 )
