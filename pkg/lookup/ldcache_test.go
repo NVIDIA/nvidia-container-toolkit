@@ -61,10 +61,10 @@ func TestLDCacheLookup(t *testing.T) {
 		for _, input := range tc.inputs {
 			t.Run(tc.rootFs+" "+input, func(t *testing.T) {
 				rootfs := filepath.Join(moduleRoot, "testdata", "lookup", tc.rootFs)
-				l := NewLdcacheLocator(
+				l := NewFactory(
 					WithLogger(logger),
 					WithRoot(rootfs),
-				)
+				).newLdcacheLocator()
 
 				candidates, err := l.Locate(input)
 				require.ErrorIs(t, err, tc.expectedError)
