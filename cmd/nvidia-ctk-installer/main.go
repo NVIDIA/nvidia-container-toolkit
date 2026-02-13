@@ -10,6 +10,7 @@ import (
 	"time"
 
 	nriapi "github.com/containerd/nri/pkg/api"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sys/unix"
 
@@ -17,7 +18,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container/runtime/nri"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/toolkit"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup"
 )
 
@@ -33,10 +33,11 @@ const (
 	defaultNRIPluginIdx uint = 10
 )
 
-var defaultLowLevelRuntimes = []string{"runc", "crun"}
-
-var waitingForSignal = make(chan bool, 1)
-var signalReceived = make(chan bool, 1)
+var (
+	defaultLowLevelRuntimes = []string{"runc", "crun"}
+	waitingForSignal        = make(chan bool, 1)
+	signalReceived          = make(chan bool, 1)
+)
 
 // options stores the command line arguments
 type options struct {
@@ -54,6 +55,8 @@ type options struct {
 
 	toolkitOptions toolkit.Options
 
+	debug bool
+
 	noRuntimeConfig bool
 	runtime         string
 	runtimeOptions  runtime.Options
@@ -64,7 +67,7 @@ func (o options) toolkitRoot() string {
 }
 
 func main() {
-	logger := logger.New()
+	logger := logrus.New()
 	c := NewApp(logger)
 
 	// Run the CLI
@@ -79,13 +82,13 @@ func main() {
 
 // An app represents the nvidia-ctk-installer.
 type app struct {
-	logger logger.Interface
+	logger *logrus.Logger
 
 	toolkit *toolkit.Installer
 }
 
 // NewApp creates the CLI app from the specified options.
-func NewApp(logger logger.Interface) *cli.Command {
+func NewApp(logger *logrus.Logger) *cli.Command {
 	a := app{
 		logger: logger,
 	}
@@ -197,6 +200,13 @@ func (a app) build() *cli.Command {
 				Destination: &options.pidFile,
 				Sources:     cli.EnvVars("TOOLKIT_PID_FILE", "PID_FILE"),
 			},
+			&cli.BoolFlag{
+				Name:        "debug",
+				Value:       false,
+				Usage:       "enable debug-level log in the toolkit installer",
+				Destination: &options.debug,
+				Sources:     cli.EnvVars("TOOLKIT_DEBUG"),
+			},
 		},
 	}
 
@@ -208,6 +218,9 @@ func (a app) build() *cli.Command {
 }
 
 func (a *app) Before(c *cli.Command, o *options) error {
+	if o.debug && a.logger != nil {
+		a.logger.SetLevel(logrus.DebugLevel)
+	}
 	if o.sourceRoot == "" {
 		sourceRoot, err := a.resolveSourceRoot(o.runtimeOptions.HostRootMount, o.packageType)
 		if err != nil {
