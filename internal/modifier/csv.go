@@ -59,6 +59,7 @@ func NewCSVModifier(logger logger.Interface, cfg *config.Config, container image
 		nvcdi.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path),
 		nvcdi.WithMode(nvcdi.ModeCSV),
 		nvcdi.WithCSVFiles(csvFiles),
+		nvcdi.WithCSVCompatContainerRoot(cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.CompatContainerRoot),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct CDI library: %v", err)
