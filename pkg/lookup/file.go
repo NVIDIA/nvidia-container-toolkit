@@ -27,98 +27,27 @@ import (
 // file can be used to locate file (or file-like elements) at a specified set of
 // prefixes. The validity of a file is determined by a filter function.
 type file struct {
-	builder
+	logger   logger.Interface
+	count    int
+	filter   func(string) error
 	prefixes []string
-}
-
-// builder defines the builder for a file locator.
-type builder struct {
-	logger      logger.Interface
-	root        string
-	searchPaths []string
-	filter      func(string) error
-	count       int
-	isOptional  bool
-}
-
-// Option defines a function for passing builder to the NewFileLocator() call
-type Option func(*builder)
-
-// WithRoot sets the root for the file locator
-func WithRoot(root string) Option {
-	return func(f *builder) {
-		f.root = root
-	}
-}
-
-// WithLogger sets the logger for the file locator
-func WithLogger(logger logger.Interface) Option {
-	return func(f *builder) {
-		f.logger = logger
-	}
-}
-
-// WithSearchPaths sets the search paths for the file locator.
-func WithSearchPaths(paths ...string) Option {
-	return func(f *builder) {
-		f.searchPaths = paths
-	}
-}
-
-// WithFilter sets the filter for the file locator
-// The filter is called for each candidate file and candidates that return nil are considered.
-func WithFilter(assert func(string) error) Option {
-	return func(f *builder) {
-		f.filter = assert
-	}
-}
-
-// WithCount sets the maximum number of candidates to discover
-func WithCount(count int) Option {
-	return func(f *builder) {
-		f.count = count
-	}
-}
-
-// WithOptional sets the optional flag for the file locator
-// If the optional flag is set, the locator will not return an error if the file is not found.
-func WithOptional(optional bool) Option {
-	return func(f *builder) {
-		f.isOptional = optional
-	}
-}
-
-func newBuilder(opts ...Option) *builder {
-	o := &builder{}
-	for _, opt := range opts {
-		opt(o)
-	}
-	if o.logger == nil {
-		o.logger = logger.New()
-	}
-	if o.filter == nil {
-		o.filter = assertFile
-	}
-	return o
-}
-
-func (o builder) build() *file {
-	f := file{
-		builder: o,
-		// Since the `Locate` implementations rely on the root already being specified we update
-		// the prefixes to include the root.
-		prefixes: getSearchPrefixes(o.root, o.searchPaths...),
-	}
-	return &f
 }
 
 // NewFileLocator creates a Locator that can be used to find files with the specified builder.
 func NewFileLocator(opts ...Option) Locator {
-	return newFileLocator(opts...)
+	return NewFactory(opts...).NewFileLocator()
 }
 
-func newFileLocator(opts ...Option) *file {
-	return newBuilder(opts...).build()
+func (o Factory) NewFileLocator() Locator {
+	f := file{
+		logger: o.logger,
+		filter: o.filter,
+		count:  o.count,
+		// Since the `Locate` implementations rely on the root already being specified we update
+		// the prefixes to include the root.
+		prefixes: getSearchPrefixes(o.root, o.searchPaths...),
+	}
+	return asRequired(&f)
 }
 
 // getSearchPrefixes generates a list of unique paths to be searched by a file locator.
@@ -184,9 +113,6 @@ visit:
 		}
 	}
 
-	if !p.isOptional && len(filenames) == 0 {
-		return nil, fmt.Errorf("pattern %v %w", pattern, ErrNotFound)
-	}
 	return filenames, nil
 }
 

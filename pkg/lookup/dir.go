@@ -23,12 +23,12 @@ import (
 
 // NewDirectoryLocator creates a Locator that can be used to find directories at the specified root.
 func NewDirectoryLocator(opts ...Option) Locator {
-	return NewFileLocator(
+	return NewFactory(
 		append(
 			opts,
 			WithFilter(assertDirectory),
 		)...,
-	)
+	).NewFileLocator()
 }
 
 // assertDirectory checks wither the specified path is a directory.

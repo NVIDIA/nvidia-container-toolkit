@@ -25,7 +25,7 @@ import (
 )
 
 type executable struct {
-	file
+	Locator
 }
 
 // NewExecutableLocator creates a locator to fine executable files in the path. A logger can also be specified.
@@ -36,7 +36,7 @@ func NewExecutableLocator(logger logger.Interface, root string) Locator {
 }
 
 func newExecutableLocator(logger logger.Interface, root string, paths ...string) *executable {
-	f := newFileLocator(
+	f := NewFactory(
 		WithLogger(logger),
 		WithRoot(root),
 		WithSearchPaths(paths...),
@@ -44,11 +44,10 @@ func newExecutableLocator(logger logger.Interface, root string, paths ...string)
 		WithCount(1),
 	)
 
-	l := executable{
-		file: *f,
+	e := &executable{
+		Locator: f.NewFileLocator(),
 	}
-
-	return &l
+	return e
 }
 
 var _ Locator = (*executable)(nil)
@@ -65,7 +64,7 @@ func (p executable) Locate(pattern string) ([]string, error) {
 		return []string{pattern}, nil
 	}
 
-	return p.file.Locate(pattern)
+	return p.Locator.Locate(pattern)
 }
 
 // assertExecutable checks whether the specified path is an execuable file.

@@ -17,18 +17,24 @@
 package lookup
 
 // NewLibraryLocator creates a library locator using the specified options.
+// If search paths (WithSearchPaths(path1, path2, ...)) are explicitly specified
+// a library locator using these as absolute paths are used. Otherwise the the
+// library is constructed using the following ordering, returning the first
+// successful result:
+//   - attempt to locate the library / pattern using dlopen
+//   - attempt to locate the library from a set of predefined search paths.
+//   - attempt to locate the library from the ldcache.
 func NewLibraryLocator(opts ...Option) Locator {
-	b := newBuilder(opts...)
+	f := NewFactory(opts...)
 
 	// If search paths are already specified, we return a locator for the specified search paths.
-	if len(b.searchPaths) > 0 {
+	if len(f.searchPaths) > 0 {
 		return NewSymlinkLocator(
-			WithLogger(b.logger),
-			WithSearchPaths(b.searchPaths...),
+			WithLogger(f.logger),
+			WithSearchPaths(f.searchPaths...),
 			WithRoot("/"),
 		)
 	}
-
 	opts = append(opts,
 		WithSearchPaths([]string{
 			"/",
@@ -44,12 +50,10 @@ func NewLibraryLocator(opts ...Option) Locator {
 			"/lib/aarch64-linux-gnu/nvidia/current",
 		}...),
 	)
-	// We construct a symlink locator for expected library locations.
-	symlinkLocator := NewSymlinkLocator(opts...)
-
 	l := First(
-		symlinkLocator,
-		NewLdcacheLocator(opts...),
+		f.NewDlopenLocator(),
+		NewSymlinkLocator(opts...),
+		f.newLdcacheLocator(),
 	)
 	return l
 }

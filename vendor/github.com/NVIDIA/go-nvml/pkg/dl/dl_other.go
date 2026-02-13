@@ -1,5 +1,8 @@
+//go:build !linux
+
 /**
-# Copyright 2024 NVIDIA CORPORATION
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,21 +17,17 @@
 # limitations under the License.
 **/
 
-package lookup
+package dl
 
-import "fmt"
-
-const (
-	notFound = notFoundLocator("")
+import (
+	"fmt"
 )
 
-// A notFoundLocator always returns an ErrNotFound error.
-type notFoundLocator string
-
-func (l notFoundLocator) Locate(s string) ([]string, error) {
-	return nil, l.NewError(s)
-}
-
-func (l notFoundLocator) NewError(s string) error {
-	return fmt.Errorf("%s: %w", s, ErrNotFound)
+// Path is NOT supported on non-Linux platforms.
+// For example, on freebsd (darwin) systems, dladdr should be used instead of
+// dlinfo which is used on linux.
+// See for example: https://github.com/Manu343726/siplasplas/issues/82
+// For now we return an error.
+func (dl *DynamicLibrary) Path() (string, error) {
+	return "", fmt.Errorf("not implemented")
 }
