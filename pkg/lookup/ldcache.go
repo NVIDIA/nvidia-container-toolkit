@@ -19,18 +19,25 @@ package lookup
 import (
 	"fmt"
 	"path/filepath"
-	"slices"
+	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup/symlinks"
 )
 
 type ldcacheLocator struct {
-	*builder
-	resolvesTo map[string]string
+	logger     logger.Interface
+	root       string
+	isOptional bool
+
+	libraries []string
 }
 
 var _ Locator = (*ldcacheLocator)(nil)
 
+// NewLdcacheLocator creates a locator that allows libraries to be found using
+// the ldcache.
 func NewLdcacheLocator(opts ...Option) Locator {
 	b := newBuilder(opts...)
 
@@ -43,76 +50,71 @@ func NewLdcacheLocator(opts ...Option) Locator {
 		return &notFound{}
 	}
 
-	chain := NewSymlinkChainLocator(WithOptional(true))
-
-	resolvesTo := make(map[string]string)
+	var libraries []string
 	_, libs64 := cache.List()
 	for _, library := range libs64 {
-		if _, processed := resolvesTo[library]; processed {
-			continue
-		}
-		candidates, err := chain.Locate(library)
+		chain, err := symlinks.ResolveChain(library)
 		if err != nil {
-			b.logger.Errorf("error processing library %s from ldcache: %v", library, err)
+			b.logger.Warningf("Failed to resolve symlink chain for library %q: %v", library, err)
 			continue
 		}
-
-		if len(candidates) == 0 {
-			resolvesTo[library] = library
-			continue
-		}
-
-		// candidates represents a symlink chain.
-		// The first element represents the start of the chain and the last
-		// element the final target.
-		target := candidates[len(candidates)-1]
-		for _, candidate := range candidates {
-			resolvesTo[candidate] = target
-		}
+		libraries = append(libraries, chain...)
 	}
 
-	return &ldcacheLocator{
-		builder:    b,
-		resolvesTo: resolvesTo,
+	l := &ldcacheLocator{
+		logger:     b.logger,
+		root:       b.root,
+		isOptional: b.isOptional,
+		libraries:  libraries,
 	}
+
+	return AsUnique(WithEvaluatedSymlinks(l))
 }
 
-// Locate finds the specified libraryname.
-// If the input is a library name, the ldcache is searched otherwise the
-// provided path is resolved as a symlink.
-func (l ldcacheLocator) Locate(libname string) ([]string, error) {
-	var matcher func(string, string) bool
-
-	if filepath.IsAbs(libname) {
-		matcher = func(p string, c string) bool {
-			m, _ := filepath.Match(filepath.Join(l.root, p), c)
-			return m
-		}
-	} else {
-		matcher = func(p string, c string) bool {
-			m, _ := filepath.Match(p, filepath.Base(c))
-			return m
-		}
-	}
+// Locate finds the specified pattern in the libraries in the ldcache.
+// If the pattern is a path (includes a slash), the locator root is prefixed to
+// the pattern and libraries in the ldcache that match this pattern are
+// returned. If the pattern is a filename, the pattern is compared to the
+// basename of the libraries in the ldcache instead.
+func (l *ldcacheLocator) Locate(pattern string) ([]string, error) {
+	matcher := l.newPathPatternMatcher(pattern)
 
 	var matches []string
-	seen := make(map[string]bool)
-	for name, target := range l.resolvesTo {
-		if !matcher(libname, name) {
+	for _, library := range l.libraries {
+		if !matcher.Match(library) {
 			continue
 		}
-		if seen[target] {
-			continue
-		}
-		seen[target] = true
-		matches = append(matches, target)
+		matches = append(matches, library)
 	}
 
-	slices.Sort(matches)
-
 	if len(matches) == 0 && !l.isOptional {
-		return nil, fmt.Errorf("%s: %w", libname, ErrNotFound)
+		return nil, fmt.Errorf("%s: %w", pattern, ErrNotFound)
 	}
 
 	return matches, nil
+}
+
+type fullMatcher string
+type basenameMatcher string
+type matcher interface {
+	Match(string) bool
+}
+
+func (l *ldcacheLocator) newPathPatternMatcher(pattern string) matcher {
+	if strings.Contains(pattern, "/") {
+		return fullMatcher(filepath.Join(l.root, pattern))
+	}
+	return basenameMatcher(pattern)
+}
+
+func (m fullMatcher) Match(input string) bool {
+	matches, err := filepath.Match(string(m), input)
+	if err != nil {
+		return false
+	}
+	return matches
+}
+
+func (m basenameMatcher) Match(input string) bool {
+	return (fullMatcher)(m).Match(filepath.Base(input))
 }
