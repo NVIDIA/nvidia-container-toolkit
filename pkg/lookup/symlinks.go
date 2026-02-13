@@ -29,7 +29,7 @@ type symlinkChain struct {
 }
 
 type symlink struct {
-	file
+	locator Locator
 }
 
 // NewSymlinkChainLocator creats a locator that can be used for locating files through symlinks.
@@ -45,10 +45,15 @@ func NewSymlinkChainLocator(opts ...Option) Locator {
 // NewSymlinkLocator creats a locator that can be used for locating files through symlinks.
 func NewSymlinkLocator(opts ...Option) Locator {
 	f := newFileLocator(opts...)
-	l := symlink{
-		file: *f,
-	}
+	return AsUnique(WithEvaluatedSymlinks(f))
+}
 
+// WithEvaluatedSymlinks wraps a locator in one that ensures that returned
+// symlinks are resolved.
+func WithEvaluatedSymlinks(locator Locator) Locator {
+	l := symlink{
+		locator: locator,
+	}
 	return &l
 }
 
@@ -91,22 +96,17 @@ func (p symlinkChain) Locate(pattern string) ([]string, error) {
 // Locate finds the specified pattern at the specified root.
 // If the file is a symlink, the link is resolved and the target returned.
 func (p symlink) Locate(pattern string) ([]string, error) {
-	candidates, err := p.file.Locate(pattern)
+	candidates, err := p.locator.Locate(pattern)
 	if err != nil {
 		return nil, err
 	}
 
 	var targets []string
-	seen := make(map[string]bool)
 	for _, candidate := range candidates {
 		target, err := filepath.EvalSymlinks(candidate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve link: %w", err)
 		}
-		if seen[target] {
-			continue
-		}
-		seen[target] = true
 		targets = append(targets, target)
 	}
 	return targets, err
