@@ -19,6 +19,7 @@ package symlinks
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // Resolve returns the link target of the specified filename or the filename if it is not a link.
@@ -32,6 +33,33 @@ func Resolve(filename string) (string, error) {
 	}
 
 	return os.Readlink(filename)
+}
+
+// ResolveChain returns the resolved symlink chain starting with the specified
+// link.
+// The symlink chain for a regular file consists of only the regular file.
+func ResolveChain(filename string) ([]string, error) {
+	seen := make(map[string]bool)
+	var chain []string
+
+	for {
+		target, err := Resolve(filename)
+		if err != nil {
+			return nil, err
+		}
+		if seen[filename] {
+			return chain, nil
+		}
+		seen[filename] = true
+		chain = append(chain, filename)
+		if !filepath.IsAbs(target) {
+			target, err = filepath.Abs(filepath.Join(filepath.Dir(filename), target))
+			if err != nil {
+				return nil, fmt.Errorf("failed to construct absolute path: %v", err)
+			}
+		}
+		filename = target
+	}
 }
 
 // ForceCreate creates a specified symlink.

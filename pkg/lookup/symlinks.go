@@ -19,6 +19,7 @@ package lookup
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup/symlinks"
 )
@@ -28,7 +29,7 @@ type symlinkChain struct {
 }
 
 type symlink struct {
-	file
+	locator Locator
 }
 
 // NewSymlinkChainLocator creats a locator that can be used for locating files through symlinks.
@@ -44,10 +45,15 @@ func NewSymlinkChainLocator(opts ...Option) Locator {
 // NewSymlinkLocator creats a locator that can be used for locating files through symlinks.
 func NewSymlinkLocator(opts ...Option) Locator {
 	f := newFileLocator(opts...)
-	l := symlink{
-		file: *f,
-	}
+	return AsUnique(WithEvaluatedSymlinks(f))
+}
 
+// WithEvaluatedSymlinks wraps a locator in one that ensures that returned
+// symlinks are resolved.
+func WithEvaluatedSymlinks(locator Locator) Locator {
+	l := symlink{
+		locator: locator,
+	}
 	return &l
 }
 
@@ -64,30 +70,24 @@ func (p symlinkChain) Locate(pattern string) ([]string, error) {
 
 	var filenames []string
 	found := make(map[string]bool)
-	for len(candidates) > 0 {
-		candidate := candidates[0]
-		candidates = candidates[:len(candidates)-1]
+
+	for _, candidate := range candidates {
 		if found[candidate] {
 			continue
 		}
-		found[candidate] = true
-		filenames = append(filenames, candidate)
-
-		target, err := symlinks.Resolve(candidate)
+		targets, err := symlinks.ResolveChain(candidate)
 		if err != nil {
-			return nil, fmt.Errorf("error resolving symlink: %v", err)
+			return nil, fmt.Errorf("error resolving symlink chain: %w", err)
 		}
-
-		if !filepath.IsAbs(target) {
-			target, err = filepath.Abs(filepath.Join(filepath.Dir(candidate), target))
-			if err != nil {
-				return nil, fmt.Errorf("failed to construct absolute path: %v", err)
+		if len(targets) > 0 {
+			p.logger.Debugf("Resolved link: %v", strings.Join(targets, " => "))
+		}
+		for _, target := range targets {
+			if found[target] {
+				continue
 			}
-		}
-
-		p.logger.Debugf("Resolved link: '%v' => '%v'", candidate, target)
-		if !found[target] {
-			candidates = append(candidates, target)
+			found[target] = true
+			filenames = append(filenames, target)
 		}
 	}
 	return filenames, nil
@@ -96,22 +96,17 @@ func (p symlinkChain) Locate(pattern string) ([]string, error) {
 // Locate finds the specified pattern at the specified root.
 // If the file is a symlink, the link is resolved and the target returned.
 func (p symlink) Locate(pattern string) ([]string, error) {
-	candidates, err := p.file.Locate(pattern)
+	candidates, err := p.locator.Locate(pattern)
 	if err != nil {
 		return nil, err
 	}
 
 	var targets []string
-	seen := make(map[string]bool)
 	for _, candidate := range candidates {
 		target, err := filepath.EvalSymlinks(candidate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve link: %w", err)
 		}
-		if seen[target] {
-			continue
-		}
-		seen[target] = true
 		targets = append(targets, target)
 	}
 	return targets, err

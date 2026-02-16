@@ -16,9 +16,15 @@
 
 package lookup
 
-import "errors"
+import (
+	"errors"
+)
 
 type first []Locator
+
+type unique struct {
+	locator Locator
+}
 
 // First returns a locator that returns the first non-empty match
 func First(locators ...Locator) Locator {
@@ -50,4 +56,30 @@ func (f first) Locate(pattern string) ([]string, error) {
 	}
 
 	return nil, errors.Join(allErrors...)
+}
+
+func AsUnique(locator Locator) Locator {
+	return &unique{
+		locator: locator,
+	}
+}
+
+// Locate returns the unique candidates from the wrapped Locator.
+func (l *unique) Locate(pattern string) ([]string, error) {
+	candidates, err := l.locator.Locate(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	var uniqueCandidates []string
+	seen := make(map[string]bool)
+	for _, candidate := range candidates {
+		if seen[candidate] {
+			continue
+		}
+		seen[candidate] = true
+		uniqueCandidates = append(uniqueCandidates, candidate)
+	}
+
+	return uniqueCandidates, nil
 }
