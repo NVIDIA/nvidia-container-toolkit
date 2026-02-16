@@ -61,7 +61,7 @@ func WithLogger(logger logger.Interface) Option {
 // WithSearchPaths sets the search paths for the file locator.
 func WithSearchPaths(paths ...string) Option {
 	return func(f *builder) {
-		f.searchPaths = paths
+		f.searchPaths = NormalizePaths(paths...)
 	}
 }
 

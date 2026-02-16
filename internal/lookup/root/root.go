@@ -202,7 +202,7 @@ func (r *Driver) Libraries() lookup.Locator {
 	return lookup.NewLibraryLocator(
 		lookup.WithLogger(r.logger),
 		lookup.WithRoot(r.Root),
-		lookup.WithSearchPaths(normalizeSearchPaths(r.librarySearchPaths...)...),
+		lookup.WithSearchPaths(r.librarySearchPaths...),
 	)
 }
 
@@ -218,7 +218,7 @@ func (r *Driver) configSearchOptions() []lookup.Option {
 		return []lookup.Option{
 			lookup.WithLogger(r.logger),
 			lookup.WithRoot("/"),
-			lookup.WithSearchPaths(normalizeSearchPaths(r.configSearchPaths...)...),
+			lookup.WithSearchPaths(r.configSearchPaths...),
 		}
 	}
 	searchPaths := []string{"/etc"}
@@ -230,24 +230,11 @@ func (r *Driver) configSearchOptions() []lookup.Option {
 	}
 }
 
-// normalizeSearchPaths takes a list of paths and normalized these.
-// Each of the elements in the list is expanded if it is a path list and the
-// resultant list is returned.
-// This allows, for example, for the contents of `PATH` or `LD_LIBRARY_PATH` to
-// be passed as a search path directly.
-func normalizeSearchPaths(paths ...string) []string {
-	var normalized []string
-	for _, path := range paths {
-		normalized = append(normalized, filepath.SplitList(path)...)
-	}
-	return normalized
-}
-
 // xdgDataDirs finds the paths as specified in the environment variable XDG_DATA_DIRS.
 // See https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html.
 func xdgDataDirs() []string {
 	if dirs, exists := os.LookupEnv("XDG_DATA_DIRS"); exists && dirs != "" {
-		return normalizeSearchPaths(dirs)
+		return lookup.NormalizePaths(dirs)
 	}
 
 	return []string{"/usr/local/share", "/usr/share"}
