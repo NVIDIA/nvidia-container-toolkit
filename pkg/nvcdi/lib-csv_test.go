@@ -35,6 +35,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test/to"
 )
@@ -227,6 +228,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 
 		tc.lib.driverRoot = driverRoot
 		tc.lib.devRoot = driverRoot
+		tc.lib.driver = root.New(root.WithDriverRoot(driverRoot), root.WithDevRoot(driverRoot))
 		tc.lib.csv.Files = []string{
 			filepath.Join(driverRoot, "/etc/nvidia-container-runtime/host-files-for-container.d/devices.csv"),
 			filepath.Join(driverRoot, "/etc/nvidia-container-runtime/host-files-for-container.d/drivers.csv"),

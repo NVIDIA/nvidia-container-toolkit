@@ -43,12 +43,8 @@ func (f *Factory) newFeatureGatedModifier() (oci.SpecModifier, error) {
 
 	var discoverers []discover.Discover
 
-	// TODO: This should be f.driver.Root.
-	driverRoot := f.cfg.NVIDIAContainerCLIConfig.Root
-	devRoot := f.cfg.NVIDIAContainerCLIConfig.Root
-
 	if f.image.Getenv("NVIDIA_GDS") == "enabled" {
-		d, err := discover.NewGDSDiscoverer(f.logger, driverRoot, devRoot)
+		d, err := discover.NewGDSDiscoverer(f.logger, f.driver)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDS devices: %w", err)
 		}
@@ -56,7 +52,7 @@ func (f *Factory) newFeatureGatedModifier() (oci.SpecModifier, error) {
 	}
 
 	if f.image.Getenv("NVIDIA_MOFED") == "enabled" {
-		d, err := discover.NewMOFEDDiscoverer(f.logger, devRoot)
+		d, err := discover.NewMOFEDDiscoverer(f.logger, f.driver)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for MOFED devices: %w", err)
 		}
@@ -64,7 +60,7 @@ func (f *Factory) newFeatureGatedModifier() (oci.SpecModifier, error) {
 	}
 
 	if f.image.Getenv("NVIDIA_NVSWITCH") == "enabled" {
-		d, err := discover.NewNvSwitchDiscoverer(f.logger, devRoot)
+		d, err := discover.NewNvSwitchDiscoverer(f.logger, f.driver)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for NVSWITCH devices: %w", err)
 		}
@@ -72,7 +68,7 @@ func (f *Factory) newFeatureGatedModifier() (oci.SpecModifier, error) {
 	}
 
 	if f.image.Getenv("NVIDIA_GDRCOPY") == "enabled" {
-		d, err := discover.NewGDRCopyDiscoverer(f.logger, devRoot)
+		d, err := discover.NewGDRCopyDiscoverer(f.logger, f.driver)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDRCopy devices: %w", err)
 		}

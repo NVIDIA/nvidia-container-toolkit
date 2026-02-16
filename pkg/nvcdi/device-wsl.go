@@ -28,7 +28,7 @@ const (
 func (l *wsllib) newDXGDeviceDiscoverer() discover.Discover {
 	deviceNodes := discover.NewCharDeviceDiscoverer(
 		l.logger,
-		l.devRoot,
+		l.driver.DevRoot,
 		[]string{dxgDeviceNode},
 	)
 

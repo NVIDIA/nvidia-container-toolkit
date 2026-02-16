@@ -26,6 +26,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -60,7 +61,8 @@ func TestNewGDRCopyDiscoverer(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			devRoot := filepath.Join(lookupRoot, tc.rootfs)
-			d, err := discover.NewGDRCopyDiscoverer(logger, devRoot)
+			driver := root.New(root.WithDevRoot(devRoot))
+			d, err := discover.NewGDRCopyDiscoverer(logger, driver)
 			require.NoError(t, err)
 
 			devices, err := d.Devices()

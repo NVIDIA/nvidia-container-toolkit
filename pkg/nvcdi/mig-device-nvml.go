@@ -124,7 +124,7 @@ func (l *migDeviceSpecGenerator) getDeviceEdits() (*cdi.ContainerEdits, error) {
 		return nil, err
 	}
 	deviceNodes, err := dgpu.NewForMigDevice(device, migDevice,
-		dgpu.WithDevRoot(l.devRoot),
+		dgpu.WithDevRoot(l.driver.DevRoot),
 		dgpu.WithLogger(l.logger),
 		dgpu.WithHookCreator(l.hookCreator),
 		dgpu.WithNvsandboxuitilsLib(l.nvsandboxutilslib),

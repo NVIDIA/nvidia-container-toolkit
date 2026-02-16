@@ -181,8 +181,8 @@ func (l *csvDeviceGenerator) GetDeviceSpecs() ([]specs.Device, error) {
 func (l *csvDeviceGenerator) deviceNodeDiscoverer() (discover.Discover, error) {
 	return tegra.New(
 		tegra.WithLogger(l.logger),
-		tegra.WithDriverRoot(l.driverRoot),
-		tegra.WithDevRoot(l.devRoot),
+		tegra.WithDriverRoot(l.driver.Root),
+		tegra.WithDevRoot(l.driver.DevRoot),
 		tegra.WithHookCreator(l.hookCreator),
 		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
 		tegra.WithMountSpecs(l.deviceNodeMountSpecs()),
@@ -415,8 +415,8 @@ func (l *csvlib) driverDiscoverer() (discover.Discover, error) {
 	)
 	driverDiscoverer, err := tegra.New(
 		tegra.WithLogger(l.logger),
-		tegra.WithDriverRoot(l.driverRoot),
-		tegra.WithDevRoot(l.devRoot),
+		tegra.WithDriverRoot(l.driver.Root),
+		tegra.WithDevRoot(l.driver.DevRoot),
 		tegra.WithHookCreator(l.hookCreator),
 		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
 		tegra.WithMountSpecs(mountSpecs),

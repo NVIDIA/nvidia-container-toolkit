@@ -49,7 +49,7 @@ func (l *nvmllib) newCommonNVMLDiscoverer() (discover.Discover, error) {
 func (l *nvmllib) controlDeviceNodeDiscoverer() discover.Discover {
 	return discover.NewCharDeviceDiscoverer(
 		l.logger,
-		l.devRoot,
+		l.driver.DevRoot,
 		[]string{
 			"/dev/nvidia-modeset",
 			"/dev/nvidia-uvm-tools",

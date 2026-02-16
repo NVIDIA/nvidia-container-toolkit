@@ -42,7 +42,7 @@ var _ discover.Discover = (*deviceFolderPermissions)(nil)
 func (l *nvcdilib) newDeviceFolderPermissionHookDiscoverer(devices discover.Discover) discover.Discover {
 	d := &deviceFolderPermissions{
 		logger:      l.logger,
-		devRoot:     l.devRoot,
+		devRoot:     l.driver.DevRoot,
 		hookCreator: l.hookCreator,
 		devices:     devices,
 	}

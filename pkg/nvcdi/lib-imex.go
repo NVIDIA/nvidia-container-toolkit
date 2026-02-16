@@ -60,7 +60,7 @@ func (l *imexlib) DeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, erro
 
 	var deviceSpecGenerators DeviceSpecGenerators
 	for _, id := range channelsIDs {
-		deviceSpecGenerators = append(deviceSpecGenerators, &imexChannel{id: id, devRoot: l.devRoot})
+		deviceSpecGenerators = append(deviceSpecGenerators, &imexChannel{id: id, devRoot: l.driver.DevRoot})
 	}
 
 	return deviceSpecGenerators, nil
@@ -86,7 +86,7 @@ func (l *imexlib) getChannelIDs(ids ...string) ([]string, error) {
 func (l *imexlib) getAllChannelIDs() ([]string, error) {
 	channelsDiscoverer := discover.NewCharDeviceDiscoverer(
 		l.logger,
-		l.devRoot,
+		l.driver.DevRoot,
 		[]string{"/dev/nvidia-caps-imex-channels/channel*"},
 	)
 
