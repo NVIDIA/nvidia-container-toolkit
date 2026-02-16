@@ -467,7 +467,7 @@ func (l *csvlib) cudaCompatDiscoverer() discover.Discover {
 		// TODO: Should this be overridable through a feature flag / config option?
 		if strings.Contains(name, "Orin (nvgpu)") {
 			// TODO: This should probably be a constant or configurable.
-			cudaCompatContainerRoot = "/usr/local/cuda/compat-orin"
+			cudaCompatContainerRoot = "/usr/local/cuda/compat_orin"
 			break
 		}
 	}
