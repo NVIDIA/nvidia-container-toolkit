@@ -69,7 +69,7 @@ func (l *wsllib) newWSLDriverDiscoverer() (discover.Discover, error) {
 			),
 			lookup.WithCount(1),
 		),
-		l.driverRoot,
+		l.driver.Root,
 		requiredDriverStoreFiles,
 	)
 

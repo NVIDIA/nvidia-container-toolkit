@@ -219,7 +219,7 @@ func (l *nvmllib) init() error {
 	if l.nvsandboxutilslib == nil {
 		return nil
 	}
-	if r := l.nvsandboxutilslib.Init(l.driverRoot); r != nvsandboxutils.SUCCESS {
+	if r := l.nvsandboxutilslib.Init(l.driver.Root); r != nvsandboxutils.SUCCESS {
 		l.logger.Warningf("Failed to init nvsandboxutils: %v; ignoring", r)
 		l.nvsandboxutilslib = nil
 	}
