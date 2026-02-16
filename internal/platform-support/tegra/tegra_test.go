@@ -26,6 +26,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
@@ -114,10 +115,10 @@ func TestTegraNew(t *testing.T) {
 			if devRoot != "" {
 				devRoot = filepath.Join(lookupRoot, tc.devRootfs)
 			}
+			driver := root.New(root.WithDriverRoot(driverRoot), root.WithDevRoot(devRoot))
 			d, err := tegra.New(
 				tegra.WithLogger(logger),
-				tegra.WithDriverRoot(driverRoot),
-				tegra.WithDevRoot(devRoot),
+				tegra.WithDriver(driver),
 				tegra.WithHookCreator(hookCreator),
 				tegra.WithMountSpecs(mountSpecs),
 			)
@@ -142,6 +143,36 @@ func TestTegraNew(t *testing.T) {
 			envVars, err := d.EnvVars()
 			require.NoError(t, err)
 			require.Empty(t, envVars)
+		})
+	}
+}
+
+func TestOptions(t *testing.T) {
+	testCases := []struct {
+		description         string
+		driver              *root.Driver
+		expectedErrorstring string
+	}{
+		{
+			description:         "nill driver returns an error",
+			expectedErrorstring: "a driver must be specified",
+		},
+		{
+			description: "valid driver",
+			driver:      root.New(),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			_, err := tegra.New(
+				tegra.WithDriver(tc.driver),
+			)
+			if tc.expectedErrorstring == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, tc.expectedErrorstring)
+			}
 		})
 	}
 }

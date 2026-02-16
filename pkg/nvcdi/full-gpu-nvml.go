@@ -160,7 +160,7 @@ func (l *fullGPUDeviceSpecGenerator) getNames() ([]string, error) {
 // newFullGPUDiscoverer creates a discoverer for the full GPU defined by the specified device.
 func (l *fullGPUDeviceSpecGenerator) newFullGPUDiscoverer(d device.Device) (discover.Discover, error) {
 	deviceNodes, err := dgpu.NewForDevice(d,
-		dgpu.WithDevRoot(l.driver.DevRoot),
+		dgpu.WithDriver(l.driver),
 		dgpu.WithLogger(l.logger),
 		dgpu.WithHookCreator(l.hookCreator),
 		dgpu.WithNvsandboxuitilsLib(l.nvsandboxutilslib),

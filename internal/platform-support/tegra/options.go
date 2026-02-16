@@ -20,13 +20,13 @@ package tegra
 import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup"
 )
 
 type options struct {
 	logger             logger.Interface
-	driverRoot         string
-	devRoot            string
+	driver             *root.Driver
 	hookCreator        discover.HookCreator
 	librarySearchPaths []string
 
@@ -50,17 +50,9 @@ func WithLogger(logger logger.Interface) Option {
 }
 
 // WithDriverRoot sets the driver root for the discoverer.
-func WithDriverRoot(driverRoot string) Option {
+func WithDriver(driver *root.Driver) Option {
 	return func(o *options) {
-		o.driverRoot = driverRoot
-	}
-}
-
-// WithDevRoot sets the /dev root.
-// If this is unset, the driver root is assumed.
-func WithDevRoot(devRoot string) Option {
-	return func(o *options) {
-		o.devRoot = devRoot
+		o.driver = driver
 	}
 }
 

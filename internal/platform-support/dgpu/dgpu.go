@@ -18,6 +18,7 @@ package dgpu
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 
@@ -29,7 +30,10 @@ import (
 // NewForDevice creates a discoverer for the specified Device.
 // nvsandboxutils is used for discovery if specified, otherwise NVML is used.
 func NewForDevice(d device.Device, opts ...Option) (discover.Discover, error) {
-	o := new(opts...)
+	o, err := new(opts...)
+	if err != nil {
+		return nil, err
+	}
 
 	var discoverers []discover.Discover
 	var errs error
@@ -63,7 +67,10 @@ func NewForDevice(d device.Device, opts ...Option) (discover.Discover, error) {
 // NewForMigDevice creates a discoverer for the specified device and its associated MIG device.
 // nvsandboxutils is used for discovery if specified, otherwise NVML is used.
 func NewForMigDevice(d device.Device, mig device.MigDevice, opts ...Option) (discover.Discover, error) {
-	o := new(opts...)
+	o, err := new(opts...)
+	if err != nil {
+		return nil, err
+	}
 	o.isMigDevice = true
 
 	var discoverers []discover.Discover
@@ -101,10 +108,13 @@ func NewForMigDevice(d device.Device, mig device.MigDevice, opts ...Option) (dis
 
 }
 
-func new(opts ...Option) *options {
+func new(opts ...Option) (*options, error) {
 	o := &options{}
 	for _, opt := range opts {
 		opt(o)
+	}
+	if o.driver == nil {
+		return nil, fmt.Errorf("a driver must be specified")
 	}
 
 	if o.logger == nil {
@@ -121,5 +131,5 @@ func new(opts ...Option) *options {
 		}
 	}
 
-	return o
+	return o, nil
 }

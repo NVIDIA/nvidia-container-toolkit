@@ -34,14 +34,14 @@ func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType)
 
 	devices := discover.NewCharDeviceDiscoverer(
 		o.logger,
-		o.devRoot,
+		o.driver.DevRoot,
 		targetsByType[csv.MountSpecDev],
 	)
 
 	directories := discover.NewMounts(
 		o.logger,
-		lookup.NewDirectoryLocator(lookup.WithLogger(o.logger), lookup.WithRoot(o.driverRoot)),
-		o.driverRoot,
+		lookup.NewDirectoryLocator(lookup.WithLogger(o.logger), lookup.WithRoot(o.driver.Root)),
+		o.driver.Root,
 		targetsByType[csv.MountSpecDir],
 	)
 
@@ -52,7 +52,7 @@ func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType)
 		discover.NewMounts(
 			o.logger,
 			o.symlinkLocator,
-			o.driverRoot,
+			o.driver.Root,
 			targetsByType[csv.MountSpecLib],
 		),
 		"",
@@ -63,7 +63,7 @@ func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType)
 	symlinks := discover.NewMounts(
 		o.logger,
 		o.symlinkLocator,
-		o.driverRoot,
+		o.driver.Root,
 		targetsByType[csv.MountSpecSym],
 	)
 	createSymlinks := o.createCSVSymlinkHooks(targetsByType[csv.MountSpecSym])

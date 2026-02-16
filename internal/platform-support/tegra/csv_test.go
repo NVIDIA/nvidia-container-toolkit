@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup"
 )
 
@@ -185,6 +186,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			o := options{
 				logger:              logger,
+				driver:              root.New(),
 				hookCreator:         hookCreator,
 				symlinkLocator:      tc.symlinkLocator,
 				symlinkChainLocator: tc.symlinkChainLocator,

@@ -30,6 +30,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/dgpu"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
@@ -74,6 +75,7 @@ func TestNewForDevice(t *testing.T) {
 			if devRoot != "" {
 				devRoot = filepath.Join(lookupRoot, tc.devRootfs)
 			}
+			driver := root.New(root.WithDriverRoot(driverRoot), root.WithDevRoot(devRoot))
 
 			devicelib := device.New(tc.nvmllib)
 			device, err := devicelib.NewDevice(tc.device)
@@ -81,7 +83,7 @@ func TestNewForDevice(t *testing.T) {
 
 			d, err := dgpu.NewForDevice(device,
 				dgpu.WithLogger(logger),
-				dgpu.WithDevRoot(devRoot),
+				dgpu.WithDriver(driver),
 			)
 			if tc.expectedErrorString == "" {
 				require.NoError(t, err)

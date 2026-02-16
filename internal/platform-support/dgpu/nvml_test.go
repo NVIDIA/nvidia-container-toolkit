@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
 )
 
@@ -69,7 +70,8 @@ func TestNewNvmlDGPUDiscoverer(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			o := &options{logger: logger}
+			o, err := new(WithLogger(logger), WithDriver(root.New()))
+			require.NoError(t, err)
 
 			device, err := devicelib.NewDevice(tc.device)
 			require.NoError(t, err)
@@ -156,6 +158,7 @@ func TestNewNvmlMIGDiscoverer(t *testing.T) {
 
 			d, err := NewForMigDevice(parent, mig,
 				WithLogger(logger),
+				WithDriver(root.New()),
 				WithMIGCaps(tc.migCaps),
 			)
 			require.ErrorIs(t, err, tc.expectedError)
