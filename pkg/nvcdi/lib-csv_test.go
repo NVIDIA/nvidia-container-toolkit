@@ -115,7 +115,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 						{
 							HookName: "createContainer",
 							Path:     "/usr/bin/nvidia-cdi-hook",
-							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-driver-version=540.3.0", "--cuda-compat-container-root=/usr/local/cuda/compat-orin"},
+							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-driver-version=540.3.0", "--cuda-compat-container-root=/usr/local/cuda/compat_orin"},
 							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
 						},
 						{
