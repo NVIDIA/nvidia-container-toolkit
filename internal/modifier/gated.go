@@ -119,7 +119,6 @@ func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, dr
 		logger,
 		discover.None{},
 		hookCreator,
-		"",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct ldcache update discoverer: %w", err)

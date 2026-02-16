@@ -51,7 +51,7 @@ func (l *wsllib) GetDeviceSpecs() ([]specs.Device, error) {
 
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
 func (l *wsllib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	driver, err := newWSLDriverDiscoverer(l.logger, l.driverRoot, l.hookCreator, l.ldconfigPath)
+	driver, err := newWSLDriverDiscoverer(l.logger, l.driverRoot, l.hookCreator)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for WSL driver: %v", err)
 	}

@@ -39,7 +39,7 @@ var requiredDriverStoreFiles = []string{
 }
 
 // newWSLDriverDiscoverer returns a Discoverer for WSL2 drivers.
-func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, hookCreator discover.HookCreator, ldconfigPath string) (discover.Discover, error) {
+func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, hookCreator discover.HookCreator) (discover.Discover, error) {
 	if err := dxcore.Init(); err != nil {
 		return nil, fmt.Errorf("failed to initialize dxcore: %w", err)
 	}
@@ -79,7 +79,7 @@ func newWSLDriverDiscoverer(logger logger.Interface, driverRoot string, hookCrea
 		hookCreator: hookCreator,
 	}
 
-	ldcacheHook, _ := discover.NewLDCacheUpdateHook(logger, driverStoreMounts, hookCreator, ldconfigPath)
+	ldcacheHook, _ := discover.NewLDCacheUpdateHook(logger, driverStoreMounts, hookCreator)
 
 	d := discover.Merge(
 		driverStoreMounts,

@@ -28,7 +28,6 @@ type options struct {
 	driverRoot         string
 	devRoot            string
 	hookCreator        discover.HookCreator
-	ldconfigPath       string
 	librarySearchPaths []string
 
 	// The following can be overridden for testing
@@ -69,13 +68,6 @@ func WithDevRoot(devRoot string) Option {
 func WithHookCreator(hookCreator discover.HookCreator) Option {
 	return func(o *options) {
 		o.hookCreator = hookCreator
-	}
-}
-
-// WithLdconfigPath sets the path to the ldconfig program
-func WithLdconfigPath(ldconfigPath string) Option {
-	return func(o *options) {
-		o.ldconfigPath = ldconfigPath
 	}
 }
 

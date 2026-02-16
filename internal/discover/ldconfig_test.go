@@ -31,7 +31,6 @@ const (
 
 func TestLDCacheUpdateHook(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
-	hookCreator := NewHookCreator(WithNVIDIACDIHookPath(testNvidiaCDIHookPath))
 
 	testCases := []struct {
 		description   string
@@ -115,12 +114,16 @@ func TestLDCacheUpdateHook(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
+			hookCreator := NewHookCreator(
+				WithNVIDIACDIHookPath(testNvidiaCDIHookPath),
+				WithLdconfigPath(tc.ldconfigPath),
+			)
 			mountMock := &DiscoverMock{
 				MountsFunc: func() ([]Mount, error) {
 					return tc.mounts, tc.mountError
 				},
 			}
-			d, err := NewLDCacheUpdateHook(logger, mountMock, hookCreator, tc.ldconfigPath)
+			d, err := NewLDCacheUpdateHook(logger, mountMock, hookCreator)
 			require.NoError(t, err)
 
 			hooks, err := d.Hooks()
