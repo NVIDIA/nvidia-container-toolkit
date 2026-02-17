@@ -58,7 +58,12 @@ func TestNewCSVModifier(t *testing.T) {
 			image, _ := image.New(
 				image.WithEnvMap(tc.envmap),
 			)
-			m, err := NewCSVModifier(logger, tc.cfg, image)
+			f := createFactory(
+				WithLogger(logger),
+				WithConfig(tc.cfg),
+				WithImage(&image),
+			)
+			m, err := f.newCSVModifier()
 			if tc.expectedError != nil {
 				require.Error(t, err)
 			} else {

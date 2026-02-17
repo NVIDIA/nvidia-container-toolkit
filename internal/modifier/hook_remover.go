@@ -33,10 +33,10 @@ type nvidiaContainerRuntimeHookRemover struct {
 
 var _ oci.SpecModifier = (*nvidiaContainerRuntimeHookRemover)(nil)
 
-// NewNvidiaContainerRuntimeHookRemover creates a modifier that removes any NVIDIA Container Runtime hooks from the provided spec.
-func NewNvidiaContainerRuntimeHookRemover(logger logger.Interface) oci.SpecModifier {
+// newNvidiaContainerRuntimeHookRemover creates a modifier that removes any NVIDIA Container Runtime hooks from the provided spec.
+func (f *Factory) newNvidiaContainerRuntimeHookRemover() oci.SpecModifier {
 	return nvidiaContainerRuntimeHookRemover{
-		logger: logger,
+		logger: f.logger,
 	}
 }
 

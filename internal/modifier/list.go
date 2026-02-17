@@ -22,24 +22,10 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
-type List []oci.SpecModifier
-
-// Merge merges a set of OCI specification modifiers as a list.
-// This can be used to compose modifiers.
-func Merge(modifiers ...oci.SpecModifier) oci.SpecModifier {
-	var filteredModifiers List
-	for _, m := range modifiers {
-		if m == nil {
-			continue
-		}
-		filteredModifiers = append(filteredModifiers, m)
-	}
-
-	return filteredModifiers
-}
+type list []oci.SpecModifier
 
 // Modify applies a list of modifiers in sequence and returns on any errors encountered.
-func (m List) Modify(spec *specs.Spec) error {
+func (m list) Modify(spec *specs.Spec) error {
 	for _, mm := range m {
 		if mm == nil {
 			continue

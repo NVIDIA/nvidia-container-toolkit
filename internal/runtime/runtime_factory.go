@@ -73,49 +73,15 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		return nil, err
 	}
 
-	modeModifier, err := newModeModifier(logger, mode, cfg, *image)
-	if err != nil {
-		return nil, err
-	}
-
 	hookCreator := discover.NewHookCreator(discover.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path))
-
-	var modifiers modifier.List
-	for _, modifierType := range supportedModifierTypes(mode) {
-		switch modifierType {
-		case "mode":
-			modifiers = append(modifiers, modeModifier)
-		case "nvidia-hook-remover":
-			modifiers = append(modifiers, modifier.NewNvidiaContainerRuntimeHookRemover(logger))
-		case "graphics":
-			graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, *image, driver, hookCreator)
-			if err != nil {
-				return nil, err
-			}
-			modifiers = append(modifiers, graphicsModifier)
-		case "feature-gated":
-			featureGatedModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, *image, driver, hookCreator)
-			if err != nil {
-				return nil, err
-			}
-			modifiers = append(modifiers, featureGatedModifier)
-		}
-	}
-
-	return modifiers, nil
-}
-
-func newModeModifier(logger logger.Interface, mode info.RuntimeMode, cfg *config.Config, image image.CUDA) (oci.SpecModifier, error) {
-	switch mode {
-	case info.LegacyRuntimeMode:
-		return modifier.NewStableRuntimeModifier(logger, cfg.NVIDIAContainerRuntimeHookConfig.Path), nil
-	case info.CSVRuntimeMode:
-		return modifier.NewCSVModifier(logger, cfg, image)
-	case info.CDIRuntimeMode, info.JitCDIRuntimeMode:
-		return modifier.NewCDIModifier(logger, cfg, image, mode == info.JitCDIRuntimeMode)
-	}
-
-	return nil, fmt.Errorf("invalid runtime mode: %v", cfg.NVIDIAContainerRuntimeConfig.Mode)
+	return modifier.New(
+		modifier.WithLogger(logger),
+		modifier.WithConfig(cfg),
+		modifier.WithImage(image),
+		modifier.WithDriver(driver),
+		modifier.WithHookCreator(hookCreator),
+		modifier.WithRuntimeMode(mode),
+	)
 }
 
 // initRuntimeModeAndImage constructs an image from the specified OCI runtime
@@ -161,18 +127,4 @@ func initRuntimeModeAndImage(logger logger.Interface, cfg *config.Config, ociSpe
 	cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes = nil
 
 	return initRuntimeModeAndImage(logger, cfg, ociSpec)
-}
-
-// supportedModifierTypes returns the modifiers supported for a specific runtime mode.
-func supportedModifierTypes(mode info.RuntimeMode) []string {
-	switch mode {
-	case info.CDIRuntimeMode, info.JitCDIRuntimeMode:
-		// For CDI mode we make no additional modifications.
-		return []string{"nvidia-hook-remover", "mode"}
-	case info.CSVRuntimeMode:
-		// For CSV mode we support mode and feature-gated modification.
-		return []string{"nvidia-hook-remover", "feature-gated", "mode"}
-	default:
-		return []string{"feature-gated", "graphics", "mode"}
-	}
 }
