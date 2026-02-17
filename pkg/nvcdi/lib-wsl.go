@@ -35,7 +35,7 @@ func (l *wsllib) DeviceSpecGenerators(...string) (DeviceSpecGenerator, error) {
 
 // GetDeviceSpecs returns the CDI device specs for a single all device.
 func (l *wsllib) GetDeviceSpecs() ([]specs.Device, error) {
-	device := newDXGDeviceDiscoverer(l.logger, l.devRoot)
+	device := l.newDXGDeviceDiscoverer()
 	deviceEdits, err := edits.FromDiscoverer(device)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container edits for DXG device: %v", err)
@@ -51,7 +51,7 @@ func (l *wsllib) GetDeviceSpecs() ([]specs.Device, error) {
 
 // GetCommonEdits generates a CDI specification that can be used for ANY devices
 func (l *wsllib) GetCommonEdits() (*cdi.ContainerEdits, error) {
-	driver, err := newWSLDriverDiscoverer(l.logger, l.driverRoot, l.hookCreator)
+	driver, err := l.newWSLDriverDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for WSL driver: %v", err)
 	}
