@@ -153,7 +153,7 @@ func TestAddHookModifier(t *testing.T) {
 
 	cfg := &config.Config{}
 	cfg.NVIDIAContainerRuntimeHookConfig.Path = testHookPath
-	factory := NewFactory(
+	factory := createFactory(
 		WithLogger(logger),
 		WithConfig(cfg),
 	)

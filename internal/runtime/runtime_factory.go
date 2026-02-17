@@ -74,7 +74,7 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 	}
 
 	hookCreator := discover.NewHookCreator(discover.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path))
-	modifierFactory := modifier.NewFactory(
+	return modifier.New(
 		modifier.WithLogger(logger),
 		modifier.WithConfig(cfg),
 		modifier.WithImage(image),
@@ -82,8 +82,6 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		modifier.WithHookCreator(hookCreator),
 		modifier.WithRuntimeMode(mode),
 	)
-
-	return modifierFactory.Create()
 }
 
 // initRuntimeModeAndImage constructs an image from the specified OCI runtime

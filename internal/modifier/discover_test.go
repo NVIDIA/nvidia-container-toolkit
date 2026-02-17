@@ -130,7 +130,7 @@ func TestDiscoverModifier(t *testing.T) {
 		},
 	}
 
-	factory := NewFactory(
+	factory := createFactory(
 		WithLogger(logger),
 	)
 	for _, tc := range testCases {

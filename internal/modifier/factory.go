@@ -18,6 +18,10 @@
 package modifier
 
 import (
+	"fmt"
+
+	"github.com/opencontainers/runtime-spec/specs-go"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
@@ -36,7 +40,21 @@ type Factory struct {
 	runtimeMode info.RuntimeMode
 }
 
-func NewFactory(opts ...Option) *Factory {
+// A Factory also implements the oci.SpecModifier interface.
+var _ oci.SpecModifier = (*Factory)(nil)
+
+// New is a factory method for creating a modifier Factory.
+func New(opts ...Option) (oci.SpecModifier, error) {
+	f := createFactory(opts...)
+	if err := f.validate(); err != nil {
+		return nil, err
+	}
+	return f, nil
+}
+
+// createFactory is an internal constructor to allow validation to be bypassed
+// for internal tests.
+func createFactory(opts ...Option) *Factory {
 	f := &Factory{}
 	for _, opt := range opts {
 		opt(f)
@@ -44,8 +62,29 @@ func NewFactory(opts ...Option) *Factory {
 	return f
 }
 
-// Create a modifier based on the modifier factory configuration.
-func (f *Factory) Create() (oci.SpecModifier, error) {
+func (f *Factory) validate() error {
+	switch string(f.runtimeMode) {
+	case "":
+		return fmt.Errorf("a mode must be specified")
+	case "legacy", "csv", "jit-cdi", "cdi":
+		return nil
+	default:
+		return fmt.Errorf("invalid mode %q", f.runtimeMode)
+	}
+}
+
+// Modify creates the configured modifier and applies it to the supplied OCI
+// specification.
+func (f *Factory) Modify(s *specs.Spec) error {
+	m, err := f.create()
+	if err != nil {
+		return err
+	}
+	return m.Modify(s)
+}
+
+// create a modifier based on the modifier factory configuration.
+func (f *Factory) create() (oci.SpecModifier, error) {
 	var modifiers list
 	for _, modifierType := range supportedModifierTypes(f.runtimeMode) {
 		switch modifierType {

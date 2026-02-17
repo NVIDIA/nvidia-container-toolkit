@@ -58,7 +58,7 @@ func TestNewCSVModifier(t *testing.T) {
 			image, _ := image.New(
 				image.WithEnvMap(tc.envmap),
 			)
-			f := NewFactory(
+			f := createFactory(
 				WithLogger(logger),
 				WithConfig(tc.cfg),
 				WithImage(&image),
