@@ -120,6 +120,18 @@ func (o *options) driverLibraryLocator() lookup.Locator {
 	)
 }
 
+func (o *options) getVendorOrDefault() string {
+	if o.vendor != "" {
+		return o.vendor
+	}
+	switch o.mode {
+	case ModeManagement:
+		return "management.nvidia.com"
+	default:
+		return "nvidia.com"
+	}
+}
+
 // Option is a function that configures the nvcdi library options.
 type Option func(*options)
 

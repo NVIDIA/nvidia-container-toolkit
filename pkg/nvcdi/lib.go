@@ -68,15 +68,11 @@ func New(opts ...Option) (Interface, error) {
 
 	var factory deviceSpecGeneratorFactory
 	disabledHooks := slices.Clone(o.disabledHooks)
-	vendor := o.vendor
 	class := o.class
 	switch o.mode {
 	case ModeCSV:
 		factory = (*csvlib)(l)
 	case ModeManagement:
-		if vendor == "" {
-			vendor = "management.nvidia.com"
-		}
 		// Management containers in general do not require CUDA Forward compatibility.
 		disabledHooks = append(disabledHooks, HookEnableCudaCompat, DisableDeviceNodeModificationHook)
 		factory = (*managementlib)(l)
@@ -117,7 +113,7 @@ func New(opts ...Option) (Interface, error) {
 
 	w := wrapper{
 		factory:             factory,
-		vendor:              vendor,
+		vendor:              o.getVendorOrDefault(),
 		class:               class,
 		mergedDeviceOptions: o.mergedDeviceOptions,
 	}
