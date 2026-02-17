@@ -11,11 +11,11 @@ import (
 func (f *Factory) newModeModifier() (oci.SpecModifier, error) {
 	switch f.runtimeMode {
 	case info.LegacyRuntimeMode:
-		return f.NewStableRuntimeModifier(), nil
+		return f.newStableRuntimeModifier(), nil
 	case info.CSVRuntimeMode:
-		return f.NewCSVModifier()
+		return f.newCSVModifier()
 	case info.CDIRuntimeMode, info.JitCDIRuntimeMode:
-		return f.NewCDIModifier(f.runtimeMode == info.JitCDIRuntimeMode)
+		return f.newCDIModifier(f.runtimeMode == info.JitCDIRuntimeMode)
 	}
 	return nil, fmt.Errorf("invalid runtime mode: %v", f.runtimeMode)
 }

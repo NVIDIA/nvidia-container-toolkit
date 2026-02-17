@@ -24,9 +24,9 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
-// NewGraphicsModifier constructs a modifier that injects graphics-related modifications into an OCI runtime specification.
+// newGraphicsModifier constructs a modifier that injects graphics-related modifications into an OCI runtime specification.
 // The value of the NVIDIA_DRIVER_CAPABILITIES environment variable is checked to determine if this modification should be made.
-func (f *Factory) NewGraphicsModifier() (oci.SpecModifier, error) {
+func (f *Factory) newGraphicsModifier() (oci.SpecModifier, error) {
 	devices, reason := requiresGraphicsModifier(*f.image)
 	if len(devices) == 0 {
 		f.logger.Infof("No graphics modifier required; %v", reason)
@@ -58,7 +58,7 @@ func (f *Factory) NewGraphicsModifier() (oci.SpecModifier, error) {
 		drmNodes,
 		mounts,
 	)
-	return f.NewModifierFromDiscoverer(d)
+	return f.newModifierFromDiscoverer(d)
 }
 
 // requiresGraphicsModifier determines whether a graphics modifier is required.

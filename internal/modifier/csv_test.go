@@ -63,7 +63,7 @@ func TestNewCSVModifier(t *testing.T) {
 				WithConfig(tc.cfg),
 				WithImage(&image),
 			)
-			m, err := f.NewCSVModifier()
+			m, err := f.newCSVModifier()
 			if tc.expectedError != nil {
 				require.Error(t, err)
 			} else {

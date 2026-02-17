@@ -36,10 +36,10 @@ const (
 	automaticDevicePrefix = automaticDeviceKind + "="
 )
 
-// NewCDIModifier creates an OCI spec modifier that determines the modifications to make based on the
+// newCDIModifier creates an OCI spec modifier that determines the modifications to make based on the
 // CDI specifications available on the system. The NVIDIA_VISIBLE_DEVICES environment variable is
 // used to select the devices to include.
-func (f *Factory) NewCDIModifier(isJitCDI bool) (oci.SpecModifier, error) {
+func (f *Factory) newCDIModifier(isJitCDI bool) (oci.SpecModifier, error) {
 	defaultKind := f.cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.DefaultKind
 	if isJitCDI {
 		defaultKind = automaticDeviceKind

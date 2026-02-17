@@ -26,7 +26,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
-// NewFeatureGatedModifier creates the modifiers for optional features.
+// newFeatureGatedModifier creates the modifiers for optional features.
 // These include:
 //
 //	NVIDIA_GDS=enabled
@@ -35,7 +35,7 @@ import (
 //	NVIDIA_GDRCOPY=enabled
 //
 // If not devices are selected, no changes are made.
-func (f *Factory) NewFeatureGatedModifier() (oci.SpecModifier, error) {
+func (f *Factory) newFeatureGatedModifier() (oci.SpecModifier, error) {
 	if devices := f.image.VisibleDevices(); len(devices) == 0 {
 		f.logger.Infof("No modification required; no devices requested")
 		return nil, nil
@@ -88,7 +88,7 @@ func (f *Factory) NewFeatureGatedModifier() (oci.SpecModifier, error) {
 		discoverers = append(discoverers, cudaCompatDiscoverer)
 	}
 
-	return f.NewModifierFromDiscoverer(discover.Merge(discoverers...))
+	return f.newModifierFromDiscoverer(discover.Merge(discoverers...))
 }
 
 func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, driver *root.Driver, hookCreator discover.HookCreator) (discover.Discover, error) {

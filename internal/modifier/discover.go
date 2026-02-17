@@ -32,9 +32,9 @@ type discoverModifier struct {
 	discoverer discover.Discover
 }
 
-// NewModifierFromDiscoverer creates a modifier that applies the discovered
+// newModifierFromDiscoverer creates a modifier that applies the discovered
 // modifications to an OCI spec if required by the runtime wrapper.
-func (f *Factory) NewModifierFromDiscoverer(d discover.Discover) (oci.SpecModifier, error) {
+func (f *Factory) newModifierFromDiscoverer(d discover.Discover) (oci.SpecModifier, error) {
 	m := discoverModifier{
 		logger:     f.logger,
 		discoverer: d,

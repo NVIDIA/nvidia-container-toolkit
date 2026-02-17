@@ -29,9 +29,9 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 )
 
-// NewCSVModifier creates a modifier that applies modications to an OCI spec if required by the runtime wrapper.
+// newCSVModifier creates a modifier that applies modications to an OCI spec if required by the runtime wrapper.
 // The modifications are defined by CSV MountSpecs.
-func (f *Factory) NewCSVModifier() (oci.SpecModifier, error) {
+func (f *Factory) newCSVModifier() (oci.SpecModifier, error) {
 	devices := f.image.VisibleDevices()
 	if len(devices) == 0 {
 		f.logger.Infof("No modification required; no devices requested")

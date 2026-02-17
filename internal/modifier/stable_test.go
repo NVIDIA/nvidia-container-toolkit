@@ -159,7 +159,7 @@ func TestAddHookModifier(t *testing.T) {
 	)
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			m := factory.NewStableRuntimeModifier()
+			m := factory.newStableRuntimeModifier()
 
 			err := m.Modify(&tc.spec)
 			if tc.expectedError != nil {

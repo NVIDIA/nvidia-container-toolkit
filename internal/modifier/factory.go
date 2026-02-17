@@ -46,7 +46,7 @@ func NewFactory(opts ...Option) *Factory {
 
 // Create a modifier based on the modifier factory configuration.
 func (f *Factory) Create() (oci.SpecModifier, error) {
-	var modifiers List
+	var modifiers list
 	for _, modifierType := range supportedModifierTypes(f.runtimeMode) {
 		switch modifierType {
 		case "mode":
@@ -56,15 +56,15 @@ func (f *Factory) Create() (oci.SpecModifier, error) {
 			}
 			modifiers = append(modifiers, modeModifier)
 		case "nvidia-hook-remover":
-			modifiers = append(modifiers, f.NewNvidiaContainerRuntimeHookRemover())
+			modifiers = append(modifiers, f.newNvidiaContainerRuntimeHookRemover())
 		case "graphics":
-			graphicsModifier, err := f.NewGraphicsModifier()
+			graphicsModifier, err := f.newGraphicsModifier()
 			if err != nil {
 				return nil, err
 			}
 			modifiers = append(modifiers, graphicsModifier)
 		case "feature-gated":
-			featureGatedModifier, err := f.NewFeatureGatedModifier()
+			featureGatedModifier, err := f.newFeatureGatedModifier()
 			if err != nil {
 				return nil, err
 			}

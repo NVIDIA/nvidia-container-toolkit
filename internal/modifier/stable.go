@@ -25,9 +25,9 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
-// NewStableRuntimeModifier creates an OCI spec modifier that inserts the NVIDIA Container Runtime Hook into an OCI
+// newStableRuntimeModifier creates an OCI spec modifier that inserts the NVIDIA Container Runtime Hook into an OCI
 // spec. The specified logger is used to capture log output.
-func (f *Factory) NewStableRuntimeModifier() oci.SpecModifier {
+func (f *Factory) newStableRuntimeModifier() oci.SpecModifier {
 	m := stableRuntimeModifier{
 		logger:                         f.logger,
 		nvidiaContainerRuntimeHookPath: f.cfg.NVIDIAContainerRuntimeHookConfig.Path,
