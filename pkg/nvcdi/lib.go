@@ -72,7 +72,7 @@ func New(opts ...Option) (Interface, error) {
 	class := o.class
 	switch o.mode {
 	case ModeCSV:
-		factory = l.asCSVLib()
+		factory = (*csvlib)(l)
 	case ModeManagement:
 		if vendor == "" {
 			vendor = "management.nvidia.com"

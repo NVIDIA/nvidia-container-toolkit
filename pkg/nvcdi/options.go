@@ -24,6 +24,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
@@ -68,6 +69,9 @@ func populateOptions(opts ...Option) *options {
 		mode:              ModeAuto,
 		driverRoot:        "/",
 		nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
+		csv: csvOptions{
+			CompatContainerRoot: defaultOrinCompatContainerRoot,
+		},
 	}
 	for _, opt := range opts {
 		opt(o)
@@ -100,6 +104,10 @@ func populateOptions(opts ...Option) *options {
 		)
 	}
 	o.mode = o.resolveMode()
+
+	if o.mode == ModeCSV && len(o.csv.Files) == 0 {
+		o.csv.Files = csv.DefaultFileList()
+	}
 
 	return o
 }
