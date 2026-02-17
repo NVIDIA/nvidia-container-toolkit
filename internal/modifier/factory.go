@@ -21,8 +21,10 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
 type Factory struct {
@@ -31,6 +33,7 @@ type Factory struct {
 	driver      *root.Driver
 	hookCreator discover.HookCreator
 	image       *image.CUDA
+	runtimeMode info.RuntimeMode
 }
 
 func NewFactory(opts ...Option) *Factory {
@@ -39,6 +42,38 @@ func NewFactory(opts ...Option) *Factory {
 		opt(f)
 	}
 	return f
+}
+
+// Create a modifier based on the modifier factory configuration.
+func (f *Factory) Create() (oci.SpecModifier, error) {
+	var modifiers List
+	for _, modifierType := range supportedModifierTypes(f.runtimeMode) {
+		switch modifierType {
+		case "mode":
+			modeModifier, err := f.newModeModifier()
+			if err != nil {
+				return nil, err
+			}
+			modifiers = append(modifiers, modeModifier)
+		case "nvidia-hook-remover":
+			modifiers = append(modifiers, f.NewNvidiaContainerRuntimeHookRemover())
+		case "graphics":
+			graphicsModifier, err := f.NewGraphicsModifier()
+			if err != nil {
+				return nil, err
+			}
+			modifiers = append(modifiers, graphicsModifier)
+		case "feature-gated":
+			featureGatedModifier, err := f.NewFeatureGatedModifier()
+			if err != nil {
+				return nil, err
+			}
+			modifiers = append(modifiers, featureGatedModifier)
+		default:
+			f.logger.Debugf("Ignoring unknown modifier type %q", modifierType)
+		}
+	}
+	return modifiers, nil
 }
 
 type Option func(*Factory)
@@ -69,5 +104,11 @@ func WithImage(image *image.CUDA) Option {
 func WithLogger(logger logger.Interface) Option {
 	return func(f *Factory) {
 		f.logger = logger
+	}
+}
+
+func WithRuntimeMode(runtimeMode info.RuntimeMode) Option {
+	return func(f *Factory) {
+		f.runtimeMode = runtimeMode
 	}
 }

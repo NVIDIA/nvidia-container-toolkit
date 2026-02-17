@@ -80,48 +80,10 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		modifier.WithImage(image),
 		modifier.WithDriver(driver),
 		modifier.WithHookCreator(hookCreator),
+		modifier.WithRuntimeMode(mode),
 	)
 
-	var modifiers modifier.List
-	for _, modifierType := range supportedModifierTypes(mode) {
-		switch modifierType {
-		case "mode":
-			modeModifier, err := newModeModifier(modifierFactory, mode)
-			if err != nil {
-				return nil, err
-			}
-			modifiers = append(modifiers, modeModifier)
-		case "nvidia-hook-remover":
-			modifiers = append(modifiers, modifierFactory.NewNvidiaContainerRuntimeHookRemover())
-		case "graphics":
-			graphicsModifier, err := modifierFactory.NewGraphicsModifier()
-			if err != nil {
-				return nil, err
-			}
-			modifiers = append(modifiers, graphicsModifier)
-		case "feature-gated":
-			featureGatedModifier, err := modifierFactory.NewFeatureGatedModifier()
-			if err != nil {
-				return nil, err
-			}
-			modifiers = append(modifiers, featureGatedModifier)
-		}
-	}
-
-	return modifiers, nil
-}
-
-func newModeModifier(modifierFactory *modifier.Factory, mode info.RuntimeMode) (oci.SpecModifier, error) {
-	switch mode {
-	case info.LegacyRuntimeMode:
-		return modifierFactory.NewStableRuntimeModifier(), nil
-	case info.CSVRuntimeMode:
-		return modifierFactory.NewCSVModifier()
-	case info.CDIRuntimeMode, info.JitCDIRuntimeMode:
-		return modifierFactory.NewCDIModifier(mode == info.JitCDIRuntimeMode)
-	}
-
-	return nil, fmt.Errorf("invalid runtime mode: %v", mode)
+	return modifierFactory.Create()
 }
 
 // initRuntimeModeAndImage constructs an image from the specified OCI runtime
@@ -167,18 +129,4 @@ func initRuntimeModeAndImage(logger logger.Interface, cfg *config.Config, ociSpe
 	cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.AnnotationPrefixes = nil
 
 	return initRuntimeModeAndImage(logger, cfg, ociSpec)
-}
-
-// supportedModifierTypes returns the modifiers supported for a specific runtime mode.
-func supportedModifierTypes(mode info.RuntimeMode) []string {
-	switch mode {
-	case info.CDIRuntimeMode, info.JitCDIRuntimeMode:
-		// For CDI mode we make no additional modifications.
-		return []string{"nvidia-hook-remover", "mode"}
-	case info.CSVRuntimeMode:
-		// For CSV mode we support mode and feature-gated modification.
-		return []string{"nvidia-hook-remover", "feature-gated", "mode"}
-	default:
-		return []string{"feature-gated", "graphics", "mode"}
-	}
 }
