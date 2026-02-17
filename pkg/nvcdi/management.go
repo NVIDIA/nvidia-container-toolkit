@@ -109,10 +109,7 @@ func (l *managementlib) newManagementDeviceDiscoverer() (discover.Discover, erro
 		},
 	)
 
-	deviceFolderPermissionHooks := newDeviceFolderPermissionHookDiscoverer(
-		l.logger,
-		l.devRoot,
-		l.hookCreator,
+	deviceFolderPermissionHooks := (*nvcdilib)(l).newDeviceFolderPermissionHookDiscoverer(
 		deviceNodes,
 	)
 

@@ -170,10 +170,7 @@ func (l *fullGPUDeviceSpecGenerator) newFullGPUDiscoverer(d device.Device) (disc
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
 	}
 
-	deviceFolderPermissionHooks := newDeviceFolderPermissionHookDiscoverer(
-		l.logger,
-		l.devRoot,
-		l.hookCreator,
+	deviceFolderPermissionHooks := (*nvcdilib)(l.nvmllib).newDeviceFolderPermissionHookDiscoverer(
 		deviceNodes,
 	)
 

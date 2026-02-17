@@ -39,11 +39,11 @@ var _ discover.Discover = (*deviceFolderPermissions)(nil)
 // The nested devices that are applicable to the NVIDIA GPU devices are:
 //   - DRM devices at /dev/dri/*
 //   - NVIDIA Caps devices at /dev/nvidia-caps/*
-func newDeviceFolderPermissionHookDiscoverer(logger logger.Interface, devRoot string, hookCreator discover.HookCreator, devices discover.Discover) discover.Discover {
+func (l *nvcdilib) newDeviceFolderPermissionHookDiscoverer(devices discover.Discover) discover.Discover {
 	d := &deviceFolderPermissions{
-		logger:      logger,
-		devRoot:     devRoot,
-		hookCreator: hookCreator,
+		logger:      l.logger,
+		devRoot:     l.devRoot,
+		hookCreator: l.hookCreator,
 		devices:     devices,
 	}
 
