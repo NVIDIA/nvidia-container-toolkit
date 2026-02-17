@@ -132,6 +132,20 @@ func (o *options) getVendorOrDefault() string {
 	}
 }
 
+func (o *options) getClassOrDefault() string {
+	if o.class != "" {
+		return o.class
+	}
+	switch o.mode {
+	case ModeImex:
+		return classImexChannel
+	case ModeGdrcopy, ModeGds, ModeMofed, ModeNvswitch:
+		return string(o.mode)
+	default:
+		return "gpu"
+	}
+}
+
 // Option is a function that configures the nvcdi library options.
 type Option func(*options)
 

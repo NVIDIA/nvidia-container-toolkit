@@ -68,7 +68,6 @@ func New(opts ...Option) (Interface, error) {
 
 	var factory deviceSpecGeneratorFactory
 	disabledHooks := slices.Clone(o.disabledHooks)
-	class := o.class
 	switch o.mode {
 	case ModeCSV:
 		factory = (*csvlib)(l)
@@ -81,17 +80,11 @@ func New(opts ...Option) (Interface, error) {
 	case ModeWsl:
 		factory = (*wsllib)(l)
 	case ModeGdrcopy, ModeGds, ModeMofed, ModeNvswitch:
-		if class == "" {
-			class = string(o.mode)
-		}
 		factory = &gatedlib{
 			nvcdilib: l,
 			mode:     o.mode,
 		}
 	case ModeImex:
-		if class == "" {
-			class = classImexChannel
-		}
 		factory = (*imexlib)(l)
 	default:
 		return nil, fmt.Errorf("unknown mode %q", o.mode)
@@ -114,7 +107,7 @@ func New(opts ...Option) (Interface, error) {
 	w := wrapper{
 		factory:             factory,
 		vendor:              o.getVendorOrDefault(),
-		class:               class,
+		class:               o.getClassOrDefault(),
 		mergedDeviceOptions: o.mergedDeviceOptions,
 	}
 	return &w, nil
