@@ -32,9 +32,6 @@ import (
 type nvcdilib struct {
 	logger logger.Interface
 	platformlibs
-	// TODO: This is currently only used for the gated discoverer and could
-	// be captured there.
-	mode         Mode
 	deviceNamers DeviceNamers
 	// TODO: We should use the devRoot associated with the driver.
 	devRoot            string
@@ -65,7 +62,6 @@ func New(opts ...Option) (Interface, error) {
 
 		librarySearchPaths: slices.Clone(o.librarySearchPaths),
 		featureFlags:       o.featureFlags,
-		mode:               o.mode,
 
 		csv: o.csv,
 	}
@@ -74,7 +70,7 @@ func New(opts ...Option) (Interface, error) {
 	disabledHooks := slices.Clone(o.disabledHooks)
 	vendor := o.vendor
 	class := o.class
-	switch l.mode {
+	switch o.mode {
 	case ModeCSV:
 		factory = l.asCSVLib()
 	case ModeManagement:
@@ -90,16 +86,19 @@ func New(opts ...Option) (Interface, error) {
 		factory = (*wsllib)(l)
 	case ModeGdrcopy, ModeGds, ModeMofed, ModeNvswitch:
 		if class == "" {
-			class = string(l.mode)
+			class = string(o.mode)
 		}
-		factory = (*gatedlib)(l)
+		factory = &gatedlib{
+			nvcdilib: l,
+			mode:     o.mode,
+		}
 	case ModeImex:
 		if class == "" {
 			class = classImexChannel
 		}
 		factory = (*imexlib)(l)
 	default:
-		return nil, fmt.Errorf("unknown mode %q", l.mode)
+		return nil, fmt.Errorf("unknown mode %q", o.mode)
 	}
 
 	// Create a hook creator with the disabled hooks and the non-mode-dependent

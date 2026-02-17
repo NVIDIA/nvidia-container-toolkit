@@ -25,7 +25,10 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
 
-type gatedlib nvcdilib
+type gatedlib struct {
+	*nvcdilib
+	mode Mode
+}
 
 var _ deviceSpecGeneratorFactory = (*gatedlib)(nil)
 
