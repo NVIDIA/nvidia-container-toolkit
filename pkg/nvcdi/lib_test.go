@@ -18,30 +18,88 @@
 package nvcdi
 
 import (
+	"path/filepath"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+	"tags.cncf.io/container-device-interface/specs-go"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
 func TestNew(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	defer devices.SetAllForTest()()
+
+	moduleRoot, err := test.GetModuleRoot()
+	require.NoError(t, err)
+
+	lookupRoot := filepath.Join(moduleRoot, "testdata", "lookup")
+
 	testCases := []struct {
 		description       string
 		mode              string
+		rootfs            string
 		expectedInitError error
+
+		expectedSpec      *specs.Spec
+		expectedSpecError error
 	}{
 		{
 			description: "nvswitch mode is supported",
 			mode:        "nvswitch",
+			rootfs:      "rootfs-with-nvswitch",
+			expectedSpec: &specs.Spec{
+				Version: specs.CurrentVersion,
+				Kind:    "nvidia.com/nvswitch",
+				Devices: []specs.Device{
+					{
+						Name: "all",
+						ContainerEdits: specs.ContainerEdits{
+							DeviceNodes: []*specs.DeviceNode{
+								{
+									Path:     "/dev/nvidia-nvswitch0",
+									HostPath: "/dev/nvidia-nvswitch0",
+								},
+								{
+									Path:     "/dev/nvidia-nvswitch1",
+									HostPath: "/dev/nvidia-nvswitch1",
+								},
+								{
+									Path:     "/dev/nvidia-nvswitchctl",
+									HostPath: "/dev/nvidia-nvswitchctl",
+								},
+							},
+						},
+					},
+				},
+				ContainerEdits: specs.ContainerEdits{
+					Env: []string{
+						"NVIDIA_VISIBLE_DEVICES=void",
+					},
+				},
+			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			_, err := New(
+			driverRoot := filepath.Join(lookupRoot, tc.rootfs)
+
+			l, err := New(
+				WithLogger(logger),
 				WithMode(tc.mode),
+				WithDriverRoot(driverRoot),
 			)
 			require.EqualValues(t, tc.expectedInitError, err)
 
+			s, err := l.GetSpec()
+			require.EqualValues(t, tc.expectedSpecError, err)
+
+			require.EqualValues(t, tc.expectedSpec, stripRoot(driverRoot, s.Raw()))
 		})
 	}
 }
