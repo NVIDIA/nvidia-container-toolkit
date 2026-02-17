@@ -225,7 +225,7 @@ func TestCDIHookCreator_Create(t *testing.T) {
 			name:        "UpdateLDCacheHook with args",
 			hookCreator: NewHookCreator(WithNVIDIACDIHookPath(defaultNvidiaCDIHookPath)),
 			hookName:    UpdateLDCacheHook,
-			args:        []string{"--folder", "/usr/lib64"},
+			args:        []string{"/usr/lib64"},
 			expectedHook: &Hook{
 				Lifecycle: "createContainer",
 				Path:      defaultNvidiaCDIHookPath,

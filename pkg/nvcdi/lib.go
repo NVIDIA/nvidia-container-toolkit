@@ -149,6 +149,7 @@ func New(opts ...Option) (Interface, error) {
 		discover.WithNVIDIACDIHookPath(l.nvidiaCDIHookPath),
 		discover.WithDisabledHooks(l.disabledHooks...),
 		discover.WithEnabledHooks(l.enabledHooks...),
+		discover.WithLdconfigPath(l.ldconfigPath),
 	)
 
 	w := wrapper{

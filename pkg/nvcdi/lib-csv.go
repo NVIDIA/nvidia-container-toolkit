@@ -163,7 +163,6 @@ func (l *csvDeviceGenerator) deviceNodeDiscoverer() (discover.Discover, error) {
 		tegra.WithDriverRoot(l.driverRoot),
 		tegra.WithDevRoot(l.devRoot),
 		tegra.WithHookCreator(l.hookCreator),
-		tegra.WithLdconfigPath(l.ldconfigPath),
 		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
 		tegra.WithMountSpecs(l.deviceNodeMountSpecs()),
 	)
@@ -398,7 +397,6 @@ func (l *csvlib) driverDiscoverer() (discover.Discover, error) {
 		tegra.WithDriverRoot(l.driverRoot),
 		tegra.WithDevRoot(l.devRoot),
 		tegra.WithHookCreator(l.hookCreator),
-		tegra.WithLdconfigPath(l.ldconfigPath),
 		tegra.WithLibrarySearchPaths(l.librarySearchPaths...),
 		tegra.WithMountSpecs(mountSpecs),
 	)
@@ -408,7 +406,7 @@ func (l *csvlib) driverDiscoverer() (discover.Discover, error) {
 
 	cudaCompatDiscoverer := l.cudaCompatDiscoverer()
 
-	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(l.logger, driverDiscoverer, l.hookCreator, l.ldconfigPath)
+	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(l.logger, driverDiscoverer, l.hookCreator)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ldcache update hook discoverer: %w", err)
 	}

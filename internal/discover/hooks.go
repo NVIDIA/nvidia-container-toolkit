@@ -88,6 +88,7 @@ func (h *Hook) Hooks() ([]Hook, error) {
 
 type hookCreatorOptions struct {
 	nvidiaCDIHookPath string
+	ldconfigPath      string
 	disabledHooks     []HookName
 	enabledHooks      []HookName
 	debugLogging      bool
@@ -97,6 +98,7 @@ type Option func(*hookCreatorOptions)
 
 type cdiHookCreator struct {
 	nvidiaCDIHookPath string
+	ldconfigPath      string
 	disabledHooks     map[HookName]bool
 
 	fixedArgs    []string
@@ -138,6 +140,12 @@ func WithEnabledHooks(hooks ...HookName) Option {
 	}
 }
 
+func WithLdconfigPath(ldconfigPath string) Option {
+	return func(c *hookCreatorOptions) {
+		c.ldconfigPath = ldconfigPath
+	}
+}
+
 // WithNVIDIACDIHookPath sets the path to the nvidia-cdi-hook binary.
 func WithNVIDIACDIHookPath(nvidiaCDIHookPath string) Option {
 	return func(c *hookCreatorOptions) {
@@ -170,6 +178,7 @@ func NewHookCreator(opts ...Option) HookCreator {
 
 	c := &cdiHookCreator{
 		nvidiaCDIHookPath: o.nvidiaCDIHookPath,
+		ldconfigPath:      o.ldconfigPath,
 		disabledHooks:     disabledHooks,
 		fixedArgs:         getFixedArgsForCDIHookCLI(o.nvidiaCDIHookPath),
 		debugLogging:      o.debugLogging,
@@ -215,22 +224,28 @@ func (c cdiHookCreator) requiredArgs(name HookName) []string {
 }
 
 func (c cdiHookCreator) transformArgs(name HookName, args ...string) []string {
+	var transformedArgs []string
 	switch name {
 	case CreateSymlinksHook:
-		var transformedArgs []string
 		for _, arg := range args {
 			transformedArgs = append(transformedArgs, "--link", arg)
 		}
-		return transformedArgs
 	case ChmodHook:
-		var transformedArgs = []string{"--mode", "755"}
+		transformedArgs = append(transformedArgs, "--mode", "755")
 		for _, arg := range args {
 			transformedArgs = append(transformedArgs, "--path", arg)
 		}
-		return transformedArgs
+	case UpdateLDCacheHook:
+		if c.ldconfigPath != "" {
+			transformedArgs = append(transformedArgs, "--ldconfig-path", c.ldconfigPath)
+		}
+		for _, arg := range args {
+			transformedArgs = append(transformedArgs, "--folder", arg)
+		}
 	default:
 		return args
 	}
+	return transformedArgs
 }
 
 // getFixedArgsForCDIHookCLI returns the fixed arguments for the hook CLI.

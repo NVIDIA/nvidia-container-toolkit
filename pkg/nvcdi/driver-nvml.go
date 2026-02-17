@@ -104,7 +104,7 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string, libcudaSoParentDir
 	cudaCompatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(l.logger, l.hookCreator, version, "")
 	discoverers = append(discoverers, cudaCompatLibHookDiscoverer)
 
-	updateLDCache, _ := discover.NewLDCacheUpdateHook(l.logger, libraries, l.hookCreator, l.ldconfigPath)
+	updateLDCache, _ := discover.NewLDCacheUpdateHook(l.logger, libraries, l.hookCreator)
 	discoverers = append(discoverers, updateLDCache)
 
 	disableDeviceNodeModification := l.hookCreator.Create(DisableDeviceNodeModificationHook)
