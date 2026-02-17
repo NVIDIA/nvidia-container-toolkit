@@ -13,11 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM nvcr.io/nvidia/cuda:13.0.1-base-ubi9
+FROM fedora:43
 
-RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
-    && \
-    dnf install -y rpmrebuild
+RUN dnf install -y rpmrebuild-2.21
 
 ARG arch
 ENV arch=${arch}
