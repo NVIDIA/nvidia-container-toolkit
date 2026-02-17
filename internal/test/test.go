@@ -33,10 +33,10 @@ func GetModuleRoot() (string, error) {
 
 // PrependToPath prefixes the specified additional paths to the PATH environment variable
 func PrependToPath(additionalPaths ...string) string {
-	paths := filepath.SplitList(os.Getenv("PATH"))
-	paths = append(additionalPaths, paths...)
-
-	return strings.Join(paths, ":")
+	if currentPath := strings.TrimSpace(os.Getenv("PATH")); currentPath != "" {
+		additionalPaths = append(additionalPaths, currentPath)
+	}
+	return strings.Join(additionalPaths, ":")
 }
 
 func hasGoMod(dir string) (string, error) {
