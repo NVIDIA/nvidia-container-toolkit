@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -12,10 +13,8 @@ import (
 	"testing"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -176,9 +175,18 @@ func TestDuplicateHook(t *testing.T) {
 // addNVIDIAHook is a basic wrapper for an addHookModifier that is used for
 // testing.
 func addNVIDIAHook(spec *specs.Spec) error {
-	logger, _ := testlog.NewNullLogger()
-	m := modifier.NewStableRuntimeModifier(logger, nvidiaHook)
-	return m.Modify(spec)
+	if spec.Hooks != nil {
+		return fmt.Errorf("expected empty spec")
+	}
+	spec.Hooks = &specs.Hooks{
+		Prestart: []specs.Hook{
+			{
+				Path: nvidiaHook,
+				Args: []string{filepath.Base(nvidiaHook), "prestart"},
+			},
+		},
+	}
+	return nil
 }
 
 func (c testConfig) getRuntimeSpec() (specs.Spec, error) {
