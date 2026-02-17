@@ -64,16 +64,24 @@ func New(opts ...Option) (Interface, error) {
 		featureFlags:       o.featureFlags,
 
 		csv: o.csv,
+
+		hookCreator: discover.NewHookCreator(
+			discover.WithNVIDIACDIHookPath(o.nvidiaCDIHookPath),
+			discover.WithEnabledHooks(o.enabledHooks...),
+			discover.WithLdconfigPath(o.ldconfigPath),
+			discover.WithDisabledHooks(o.disabledHooks...),
+		),
+		editsFactory: edits.NewFactory(
+			edits.WithLogger(o.logger),
+			edits.WithNoAdditionalGIDsForDeviceNodes(o.featureFlags[FeatureNoAdditionalGIDsForDeviceNodes]),
+		),
 	}
 
 	var factory deviceSpecGeneratorFactory
-	disabledHooks := slices.Clone(o.disabledHooks)
 	switch o.mode {
 	case ModeCSV:
 		factory = (*csvlib)(l)
 	case ModeManagement:
-		// Management containers in general do not require CUDA Forward compatibility.
-		disabledHooks = append(disabledHooks, HookEnableCudaCompat, DisableDeviceNodeModificationHook)
 		factory = (*managementlib)(l)
 	case ModeNvml:
 		factory = (*nvmllib)(l)
@@ -89,20 +97,6 @@ func New(opts ...Option) (Interface, error) {
 	default:
 		return nil, fmt.Errorf("unknown mode %q", o.mode)
 	}
-
-	// Create a hook creator with the disabled hooks and the non-mode-dependent
-	// options.
-	l.hookCreator = discover.NewHookCreator(
-		discover.WithNVIDIACDIHookPath(o.nvidiaCDIHookPath),
-		discover.WithEnabledHooks(o.enabledHooks...),
-		discover.WithLdconfigPath(o.ldconfigPath),
-		discover.WithDisabledHooks(disabledHooks...),
-	)
-
-	l.editsFactory = edits.NewFactory(
-		edits.WithLogger(o.logger),
-		edits.WithNoAdditionalGIDsForDeviceNodes(o.featureFlags[FeatureNoAdditionalGIDsForDeviceNodes]),
-	)
 
 	w := wrapper{
 		factory:             factory,

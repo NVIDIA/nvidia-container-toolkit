@@ -109,6 +109,12 @@ func populateOptions(opts ...Option) *options {
 		o.csv.Files = csv.DefaultFileList()
 	}
 
+	if o.mode == ModeManagement {
+		// For management mode we explicitly disable the hooks that enable CUDA
+		// compatibility and disable device node modifications.
+		o.disabledHooks = append(o.disabledHooks, HookEnableCudaCompat, DisableDeviceNodeModificationHook)
+	}
+
 	return o
 }
 
