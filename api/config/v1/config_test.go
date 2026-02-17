@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/test/to"
 )
 
 func TestGetConfigWithCustomConfig(t *testing.T) {
@@ -215,7 +217,7 @@ func TestGetConfig(t *testing.T) {
 					Path: "nvidia-ctk",
 				},
 				Features: features{
-					AllowLDConfigFromContainer: ptr(feature(true)),
+					AllowLDConfigFromContainer: to.Ptr(feature(true)),
 				},
 			},
 		},
@@ -433,7 +435,7 @@ func TestAssertValid(t *testing.T) {
 					Ldconfig: "/non/host/path",
 				},
 				Features: features{
-					AllowLDConfigFromContainer: ptr(feature(true)),
+					AllowLDConfigFromContainer: to.Ptr(feature(true)),
 				},
 			},
 		},
@@ -460,11 +462,6 @@ func setGetDistIDLikeForTest(ids []string) func() {
 	return func() {
 		getDistIDLike = original
 	}
-}
-
-// prt returns a reference to whatever type is passed into it
-func ptr[T any](x T) *T {
-	return &x
 }
 
 func setGetLdConfigPathForTest() func() {
