@@ -21,8 +21,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"tags.cncf.io/container-device-interface/pkg/cdi"
+	producer "tags.cncf.io/container-device-interface/pkg/cdi-producer"
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
@@ -42,73 +44,75 @@ func New(opts ...Option) (Interface, error) {
 	return newBuilder(opts...).Build()
 }
 
-// Save writes the spec to the specified path and overwrites the file if it exists.
-func (s *spec) Save(path string) error {
-	if s.transformOnSave != nil {
-		err := s.transformOnSave.Transform(s.Raw())
+type Validator interface {
+	Validate(*specs.Spec) error
+}
+
+type Validators []Validator
+
+func (v Validators) Validate(s *specs.Spec) error {
+	for _, vv := range v {
+		if vv == nil {
+			continue
+		}
+		err := vv.Validate(s)
 		if err != nil {
-			return fmt.Errorf("error applying transform: %w", err)
+			return err
 		}
 	}
-	path, err := s.normalizePath(path)
-	if err != nil {
-		return fmt.Errorf("failed to normalize path: %w", err)
-	}
-
-	specDir, filename := filepath.Split(path)
-	cache, _ := cdi.NewCache(
-		cdi.WithAutoRefresh(false),
-		cdi.WithSpecDirs(specDir),
-	)
-	if err := cache.WriteSpec(s.Raw(), filename); err != nil {
-		return fmt.Errorf("failed to write spec: %w", err)
-	}
-
-	specDirAsRoot, err := os.OpenRoot(specDir)
-	if err != nil {
-		return fmt.Errorf("failed to open root: %w", err)
-	}
-	defer specDirAsRoot.Close()
-
-	if err := specDirAsRoot.Chmod(filename, s.permissions); err != nil {
-		return fmt.Errorf("failed to set permissions on spec file: %w", err)
-	}
-
 	return nil
+}
+
+type transfromAsValidator struct {
+	transform.Transformer
+}
+
+func fromTransform(t transform.Transformer) Validator {
+	if t == nil {
+		return nil
+	}
+	return &transfromAsValidator{t}
+}
+
+func (t *transfromAsValidator) Validate(s *specs.Spec) error {
+	if t == nil || t.Transformer == nil {
+		return nil
+	}
+	if err := t.Transform(s); err != nil {
+		return fmt.Errorf("error applying transform: %w", err)
+	}
+	return nil
+}
+
+// Save writes the spec to the specified path and overwrites the file if it exists.
+func (s *spec) Save(path string) error {
+	pathWithExtension := s.ensureExtension(path)
+
+	return producer.Save(s.Raw(), pathWithExtension,
+		s.producerOptions()...,
+	)
 }
 
 // WriteTo writes the spec to the specified writer.
 func (s *spec) WriteTo(w io.Writer) (int64, error) {
-	tmpFile, err := os.CreateTemp("", "nvcdi-spec-*"+s.extension())
-	if err != nil {
-		return 0, err
-	}
-	tmpDir, tmpFileName := filepath.Split(tmpFile.Name())
+	return producer.WriteTo(s.Raw(), w,
+		s.producerOptions()...,
+	)
+}
 
-	tmpDirRoot, err := os.OpenRoot(tmpDir)
-	if err != nil {
-		return 0, err
+func (s *spec) producerOptions() []producer.Option {
+	var validators Validators
+	if s.transformOnSave != nil {
+		validators = append(validators, fromTransform(s.transformOnSave))
 	}
-	defer tmpDirRoot.Close()
-	defer func() {
-		_ = tmpDirRoot.Remove(tmpFileName)
-	}()
+	validators = append(validators, cdi.SpecContentValidator)
 
-	if err := s.Save(tmpFile.Name()); err != nil {
-		return 0, err
+	return []producer.Option{
+		producer.WithOutputFormat(s.format),
+		producer.WithOverwrite(true),
+		producer.WithPermissions(s.permissions),
+		producer.WithValidator(validators),
 	}
-
-	if err := tmpFile.Close(); err != nil {
-		return 0, fmt.Errorf("failed to close temporary file: %w", err)
-	}
-
-	savedFile, err := tmpDirRoot.Open(tmpFileName)
-	if err != nil {
-		return 0, fmt.Errorf("failed to open temporary file: %w", err)
-	}
-	defer savedFile.Close()
-
-	return savedFile.WriteTo(w)
 }
 
 // Raw returns a pointer to the raw spec.
@@ -116,30 +120,17 @@ func (s *spec) Raw() *specs.Spec {
 	return s.Spec
 }
 
-// normalizePath ensures that the specified path has a supported extension
-func (s *spec) normalizePath(path string) (string, error) {
-	if ext := filepath.Ext(path); ext != ".yaml" && ext != ".json" {
-		path += s.extension()
+func (s *spec) ensureExtension(filename string) string {
+	if filename == "" {
+		return ""
 	}
-
-	if filepath.Clean(filepath.Dir(path)) == "." {
-		pwd, err := os.Getwd()
-		if err != nil {
-			return path, fmt.Errorf("failed to get current working directory: %v", err)
-		}
-		path = filepath.Join(pwd, path)
+	ext := filepath.Ext(filename)
+	switch ext {
+	case ".yaml", ".json":
+		return filename
+	case ".yml":
+		return strings.TrimSuffix(filename, ".yml") + ".yaml"
+	default:
+		return filename + "." + s.format
 	}
-
-	return path, nil
-}
-
-func (s *spec) extension() string {
-	switch s.format {
-	case FormatJSON:
-		return ".json"
-	case FormatYAML:
-		return ".yaml"
-	}
-
-	return ".yaml"
 }
