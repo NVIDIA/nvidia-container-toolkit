@@ -47,10 +47,14 @@ func TestCharDeviceLocator(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			f := NewCharDeviceLocator(
+			required, ok := NewCharDeviceLocator(
 				WithLogger(logger),
 				WithRoot(tc.root),
-			).(*file)
+			).(*requiredLocator)
+			require.True(t, ok)
+
+			f, ok := required.wraps.(*file)
+			require.True(t, ok)
 
 			require.EqualValues(t, tc.expectedPrefixes, f.prefixes)
 		})

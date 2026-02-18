@@ -122,13 +122,14 @@ func (r *Driver) DriverLibraryLocator(additionalDirs ...string) (lookup.Locator,
 		}
 	}
 
-	l := lookup.NewSymlinkLocator(
-		lookup.WithRoot(r.Root),
-		lookup.WithLogger(r.logger),
-		lookup.WithSearchPaths(
-			searchPaths...,
+	l := lookup.AsOptional(
+		lookup.NewSymlinkLocator(
+			lookup.WithRoot(r.Root),
+			lookup.WithLogger(r.logger),
+			lookup.WithSearchPaths(
+				searchPaths...,
+			),
 		),
-		lookup.WithOptional(true),
 	)
 	return l, nil
 }

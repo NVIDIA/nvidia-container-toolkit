@@ -21,11 +21,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup/symlinks"
 )
 
 type symlinkChain struct {
-	file
+	logger  logger.Interface
+	locator Locator
 }
 
 type symlink struct {
@@ -34,18 +36,19 @@ type symlink struct {
 
 // NewSymlinkChainLocator creats a locator that can be used for locating files through symlinks.
 func NewSymlinkChainLocator(opts ...Option) Locator {
-	f := newFileLocator(opts...)
-	l := symlinkChain{
-		file: *f,
+	f := NewFactory(opts...)
+	l := &symlinkChain{
+		logger:  f.logger,
+		locator: f.NewFileLocator(),
 	}
 
-	return &l
+	return l
 }
 
 // NewSymlinkLocator creats a locator that can be used for locating files through symlinks.
 func NewSymlinkLocator(opts ...Option) Locator {
-	f := newFileLocator(opts...)
-	return AsUnique(WithEvaluatedSymlinks(f))
+	f := NewFactory(opts...)
+	return AsUnique(WithEvaluatedSymlinks(f.NewFileLocator()))
 }
 
 // WithEvaluatedSymlinks wraps a locator in one that ensures that returned
@@ -60,14 +63,10 @@ func WithEvaluatedSymlinks(locator Locator) Locator {
 // Locate finds the specified pattern at the specified root.
 // If the file is a symlink, the link is followed and all candidates to the final target are returned.
 func (p symlinkChain) Locate(pattern string) ([]string, error) {
-	candidates, err := p.file.Locate(pattern)
+	candidates, err := p.locator.Locate(pattern)
 	if err != nil {
 		return nil, err
 	}
-	if len(candidates) == 0 {
-		return candidates, nil
-	}
-
 	var filenames []string
 	found := make(map[string]bool)
 
