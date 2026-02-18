@@ -42,6 +42,7 @@ func TestNew(t *testing.T) {
 	testCases := []struct {
 		description       string
 		mode              string
+		additionalOptions []Option
 		driverRootfs      string
 		devRootfs         string
 		expectedInitError error
@@ -261,6 +262,99 @@ func TestNew(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:  "imex mode",
+			mode:         "imex",
+			driverRootfs: "rootfs-1",
+			expectedSpec: &specs.Spec{
+				Version: specs.CurrentVersion,
+				Kind:    "nvidia.com/imex-channel",
+				Devices: []specs.Device{
+					{
+						Name: "0",
+						ContainerEdits: specs.ContainerEdits{
+							DeviceNodes: []*specs.DeviceNode{
+								{
+									Path:     "/dev/nvidia-caps-imex-channels/channel0",
+									HostPath: "/dev/nvidia-caps-imex-channels/channel0",
+								},
+							},
+						},
+					},
+					{
+						Name: "1",
+						ContainerEdits: specs.ContainerEdits{
+							DeviceNodes: []*specs.DeviceNode{
+								{
+									Path:     "/dev/nvidia-caps-imex-channels/channel1",
+									HostPath: "/dev/nvidia-caps-imex-channels/channel1",
+								},
+							},
+						},
+					},
+					{
+						Name: "2047",
+						ContainerEdits: specs.ContainerEdits{
+							DeviceNodes: []*specs.DeviceNode{
+								{
+									Path:     "/dev/nvidia-caps-imex-channels/channel2047",
+									HostPath: "/dev/nvidia-caps-imex-channels/channel2047",
+								},
+							},
+						},
+					},
+				},
+				ContainerEdits: specs.ContainerEdits{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=void"},
+				},
+			},
+		},
+		{
+			description:  "csv mode",
+			mode:         "csv",
+			driverRootfs: "rootfs-orin",
+			additionalOptions: []Option{
+				WithCSVFiles([]string{
+					filepath.Join(lookupRoot, "rootfs-orin", "/etc/nvidia-container-runtime/host-files-for-container.d/devices.csv"),
+					filepath.Join(lookupRoot, "rootfs-orin", "/etc/nvidia-container-runtime/host-files-for-container.d/drivers.csv"),
+				}),
+			},
+			expectedSpec: &specs.Spec{
+				Version: specs.CurrentVersion,
+				Kind:    "nvidia.com/gpu",
+				Devices: []specs.Device{
+					{
+						Name: "0",
+						ContainerEdits: specs.ContainerEdits{
+							DeviceNodes: []*specs.DeviceNode{
+								{Path: "/dev/nvidia0", HostPath: "/dev/nvidia0"},
+							},
+						},
+					},
+				},
+				ContainerEdits: specs.ContainerEdits{
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=void"},
+					Mounts: []*specs.Mount{
+						{HostPath: "/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so.1.1", ContainerPath: "/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so.1.1", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
+						{HostPath: "/usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ml.so.1", ContainerPath: "/usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ml.so.1", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
+					},
+					Hooks: []*specs.Hook{
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "create-symlinks", "--link", "libcuda.so.1::/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/usr/lib/aarch64-linux-gnu/nvidia"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -275,10 +369,12 @@ func TestNew(t *testing.T) {
 			}
 
 			l, err := New(
-				WithLogger(logger),
-				WithMode(tc.mode),
-				WithDriverRoot(driverRoot),
-				WithDevRoot(devRoot),
+				append([]Option{
+					WithLogger(logger),
+					WithMode(tc.mode),
+					WithDriverRoot(driverRoot),
+					WithDevRoot(devRoot),
+				}, tc.additionalOptions...)...,
 			)
 			require.EqualValues(t, tc.expectedInitError, err)
 
