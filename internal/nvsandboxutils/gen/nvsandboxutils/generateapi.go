@@ -156,10 +156,10 @@ func generatePackageMethodsComment(input GeneratableInterfacePoperties) (string,
 		"// The variables below represent package level methods from the %s type.",
 	}
 
-	var signature strings.Builder
+	signature := &strings.Builder{}
 	comment := strings.Join(commentFmt, "\n")
 	comment = fmt.Sprintf(comment, input.Type)
-	signature.WriteString(fmt.Sprintf("%s\n", comment))
+	fmt.Fprintf(signature, "%s\n", comment)
 	return signature.String(), nil
 }
 
@@ -170,17 +170,17 @@ func generateInterfaceComment(input GeneratableInterfacePoperties) (string, erro
 		"//go:generate moq -rm -fmt=goimports -out mock/%s.go -pkg mock . %s:%s",
 	}
 
-	var signature strings.Builder
+	signature := &strings.Builder{}
 	comment := strings.Join(commentFmt, "\n")
 	comment = fmt.Sprintf(comment, input.Interface, input.Type, strings.ToLower(input.Interface), input.Interface, input.Interface)
-	signature.WriteString(fmt.Sprintf("%s\n", comment))
+	fmt.Fprintf(signature, "%s\n", comment)
 	return signature.String(), nil
 }
 
 func generatePackageMethods(sourceDir string, input GeneratableInterfacePoperties) (string, error) {
-	var signature strings.Builder
+	signature := &strings.Builder{}
 
-	signature.WriteString("var (\n")
+	fmt.Fprintf(signature, "var (\n")
 
 	methods, err := extractMethodsFromPackage(sourceDir, input)
 	if err != nil {
@@ -189,19 +189,18 @@ func generatePackageMethods(sourceDir string, input GeneratableInterfacePopertie
 
 	for _, method := range methods {
 		name := method.Name.Name
-		formatted := fmt.Sprintf("\t%s = %s.%s\n", name, input.PackageMethodsAliasedFrom, name)
-		signature.WriteString(formatted)
+		fmt.Fprintf(signature, "\t%s = %s.%s\n", name, input.PackageMethodsAliasedFrom, name)
 	}
 
-	signature.WriteString(")\n")
+	fmt.Fprintf(signature, ")\n")
 
 	return signature.String(), nil
 }
 
 func generateInterface(sourceDir string, input GeneratableInterfacePoperties) (string, error) {
-	var signature strings.Builder
+	signature := &strings.Builder{}
 
-	signature.WriteString(fmt.Sprintf("type %s interface {\n", input.Interface))
+	fmt.Fprintf(signature, "type %s interface {\n", input.Interface)
 
 	methods, err := extractMethodsFromPackage(sourceDir, input)
 	if err != nil {
@@ -209,11 +208,10 @@ func generateInterface(sourceDir string, input GeneratableInterfacePoperties) (s
 	}
 
 	for _, method := range methods {
-		formatted := fmt.Sprintf("\t%s\n", formatMethodSignature(method))
-		signature.WriteString(formatted)
+		fmt.Fprintf(signature, "\t%s\n", formatMethodSignature(method))
 	}
 
-	signature.WriteString("}\n")
+	fmt.Fprintf(signature, "}\n")
 
 	return signature.String(), nil
 }
@@ -328,38 +326,38 @@ func extractMethods(sourceFile string, sourceContent []byte, input GeneratableIn
 }
 
 func formatMethodSignature(decl *ast.FuncDecl) string {
-	var signature strings.Builder
+	signature := &strings.Builder{}
 
 	// Write method name
-	signature.WriteString(decl.Name.Name)
-	signature.WriteString("(")
+	fmt.Fprint(signature, decl.Name.Name)
+	fmt.Fprintf(signature, "(")
 
 	// Write parameters
 	if decl.Type.Params != nil {
 		for i, param := range decl.Type.Params.List {
 			if i > 0 {
-				signature.WriteString(", ")
+				fmt.Fprintf(signature, ", ")
 			}
-			signature.WriteString(formatFieldList(param))
+			fmt.Fprint(signature, formatFieldList(param))
 		}
 	}
 
-	signature.WriteString(")")
+	fmt.Fprintf(signature, ")")
 
 	// Write return types
 	if decl.Type.Results != nil {
-		signature.WriteString(" ")
+		fmt.Fprintf(signature, " ")
 		if len(decl.Type.Results.List) > 1 {
-			signature.WriteString("(")
+			fmt.Fprintf(signature, "(")
 		}
 		for i, result := range decl.Type.Results.List {
 			if i > 0 {
-				signature.WriteString(", ")
+				fmt.Fprintf(signature, ", ")
 			}
-			signature.WriteString(formatFieldList(result))
+			fmt.Fprint(signature, formatFieldList(result))
 		}
 		if len(decl.Type.Results.List) > 1 {
-			signature.WriteString(")")
+			fmt.Fprintf(signature, ")")
 		}
 	}
 
@@ -367,16 +365,16 @@ func formatMethodSignature(decl *ast.FuncDecl) string {
 }
 
 func formatFieldList(field *ast.Field) string {
-	var builder strings.Builder
+	builder := &strings.Builder{}
 	switch fieldType := field.Type.(type) {
 	case *ast.Ident:
-		builder.WriteString(fieldType.Name)
+		fmt.Fprint(builder, fieldType.Name)
 	case *ast.ArrayType:
-		builder.WriteString("[]")
-		builder.WriteString(formatFieldList(&ast.Field{Type: fieldType.Elt}))
+		fmt.Fprintf(builder, "[]")
+		fmt.Fprint(builder, formatFieldList(&ast.Field{Type: fieldType.Elt}))
 	case *ast.StarExpr:
-		builder.WriteString("*")
-		builder.WriteString(formatFieldList(&ast.Field{Type: fieldType.X}))
+		fmt.Fprintf(builder, "*")
+		fmt.Fprint(builder, formatFieldList(&ast.Field{Type: fieldType.X}))
 	}
 	return builder.String()
 }
