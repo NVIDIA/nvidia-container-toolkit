@@ -49,7 +49,7 @@ func getCLIPath(config config.ContainerCLIConfig) string {
 
 	path, err := exec.LookPath("nvidia-container-cli")
 	if err != nil {
-		log.Panicln("couldn't find binary nvidia-container-cli in", os.Getenv("PATH"), ":", err)
+		log.Panicf("couldn't find binary nvidia-container-cli in PATH: %v", err)
 	}
 	return path
 }
@@ -156,7 +156,7 @@ func doPrestart() {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage of nvidia-container-runtime-hook:\n")
 	flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "\nCommands:\n")
 	fmt.Fprintf(os.Stderr, "  prestart\n        run the prestart hook\n")
