@@ -86,11 +86,16 @@ func (t *transfromAsValidator) Validate(s *specs.Spec) error {
 
 // Save writes the spec to the specified path and overwrites the file if it exists.
 func (s *spec) Save(path string) error {
-	pathWithExtension := s.ensureExtension(path)
+	if pathWithExtension := s.ensureExtension(path); pathWithExtension != "" {
+		return producer.Save(s.Raw(), pathWithExtension,
+			s.producerOptions()...,
+		)
+	}
+	if _, err := s.WriteTo(os.Stdout); err != nil {
+		return fmt.Errorf("failed to write CDI spec to STDOUT: %w", err)
+	}
 
-	return producer.Save(s.Raw(), pathWithExtension,
-		s.producerOptions()...,
-	)
+	return nil
 }
 
 // WriteTo writes the spec to the specified writer.
