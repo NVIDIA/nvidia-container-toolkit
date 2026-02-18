@@ -20,17 +20,17 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 )
 
-const (
-	devRoot = "/dev"
-)
-
 // NewCharDeviceLocator creates a Locator that can be used to find char devices at the specified root. A logger is
 // also specified.
 func NewCharDeviceLocator(opts ...Option) Locator {
 	filter := devices.AssertCharDevice
 
 	opts = append(opts,
-		WithSearchPaths("", devRoot),
+		// Device nodes can be specified by their full path e.g. /dev/nvidia0 or
+		// by the name of the device node e.g nvidia0.
+		// We thus set the search path to include "/" and "/dev" to cover both
+		// cases.
+		WithSearchPaths("/", "/dev"),
 		WithFilter(filter),
 	)
 	return NewFileLocator(

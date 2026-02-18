@@ -34,7 +34,7 @@ var (
 // GetPaths returns a list of paths for a specified root. These are constructed from the
 // PATH environment variable, a default path list, and the supplied root.
 func GetPaths(root string) []string {
-	dirs := filepath.SplitList(os.Getenv(envPath))
+	dirs := NormalizePaths(os.Getenv(envPath))
 
 	inDirs := make(map[string]bool)
 	for _, d := range dirs {
@@ -66,4 +66,18 @@ func GetPaths(root string) []string {
 // environment variable
 func GetPath(root string) string {
 	return strings.Join(GetPaths(root), ":")
+}
+
+// NormalizePaths takes a list of paths and normalizes these.
+// Each of the elements in the list is expanded, meaning that if it consists of
+// strings separated by the platform-specific path separator, the element is
+// converted to a list by splitting on the separator.
+// This allows for the contents of envvironment variables such as `PATH` or
+// `LD_LIBRARY_PATH` to be processed allongside other explicit strings.
+func NormalizePaths(paths ...string) []string {
+	var normalized []string
+	for _, path := range paths {
+		normalized = append(normalized, filepath.SplitList(path)...)
+	}
+	return normalized
 }

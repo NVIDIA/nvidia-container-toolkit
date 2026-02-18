@@ -33,7 +33,7 @@ func TestCharDeviceLocator(t *testing.T) {
 	}{
 		{
 			root:             "",
-			expectedPrefixes: []string{"", "/dev"},
+			expectedPrefixes: []string{"/", "/dev"},
 		},
 		{
 			root:             "/",
