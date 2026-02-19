@@ -17,8 +17,6 @@
 package tegra
 
 import (
-	"fmt"
-
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup/symlinks"
@@ -54,10 +52,7 @@ func New(opts ...Option) (discover.Discover, error) {
 		o.resolveSymlink = symlinks.Resolve
 	}
 
-	mountSpecDiscoverer, err := o.newDiscovererFromMountSpecs(o.mountSpecs.MountSpecPathsByType())
-	if err != nil {
-		return nil, fmt.Errorf("failed to create discoverer for mount specs: %v", err)
-	}
+	mountSpecDiscoverer := o.newDiscovererFromMountSpecs(o.mountSpecs.MountSpecPathsByType())
 
 	tegraSystemMounts := discover.NewMounts(
 		o.logger,

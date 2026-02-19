@@ -26,10 +26,10 @@ import (
 )
 
 // newDiscovererFromMountSpecs creates a discoverer for the specified mount specs.
-func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType) (discover.Discover, error) {
+func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType) discover.Discover {
 	if len(targetsByType) == 0 {
 		o.logger.Warningf("No mount specs specified")
-		return discover.None{}, nil
+		return discover.None{}
 	}
 
 	devices := discover.NewCharDeviceDiscoverer(
@@ -68,15 +68,13 @@ func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType)
 	)
 	createSymlinks := o.createCSVSymlinkHooks(targetsByType[csv.MountSpecSym])
 
-	d := discover.Merge(
+	return discover.Merge(
 		devices,
 		directories,
 		libraries,
 		symlinks,
 		createSymlinks,
 	)
-
-	return d, nil
 }
 
 // MountSpecsFromCSVFiles returns a MountSpecPathsByTyper for the specified list

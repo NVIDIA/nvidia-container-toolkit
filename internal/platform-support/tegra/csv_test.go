@@ -196,8 +196,7 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 				),
 			}
 
-			d, err := o.newDiscovererFromMountSpecs(o.mountSpecs.MountSpecPathsByType())
-			require.ErrorIs(t, err, tc.expectedError)
+			d := o.newDiscovererFromMountSpecs(o.mountSpecs.MountSpecPathsByType())
 
 			hooks, err := d.Hooks()
 			require.ErrorIs(t, err, tc.expectedHooksError)
