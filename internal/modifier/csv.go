@@ -22,17 +22,14 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/cuda"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 )
 
 // newCSVModifier creates a modifier that applies modications to an OCI spec if required by the runtime wrapper.
 // The modifications are defined by CSV MountSpecs.
 func (f *Factory) newCSVModifier() (oci.SpecModifier, error) {
-	devices := f.image.VisibleDevices()
+	devices := withUniqueDevices(csvDevices(*f.image)).DeviceRequests()
 	if len(devices) == 0 {
 		f.logger.Infof("No modification required; no devices requested")
 		return nil, nil
@@ -43,37 +40,7 @@ func (f *Factory) newCSVModifier() (oci.SpecModifier, error) {
 		return nil, fmt.Errorf("requirements not met: %v", err)
 	}
 
-	csvFiles, err := csv.GetFileList(f.cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.MountSpecPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get list of CSV files: %v", err)
-	}
-
-	if f.image.Getenv(image.EnvVarNvidiaRequireJetpack) != "csv-mounts=all" {
-		csvFiles = csv.BaseFilesOnly(csvFiles)
-	}
-
-	cdilib, err := nvcdi.New(
-		nvcdi.WithLogger(f.logger),
-		nvcdi.WithDriverRoot(f.driver.Root),
-		nvcdi.WithDevRoot(f.driver.DevRoot),
-		nvcdi.WithNVIDIACDIHookPath(f.cfg.NVIDIACTKConfig.Path),
-		nvcdi.WithMode(nvcdi.ModeCSV),
-		nvcdi.WithCSVFiles(csvFiles),
-		nvcdi.WithCSVCompatContainerRoot(f.cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.CompatContainerRoot),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct CDI library: %v", err)
-	}
-
-	spec, err := cdilib.GetSpec(devices...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get CDI spec: %v", err)
-	}
-
-	return cdi.New(
-		cdi.WithLogger(f.logger),
-		cdi.WithSpec(spec.Raw()),
-	)
+	return f.newAutomaticCDISpecModifier(devices)
 }
 
 func checkRequirements(logger logger.Interface, image *image.CUDA) error {
@@ -106,4 +73,15 @@ func checkRequirements(logger logger.Interface, image *image.CUDA) error {
 	}
 
 	return r.Assert()
+}
+
+type csvDevices image.CUDA
+
+func (d csvDevices) DeviceRequests() []string {
+	var devices []string
+	i := (image.CUDA)(d)
+	for _, deviceID := range i.VisibleDevices() {
+		devices = append(devices, "mode=csv,id="+deviceID)
+	}
+	return devices
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 )
 
@@ -180,6 +181,14 @@ func (f *Factory) newAutomaticCDISpecModifier(devices []string) (oci.SpecModifie
 		nvcdiFeatureFlags = append(nvcdiFeatureFlags, nvcdi.FeatureNoAdditionalGIDsForDeviceNodes)
 	}
 
+	csvFiles, err := csv.GetFileList(f.cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.MountSpecPath)
+	if err != nil {
+		f.logger.Warningf("Failed to get the list of CSV files: %v", err)
+	}
+	if f.image.Getenv(image.EnvVarNvidiaRequireJetpack) != "csv-mounts=all" {
+		csvFiles = csv.BaseFilesOnly(csvFiles)
+	}
+
 	cdiModeIdentifiers := cdiModeIdentfiersFromDevices(devices...)
 	f.logger.Debugf("Per-mode identifiers: %v", cdiModeIdentifiers)
 	var modifiers oci.SpecModifiers
@@ -193,6 +202,8 @@ func (f *Factory) newAutomaticCDISpecModifier(devices []string) (oci.SpecModifie
 			nvcdi.WithClass(cdiModeIdentifiers.deviceClassByMode[mode]),
 			nvcdi.WithMode(mode),
 			nvcdi.WithFeatureFlags(nvcdiFeatureFlags...),
+			nvcdi.WithCSVCompatContainerRoot(f.cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.CompatContainerRoot),
+			nvcdi.WithCSVFiles(csvFiles),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct CDI library for mode %q: %w", mode, err)
