@@ -96,7 +96,7 @@ type managementDiscoverer struct {
 func (l *managementlib) newManagementDeviceDiscoverer() (discover.Discover, error) {
 	deviceNodes := discover.NewCharDeviceDiscoverer(
 		l.logger,
-		l.devRoot,
+		l.driver.DevRoot,
 		[]string{
 			"/dev/nvidia*",
 			"/dev/nvidia-caps/nvidia-cap*",

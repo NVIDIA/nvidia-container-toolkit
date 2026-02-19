@@ -281,6 +281,7 @@ func (l *nvcdilib) getDriver(additionalOptions ...root.Option) *root.Driver {
 	options := []root.Option{
 		root.WithLogger(l.logger),
 		root.WithDriverRoot(l.driverRoot),
+		root.WithDevRoot(l.devRoot),
 		root.WithLibrarySearchPaths(l.librarySearchPaths...),
 		root.WithConfigSearchPaths(l.configSearchPaths...),
 	}

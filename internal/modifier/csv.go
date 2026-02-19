@@ -54,8 +54,8 @@ func (f *Factory) newCSVModifier() (oci.SpecModifier, error) {
 
 	cdilib, err := nvcdi.New(
 		nvcdi.WithLogger(f.logger),
-		// TODO: We should use f.driver here.
-		nvcdi.WithDriverRoot(f.cfg.NVIDIAContainerCLIConfig.Root),
+		nvcdi.WithDriverRoot(f.driver.Root),
+		nvcdi.WithDevRoot(f.driver.DevRoot),
 		nvcdi.WithNVIDIACDIHookPath(f.cfg.NVIDIACTKConfig.Path),
 		nvcdi.WithMode(nvcdi.ModeCSV),
 		nvcdi.WithCSVFiles(csvFiles),

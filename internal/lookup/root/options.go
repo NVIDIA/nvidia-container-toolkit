@@ -22,6 +22,8 @@ type options struct {
 	logger logger.Interface
 	// Root represents the root from the perspective of the driver libraries and binaries.
 	Root string
+	// DevRoot represents the root for device nodes for the driver.
+	DevRoot string
 	// librarySearchPaths specifies explicit search paths for discovering libraries.
 	librarySearchPaths []string
 	// configSearchPaths specified explicit search paths for discovering driver config files.
@@ -34,6 +36,12 @@ type Option func(*options)
 func WithLogger(logger logger.Interface) Option {
 	return func(o *options) {
 		o.logger = logger
+	}
+}
+
+func WithDevRoot(devRoot string) Option {
+	return func(o *options) {
+		o.DevRoot = devRoot
 	}
 }
 

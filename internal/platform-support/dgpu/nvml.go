@@ -53,13 +53,13 @@ func (o *options) newNvmlDGPUDiscoverer(d requiredInfo) (discover.Discover, erro
 
 	deviceNodes := discover.NewCharDeviceDiscoverer(
 		o.logger,
-		o.devRoot,
+		o.driver.DevRoot,
 		deviceNodePaths,
 	)
 
 	byPathHooks := &byPathHookDiscoverer{
 		logger:      o.logger,
-		devRoot:     o.devRoot,
+		devRoot:     o.driver.DevRoot,
 		hookCreator: o.hookCreator,
 		pciBusID:    pciBusID,
 		deviceNodes: deviceNodes,
@@ -106,7 +106,7 @@ func (o *options) newNvmlMigDiscoverer(d requiredMigInfo) (discover.Discover, er
 
 	deviceNodes := discover.NewCharDeviceDiscoverer(
 		o.logger,
-		o.devRoot,
+		o.driver.DevRoot,
 		[]string{
 			parentPath,
 			giCapDevicePath,

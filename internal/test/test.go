@@ -17,6 +17,8 @@
 package test
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -49,4 +51,21 @@ func hasGoMod(dir string) (string, error) {
 		return hasGoMod(filepath.Dir(dir))
 	}
 	return dir, nil
+}
+
+// Strip root is used to remove the specified root from the string
+// representation of any type.
+func StripRoot[T any](v T, root string) T {
+	stringRep, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	stringRep = bytes.ReplaceAll(stringRep, []byte(root), []byte(""))
+
+	var modified T
+	err = json.Unmarshal(stringRep, &modified)
+	if err != nil {
+		panic(err)
+	}
+	return modified
 }

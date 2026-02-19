@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 	mocknvsandboxutils "github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils/mock"
 )
@@ -151,11 +152,12 @@ func TestNewNvsandboxutilsDGPUDiscoverer(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			o := &options{
-				logger:            logger,
-				devRoot:           tc.devRoot,
-				nvsandboxutilslib: tc.nvsandboxutils,
-			}
+			o, err := new(
+				WithLogger(logger),
+				WithDriver(root.New(root.WithDevRoot(tc.devRoot))),
+				WithNvsandboxuitilsLib(tc.nvsandboxutils),
+			)
+			require.NoError(t, err)
 
 			device, err := devicelib.NewDevice(tc.device)
 			require.NoError(t, err)

@@ -16,13 +16,16 @@
 
 package discover
 
-import "github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+import (
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
+)
 
 // NewNvSwitchDiscoverer creates a discoverer for NVSWITCH devices.
-func NewNvSwitchDiscoverer(logger logger.Interface, devRoot string) (Discover, error) {
+func NewNvSwitchDiscoverer(logger logger.Interface, driver *root.Driver) (Discover, error) {
 	devices := NewCharDeviceDiscoverer(
 		logger,
-		devRoot,
+		driver.DevRoot,
 		[]string{
 			"/dev/nvidia-nvswitchctl",
 			"/dev/nvidia-nvswitch*",

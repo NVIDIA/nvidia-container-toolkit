@@ -20,25 +20,28 @@ import (
 	"fmt"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup/symlinks"
 )
 
 // New creates a new tegra discoverer using the supplied functional options.
 func New(opts ...Option) (discover.Discover, error) {
-	o := &options{}
+	o := &options{
+		logger:     &logger.NullLogger{},
+		mountSpecs: mountSpecPathsByTypers{},
+	}
 	for _, opt := range opts {
 		opt(o)
 	}
-
-	if o.devRoot == "" {
-		o.devRoot = o.driverRoot
+	if o.driver == nil {
+		return nil, fmt.Errorf("a driver must be specified")
 	}
 
 	if o.symlinkLocator == nil {
 		o.symlinkLocator = lookup.NewSymlinkLocator(
 			lookup.WithLogger(o.logger),
-			lookup.WithRoot(o.driverRoot),
+			lookup.WithRoot(o.driver.Root),
 			lookup.WithSearchPaths(append(o.librarySearchPaths, "/")...),
 		)
 	}
@@ -46,7 +49,7 @@ func New(opts ...Option) (discover.Discover, error) {
 	if o.symlinkChainLocator == nil {
 		o.symlinkChainLocator = lookup.NewSymlinkChainLocator(
 			lookup.WithLogger(o.logger),
-			lookup.WithRoot(o.driverRoot),
+			lookup.WithRoot(o.driver.Root),
 		)
 	}
 
@@ -54,10 +57,7 @@ func New(opts ...Option) (discover.Discover, error) {
 		o.resolveSymlink = symlinks.Resolve
 	}
 
-	mountSpecDiscoverer, err := o.newDiscovererFromMountSpecs(o.mountSpecs.MountSpecPathsByType())
-	if err != nil {
-		return nil, fmt.Errorf("failed to create discoverer for mount specs: %v", err)
-	}
+	mountSpecDiscoverer := o.newDiscovererFromMountSpecs(o.mountSpecs.MountSpecPathsByType())
 
 	tegraSystemMounts := discover.NewMounts(
 		o.logger,

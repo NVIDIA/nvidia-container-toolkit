@@ -159,7 +159,7 @@ func TestFactoryMethod(t *testing.T) {
 
 			argv := []string{"--bundle", bundleDir, "create"}
 
-			_, err = newNVIDIAContainerRuntime(logger, tc.cfg, argv, driver)
+			_, err = newNVIDIAContainerRuntime(logger, driver, tc.cfg, argv)
 			if tc.expectedError {
 				require.Error(t, err)
 			} else {
@@ -337,7 +337,7 @@ func TestNewSpecModifier(t *testing.T) {
 					return tc.spec, nil
 				},
 			}
-			m, err := newSpecModifier(logger, tc.config, spec, driver)
+			m, err := newSpecModifier(logger, driver, tc.config, spec)
 			require.NoError(t, err)
 
 			err = m.Modify(tc.spec)

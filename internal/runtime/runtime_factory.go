@@ -30,7 +30,7 @@ import (
 )
 
 // newNVIDIAContainerRuntime is a factory method that constructs a runtime based on the selected configuration and specified logger
-func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv []string, driver *root.Driver) (oci.Runtime, error) {
+func newNVIDIAContainerRuntime(logger logger.Interface, driver *root.Driver, cfg *config.Config, argv []string) (oci.Runtime, error) {
 	lowLevelRuntime, err := oci.NewLowLevelRuntime(logger, cfg.NVIDIAContainerRuntimeConfig.Runtimes)
 	if err != nil {
 		return nil, fmt.Errorf("error constructing low-level runtime: %v", err)
@@ -50,7 +50,7 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 		return nil, fmt.Errorf("error constructing OCI specification: %v", err)
 	}
 
-	specModifier, err := newSpecModifier(logger, cfg, ociSpec, driver)
+	specModifier, err := newSpecModifier(logger, driver, cfg, ociSpec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct OCI spec modifier: %v", err)
 	}
@@ -67,7 +67,7 @@ func newNVIDIAContainerRuntime(logger logger.Interface, cfg *config.Config, argv
 }
 
 // newSpecModifier is a factory method that creates constructs an OCI spec modifer based on the provided config.
-func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spec, driver *root.Driver) (oci.SpecModifier, error) {
+func newSpecModifier(logger logger.Interface, driver *root.Driver, cfg *config.Config, ociSpec oci.Spec) (oci.SpecModifier, error) {
 	mode, image, err := initRuntimeModeAndImage(logger, cfg, ociSpec)
 	if err != nil {
 		return nil, err

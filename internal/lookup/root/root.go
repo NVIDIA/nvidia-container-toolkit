@@ -34,6 +34,8 @@ type Driver struct {
 	logger logger.Interface
 	// Root represents the root from the perspective of the driver libraries and binaries.
 	Root string
+	// DevRoot represents the root for device nodes for the driver.
+	DevRoot string
 	// librarySearchPaths specifies explicit search paths for discovering libraries.
 	librarySearchPaths []string
 	// configSearchPaths specified explicit search paths for discovering driver config files.
@@ -54,6 +56,9 @@ func New(opts ...Option) *Driver {
 	if o.logger == nil {
 		o.logger = logger.New()
 	}
+	if o.DevRoot == "" {
+		o.DevRoot = o.Root
+	}
 
 	var driverVersion string
 	if o.versioner != nil {
@@ -67,6 +72,7 @@ func New(opts ...Option) *Driver {
 	d := &Driver{
 		logger:             o.logger,
 		Root:               o.Root,
+		DevRoot:            o.DevRoot,
 		librarySearchPaths: o.librarySearchPaths,
 		configSearchPaths:  o.configSearchPaths,
 		version:            driverVersion,

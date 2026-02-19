@@ -55,7 +55,7 @@ func (o *options) newNvsandboxutilsDGPUDiscoverer(d UUIDer) (discover.Discover, 
 	nvd := nvsandboxutilsDGPU{
 		lib:         o.nvsandboxutilslib,
 		uuid:        uuid,
-		devRoot:     strings.TrimSuffix(filepath.Clean(o.devRoot), "/dev"),
+		devRoot:     strings.TrimSuffix(filepath.Clean(o.driver.DevRoot), "/dev"),
 		isMig:       o.isMigDevice,
 		hookCreator: o.hookCreator,
 	}

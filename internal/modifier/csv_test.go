@@ -24,6 +24,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 )
 
 func TestNewCSVModifier(t *testing.T) {
@@ -60,6 +61,7 @@ func TestNewCSVModifier(t *testing.T) {
 			)
 			f := createFactory(
 				WithLogger(logger),
+				WithDriver(root.New()),
 				WithConfig(tc.cfg),
 				WithImage(&image),
 			)

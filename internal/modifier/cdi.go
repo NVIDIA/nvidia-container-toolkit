@@ -187,7 +187,8 @@ func (f *Factory) newAutomaticCDISpecModifier(devices []string) (oci.SpecModifie
 		cdilib, err := nvcdi.New(
 			nvcdi.WithLogger(f.logger),
 			nvcdi.WithNVIDIACDIHookPath(f.cfg.NVIDIACTKConfig.Path),
-			nvcdi.WithDriverRoot(f.cfg.NVIDIAContainerCLIConfig.Root),
+			nvcdi.WithDriverRoot(f.driver.Root),
+			nvcdi.WithDevRoot(f.driver.DevRoot),
 			nvcdi.WithVendor(automaticDeviceVendor),
 			nvcdi.WithClass(cdiModeIdentifiers.deviceClassByMode[mode]),
 			nvcdi.WithMode(mode),
