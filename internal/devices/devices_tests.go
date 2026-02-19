@@ -29,6 +29,7 @@ import (
 type Interface interface {
 	DeviceFromPath(string, string) (*Device, error)
 	AssertCharDevice(string) error
+	IsOverrideApplied() bool
 }
 
 type testDefaults struct{}
@@ -47,6 +48,7 @@ func SetInterfaceForTests(m Interface) func() {
 	funcs := []func(){
 		SetDeviceFromPathForTest(m.DeviceFromPath),
 		SetAssertCharDeviceForTest(m.AssertCharDevice),
+		SetIsOverrideAppliedForTest(m.IsOverrideApplied),
 	}
 	return func() {
 		for _, f := range funcs {
@@ -68,6 +70,14 @@ func SetAssertCharDeviceForTest(testFunc func(string) error) func() {
 	assertCharDeviceStub = testFunc
 	return func() {
 		assertCharDeviceStub = current
+	}
+}
+
+func SetIsOverrideAppliedForTest(testFunc func() bool) func() {
+	current := isOverrideAppliedStub
+	isOverrideAppliedStub = testFunc
+	return func() {
+		isOverrideAppliedStub = current
 	}
 }
 
@@ -114,4 +124,8 @@ func (t *testDefaults) AssertCharDevice(path string) error {
 	}
 
 	return nil
+}
+
+func (t *testDefaults) IsOverrideApplied() bool {
+	return true
 }

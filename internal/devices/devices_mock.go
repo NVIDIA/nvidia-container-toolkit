@@ -23,6 +23,9 @@ var _ Interface = &InterfaceMock{}
 //			DeviceFromPathFunc: func(s1 string, s2 string) (*Device, error) {
 //				panic("mock out the DeviceFromPath method")
 //			},
+//			IsOverrideAppliedFunc: func() bool {
+//				panic("mock out the IsOverrideApplied method")
+//			},
 //		}
 //
 //		// use mockedInterface in code that requires Interface
@@ -35,6 +38,9 @@ type InterfaceMock struct {
 
 	// DeviceFromPathFunc mocks the DeviceFromPath method.
 	DeviceFromPathFunc func(s1 string, s2 string) (*Device, error)
+
+	// IsOverrideAppliedFunc mocks the IsOverrideApplied method.
+	IsOverrideAppliedFunc func() bool
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -50,9 +56,13 @@ type InterfaceMock struct {
 			// S2 is the s2 argument value.
 			S2 string
 		}
+		// IsOverrideApplied holds details about calls to the IsOverrideApplied method.
+		IsOverrideApplied []struct {
+		}
 	}
-	lockAssertCharDevice sync.RWMutex
-	lockDeviceFromPath   sync.RWMutex
+	lockAssertCharDevice  sync.RWMutex
+	lockDeviceFromPath    sync.RWMutex
+	lockIsOverrideApplied sync.RWMutex
 }
 
 // AssertCharDevice calls AssertCharDeviceFunc.
@@ -120,5 +130,32 @@ func (mock *InterfaceMock) DeviceFromPathCalls() []struct {
 	mock.lockDeviceFromPath.RLock()
 	calls = mock.calls.DeviceFromPath
 	mock.lockDeviceFromPath.RUnlock()
+	return calls
+}
+
+// IsOverrideApplied calls IsOverrideAppliedFunc.
+func (mock *InterfaceMock) IsOverrideApplied() bool {
+	if mock.IsOverrideAppliedFunc == nil {
+		panic("InterfaceMock.IsOverrideAppliedFunc: method is nil but Interface.IsOverrideApplied was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockIsOverrideApplied.Lock()
+	mock.calls.IsOverrideApplied = append(mock.calls.IsOverrideApplied, callInfo)
+	mock.lockIsOverrideApplied.Unlock()
+	return mock.IsOverrideAppliedFunc()
+}
+
+// IsOverrideAppliedCalls gets all the calls that were made to IsOverrideApplied.
+// Check the length with:
+//
+//	len(mockedInterface.IsOverrideAppliedCalls())
+func (mock *InterfaceMock) IsOverrideAppliedCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockIsOverrideApplied.RLock()
+	calls = mock.calls.IsOverrideApplied
+	mock.lockIsOverrideApplied.RUnlock()
 	return calls
 }
