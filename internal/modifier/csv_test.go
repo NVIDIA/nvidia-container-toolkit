@@ -31,7 +31,7 @@ func TestNewCSVModifier(t *testing.T) {
 
 	testCases := []struct {
 		description   string
-		cfg           *config.Config
+		cfg           config.Config
 		envmap        map[string]string
 		expectedError error
 		expectedNil   bool
@@ -60,7 +60,7 @@ func TestNewCSVModifier(t *testing.T) {
 			)
 			f := createFactory(
 				WithLogger(logger),
-				WithConfig(tc.cfg),
+				WithConfig(&tc.cfg),
 				WithImage(&image),
 			)
 			m, err := f.newCSVModifier()

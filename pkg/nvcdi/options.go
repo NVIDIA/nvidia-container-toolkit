@@ -22,6 +22,7 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
@@ -61,6 +62,12 @@ func WithDriverRoot(root string) Option {
 func WithDevRoot(root string) Option {
 	return func(l *nvcdilib) {
 		l.devRoot = root
+	}
+}
+
+func WithEditsFactory(editsFactory edits.Factory) Option {
+	return func(l *nvcdilib) {
+		l.editsFactory = editsFactory
 	}
 }
 
