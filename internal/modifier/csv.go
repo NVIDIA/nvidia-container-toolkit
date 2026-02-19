@@ -60,6 +60,7 @@ func (f *Factory) newCSVModifier() (oci.SpecModifier, error) {
 		nvcdi.WithMode(nvcdi.ModeCSV),
 		nvcdi.WithCSVFiles(csvFiles),
 		nvcdi.WithCSVCompatContainerRoot(f.cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.CompatContainerRoot),
+		nvcdi.WithEditsFactory(f.editsFactory),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct CDI library: %v", err)

@@ -64,7 +64,10 @@ func createFactory(opts ...Option) *Factory {
 	}
 
 	if f.editsFactory == nil {
-		f.editsFactory = edits.NewFactory(edits.WithLogger(f.logger))
+		f.editsFactory = edits.NewFactory(
+			edits.WithLogger(f.logger),
+			edits.WithNoAdditionalGIDsForDeviceNodes(f.cfg.Features.NoAdditionalGIDsForDeviceNodes.IsEnabled()),
+		)
 	}
 
 	return f
