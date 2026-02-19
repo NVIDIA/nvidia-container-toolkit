@@ -53,3 +53,11 @@ var assertCharDeviceStub = func(path string) error {
 	}
 	return nil
 }
+
+func IsOverrideApplied() bool {
+	return isOverrideAppliedStub()
+}
+
+var isOverrideAppliedStub = func() bool {
+	return false
+}
