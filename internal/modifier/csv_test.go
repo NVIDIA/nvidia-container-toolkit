@@ -117,8 +117,6 @@ func TestNewCSVModifier(t *testing.T) {
 				devRoot = filepath.Join(lookupRoot, tc.devRootfs)
 			}
 			driver := root.New(root.WithDriverRoot(driverRoot), root.WithDevRoot(devRoot))
-			// TODO: We should point to the factory root here.
-			tc.cfg.NVIDIAContainerCLIConfig.Root = driverRoot
 			// Override the CSV file search path for this root.
 			tc.cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.MountSpecPath = filepath.Join(driverRoot, "/etc/nvidia-container-runtime/host-files-for-container.d")
 

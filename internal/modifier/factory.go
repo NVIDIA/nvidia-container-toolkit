@@ -62,7 +62,6 @@ func createFactory(opts ...Option) *Factory {
 	for _, opt := range opts {
 		opt(f)
 	}
-
 	if f.editsFactory == nil {
 		f.editsFactory = edits.NewFactory(edits.WithLogger(f.logger))
 	}
@@ -71,6 +70,9 @@ func createFactory(opts ...Option) *Factory {
 }
 
 func (f *Factory) validate() error {
+	if f.driver == nil {
+		return fmt.Errorf("a driver muse be specified")
+	}
 	switch string(f.runtimeMode) {
 	case "":
 		return fmt.Errorf("a mode must be specified")
