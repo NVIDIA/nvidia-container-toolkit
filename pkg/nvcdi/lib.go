@@ -71,10 +71,7 @@ func New(opts ...Option) (Interface, error) {
 			discover.WithLdconfigPath(o.ldconfigPath),
 			discover.WithDisabledHooks(o.disabledHooks...),
 		),
-		editsFactory: edits.NewFactory(
-			edits.WithLogger(o.logger),
-			edits.WithNoAdditionalGIDsForDeviceNodes(o.featureFlags[FeatureNoAdditionalGIDsForDeviceNodes]),
-		),
+		editsFactory: o.editsFactory,
 	}
 
 	var factory deviceSpecGeneratorFactory

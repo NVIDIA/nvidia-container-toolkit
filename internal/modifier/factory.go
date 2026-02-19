@@ -32,14 +32,20 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
-type Factory struct {
+// factoryOptions define the set of options that must be set when constructing
+// a modifier factory.
+type factoryOptions struct {
 	logger      logger.Interface
 	cfg         *config.Config
 	driver      *root.Driver
 	hookCreator discover.HookCreator
 	image       *image.CUDA
 	runtimeMode info.RuntimeMode
+}
 
+type Factory struct {
+	factoryOptions
+	// An editsFactory is created at construction.
 	editsFactory edits.Factory
 }
 
@@ -60,11 +66,13 @@ func New(opts ...Option) (oci.SpecModifier, error) {
 func createFactory(opts ...Option) *Factory {
 	f := &Factory{}
 	for _, opt := range opts {
-		opt(f)
+		opt(&f.factoryOptions)
 	}
-	if f.editsFactory == nil {
-		f.editsFactory = edits.NewFactory(edits.WithLogger(f.logger))
-	}
+
+	f.editsFactory = edits.NewFactory(
+		edits.WithLogger(f.logger),
+		edits.WithNoAdditionalGIDsForDeviceNodes(f.cfg.Features.NoAdditionalGIDsForDeviceNodes.IsEnabled()),
+	)
 
 	return f
 }
@@ -125,39 +133,39 @@ func (f *Factory) create() (oci.SpecModifier, error) {
 	return modifiers, nil
 }
 
-type Option func(*Factory)
+type Option func(*factoryOptions)
 
 func WithConfig(cfg *config.Config) Option {
-	return func(f *Factory) {
+	return func(f *factoryOptions) {
 		f.cfg = cfg
 	}
 }
 
 func WithDriver(driver *root.Driver) Option {
-	return func(f *Factory) {
+	return func(f *factoryOptions) {
 		f.driver = driver
 	}
 }
 func WithHookCreator(hookCreator discover.HookCreator) Option {
-	return func(f *Factory) {
+	return func(f *factoryOptions) {
 		f.hookCreator = hookCreator
 	}
 }
 
 func WithImage(image *image.CUDA) Option {
-	return func(f *Factory) {
+	return func(f *factoryOptions) {
 		f.image = image
 	}
 }
 
 func WithLogger(logger logger.Interface) Option {
-	return func(f *Factory) {
+	return func(f *factoryOptions) {
 		f.logger = logger
 	}
 }
 
 func WithRuntimeMode(runtimeMode info.RuntimeMode) Option {
-	return func(f *Factory) {
+	return func(f *factoryOptions) {
 		f.runtimeMode = runtimeMode
 	}
 }
