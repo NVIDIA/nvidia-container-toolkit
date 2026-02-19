@@ -19,7 +19,7 @@ package modifier
 import (
 	"fmt"
 
-	"github.com/opencontainers/runtime-spec/specs-go"
+	ocispecs "github.com/opencontainers/runtime-spec/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
@@ -28,27 +28,42 @@ import (
 )
 
 type discoverModifier struct {
-	logger     logger.Interface
-	discoverer discover.Discover
+	logger       logger.Interface
+	editsFactory edits.Factory
+	discoverer   discover.Discover
 }
 
 // newModifierFromDiscoverer creates a modifier that applies the discovered
 // modifications to an OCI spec if required by the runtime wrapper.
 func (f *Factory) newModifierFromDiscoverer(d discover.Discover) (oci.SpecModifier, error) {
 	m := discoverModifier{
-		logger:     f.logger,
-		discoverer: d,
+		logger:       f.logger,
+		editsFactory: f.editsFactory,
+		discoverer:   d,
 	}
 	return &m, nil
 }
 
 // Modify applies the modifications required by discoverer to the incomming OCI spec.
 // These modifications are applied in-place.
-func (m discoverModifier) Modify(spec *specs.Spec) error {
-	specEdits, err := edits.NewSpecEdits(m.logger, m.discoverer)
+func (m discoverModifier) Modify(spec *ocispecs.Spec) error {
+	specEdits, err := m.editsFactory.FromDiscoverer(m.discoverer)
 	if err != nil {
 		return fmt.Errorf("failed to get required container edits: %v", err)
 	}
 
-	return specEdits.Modify(spec)
+	m.logger.Infof("Mounts:")
+	for _, mount := range specEdits.Mounts {
+		m.logger.Infof("Mounting %v at %v", mount.HostPath, mount.ContainerPath)
+	}
+	m.logger.Infof("Devices:")
+	for _, device := range specEdits.DeviceNodes {
+		m.logger.Infof("Injecting %v", device.Path)
+	}
+	m.logger.Infof("Hooks:")
+	for _, hook := range specEdits.Hooks {
+		m.logger.Infof("Injecting %v %v", hook.Path, hook.Args)
+	}
+
+	return specEdits.Apply(spec)
 }

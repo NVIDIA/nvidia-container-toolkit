@@ -26,7 +26,6 @@ import (
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 )
 
@@ -41,7 +40,7 @@ func (l *nvmllib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 		return nil, fmt.Errorf("failed to create discoverer for common entities: %v", err)
 	}
 
-	return edits.FromDiscoverer(common)
+	return l.editsFactory.FromDiscoverer(common)
 }
 
 // DeviceSpecGenerators returns the CDI device spec generators for NVML devices

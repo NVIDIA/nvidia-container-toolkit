@@ -17,6 +17,7 @@
 package edits
 
 import (
+	"io/fs"
 	"os"
 
 	"tags.cncf.io/container-device-interface/pkg/cdi"
@@ -26,7 +27,10 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
 
-type device discover.Device
+type device struct {
+	discover.Device
+	noAdditionalGIDs bool
+}
 
 // toEdits converts a discovered device to CDI Container Edits.
 func (d device) toEdits() (*cdi.ContainerEdits, error) {
@@ -37,7 +41,8 @@ func (d device) toEdits() (*cdi.ContainerEdits, error) {
 
 	e := cdi.ContainerEdits{
 		ContainerEdits: &specs.ContainerEdits{
-			DeviceNodes: []*specs.DeviceNode{deviceNode},
+			DeviceNodes:    []*specs.DeviceNode{deviceNode},
+			AdditionalGIDs: d.getAdditionalGIDs(deviceNode),
 		},
 	}
 	return &e, nil
@@ -109,4 +114,35 @@ func ptrIfNonZero[T uint32 | os.FileMode](id T) *T {
 		return nil
 	}
 	return &id
+}
+
+// getAdditionalGIDs returns the group id of the device if the device is not world read/writable.
+// If the information cannot be extracted or an error occurs, 0 is returned.
+func (d *device) getAdditionalGIDs(dn *specs.DeviceNode) []uint32 {
+	if d.noAdditionalGIDs {
+		return nil
+	}
+	// Handle the underdefined cases where we do not have enough information to
+	// extract the GID for the device OR whether the additional GID is required.
+	if dn == nil || dn.GID == nil || *dn.GID == 0 {
+		return nil
+	}
+	if dn.FileMode == nil {
+		return nil
+	}
+	if dn.FileMode.Type()&os.ModeCharDevice == 0 {
+		return nil
+	}
+	if permission := dn.FileMode.Perm(); isWorldReadable(permission) && isWorldWriteable(permission) {
+		return nil
+	}
+	return []uint32{*dn.GID}
+}
+
+func isWorldReadable(m fs.FileMode) bool {
+	return m&04 != 0
+}
+
+func isWorldWriteable(m fs.FileMode) bool {
+	return m&02 != 0
 }

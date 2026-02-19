@@ -19,37 +19,51 @@ package edits
 import (
 	"fmt"
 
-	ociSpecs "github.com/opencontainers/runtime-spec/specs-go"
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
-type edits struct {
-	cdi.ContainerEdits
-	logger logger.Interface
+const (
+	// An EmptyFactory is an edits factory that always returns empty CDI
+	// container edits.
+	EmptyFactory = empty("empty")
+)
+
+type Factory interface {
+	New() *cdi.ContainerEdits
+	FromDiscoverer(discover.Discover) (*cdi.ContainerEdits, error)
 }
 
-// NewSpecEdits creates a SpecModifier that defines the required OCI spec edits (as CDI ContainerEdits) from the specified
-// discoverer.
-func NewSpecEdits(logger logger.Interface, d discover.Discover) (oci.SpecModifier, error) {
-	c, err := FromDiscoverer(d)
-	if err != nil {
-		return nil, fmt.Errorf("error constructing container edits: %v", err)
-	}
-	e := edits{
-		ContainerEdits: *c,
-		logger:         logger,
-	}
+type empty string
 
-	return &e, nil
+type factory struct {
+	logger                         logger.Interface
+	noAdditionalGIDsForDeviceNodes bool
 }
 
-// FromDiscoverer creates CDI container edits for the specified discoverer.
-func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
+var _ Factory = (*empty)(nil)
+var _ Factory = (*factory)(nil)
+
+type Option func(*factory)
+
+func NewFactory(opts ...Option) Factory {
+	f := &factory{
+		logger: &logger.NullLogger{},
+	}
+	for _, opt := range opts {
+		opt(f)
+	}
+	return f
+}
+
+func (f *factory) New() *cdi.ContainerEdits {
+	return EmptyFactory.New()
+}
+
+func (f *factory) FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 	devices, err := d.Devices()
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover devices: %v", err)
@@ -70,9 +84,9 @@ func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 		return nil, fmt.Errorf("failed to discover hooks: %v", err)
 	}
 
-	c := NewContainerEdits()
+	c := EmptyFactory.New()
 	for _, d := range devices {
-		edits, err := device(d).toEdits()
+		edits, err := f.device(d).toEdits()
 		if err != nil {
 			return nil, fmt.Errorf("failed to created container edits for device: %v", err)
 		}
@@ -94,32 +108,34 @@ func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 	return c, nil
 }
 
-// NewContainerEdits is a utility function to create a CDI ContainerEdits struct.
-func NewContainerEdits() *cdi.ContainerEdits {
+func (f *factory) device(d discover.Device) *device {
+	return &device{
+		Device:           d,
+		noAdditionalGIDs: f.noAdditionalGIDsForDeviceNodes,
+	}
+}
+
+// New creates a set of empty CDI container edits for an empty factory.
+func (e empty) New() *cdi.ContainerEdits {
 	c := cdi.ContainerEdits{
 		ContainerEdits: &specs.ContainerEdits{},
 	}
 	return &c
 }
 
-// Modify applies the defined edits to the incoming OCI spec
-func (e *edits) Modify(spec *ociSpecs.Spec) error {
-	if e == nil || e.ContainerEdits.ContainerEdits == nil {
-		return nil
-	}
+// FromDiscoverer creates a set of empty CDI container edits for ANY discoverer.
+func (e empty) FromDiscoverer(_ discover.Discover) (*cdi.ContainerEdits, error) {
+	return e.New(), nil
+}
 
-	e.logger.Infof("Mounts:")
-	for _, mount := range e.Mounts {
-		e.logger.Infof("Mounting %v at %v", mount.HostPath, mount.ContainerPath)
+func WithLogger(logger logger.Interface) Option {
+	return func(f *factory) {
+		f.logger = logger
 	}
-	e.logger.Infof("Devices:")
-	for _, device := range e.DeviceNodes {
-		e.logger.Infof("Injecting %v", device.Path)
-	}
-	e.logger.Infof("Hooks:")
-	for _, hook := range e.Hooks {
-		e.logger.Infof("Injecting %v %v", hook.Path, hook.Args)
-	}
+}
 
-	return e.Apply(spec)
+func WithNoAdditionalGIDsForDeviceNodes(noAdditionalGIDsForDeviceNodes bool) Option {
+	return func(f *factory) {
+		f.noAdditionalGIDsForDeviceNodes = noAdditionalGIDsForDeviceNodes
+	}
 }

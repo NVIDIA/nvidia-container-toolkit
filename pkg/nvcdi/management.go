@@ -25,7 +25,6 @@ import (
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 )
 
@@ -44,7 +43,7 @@ func (l *managementlib) GetDeviceSpecs() ([]specs.Device, error) {
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
 	}
 
-	edits, err := edits.FromDiscoverer(devices)
+	edits, err := l.editsFactory.FromDiscoverer(devices)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create edits from discoverer: %v", err)
 	}
@@ -80,7 +79,7 @@ func (l *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 		return nil, fmt.Errorf("failed to create driver library discoverer: %v", err)
 	}
 
-	edits, err := edits.FromDiscoverer(driver)
+	edits, err := l.editsFactory.FromDiscoverer(driver)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create edits from discoverer: %v", err)
 	}

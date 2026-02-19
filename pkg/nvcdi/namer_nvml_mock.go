@@ -4,9 +4,8 @@
 package nvcdi
 
 import (
-	"sync"
-
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
+	"sync"
 )
 
 // Ensure, that nvmlUUIDerMock does implement nvmlUUIDer.
