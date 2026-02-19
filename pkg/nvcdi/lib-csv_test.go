@@ -82,7 +82,17 @@ func TestDeviceSpecGenerators(t *testing.T) {
 			},
 			expectedCommonEdits: &cdi.ContainerEdits{
 				ContainerEdits: &specs.ContainerEdits{
+					Mounts: []*specs.Mount{
+						{HostPath: "/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so.1.1", ContainerPath: "/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so.1.1", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
+						{HostPath: "/usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ml.so.1", ContainerPath: "/usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ml.so.1", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
+					},
 					Hooks: []*specs.Hook{
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "create-symlinks", "--link", "libcuda.so.1::/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
 						{
 							HookName: "createContainer",
 							Path:     "/usr/bin/nvidia-cdi-hook",
@@ -92,7 +102,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 						{
 							HookName: "createContainer",
 							Path:     "/usr/bin/nvidia-cdi-hook",
-							Args:     []string{"nvidia-cdi-hook", "update-ldcache"},
+							Args:     []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/usr/lib/aarch64-linux-gnu/nvidia"},
 							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
 						},
 					},
@@ -124,7 +134,17 @@ func TestDeviceSpecGenerators(t *testing.T) {
 			},
 			expectedCommonEdits: &cdi.ContainerEdits{
 				ContainerEdits: &specs.ContainerEdits{
+					Mounts: []*specs.Mount{
+						{HostPath: "/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so.1.1", ContainerPath: "/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so.1.1", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
+						{HostPath: "/usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ml.so.1", ContainerPath: "/usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ml.so.1", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
+					},
 					Hooks: []*specs.Hook{
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "create-symlinks", "--link", "libcuda.so.1::/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
 						{
 							HookName: "createContainer",
 							Path:     "/usr/bin/nvidia-cdi-hook",
@@ -134,7 +154,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 						{
 							HookName: "createContainer",
 							Path:     "/usr/bin/nvidia-cdi-hook",
-							Args:     []string{"nvidia-cdi-hook", "update-ldcache"},
+							Args:     []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/usr/lib/aarch64-linux-gnu/nvidia"},
 							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
 						},
 					},
@@ -231,7 +251,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 			commonEdits, err := tc.lib.GetCommonEdits()
 			require.NoError(t, err)
 
-			require.EqualValues(t, tc.expectedCommonEdits, commonEdits)
+			require.EqualValues(t, tc.expectedCommonEdits, stripRoot(driverRoot, commonEdits))
 		})
 	}
 
