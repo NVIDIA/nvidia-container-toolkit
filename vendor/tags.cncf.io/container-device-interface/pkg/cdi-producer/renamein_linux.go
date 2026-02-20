@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-package cdi
+package producer
 
 import (
 	"fmt"
