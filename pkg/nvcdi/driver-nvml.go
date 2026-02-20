@@ -234,10 +234,10 @@ func (l *nvcdilib) newDriverFirmwareDiscoverer(version string) (discover.Discove
 		l.logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(l.logger),
-			lookup.WithRoot(l.driverRoot),
+			lookup.WithRoot(l.driver.Root),
 			lookup.WithSearchPaths(gspFirmwareSearchPaths...),
 		),
-		l.driverRoot,
+		l.driver.Root,
 		[]string{gspFirmwarePaths},
 	), nil
 }
@@ -246,8 +246,8 @@ func (l *nvcdilib) newDriverFirmwareDiscoverer(version string) (discover.Discove
 func (l *nvcdilib) newDriverBinariesDiscoverer() discover.Discover {
 	return discover.NewMounts(
 		l.logger,
-		lookup.NewExecutableLocator(l.logger, l.driverRoot),
-		l.driverRoot,
+		lookup.NewExecutableLocator(l.logger, l.driver.Root),
+		l.driver.Root,
 		[]string{
 			"nvidia-smi",              /* System management interface */
 			"nvidia-debugdump",        /* GPU coredump utility */

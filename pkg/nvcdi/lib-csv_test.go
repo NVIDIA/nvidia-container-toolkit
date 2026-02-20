@@ -65,11 +65,13 @@ func TestDeviceSpecGenerators(t *testing.T) {
 			description:  "single orin CSV device",
 			rootfsFolder: "rootfs-orin",
 			lib: &csvlib{
-				// test-case specific
-				infolib: &infoInterfaceMock{
-					HasNvmlFunc: func() (bool, string) { return true, "forced" },
+				platformlibs: platformlibs{
+					// test-case specific
+					infolib: &infoInterfaceMock{
+						HasNvmlFunc: func() (bool, string) { return true, "forced" },
+					},
+					nvmllib: mockOrinServer(),
 				},
-				nvmllib: mockOrinServer(),
 			},
 			expectedDeviceSpecs: []specs.Device{
 				{
@@ -114,11 +116,13 @@ func TestDeviceSpecGenerators(t *testing.T) {
 			description:  "single orin CSV device; custom container compat root",
 			rootfsFolder: "rootfs-orin",
 			lib: &csvlib{
-				// test-case specific
-				infolib: &infoInterfaceMock{
-					HasNvmlFunc: func() (bool, string) { return true, "forced" },
+				platformlibs: platformlibs{
+					// test-case specific
+					infolib: &infoInterfaceMock{
+						HasNvmlFunc: func() (bool, string) { return true, "forced" },
+					},
+					nvmllib: mockOrinServer(),
 				},
-				nvmllib: mockOrinServer(),
 				csv: csvOptions{
 					CompatContainerRoot: "/another/compat/root",
 				},
@@ -166,11 +170,13 @@ func TestDeviceSpecGenerators(t *testing.T) {
 			description:  "thor device with dGPU",
 			rootfsFolder: "rootfs-thor-dgpu",
 			lib: &csvlib{
-				// test-case specific
-				infolib: &infoInterfaceMock{
-					HasNvmlFunc: func() (bool, string) { return true, "forced" },
+				platformlibs: platformlibs{
+					// test-case specific
+					infolib: &infoInterfaceMock{
+						HasNvmlFunc: func() (bool, string) { return true, "forced" },
+					},
+					nvmllib: mockIGXServer(),
 				},
-				nvmllib: mockIGXServer(),
 			},
 			expectedDeviceSpecs: []specs.Device{
 				{
@@ -226,7 +232,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 
 		tc.lib.devicelib = device.New(tc.lib.nvmllib)
 
-		tc.lib.driverRoot = driverRoot
+		tc.lib.driver = root.New(root.WithDriverRoot(driverRoot))
 		tc.lib.devRoot = driverRoot
 		tc.lib.driver = root.New(root.WithDriverRoot(driverRoot), root.WithDevRoot(driverRoot))
 		tc.lib.csv.Files = []string{

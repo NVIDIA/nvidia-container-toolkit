@@ -62,7 +62,7 @@ func (l *managementlib) GetDeviceSpecs() ([]specs.Device, error) {
 // GetCommonEdits returns the common edits for use in managementlib containers.
 func (l *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	if l.nvsandboxutilslib != nil {
-		if r := l.nvsandboxutilslib.Init(l.driverRoot); r != nvsandboxutils.SUCCESS {
+		if r := l.nvsandboxutilslib.Init(l.driver.Root); r != nvsandboxutils.SUCCESS {
 			l.logger.Warningf("Failed to init nvsandboxutils: %v; ignoring", r)
 			l.nvsandboxutilslib = nil
 		}

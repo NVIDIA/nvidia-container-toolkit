@@ -18,9 +18,8 @@ package nvcdi
 
 import (
 	"fmt"
+	"slices"
 
-	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
-	"github.com/NVIDIA/go-nvlib/pkg/nvlib/info"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
@@ -28,141 +27,82 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
-	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
 
 type nvcdilib struct {
-	logger             logger.Interface
-	nvmllib            nvml.Interface
-	nvsandboxutilslib  nvsandboxutils.Interface
-	mode               Mode
-	devicelib          device.Interface
-	deviceNamers       DeviceNamers
-	driverRoot         string
+	logger logger.Interface
+	platformlibs
+	deviceNamers DeviceNamers
+	// TODO: We should use the devRoot associated with the driver.
 	devRoot            string
-	nvidiaCDIHookPath  string
-	ldconfigPath       string
-	configSearchPaths  []string
 	librarySearchPaths []string
 
 	csv csvOptions
 
-	vendor string
-	class  string
-
-	driver  *root.Driver
-	infolib info.Interface
-
-	mergedDeviceOptions []transform.MergedDeviceOption
+	driver *root.Driver
 
 	featureFlags map[FeatureFlag]bool
 
-	disabledHooks []discover.HookName
-	enabledHooks  []discover.HookName
-	hookCreator   discover.HookCreator
-
+	hookCreator  discover.HookCreator
 	editsFactory edits.Factory
 }
 
 // New creates a new nvcdi library
 func New(opts ...Option) (Interface, error) {
+	o := populateOptions(opts...)
+
 	l := &nvcdilib{
-		featureFlags: make(map[FeatureFlag]bool),
-	}
-	for _, opt := range opts {
-		opt(l)
-	}
-	if l.mode == "" {
-		l.mode = ModeAuto
-	}
-	if l.logger == nil {
-		l.logger = logger.New()
-	}
-	if l.editsFactory == nil {
-		l.editsFactory = edits.NewFactory(
-			edits.WithLogger(l.logger),
-			edits.WithNoAdditionalGIDsForDeviceNodes(l.featureFlags[FeatureNoAdditionalGIDsForDeviceNodes]),
-		)
-	}
-	if len(l.deviceNamers) == 0 {
-		indexNamer, _ := NewDeviceNamer(DeviceNameStrategyIndex)
-		l.deviceNamers = []DeviceNamer{indexNamer}
-	}
-	if l.nvidiaCDIHookPath == "" {
-		l.nvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
-	}
-	if l.driverRoot == "" {
-		l.driverRoot = "/"
-	}
-	if l.devRoot == "" {
-		l.devRoot = l.driverRoot
-	}
-
-	l.nvmllib = l.getNvmlLib()
-	l.nvsandboxutilslib = l.getNvsandboxUtilsLib()
-	l.driver = l.getDriver(
-		root.WithVersioner(
-			root.FirstOf(
-				nvsandboxutilslibWithVersion(l.nvsandboxutilslib),
-				nvmllibWithVersion(l.nvmllib),
-			),
+		logger:       o.logger,
+		platformlibs: o.platformlibs,
+		driver: root.New(
+			o.getDriverOptions()...,
 		),
-	)
+		devRoot:      o.devRoot,
+		deviceNamers: o.deviceNamers,
 
-	if l.devicelib == nil {
-		l.devicelib = device.New(l.nvmllib)
-	}
-	if l.infolib == nil {
-		l.infolib = info.New(
-			info.WithRoot(l.driverRoot),
-			info.WithLogger(l.logger),
-			info.WithNvmlLib(l.nvmllib),
-			info.WithDeviceLib(l.devicelib),
-		)
+		librarySearchPaths: slices.Clone(o.librarySearchPaths),
+		featureFlags:       o.featureFlags,
+
+		csv: o.csv,
+
+		hookCreator: discover.NewHookCreator(
+			discover.WithNVIDIACDIHookPath(o.nvidiaCDIHookPath),
+			discover.WithEnabledHooks(o.enabledHooks...),
+			discover.WithLdconfigPath(o.ldconfigPath),
+			discover.WithDisabledHooks(o.disabledHooks...),
+		),
+		editsFactory: edits.NewFactory(
+			edits.WithLogger(o.logger),
+			edits.WithNoAdditionalGIDsForDeviceNodes(o.featureFlags[FeatureNoAdditionalGIDsForDeviceNodes]),
+		),
 	}
 
 	var factory deviceSpecGeneratorFactory
-	switch l.resolveMode() {
+	switch o.mode {
 	case ModeCSV:
-		factory = l.asCSVLib()
+		factory = (*csvlib)(l)
 	case ModeManagement:
-		if l.vendor == "" {
-			l.vendor = "management.nvidia.com"
-		}
-		// Management containers in general do not require CUDA Forward compatibility.
-		l.disabledHooks = append(l.disabledHooks, HookEnableCudaCompat, DisableDeviceNodeModificationHook)
 		factory = (*managementlib)(l)
 	case ModeNvml:
 		factory = (*nvmllib)(l)
 	case ModeWsl:
 		factory = (*wsllib)(l)
 	case ModeGdrcopy, ModeGds, ModeMofed, ModeNvswitch:
-		if l.class == "" {
-			l.class = string(l.mode)
+		factory = &gatedlib{
+			nvcdilib: l,
+			mode:     o.mode,
 		}
-		factory = (*gatedlib)(l)
 	case ModeImex:
-		if l.class == "" {
-			l.class = classImexChannel
-		}
 		factory = (*imexlib)(l)
 	default:
-		return nil, fmt.Errorf("unknown mode %q", l.mode)
+		return nil, fmt.Errorf("unknown mode %q", o.mode)
 	}
-
-	// create hookCreator
-	l.hookCreator = discover.NewHookCreator(
-		discover.WithNVIDIACDIHookPath(l.nvidiaCDIHookPath),
-		discover.WithDisabledHooks(l.disabledHooks...),
-		discover.WithEnabledHooks(l.enabledHooks...),
-		discover.WithLdconfigPath(l.ldconfigPath),
-	)
 
 	w := wrapper{
 		factory:             factory,
-		vendor:              l.vendor,
-		class:               l.class,
-		mergedDeviceOptions: l.mergedDeviceOptions,
+		vendor:              o.getVendorOrDefault(),
+		class:               o.getClassOrDefault(),
+		mergedDeviceOptions: o.mergedDeviceOptions,
 	}
 	return &w, nil
 }
@@ -226,18 +166,18 @@ func (l *nvsandboxutilslibAsVersioner) Version() (string, error) {
 	return version, nil
 }
 
-func (l *nvcdilib) getNvmlLib() nvml.Interface {
-	if l.nvmllib != nil {
-		return l.nvmllib
+func (o *options) getNvmlLib() nvml.Interface {
+	if o.nvmllib != nil {
+		return o.nvmllib
 	}
 
 	var nvmlOpts []nvml.LibraryOption
-	candidates, err := l.getDriver().Libraries().Locate("libnvidia-ml.so.1")
+	candidates, err := o.driverLibraryLocator().Locate("libnvidia-ml.so.1")
 	if err != nil {
-		l.logger.Warningf("Ignoring error in locating libnvidia-ml.so.1: %v", err)
+		o.logger.Warningf("Ignoring error in locating libnvidia-ml.so.1: %v", err)
 	} else {
 		libNvidiaMlPath := candidates[0]
-		l.logger.Infof("Using %v", libNvidiaMlPath)
+		o.logger.Infof("Using %v", libNvidiaMlPath)
 		nvmlOpts = append(nvmlOpts, nvml.WithLibraryPath(libNvidiaMlPath))
 	}
 	return nvml.New(nvmlOpts...)
@@ -245,29 +185,30 @@ func (l *nvcdilib) getNvmlLib() nvml.Interface {
 
 // getNvsandboxUtilsLib returns the nvsandboxutilslib to use for CDI spec
 // generation.
-func (l *nvcdilib) getNvsandboxUtilsLib() nvsandboxutils.Interface {
-	if l.featureFlags[FeatureDisableNvsandboxUtils] {
+func (o *options) getNvsandboxUtilsLib() nvsandboxutils.Interface {
+	if o.featureFlags[FeatureDisableNvsandboxUtils] {
 		return nil
 	}
-	if l.nvsandboxutilslib != nil {
-		return l.nvsandboxutilslib
+	if o.nvsandboxutilslib != nil {
+		return o.nvsandboxutilslib
 	}
 
 	var nvsandboxutilsOpts []nvsandboxutils.LibraryOption
 	// Set the library path for libnvidia-sandboxutils
-	candidates, err := l.getDriver().Libraries().Locate("libnvidia-sandboxutils.so.1")
+	candidates, err := o.driverLibraryLocator().Locate("libnvidia-sandboxutils.so.1")
 	if err != nil {
-		l.logger.Warningf("Ignoring error in locating libnvidia-sandboxutils.so.1: %v", err)
+		o.logger.Warningf("Ignoring error in locating libnvidia-sandboxutils.so.1: %v", err)
 	} else {
 		libNvidiaSandboxutilsPath := candidates[0]
-		l.logger.Infof("Using %v", libNvidiaSandboxutilsPath)
+		o.logger.Infof("Using %v", libNvidiaSandboxutilsPath)
 		nvsandboxutilsOpts = append(nvsandboxutilsOpts, nvsandboxutils.WithLibraryPath(libNvidiaSandboxutilsPath))
 	}
 
 	// We try to initialize the library once to ensure that we have a valid installation.
 	lib := nvsandboxutils.New(nvsandboxutilsOpts...)
-	if r := lib.Init(l.driverRoot); r != nvsandboxutils.SUCCESS {
-		l.logger.Warningf("Failed to init nvsandboxutils: %v; ignoring", r)
+	// TODO: Should this accept the driver root or the devRoot?
+	if r := lib.Init(o.driverRoot); r != nvsandboxutils.SUCCESS {
+		o.logger.Warningf("Failed to init nvsandboxutils: %v; ignoring", r)
 		return nil
 	}
 	defer func() {
@@ -277,16 +218,18 @@ func (l *nvcdilib) getNvsandboxUtilsLib() nvsandboxutils.Interface {
 	return lib
 }
 
-func (l *nvcdilib) getDriver(additionalOptions ...root.Option) *root.Driver {
-	options := []root.Option{
-		root.WithLogger(l.logger),
-		root.WithDriverRoot(l.driverRoot),
-		root.WithDevRoot(l.devRoot),
-		root.WithLibrarySearchPaths(l.librarySearchPaths...),
-		root.WithConfigSearchPaths(l.configSearchPaths...),
+func (o *options) getDriverOptions() []root.Option {
+	return []root.Option{
+		root.WithLogger(o.logger),
+		root.WithDriverRoot(o.driverRoot),
+		root.WithDevRoot(o.devRoot),
+		root.WithLibrarySearchPaths(o.librarySearchPaths...),
+		root.WithConfigSearchPaths(o.configSearchPaths...),
+		root.WithVersioner(
+			root.FirstOf(
+				nvsandboxutilslibWithVersion(o.nvsandboxutilslib),
+				nvmllibWithVersion(o.nvmllib),
+			),
+		),
 	}
-
-	options = append(options, additionalOptions...)
-
-	return root.New(options...)
 }

@@ -193,6 +193,7 @@ func (f *Factory) newAutomaticCDISpecModifier(devices []string) (oci.SpecModifie
 			nvcdi.WithClass(cdiModeIdentifiers.deviceClassByMode[mode]),
 			nvcdi.WithMode(mode),
 			nvcdi.WithFeatureFlags(nvcdiFeatureFlags...),
+			nvcdi.WithCSVCompatContainerRoot(f.cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.CompatContainerRoot),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct CDI library for mode %q: %w", mode, err)

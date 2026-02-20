@@ -104,16 +104,15 @@ func IsValidMode[T modeConstraint](mode T) bool {
 }
 
 // resolveMode resolves the mode for CDI spec generation based on the current system.
-func (l *nvcdilib) resolveMode() (rmode Mode) {
-	if l.mode != ModeAuto {
-		return l.mode
+func (o *options) resolveMode() (rmode Mode) {
+	if o.mode != ModeAuto {
+		return o.mode
 	}
 	defer func() {
-		l.logger.Infof("Auto-detected mode as '%v'", rmode)
-		l.mode = rmode
+		o.logger.Infof("Auto-detected mode as '%v'", rmode)
 	}()
 
-	platform := l.infolib.ResolvePlatform()
+	platform := o.infolib.ResolvePlatform()
 	switch platform {
 	case info.PlatformNVML:
 		return ModeNvml
@@ -122,6 +121,6 @@ func (l *nvcdilib) resolveMode() (rmode Mode) {
 	case info.PlatformWSL:
 		return ModeWsl
 	}
-	l.logger.Warningf("Unsupported platform detected: %v; assuming %v", platform, ModeNvml)
+	o.logger.Warningf("Unsupported platform detected: %v; assuming %v", platform, ModeNvml)
 	return ModeNvml
 }

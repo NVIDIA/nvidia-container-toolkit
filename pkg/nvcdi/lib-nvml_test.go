@@ -128,8 +128,10 @@ func TestNvmllibGetDeviceSpecGeneratorsForIDs(t *testing.T) {
 			mockDev := device.New(mockNvml)
 
 			l := &nvmllib{
-				nvmllib:   mockNvml,
-				devicelib: mockDev,
+				platformlibs: platformlibs{
+					nvmllib:   mockNvml,
+					devicelib: mockDev,
+				},
 			}
 			// Call the function under test
 			generators, err := l.getDeviceSpecGeneratorsForIDs(tc.ids...)
