@@ -1,5 +1,11 @@
 # NVIDIA Container Toolkit Changelog
 
+## What's Changed
+
+- Add a Dlopen-based library locator
+- Add support for injecting additional GIDs
+- Add support for CUDA forward compat on Orin systems
+
 ## v1.19.0-rc.3
 - Remove restart logic from nvidia-cdi-refresh.service.
 - fix: Set device node GID in CDI specs
