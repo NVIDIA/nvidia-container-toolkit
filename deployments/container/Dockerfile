@@ -55,7 +55,7 @@ RUN make PREFIX=/artifacts/bin cmd-nvidia-ctk-installer
 
 # The packaging stage collects the deb and rpm packages built for
 # supported architectures.
-FROM nvcr.io/nvidia/distroless/go:v4.0.1-dev AS packaging
+FROM nvcr.io/nvidia/distroless/go:v4.0.2-dev AS packaging
 
 USER 0:0
 SHELL ["/busybox/sh", "-c"]
@@ -144,7 +144,7 @@ COPY --from=build /artifacts/bin /artifacts/build
 
 # The application stage contains the application used as a GPU Operator
 # operand.
-FROM nvcr.io/nvidia/distroless/go:v4.0.1-dev AS application
+FROM nvcr.io/nvidia/distroless/go:v4.0.2-dev AS application
 
 USER 0:0
 SHELL ["/busybox/sh", "-c"]
