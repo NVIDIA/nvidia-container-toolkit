@@ -269,7 +269,7 @@ func (l *mixedcsvlib) getAllDeviceIndices() ([]string, error) {
 
 func (l *mixedcsvlib) deviceSpecGeneratorForId(id device.Identifier) (DeviceSpecGenerator, error) {
 	switch {
-	case id.IsGpuUUID(), isIntegratedGPUID(id):
+	case id.IsGpuUUID(), isOrinGPUID(id):
 		uuid := string(id)
 		device, ret := l.nvmllib.DeviceGetHandleByUUID(uuid)
 		if ret != nvml.SUCCESS {
@@ -361,7 +361,13 @@ func (l *mixedcsvlib) iGPUDeviceSpecGenerator(index int, uuid string) (DeviceSpe
 	return g, nil
 }
 
-func isIntegratedGPUID(id device.Identifier) bool {
+// isOrinGPUID returns true if the specified device identifier represents
+// an Orin iGPU uuid (as opposed to a discrete GPU).
+// Based on practical examples, the identifier for an Orin iGPU is a standard
+// hexadecimal UUID in the 8-4-4-4-12 format, whereas discrete GPU UUIDs have
+// the prefix `GPU-` or `MIG-` for full GPUs or MIG devices, respectively. Thor
+// iGPUs follow the same format as discrete GPUs.
+func isOrinGPUID(id device.Identifier) bool {
 	_, err := uuid.Parse(string(id))
 	return err == nil
 }
