@@ -373,7 +373,12 @@ func isOrinGPUID(id device.Identifier) bool {
 }
 
 // isIntegratedGPU checks whether the specified device is an integrated GPU.
-// As a proxy we check the PCI Bus if for thes
+// The following heuristic is followed:
+//   - If the device does not support getting PCI bus information, we fall back to
+//     checking the device name and consider Orin and Thor devices iGPUs.
+//   - If the device does support PCI bus information, we check for a specific
+//     bus ID that is associated with Thor devices.
+//
 // TODO: This should be replaced by an explicit NVML call once available.
 func isIntegratedGPU(d nvml.Device) (bool, error) {
 	pciInfo, ret := d.GetPciInfo()
@@ -388,13 +393,12 @@ func isIntegratedGPU(d nvml.Device) (bool, error) {
 		return false, fmt.Errorf("failed to get PCI info: %v", ret)
 	}
 
-	if pciInfo.Domain != 0 {
-		return false, nil
+	// On Thor-based systems, the iGPU always has the PCI bus ID '0000:01:00.0'.
+	// We explicitly handle this case.
+	if pciInfo.Domain == 0 && pciInfo.Bus == 1 && pciInfo.Device == 0 {
+		return true, nil
 	}
-	if pciInfo.Bus != 1 {
-		return false, nil
-	}
-	return pciInfo.Device == 0, nil
+	return false, nil
 }
 
 func (l *csvlib) driverDiscoverer() (discover.Discover, error) {
