@@ -1,4 +1,4 @@
-name: Stale issues and pull requests
+name: Stale issues
 
 on:
   workflow_dispatch:
@@ -10,22 +10,16 @@ jobs:
     permissions:
       actions: write
       issues: write
-      pull-requests: write
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/stale@v10
       with:
         stale-issue-message: 'This issue is stale because it has been open 90 days with no activity. This issue will be closed in 30 days unless new comments are made or the stale label is removed. To skip these checks, apply the "lifecycle/frozen" label.'
-        stale-pr-message: 'This PR is stale because it has been open 90 days with no activity. This PR will be closed in 30 days unless new comments are made or the stale label is removed. To skip these checks, apply the "lifecycle/frozen" label.'
         stale-issue-label: 'lifecycle/stale'
-        stale-pr-label: 'lifecycle/stale'
-        exempt-issue-labels: 'lifecycle/frozen'
-        exempt-pr-labels: 'lifecycle/frozen'
+        exempt-issue-labels: 'lifecycle/frozen,feature,enhancement'
         days-before-stale: 90
         close-issue-message: 'This issue was automatically closed due to inactivity.'
-        close-pr-message: 'This pull request was automatically closed due to inactivity.'
         days-before-issue-close: 30
-        days-before-pr-close: 30
         remove-stale-when-updated: true
         operations-per-run: 1000
