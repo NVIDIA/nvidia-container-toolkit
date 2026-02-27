@@ -28,7 +28,7 @@ if [[ -z ${VERSION} ]]; then
   exit 1
 fi
 
-SHA=$(git rev-parse --short=8 ${VERSION})
+SHA=$(git rev-parse --short=8 ${VERSION}^{commit})
 
 IMAGE_NAME="ghcr.io/nvidia/container-toolkit"
 IMAGE_TAG=${SHA}-packaging
