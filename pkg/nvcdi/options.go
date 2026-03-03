@@ -69,9 +69,6 @@ func populateOptions(opts ...Option) *options {
 		mode:              ModeAuto,
 		driverRoot:        "/",
 		nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
-		csv: csvOptions{
-			CompatContainerRoot: defaultOrinCompatContainerRoot,
-		},
 	}
 	for _, opt := range opts {
 		opt(o)
@@ -107,6 +104,10 @@ func populateOptions(opts ...Option) *options {
 
 	if o.mode == ModeCSV && len(o.csv.Files) == 0 {
 		o.csv.Files = csv.DefaultFileList()
+	}
+
+	if o.mode == ModeCSV && o.csv.CompatContainerRoot == "" {
+		o.csv.CompatContainerRoot = defaultOrinCompatContainerRoot
 	}
 
 	if o.mode == ModeManagement {
