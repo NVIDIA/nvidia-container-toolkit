@@ -115,9 +115,9 @@ echo "Creating a version bump branch: bump-release-${version}"
 git checkout -f -b bump-release-${version}
 
 # Patch versions.mk
-LIB_VERSION=${release%-*}
+LIB_VERSION=${version%-*}
 LIB_VERSION=${LIB_VERSION#v}
-if [[ ${release} == v*-rc.* ]]; then
+if [[ ${version} == v*-rc.* ]]; then
     LIB_TAG_STRING=" ${version#*-}"
 else
     LIB_TAG_STRING=
