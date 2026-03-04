@@ -21,8 +21,6 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 )
 
@@ -41,84 +39,59 @@ func (f *Factory) newFeatureGatedModifier() (oci.SpecModifier, error) {
 		return nil, nil
 	}
 
-	var discoverers []discover.Discover
-
-	if f.image.Getenv("NVIDIA_GDS") == "enabled" {
-		d, err := discover.NewGDSDiscoverer(f.logger, f.driver)
+	var modifers list
+	if gatedDeviceRequests := withUniqueDevices(gatedDevices(*f.image)).DeviceRequests(); len(gatedDeviceRequests) != 0 {
+		featureGatedModifier, err := f.newAutomaticCDISpecModifier(gatedDeviceRequests)
 		if err != nil {
-			return nil, fmt.Errorf("failed to construct discoverer for GDS devices: %w", err)
+			return nil, err
 		}
-		discoverers = append(discoverers, d)
-	}
-
-	if f.image.Getenv("NVIDIA_MOFED") == "enabled" {
-		d, err := discover.NewMOFEDDiscoverer(f.logger, f.driver)
-		if err != nil {
-			return nil, fmt.Errorf("failed to construct discoverer for MOFED devices: %w", err)
-		}
-		discoverers = append(discoverers, d)
-	}
-
-	if f.image.Getenv("NVIDIA_NVSWITCH") == "enabled" {
-		d, err := discover.NewNvSwitchDiscoverer(f.logger, f.driver)
-		if err != nil {
-			return nil, fmt.Errorf("failed to construct discoverer for NVSWITCH devices: %w", err)
-		}
-		discoverers = append(discoverers, d)
-	}
-
-	if f.image.Getenv("NVIDIA_GDRCOPY") == "enabled" {
-		d, err := discover.NewGDRCopyDiscoverer(f.logger, f.driver)
-		if err != nil {
-			return nil, fmt.Errorf("failed to construct discoverer for GDRCopy devices: %w", err)
-		}
-		discoverers = append(discoverers, d)
+		modifers = append(modifers, featureGatedModifier)
 	}
 
 	// If the feature flag has explicitly been toggled, we don't make any modification.
 	if !f.cfg.Features.DisableCUDACompatLibHook.IsEnabled() {
-		cudaCompatDiscoverer, err := getCudaCompatModeDiscoverer(f.logger, f.cfg, f.driver, f.hookCreator)
+		cudaCompatModifer, err := f.getCudaCompatModeModifier()
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct CUDA Compat discoverer: %w", err)
 		}
-		discoverers = append(discoverers, cudaCompatDiscoverer)
+		modifers = append(modifers, cudaCompatModifer)
 	}
 
-	return f.newModifierFromDiscoverer(discover.Merge(discoverers...))
+	return modifers, nil
 }
 
-func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, driver *root.Driver, hookCreator discover.HookCreator) (discover.Discover, error) {
+func (f *Factory) getCudaCompatModeModifier() (oci.SpecModifier, error) {
 	// We don't support the enable-cuda-compat hook in CSV mode.
-	if cfg.NVIDIAContainerRuntimeConfig.Mode == "csv" {
+	if f.cfg.NVIDIAContainerRuntimeConfig.Mode == "csv" {
 		return nil, nil
 	}
 
 	// For legacy mode, we only include the enable-cuda-compat hook if cuda-compat-mode is set to hook.
-	if cfg.NVIDIAContainerRuntimeConfig.Mode == "legacy" && cfg.NVIDIAContainerRuntimeConfig.Modes.Legacy.CUDACompatMode != config.CUDACompatModeHook {
+	if f.cfg.NVIDIAContainerRuntimeConfig.Mode == "legacy" && f.cfg.NVIDIAContainerRuntimeConfig.Modes.Legacy.CUDACompatMode != config.CUDACompatModeHook {
 		return nil, nil
 	}
 
-	version, err := driver.Version()
+	version, err := f.driver.Version()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get driver version: %w", err)
 	}
 
-	compatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(logger, hookCreator, &discover.EnableCUDACompatHookOptions{HostDriverVersion: version})
+	compatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(f.logger, f.hookCreator, &discover.EnableCUDACompatHookOptions{HostDriverVersion: version})
 	// For non-legacy modes we return the hook as is. These modes *should* already include the update-ldcache hook.
-	if cfg.NVIDIAContainerRuntimeConfig.Mode != "legacy" {
-		return compatLibHookDiscoverer, nil
+	if f.cfg.NVIDIAContainerRuntimeConfig.Mode != "legacy" {
+		return f.newModifierFromDiscoverer(compatLibHookDiscoverer)
 	}
 
 	// For legacy mode, we also need to inject a hook to update the LDCache
 	// after we have modifed the configuration.
 	ldcacheUpdateHookDiscoverer, err := discover.NewLDCacheUpdateHook(
-		logger,
+		f.logger,
 		discover.None{},
-		hookCreator,
+		f.hookCreator,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct ldcache update discoverer: %w", err)
 	}
 
-	return discover.Merge(compatLibHookDiscoverer, ldcacheUpdateHookDiscoverer), nil
+	return f.newModifierFromDiscoverer(discover.Merge(compatLibHookDiscoverer, ldcacheUpdateHookDiscoverer))
 }
