@@ -269,7 +269,7 @@ func (l *mixedcsvlib) getAllDeviceIndices() ([]string, error) {
 
 func (l *mixedcsvlib) deviceSpecGeneratorForId(id device.Identifier) (DeviceSpecGenerator, error) {
 	switch {
-	case id.IsGpuUUID(), isIntegratedGPUID(id):
+	case id.IsGpuUUID(), isOrinGPUID(id):
 		uuid := string(id)
 		device, ret := l.nvmllib.DeviceGetHandleByUUID(uuid)
 		if ret != nvml.SUCCESS {
@@ -361,13 +361,24 @@ func (l *mixedcsvlib) iGPUDeviceSpecGenerator(index int, uuid string) (DeviceSpe
 	return g, nil
 }
 
-func isIntegratedGPUID(id device.Identifier) bool {
+// isOrinGPUID returns true if the specified device identifier represents
+// an Orin iGPU uuid (as opposed to a discrete GPU).
+// Based on practical examples, the identifier for an Orin iGPU is a standard
+// hexadecimal UUID in the 8-4-4-4-12 format, whereas discrete GPU UUIDs have
+// the prefix `GPU-` or `MIG-` for full GPUs or MIG devices, respectively. Thor
+// iGPUs follow the same format as discrete GPUs.
+func isOrinGPUID(id device.Identifier) bool {
 	_, err := uuid.Parse(string(id))
 	return err == nil
 }
 
 // isIntegratedGPU checks whether the specified device is an integrated GPU.
-// As a proxy we check the PCI Bus if for thes
+// The following heuristic is followed:
+//   - If the device does not support getting PCI bus information, we fall back to
+//     checking the device name and consider Orin and Thor devices iGPUs.
+//   - If the device does support PCI bus information, we check for a specific
+//     bus ID that is associated with Thor devices.
+//
 // TODO: This should be replaced by an explicit NVML call once available.
 func isIntegratedGPU(d nvml.Device) (bool, error) {
 	pciInfo, ret := d.GetPciInfo()
@@ -382,13 +393,12 @@ func isIntegratedGPU(d nvml.Device) (bool, error) {
 		return false, fmt.Errorf("failed to get PCI info: %v", ret)
 	}
 
-	if pciInfo.Domain != 0 {
-		return false, nil
+	// On Thor-based systems, the iGPU always has the PCI bus ID '0000:01:00.0'.
+	// We explicitly handle this case.
+	if pciInfo.Domain == 0 && pciInfo.Bus == 1 && pciInfo.Device == 0 {
+		return true, nil
 	}
-	if pciInfo.Bus != 1 {
-		return false, nil
-	}
-	return pciInfo.Device == 0, nil
+	return false, nil
 }
 
 func (l *csvlib) driverDiscoverer() (discover.Discover, error) {
