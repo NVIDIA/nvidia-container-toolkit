@@ -54,7 +54,7 @@ jobs:
           image: tonistiigi/binfmt:master
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: build ${{ matrix.target }} packages
         run: |
@@ -91,7 +91,7 @@ jobs:
           image: tonistiigi/binfmt:master
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Get built packages
         uses: actions/download-artifact@v8
