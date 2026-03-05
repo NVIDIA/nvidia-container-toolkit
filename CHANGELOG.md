@@ -1,5 +1,19 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.19.0-rc.7
+- fix: Reuse instantiated editsFactory in CDI
+- fix: Don't use driver version in ELF header for compat check
+- Use jit-cdi modifier for gated modifiers
+- refactor: Use automatic CDI modifier for CSV
+- fix: Use driver.Root instead of config option in modifier Factory
+- test: Improve csv modifier tests
+- test: Add IsOverrideApplied function to devices package
+- chore: Run goimports on mocks
+- fix: Ensure that CUDA Compat Container path is set by default
+- chore: Update isIntegratedGPU for readability
+- chore: Rename isIntegratedGPUID function to isOrinGPUID
+- fix: Use correct version when updating versions.mk
+
 ## v1.19.0-rc.6
 
 - Use host CUDA version for all CSV compat checks
