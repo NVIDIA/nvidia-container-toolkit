@@ -124,7 +124,6 @@ func TestNewCSVModifier(t *testing.T) {
 			f := createFactory(
 				WithLogger(logger),
 				WithDriver(driver),
-				WithLogger(logger),
 				WithConfig(&tc.cfg),
 				WithImage(&image),
 			)

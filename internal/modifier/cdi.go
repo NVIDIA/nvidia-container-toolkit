@@ -18,7 +18,6 @@ package modifier
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	"tags.cncf.io/container-device-interface/pkg/parser"
@@ -176,11 +175,6 @@ func filterAutomaticDevices(devices []string) []string {
 func (f *Factory) newAutomaticCDISpecModifier(devices []string) (oci.SpecModifier, error) {
 	f.logger.Debugf("Generating in-memory CDI specs for devices %v", devices)
 
-	nvcdiFeatureFlags := slices.Clone(f.cfg.NVIDIAContainerRuntimeConfig.Modes.JitCDI.NVCDIFeatureFlags)
-	if f.cfg.Features.NoAdditionalGIDsForDeviceNodes.IsEnabled() {
-		nvcdiFeatureFlags = append(nvcdiFeatureFlags, nvcdi.FeatureNoAdditionalGIDsForDeviceNodes)
-	}
-
 	csvFiles, err := csv.GetFileList(f.cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.MountSpecPath)
 	if err != nil {
 		f.logger.Warningf("Failed to get the list of CSV files: %v", err)
@@ -198,10 +192,11 @@ func (f *Factory) newAutomaticCDISpecModifier(devices []string) (oci.SpecModifie
 			nvcdi.WithNVIDIACDIHookPath(f.cfg.NVIDIACTKConfig.Path),
 			nvcdi.WithDriverRoot(f.driver.Root),
 			nvcdi.WithDevRoot(f.driver.DevRoot),
+			nvcdi.WithEditsFactory(f.editsFactory),
 			nvcdi.WithVendor(automaticDeviceVendor),
 			nvcdi.WithClass(cdiModeIdentifiers.deviceClassByMode[mode]),
 			nvcdi.WithMode(mode),
-			nvcdi.WithFeatureFlags(nvcdiFeatureFlags...),
+			nvcdi.WithFeatureFlags(f.cfg.NVIDIAContainerRuntimeConfig.Modes.JitCDI.NVCDIFeatureFlags...),
 			nvcdi.WithCSVCompatContainerRoot(f.cfg.NVIDIAContainerRuntimeConfig.Modes.CSV.CompatContainerRoot),
 			nvcdi.WithCSVFiles(csvFiles),
 		)

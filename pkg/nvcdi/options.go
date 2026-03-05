@@ -22,6 +22,7 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
@@ -52,6 +53,8 @@ type options struct {
 
 	disabledHooks []discover.HookName
 	enabledHooks  []discover.HookName
+
+	editsFactory edits.Factory
 }
 
 type platformlibs struct {
@@ -114,6 +117,13 @@ func populateOptions(opts ...Option) *options {
 		// For management mode we explicitly disable the hooks that enable CUDA
 		// compatibility and disable device node modifications.
 		o.disabledHooks = append(o.disabledHooks, HookEnableCudaCompat, DisableDeviceNodeModificationHook)
+	}
+
+	if o.editsFactory == nil {
+		o.editsFactory = edits.NewFactory(
+			edits.WithLogger(o.logger),
+			edits.WithNoAdditionalGIDsForDeviceNodes(o.featureFlags[FeatureNoAdditionalGIDsForDeviceNodes]),
+		)
 	}
 
 	return o
@@ -188,6 +198,12 @@ func WithDriverRoot(root string) Option {
 func WithDevRoot(root string) Option {
 	return func(l *options) {
 		l.devRoot = root
+	}
+}
+
+func WithEditsFactory(editsFactory edits.Factory) Option {
+	return func(l *options) {
+		l.editsFactory = editsFactory
 	}
 }
 
