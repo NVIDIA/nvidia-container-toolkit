@@ -177,23 +177,28 @@ func (m command) getContainerForwardCompatDir(containerRoot containerRoot, o *op
 }
 
 func (m command) useCompatLibraries(libcudaCompatPath string, hostDriverVersion string, hostCUDAVersion string) (bool, error) {
+	// If the host CUDA version is specified, we need to inspect the ELF header
+	// of the compat libraries in the container to determine whether these
+	// should be used.
+	if hostCUDAVersion != "" {
+		cudaCompatHeader, _ := GetCUDACompatElfHeader(libcudaCompatPath)
+		if cudaCompatHeader != nil {
+			return cudaCompatHeader.UseCompat(hostCUDAVersion), nil
+		}
+		// If we were unable to read the CUDA header, we do not use the compat
+		// libraries.
+		return false, nil
+	}
+
+	// If neither a host driver version nor a host CUDA version is specified,
+	// we don't use the CUDA compat libraries in the container.
+	if hostDriverVersion == "" {
+		return false, nil
+	}
+
 	driverMajor, err := extractMajorVersion(hostDriverVersion)
 	if err != nil {
 		return false, fmt.Errorf("failed to extract major version from %q: %v", hostDriverVersion, err)
-	}
-
-	// First check the ELF header. If this is present, we use the ELF header to
-	// determine whether the CUDA compat libraries in the container should be
-	// used.
-	cudaCompatHeader, _ := GetCUDACompatElfHeader(libcudaCompatPath)
-	if cudaCompatHeader != nil {
-		return cudaCompatHeader.UseCompat(driverMajor, hostCUDAVersion), nil
-	}
-
-	// If no CUDA Compat ELF header is available, and NO host driver version
-	// was specified, we don't use the CUDA compat libraries in the container.
-	if hostDriverVersion == "" {
-		return false, nil
 	}
 
 	compatDriverVersion := strings.TrimPrefix(filepath.Base(libcudaCompatPath), "libcuda.so.")
