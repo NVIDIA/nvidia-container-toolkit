@@ -89,6 +89,11 @@ func New(opts ...Option) (Interface, error) {
 			nvcdilib: l,
 			mode:     o.mode,
 		}
+	case ModeSandbox:
+		factory = &sandboxlib{
+			nvcdilib:                 l,
+			emptyDeviceSpecGenerator: "all",
+		}
 	case ModeImex:
 		factory = (*imexlib)(l)
 	default:

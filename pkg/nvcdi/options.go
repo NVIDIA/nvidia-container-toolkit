@@ -126,6 +126,11 @@ func populateOptions(opts ...Option) *options {
 		)
 	}
 
+	if o.mode == ModeSandbox {
+		// For sandbox mode we explicitly disable all hooks.
+		o.disabledHooks = append(o.disabledHooks, AllHooks)
+	}
+
 	return o
 }
 
