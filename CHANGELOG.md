@@ -1,5 +1,8 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.19.0
+- Promote v1.19.0-rc.7 to v1.19.0
+
 ## v1.19.0-rc.7
 - fix: Reuse instantiated editsFactory in CDI
 - fix: Don't use driver version in ELF header for compat check
