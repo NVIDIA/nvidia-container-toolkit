@@ -227,6 +227,8 @@ func getGoFiles(sourceDir string) (map[string][]byte, error) {
 			return nil
 		}
 
+		//nolint:gosec  // Since we are only using this during code generation
+		// we are not concerned with possible TOUTOC race conditions.
 		content, err := os.ReadFile(path)
 		if err != nil {
 			return err
