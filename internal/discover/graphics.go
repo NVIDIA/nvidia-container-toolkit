@@ -109,17 +109,22 @@ func newVulkanConfigsDiscover(logger logger.Interface, driver *root.Driver) Disc
 
 type graphicsDriverLibraries struct {
 	Discover
-	logger      logger.Interface
-	hookCreator HookCreator
+	logger        logger.Interface
+	hookCreator   HookCreator
+	// driverVersionSuffix is the version of the driver that is being used
+	// prefixed with a '.'
+	driverVersionSuffix string
 }
 
 var _ Discover = (*graphicsDriverLibraries)(nil)
 
 func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver, hookCreator HookCreator) (Discover, error) {
-	cudaVersionPattern, err := driver.Version()
+	driverVersion, err := driver.Version()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get driver version: %w", err)
 	}
+	// We use the driver version as a pattern for matching libraries.
+	// This pattern is used to identify libraries that are part of the driver.
 	cudaLibRoot, err := driver.GetDriverLibDirectory()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get libcuda.so parent directory: %w", err)
@@ -140,8 +145,8 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 			// * libnvidia-allocator.so.RM_VERSION
 			// * libnvidia-vulkan-producer.so.RM_VERSION
 			// but need to be handled for the legacy case too.
-			"libnvidia-allocator.so." + cudaVersionPattern,
-			"libnvidia-vulkan-producer.so." + cudaVersionPattern,
+			"libnvidia-allocator.so." + driverVersion,
+			"libnvidia-vulkan-producer.so." + driverVersion,
 		},
 	)
 
@@ -156,14 +161,15 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 		driver.Root,
 		[]string{
 			"nvidia_drv.so",
-			"libglxserver_nvidia.so." + cudaVersionPattern,
+			"libglxserver_nvidia.so." + driverVersion,
 		},
 	)
 
 	return &graphicsDriverLibraries{
-		Discover:    Merge(libraries, xorgLibraries),
-		logger:      logger,
-		hookCreator: hookCreator,
+		Discover:            Merge(libraries, xorgLibraries),
+		logger:              logger,
+		hookCreator:         hookCreator,
+		driverVersionSuffix: "." + driverVersion,
 	}, nil
 }
 
@@ -231,8 +237,7 @@ func (d graphicsDriverLibraries) Hooks() ([]Hook, error) {
 
 // isDriverLibrary checks whether the specified filename is a specific driver library.
 func (d graphicsDriverLibraries) isDriverLibrary(filename string, libraryName string) bool {
-	// TODO: Instead of `.*.*` we could use the driver version.
-	pattern := strings.TrimSuffix(libraryName, ".") + ".*.*"
+	pattern := libraryName + d.driverVersionSuffix
 	match, _ := filepath.Match(pattern, filename)
 	return match
 }
