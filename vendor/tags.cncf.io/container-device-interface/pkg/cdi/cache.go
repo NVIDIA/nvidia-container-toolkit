@@ -29,6 +29,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	oci "github.com/opencontainers/runtime-spec/specs-go"
+	producer "tags.cncf.io/container-device-interface/pkg/cdi-producer"
 	cdi "tags.cncf.io/container-device-interface/specs-go"
 )
 
@@ -282,25 +283,13 @@ func (c *Cache) highestPrioritySpecDir() (string, int) {
 // priority Spec directory. If name has a "json" or "yaml" extension it
 // choses the encoding. Otherwise the default YAML encoding is used.
 func (c *Cache) WriteSpec(raw *cdi.Spec, name string) error {
-	var (
-		specDir string
-		path    string
-		prio    int
-		spec    *Spec
-		err     error
-	)
-
-	specDir, prio = c.highestPrioritySpecDir()
+	specDir, prio := c.highestPrioritySpecDir()
 	if specDir == "" {
 		return errors.New("no Spec directories to write to")
 	}
 
-	path = filepath.Join(specDir, name)
-	if ext := filepath.Ext(path); ext != ".json" && ext != ".yaml" {
-		path += defaultSpecExt
-	}
-
-	spec, err = newSpec(raw, path, prio)
+	path := producer.EnsureExtension(filepath.Join(specDir, name))
+	spec, err := newSpec(raw, path, prio)
 	if err != nil {
 		return err
 	}
@@ -313,23 +302,14 @@ func (c *Cache) WriteSpec(raw *cdi.Spec, name string) error {
 // Spec previously written by WriteSpec(). If the file exists and
 // its removal fails RemoveSpec returns an error.
 func (c *Cache) RemoveSpec(name string) error {
-	var (
-		specDir string
-		path    string
-		err     error
-	)
-
-	specDir, _ = c.highestPrioritySpecDir()
+	specDir, _ := c.highestPrioritySpecDir()
 	if specDir == "" {
 		return errors.New("no Spec directories to remove from")
 	}
 
-	path = filepath.Join(specDir, name)
-	if ext := filepath.Ext(path); ext != ".json" && ext != ".yaml" {
-		path += defaultSpecExt
-	}
+	path := producer.EnsureExtension(filepath.Join(specDir, name))
 
-	err = os.Remove(path)
+	err := os.Remove(path)
 	if err != nil && errors.Is(err, fs.ErrNotExist) {
 		err = nil
 	}

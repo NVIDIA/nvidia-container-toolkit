@@ -159,13 +159,5 @@ func (o transformOptions) getContents() ([]byte, error) {
 
 // Save saves the CDI specification to the output file
 func (o transformOptions) Save(s spec.Interface) error {
-	if o.output == "" {
-		_, err := s.WriteTo(os.Stdout)
-		if err != nil {
-			return fmt.Errorf("failed to write CDI spec to STDOUT: %v", err)
-		}
-		return nil
-	}
-
 	return s.Save(o.output)
 }

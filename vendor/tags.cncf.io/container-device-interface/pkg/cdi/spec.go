@@ -17,7 +17,6 @@
 package cdi
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,17 +24,12 @@ import (
 	"sync"
 
 	oci "github.com/opencontainers/runtime-spec/specs-go"
-	orderedyaml "gopkg.in/yaml.v3"
 	"sigs.k8s.io/yaml"
 
 	"tags.cncf.io/container-device-interface/internal/validation"
+	producer "tags.cncf.io/container-device-interface/pkg/cdi-producer"
 	"tags.cncf.io/container-device-interface/pkg/parser"
 	cdi "tags.cncf.io/container-device-interface/specs-go"
-)
-
-const (
-	// defaultSpecExt is the file extension for the default encoding.
-	defaultSpecExt = ".yaml"
 )
 
 type validator interface {
@@ -107,10 +101,6 @@ func newSpec(raw *cdi.Spec, path string, priority int) (*Spec, error) {
 		priority: priority,
 	}
 
-	if ext := filepath.Ext(spec.path); ext != ".yaml" && ext != ".json" {
-		spec.path += defaultSpecExt
-	}
-
 	spec.vendor, spec.class = parser.ParseQualifier(spec.Kind)
 
 	if spec.devices, err = spec.validate(); err != nil {
@@ -123,52 +113,14 @@ func newSpec(raw *cdi.Spec, path string, priority int) (*Spec, error) {
 // Write the CDI Spec to the file associated with it during instantiation
 // by newSpec() or ReadSpec().
 func (s *Spec) write(overwrite bool) error {
-	var (
-		data []byte
-		dir  string
-		tmp  *os.File
-		err  error
+	return producer.Save(s.Spec, s.path,
+		// If we cannot determine the file format as yaml from the extension,
+		// we assume a json format.
+		producer.WithOutputFormat("json"),
+		producer.WithOverwrite(overwrite),
+		producer.WithPermissions(0),
+		producer.WithValidator(getSpecValidator()),
 	)
-
-	err = validateSpec(s.Spec)
-	if err != nil {
-		return err
-	}
-
-	if filepath.Ext(s.path) == ".yaml" {
-		data, err = orderedyaml.Marshal(s.Spec)
-		data = append([]byte("---\n"), data...)
-	} else {
-		data, err = json.Marshal(s.Spec)
-	}
-	if err != nil {
-		return fmt.Errorf("failed to marshal Spec file: %w", err)
-	}
-
-	dir = filepath.Dir(s.path)
-	err = os.MkdirAll(dir, 0o755)
-	if err != nil {
-		return fmt.Errorf("failed to create Spec dir: %w", err)
-	}
-
-	tmp, err = os.CreateTemp(dir, "spec.*.tmp")
-	if err != nil {
-		return fmt.Errorf("failed to create Spec file: %w", err)
-	}
-	_, err = tmp.Write(data)
-	_ = tmp.Close()
-	if err != nil {
-		return fmt.Errorf("failed to write Spec file: %w", err)
-	}
-
-	err = renameIn(dir, filepath.Base(tmp.Name()), filepath.Base(s.path), overwrite)
-
-	if err != nil {
-		_ = os.Remove(tmp.Name())
-		err = fmt.Errorf("failed to write Spec file: %w", err)
-	}
-
-	return err
 }
 
 // GetVendor returns the vendor of this Spec.
@@ -267,6 +219,13 @@ func SetSpecValidator(v validator) {
 	specValidator = v
 }
 
+// getSpecValidator returns a reference to the current validator.
+func getSpecValidator() validator {
+	validatorLock.Lock()
+	defer validatorLock.Unlock()
+	return specValidator
+}
+
 // validateSpec validates the Spec using the external validator.
 func validateSpec(raw *cdi.Spec) error {
 	validatorLock.RLock()
@@ -345,4 +304,24 @@ func GenerateNameForTransientSpec(raw *cdi.Spec, transientID string) (string, er
 	}
 
 	return GenerateTransientSpecName(vendor, class, transientID), nil
+}
+
+type contentSpecValidator string
+
+const (
+	// SpecContentValidator validates the CDI spec based on the content and
+	// not the JSON schema.
+	SpecContentValidator = contentSpecValidator("default")
+)
+
+func (v contentSpecValidator) Validate(raw *cdi.Spec) error {
+	spec := &Spec{
+		Spec: raw,
+	}
+	spec.vendor, spec.class = parser.ParseQualifier(spec.Kind)
+	_, err := spec.validate()
+	if err != nil {
+		return fmt.Errorf("invalid CDI Spec: %w", err)
+	}
+	return nil
 }
