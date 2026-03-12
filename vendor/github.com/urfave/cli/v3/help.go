@@ -124,8 +124,7 @@ func helpCommandAction(ctx context.Context, cmd *Command) error {
 	}
 
 	// Case 3, 5
-	if (len(cmd.Commands) == 1 && !cmd.HideHelp) ||
-		(len(cmd.Commands) == 0 && cmd.HideHelp) {
+	if len(cmd.VisibleCommands()) == 0 {
 
 		tmpl := cmd.CustomHelpTemplate
 		if tmpl == "" {
@@ -184,11 +183,12 @@ func DefaultRootCommandComplete(ctx context.Context, cmd *Command) {
 var DefaultAppComplete = DefaultRootCommandComplete
 
 func printCommandSuggestions(commands []*Command, writer io.Writer) {
+	shell := os.Getenv("SHELL")
 	for _, command := range commands {
 		if command.Hidden {
 			continue
 		}
-		if strings.HasSuffix(os.Getenv("SHELL"), "zsh") && len(command.Usage) > 0 {
+		if (strings.HasSuffix(shell, "zsh") || strings.HasSuffix(shell, "fish")) && len(command.Usage) > 0 {
 			_, _ = fmt.Fprintf(writer, "%s:%s\n", command.Name, command.Usage)
 		} else {
 			_, _ = fmt.Fprintf(writer, "%s\n", command.Name)
@@ -240,7 +240,8 @@ func printFlagSuggestions(lastArg string, flags []Flag, writer io.Writer) {
 		// match if last argument matches this flag and it is not repeated
 		if strings.HasPrefix(name, cur) && cur != name /* && !cliArgContains(name, os.Args)*/ {
 			flagCompletion := fmt.Sprintf("%s%s", strings.Repeat("-", count), name)
-			if usage != "" && strings.HasSuffix(os.Getenv("SHELL"), "zsh") {
+			shell := os.Getenv("SHELL")
+			if usage != "" && (strings.HasSuffix(shell, "zsh") || strings.HasSuffix(shell, "fish")) {
 				flagCompletion = fmt.Sprintf("%s:%s", flagCompletion, usage)
 			}
 			fmt.Fprintln(writer, flagCompletion)
