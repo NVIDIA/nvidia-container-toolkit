@@ -33,8 +33,8 @@ github.com/moby/sys/reexec v0.1.0 h1:RrBi8e0EBTLEgfruBOFcxtElzRGTEUkeIFaVXgU7wok
 github.com/moby/sys/reexec v0.1.0/go.mod h1:EqjBg8F3X7iZe5pU6nRZnYCMUTXoxsjiIfHup5wYIN8=
 github.com/moby/sys/symlink v0.3.0 h1:GZX89mEZ9u53f97npBy4Rc3vJKj7JBDj/PN2I22GrNU=
 github.com/moby/sys/symlink v0.3.0/go.mod h1:3eNdhduHmYPcgsJtZXW1W4XUJdZGBIkttZ8xKqPUJq0=
-github.com/opencontainers/runc v1.3.4 h1:+lwmPUTzbgv0JFqu8zBU2WtHYbm+JPPS9hxB/PvWd30=
-github.com/opencontainers/runc v1.3.4/go.mod h1:o1wyv76EDlTkcf0KTFgN8bMWLPvgF/HfX709lDv+rr4=
+github.com/opencontainers/runc v1.3.5 h1:Pu5ptKOUfCtjukP3iWDVplLDpwrfd6VrgmMh77D0YJw=
+github.com/opencontainers/runc v1.3.5/go.mod h1:o1wyv76EDlTkcf0KTFgN8bMWLPvgF/HfX709lDv+rr4=
 github.com/opencontainers/runtime-spec v1.3.0 h1:YZupQUdctfhpZy3TM39nN9Ika5CBWT5diQ8ibYCRkxg=
 github.com/opencontainers/runtime-spec v1.3.0/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/opencontainers/runtime-tools v0.9.1-0.20251114084447-edf4cb3d2116 h1:tAKu3NkKWZYpqBSOJKwTxT1wIGueiF7gcmcNgr5pNTY=
