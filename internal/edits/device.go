@@ -130,9 +130,6 @@ func (d *device) getAdditionalGIDs(dn *specs.DeviceNode) []uint32 {
 	if dn.FileMode == nil {
 		return nil
 	}
-	if dn.FileMode.Type()&os.ModeCharDevice == 0 {
-		return nil
-	}
 	if permission := dn.FileMode.Perm(); isWorldReadable(permission) && isWorldWriteable(permission) {
 		return nil
 	}
