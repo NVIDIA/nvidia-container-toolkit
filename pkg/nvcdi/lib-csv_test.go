@@ -182,6 +182,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 				{
 					Name: "0",
 					ContainerEdits: specs.ContainerEdits{
+						AdditionalGIDs: []uint32{44},
 						DeviceNodes: []*specs.DeviceNode{
 							{Path: "/dev/nvidia0", HostPath: "/dev/nvidia0"},
 							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
@@ -193,6 +194,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 				{
 					Name: "1",
 					ContainerEdits: specs.ContainerEdits{
+						AdditionalGIDs: []uint32{44},
 						DeviceNodes: []*specs.DeviceNode{
 							{Path: "/dev/nvidia1", HostPath: "/dev/nvidia1"},
 							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
