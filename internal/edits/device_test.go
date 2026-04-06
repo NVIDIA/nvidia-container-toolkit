@@ -23,12 +23,89 @@ import (
 
 	"github.com/opencontainers/cgroups/devices/config"
 	"github.com/stretchr/testify/require"
+	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test/to"
 )
+
+func TestDeviceToEdits(t *testing.T) {
+	testCases := []struct {
+		description string
+		device      discover.Device
+		deviceslib  devices.Interface
+		expected    *cdi.ContainerEdits
+	}{
+		{
+			device: discover.Device{
+				Path: "/foo",
+			},
+			expected: &cdi.ContainerEdits{
+				ContainerEdits: &specs.ContainerEdits{
+					DeviceNodes: []*specs.DeviceNode{
+						{Path: "/foo"},
+					},
+				},
+			},
+		},
+		{
+			description: "device with additional GIDs",
+			device: discover.Device{
+				Path: "/foo",
+			},
+			deviceslib: &devices.InterfaceMock{
+				DeviceFromPathFunc: func(path, permissions string) (*devices.Device, error) {
+					if path != "/foo" {
+						return nil, fmt.Errorf("not found %v", path)
+					}
+					cd := &config.Device{
+						Rule: config.Rule{
+							Major:       100,
+							Minor:       200,
+							Permissions: config.Permissions("w"),
+						},
+						// The bits which indicate this is a character device in the filemode
+						// have been masked. This mimics the behavior of the real DeviceFromPath
+						// function.
+						FileMode: 0660 & os.ModePerm,
+						Uid:      11,
+						Gid:      44,
+					}
+
+					return (*devices.Device)(cd), nil
+				},
+			},
+			expected: &cdi.ContainerEdits{
+				ContainerEdits: &specs.ContainerEdits{
+					DeviceNodes: []*specs.DeviceNode{
+						{
+							Path:        "/foo",
+							HostPath:    "",
+							Permissions: "w",
+							Major:       100,
+							Minor:       200,
+							FileMode:    to.Ptr(0660 & os.ModePerm),
+							GID:         ptrIfNonZero[uint32](44),
+						},
+					},
+					AdditionalGIDs: []uint32{44},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		f := factory{}
+		t.Run(tc.description, func(t *testing.T) {
+			defer devices.SetInterfaceForTests(tc.deviceslib)()
+			edits, err := f.device(tc.device).toEdits()
+			require.NoError(t, err)
+			require.EqualValues(t, tc.expected, edits)
+		})
+	}
+}
 
 func TestDeviceToSpec(t *testing.T) {
 	testCases := []struct {
