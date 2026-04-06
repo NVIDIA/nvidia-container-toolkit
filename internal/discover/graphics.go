@@ -63,6 +63,7 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, h
 			"glvnd/egl_vendor.d/10_nvidia.json",
 			"egl/egl_external_platform.d/15_nvidia_gbm.json",
 			"egl/egl_external_platform.d/10_nvidia_wayland.json",
+			"egl/egl_external_platform.d/09_nvidia_wayland2.json",
 			"nvidia/nvoptix.bin",
 			"X11/xorg.conf.d/10-nvidia.conf",
 			"X11/xorg.conf.d/nvidia-drm-outputclass.conf",
@@ -134,6 +135,7 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 			// have the RM version. Use the *.* pattern to match X.Y.Z versions.
 			"libnvidia-egl-gbm.so.*.*",
 			"libnvidia-egl-wayland.so.*.*",
+			"libnvidia-egl-wayland2.so.*.*",
 			// We include the following libraries to have them available for
 			// symlink creation below:
 			// If CDI injection is used, these should already be detected as:
