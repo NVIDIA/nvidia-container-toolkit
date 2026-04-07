@@ -273,7 +273,19 @@ func (a *app) Run(ctx context.Context, c *cli.Command, o *options) error {
 
 	runtimeConfigurer := runtime.NewConfigurer(o.runtime, o.noRuntimeConfig, o.enableNRIPlugin)
 
-	if len(o.toolkitOptions.ContainerRuntimeRuntimes) == 0 {
+	if o.enableNRIPlugin {
+		// When NRI Plugin is enabled, the toolkit no longer interacts with the cri-o/containerd runtime config TOML and
+		// therefore can no longer source the list of low-level runtime binary paths used by the container runtime.
+		// This becomes an issue when migrating from non-NRI to NRI where the low-level runtime binary path previously
+		// referenced is still needed after enabling the NRI Plugin mode. To do this, we retrieve the toolkit config
+		// object from the previous toolkit install run and fetch the list of low-level runtimes used then to retain the context.
+		toolkitCfg, err := a.toolkit.GetInstalledConfig()
+		if err != nil {
+			a.logger.Warnf("failed to get installed toolkit config: %v", err)
+		} else {
+			o.toolkitOptions.ContainerRuntimeRuntimes = toolkitCfg.NVIDIAContainerRuntimeConfig.Runtimes
+		}
+	} else if len(o.toolkitOptions.ContainerRuntimeRuntimes) == 0 {
 		lowlevelRuntimePaths, err := runtimeConfigurer.GetLowlevelRuntimePaths(&o.runtimeOptions)
 		if err != nil {
 			return fmt.Errorf("unable to determine runtime options: %w", err)
