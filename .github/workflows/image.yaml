@@ -21,27 +21,15 @@ on:
       version:
         required: true
         type: string
-      build_multi_arch_images:
-        required: true
-        type: string
 
 jobs:
-  packages:
-    runs-on: ubuntu-latest
+  amd64-packages:
+    runs-on: linux-amd64-cpu4
     strategy:
       matrix:
         target:
-          - ubuntu18.04-arm64
           - ubuntu18.04-amd64
-          - centos7-aarch64
           - centos7-x86_64
-        ispr:
-          - ${{ github.ref_name != 'main' && !startsWith( github.ref_name, 'release-' ) }}
-        exclude:
-          - ispr: true
-            target: ubuntu18.04-arm64
-          - ispr: true
-            target: centos7-aarch64
       fail-fast: false
 
     steps:
@@ -69,21 +57,57 @@ jobs:
           name: toolkit-container-${{ matrix.target }}-${{ github.run_id }}
           path: ${{ github.workspace }}/dist/*
 
-  image:
+  arm64-packages:
+    runs-on: linux-arm64-cpu4
+    strategy:
+      matrix:
+        target:
+          - ubuntu18.04-arm64
+          - centos7-aarch64
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v6
+        name: Check out code
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          image: tonistiigi/binfmt:master
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: build ${{ matrix.target }} packages
+        run: |
+          sudo apt-get install -y coreutils build-essential sed git bash make
+          echo "Building packages"
+          ./scripts/build-packages.sh ${{ matrix.target }}
+
+      - name: 'Upload Artifacts'
+        uses: actions/upload-artifact@v7
+        with:
+          compression-level: 0
+          name: toolkit-container-${{ matrix.target }}-${{ github.run_id }}
+          path: ${{ github.workspace }}/dist/*
+
+  packaging-image:
     runs-on: linux-amd64-cpu4
     permissions:
       contents: read
       id-token: write
       packages: write
-    strategy:
-      matrix:
-        target:
-          - application
-          - packaging
-    needs: packages
+    needs:
+      - amd64-packages
+      - arm64-packages
     steps:
       - uses: actions/checkout@v6
         name: Check out code
+
+      - name: Calculate build vars
+        id: vars
+        run: |
+          echo "LOWERCASE_REPO_OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | awk '{print tolower($0)}')" >> $GITHUB_ENV
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -113,11 +137,106 @@ jobs:
 
       - name: Build image
         env:
-          IMAGE_NAME: ghcr.io/nvidia/container-toolkit
+          IMAGE_NAME: ghcr.io/${{ env.LOWERCASE_REPO_OWNER }}/container-toolkit
           VERSION: ${{ inputs.version }}
           PUSH_ON_BUILD: "true"
-          BUILD_MULTI_ARCH_IMAGES: ${{ inputs.build_multi_arch_images }}
           GOPROXY: ${{ steps.setup-go-proxy.outputs.goproxy-url }}
         run: |
           echo "${VERSION}"
-          make -f deployments/container/Makefile build-${{ matrix.target }}
+          make -f deployments/container/Makefile build-packaging
+
+  application-image:
+    strategy:
+      matrix:
+        arch:
+          - amd64
+          - arm64
+    runs-on: linux-${{ matrix.arch }}-cpu4
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    needs:
+      - amd64-packages
+      - arm64-packages
+    steps:
+      - uses: actions/checkout@v6
+        name: Check out code
+
+      - name: Calculate build vars
+        id: vars
+        run: |
+          echo "LOWERCASE_REPO_OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | awk '{print tolower($0)}')" >> $GITHUB_ENV
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          image: tonistiigi/binfmt:master
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Get built packages
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ github.workspace }}/dist/
+          pattern: toolkit-container-*-${{ github.run_id }}
+          merge-multiple: true
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Go Proxy
+        id: setup-go-proxy
+        uses: nv-gha-runners/setup-artifactory-go-proxy@main
+
+      - name: Build image
+        env:
+          IMAGE_NAME: ghcr.io/${{ env.LOWERCASE_REPO_OWNER }}/container-toolkit
+          VERSION: ${{ inputs.version }}-${{ matrix.arch }}
+          PUSH_ON_BUILD: "true"
+          GOPROXY: ${{ steps.setup-go-proxy.outputs.goproxy-url }}
+        run: |
+          echo "${VERSION}"
+          make -f deployments/container/Makefile build-application
+
+  create-manifest:
+    needs:
+      - application-image
+    runs-on: linux-amd64-cpu4
+    steps:
+      - uses: actions/checkout@v6
+        name: Check out code
+
+      - name: Calculate build vars
+        id: vars
+        run: |
+          echo "LOWERCASE_REPO_OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | awk '{print tolower($0)}')" >> $GITHUB_ENV
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          image: tonistiigi/binfmt:master
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Manifest
+        env:
+          MULTIARCH_IMAGE: ghcr.io/${{ env.LOWERCASE_REPO_OWNER }}/container-toolkit:${{ inputs.version }}
+        run: |
+          docker manifest create \
+            ${MULTIARCH_IMAGE} \
+            ghcr.io/${{ env.LOWERCASE_REPO_OWNER }}/container-toolkit:${{ inputs.version }}-amd64 \
+            ghcr.io/${{ env.LOWERCASE_REPO_OWNER }}/container-toolkit:${{ inputs.version }}-arm64
+          docker manifest push ${MULTIARCH_IMAGE}
