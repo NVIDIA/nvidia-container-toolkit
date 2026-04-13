@@ -193,7 +193,7 @@ function upload_archive() {
 component="nvidia_container_toolkit"
 version="${VERSION%~rc.*}"
 version_suffix=$(date -r "${IMAGE_EPOCH}" '+%Y.%m.%d.%s' || date -d @"${IMAGE_EPOCH}" '+%Y.%m.%d.%s')
-kitmaker_version="${VERSION%~rc.*}.${version_suffix}"
+kitmaker_version="${VERSION%~*}.${version_suffix}"
 kitmaker_os="linux"
 
 # create_and_upload creates a kitmaker archive for the specified component, os, and arch and uploads it.
