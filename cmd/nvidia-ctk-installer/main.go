@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
-	"time"
 
 	nriapi "github.com/containerd/nri/pkg/api"
 	"github.com/sirupsen/logrus"
@@ -312,7 +311,7 @@ func (a *app) Run(ctx context.Context, c *cli.Command, o *options) error {
 	if o.enableNRIPlugin {
 		nriPlugin, err := a.startNRIPluginServer(ctx, o)
 		if err != nil {
-			a.logger.Errorf("unable to start NRI plugin server: %v", err)
+			return fmt.Errorf("unable to start NRI plugin server: %w", err)
 		}
 		defer nriPlugin.Stop()
 	}
@@ -384,29 +383,9 @@ func (a *app) waitForSignal() error {
 func (a *app) startNRIPluginServer(ctx context.Context, opts *options) (*nri.Plugin, error) {
 	a.logger.Infof("Starting the NRI Plugin server....")
 
-	const (
-		maxRetryAttempts = 5
-		retryBackoff     = 2 * time.Second
-	)
-
 	plugin := nri.NewPlugin(ctx, a.logger, opts.nriNamespace)
-	retriable := func() error {
-		return plugin.Start(ctx, opts.nriSocket, fmt.Sprintf("%02d", opts.nriPluginIndex))
-	}
-	var err error
-	for i := 0; i < maxRetryAttempts; i++ {
-		err = retriable()
-		if err == nil {
-			break
-		}
-		a.logger.Warningf("Attempt %d - error starting the NRI plugin: %v", i+1, err)
-		if i == maxRetryAttempts-1 {
-			break
-		}
-		time.Sleep(retryBackoff)
-	}
+	err := plugin.Start(ctx, opts.nriSocket, fmt.Sprintf("%02d", opts.nriPluginIndex))
 	if err != nil {
-		a.logger.Errorf("Max retries reached %d/%d, aborting", maxRetryAttempts, maxRetryAttempts)
 		return nil, err
 	}
 	return plugin, nil
