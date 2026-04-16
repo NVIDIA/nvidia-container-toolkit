@@ -177,16 +177,19 @@ func (m command) getContainerForwardCompatDir(containerRoot containerRoot, o *op
 }
 
 func (m command) useCompatLibraries(libcudaCompatPath string, hostDriverVersion string, hostCUDAVersion string) (bool, error) {
+	// First check the ELF header of the libcuda.so included in the compat directory.
+	// If this is present, we use the ELF header to determine whether the CUDA compat
+	// libraries in the container should be used over the host driver libraries.
+	compatDriverVersion := strings.TrimPrefix(filepath.Base(libcudaCompatPath), "libcuda.so.")
+	cudaCompatHeader, _ := GetCUDACompatElfHeader(libcudaCompatPath)
+	if cudaCompatHeader != nil {
+		return cudaCompatHeader.UseCompat(compatDriverVersion, hostDriverVersion, hostCUDAVersion), nil
+	}
+
 	// If the host CUDA version is specified, we need to inspect the ELF header
 	// of the compat libraries in the container to determine whether these
-	// should be used.
+	// should be used. Return early if we cannot read the ELF header.
 	if hostCUDAVersion != "" {
-		cudaCompatHeader, _ := GetCUDACompatElfHeader(libcudaCompatPath)
-		if cudaCompatHeader != nil {
-			return cudaCompatHeader.UseCompat(hostCUDAVersion), nil
-		}
-		// If we were unable to read the CUDA header, we do not use the compat
-		// libraries.
 		return false, nil
 	}
 
@@ -196,12 +199,14 @@ func (m command) useCompatLibraries(libcudaCompatPath string, hostDriverVersion 
 		return false, nil
 	}
 
+	// If we reach this point, it means we could not read the ELf header but
+	// the host driver version is specified. We fall back to comparing the major
+	// versions of the host driver and compat driver.
 	driverMajor, err := extractMajorVersion(hostDriverVersion)
 	if err != nil {
 		return false, fmt.Errorf("failed to extract major version from %q: %v", hostDriverVersion, err)
 	}
 
-	compatDriverVersion := strings.TrimPrefix(filepath.Base(libcudaCompatPath), "libcuda.so.")
 	compatMajor, err := extractMajorVersion(compatDriverVersion)
 	if err != nil {
 		return false, fmt.Errorf("failed to extract major version from %q: %v", compatDriverVersion, err)
