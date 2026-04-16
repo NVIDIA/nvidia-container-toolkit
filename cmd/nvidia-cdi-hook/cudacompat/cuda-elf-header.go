@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"golang.org/x/mod/semver"
@@ -118,14 +119,31 @@ func getCUDAFwdCompatibilitySection(lib *elf.File) *elf.Section {
 
 // UseCompat checks whether the CUDA compat libraries with the specified elf
 // header should be used given the specified host versions.
-// This is done by comparing the host CUDA version with the CUDA version
-// specified in the ELF header.
-func (h *compatElfHeader) UseCompat(hostCUDAVersion string) bool {
+// If the host driver version is specified, we check if the driver version
+// is supported in the ELF header. If no host driver version is provided, we
+// fall back to checking the CUDA version specified in the ELF header.
+func (h *compatElfHeader) UseCompat(compatDriverVersion string, hostDriverVersion string, hostCUDAVersion string) bool {
 	if h == nil {
 		return false
 	}
 
-	return h.CUDAVersion.UseCompat(hostCUDAVersion)
+	if compatDriverVersion == "" || hostDriverVersion == "" {
+		if hostCUDAVersion != "" {
+			return h.CUDAVersion.UseCompat(hostCUDAVersion)
+		}
+		return false
+	}
+
+	hostDriverMajor, err := extractMajorVersion(hostDriverVersion)
+	if err != nil {
+		return false
+	}
+
+	if !slices.Contains(h.Driver, hostDriverMajor) {
+		return false
+	}
+
+	return semver.Compare(normalizeVersion(compatDriverVersion), normalizeVersion(hostDriverVersion)) > 0
 }
 
 type cudaVersion string

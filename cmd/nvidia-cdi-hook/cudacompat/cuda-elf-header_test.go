@@ -38,8 +38,8 @@ func TestGetCUDACompatElfHeader(t *testing.T) {
 		expected    *compatElfHeader
 	}{
 		{
-			description: "wip",
-			filename:    "libcuda.so.575.57.08",
+			description: "575.57.08",
+			filename:    "575.57.08/libcuda.so.575.57.08",
 			expected: &compatElfHeader{
 				Format:      1,
 				CUDAVersion: "12.9",
@@ -48,8 +48,8 @@ func TestGetCUDACompatElfHeader(t *testing.T) {
 			},
 		},
 		{
-			description: "wip",
-			filename:    "libcuda.so.590.44.01",
+			description: "590.44.01",
+			filename:    "590.44.01/libcuda.so.590.44.01",
 			expected: &compatElfHeader{
 				Format:      1,
 				CUDAVersion: "13.1",
@@ -67,6 +67,119 @@ func TestGetCUDACompatElfHeader(t *testing.T) {
 			require.NoError(t, err)
 
 			require.EqualValues(t, tc.expected, h)
+		})
+	}
+}
+
+func TestUseCompat(t *testing.T) {
+	testCases := []struct {
+		description         string
+		elfHeader           *compatElfHeader
+		compatDriverVersion string
+		hostDriverVersion   string
+		hostCudaVersion     string
+		expected            bool
+	}{
+		{
+			description: "container cuda version greater than host cuda version",
+			elfHeader: &compatElfHeader{
+				Format:      1,
+				CUDAVersion: "12.9",
+				Driver:      []int{535, 550, 560, 565, 570, 575},
+				Device:      []int{1, 2, 7, 8, 9, 10, 11, 12, 13, 14},
+			},
+			hostCudaVersion: "12.8",
+			expected:        true,
+		},
+		{
+			description: "container cuda version same as host cuda version",
+			elfHeader: &compatElfHeader{
+				Format:      1,
+				CUDAVersion: "12.9",
+				Driver:      []int{535, 550, 560, 565, 570, 575},
+				Device:      []int{1, 2, 7, 8, 9, 10, 11, 12, 13, 14},
+			},
+			hostCudaVersion: "12.9",
+			expected:        false,
+		},
+		{
+			description: "container cuda version less than host cuda version",
+			elfHeader: &compatElfHeader{
+				Format:      1,
+				CUDAVersion: "12.9",
+				Driver:      []int{535, 550, 560, 565, 570, 575},
+				Device:      []int{1, 2, 7, 8, 9, 10, 11, 12, 13, 14},
+			},
+			hostCudaVersion: "12.10",
+			expected:        false,
+		},
+		{
+			description: "host driver branch not supported in compat elf header",
+			elfHeader: &compatElfHeader{
+				Format:      1,
+				CUDAVersion: "12.9",
+				Driver:      []int{535, 550, 560, 565, 570, 575},
+				Device:      []int{1, 2, 7, 8, 9, 10, 11, 12, 13, 14},
+			},
+			compatDriverVersion: "575.57.08",
+			hostDriverVersion:   "590.44.01",
+			expected:            false,
+		},
+		{
+			description: "host driver branch supported in compat elf header, host driver branch < compat driver branch",
+			elfHeader: &compatElfHeader{
+				Format:      1,
+				CUDAVersion: "12.9",
+				Driver:      []int{535, 550, 560, 565, 570, 575},
+				Device:      []int{1, 2, 7, 8, 9, 10, 11, 12, 13, 14},
+			},
+			compatDriverVersion: "575.57.08",
+			hostDriverVersion:   "570.211.01",
+			expected:            true,
+		},
+		{
+			description: "host driver branch same as compat driver branch, compat driver > host driver",
+			elfHeader: &compatElfHeader{
+				Format:      1,
+				CUDAVersion: "12.9",
+				Driver:      []int{535, 550, 560, 565, 570, 575},
+				Device:      []int{1, 2, 7, 8, 9, 10, 11, 12, 13, 14},
+			},
+			compatDriverVersion: "575.57.08",
+			hostDriverVersion:   "575.10.10",
+			expected:            true,
+		},
+		{
+			description: "host driver branch same as compat driver branch, compat driver = host driver",
+			elfHeader: &compatElfHeader{
+				Format:      1,
+				CUDAVersion: "12.9",
+				Driver:      []int{535, 550, 560, 565, 570, 575},
+				Device:      []int{1, 2, 7, 8, 9, 10, 11, 12, 13, 14},
+			},
+			compatDriverVersion: "575.57.08",
+			hostDriverVersion:   "575.57.08",
+			expected:            false,
+		},
+		{
+			description: "host driver branch same as compat driver branch, compat driver < host driver",
+			elfHeader: &compatElfHeader{
+				Format:      1,
+				CUDAVersion: "12.9",
+				Driver:      []int{535, 550, 560, 565, 570, 575},
+				Device:      []int{1, 2, 7, 8, 9, 10, 11, 12, 13, 14},
+			},
+			compatDriverVersion: "575.57.08",
+			hostDriverVersion:   "575.99.99",
+			expected:            false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			useCompat := tc.elfHeader.UseCompat(tc.compatDriverVersion, tc.hostDriverVersion, tc.hostCudaVersion)
+
+			require.EqualValues(t, tc.expected, useCompat)
 		})
 	}
 }
