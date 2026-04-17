@@ -39,8 +39,6 @@ type executable struct {
 }
 
 func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, error) {
-	configFilePath := t.ConfigFilePath(destDir)
-
 	executables := []executable{
 		{
 			path: "nvidia-ctk",
@@ -49,6 +47,9 @@ func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 			path: "nvidia-cdi-hook",
 		},
 	}
+
+	configFilePath := filepath.Join(destDir, ".config", "nvidia-container-runtime", "config.toml")
+
 	for _, runtime := range operator.GetRuntimes() {
 		e := executable{
 			path:                 runtime.Path,

@@ -100,11 +100,6 @@ func (t *ToolkitInstaller) Install(destDir string) error {
 	return errs
 }
 
-func (t *ToolkitInstaller) ConfigFilePath(destDir string) string {
-	toolkitConfigDir := filepath.Join(destDir, ".config", "nvidia-container-runtime")
-	return filepath.Join(toolkitConfigDir, "config.toml")
-}
-
 type symlink struct {
 	linkname string
 	target   string

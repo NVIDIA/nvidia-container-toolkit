@@ -219,6 +219,8 @@ type Installer struct {
 	sourceRoot string
 	// toolkitRoot specifies the destination path at which the toolkit is installed.
 	toolkitRoot string
+	// toolkitConfigFilePath specifies the file path of toolkit config file. It is derived from toolkitRoot.
+	toolkitConfigFilePath string
 }
 
 // NewInstaller creates an installer for the NVIDIA Container Toolkit.
@@ -230,6 +232,10 @@ func NewInstaller(opts ...Option) *Installer {
 
 	if i.logger == nil {
 		i.logger = logger.New()
+	}
+
+	if len(i.toolkitRoot) > 0 {
+		i.toolkitConfigFilePath = filepath.Join(i.toolkitRoot, ".config", "nvidia-container-runtime", "config.toml")
 	}
 
 	return i
@@ -332,7 +338,7 @@ func (t *Installer) Install(cli *cli.Command, opts *Options, runtime string) err
 		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("could not install toolkit components: %w", err))
 	}
 
-	err = t.installToolkitConfig(cli, opts, toolkit.ConfigFilePath(t.toolkitRoot))
+	err = t.installToolkitConfig(cli, opts)
 	if err != nil && !opts.ignoreErrors {
 		return fmt.Errorf("error installing NVIDIA container toolkit config: %v", err)
 	} else if err != nil {
@@ -357,9 +363,21 @@ func (t *Installer) Install(cli *cli.Command, opts *Options, runtime string) err
 	return nil
 }
 
+func (t *Installer) GetInstalledConfig() (*config.Config, error) {
+	cfg, err := config.New(
+		config.WithConfigFile(t.toolkitConfigFilePath),
+		config.WithRequired(true),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error loading installed toolkit config file: %w", err)
+	}
+	return cfg.Config()
+}
+
 // installToolkitConfig installs the config file for the NVIDIA container toolkit ensuring
 // that the settings are updated to match the desired install and nvidia driver directories.
-func (t *Installer) installToolkitConfig(c *cli.Command, opts *Options, toolkitConfigPath string) error {
+func (t *Installer) installToolkitConfig(c *cli.Command, opts *Options) error {
+	toolkitConfigPath := t.toolkitConfigFilePath
 
 	t.logger.Infof("Installing NVIDIA container toolkit config '%v'", toolkitConfigPath)
 
