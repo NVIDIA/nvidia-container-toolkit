@@ -224,6 +224,50 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
 		})
 	})
 
+	When("Testing CUDA Minor Version compatibility", Ordered, func() {
+		BeforeAll(func(ctx context.Context) {
+			/*
+			 * CUDA 13.0.3, NVIDIA Linux Driver 580.126.20
+			 */
+			_, _, err := runner.Run("docker pull nvcr.io/nvidia/cuda:13.0.3-base-ubi8")
+			Expect(err).ToNot(HaveOccurred())
+
+			compatOutput, _, err := runner.Run("docker run --rm -i -e NVIDIA_VISIBLE_DEVICES=void nvcr.io/nvidia/cuda:13.0.3-base-ubi8 bash -c \"ls /usr/local/cuda/compat/libcuda.*.*\"")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(compatOutput).ToNot(BeEmpty())
+
+			compatDriverVersion := strings.TrimPrefix(filepath.Base(compatOutput), "libcuda.so.")
+			compatMajor := strings.SplitN(compatDriverVersion, ".", 2)[0]
+
+			if hostDriverMajor != compatMajor {
+				GinkgoLogr.Info("CUDA Minor Version Compatibility tests require the host driver branch to equal the compat driver branch", "hostDriverVersion", hostDriverVersion, "compatDriverVersion", compatDriverVersion)
+				Skip("CUDA Minor Version Compatibility tests require the host driver branch to equal the compat driver branch")
+			}
+		})
+
+		It("should work with the nvidia runtime in legacy mode", func(ctx context.Context) {
+			ldconfigOut, _, err := runner.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true --runtime=nvidia --gpus all nvcr.io/nvidia/cuda:13.0.3-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ldconfigOut).To(ContainSubstring("/usr/local/cuda-13.0/compat/"))
+		})
+
+		It("should work with the nvidia runtime in CDI mode", func(ctx context.Context) {
+			ldconfigOut, _, err := runner.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true  --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all nvcr.io/nvidia/cuda:13.0.3-base-ubi8 bash -c \"ldconfig -p | grep libcuda.so.1\"")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ldconfigOut).To(ContainSubstring("/usr/local/cuda-13.0/compat/"))
+		})
+
+		It("should create a single ld.so.conf.d config file", func(ctx context.Context) {
+			lsout, _, err := runner.Run("docker run --rm -i -e NVIDIA_DISABLE_REQUIRE=true --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=runtime.nvidia.com/gpu=all nvcr.io/nvidia/cuda:13.0.3-base-ubi8 bash -c \"ls -l /etc/ld.so.conf.d/00-compat-*.conf\"")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(lsout).To(WithTransform(
+				func(s string) []string {
+					return strings.Split(strings.TrimSpace(s), "\n")
+				}, HaveLen(1),
+			))
+		})
+	})
+
 	When("Disabling device node creation", Ordered, func() {
 		BeforeAll(func(ctx context.Context) {
 			_, _, err := runner.Run("docker pull ubuntu")
