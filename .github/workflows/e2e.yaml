@@ -44,15 +44,15 @@ jobs:
         driver_branch:
           # LTS branch. EOL June 2026
           - 535
-          # Production branch. EOL February 2026
-          - 570
           # LTS branch. EOL August 2028
           - 580
+          # Production Branch. EOL March 2027
+          - 595
         exclude:
           - ispr: true
-            driver_branch: 570
-          - ispr: true
             driver_branch: 580
+          - ispr: true
+            driver_branch: 595
     steps:
       - name: Check out code
         uses: actions/checkout@v6
