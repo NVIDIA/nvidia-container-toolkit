@@ -143,7 +143,7 @@ func (h *compatElfHeader) UseCompat(compatDriverVersion string, hostDriverVersio
 		return false
 	}
 
-	return semver.Compare(normalizeVersion(compatDriverVersion), normalizeVersion(hostDriverVersion)) > 0
+	return compareVersions(compatDriverVersion, hostDriverVersion) > 0
 }
 
 type cudaVersion string
@@ -155,9 +155,28 @@ func (containerVersion cudaVersion) UseCompat(hostVersion string) bool {
 		return false
 	}
 
-	return semver.Compare(normalizeVersion(containerVersion), normalizeVersion(hostVersion)) > 0
+	return compareVersions(containerVersion, hostVersion) > 0
 }
 
+func compareVersions[T string | cudaVersion, O string | cudaVersion](this T, other O) int {
+	return semver.Compare(normalizeVersion(this), normalizeVersion(other))
+}
+
+// normalizeVersion converts the given version into a valid semantic version.
+// This function will always return a string in the format of vMAJOR.MINOR.PATCH
+// It accounts for version strings that have leading zeros, which is common
+// in NVIDIA driver version strings. For example, 570.211.01 will be converted to
+// v570.22.1
 func normalizeVersion[T string | cudaVersion](v T) string {
-	return "v" + strings.TrimPrefix(string(v), "v")
+	majorMinorPatch := []string{"0", "0", "0"}
+	versionParts := strings.SplitN(strings.TrimPrefix(string(v), "v"), ".", 3)
+	for i, versionPart := range versionParts {
+		trimmed := strings.TrimLeft(versionPart, "0")
+		if trimmed == "" {
+			trimmed = "0"
+		}
+		majorMinorPatch[i] = trimmed
+	}
+
+	return "v" + strings.Join(majorMinorPatch, ".")
 }

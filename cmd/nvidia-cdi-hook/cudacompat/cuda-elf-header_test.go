@@ -183,3 +183,93 @@ func TestUseCompat(t *testing.T) {
 		})
 	}
 }
+
+func TestCompareVersions(t *testing.T) {
+	testCases := []struct {
+		description string
+		a           string
+		b           string
+		expected    int
+	}{
+		{
+			description: "empty",
+			expected:    0,
+		},
+		{
+			description: "less than",
+			a:           "1.2.3",
+			b:           "2.4.5",
+			expected:    -1,
+		},
+		{
+			description: "equal",
+			a:           "1.1.1",
+			b:           "1.1.1",
+			expected:    0,
+		},
+		{
+			description: "equal with leading zeros in version string",
+			a:           "1.1.1",
+			b:           "1.01.1",
+			expected:    0,
+		},
+		{
+			description: "greater than",
+			a:           "2.4.5",
+			b:           "2.4.4",
+			expected:    1,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			require.EqualValues(t, tc.expected, compareVersions(tc.a, tc.b))
+		})
+	}
+
+}
+
+func TestNormalizeVersion(t *testing.T) {
+	testCases := []struct {
+		description string
+		input       string
+		expected    string
+	}{
+		{
+			description: "empty",
+			input:       "",
+			expected:    "v0.0.0",
+		},
+		{
+			description: "major is 0",
+			input:       "v0.1.2",
+			expected:    "v0.1.2",
+		},
+		{
+			description: "major only",
+			input:       "1",
+			expected:    "v1.0.0",
+		},
+		{
+			description: "major and minor only",
+			input:       "1.1",
+			expected:    "v1.1.0",
+		},
+		{
+			description: "zero-padded version",
+			input:       "01.02.03",
+			expected:    "v1.2.3",
+		},
+		{
+			description: "valid semantic version",
+			input:       "v1.2.3-4+567",
+			expected:    "v1.2.3-4+567",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			output := normalizeVersion(tc.input)
+			require.EqualValues(t, tc.expected, output)
+		})
+	}
+}
