@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Default container runtime (override with DOCKER=podman for Podman)
+DOCKER ?= docker
+
 # Supported OSs by architecture
 AMD64_TARGETS := ubuntu22.04 ubuntu20.04 ubuntu18.04 ubuntu16.04 debian10 debian9
 X86_64_TARGETS := centos7 centos8 rhel7 rhel8 amazonlinux2 opensuse-leap15.1
@@ -21,6 +24,11 @@ AARCH64_TARGETS := centos7 centos8 rhel8 amazonlinux2
 
 # Define top-level build targets
 docker%: SHELL:=/bin/bash
+
+# When using Podman, local images are stored under localhost/ so run uses the same name
+IMAGE_PREFIX := $(if $(filter podman,$(DOCKER)),localhost/,)
+# When using Podman (often on SELinux hosts), :z allows the container to write to the volume
+VOLUME_OPTS := $(if $(filter podman,$(DOCKER)),:z,)
 
 # Native targets
 PLATFORM ?= $(shell uname -m)
@@ -79,7 +87,7 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 --%: TARGET_PLATFORM = $(*)
 --%: VERSION = $(patsubst $(OS)%-$(ARCH),%,$(TARGET_PLATFORM))
 --%: BASEIMAGE = $(OS):$(VERSION)
---%: BUILDIMAGE = nvidia/$(LIB_NAME)/$(OS)$(VERSION)-$(ARCH)
+--%: BUILDIMAGE = $(IMAGE_PREFIX)nvidia/$(LIB_NAME)/$(OS)$(VERSION)-$(ARCH)
 --%: DOCKERFILE = $(CURDIR)/docker/Dockerfile.$(OS)
 --%: ARTIFACTS_DIR = $(DIST_DIR)/$(OS)$(VERSION)/$(ARCH)
 --%: docker-build-%
@@ -114,7 +122,7 @@ docker-all: $(AMD64_TARGETS) $(X86_64_TARGETS) \
 
 docker-build-%:
 	@echo "Building for $(TARGET_PLATFORM)"
-	docker pull --platform=linux/$(ARCH) $(BASEIMAGE)
+	$(DOCKER) pull --platform=linux/$(ARCH) $(BASEIMAGE)
 	DOCKER_BUILDKIT=1 \
 	$(DOCKER) build \
 	    --platform=linux/$(ARCH) \
@@ -127,17 +135,18 @@ docker-build-%:
 	    --build-arg GIT_COMMIT="$(GIT_COMMIT)" \
 	    --tag $(BUILDIMAGE) \
 	    --file $(DOCKERFILE) .
+	$(MKDIR) -p $(ARTIFACTS_DIR)
 	$(DOCKER) run \
 	    --platform=linux/$(ARCH) \
 	    -e DISTRIB \
 	    -e SECTION \
-	    -v $(ARTIFACTS_DIR):/dist \
+	    -v $(ARTIFACTS_DIR):/dist$(VOLUME_OPTS) \
 	    $(BUILDIMAGE)
 
 docker-clean:
-	IMAGES=$$(docker images "nvidia/$(LIB_NAME)/*" --format="{{.ID}}"); \
+	IMAGES=$$($(DOCKER) images "$(IMAGE_PREFIX)nvidia/$(LIB_NAME)/*" --format="{{.ID}}"); \
 	if [ "$${IMAGES}" != "" ]; then \
-	    docker rmi -f $${IMAGES}; \
+	    $(DOCKER) rmi -f $${IMAGES}; \
 	fi
 
 distclean:
