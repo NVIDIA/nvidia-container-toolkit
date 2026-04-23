@@ -18,6 +18,7 @@ package config
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 
@@ -322,6 +323,72 @@ func TestConfigFromToml(t *testing.T) {
 			config, err := tomlCfg.Config()
 			require.ErrorIs(t, err, tc.expectedError)
 			require.EqualValues(t, tc.expectedConfig, config)
+		})
+	}
+}
+
+func TestLoadConfigToml(t *testing.T) {
+	cfgToml, err := defaultToml()
+	require.NoError(t, err)
+
+	cfgToml.Set("nvidia-container-cli.ldconfig", "OVERRIDDEN")
+	cfgToml.Set("nvidia-container-cli.debug", "/var/log/nvidia-container-toolkit.log")
+	cfgToml.Set("nvidia-container-runtime.debug", "/var/log/nvidia-container-runtime.log")
+
+	tmpFile, err := os.CreateTemp("", "config.toml")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = cfgToml.Save(tmpFile)
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	testCases := []struct {
+		description string
+		options     options
+		expected    string
+	}{
+		{
+			description: "empty filename returns default config",
+			options: options{
+				configFile: "",
+			},
+			expected: func() string {
+				cfgToml, _ := defaultToml()
+				buffer := new(bytes.Buffer)
+				cfgToml.Save(buffer)
+				return buffer.String()
+			}(),
+		},
+		{
+			description: "save uncommented configuration items to file",
+			options: options{
+				configFile: tmpFile.Name(),
+			},
+			expected: func() string {
+				cfgToml, _ := defaultToml()
+				cfgToml.Set("nvidia-container-cli.ldconfig", "OVERRIDDEN")
+				cfgToml.Set("nvidia-container-cli.debug", "/var/log/nvidia-container-toolkit.log")
+				cfgToml.Set("nvidia-container-runtime.debug", "/var/log/nvidia-container-runtime.log")
+				buffer := new(bytes.Buffer)
+				cfgToml.Save(buffer)
+				return buffer.String()
+			}(),
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			tomlCfg, err := tc.options.loadConfigToml()
+			require.NoError(t, err)
+
+			buffer := new(bytes.Buffer)
+			_, err = tomlCfg.Save(buffer)
+			require.NoError(t, err)
+
+			require.EqualValues(t,
+				strings.TrimSpace(tc.expected),
+				strings.TrimSpace(buffer.String()),
+			)
 		})
 	}
 }
