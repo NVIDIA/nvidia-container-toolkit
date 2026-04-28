@@ -42,6 +42,9 @@ const (
 	PoststartHook = "poststart"
 	// PoststopHook is the name of the OCI "poststop" hook.
 	PoststopHook = "poststop"
+
+	// NoPermissions requests empty cgroup permissions for a device.
+	NoPermissions = "none"
 )
 
 var (
@@ -106,8 +109,11 @@ func (e *ContainerEdits) Apply(spec *oci.Spec) error {
 
 		if dev.Type == "b" || dev.Type == "c" {
 			access := d.Permissions
-			if access == "" {
+			switch access {
+			case "":
 				access = "rwm"
+			case NoPermissions:
+				access = ""
 			}
 			specgen.AddLinuxResourcesDevice(true, dev.Type, &dev.Major, &dev.Minor, access)
 		}
@@ -123,8 +129,15 @@ func (e *ContainerEdits) Apply(spec *oci.Spec) error {
 
 	if len(e.Mounts) > 0 {
 		for _, m := range e.Mounts {
+			mnt := &Mount{m}
+
 			specgen.RemoveMount(m.ContainerPath)
-			specgen.AddMount((&Mount{m}).toOCI())
+
+			if !specHasUserNamespace(spec) {
+				specgen.AddMount(mnt.toOCI())
+			} else {
+				specgen.AddMount(mnt.toOCI(withIDMapForBindMount()))
+			}
 		}
 		sortMounts(&specgen)
 	}
@@ -354,12 +367,14 @@ func (d *DeviceNode) Validate() error {
 	if _, ok := validTypes[d.Type]; !ok {
 		return fmt.Errorf("device %q: invalid type %q", d.Path, d.Type)
 	}
-	for _, bit := range d.Permissions {
-		if bit != 'r' && bit != 'w' && bit != 'm' {
-			return fmt.Errorf("device %q: invalid permissions %q",
-				d.Path, d.Permissions)
-		}
+	switch {
+	case d.Permissions == "":
+	case d.Permissions == NoPermissions:
+	case strings.Trim(d.Permissions, "rwm") != "":
+		return fmt.Errorf("device %q: invalid permissions %q",
+			d.Path, d.Permissions)
 	}
+
 	return nil
 }
 
@@ -464,4 +479,17 @@ func (m orderedMounts) Swap(i, j int) {
 // parts returns the number of parts in the destination of a mount. Used in sorting.
 func (m orderedMounts) parts(i int) int {
 	return strings.Count(filepath.Clean(m[i].Destination), string(os.PathSeparator))
+}
+
+// specHasUserNamespace returns true if the OCI Spec has a Linux UserNamespace.
+func specHasUserNamespace(spec *oci.Spec) bool {
+	if spec == nil || spec.Linux == nil {
+		return false
+	}
+	for _, ns := range spec.Linux.Namespaces {
+		if ns.Type == oci.UserNamespace {
+			return true
+		}
+	}
+	return false
 }

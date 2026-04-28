@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -351,14 +350,6 @@ type generatedSpecs struct {
 
 func (g *generatedSpecs) Save(filename string) error {
 	filename = g.updateFilename(filename)
-
-	if filename == "" {
-		_, err := g.WriteTo(os.Stdout)
-		if err != nil {
-			return fmt.Errorf("failed to write CDI spec to STDOUT: %v", err)
-		}
-		return nil
-	}
 
 	return g.Interface.Save(filename)
 }
