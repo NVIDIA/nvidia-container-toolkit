@@ -56,6 +56,10 @@ func (f *Factory) newCDIModifier(isJitCDI bool) (oci.SpecModifier, error) {
 		return nil, nil
 	}
 
+	if err := checkRequirements(f.logger, f.image); err != nil {
+		return nil, fmt.Errorf("requirements not met: %w", err)
+	}
+
 	automaticDevices := filterAutomaticDevices(devices)
 	if len(automaticDevices) != len(devices) && len(automaticDevices) > 0 {
 		return nil, fmt.Errorf("requesting a CDI device with vendor 'runtime.nvidia.com' is not supported when requesting other CDI devices")
