@@ -18,6 +18,7 @@
 package cudacompat
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -26,7 +27,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
-func TestGetCUDACompatElfHeader(t *testing.T) {
+func TestGetCUDACompatElfHeaderFromReader(t *testing.T) {
 	moduleRoot, err := test.GetModuleRoot()
 	require.NoError(t, err)
 
@@ -76,8 +77,10 @@ func TestGetCUDACompatElfHeader(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			libpath := filepath.Join(dataRoot, tc.filename)
+			lib, err := os.Open(libpath)
+			require.NoError(t, err)
 
-			h, err := GetCUDACompatElfHeader(libpath)
+			h, err := GetCUDACompatElfHeaderFromReader(lib)
 			if tc.expectedError != "" {
 				require.ErrorContains(t, err, tc.expectedError)
 				require.Nil(t, h)
