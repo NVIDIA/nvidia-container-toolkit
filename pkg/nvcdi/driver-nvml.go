@@ -41,12 +41,7 @@ func (l *nvcdilib) newDriverVersionDiscoverer() (discover.Discover, error) {
 		return nil, fmt.Errorf("failed to determine driver version (%q): %w", version, err)
 	}
 
-	libcudasoParentDirPath, err := l.driver.GetDriverLibDirectory()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get libcuda.so parent path: %w", err)
-	}
-
-	libraries, err := l.NewDriverLibraryDiscoverer(version, libcudasoParentDirPath)
+	libraries, err := l.NewDriverLibraryDiscoverer(version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for driver libraries: %v", err)
 	}
@@ -74,7 +69,7 @@ func (l *nvcdilib) newDriverVersionDiscoverer() (discover.Discover, error) {
 }
 
 // NewDriverLibraryDiscoverer creates a discoverer for the libraries associated with the specified driver version.
-func (l *nvcdilib) NewDriverLibraryDiscoverer(version string, libcudaSoParentDirPath string) (discover.Discover, error) {
+func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover, error) {
 	versionSuffixLibraryMounts, err := l.getVersionSuffixDriverLibraryMounts(version)
 	if err != nil {
 		return nil, err
