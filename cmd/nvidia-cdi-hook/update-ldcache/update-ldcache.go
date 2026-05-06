@@ -130,8 +130,7 @@ func (m command) run(_ *cli.Command, cfg *options) error {
 // updateLdCacheHandler wraps updateLdCache with error handling.
 func updateLdCacheHandler() {
 	if err := updateLdCache(os.Args); err != nil {
-		log.Printf("Error updating ldcache: %v", err)
-		os.Exit(1)
+		log.Fatalf("Error updating ldcache: %v", err)
 	}
 }
 
