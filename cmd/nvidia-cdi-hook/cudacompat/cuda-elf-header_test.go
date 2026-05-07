@@ -57,6 +57,11 @@ func TestGetCUDACompatElfHeader(t *testing.T) {
 				Device:      []int{1, 2, 7, 8, 9, 10, 11, 12, 13, 14},
 			},
 		},
+		{
+			description: "orin-13.2.1",
+			filename:    "libcuda.orin.13.2.1.so.1.1",
+			expected:    &compatElfHeader{},
+		},
 	}
 
 	for _, tc := range testCases {
