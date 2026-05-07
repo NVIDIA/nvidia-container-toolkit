@@ -38,7 +38,7 @@ func TestGetCUDACompatElfHeader(t *testing.T) {
 		expected    *compatElfHeader
 	}{
 		{
-			description: "wip",
+			description: "libcuda.so.575.57.08",
 			filename:    "libcuda.so.575.57.08",
 			expected: &compatElfHeader{
 				Format:      1,
@@ -48,7 +48,7 @@ func TestGetCUDACompatElfHeader(t *testing.T) {
 			},
 		},
 		{
-			description: "wip",
+			description: "libcuda.so.590.44.01",
 			filename:    "libcuda.so.590.44.01",
 			expected: &compatElfHeader{
 				Format:      1,
