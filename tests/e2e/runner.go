@@ -29,12 +29,23 @@ import (
 )
 
 const (
+	// Newer versions of Ubuntu container images (starting with 26.04)
+	// introduced changes that broke nvidia-container-cli tests.
+	// In particular, the libcap shared library, the pivot_root binary,
+	// and /sbin/ldconfig.real are not included by default. This differs
+	// from prior releases. To account for this and fix the test failures,
+	// the libcap2 and utils-linux-extra (provided pivot_root) packages
+	// have been added as prerequisites. In addition, /sbin/ldconfig.real
+	// is made a symlink to /sbin/ldconfig if it doesn't exist.
 	installPrerequisitesScript = `
 set -e
 export DEBIAN_FRONTEND=noninteractive
 # Install prerequisites
 apt-get update
-apt-get install -y curl gnupg2
+apt-get install -y curl gnupg2 libcap2 util-linux-extra
+if [[ ! -f "/sbin/ldconfig.real" ]]; then
+    ln -s /sbin/ldconfig /sbin/ldconfig.real
+fi
 `
 )
 
