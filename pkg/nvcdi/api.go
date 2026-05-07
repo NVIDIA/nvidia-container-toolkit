@@ -96,4 +96,8 @@ const (
 	// FeatureNoAdditionalGIDsForDeviceNodes disables the injection of additional GIDs
 	// for a device node when the node is not readable and writable by the user.
 	FeatureNoAdditionalGIDsForDeviceNodes = FeatureFlag("no-additional-gids-for-device-nodes")
+
+	// FeatureDisableIPCDiscoverer disables the inclusion of IPC sockets
+	// (nvidia-persistenced, nvidia-fabricmanager, MPS) in the CDI spec.
+	FeatureDisableIPCDiscoverer = FeatureFlag("disable-ipc-discoverer")
 )

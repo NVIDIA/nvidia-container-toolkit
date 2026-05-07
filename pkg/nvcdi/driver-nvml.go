@@ -51,7 +51,7 @@ func (l *nvcdilib) newDriverVersionDiscoverer() (discover.Discover, error) {
 		return nil, fmt.Errorf("failed to create discoverer for driver libraries: %v", err)
 	}
 
-	ipcs, err := discover.NewIPCDiscoverer(l.logger, l.driver.Root)
+	ipcs, err := l.newIPCDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for IPC sockets: %v", err)
 	}
@@ -71,6 +71,13 @@ func (l *nvcdilib) newDriverVersionDiscoverer() (discover.Discover, error) {
 	)
 
 	return d, nil
+}
+
+func (l *nvcdilib) newIPCDiscoverer() (discover.Discover, error) {
+	if l.featureFlags[FeatureDisableIPCDiscoverer] {
+		return nil, nil
+	}
+	return discover.NewIPCDiscoverer(l.logger, l.driver.Root)
 }
 
 // NewDriverLibraryDiscoverer creates a discoverer for the libraries associated with the specified driver version.
