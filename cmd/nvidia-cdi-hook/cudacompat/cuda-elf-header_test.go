@@ -33,9 +33,10 @@ func TestGetCUDACompatElfHeader(t *testing.T) {
 	dataRoot := filepath.Join(moduleRoot, "testdata", "compat")
 
 	testCases := []struct {
-		description string
-		filename    string
-		expected    *compatElfHeader
+		description   string
+		filename      string
+		expected      *compatElfHeader
+		expectedError string
 	}{
 		{
 			description: "libcuda.so.575.57.08",
@@ -58,9 +59,17 @@ func TestGetCUDACompatElfHeader(t *testing.T) {
 			},
 		},
 		{
-			description: "orin-invalid-json",
-			filename:    "libcuda.invalid.json.so.99.88",
-			expected:    nil,
+			description:   "invalid json",
+			filename:      "libcuda.invalid.json.so.99.88",
+			expectedError: "could not unmarshal JSON data",
+		},
+		{
+			description: "orin-13.2.1",
+			filename:    "libcuda.orin.13.2.1.so.1.1",
+			expected: &compatElfHeader{
+				Format:      1,
+				CUDAVersion: "13.2",
+			},
 		},
 	}
 
@@ -69,6 +78,11 @@ func TestGetCUDACompatElfHeader(t *testing.T) {
 			libpath := filepath.Join(dataRoot, tc.filename)
 
 			h, err := GetCUDACompatElfHeader(libpath)
+			if tc.expectedError != "" {
+				require.ErrorContains(t, err, tc.expectedError)
+				require.Nil(t, h)
+				return
+			}
 			require.NoError(t, err)
 
 			require.EqualValues(t, tc.expected, h)
