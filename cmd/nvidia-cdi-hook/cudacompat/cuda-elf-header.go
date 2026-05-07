@@ -50,6 +50,9 @@ func (h elf32_Nhdr) sizeof() int {
 	return 12
 }
 
+// GetCUDACompatElfHeader returns the elf header for the specified library.
+// This should be equivalent to:
+// readelf -p .note.cuda.fwd_compatibility {{.libraryPath}}
 func GetCUDACompatElfHeader(libraryPath string) (*compatElfHeader, error) {
 	lib, err := elf.Open(libraryPath)
 	if os.IsNotExist(err) {
@@ -99,8 +102,13 @@ func alignUp[T uint32 | uint64, S uint64](size T, to S) int {
 	return int((size + T(to) - 1) &^ (T(to) - 1))
 }
 
-func trim(data []byte, from int, len int) []byte {
-	return bytes.Trim(data[from:from+len], "\x00")
+func trim(data []byte, from int, n int) []byte {
+	if len(data) == 0 {
+		return nil
+	}
+	from = min(len(data)-1, from)
+	to := min(len(data), from+n)
+	return bytes.Trim(data[from:to], "\x00")
 }
 
 func getCUDAFwdCompatibilitySection(lib *elf.File) *elf.Section {
