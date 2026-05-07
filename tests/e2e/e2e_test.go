@@ -77,16 +77,16 @@ var _ = BeforeSuite(func() {
 
 	localCacheDir = strings.TrimSpace(tmpdir)
 
-	toolkitInstaller, err = NewToolkitInstaller(
-		WithToolkitImage(nvidiaContainerToolkitImage),
-		WithCacheDir(localCacheDir),
-	)
-	Expect(err).ToNot(HaveOccurred())
-
-	_, _, err = toolkitInstaller.PrepareCache(runner)
-	Expect(err).ToNot(HaveOccurred())
-
 	if installCTK {
+		toolkitInstaller, err = NewToolkitInstaller(
+			WithToolkitImage(nvidiaContainerToolkitImage),
+			WithCacheDir(localCacheDir),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, _, err = toolkitInstaller.PrepareCache(runner)
+		Expect(err).ToNot(HaveOccurred())
+
 		_, _, err := toolkitInstaller.Install(runner)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -104,9 +104,11 @@ func getTestEnv() {
 
 	installCTK = getEnvVarOrDefault("E2E_INSTALL_CTK", false)
 
-	imageName := getRequiredEnvvar[string]("E2E_IMAGE_NAME")
-	imageTag := getRequiredEnvvar[string]("E2E_IMAGE_TAG")
-	nvidiaContainerToolkitImage = imageName + ":" + imageTag
+	if installCTK {
+		imageName := getRequiredEnvvar[string]("E2E_IMAGE_NAME")
+		imageTag := getRequiredEnvvar[string]("E2E_IMAGE_TAG")
+		nvidiaContainerToolkitImage = imageName + ":" + imageTag
+	}
 
 	sshHost = getEnvVarOrDefault("E2E_SSH_HOST", "")
 	if sshHost != "" {
