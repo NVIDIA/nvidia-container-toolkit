@@ -3,6 +3,7 @@ package symlinks
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -121,6 +122,24 @@ func TestCreateLink(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "parent directory is a relative symlink outside of container root",
+			containerContents: []dirOrLink{
+				{path: "/lib/foo", target: "../../"},
+			},
+			link: link{
+				path:   "/lib/foo/libfoo.so",
+				target: "libfoo.so.1",
+			},
+			expectedLinks: []expectedLink{
+				{
+					link: link{
+						path:   "{{ .containerRoot }}/libfoo.so",
+						target: "libfoo.so.1",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -232,6 +251,19 @@ func TestCreateLinkAlreadyExists(t *testing.T) {
 }
 
 func TestCreateLinkOutOfBounds(t *testing.T) {
+	// (cdesiniotis) This test case fails on linux and rightfully so.
+	// This works with the non-linux createSymlinkInRoot implementation
+	// due to the specific behavior of FollowSymlinkInScope. The linux
+	// implementation resolves /lib/foo to filepath.Join(tmpDir, /host-root)
+	// **in the container** which is not a valid directory, and thus,
+	// it fails to open the parent directory of the link we are trying
+	// to create.
+	//
+	// For now we are skipping this test case on linux, but in the future
+	// we can consider removing this test case altogether.
+	if runtime.GOOS == "linux" {
+		t.Skip("test not supported on linux")
+	}
 	tmpDir := t.TempDir()
 	hostRoot := filepath.Join(tmpDir, "/host-root")
 	containerRoot := filepath.Join(tmpDir, "/container-root")
@@ -253,7 +285,7 @@ func TestCreateLinkOutOfBounds(t *testing.T) {
 	require.Equal(t, hostRoot, path)
 
 	// nvidia-cdi-hook create-symlinks --link ../libfoo.so.1::/lib/foo/libfoo.so
-	_ = getTestCommand().createLink(containerRoot, "../libfoo.so.1", "/lib/foo/libfoo.so")
+	err = getTestCommand().createLink(containerRoot, "../libfoo.so.1", "/lib/foo/libfoo.so")
 	require.NoError(t, err)
 
 	target, err := symlinks.Resolve(filepath.Join(containerRoot, hostRoot, "libfoo.so"))
