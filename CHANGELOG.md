@@ -1,5 +1,15 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.19.1
+- fix: Additional GIDs are dropped due to file mode mask
+- fix: Remove dependency on multi-user.target
+- Add libnvidia-egl-wayland2 to the graphics discoverer
+- fix systemd unit conditions to work on WSL2
+- [NRI Plugin] get low-level runtime bin paths from previous install
+- implement NRI plugin reconnect mechanism
+- ensure the toolkit exits if NRI Plugin init fails
+- feat(nvcdi): Allow IPC sockets to not be discovered
+
 ## v1.19.0
 - Promote v1.19.0-rc.7 to v1.19.0
 
