@@ -34,33 +34,45 @@ func TestLocate(t *testing.T) {
 
 	testCases := []struct {
 		description   string
-		libcudaPath   string
-		expected      string
+		libPaths      []string
+		expected      []string
 		expectedError error
 	}{
 		{
 			description:   "no libcuda does not resolve library",
-			libcudaPath:   "",
-			expected:      "",
+			libPaths:      nil,
+			expected:      nil,
 			expectedError: lookup.ErrNotFound,
 		},
 		{
 			description:   "no-ldcache searches /usr/lib64",
-			libcudaPath:   "/usr/lib64/libcuda.so.123.34",
-			expected:      "/usr/lib64",
+			libPaths:      []string{"/usr/lib64/libcuda.so.123.34"},
+			expected:      []string{"/usr/lib64"},
 			expectedError: nil,
 		},
 		{
 			description:   "no-ldcache searches /usr/lib64 for libnvidia-ml.so.",
-			libcudaPath:   "/usr/lib64/libnvidia-ml.so.123.34",
-			expected:      "/usr/lib64",
+			libPaths:      []string{"/usr/lib64/libnvidia-ml.so.123.34"},
+			expected:      []string{"/usr/lib64"},
+			expectedError: nil,
+		},
+		{
+			description: "locates two driver library directories",
+			libPaths: []string{
+				"/usr/lib64/libcuda.so.123.34",
+				"/usr/lib/x86_64-linux-gnu/libnvidia-ml.so.123.34",
+			},
+			expected: []string{
+				"/usr/lib64",
+				"/usr/lib/x86_64-linux-gnu",
+			},
 			expectedError: nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			driverRoot, err := setupDriverRoot(t, tc.libcudaPath)
+			driverRoot, err := setupDriverRoot(t, tc.libPaths)
 			require.NoError(t, err)
 
 			l := New(
@@ -68,35 +80,41 @@ func TestLocate(t *testing.T) {
 				WithDriverRoot(driverRoot),
 			)
 
-			driverLibraryPath, err := l.GetDriverLibDirectory()
-			require.ErrorIs(t, err, tc.expectedError)
+			driverLibraryPaths, err := l.GetDriverLibDirectories()
+			if tc.expectedError != nil {
+				require.ErrorIs(t, err, tc.expectedError)
+				return
+			}
+
+			require.NoError(t, err)
 
 			// NOTE: We need to strip `/private` on MacOs due to symlink resolution
-			stripped := strings.TrimPrefix(driverLibraryPath, "/private")
+			stripped := make([]string, len(driverLibraryPaths))
+			for i, p := range driverLibraryPaths {
+				stripped[i] = strings.TrimPrefix(p, "/private")
+			}
 
-			require.Equal(t, tc.expected, stripped)
+			require.ElementsMatch(t, tc.expected, stripped)
 		})
 	}
 }
 
 // setupDriverRoot creates a folder that can be used to represent a driver root.
-// The path to libcuda can be specified and an empty file is created at this location in the driver root.
-func setupDriverRoot(t *testing.T, libCudaPath string) (string, error) {
+// Library paths can be specified and empty files are created at these locations in the driver root.
+func setupDriverRoot(t *testing.T, libPaths []string) (string, error) {
 	driverRoot := t.TempDir()
 
-	if libCudaPath == "" {
-		return driverRoot, nil
-	}
+	for _, libPath := range libPaths {
+		if err := os.MkdirAll(filepath.Join(driverRoot, filepath.Dir(libPath)), 0755); err != nil {
+			return "", fmt.Errorf("failed to create required driver root folder: %w", err)
+		}
 
-	if err := os.MkdirAll(filepath.Join(driverRoot, filepath.Dir(libCudaPath)), 0755); err != nil {
-		return "", fmt.Errorf("falied to create required driver root folder: %w", err)
+		f, err := os.Create(filepath.Join(driverRoot, libPath))
+		if err != nil {
+			return "", fmt.Errorf("failed to create dummy library file: %w", err)
+		}
+		f.Close()
 	}
-
-	libCuda, err := os.Create(filepath.Join(driverRoot, libCudaPath))
-	if err != nil {
-		return "", fmt.Errorf("failed to create dummy libcuda.so: %w", err)
-	}
-	defer libCuda.Close()
 
 	return filepath.EvalSymlinks(driverRoot)
 }
