@@ -18,6 +18,7 @@ package dgpu
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
@@ -75,12 +76,21 @@ func (o *options) newNvmlDGPUDiscoverer(d requiredInfo) (discover.Discover, erro
 type requiredMigInfo interface {
 	getPlacementInfo() (int, int, int, error)
 	getDevNodePath() (string, error)
+	getPCIBusID() (string, error)
 }
 
 func (o *options) newNvmlMigDiscoverer(d requiredMigInfo) (discover.Discover, error) {
 	if o.migCaps == nil || o.migCapsError != nil {
 		return nil, fmt.Errorf("error getting MIG capability device paths: %v", o.migCapsError)
 	}
+
+	var charDevicePaths []string
+
+	parentPath, err := d.getDevNodePath()
+	if err != nil {
+		return nil, err
+	}
+	charDevicePaths = append(charDevicePaths, parentPath)
 
 	gpu, gi, ci, err := d.getPlacementInfo()
 	if err != nil {
@@ -92,16 +102,44 @@ func (o *options) newNvmlMigDiscoverer(d requiredMigInfo) (discover.Discover, er
 	if err != nil {
 		return nil, fmt.Errorf("failed to get GI cap device path: %v", err)
 	}
+	charDevicePaths = append(charDevicePaths, giCapDevicePath)
 
 	ciCap := nvcaps.NewComputeInstanceCap(gpu, gi, ci)
 	ciCapDevicePath, err := o.migCaps.GetCapDevicePath(ciCap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CI cap device path: %v", err)
 	}
+	charDevicePaths = append(charDevicePaths, ciCapDevicePath)
 
-	parentPath, err := d.getDevNodePath()
-	if err != nil {
-		return nil, err
+	supportsDRI := slices.Contains(o.migAttributes, "gfx")
+	if supportsDRI {
+		pciBusID, err := d.getPCIBusID()
+		if err != nil {
+			return nil, fmt.Errorf("error getting PCI info for device: %w", err)
+		}
+
+		drmDeviceNodes, err := drm.GetDeviceNodesByBusID(pciBusID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to determine DRM devices for %q: %w", pciBusID, err)
+		}
+
+		charDevicePaths = append(charDevicePaths, drmDeviceNodes...)
+		deviceNodes := discover.NewCharDeviceDiscoverer(
+			o.logger,
+			o.driver.DevRoot,
+			charDevicePaths,
+		)
+		byPathHooks := &byPathHookDiscoverer{
+			logger:      o.logger,
+			devRoot:     o.driver.DevRoot,
+			hookCreator: o.hookCreator,
+			pciBusID:    pciBusID,
+			deviceNodes: deviceNodes,
+		}
+		return discover.Merge(
+			deviceNodes,
+			byPathHooks,
+		), nil
 	}
 
 	deviceNodes := discover.NewCharDeviceDiscoverer(
@@ -164,4 +202,8 @@ func (d *toRequiredMigInfo) getPlacementInfo() (int, int, int, error) {
 
 func (d *toRequiredMigInfo) getDevNodePath() (string, error) {
 	return d.parent.getDevNodePath()
+}
+
+func (d *toRequiredMigInfo) getPCIBusID() (string, error) {
+	return d.parent.GetPCIBusID()
 }
