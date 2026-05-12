@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"golang.org/x/mod/semver"
@@ -118,14 +119,31 @@ func getCUDAFwdCompatibilitySection(lib *elf.File) *elf.Section {
 
 // UseCompat checks whether the CUDA compat libraries with the specified elf
 // header should be used given the specified host versions.
-// This is done by comparing the host CUDA version with the CUDA version
-// specified in the ELF header.
-func (h *compatElfHeader) UseCompat(hostCUDAVersion string) bool {
+// If the host driver version is specified, we check if the driver version
+// is supported in the ELF header. If no host driver version is provided, we
+// fall back to checking the CUDA version specified in the ELF header.
+func (h *compatElfHeader) UseCompat(compatDriverVersion string, hostDriverVersion string, hostCUDAVersion string) bool {
 	if h == nil {
 		return false
 	}
 
-	return h.CUDAVersion.UseCompat(hostCUDAVersion)
+	if compatDriverVersion == "" || hostDriverVersion == "" {
+		if hostCUDAVersion != "" {
+			return h.CUDAVersion.UseCompat(hostCUDAVersion)
+		}
+		return false
+	}
+
+	hostDriverMajor, err := extractMajorVersion(hostDriverVersion)
+	if err != nil {
+		return false
+	}
+
+	if !slices.Contains(h.Driver, hostDriverMajor) {
+		return false
+	}
+
+	return compareVersions(compatDriverVersion, hostDriverVersion) > 0
 }
 
 type cudaVersion string
@@ -137,9 +155,28 @@ func (containerVersion cudaVersion) UseCompat(hostVersion string) bool {
 		return false
 	}
 
-	return semver.Compare(normalizeVersion(containerVersion), normalizeVersion(hostVersion)) > 0
+	return compareVersions(containerVersion, hostVersion) > 0
 }
 
+func compareVersions[T string | cudaVersion, O string | cudaVersion](this T, other O) int {
+	return semver.Compare(normalizeVersion(this), normalizeVersion(other))
+}
+
+// normalizeVersion converts the given version into a valid semantic version.
+// This function will always return a string in the format of vMAJOR.MINOR.PATCH
+// It accounts for version strings that have leading zeros, which is common
+// in NVIDIA driver version strings. For example, 570.211.01 will be converted to
+// v570.22.1
 func normalizeVersion[T string | cudaVersion](v T) string {
-	return "v" + strings.TrimPrefix(string(v), "v")
+	majorMinorPatch := []string{"0", "0", "0"}
+	versionParts := strings.SplitN(strings.TrimPrefix(string(v), "v"), ".", 3)
+	for i, versionPart := range versionParts {
+		trimmed := strings.TrimLeft(versionPart, "0")
+		if trimmed == "" {
+			trimmed = "0"
+		}
+		majorMinorPatch[i] = trimmed
+	}
+
+	return "v" + strings.Join(majorMinorPatch, ".")
 }
