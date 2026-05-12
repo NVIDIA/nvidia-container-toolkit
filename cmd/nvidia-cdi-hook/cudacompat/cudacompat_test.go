@@ -24,6 +24,8 @@ import (
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
 func TestCompatLibs(t *testing.T) {
@@ -162,6 +164,97 @@ func TestCompatLibs(t *testing.T) {
 				require.NoError(t, os.WriteFile(target, []byte(contents), 0600))
 			}
 
+			c := command{
+				logger: logger,
+			}
+			containerForwardCompatDir, err := c.getContainerForwardCompatDir(containerRoot(containerRootDir), &tc.options)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.expectedContainerForwardCompatDir, containerForwardCompatDir)
+		})
+	}
+}
+
+func TestCompatLibsWithElfHeader(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+	moduleRoot, err := test.GetModuleRoot()
+	require.NoError(t, err)
+
+	dataRoot := filepath.Join(moduleRoot, "testdata")
+
+	testCases := []struct {
+		description                       string
+		options                           options
+		expectedContainerForwardCompatDir string
+	}{
+		{
+			description: "container cuda version greater than host cuda version",
+			options: options{
+				cudaCompatContainerRoot: "compat/575.57.08",
+				hostCudaVersion:         "12.8",
+			},
+			expectedContainerForwardCompatDir: "/compat/575.57.08",
+		},
+		{
+			description: "container cuda version same as host cuda version",
+			options: options{
+				cudaCompatContainerRoot: "compat/575.57.08",
+				hostCudaVersion:         "12.9",
+			},
+			expectedContainerForwardCompatDir: "",
+		},
+		{
+			description: "container cuda version less than host cuda version",
+			options: options{
+				cudaCompatContainerRoot: "compat/575.57.08",
+				hostCudaVersion:         "12.10",
+			},
+			expectedContainerForwardCompatDir: "",
+		},
+		{
+			description: "host driver branch not supported in compat elf header",
+			options: options{
+				cudaCompatContainerRoot: "compat/575.57.08",
+				hostDriverVersion:       "590.44.01",
+			},
+			expectedContainerForwardCompatDir: "",
+		},
+		{
+			description: "host driver branch supported in compat elf header, host driver branch < compat driver branch",
+			options: options{
+				cudaCompatContainerRoot: "compat/575.57.08",
+				hostDriverVersion:       "570.211.01",
+			},
+			expectedContainerForwardCompatDir: "/compat/575.57.08",
+		},
+		{
+			description: "host driver branch same as compat driver branch, compat driver > host driver",
+			options: options{
+				cudaCompatContainerRoot: "compat/575.57.08",
+				hostDriverVersion:       "575.10.10",
+			},
+			expectedContainerForwardCompatDir: "/compat/575.57.08",
+		},
+		{
+			description: "host driver branch same as compat driver branch, compat driver = host driver",
+			options: options{
+				cudaCompatContainerRoot: "compat/575.57.08",
+				hostDriverVersion:       "575.57.08",
+			},
+			expectedContainerForwardCompatDir: "",
+		},
+		{
+			description: "host driver branch same as compat driver branch, compat driver < host driver",
+			options: options{
+				cudaCompatContainerRoot: "compat/575.57.08",
+				hostDriverVersion:       "575.99.99",
+			},
+			expectedContainerForwardCompatDir: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			containerRootDir := dataRoot
 			c := command{
 				logger: logger,
 			}

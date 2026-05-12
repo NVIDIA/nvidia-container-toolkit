@@ -49,8 +49,9 @@ jobs:
           # Production Branch. EOL March 2027
           - 595
         exclude:
-          - ispr: true
-            driver_branch: 580
+          # temporary change to test CUDA minor version compatibility with the 580 branch
+          #- ispr: true
+          #  driver_branch: 580
           - ispr: true
             driver_branch: 595
     steps:
