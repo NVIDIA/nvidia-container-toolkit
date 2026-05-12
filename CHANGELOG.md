@@ -9,6 +9,7 @@
 - implement NRI plugin reconnect mechanism
 - ensure the toolkit exits if NRI Plugin init fails
 - feat(nvcdi): Allow IPC sockets to not be discovered
+- fix(cudacompat): Fix handling of CUDA compat on Orin
 
 ## v1.19.0
 - Promote v1.19.0-rc.7 to v1.19.0
