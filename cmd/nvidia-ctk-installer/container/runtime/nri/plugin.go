@@ -81,7 +81,10 @@ func (p *Plugin) injectCDIDevices(pod *api.PodSandbox, ctr *api.Container, a *ap
 	ctx := p.ctx
 	pluginLogger := p.stub.Logger()
 
-	devices := p.parseCDIDevices(pod, nriCDIAnnotationDomain, ctr.Name)
+	devices, err := p.parseCDIDevices(pod, nriCDIAnnotationDomain, ctr.Name)
+	if err != nil {
+		return err
+	}
 	if len(devices) == 0 {
 		pluginLogger.Debugf(ctx, "%s: no CDI devices annotated...", containerName(pod, ctr))
 		return nil
@@ -100,19 +103,19 @@ func (p *Plugin) injectCDIDevices(pod *api.PodSandbox, ctr *api.Container, a *ap
 }
 
 // parseCDIDevices processes the podSpec and determines which containers which need CDI devices injected to them
-func (p *Plugin) parseCDIDevices(pod *api.PodSandbox, key, container string) []string {
+func (p *Plugin) parseCDIDevices(pod *api.PodSandbox, key, container string) ([]string, error) {
 	if p.namespace != pod.Namespace {
-		p.logger.Debugf("pod %s/%s is not in the toolkit's namespace %s. Skipping CDI device injection...", pod.Namespace, pod.Name, p.namespace)
-		return nil
+		p.logger.Debugf("pod %s/%s is not in the toolkit's namespace %s. Failing CDI device injection...", pod.Namespace, pod.Name, p.namespace)
+		return nil, fmt.Errorf("pod %s/%s is not in the NRI namespace %s", pod.Namespace, pod.Name, p.namespace)
 	}
 
 	cdiDeviceNames, ok := plugin.GetEffectiveAnnotation(pod, key, container)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	cdiDevices := strings.Split(cdiDeviceNames, ",")
-	return cdiDevices
+	return cdiDevices, nil
 }
 
 // Construct a container name for log messages.
