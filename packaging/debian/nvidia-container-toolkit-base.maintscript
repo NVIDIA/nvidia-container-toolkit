@@ -1,0 +1,2 @@
+rm_conffile /etc/systemd/system/nvidia-cdi-refresh.service @VERSION@~ nvidia-container-toolkit-base
+rm_conffile /etc/systemd/system/nvidia-cdi-refresh.path @VERSION@~ nvidia-container-toolkit-base

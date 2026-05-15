@@ -62,10 +62,27 @@ EOF
 	rm -rf /etc/systemd/system/dummy.service
 	systemctl daemon-reload
 `
+	disablePolicyRcDScript = `#!/usr/bin/env bash
+	# The kindest/base image carries a Docker-oriented policy-rc.d that blocks
+	# deb-systemd-invoke from starting units during package installation. These
+	# tests run a real systemd instance, so package-triggered unit starts should
+	# be allowed.
+	rm -f /usr/sbin/policy-rc.d
+	`
 
 	nvidiaCdiRefreshPathActiveTemplate = `
 	if ! systemctl status nvidia-cdi-refresh.path | grep "Active: active"; then
 		echo "nvidia-cdi-refresh.path is not Active"
+		exit 1
+	fi
+	`
+	nvidiaCdiRefreshUnitsEnabledTemplate = `
+	if ! systemctl is-enabled --quiet nvidia-cdi-refresh.path; then
+		echo "nvidia-cdi-refresh.path is not enabled"
+		exit 1
+	fi
+	if ! systemctl is-enabled --quiet nvidia-cdi-refresh.service; then
+		echo "nvidia-cdi-refresh.service is not enabled"
 		exit 1
 	fi
 	`
@@ -130,6 +147,20 @@ var _ = Describe("nvidia-cdi-refresh", Ordered, ContinueOnFailure, Label("system
 		outerContainerImage = "docker.io/kindest/base:v20250521-31a79fd4"
 	)
 
+	installToolkit := func() {
+		_, _, err := toolkitInstaller.Install(systemdRunner)
+		Expect(err).ToNot(HaveOccurred())
+
+		output, _, err := systemdRunner.Run("nvidia-ctk --version")
+		Expect(err).ToNot(HaveOccurred())
+		GinkgoLogr.Info("using nvidia-ctk", "version", strings.TrimSpace(output))
+	}
+
+	purgeToolkit := func() {
+		_, _, err := systemdRunner.Run("apt-get purge -y libnvidia-container* nvidia-container-toolkit*")
+		Expect(err).ToNot(HaveOccurred())
+	}
+
 	BeforeAll(func(ctx context.Context) {
 		var err error
 		systemdRunner, err = NewNestedContainerRunner(runner, outerContainerImage, false, containerName, localCacheDir, true)
@@ -143,6 +174,9 @@ var _ = Describe("nvidia-cdi-refresh", Ordered, ContinueOnFailure, Label("system
 			GinkgoLogr.Error(err, "systemctl state")
 			time.Sleep(1 * time.Second)
 		}
+
+		_, _, err = systemdRunner.Run(disablePolicyRcDScript)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterAll(func(ctx context.Context) {
@@ -153,22 +187,20 @@ var _ = Describe("nvidia-cdi-refresh", Ordered, ContinueOnFailure, Label("system
 
 	When("installing nvidia-container-toolkit", Ordered, func() {
 		BeforeAll(func(ctx context.Context) {
-
-			_, _, err := toolkitInstaller.Install(systemdRunner)
-			Expect(err).ToNot(HaveOccurred())
-
-			output, _, err := systemdRunner.Run("nvidia-ctk --version")
-			Expect(err).ToNot(HaveOccurred())
-			GinkgoLogr.Info("using nvidia-ctk", "version", strings.TrimSpace(output))
+			installToolkit()
 		})
 
 		AfterAll(func(ctx context.Context) {
-			_, _, err := systemdRunner.Run("apt-get purge -y libnvidia-container* nvidia-container-toolkit*")
-			Expect(err).ToNot(HaveOccurred())
+			purgeToolkit()
 		})
 
 		It("should load the nvidia-cdi-refresh.path unit", func(ctx context.Context) {
 			_, _, err := systemdRunner.Run(nvidiaCdiRefreshPathActiveTemplate)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should enable the nvidia-cdi-refresh units", func(ctx context.Context) {
+			_, _, err := systemdRunner.Run(nvidiaCdiRefreshUnitsEnabledTemplate)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -196,9 +228,13 @@ var _ = Describe("nvidia-cdi-refresh", Ordered, ContinueOnFailure, Label("system
 			_, _, err = systemdRunner.Run(getSystemStateScript)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("degraded"))
+
+			installToolkit()
 		})
 
 		AfterAll(func(ctx context.Context) {
+			purgeToolkit()
+
 			_, _, err := systemdRunner.Run(fixSystemDegradedScript)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -212,6 +248,11 @@ var _ = Describe("nvidia-cdi-refresh", Ordered, ContinueOnFailure, Label("system
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should enable the nvidia-cdi-refresh units", func(ctx context.Context) {
+			_, _, err := systemdRunner.Run(nvidiaCdiRefreshUnitsEnabledTemplate)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("should load the nvidia-cdi-refresh.service unit", func(ctx context.Context) {
 			_, _, err := systemdRunner.Run(nvidiaCdiRefreshServiceLoadedTemplate)
 			Expect(err).ToNot(HaveOccurred())
@@ -222,8 +263,8 @@ var _ = Describe("nvidia-cdi-refresh", Ordered, ContinueOnFailure, Label("system
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should generate the nvidia.yaml file", func(ctx context.Context) {
-			_, _, err := systemdRunner.Run(nvidiaCdiRefreshFileExistsTemplate)
+		It("should refresh the nvidia.yaml file after upgrading the nvidia-container-toolkit", func(ctx context.Context) {
+			_, _, err := systemdRunner.Run(nvidiaCdiRefreshUpgradeTemplate)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})

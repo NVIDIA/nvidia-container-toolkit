@@ -5,6 +5,8 @@ set -e
 sed -i "s;@SECTION@;${SECTION:+$SECTION/};g" debian/control
 sed -i "s;@VERSION@;${VERSION:+$VERSION};g" debian/control
 
+sed -i "s;@VERSION@;${VERSION:+$VERSION};g" debian/nvidia-container-toolkit-base.maintscript
+
 if [ -n "$DISTRIB" ]; then
     sed -i "s;UNRELEASED;$DISTRIB;" debian/changelog
 fi
