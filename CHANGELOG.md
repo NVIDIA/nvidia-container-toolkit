@@ -12,6 +12,7 @@
 - fix(cudacompat): Fix handling of CUDA compat on Orin
 - Update systemd unit conditions to execute nvidia-smi
 - Reintroduce restart logic to nvidia-cdi-refresh.service
+- [cri-o config] fix drop-in config directory used for config overrides
 
 ## v1.19.0
 - Promote v1.19.0-rc.7 to v1.19.0

@@ -47,7 +47,7 @@ const (
 	defaultDockerConfigFilePath     = "/etc/docker/daemon.json"
 
 	defaultContainerdDropInConfigFilePath = "/etc/containerd/conf.d/99-nvidia.toml"
-	defaultCrioDropInConfigFilePath       = "/etc/crio/conf.d/99-nvidia.toml"
+	defaultCrioDropInConfigFilePath       = "/etc/crio/crio.conf.d/99-nvidia.toml"
 
 	defaultConfigSource = configSourceFile
 	configSourceCommand = "command"
