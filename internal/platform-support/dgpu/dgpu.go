@@ -72,6 +72,11 @@ func NewForMigDevice(d device.Device, mig device.MigDevice, opts ...Option) (dis
 		return nil, err
 	}
 	o.isMigDevice = true
+	migProfile, err := mig.GetProfile()
+	if err != nil {
+		return nil, fmt.Errorf("error getting MIG Profile attributes: %w", err)
+	}
+	o.migAttributes = migProfile.GetInfo().Attributes
 
 	var discoverers []discover.Discover
 	var errs error

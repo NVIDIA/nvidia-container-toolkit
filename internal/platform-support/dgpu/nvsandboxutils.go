@@ -19,6 +19,7 @@ package dgpu
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
@@ -31,7 +32,7 @@ type nvsandboxutilsDGPU struct {
 	lib         nvsandboxutils.Interface
 	uuid        string
 	devRoot     string
-	isMig       bool
+	supportsDRI bool
 	hookCreator discover.HookCreator
 	deviceLinks []string
 }
@@ -52,11 +53,13 @@ func (o *options) newNvsandboxutilsDGPUDiscoverer(d UUIDer) (discover.Discover, 
 		return nil, fmt.Errorf("failed to get device UUID: %w", nvmlRet)
 	}
 
+	supportsDRI := !o.isMigDevice || slices.Contains(o.migAttributes, "gfx")
+
 	nvd := nvsandboxutilsDGPU{
 		lib:         o.nvsandboxutilslib,
 		uuid:        uuid,
 		devRoot:     strings.TrimSuffix(filepath.Clean(o.driver.DevRoot), "/dev"),
-		isMig:       o.isMigDevice,
+		supportsDRI: supportsDRI,
 		hookCreator: o.hookCreator,
 	}
 
@@ -73,7 +76,7 @@ func (d *nvsandboxutilsDGPU) Devices() ([]discover.Device, error) {
 	for _, info := range gpuFileInfos {
 		switch info.SubType {
 		case nvsandboxutils.NV_DEV_DRI_CARD, nvsandboxutils.NV_DEV_DRI_RENDERD:
-			if d.isMig {
+			if !d.supportsDRI {
 				continue
 			}
 			fallthrough
@@ -90,7 +93,7 @@ func (d *nvsandboxutilsDGPU) Devices() ([]discover.Device, error) {
 			}
 			devices = append(devices, device)
 		case nvsandboxutils.NV_DEV_DRI_CARD_SYMLINK, nvsandboxutils.NV_DEV_DRI_RENDERD_SYMLINK:
-			if d.isMig {
+			if !d.supportsDRI {
 				continue
 			}
 			if info.Flags == nvsandboxutils.NV_FILE_FLAG_CONTENT {
