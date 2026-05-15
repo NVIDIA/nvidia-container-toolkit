@@ -29,7 +29,9 @@ type options struct {
 	driver      *root.Driver
 	hookCreator discover.HookCreator
 
-	isMigDevice bool
+	isMigDevice   bool
+	migAttributes []string
+
 	// migCaps stores the MIG capabilities for the system.
 	// If MIG is not available, this is nil.
 	migCaps      nvcaps.MigCaps
