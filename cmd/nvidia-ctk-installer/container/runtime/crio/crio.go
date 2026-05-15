@@ -47,7 +47,7 @@ const (
 
 	// Config-based settings
 	DefaultConfig       = "/etc/crio/crio.conf"
-	DefaultDropInConfig = "/etc/crio/conf.d/99-nvidia.toml"
+	DefaultDropInConfig = "/etc/crio/crio.conf.d/99-nvidia.toml"
 
 	DefaultSocket      = "/var/run/crio/crio.sock"
 	DefaultRestartMode = "systemd"
