@@ -67,7 +67,7 @@ sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
 ```
 (Note that `sudo` is used to ensure the correct permissions to write to the `/etc/cdi` folder)
 
-With the specification generated, a GPU can be requested by specifying the fully-qualified CDI device name. With `podman` as an exmaple:
+With the specification generated, a GPU can be requested by specifying the fully-qualified CDI device name. With `podman` as an example:
 ```bash
 podman run --rm -ti --device=nvidia.com/gpu=gpu0 ubuntu nvidia-smi -L
 ```

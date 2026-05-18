@@ -275,7 +275,7 @@ func (r remoteRunner) Run(script string) (string, string, error) {
 	return stdout.String(), "", nil
 }
 
-// Run runs teh specified script in the container using the docker exec command.
+// Run runs the specified script in the container using the docker exec command.
 // The script is is run as the root user.
 func (r nestedContainerRunner) Run(script string) (string, string, error) {
 	return r.runner.Run(`docker exec -u root "` + r.containerName + `" bash -c '` + script + `'`)
