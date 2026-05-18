@@ -100,6 +100,12 @@ func New(opts ...Option) (Interface, error) {
 		vendor:              o.getVendorOrDefault(),
 		class:               o.getClassOrDefault(),
 		mergedDeviceOptions: o.mergedDeviceOptions,
+		editsFactory:          l.editsFactory,
+		additionalCommonEdits: []discover.Discover{
+			discover.NewCheckRequirementsHookDiscoverer(l.hookCreator, &discover.CheckRequirementsHookOptions{
+				DriverRoot: l.driver.Root,
+			}),
+		},
 	}
 	return &w, nil
 }

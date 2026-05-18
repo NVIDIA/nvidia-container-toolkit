@@ -51,6 +51,8 @@ const (
 	// AllHooks is a special hook name that allows all hooks to be matched.
 	AllHooks = discover.AllHooks
 
+	// A CheckRequirementsHook is used to enforce NVIDIA_REQUIRE_* constraints.
+	CheckRequirementsHook = discover.CheckRequirementsHook
 	// A CreateSymlinksHook is used to create symlinks in the container.
 	CreateSymlinksHook = discover.CreateSymlinksHook
 	// DisableDeviceNodeModificationHook refers to the hook used to ensure that

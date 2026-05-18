@@ -21,6 +21,7 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements"
 )
 
 // newCSVModifier creates a modifier that applies modications to an OCI spec if required by the runtime wrapper.
@@ -33,7 +34,7 @@ func (f *Factory) newCSVModifier() (oci.SpecModifier, error) {
 	}
 	f.logger.Infof("Constructing modifier from config: %+v", *f.cfg)
 
-	if err := checkRequirements(f.logger, f.image, f.driver); err != nil {
+	if err := requirements.CheckImage(f.logger, f.image, f.driver); err != nil {
 		return nil, fmt.Errorf("requirements not met: %v", err)
 	}
 
