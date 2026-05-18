@@ -20,12 +20,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"sync/atomic"
 	"time"
 
-	"github.com/containerd/nri/pkg/api"
-	"github.com/containerd/nri/pkg/plugin"
 	"github.com/containerd/nri/pkg/stub"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -45,11 +42,10 @@ const (
 )
 
 type Plugin struct {
-	ctx    context.Context
 	logger logger.Interface
 
-	namespace string
-	stub      stub.Stub
+	pluginImpl interface{}
+	stub       stub.Stub
 
 	// stopped is set before Stop() so OnClose does not reconnect during shutdown.
 	stopped atomic.Bool
@@ -57,80 +53,23 @@ type Plugin struct {
 	reconnectInProgress atomic.Bool
 }
 
-// NewPlugin creates a new NRI plugin for injecting CDI devices
-func NewPlugin(ctx context.Context, logger logger.Interface, namespace string) *Plugin {
+// NewPlugin creates an NRI plugin that injects CDI devices from pod annotations.
+func NewPlugin(logger logger.Interface, pluginImpl interface{}) *Plugin {
 	return &Plugin{
-		ctx:       ctx,
-		logger:    logger,
-		namespace: namespace,
+		logger:     logger,
+		pluginImpl: pluginImpl,
 	}
 }
 
-// CreateContainer handles container creation requests.
-func (p *Plugin) CreateContainer(_ context.Context, pod *api.PodSandbox, ctr *api.Container) (*api.ContainerAdjustment, []*api.ContainerUpdate, error) {
-	adjust := &api.ContainerAdjustment{}
-
-	if err := p.injectCDIDevices(pod, ctr, adjust); err != nil {
-		return nil, nil, err
-	}
-
-	return adjust, nil, nil
-}
-
-func (p *Plugin) injectCDIDevices(pod *api.PodSandbox, ctr *api.Container, a *api.ContainerAdjustment) error {
-	ctx := p.ctx
-	pluginLogger := p.stub.Logger()
-
-	devices := p.parseCDIDevices(pod, nriCDIAnnotationDomain, ctr.Name)
-	if len(devices) == 0 {
-		pluginLogger.Debugf(ctx, "%s: no CDI devices annotated...", containerName(pod, ctr))
-		return nil
-	}
-
-	pluginLogger.Infof(ctx, "%s: injecting CDI devices %v...", containerName(pod, ctr), devices)
-	for _, name := range devices {
-		a.AddCDIDevice(
-			&api.CDIDevice{
-				Name: name,
-			},
-		)
-	}
-
-	return nil
-}
-
-// parseCDIDevices processes the podSpec and determines which containers which need CDI devices injected to them
-func (p *Plugin) parseCDIDevices(pod *api.PodSandbox, key, container string) []string {
-	if p.namespace != pod.Namespace {
-		p.logger.Debugf("pod %s/%s is not in the toolkit's namespace %s. Skipping CDI device injection...", pod.Namespace, pod.Name, p.namespace)
-		return nil
-	}
-
-	cdiDeviceNames, ok := plugin.GetEffectiveAnnotation(pod, key, container)
-	if !ok {
-		return nil
-	}
-
-	cdiDevices := strings.Split(cdiDeviceNames, ",")
-	return cdiDevices
-}
-
-// Construct a container name for log messages.
-func containerName(pod *api.PodSandbox, container *api.Container) string {
-	if pod != nil {
-		return pod.Name + "/" + container.Name
-	}
-	return container.Name
-}
-
-// Start starts the NRI plugin
-func (p *Plugin) Start(ctx context.Context, nriSocketPath, nriPluginIdx string) error {
+// Start starts the NRI plugin using the provided registration configuration.
+func (p *Plugin) Start(ctx context.Context, cfg RegistrationConfig) error {
+	nriSocketPath := cfg.Socket
 	pluginOpts := []stub.Option{
-		stub.WithPluginIdx(nriPluginIdx),
+		stub.WithPluginIdx(cfg.pluginIndex()),
 		stub.WithLogger(toNriLogger{p.logger}),
 		stub.WithOnClose(func() {
 			p.logger.Infof("NRI ttrpc connection to %s is down; attempting to reconnect...", nriSocketPath)
-			p.scheduleReconnect(nriSocketPath)
+			p.scheduleReconnect(ctx, nriSocketPath)
 		}),
 	}
 	if len(nriSocketPath) > 0 {
@@ -142,7 +81,7 @@ func (p *Plugin) Start(ctx context.Context, nriSocketPath, nriPluginIdx string) 
 	}
 
 	var err error
-	if p.stub, err = stub.New(p, pluginOpts...); err != nil {
+	if p.stub, err = stub.New(p.pluginImpl, pluginOpts...); err != nil {
 		return fmt.Errorf("failed to initialise plugin at %s: %w", nriSocketPath, err)
 	}
 	err = p.stub.Start(ctx)
@@ -153,7 +92,7 @@ func (p *Plugin) Start(ctx context.Context, nriSocketPath, nriPluginIdx string) 
 }
 
 // scheduleReconnect runs stub.Start in a loop until success, shutdown, or context cancellation.
-func (p *Plugin) scheduleReconnect(nriSocketPath string) {
+func (p *Plugin) scheduleReconnect(ctx context.Context, nriSocketPath string) {
 	if !p.reconnectInProgress.CompareAndSwap(false, true) {
 		return
 	}
@@ -165,12 +104,12 @@ func (p *Plugin) scheduleReconnect(nriSocketPath string) {
 				return
 			}
 			select {
-			case <-p.ctx.Done():
+			case <-ctx.Done():
 				return
 			case <-time.After(nriReconnectBackoff):
 			}
 			p.logger.Infof("NRI plugin reconnecting to %s (attempt %d)...", nriSocketPath, i)
-			if err := p.stub.Start(p.ctx); err != nil {
+			if err := p.stub.Start(ctx); err != nil {
 				p.logger.Warningf("NRI plugin reconnect failed: %v", err)
 				if p.stopped.Load() {
 					p.logger.Infof("NRI plugin stopped. Stopping all reconnect attempts...")

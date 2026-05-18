@@ -51,6 +51,8 @@ type options struct {
 	nriPluginIndex  uint
 	nriSocket       string
 	nriNamespace    string
+	// nriPlugins holds additional named NRI plugins to start alongside the default plugin.
+	nriPlugins []nri.Entry
 
 	toolkitOptions toolkit.Options
 
@@ -63,6 +65,29 @@ type options struct {
 
 func (o options) toolkitRoot() string {
 	return filepath.Join(o.toolkitInstallDir, toolkitSubDir)
+}
+
+func (o options) nriEnabled() bool {
+	return o.enableNRIPlugin || len(o.nriPlugins) > 0
+}
+
+const defaultNRIManagementPluginName = "cdi-device-injector"
+
+func (a *app) nriPluginEntries(o *options) []nri.Entry {
+	var entries []nri.Entry
+	if o.enableNRIPlugin {
+		cdiDeviceInjector := nri.NewCDIDeviceInjector(a.logger, o.nriNamespace)
+		entries = append(entries, nri.Entry{
+			Name:         defaultNRIManagementPluginName,
+			PluginRunner: nri.NewPlugin(a.logger, cdiDeviceInjector),
+			Config: nri.RegistrationConfig{
+				Index:  o.nriPluginIndex,
+				Socket: o.nriSocket,
+			},
+		})
+	}
+	entries = append(entries, o.nriPlugins...)
+	return entries
 }
 
 func main() {
@@ -249,6 +274,12 @@ func (a *app) validateFlags(c *cli.Command, o *options) error {
 		return fmt.Errorf("the NRI namespace must be specified when the NRI plugin is enabled")
 	}
 
+	if o.nriEnabled() {
+		if err := nri.ValidateEntries(a.nriPluginEntries(o)); err != nil {
+			return err
+		}
+	}
+
 	if err := a.toolkit.ValidateOptions(&o.toolkitOptions); err != nil {
 		return err
 	}
@@ -270,9 +301,9 @@ func (a *app) Run(ctx context.Context, c *cli.Command, o *options) error {
 	}
 	defer a.shutdown(o.pidFile)
 
-	runtimeConfigurer := runtime.NewConfigurer(o.runtime, o.noRuntimeConfig, o.enableNRIPlugin)
+	runtimeConfigurer := runtime.NewConfigurer(o.runtime, o.noRuntimeConfig, o.nriEnabled())
 
-	if o.enableNRIPlugin {
+	if o.nriEnabled() {
 		// When NRI Plugin is enabled, the toolkit no longer interacts with the cri-o/containerd runtime config TOML and
 		// therefore can no longer source the list of low-level runtime binary paths used by the container runtime.
 		// This becomes an issue when migrating from non-NRI to NRI where the low-level runtime binary path previously
@@ -308,12 +339,13 @@ func (a *app) Run(ctx context.Context, c *cli.Command, o *options) error {
 		return nil
 	}
 
-	if o.enableNRIPlugin {
-		nriPlugin, err := a.startNRIPluginServer(ctx, o)
-		if err != nil {
-			return fmt.Errorf("unable to start NRI plugin server: %w", err)
+	if o.nriEnabled() {
+		entries := a.nriPluginEntries(o)
+		nriManager := nri.NewManager(a.logger)
+		if err := nriManager.Start(ctx, entries); err != nil {
+			return fmt.Errorf("unable to start NRI plugins: %w", err)
 		}
-		defer nriPlugin.Stop()
+		defer nriManager.Stop()
 	}
 
 	err = a.waitForSignal()
@@ -378,17 +410,6 @@ func (a *app) waitForSignal() error {
 	waitingForSignal <- true
 	<-signalReceived
 	return nil
-}
-
-func (a *app) startNRIPluginServer(ctx context.Context, opts *options) (*nri.Plugin, error) {
-	a.logger.Infof("Starting the NRI Plugin server....")
-
-	plugin := nri.NewPlugin(ctx, a.logger, opts.nriNamespace)
-	err := plugin.Start(ctx, opts.nriSocket, fmt.Sprintf("%02d", opts.nriPluginIndex))
-	if err != nil {
-		return nil, err
-	}
-	return plugin, nil
 }
 
 func (a *app) shutdown(pidFile string) {
