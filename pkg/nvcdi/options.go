@@ -119,6 +119,10 @@ func populateOptions(opts ...Option) *options {
 		o.disabledHooks = append(o.disabledHooks, HookEnableCudaCompat, DisableDeviceNodeModificationHook)
 	}
 
+	if o.featureFlags[FeatureNoDisableDeviceNodeModificationHook] {
+		o.disabledHooks = append(o.disabledHooks, DisableDeviceNodeModificationHook)
+	}
+
 	if o.editsFactory == nil {
 		o.editsFactory = edits.NewFactory(
 			edits.WithLogger(o.logger),

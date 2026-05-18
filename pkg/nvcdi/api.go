@@ -100,4 +100,8 @@ const (
 	// FeatureDisableIPCDiscoverer disables the inclusion of IPC sockets
 	// (nvidia-persistenced, nvidia-fabricmanager, MPS) in the CDI spec.
 	FeatureDisableIPCDiscoverer = FeatureFlag("disable-ipc-discoverer")
+
+	// FeatureNoDisableDeviceNodeModificationHook disables the
+	// disable-device-node-modification CDI hook.
+	FeatureNoDisableDeviceNodeModificationHook = FeatureFlag("no-disable-device-node-modification-hook")
 )
