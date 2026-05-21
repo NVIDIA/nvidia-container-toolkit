@@ -19,6 +19,8 @@ package cudacompat
 import (
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -34,6 +36,7 @@ func TestCompatLibs(t *testing.T) {
 		contents                          map[string]string
 		options                           options
 		expectedContainerForwardCompatDir string
+		skipGOOS                          []string
 	}{
 		{
 			description: "empty root",
@@ -116,6 +119,7 @@ func TestCompatLibs(t *testing.T) {
 				hostDriverVersion: "222.55.66",
 			},
 			expectedContainerForwardCompatDir: "/etc/alternatives/cuda/compat",
+			skipGOOS:                          []string{"darwin"},
 		},
 		{
 			description: "symlinks stay in container",
@@ -128,6 +132,7 @@ func TestCompatLibs(t *testing.T) {
 				hostDriverVersion: "222.55.66",
 			},
 			expectedContainerForwardCompatDir: "/compat",
+			skipGOOS:                          []string{"darwin"},
 		},
 		{
 			description: "specified compat path is used",
@@ -149,6 +154,10 @@ func TestCompatLibs(t *testing.T) {
 		}
 
 		t.Run(tc.description, func(t *testing.T) {
+			if slices.Contains(tc.skipGOOS, runtime.GOOS) {
+				t.Skipf("test not supported on %s", runtime.GOOS)
+			}
+
 			containerRootDir := t.TempDir()
 			for name, contents := range tc.contents {
 				target := filepath.Join(containerRootDir, name)
@@ -165,7 +174,8 @@ func TestCompatLibs(t *testing.T) {
 			c := command{
 				logger: logger,
 			}
-			containerForwardCompatDir, err := c.getContainerForwardCompatDir(containerRoot(containerRootDir), &tc.options)
+			containerRoot, _ := newRoot(containerRootDir)
+			containerForwardCompatDir, err := c.getContainerForwardCompatDir(containerRoot, &tc.options)
 			require.NoError(t, err)
 			require.EqualValues(t, tc.expectedContainerForwardCompatDir, containerForwardCompatDir)
 		})
@@ -195,7 +205,9 @@ func TestUpdateLdconfig(t *testing.T) {
 			c := command{
 				logger: logger,
 			}
-			err := c.createLdsoconfdFile(containerRoot(containerRootDir), cudaCompatLdsoconfdFilenamePattern, tc.folders...)
+			containerRoot, _ := newRoot(containerRootDir)
+
+			err := c.createLdsoconfdFile(containerRoot, cudaCompatLdsoconfdFilenamePattern, tc.folders...)
 			require.NoError(t, err)
 
 			matches, err := filepath.Glob(filepath.Join(containerRootDir, "/etc/ld.so.conf.d/00-compat-*.conf"))

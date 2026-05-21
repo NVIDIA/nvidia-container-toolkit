@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/moby/sys/symlink"
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -121,8 +120,8 @@ func (m command) run(_ *cli.Command, cfg *config) error {
 //
 // Note that if the link path resolves to an absolute path oudside of the
 // specified root, this is treated as an absolute path in this root.
-func (m command) createLink(containerRoot string, targetPath string, link string) error {
-	linkPath := filepath.Join(containerRoot, link)
+func (m command) createLink(containerRootDir string, targetPath string, link string) error {
+	linkPath := filepath.Join(containerRootDir, link)
 
 	exists, err := linkExists(targetPath, linkPath)
 	if err != nil {
@@ -133,24 +132,7 @@ func (m command) createLink(containerRoot string, targetPath string, link string
 		return nil
 	}
 
-	// We resolve the parent of the symlink that we're creating in the container root.
-	// If we resolve the full link path, an existing link at the location itself
-	// is also resolved here and we are unable to force create the link.
-	resolvedLinkParent, err := symlink.FollowSymlinkInScope(filepath.Dir(linkPath), containerRoot)
-	if err != nil {
-		return fmt.Errorf("failed to follow path for link %v relative to %v: %w", link, containerRoot, err)
-	}
-	resolvedLinkPath := filepath.Join(resolvedLinkParent, filepath.Base(linkPath))
-
-	m.logger.Infof("Symlinking %v to %v", resolvedLinkPath, targetPath)
-	err = os.MkdirAll(filepath.Dir(resolvedLinkPath), 0755)
-	if err != nil {
-		return fmt.Errorf("failed to create directory: %v", err)
-	}
-	err = symlinks.ForceCreate(targetPath, resolvedLinkPath)
-	if err != nil {
-		return fmt.Errorf("failed to create symlink: %v", err)
-	}
+	return m.createSymlinkInRoot(containerRootDir, targetPath, link)
 
 	return nil
 }

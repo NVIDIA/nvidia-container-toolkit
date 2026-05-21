@@ -23,7 +23,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 
 	"golang.org/x/mod/semver"
@@ -50,16 +50,13 @@ func (h elf32_Nhdr) sizeof() int {
 	return 12
 }
 
-// GetCUDACompatElfHeader returns the elf header for the specified library.
+// GetCUDACompatElfHeaderFromReader returns the elf header for the specified library.
 // This should be equivalent to:
 // readelf -p .note.cuda.fwd_compatibility {{.libraryPath}}
-func GetCUDACompatElfHeader(libraryPath string) (*compatElfHeader, error) {
-	lib, err := elf.Open(libraryPath)
-	if os.IsNotExist(err) {
-		return nil, nil
-	}
+func GetCUDACompatElfHeaderFromReader(library io.ReaderAt) (*compatElfHeader, error) {
+	lib, err := elf.NewFile(library)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load elf info for %q: %w", libraryPath, err)
+		return nil, fmt.Errorf("failed to load elf info for CUDA compat library: %w", err)
 	}
 	defer func() {
 		_ = lib.Close()
