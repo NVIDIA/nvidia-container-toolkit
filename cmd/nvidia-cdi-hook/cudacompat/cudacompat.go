@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -125,7 +126,13 @@ func (m command) run(_ *cli.Command, o *options) error {
 		return fmt.Errorf("failed to determined container root: %w", err)
 	}
 
-	containerForwardCompatDir, err := m.getContainerForwardCompatDir(containerRoot(containerRootDir), o)
+	containerRoot, err := newRoot(containerRootDir)
+	if err != nil {
+		return fmt.Errorf("failed to open container root: %w", err)
+	}
+	defer containerRoot.Close()
+
+	containerForwardCompatDir, err := m.getContainerForwardCompatDir(containerRoot, o)
 	if err != nil {
 		return fmt.Errorf("failed to get container forward compat directory: %w", err)
 	}
@@ -133,10 +140,10 @@ func (m command) run(_ *cli.Command, o *options) error {
 		return nil
 	}
 
-	return m.createLdsoconfdFile(containerRoot(containerRootDir), cudaCompatLdsoconfdFilenamePattern, containerForwardCompatDir)
+	return m.createLdsoconfdFile(containerRoot, cudaCompatLdsoconfdFilenamePattern, containerForwardCompatDir)
 }
 
-func (m command) getContainerForwardCompatDir(containerRoot containerRoot, o *options) (string, error) {
+func (m command) getContainerForwardCompatDir(containerRoot *root, o *options) (string, error) {
 	if o.hostDriverVersion == "" && o.hostCudaVersion == "" {
 		m.logger.Debugf("Neither a host driver version nor a host CUDA version was specified")
 		return "", nil
@@ -164,7 +171,13 @@ func (m command) getContainerForwardCompatDir(containerRoot containerRoot, o *op
 
 	libCudaCompatPath := libs[0]
 
-	useCompatLibs, err := m.useCompatLibraries(libCudaCompatPath, o.hostDriverVersion, o.hostCudaVersion)
+	libCudaCompatFile, err := containerRoot.Open(libCudaCompatPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open CUDA compat library %q: %w", libCudaCompatPath, err)
+	}
+	defer libCudaCompatFile.Close()
+
+	useCompatLibs, err := m.useCompatLibraries(libCudaCompatFile, o.hostDriverVersion, o.hostCudaVersion)
 	if err != nil {
 		return "", err
 	}
@@ -172,16 +185,16 @@ func (m command) getContainerForwardCompatDir(containerRoot containerRoot, o *op
 		return "", nil
 	}
 
-	resolvedCompatDir := strings.TrimPrefix(filepath.Dir(libCudaCompatPath), string(containerRoot))
+	resolvedCompatDir := strings.TrimPrefix(filepath.Dir(libCudaCompatPath), containerRoot.Name())
 	return resolvedCompatDir, nil
 }
 
-func (m command) useCompatLibraries(libcudaCompatPath string, hostDriverVersion string, hostCUDAVersion string) (bool, error) {
+func (m command) useCompatLibraries(libcudaCompatFile *os.File, hostDriverVersion string, hostCUDAVersion string) (bool, error) {
 	// If the host CUDA version is specified, we need to inspect the ELF header
 	// of the compat libraries in the container to determine whether these
 	// should be used.
 	if hostCUDAVersion != "" {
-		cudaCompatHeader, _ := GetCUDACompatElfHeader(libcudaCompatPath)
+		cudaCompatHeader, _ := GetCUDACompatElfHeaderFromReader(libcudaCompatFile)
 		if cudaCompatHeader != nil {
 			return cudaCompatHeader.UseCompat(hostCUDAVersion), nil
 		}
@@ -201,7 +214,7 @@ func (m command) useCompatLibraries(libcudaCompatPath string, hostDriverVersion 
 		return false, fmt.Errorf("failed to extract major version from %q: %v", hostDriverVersion, err)
 	}
 
-	compatDriverVersion := strings.TrimPrefix(filepath.Base(libcudaCompatPath), "libcuda.so.")
+	compatDriverVersion := strings.TrimPrefix(filepath.Base(libcudaCompatFile.Name()), "libcuda.so.")
 	compatMajor, err := extractMajorVersion(compatDriverVersion)
 	if err != nil {
 		return false, fmt.Errorf("failed to extract major version from %q: %v", compatDriverVersion, err)
@@ -218,21 +231,19 @@ func (m command) useCompatLibraries(libcudaCompatPath string, hostDriverVersion 
 // createLdsoconfdFile creates a file at /etc/ld.so.conf.d/ in the specified root.
 // The file is created at /etc/ld.so.conf.d/{{ .pattern }} using `CreateTemp` and
 // contains the specified directories on each line.
-func (m command) createLdsoconfdFile(in containerRoot, pattern string, dirs ...string) error {
+func (m command) createLdsoconfdFile(root *root, pattern string, dirs ...string) error {
 	if len(dirs) == 0 {
 		m.logger.Debugf("No directories to add to /etc/ld.so.conf")
 		return nil
 	}
 
-	ldsoconfdDir, err := in.resolve("/etc/ld.so.conf.d")
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(ldsoconfdDir, 0755); err != nil {
+	ldsoconfdDirPath := "/etc/ld.so.conf.d"
+	if err := root.MkdirAll(ldsoconfdDirPath, 0755); err != nil {
 		return fmt.Errorf("failed to create ld.so.conf.d: %w", err)
 	}
 
-	configFile, err := os.CreateTemp(ldsoconfdDir, pattern)
+	configFileName := strings.ReplaceAll(pattern, "*", uuid.NewString())
+	configFile, err := root.Create(filepath.Join(ldsoconfdDirPath, configFileName))
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %w", err)
 	}
@@ -247,7 +258,7 @@ func (m command) createLdsoconfdFile(in containerRoot, pattern string, dirs ...s
 		}
 		_, err = fmt.Fprintf(configFile, "%s\n", dir)
 		if err != nil {
-			return fmt.Errorf("failed to update config file: %w", err)
+			return fmt.Errorf("failed to write to config file: %w", err)
 		}
 		added[dir] = true
 	}
