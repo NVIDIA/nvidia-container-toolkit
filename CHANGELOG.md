@@ -13,6 +13,8 @@
 - Update systemd unit conditions to execute nvidia-smi
 - Reintroduce restart logic to nvidia-cdi-refresh.service
 - [cri-o config] fix drop-in config directory used for config overrides
+- add support for injecting /dev/dri* devices nodes for gfx MIGs
+- Use cyphar/filepath-securejoin/pathrs-lite in cudacompat and create-symlinks hook
 
 ## v1.19.0
 - Promote v1.19.0-rc.7 to v1.19.0
