@@ -133,8 +133,6 @@ func (m command) createLink(containerRootDir string, targetPath string, link str
 	}
 
 	return m.createSymlinkInRoot(containerRootDir, targetPath, link)
-
-	return nil
 }
 
 // linkExists checks whether the specified link exists.
