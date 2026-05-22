@@ -22,6 +22,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -99,6 +100,7 @@ func (r root) globFiles(pattern string) ([]string, error) {
 		}
 		files = append(files, filepath.Join(dir, match))
 	}
+	sort.Strings(files)
 	return files, nil
 }
 
