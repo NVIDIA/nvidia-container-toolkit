@@ -16,7 +16,7 @@
 ARG GOLANG_VERSION=x.x.x
 ARG VERSION="N/A"
 
-FROM nvcr.io/nvidia/cuda:12.9.1-base-ubi9 AS build
+FROM nvcr.io/nvidia/cuda:13.2.1-base-ubi9 AS build
 
 RUN rm -f /etc/yum.repos.d/cuda.repo && rm -f /etc/ld.so.conf.d/nvidia.conf
 
@@ -88,7 +88,7 @@ LABEL description="See summary"
 COPY LICENSE /licenses/
 
 # The debpackages stage is used to extract the contents of deb packages.
-FROM nvcr.io/nvidia/cuda:12.9.1-base-ubuntu20.04 AS debpackages
+FROM nvcr.io/nvidia/cuda:12.9.2-base-ubuntu20.04 AS debpackages
 
 RUN rm -f /etc/apt/sources.list.d/cuda.list
 
@@ -109,7 +109,7 @@ RUN set -eux; \
     for p in $(ls /deb-packages/${ARCH}/*.deb); do dpkg-deb -xv $p /artifacts/deb/; done
 
 # The rpmpackages stage is used to extract the contents of the rpm packages.
-FROM nvcr.io/nvidia/cuda:12.9.1-base-ubi9 AS rpmpackages
+FROM nvcr.io/nvidia/cuda:13.2.1-base-ubi9 AS rpmpackages
 
 RUN rm -f /etc/yum.repos.d/cuda.repo && rm -f /etc/ld.so.conf.d/nvidia.conf
 
