@@ -385,7 +385,7 @@ func TestHasPath(t *testing.T) {
 
 			root, _ := newRoot(containerRootDir)
 			got := root.hasPath(tc.path)
-			require.Equal(t, tc.expected, got)
+			require.ElementsMatch(t, tc.expected, got)
 		})
 	}
 }
