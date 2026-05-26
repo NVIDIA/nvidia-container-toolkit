@@ -53,13 +53,26 @@ ARG VERSION="N/A"
 ARG GIT_COMMIT="unknown"
 RUN make PREFIX=/artifacts/bin cmd-nvidia-ctk-installer
 
+# Build a static busybox layout: one binary plus applet symlinks (sh, rm,
+# ln, sleep, cat, ...) so PATH-resolved commands in init-container wrappers
+# and lifecycle hooks keep working on the non-*-dev* distroless base.
+FROM debian:trixie-slim AS shell
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends busybox-static \
+ && rm -rf /var/lib/apt/lists/* \
+ && mkdir /busybox \
+ && cp /bin/busybox /busybox/busybox \
+ && /busybox/busybox --install -s /busybox
+
 # The packaging stage collects the deb and rpm packages built for
 # supported architectures.
-FROM nvcr.io/nvidia/distroless/go:v4.0.6-dev AS packaging
+FROM nvcr.io/nvidia/distroless/go:v4.0.6 AS packaging
 
 USER 0:0
-SHELL ["/busybox/sh", "-c"]
-RUN ln -s /busybox/sh /bin/sh
+
+COPY --from=shell /busybox /busybox
+RUN ["/busybox/ln", "-s", "/busybox/sh", "/bin/sh"]
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/busybox
 
 ARG ARTIFACTS_ROOT
 COPY ${ARTIFACTS_ROOT}/ubuntu18.04 /artifacts/packages/ubuntu18.04
@@ -144,11 +157,13 @@ COPY --from=build /artifacts/bin /artifacts/build
 
 # The application stage contains the application used as a GPU Operator
 # operand.
-FROM nvcr.io/nvidia/distroless/go:v4.0.6-dev AS application
+FROM nvcr.io/nvidia/distroless/go:v4.0.6 AS application
 
 USER 0:0
-SHELL ["/busybox/sh", "-c"]
-RUN ln -s /busybox/sh /bin/sh
+
+COPY --from=shell /busybox /busybox
+RUN ["/busybox/ln", "-s", "/busybox/sh", "/bin/sh"]
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/busybox
 
 ENV NVIDIA_DISABLE_REQUIRE="true"
 ENV NVIDIA_VISIBLE_DEVICES=void
