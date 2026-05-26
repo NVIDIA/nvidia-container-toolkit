@@ -38,7 +38,7 @@ variables:
   # Define the public staging registry
   STAGING_REGISTRY: ghcr.io/nvidia
   STAGING_VERSION: ${CI_COMMIT_SHORT_SHA}
-  ARTIFACTORY_REPO_BASE: "https://urm.nvidia.com/artifactory/sw-gpu-cloudnative"
+  ARTIFACTORY_REPO_BASE: "${ARTIFACTORY_ROOT_URL}/artifactory/sw-gpu-cloudnative"
   KITMAKER_RELEASE_FOLDER: "kitmaker"
   PACKAGE_ARCHIVE_RELEASE_FOLDER: "releases"
 
