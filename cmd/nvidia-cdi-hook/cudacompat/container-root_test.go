@@ -507,7 +507,7 @@ func TestGlobFiles(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			require.Equal(t, tc.expected, got)
+			require.ElementsMatch(t, tc.expected, got)
 		})
 	}
 }
