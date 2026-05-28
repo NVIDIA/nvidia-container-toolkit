@@ -42,15 +42,11 @@ jobs:
         ispr:
           - ${{ github.ref_name != 'main' && !startsWith( github.ref_name, 'release-' ) }}
         driver_branch:
-          # LTS branch. EOL June 2026
-          - 535
           # LTS branch. EOL August 2028
           - 580
           # Production Branch. EOL March 2027
           - 595
         exclude:
-          - ispr: true
-            driver_branch: 580
           - ispr: true
             driver_branch: 595
     steps:
