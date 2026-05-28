@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/cyphar/filepath-securejoin/pathrs-lite"
@@ -129,5 +130,6 @@ func (r root) globFiles(pattern string) ([]string, error) {
 		}
 		files = append(files, filepath.Join(dir, dEntry.Name()))
 	}
+	sort.Strings(files)
 	return files, nil
 }
