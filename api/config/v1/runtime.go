@@ -49,6 +49,8 @@ type cdiModeConfig struct {
 type jitCDIModeConfig struct {
 	// NVCDIFeatureFlags sets a list of nvcdi features explicitly.
 	NVCDIFeatureFlags []nvcdi.FeatureFlag `toml:"nvcdi-feature-flags,omitempty"`
+	// NVCDIDisableHooks sets a list of nvcdi hooks to disable
+	NVCDIDisableHooks []nvcdi.HookName `toml:"nvcdi-disable-hooks,omitempty"`
 }
 
 type csvModeConfig struct {
