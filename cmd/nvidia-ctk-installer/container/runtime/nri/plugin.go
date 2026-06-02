@@ -101,14 +101,17 @@ func (p *Plugin) injectCDIDevices(pod *api.PodSandbox, ctr *api.Container, a *ap
 
 // parseCDIDevices processes the podSpec and determines which containers which need CDI devices injected to them
 func (p *Plugin) parseCDIDevices(pod *api.PodSandbox, key, container string) []string {
-	if p.namespace != pod.Namespace {
-		p.logger.Debugf("pod %s/%s is not in the toolkit's namespace %s. Skipping CDI device injection...", pod.Namespace, pod.Name, p.namespace)
-		return nil
-	}
-
 	cdiDeviceNames, ok := plugin.GetEffectiveAnnotation(pod, key, container)
 	if !ok {
 		return nil
+	}
+
+	if strings.Contains(cdiDeviceNames, "management.nvidia.com/gpu") {
+		if p.namespace != pod.Namespace {
+			p.logger.Infof("pod %s/%s is requesting one or more management CDI devices, but it is outside of the toolkit's "+
+				"namespace %s. Skipping CDI device injection...", pod.Namespace, pod.Name, p.namespace)
+			return nil
+		}
 	}
 
 	cdiDevices := strings.Split(cdiDeviceNames, ",")
