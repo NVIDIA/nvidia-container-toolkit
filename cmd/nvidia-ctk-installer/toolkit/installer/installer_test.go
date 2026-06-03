@@ -44,7 +44,7 @@ func TestToolkitInstaller(t *testing.T) {
 
 	installer := &fileInstallerMock{
 		installFileFunc: func(s1, s2 string) (os.FileMode, error) {
-			return 0666, nil
+			return 0o666, nil
 		},
 		installContentFunc: func(reader io.Reader, s string, fileMode fs.FileMode) error {
 			var b bytes.Buffer
@@ -143,7 +143,9 @@ func TestToolkitInstaller(t *testing.T) {
 			{"/artifacts/test/usr/bin/nvidia-container-runtime.legacy", "/foo/bar/baz/nvidia-container-runtime.legacy.real"},
 			{"/artifacts/test/usr/bin/nvidia-container-runtime", "/foo/bar/baz/nvidia-container-runtime.real"},
 			{"/artifacts/test/usr/bin/nvidia-ctk", "/foo/bar/baz/nvidia-ctk.real"},
-			{"/artifacts/test/usr/bin/nvidia-cdi-hook", "/foo/bar/baz/nvidia-cdi-hook.real"},
+			// nvidia-cdi-hook is installed unwrapped (as the real binary) so it can be
+			// executed by the container runtime as a CDI hook on hosts without /bin/sh.
+			{"/artifacts/test/usr/bin/nvidia-cdi-hook", "/foo/bar/baz/nvidia-cdi-hook"},
 			{"/artifacts/test/usr/bin/nvidia-container-cli", "/foo/bar/baz/nvidia-container-cli.real"},
 			{"/artifacts/test/usr/bin/nvidia-container-runtime-hook", "/foo/bar/baz/nvidia-container-runtime-hook.real"},
 		},
@@ -166,7 +168,7 @@ func TestToolkitInstaller(t *testing.T) {
 		[]contentCall{
 			{
 				path: "/foo/bar/baz/nvidia-container-runtime",
-				mode: 0777,
+				mode: 0o777,
 				wrapper: `#! /bin/sh
 cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
 if [ "${?}" != "0" ]; then
@@ -181,7 +183,7 @@ PATH=/foo/bar/baz:$PATH \
 			},
 			{
 				path: "/foo/bar/baz/nvidia-container-runtime.cdi",
-				mode: 0777,
+				mode: 0o777,
 				wrapper: `#! /bin/sh
 cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
 if [ "${?}" != "0" ]; then
@@ -196,7 +198,7 @@ PATH=/foo/bar/baz:$PATH \
 			},
 			{
 				path: "/foo/bar/baz/nvidia-container-runtime.legacy",
-				mode: 0777,
+				mode: 0o777,
 				wrapper: `#! /bin/sh
 cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
 if [ "${?}" != "0" ]; then
@@ -211,25 +213,18 @@ PATH=/foo/bar/baz:$PATH \
 			},
 			{
 				path: "/foo/bar/baz/nvidia-ctk",
-				mode: 0777,
+				mode: 0o777,
 				wrapper: `#! /bin/sh
 PATH=/foo/bar/baz:$PATH \
 	/foo/bar/baz/nvidia-ctk.real \
 		"$@"
 `,
 			},
-			{
-				path: "/foo/bar/baz/nvidia-cdi-hook",
-				mode: 0777,
-				wrapper: `#! /bin/sh
-PATH=/foo/bar/baz:$PATH \
-	/foo/bar/baz/nvidia-cdi-hook.real \
-		"$@"
-`,
-			},
+			// nvidia-cdi-hook is installed unwrapped, so no wrapper content is rendered
+			// for it (it does not appear in contentCalls).
 			{
 				path: "/foo/bar/baz/nvidia-container-cli",
-				mode: 0777,
+				mode: 0o777,
 				wrapper: `#! /bin/sh
 LD_LIBRARY_PATH=/foo/bar/baz:$LD_LIBRARY_PATH \
 PATH=/foo/bar/baz:$PATH \
@@ -239,7 +234,7 @@ PATH=/foo/bar/baz:$PATH \
 			},
 			{
 				path: "/foo/bar/baz/nvidia-container-runtime-hook",
-				mode: 0777,
+				mode: 0o777,
 				wrapper: `#! /bin/sh
 NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
 PATH=/foo/bar/baz:$PATH \
