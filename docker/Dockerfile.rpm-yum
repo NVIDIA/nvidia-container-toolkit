@@ -30,7 +30,11 @@ RUN yum install -y \
         wget \
         git \
         make \
-        rpm-build && \
+        rpm-build \
+        systemd && \
+    if yum info systemd-rpm-macros >/dev/null 2>&1; then \
+        yum install -y systemd-rpm-macros; \
+    fi && \
     rm -rf /var/cache/yum/*
 
 ARG GOLANG_VERSION=0.0.0

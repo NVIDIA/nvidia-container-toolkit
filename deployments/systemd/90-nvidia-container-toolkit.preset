@@ -1,0 +1,2 @@
+enable nvidia-cdi-refresh.path
+enable nvidia-cdi-refresh.service

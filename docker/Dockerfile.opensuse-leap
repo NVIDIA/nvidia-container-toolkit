@@ -5,7 +5,8 @@ RUN zypper install -y \
     ca-certificates \
     wget \
     git \
-    rpm-build && \
+    rpm-build \
+    systemd-rpm-macros && \
     rm -rf /var/cache/zypp/*
 
 ARG GOLANG_VERSION=0.0.0
@@ -46,7 +47,7 @@ RUN make PREFIX=${DIST_DIR} cmds
 
 WORKDIR $DIST_DIR/..
 COPY packaging/rpm .
-COPY deployments/systemd/ .
+COPY deployments/systemd/ ${DIST_DIR}/
 
 CMD arch=$(uname -m) && \
     rpmbuild --clean --target=$arch -bb \
