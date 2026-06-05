@@ -88,6 +88,13 @@ func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 			return nil, err
 		}
 
+		// do not create a shell wraper for nvidia-cdi-hook executable
+		if executable.path == "nvidia-cdi-hook" {
+			installers = append(installers, executableFile(executablePath))
+
+			continue
+		}
+
 		wrappedExecutableFilename := filepath.Base(executablePath)
 		dotRealFilename := wrappedExecutableFilename + ".real"
 
@@ -122,7 +129,17 @@ func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 	}
 
 	return installers, nil
+}
 
+// executableFile installs an executable directly, without a shell wrapper,
+// preserving its basename and mode.
+type executableFile string
+
+func (e executableFile) Install(destDir string) error {
+	dest := filepath.Join(destDir, filepath.Base(string(e)))
+	_, err := installFile(string(e), dest)
+
+	return err
 }
 
 type wrapper struct {
@@ -155,7 +172,7 @@ func (w *wrapper) Install(destDir string) error {
 		return fmt.Errorf("failed to render wrapper: %w", err)
 	}
 	wrapperFile := filepath.Join(destDir, filepath.Base(w.Source))
-	return installContent(content, wrapperFile, mode|0111)
+	return installContent(content, wrapperFile, mode|0o111)
 }
 
 func (w *render) render() (io.Reader, error) {

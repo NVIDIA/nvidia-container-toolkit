@@ -168,7 +168,9 @@ containerEdits:
 			requireSymlink(t, toolkitRoot, "libnvidia-container.so.1", "libnvidia-container.so.99.88.77")
 			requireSymlink(t, toolkitRoot, "libnvidia-container-go.so.1", "libnvidia-container-go.so.99.88.77")
 
-			requireWrappedExecutable(t, toolkitRoot, "nvidia-cdi-hook")
+			// nvidia-cdi-hook is installed unwrapped (as the real binary) so it can be
+			// run by the container runtime as a CDI hook on hosts without /bin/sh.
+			requireUnwrappedExecutable(t, toolkitRoot, "nvidia-cdi-hook")
 			requireWrappedExecutable(t, toolkitRoot, "nvidia-container-cli")
 			requireWrappedExecutable(t, toolkitRoot, "nvidia-container-runtime")
 			requireWrappedExecutable(t, toolkitRoot, "nvidia-container-runtime-hook")
@@ -216,6 +218,13 @@ containerEdits:
 func requireWrappedExecutable(t *testing.T, toolkitRoot string, expectedExecutable string) {
 	requireExecutable(t, toolkitRoot, expectedExecutable)
 	requireExecutable(t, toolkitRoot, expectedExecutable+".real")
+}
+
+// requireUnwrappedExecutable checks that the executable is installed directly as the
+// real binary, without a shell wrapper and without a .real-suffixed copy.
+func requireUnwrappedExecutable(t *testing.T, toolkitRoot string, expectedExecutable string) {
+	requireExecutable(t, toolkitRoot, expectedExecutable)
+	require.NoFileExists(t, filepath.Join(toolkitRoot, expectedExecutable+".real"))
 }
 
 func requireExecutable(t *testing.T, toolkitRoot string, expectedExecutable string) {
