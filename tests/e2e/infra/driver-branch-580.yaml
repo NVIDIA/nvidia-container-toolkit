@@ -27,4 +27,6 @@ spec:
     install: false
   nvidiaDriver:
     install: true
-    branch: 580
+    source: package
+    package:
+      branch: "580"
