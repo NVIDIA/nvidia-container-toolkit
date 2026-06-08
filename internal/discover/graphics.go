@@ -121,7 +121,7 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 	if err != nil {
 		return nil, fmt.Errorf("failed to get driver version: %w", err)
 	}
-	cudaLibRoot, err := driver.GetDriverLibDirectory()
+	cudaLibRoots, err := driver.GetDriverLibDirectories()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get libcuda.so parent directory: %w", err)
 	}
@@ -152,7 +152,7 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 		lookup.NewFileLocator(
 			lookup.WithLogger(logger),
 			lookup.WithRoot(driver.Root),
-			lookup.WithSearchPaths(buildXOrgSearchPaths(cudaLibRoot)...),
+			lookup.WithSearchPaths(buildXOrgSearchPaths(cudaLibRoots...)...),
 			lookup.WithCount(1),
 		),
 		driver.Root,
@@ -239,8 +239,17 @@ func (d graphicsDriverLibraries) isDriverLibrary(filename string, libraryName st
 	return match
 }
 
-// buildXOrgSearchPaths returns the ordered list of search paths for XOrg files.
-func buildXOrgSearchPaths(libRoot string) []string {
+// buildXOrgSearchPaths returns search paths from all roots
+func buildXOrgSearchPaths(roots ...string) []string {
+	var paths []string
+	for _, root := range roots {
+		paths = append(paths, buildXOrgSearchPathsAtRoot(root)...)
+	}
+	return paths
+}
+
+// buildXOrgSearchPathsAtRoot returns the ordered list of search paths for XOrg files.
+func buildXOrgSearchPathsAtRoot(libRoot string) []string {
 	var paths []string
 	if libRoot != "" {
 		paths = append(paths,

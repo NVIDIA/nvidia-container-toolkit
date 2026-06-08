@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 
@@ -43,8 +44,8 @@ type Driver struct {
 
 	// version caches the driver version.
 	version string
-	// driverLibDirectory caches the path to parent of the driver libraries
-	driverLibDirectory string
+	// driverLibDirectories caches the paths to parent of the driver libraries
+	driverLibDirectories []string
 }
 
 // New creates a new Driver root using the specified options.
@@ -70,13 +71,13 @@ func New(opts ...Option) *Driver {
 	}
 
 	d := &Driver{
-		logger:             o.logger,
-		Root:               o.Root,
-		DevRoot:            o.DevRoot,
-		librarySearchPaths: o.librarySearchPaths,
-		configSearchPaths:  o.configSearchPaths,
-		version:            driverVersion,
-		driverLibDirectory: "",
+		logger:               o.logger,
+		Root:                 o.Root,
+		DevRoot:              o.DevRoot,
+		librarySearchPaths:   o.librarySearchPaths,
+		configSearchPaths:    o.configSearchPaths,
+		version:              driverVersion,
+		driverLibDirectories: nil,
 	}
 
 	return d
@@ -97,34 +98,36 @@ func (r *Driver) Version() (string, error) {
 	return r.version, nil
 }
 
-// GetDriverLibDirectory returns the cached directory where the driver libs are
-// found if possible.
+// GetDriverLibDirectories returns the cached directories where the driver libs
+// are found if possible.
 // If this has not yet been initialized, the path is first detected and then returned.
-func (r *Driver) GetDriverLibDirectory() (string, error) {
+func (r *Driver) GetDriverLibDirectories() ([]string, error) {
 	r.Lock()
 	defer r.Unlock()
 
-	if r.driverLibDirectory == "" {
+	if len(r.driverLibDirectories) == 0 {
 		if err := r.updateInfo(); err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
-	return r.driverLibDirectory, nil
+	return r.driverLibDirectories, nil
 }
 
 func (r *Driver) DriverLibraryLocator(additionalDirs ...string) (lookup.Locator, error) {
-	libcudasoParentDirPath, err := r.GetDriverLibDirectory()
+	libcudasoParentDirPaths, err := r.GetDriverLibDirectories()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get libcuda.so parent directory: %w", err)
 	}
 
-	searchPaths := []string{libcudasoParentDirPath}
+	searchPaths := slices.Clone(libcudasoParentDirPaths)
 	for _, dir := range additionalDirs {
 		if strings.HasPrefix(dir, "/") {
 			searchPaths = append(searchPaths, dir)
 		} else {
-			searchPaths = append(searchPaths, filepath.Join(libcudasoParentDirPath, dir))
+			for _, libcudasoParentDirPath := range libcudasoParentDirPaths {
+				searchPaths = append(searchPaths, filepath.Join(libcudasoParentDirPath, dir))
+			}
 		}
 	}
 
@@ -141,7 +144,7 @@ func (r *Driver) DriverLibraryLocator(additionalDirs ...string) (lookup.Locator,
 }
 
 func (r *Driver) updateInfo() error {
-	driverLibPath, version, err := r.inferVersion()
+	_, version, err := r.inferVersion()
 	if err != nil {
 		return err
 	}
@@ -149,8 +152,25 @@ func (r *Driver) updateInfo() error {
 		return fmt.Errorf("unexpected version detected: %v != %v", r.version, version)
 	}
 
+	versionedDriverLibPaths, err := r.Libraries().Locate("lib*.so." + version)
+	if err != nil {
+		return fmt.Errorf("failed to locate versioned driver libraries: %w", err)
+	}
+
+	var uniqueDirs []string
+	seen := make(map[string]bool)
+
+	for _, path := range versionedDriverLibPaths {
+		dir := filepath.Dir(path)
+		if seen[dir] {
+			continue
+		}
+		seen[dir] = true
+		uniqueDirs = append(uniqueDirs, r.RelativeToRoot(dir))
+	}
+
 	r.version = version
-	r.driverLibDirectory = r.RelativeToRoot(filepath.Dir(driverLibPath))
+	r.driverLibDirectories = uniqueDirs
 
 	return nil
 }
@@ -167,7 +187,7 @@ func (r *Driver) inferVersion() (string, string, error) {
 	for _, driverLib := range []string{"libcuda.so.", "libnvidia-ml.so."} {
 		driverLibPaths, err := r.Libraries().Locate(driverLib + versionSuffix)
 		if err != nil {
-			errs = errors.Join(errs, fmt.Errorf("failed to locate libcuda.so: %w", err))
+			errs = errors.Join(errs, fmt.Errorf("failed to locate %q: %w", driverLib, err))
 			continue
 		}
 		driverLibPath := driverLibPaths[0]
