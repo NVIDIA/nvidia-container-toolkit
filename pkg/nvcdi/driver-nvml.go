@@ -81,6 +81,10 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover
 	if err != nil {
 		return nil, err
 	}
+	legacyNVVMLibraryMounts, err := l.getLegacyNVVMLibraryMounts()
+	if err != nil {
+		return nil, err
+	}
 	explicitLibraryMounts, err := l.getExplicitDriverLibraryMounts()
 	if err != nil {
 		return nil, err
@@ -88,6 +92,7 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover
 
 	libraries := discover.Merge(
 		versionSuffixLibraryMounts,
+		legacyNVVMLibraryMounts,
 		explicitLibraryMounts,
 	)
 
@@ -181,6 +186,25 @@ func (l *nvcdilib) getExplicitDriverLibraryMounts() (discover.Discover, error) {
 
 	return mounts, nil
 
+}
+
+func (l *nvcdilib) getLegacyNVVMLibraryMounts() (discover.Discover, error) {
+	legacyNVMMLibrary := []string{
+		"libnvidia-nvvm70.so.*",
+	}
+
+	driverLibraryLocator, err := l.driver.DriverLibraryLocator()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get driver library locator: %w", err)
+	}
+	mounts := discover.NewMounts(
+		l.logger,
+		driverLibraryLocator,
+		l.driver.Root,
+		legacyNVMMLibrary,
+	)
+
+	return mounts, nil
 }
 
 func getUTSRelease() (string, error) {
