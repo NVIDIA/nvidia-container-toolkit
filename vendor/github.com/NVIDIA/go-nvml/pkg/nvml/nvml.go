@@ -396,6 +396,15 @@ func nvmlDeviceGetRepairStatus(nvmlDevice nvmlDevice, RepairStatus *RepairStatus
 	return __v
 }
 
+// nvmlDeviceGetUnrepairableMemoryFlag_v1 function as declared in nvml/nvml.h
+func nvmlDeviceGetUnrepairableMemoryFlag_v1(nvmlDevice nvmlDevice, UnrepairableMemoryStatus *UnrepairableMemoryStatus_v1) Return {
+	cnvmlDevice, _ := *(*C.nvmlDevice_t)(unsafe.Pointer(&nvmlDevice)), cgoAllocsUnknown
+	cUnrepairableMemoryStatus, _ := (*C.nvmlUnrepairableMemoryStatus_v1_t)(unsafe.Pointer(UnrepairableMemoryStatus)), cgoAllocsUnknown
+	__ret := C.nvmlDeviceGetUnrepairableMemoryFlag_v1(cnvmlDevice, cUnrepairableMemoryStatus)
+	__v := (Return)(__ret)
+	return __v
+}
+
 // nvmlDeviceGetTopologyCommonAncestor function as declared in nvml/nvml.h
 func nvmlDeviceGetTopologyCommonAncestor(Device1 nvmlDevice, Device2 nvmlDevice, PathInfo *GpuTopologyLevel) Return {
 	cDevice1, _ := *(*C.nvmlDevice_t)(unsafe.Pointer(&Device1)), cgoAllocsUnknown
@@ -1802,6 +1811,24 @@ func nvmlDeviceGetPdi(nvmlDevice nvmlDevice, Pdi *Pdi) Return {
 	return __v
 }
 
+// nvmlDeviceSetHostname_v1 function as declared in nvml/nvml.h
+func nvmlDeviceSetHostname_v1(nvmlDevice nvmlDevice, Hostname *Hostname_v1) Return {
+	cnvmlDevice, _ := *(*C.nvmlDevice_t)(unsafe.Pointer(&nvmlDevice)), cgoAllocsUnknown
+	cHostname, _ := (*C.nvmlHostname_v1_t)(unsafe.Pointer(Hostname)), cgoAllocsUnknown
+	__ret := C.nvmlDeviceSetHostname_v1(cnvmlDevice, cHostname)
+	__v := (Return)(__ret)
+	return __v
+}
+
+// nvmlDeviceGetHostname_v1 function as declared in nvml/nvml.h
+func nvmlDeviceGetHostname_v1(nvmlDevice nvmlDevice, Hostname *Hostname_v1) Return {
+	cnvmlDevice, _ := *(*C.nvmlDevice_t)(unsafe.Pointer(&nvmlDevice)), cgoAllocsUnknown
+	cHostname, _ := (*C.nvmlHostname_v1_t)(unsafe.Pointer(Hostname)), cgoAllocsUnknown
+	__ret := C.nvmlDeviceGetHostname_v1(cnvmlDevice, cHostname)
+	__v := (Return)(__ret)
+	return __v
+}
+
 // nvmlUnitSetLedState function as declared in nvml/nvml.h
 func nvmlUnitSetLedState(nvmlUnit nvmlUnit, Color LedColor) Return {
 	cnvmlUnit, _ := *(*C.nvmlUnit_t)(unsafe.Pointer(&nvmlUnit)), cgoAllocsUnknown
@@ -3096,6 +3123,15 @@ func nvmlDeviceReadWritePRM_v1(nvmlDevice nvmlDevice, Buffer *PRMTLV_v1) Return 
 	return __v
 }
 
+// nvmlDeviceReadPRMCounters_v1 function as declared in nvml/nvml.h
+func nvmlDeviceReadPRMCounters_v1(nvmlDevice nvmlDevice, CounterList *PRMCounterList_v1) Return {
+	cnvmlDevice, _ := *(*C.nvmlDevice_t)(unsafe.Pointer(&nvmlDevice)), cgoAllocsUnknown
+	cCounterList, _ := (*C.nvmlPRMCounterList_v1_t)(unsafe.Pointer(CounterList)), cgoAllocsUnknown
+	__ret := C.nvmlDeviceReadPRMCounters_v1(cnvmlDevice, cCounterList)
+	__v := (Return)(__ret)
+	return __v
+}
+
 // nvmlDeviceSetMigMode function as declared in nvml/nvml.h
 func nvmlDeviceSetMigMode(nvmlDevice nvmlDevice, Mode uint32, ActivationStatus *Return) Return {
 	cnvmlDevice, _ := *(*C.nvmlDevice_t)(unsafe.Pointer(&nvmlDevice)), cgoAllocsUnknown
@@ -3498,6 +3534,15 @@ func nvmlDeviceWorkloadPowerProfileClearRequestedProfiles(nvmlDevice nvmlDevice,
 	return __v
 }
 
+// nvmlDeviceWorkloadPowerProfileUpdateProfiles_v1 function as declared in nvml/nvml.h
+func nvmlDeviceWorkloadPowerProfileUpdateProfiles_v1(nvmlDevice nvmlDevice, UpdateProfiles *WorkloadPowerProfileUpdateProfiles_v1) Return {
+	cnvmlDevice, _ := *(*C.nvmlDevice_t)(unsafe.Pointer(&nvmlDevice)), cgoAllocsUnknown
+	cUpdateProfiles, _ := (*C.nvmlWorkloadPowerProfileUpdateProfiles_v1_t)(unsafe.Pointer(UpdateProfiles)), cgoAllocsUnknown
+	__ret := C.nvmlDeviceWorkloadPowerProfileUpdateProfiles_v1(cnvmlDevice, cUpdateProfiles)
+	__v := (Return)(__ret)
+	return __v
+}
+
 // nvmlDevicePowerSmoothingActivatePresetProfile function as declared in nvml/nvml.h
 func nvmlDevicePowerSmoothingActivatePresetProfile(nvmlDevice nvmlDevice, Profile *PowerSmoothingProfile) Return {
 	cnvmlDevice, _ := *(*C.nvmlDevice_t)(unsafe.Pointer(&nvmlDevice)), cgoAllocsUnknown
@@ -3530,6 +3575,15 @@ func nvmlDeviceGetSramUniqueUncorrectedEccErrorCounts(nvmlDevice nvmlDevice, Err
 	cnvmlDevice, _ := *(*C.nvmlDevice_t)(unsafe.Pointer(&nvmlDevice)), cgoAllocsUnknown
 	cErrorCounts, _ := (*C.nvmlEccSramUniqueUncorrectedErrorCounts_t)(unsafe.Pointer(ErrorCounts)), cgoAllocsUnknown
 	__ret := C.nvmlDeviceGetSramUniqueUncorrectedEccErrorCounts(cnvmlDevice, cErrorCounts)
+	__v := (Return)(__ret)
+	return __v
+}
+
+// nvmlDeviceSetRusdSettings_v1 function as declared in nvml/nvml.h
+func nvmlDeviceSetRusdSettings_v1(nvmlDevice nvmlDevice, Settings *RusdSettings_v1) Return {
+	cnvmlDevice, _ := *(*C.nvmlDevice_t)(unsafe.Pointer(&nvmlDevice)), cgoAllocsUnknown
+	cSettings, _ := (*C.nvmlRusdSettings_v1_t)(unsafe.Pointer(Settings)), cgoAllocsUnknown
+	__ret := C.nvmlDeviceSetRusdSettings_v1(cnvmlDevice, cSettings)
 	__v := (Return)(__ret)
 	return __v
 }

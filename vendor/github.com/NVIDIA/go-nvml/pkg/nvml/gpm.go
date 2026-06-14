@@ -58,6 +58,7 @@ func (l *library) GpmMetricsGetV(metricsGet *GpmMetricsGetType) GpmMetricsGetVTy
 
 // nvmlGpmMetricsGetStub is a stub function that can be overridden for testing.
 var nvmlGpmMetricsGetStub = nvmlGpmMetricsGet
+var nvmlGpmQueryDeviceSupportStub = nvmlGpmQueryDeviceSupport
 
 func (metricsGetV GpmMetricsGetVType) V1() Return {
 	metricsGetV.metricsGet.Version = 1
@@ -120,8 +121,8 @@ func (device nvmlDevice) GpmQueryDeviceSupportV() GpmSupportV {
 
 func (gpmSupportV GpmSupportV) V1() (GpmSupport, Return) {
 	var gpmSupport GpmSupport
-	gpmSupport.Version = STRUCT_VERSION(gpmSupport, 1)
-	ret := nvmlGpmQueryDeviceSupport(gpmSupportV.device, &gpmSupport)
+	gpmSupport.Version = GPM_SUPPORT_VERSION
+	ret := nvmlGpmQueryDeviceSupportStub(gpmSupportV.device, &gpmSupport)
 	return gpmSupport, ret
 }
 
@@ -131,8 +132,8 @@ func (l *library) GpmQueryDeviceSupport(device Device) (GpmSupport, Return) {
 
 func (device nvmlDevice) GpmQueryDeviceSupport() (GpmSupport, Return) {
 	var gpmSupport GpmSupport
-	gpmSupport.Version = STRUCT_VERSION(gpmSupport, GPM_SUPPORT_VERSION)
-	ret := nvmlGpmQueryDeviceSupport(device, &gpmSupport)
+	gpmSupport.Version = GPM_SUPPORT_VERSION
+	ret := nvmlGpmQueryDeviceSupportStub(device, &gpmSupport)
 	return gpmSupport, ret
 }
 

@@ -120,6 +120,7 @@ var (
 	DeviceGetHandleByUUID                            = libnvml.DeviceGetHandleByUUID
 	DeviceGetHandleByUUIDV                           = libnvml.DeviceGetHandleByUUIDV
 	DeviceGetHostVgpuMode                            = libnvml.DeviceGetHostVgpuMode
+	DeviceGetHostname_v1                             = libnvml.DeviceGetHostname_v1
 	DeviceGetIndex                                   = libnvml.DeviceGetIndex
 	DeviceGetInforomConfigurationChecksum            = libnvml.DeviceGetInforomConfigurationChecksum
 	DeviceGetInforomImageVersion                     = libnvml.DeviceGetInforomImageVersion
@@ -215,6 +216,7 @@ var (
 	DeviceGetTotalEccErrors                          = libnvml.DeviceGetTotalEccErrors
 	DeviceGetTotalEnergyConsumption                  = libnvml.DeviceGetTotalEnergyConsumption
 	DeviceGetUUID                                    = libnvml.DeviceGetUUID
+	DeviceGetUnrepairableMemoryFlag_v1               = libnvml.DeviceGetUnrepairableMemoryFlag_v1
 	DeviceGetUtilizationRates                        = libnvml.DeviceGetUtilizationRates
 	DeviceGetVbiosVersion                            = libnvml.DeviceGetVbiosVersion
 	DeviceGetVgpuCapabilities                        = libnvml.DeviceGetVgpuCapabilities
@@ -238,6 +240,7 @@ var (
 	DevicePowerSmoothingSetState                     = libnvml.DevicePowerSmoothingSetState
 	DevicePowerSmoothingUpdatePresetProfileParam     = libnvml.DevicePowerSmoothingUpdatePresetProfileParam
 	DeviceQueryDrainState                            = libnvml.DeviceQueryDrainState
+	DeviceReadPRMCounters_v1                         = libnvml.DeviceReadPRMCounters_v1
 	DeviceReadWritePRM_v1                            = libnvml.DeviceReadWritePRM_v1
 	DeviceRegisterEvents                             = libnvml.DeviceRegisterEvents
 	DeviceRemoveGpu                                  = libnvml.DeviceRemoveGpu
@@ -265,6 +268,7 @@ var (
 	DeviceSetGpcClkVfOffset                          = libnvml.DeviceSetGpcClkVfOffset
 	DeviceSetGpuLockedClocks                         = libnvml.DeviceSetGpuLockedClocks
 	DeviceSetGpuOperationMode                        = libnvml.DeviceSetGpuOperationMode
+	DeviceSetHostname_v1                             = libnvml.DeviceSetHostname_v1
 	DeviceSetMemClkVfOffset                          = libnvml.DeviceSetMemClkVfOffset
 	DeviceSetMemoryLockedClocks                      = libnvml.DeviceSetMemoryLockedClocks
 	DeviceSetMigMode                                 = libnvml.DeviceSetMigMode
@@ -274,6 +278,7 @@ var (
 	DeviceSetPersistenceMode                         = libnvml.DeviceSetPersistenceMode
 	DeviceSetPowerManagementLimit                    = libnvml.DeviceSetPowerManagementLimit
 	DeviceSetPowerManagementLimit_v2                 = libnvml.DeviceSetPowerManagementLimit_v2
+	DeviceSetRusdSettings_v1                         = libnvml.DeviceSetRusdSettings_v1
 	DeviceSetTemperatureThreshold                    = libnvml.DeviceSetTemperatureThreshold
 	DeviceSetVgpuCapabilities                        = libnvml.DeviceSetVgpuCapabilities
 	DeviceSetVgpuHeterogeneousMode                   = libnvml.DeviceSetVgpuHeterogeneousMode
@@ -284,6 +289,7 @@ var (
 	DeviceWorkloadPowerProfileGetCurrentProfiles     = libnvml.DeviceWorkloadPowerProfileGetCurrentProfiles
 	DeviceWorkloadPowerProfileGetProfilesInfo        = libnvml.DeviceWorkloadPowerProfileGetProfilesInfo
 	DeviceWorkloadPowerProfileSetRequestedProfiles   = libnvml.DeviceWorkloadPowerProfileSetRequestedProfiles
+	DeviceWorkloadPowerProfileUpdateProfiles_v1      = libnvml.DeviceWorkloadPowerProfileUpdateProfiles_v1
 	ErrorString                                      = libnvml.ErrorString
 	EventSetCreate                                   = libnvml.EventSetCreate
 	EventSetFree                                     = libnvml.EventSetFree
@@ -500,6 +506,7 @@ type Interface interface {
 	DeviceGetHandleByUUID(string) (Device, Return)
 	DeviceGetHandleByUUIDV(*UUID) (Device, Return)
 	DeviceGetHostVgpuMode(Device) (HostVgpuMode, Return)
+	DeviceGetHostname_v1(Device) (string, Return)
 	DeviceGetIndex(Device) (int, Return)
 	DeviceGetInforomConfigurationChecksum(Device) (uint32, Return)
 	DeviceGetInforomImageVersion(Device) (string, Return)
@@ -595,6 +602,7 @@ type Interface interface {
 	DeviceGetTotalEccErrors(Device, MemoryErrorType, EccCounterType) (uint64, Return)
 	DeviceGetTotalEnergyConsumption(Device) (uint64, Return)
 	DeviceGetUUID(Device) (string, Return)
+	DeviceGetUnrepairableMemoryFlag_v1(Device) (UnrepairableMemoryStatus_v1, Return)
 	DeviceGetUtilizationRates(Device) (Utilization, Return)
 	DeviceGetVbiosVersion(Device) (string, Return)
 	DeviceGetVgpuCapabilities(Device, DeviceVgpuCapability) (bool, Return)
@@ -618,6 +626,7 @@ type Interface interface {
 	DevicePowerSmoothingSetState(Device, *PowerSmoothingState) Return
 	DevicePowerSmoothingUpdatePresetProfileParam(Device, *PowerSmoothingProfile) Return
 	DeviceQueryDrainState(*PciInfo) (EnableState, Return)
+	DeviceReadPRMCounters_v1(Device, []PRMCounterId, int) ([]PRMCounter_v1, Return)
 	DeviceReadWritePRM_v1(Device, *PRMTLV_v1) Return
 	DeviceRegisterEvents(Device, uint64, EventSet) Return
 	DeviceRemoveGpu(*PciInfo) Return
@@ -645,6 +654,7 @@ type Interface interface {
 	DeviceSetGpcClkVfOffset(Device, int) Return
 	DeviceSetGpuLockedClocks(Device, uint32, uint32) Return
 	DeviceSetGpuOperationMode(Device, GpuOperationMode) Return
+	DeviceSetHostname_v1(Device, string) Return
 	DeviceSetMemClkVfOffset(Device, int) Return
 	DeviceSetMemoryLockedClocks(Device, uint32, uint32) Return
 	DeviceSetMigMode(Device, int) (Return, Return)
@@ -654,6 +664,7 @@ type Interface interface {
 	DeviceSetPersistenceMode(Device, EnableState) Return
 	DeviceSetPowerManagementLimit(Device, uint32) Return
 	DeviceSetPowerManagementLimit_v2(Device, *PowerValue_v2) Return
+	DeviceSetRusdSettings_v1(Device, RusdSettings_v1) Return
 	DeviceSetTemperatureThreshold(Device, TemperatureThresholds, int) Return
 	DeviceSetVgpuCapabilities(Device, DeviceVgpuCapability, EnableState) Return
 	DeviceSetVgpuHeterogeneousMode(Device, VgpuHeterogeneousMode) Return
@@ -664,6 +675,7 @@ type Interface interface {
 	DeviceWorkloadPowerProfileGetCurrentProfiles(Device) (WorkloadPowerProfileCurrentProfiles, Return)
 	DeviceWorkloadPowerProfileGetProfilesInfo(Device) (WorkloadPowerProfileProfilesInfo, Return)
 	DeviceWorkloadPowerProfileSetRequestedProfiles(Device, *WorkloadPowerProfileRequestedProfiles) Return
+	DeviceWorkloadPowerProfileUpdateProfiles_v1(Device, PowerProfileOperation, []PowerProfileType) Return
 	ErrorString(Return) string
 	EventSetCreate() (EventSet, Return)
 	EventSetFree(EventSet) Return
@@ -871,6 +883,7 @@ type Device interface {
 	GetGspFirmwareMode() (bool, bool, Return)
 	GetGspFirmwareVersion() (string, Return)
 	GetHostVgpuMode() (HostVgpuMode, Return)
+	GetHostname_v1() (string, Return)
 	GetIndex() (int, Return)
 	GetInforomConfigurationChecksum() (uint32, Return)
 	GetInforomImageVersion() (string, Return)
@@ -966,6 +979,7 @@ type Device interface {
 	GetTotalEccErrors(MemoryErrorType, EccCounterType) (uint64, Return)
 	GetTotalEnergyConsumption() (uint64, Return)
 	GetUUID() (string, Return)
+	GetUnrepairableMemoryFlag_v1() (UnrepairableMemoryStatus_v1, Return)
 	GetUtilizationRates() (Utilization, Return)
 	GetVbiosVersion() (string, Return)
 	GetVgpuCapabilities(DeviceVgpuCapability) (bool, Return)
@@ -993,6 +1007,7 @@ type Device interface {
 	PowerSmoothingActivatePresetProfile(*PowerSmoothingProfile) Return
 	PowerSmoothingSetState(*PowerSmoothingState) Return
 	PowerSmoothingUpdatePresetProfileParam(*PowerSmoothingProfile) Return
+	ReadPRMCounters_v1([]PRMCounterId, int) ([]PRMCounter_v1, Return)
 	ReadWritePRM_v1(*PRMTLV_v1) Return
 	RegisterEvents(uint64, EventSet) Return
 	ResetApplicationsClocks() Return
@@ -1018,6 +1033,7 @@ type Device interface {
 	SetGpcClkVfOffset(int) Return
 	SetGpuLockedClocks(uint32, uint32) Return
 	SetGpuOperationMode(GpuOperationMode) Return
+	SetHostname_v1(string) Return
 	SetMemClkVfOffset(int) Return
 	SetMemoryLockedClocks(uint32, uint32) Return
 	SetMigMode(int) (Return, Return)
@@ -1027,6 +1043,7 @@ type Device interface {
 	SetPersistenceMode(EnableState) Return
 	SetPowerManagementLimit(uint32) Return
 	SetPowerManagementLimit_v2(*PowerValue_v2) Return
+	SetRusdSettings_v1(RusdSettings_v1) Return
 	SetTemperatureThreshold(TemperatureThresholds, int) Return
 	SetVgpuCapabilities(DeviceVgpuCapability, EnableState) Return
 	SetVgpuHeterogeneousMode(VgpuHeterogeneousMode) Return
@@ -1038,6 +1055,7 @@ type Device interface {
 	WorkloadPowerProfileGetCurrentProfiles() (WorkloadPowerProfileCurrentProfiles, Return)
 	WorkloadPowerProfileGetProfilesInfo() (WorkloadPowerProfileProfilesInfo, Return)
 	WorkloadPowerProfileSetRequestedProfiles(*WorkloadPowerProfileRequestedProfiles) Return
+	WorkloadPowerProfileUpdateProfiles_v1(PowerProfileOperation, []PowerProfileType) Return
 }
 
 // GpuInstance represents the interface for the nvmlGpuInstance type.

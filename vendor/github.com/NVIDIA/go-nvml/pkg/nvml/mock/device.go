@@ -291,6 +291,9 @@ var _ nvml.Device = &Device{}
 //			GetHostVgpuModeFunc: func() (nvml.HostVgpuMode, nvml.Return) {
 //				panic("mock out the GetHostVgpuMode method")
 //			},
+//			GetHostname_v1Func: func() (string, nvml.Return) {
+//				panic("mock out the GetHostname_v1 method")
+//			},
 //			GetIndexFunc: func() (int, nvml.Return) {
 //				panic("mock out the GetIndex method")
 //			},
@@ -576,6 +579,9 @@ var _ nvml.Device = &Device{}
 //			GetUUIDFunc: func() (string, nvml.Return) {
 //				panic("mock out the GetUUID method")
 //			},
+//			GetUnrepairableMemoryFlag_v1Func: func() (nvml.UnrepairableMemoryStatus_v1, nvml.Return) {
+//				panic("mock out the GetUnrepairableMemoryFlag_v1 method")
+//			},
 //			GetUtilizationRatesFunc: func() (nvml.Utilization, nvml.Return) {
 //				panic("mock out the GetUtilizationRates method")
 //			},
@@ -657,6 +663,9 @@ var _ nvml.Device = &Device{}
 //			PowerSmoothingUpdatePresetProfileParamFunc: func(powerSmoothingProfile *nvml.PowerSmoothingProfile) nvml.Return {
 //				panic("mock out the PowerSmoothingUpdatePresetProfileParam method")
 //			},
+//			ReadPRMCounters_v1Func: func(pRMCounterIds []nvml.PRMCounterId, n int) ([]nvml.PRMCounter_v1, nvml.Return) {
+//				panic("mock out the ReadPRMCounters_v1 method")
+//			},
 //			ReadWritePRM_v1Func: func(pRMTLV_v1 *nvml.PRMTLV_v1) nvml.Return {
 //				panic("mock out the ReadWritePRM_v1 method")
 //			},
@@ -732,6 +741,9 @@ var _ nvml.Device = &Device{}
 //			SetGpuOperationModeFunc: func(gpuOperationMode nvml.GpuOperationMode) nvml.Return {
 //				panic("mock out the SetGpuOperationMode method")
 //			},
+//			SetHostname_v1Func: func(s string) nvml.Return {
+//				panic("mock out the SetHostname_v1 method")
+//			},
 //			SetMemClkVfOffsetFunc: func(n int) nvml.Return {
 //				panic("mock out the SetMemClkVfOffset method")
 //			},
@@ -758,6 +770,9 @@ var _ nvml.Device = &Device{}
 //			},
 //			SetPowerManagementLimit_v2Func: func(powerValue_v2 *nvml.PowerValue_v2) nvml.Return {
 //				panic("mock out the SetPowerManagementLimit_v2 method")
+//			},
+//			SetRusdSettings_v1Func: func(rusdSettings_v1 nvml.RusdSettings_v1) nvml.Return {
+//				panic("mock out the SetRusdSettings_v1 method")
 //			},
 //			SetTemperatureThresholdFunc: func(temperatureThresholds nvml.TemperatureThresholds, n int) nvml.Return {
 //				panic("mock out the SetTemperatureThreshold method")
@@ -791,6 +806,9 @@ var _ nvml.Device = &Device{}
 //			},
 //			WorkloadPowerProfileSetRequestedProfilesFunc: func(workloadPowerProfileRequestedProfiles *nvml.WorkloadPowerProfileRequestedProfiles) nvml.Return {
 //				panic("mock out the WorkloadPowerProfileSetRequestedProfiles method")
+//			},
+//			WorkloadPowerProfileUpdateProfiles_v1Func: func(powerProfileOperation nvml.PowerProfileOperation, powerProfileTypes []nvml.PowerProfileType) nvml.Return {
+//				panic("mock out the WorkloadPowerProfileUpdateProfiles_v1 method")
 //			},
 //		}
 //
@@ -1071,6 +1089,9 @@ type Device struct {
 
 	// GetHostVgpuModeFunc mocks the GetHostVgpuMode method.
 	GetHostVgpuModeFunc func() (nvml.HostVgpuMode, nvml.Return)
+
+	// GetHostname_v1Func mocks the GetHostname_v1 method.
+	GetHostname_v1Func func() (string, nvml.Return)
 
 	// GetIndexFunc mocks the GetIndex method.
 	GetIndexFunc func() (int, nvml.Return)
@@ -1357,6 +1378,9 @@ type Device struct {
 	// GetUUIDFunc mocks the GetUUID method.
 	GetUUIDFunc func() (string, nvml.Return)
 
+	// GetUnrepairableMemoryFlag_v1Func mocks the GetUnrepairableMemoryFlag_v1 method.
+	GetUnrepairableMemoryFlag_v1Func func() (nvml.UnrepairableMemoryStatus_v1, nvml.Return)
+
 	// GetUtilizationRatesFunc mocks the GetUtilizationRates method.
 	GetUtilizationRatesFunc func() (nvml.Utilization, nvml.Return)
 
@@ -1438,6 +1462,9 @@ type Device struct {
 	// PowerSmoothingUpdatePresetProfileParamFunc mocks the PowerSmoothingUpdatePresetProfileParam method.
 	PowerSmoothingUpdatePresetProfileParamFunc func(powerSmoothingProfile *nvml.PowerSmoothingProfile) nvml.Return
 
+	// ReadPRMCounters_v1Func mocks the ReadPRMCounters_v1 method.
+	ReadPRMCounters_v1Func func(pRMCounterIds []nvml.PRMCounterId, n int) ([]nvml.PRMCounter_v1, nvml.Return)
+
 	// ReadWritePRM_v1Func mocks the ReadWritePRM_v1 method.
 	ReadWritePRM_v1Func func(pRMTLV_v1 *nvml.PRMTLV_v1) nvml.Return
 
@@ -1513,6 +1540,9 @@ type Device struct {
 	// SetGpuOperationModeFunc mocks the SetGpuOperationMode method.
 	SetGpuOperationModeFunc func(gpuOperationMode nvml.GpuOperationMode) nvml.Return
 
+	// SetHostname_v1Func mocks the SetHostname_v1 method.
+	SetHostname_v1Func func(s string) nvml.Return
+
 	// SetMemClkVfOffsetFunc mocks the SetMemClkVfOffset method.
 	SetMemClkVfOffsetFunc func(n int) nvml.Return
 
@@ -1539,6 +1569,9 @@ type Device struct {
 
 	// SetPowerManagementLimit_v2Func mocks the SetPowerManagementLimit_v2 method.
 	SetPowerManagementLimit_v2Func func(powerValue_v2 *nvml.PowerValue_v2) nvml.Return
+
+	// SetRusdSettings_v1Func mocks the SetRusdSettings_v1 method.
+	SetRusdSettings_v1Func func(rusdSettings_v1 nvml.RusdSettings_v1) nvml.Return
 
 	// SetTemperatureThresholdFunc mocks the SetTemperatureThreshold method.
 	SetTemperatureThresholdFunc func(temperatureThresholds nvml.TemperatureThresholds, n int) nvml.Return
@@ -1572,6 +1605,9 @@ type Device struct {
 
 	// WorkloadPowerProfileSetRequestedProfilesFunc mocks the WorkloadPowerProfileSetRequestedProfiles method.
 	WorkloadPowerProfileSetRequestedProfilesFunc func(workloadPowerProfileRequestedProfiles *nvml.WorkloadPowerProfileRequestedProfiles) nvml.Return
+
+	// WorkloadPowerProfileUpdateProfiles_v1Func mocks the WorkloadPowerProfileUpdateProfiles_v1 method.
+	WorkloadPowerProfileUpdateProfiles_v1Func func(powerProfileOperation nvml.PowerProfileOperation, powerProfileTypes []nvml.PowerProfileType) nvml.Return
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -1911,6 +1947,9 @@ type Device struct {
 		}
 		// GetHostVgpuMode holds details about calls to the GetHostVgpuMode method.
 		GetHostVgpuMode []struct {
+		}
+		// GetHostname_v1 holds details about calls to the GetHostname_v1 method.
+		GetHostname_v1 []struct {
 		}
 		// GetIndex holds details about calls to the GetIndex method.
 		GetIndex []struct {
@@ -2279,6 +2318,9 @@ type Device struct {
 		// GetUUID holds details about calls to the GetUUID method.
 		GetUUID []struct {
 		}
+		// GetUnrepairableMemoryFlag_v1 holds details about calls to the GetUnrepairableMemoryFlag_v1 method.
+		GetUnrepairableMemoryFlag_v1 []struct {
+		}
 		// GetUtilizationRates holds details about calls to the GetUtilizationRates method.
 		GetUtilizationRates []struct {
 		}
@@ -2387,6 +2429,13 @@ type Device struct {
 		PowerSmoothingUpdatePresetProfileParam []struct {
 			// PowerSmoothingProfile is the powerSmoothingProfile argument value.
 			PowerSmoothingProfile *nvml.PowerSmoothingProfile
+		}
+		// ReadPRMCounters_v1 holds details about calls to the ReadPRMCounters_v1 method.
+		ReadPRMCounters_v1 []struct {
+			// PRMCounterIds is the pRMCounterIds argument value.
+			PRMCounterIds []nvml.PRMCounterId
+			// N is the n argument value.
+			N int
 		}
 		// ReadWritePRM_v1 holds details about calls to the ReadWritePRM_v1 method.
 		ReadWritePRM_v1 []struct {
@@ -2523,6 +2572,11 @@ type Device struct {
 			// GpuOperationMode is the gpuOperationMode argument value.
 			GpuOperationMode nvml.GpuOperationMode
 		}
+		// SetHostname_v1 holds details about calls to the SetHostname_v1 method.
+		SetHostname_v1 []struct {
+			// S is the s argument value.
+			S string
+		}
 		// SetMemClkVfOffset holds details about calls to the SetMemClkVfOffset method.
 		SetMemClkVfOffset []struct {
 			// N is the n argument value.
@@ -2576,6 +2630,11 @@ type Device struct {
 			// PowerValue_v2 is the powerValue_v2 argument value.
 			PowerValue_v2 *nvml.PowerValue_v2
 		}
+		// SetRusdSettings_v1 holds details about calls to the SetRusdSettings_v1 method.
+		SetRusdSettings_v1 []struct {
+			// RusdSettings_v1 is the rusdSettings_v1 argument value.
+			RusdSettings_v1 nvml.RusdSettings_v1
+		}
 		// SetTemperatureThreshold holds details about calls to the SetTemperatureThreshold method.
 		SetTemperatureThreshold []struct {
 			// TemperatureThresholds is the temperatureThresholds argument value.
@@ -2628,6 +2687,13 @@ type Device struct {
 		WorkloadPowerProfileSetRequestedProfiles []struct {
 			// WorkloadPowerProfileRequestedProfiles is the workloadPowerProfileRequestedProfiles argument value.
 			WorkloadPowerProfileRequestedProfiles *nvml.WorkloadPowerProfileRequestedProfiles
+		}
+		// WorkloadPowerProfileUpdateProfiles_v1 holds details about calls to the WorkloadPowerProfileUpdateProfiles_v1 method.
+		WorkloadPowerProfileUpdateProfiles_v1 []struct {
+			// PowerProfileOperation is the powerProfileOperation argument value.
+			PowerProfileOperation nvml.PowerProfileOperation
+			// PowerProfileTypes is the powerProfileTypes argument value.
+			PowerProfileTypes []nvml.PowerProfileType
 		}
 	}
 	lockClearAccountingPids                        sync.RWMutex
@@ -2721,6 +2787,7 @@ type Device struct {
 	lockGetGspFirmwareMode                         sync.RWMutex
 	lockGetGspFirmwareVersion                      sync.RWMutex
 	lockGetHostVgpuMode                            sync.RWMutex
+	lockGetHostname_v1                             sync.RWMutex
 	lockGetIndex                                   sync.RWMutex
 	lockGetInforomConfigurationChecksum            sync.RWMutex
 	lockGetInforomImageVersion                     sync.RWMutex
@@ -2816,6 +2883,7 @@ type Device struct {
 	lockGetTotalEccErrors                          sync.RWMutex
 	lockGetTotalEnergyConsumption                  sync.RWMutex
 	lockGetUUID                                    sync.RWMutex
+	lockGetUnrepairableMemoryFlag_v1               sync.RWMutex
 	lockGetUtilizationRates                        sync.RWMutex
 	lockGetVbiosVersion                            sync.RWMutex
 	lockGetVgpuCapabilities                        sync.RWMutex
@@ -2843,6 +2911,7 @@ type Device struct {
 	lockPowerSmoothingActivatePresetProfile        sync.RWMutex
 	lockPowerSmoothingSetState                     sync.RWMutex
 	lockPowerSmoothingUpdatePresetProfileParam     sync.RWMutex
+	lockReadPRMCounters_v1                         sync.RWMutex
 	lockReadWritePRM_v1                            sync.RWMutex
 	lockRegisterEvents                             sync.RWMutex
 	lockResetApplicationsClocks                    sync.RWMutex
@@ -2868,6 +2937,7 @@ type Device struct {
 	lockSetGpcClkVfOffset                          sync.RWMutex
 	lockSetGpuLockedClocks                         sync.RWMutex
 	lockSetGpuOperationMode                        sync.RWMutex
+	lockSetHostname_v1                             sync.RWMutex
 	lockSetMemClkVfOffset                          sync.RWMutex
 	lockSetMemoryLockedClocks                      sync.RWMutex
 	lockSetMigMode                                 sync.RWMutex
@@ -2877,6 +2947,7 @@ type Device struct {
 	lockSetPersistenceMode                         sync.RWMutex
 	lockSetPowerManagementLimit                    sync.RWMutex
 	lockSetPowerManagementLimit_v2                 sync.RWMutex
+	lockSetRusdSettings_v1                         sync.RWMutex
 	lockSetTemperatureThreshold                    sync.RWMutex
 	lockSetVgpuCapabilities                        sync.RWMutex
 	lockSetVgpuHeterogeneousMode                   sync.RWMutex
@@ -2888,6 +2959,7 @@ type Device struct {
 	lockWorkloadPowerProfileGetCurrentProfiles     sync.RWMutex
 	lockWorkloadPowerProfileGetProfilesInfo        sync.RWMutex
 	lockWorkloadPowerProfileSetRequestedProfiles   sync.RWMutex
+	lockWorkloadPowerProfileUpdateProfiles_v1      sync.RWMutex
 }
 
 // ClearAccountingPids calls ClearAccountingPidsFunc.
@@ -5498,6 +5570,33 @@ func (mock *Device) GetHostVgpuModeCalls() []struct {
 	mock.lockGetHostVgpuMode.RLock()
 	calls = mock.calls.GetHostVgpuMode
 	mock.lockGetHostVgpuMode.RUnlock()
+	return calls
+}
+
+// GetHostname_v1 calls GetHostname_v1Func.
+func (mock *Device) GetHostname_v1() (string, nvml.Return) {
+	if mock.GetHostname_v1Func == nil {
+		panic("Device.GetHostname_v1Func: method is nil but Device.GetHostname_v1 was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetHostname_v1.Lock()
+	mock.calls.GetHostname_v1 = append(mock.calls.GetHostname_v1, callInfo)
+	mock.lockGetHostname_v1.Unlock()
+	return mock.GetHostname_v1Func()
+}
+
+// GetHostname_v1Calls gets all the calls that were made to GetHostname_v1.
+// Check the length with:
+//
+//	len(mockedDevice.GetHostname_v1Calls())
+func (mock *Device) GetHostname_v1Calls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetHostname_v1.RLock()
+	calls = mock.calls.GetHostname_v1
+	mock.lockGetHostname_v1.RUnlock()
 	return calls
 }
 
@@ -8260,6 +8359,33 @@ func (mock *Device) GetUUIDCalls() []struct {
 	return calls
 }
 
+// GetUnrepairableMemoryFlag_v1 calls GetUnrepairableMemoryFlag_v1Func.
+func (mock *Device) GetUnrepairableMemoryFlag_v1() (nvml.UnrepairableMemoryStatus_v1, nvml.Return) {
+	if mock.GetUnrepairableMemoryFlag_v1Func == nil {
+		panic("Device.GetUnrepairableMemoryFlag_v1Func: method is nil but Device.GetUnrepairableMemoryFlag_v1 was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetUnrepairableMemoryFlag_v1.Lock()
+	mock.calls.GetUnrepairableMemoryFlag_v1 = append(mock.calls.GetUnrepairableMemoryFlag_v1, callInfo)
+	mock.lockGetUnrepairableMemoryFlag_v1.Unlock()
+	return mock.GetUnrepairableMemoryFlag_v1Func()
+}
+
+// GetUnrepairableMemoryFlag_v1Calls gets all the calls that were made to GetUnrepairableMemoryFlag_v1.
+// Check the length with:
+//
+//	len(mockedDevice.GetUnrepairableMemoryFlag_v1Calls())
+func (mock *Device) GetUnrepairableMemoryFlag_v1Calls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetUnrepairableMemoryFlag_v1.RLock()
+	calls = mock.calls.GetUnrepairableMemoryFlag_v1
+	mock.lockGetUnrepairableMemoryFlag_v1.RUnlock()
+	return calls
+}
+
 // GetUtilizationRates calls GetUtilizationRatesFunc.
 func (mock *Device) GetUtilizationRates() (nvml.Utilization, nvml.Return) {
 	if mock.GetUtilizationRatesFunc == nil {
@@ -9055,6 +9181,42 @@ func (mock *Device) PowerSmoothingUpdatePresetProfileParamCalls() []struct {
 	mock.lockPowerSmoothingUpdatePresetProfileParam.RLock()
 	calls = mock.calls.PowerSmoothingUpdatePresetProfileParam
 	mock.lockPowerSmoothingUpdatePresetProfileParam.RUnlock()
+	return calls
+}
+
+// ReadPRMCounters_v1 calls ReadPRMCounters_v1Func.
+func (mock *Device) ReadPRMCounters_v1(pRMCounterIds []nvml.PRMCounterId, n int) ([]nvml.PRMCounter_v1, nvml.Return) {
+	if mock.ReadPRMCounters_v1Func == nil {
+		panic("Device.ReadPRMCounters_v1Func: method is nil but Device.ReadPRMCounters_v1 was just called")
+	}
+	callInfo := struct {
+		PRMCounterIds []nvml.PRMCounterId
+		N             int
+	}{
+		PRMCounterIds: pRMCounterIds,
+		N:             n,
+	}
+	mock.lockReadPRMCounters_v1.Lock()
+	mock.calls.ReadPRMCounters_v1 = append(mock.calls.ReadPRMCounters_v1, callInfo)
+	mock.lockReadPRMCounters_v1.Unlock()
+	return mock.ReadPRMCounters_v1Func(pRMCounterIds, n)
+}
+
+// ReadPRMCounters_v1Calls gets all the calls that were made to ReadPRMCounters_v1.
+// Check the length with:
+//
+//	len(mockedDevice.ReadPRMCounters_v1Calls())
+func (mock *Device) ReadPRMCounters_v1Calls() []struct {
+	PRMCounterIds []nvml.PRMCounterId
+	N             int
+} {
+	var calls []struct {
+		PRMCounterIds []nvml.PRMCounterId
+		N             int
+	}
+	mock.lockReadPRMCounters_v1.RLock()
+	calls = mock.calls.ReadPRMCounters_v1
+	mock.lockReadPRMCounters_v1.RUnlock()
 	return calls
 }
 
@@ -9874,6 +10036,38 @@ func (mock *Device) SetGpuOperationModeCalls() []struct {
 	return calls
 }
 
+// SetHostname_v1 calls SetHostname_v1Func.
+func (mock *Device) SetHostname_v1(s string) nvml.Return {
+	if mock.SetHostname_v1Func == nil {
+		panic("Device.SetHostname_v1Func: method is nil but Device.SetHostname_v1 was just called")
+	}
+	callInfo := struct {
+		S string
+	}{
+		S: s,
+	}
+	mock.lockSetHostname_v1.Lock()
+	mock.calls.SetHostname_v1 = append(mock.calls.SetHostname_v1, callInfo)
+	mock.lockSetHostname_v1.Unlock()
+	return mock.SetHostname_v1Func(s)
+}
+
+// SetHostname_v1Calls gets all the calls that were made to SetHostname_v1.
+// Check the length with:
+//
+//	len(mockedDevice.SetHostname_v1Calls())
+func (mock *Device) SetHostname_v1Calls() []struct {
+	S string
+} {
+	var calls []struct {
+		S string
+	}
+	mock.lockSetHostname_v1.RLock()
+	calls = mock.calls.SetHostname_v1
+	mock.lockSetHostname_v1.RUnlock()
+	return calls
+}
+
 // SetMemClkVfOffset calls SetMemClkVfOffsetFunc.
 func (mock *Device) SetMemClkVfOffset(n int) nvml.Return {
 	if mock.SetMemClkVfOffsetFunc == nil {
@@ -10175,6 +10369,38 @@ func (mock *Device) SetPowerManagementLimit_v2Calls() []struct {
 	mock.lockSetPowerManagementLimit_v2.RLock()
 	calls = mock.calls.SetPowerManagementLimit_v2
 	mock.lockSetPowerManagementLimit_v2.RUnlock()
+	return calls
+}
+
+// SetRusdSettings_v1 calls SetRusdSettings_v1Func.
+func (mock *Device) SetRusdSettings_v1(rusdSettings_v1 nvml.RusdSettings_v1) nvml.Return {
+	if mock.SetRusdSettings_v1Func == nil {
+		panic("Device.SetRusdSettings_v1Func: method is nil but Device.SetRusdSettings_v1 was just called")
+	}
+	callInfo := struct {
+		RusdSettings_v1 nvml.RusdSettings_v1
+	}{
+		RusdSettings_v1: rusdSettings_v1,
+	}
+	mock.lockSetRusdSettings_v1.Lock()
+	mock.calls.SetRusdSettings_v1 = append(mock.calls.SetRusdSettings_v1, callInfo)
+	mock.lockSetRusdSettings_v1.Unlock()
+	return mock.SetRusdSettings_v1Func(rusdSettings_v1)
+}
+
+// SetRusdSettings_v1Calls gets all the calls that were made to SetRusdSettings_v1.
+// Check the length with:
+//
+//	len(mockedDevice.SetRusdSettings_v1Calls())
+func (mock *Device) SetRusdSettings_v1Calls() []struct {
+	RusdSettings_v1 nvml.RusdSettings_v1
+} {
+	var calls []struct {
+		RusdSettings_v1 nvml.RusdSettings_v1
+	}
+	mock.lockSetRusdSettings_v1.RLock()
+	calls = mock.calls.SetRusdSettings_v1
+	mock.lockSetRusdSettings_v1.RUnlock()
 	return calls
 }
 
@@ -10520,5 +10746,41 @@ func (mock *Device) WorkloadPowerProfileSetRequestedProfilesCalls() []struct {
 	mock.lockWorkloadPowerProfileSetRequestedProfiles.RLock()
 	calls = mock.calls.WorkloadPowerProfileSetRequestedProfiles
 	mock.lockWorkloadPowerProfileSetRequestedProfiles.RUnlock()
+	return calls
+}
+
+// WorkloadPowerProfileUpdateProfiles_v1 calls WorkloadPowerProfileUpdateProfiles_v1Func.
+func (mock *Device) WorkloadPowerProfileUpdateProfiles_v1(powerProfileOperation nvml.PowerProfileOperation, powerProfileTypes []nvml.PowerProfileType) nvml.Return {
+	if mock.WorkloadPowerProfileUpdateProfiles_v1Func == nil {
+		panic("Device.WorkloadPowerProfileUpdateProfiles_v1Func: method is nil but Device.WorkloadPowerProfileUpdateProfiles_v1 was just called")
+	}
+	callInfo := struct {
+		PowerProfileOperation nvml.PowerProfileOperation
+		PowerProfileTypes     []nvml.PowerProfileType
+	}{
+		PowerProfileOperation: powerProfileOperation,
+		PowerProfileTypes:     powerProfileTypes,
+	}
+	mock.lockWorkloadPowerProfileUpdateProfiles_v1.Lock()
+	mock.calls.WorkloadPowerProfileUpdateProfiles_v1 = append(mock.calls.WorkloadPowerProfileUpdateProfiles_v1, callInfo)
+	mock.lockWorkloadPowerProfileUpdateProfiles_v1.Unlock()
+	return mock.WorkloadPowerProfileUpdateProfiles_v1Func(powerProfileOperation, powerProfileTypes)
+}
+
+// WorkloadPowerProfileUpdateProfiles_v1Calls gets all the calls that were made to WorkloadPowerProfileUpdateProfiles_v1.
+// Check the length with:
+//
+//	len(mockedDevice.WorkloadPowerProfileUpdateProfiles_v1Calls())
+func (mock *Device) WorkloadPowerProfileUpdateProfiles_v1Calls() []struct {
+	PowerProfileOperation nvml.PowerProfileOperation
+	PowerProfileTypes     []nvml.PowerProfileType
+} {
+	var calls []struct {
+		PowerProfileOperation nvml.PowerProfileOperation
+		PowerProfileTypes     []nvml.PowerProfileType
+	}
+	mock.lockWorkloadPowerProfileUpdateProfiles_v1.RLock()
+	calls = mock.calls.WorkloadPowerProfileUpdateProfiles_v1
+	mock.lockWorkloadPowerProfileUpdateProfiles_v1.RUnlock()
 	return calls
 }

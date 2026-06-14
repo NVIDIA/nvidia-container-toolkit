@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package dgxa100
 
 import (
@@ -132,10 +131,32 @@ var MIGProfiles = struct {
 				SharedJpegCount:       0,
 				SharedOfaCount:        0,
 			},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {
+				Id:                    nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1,
+				SliceCount:            1,
+				InstanceCount:         1,
+				MultiprocessorCount:   14,
+				SharedCopyEngineCount: 1,
+				SharedDecoderCount:    0,
+				SharedEncoderCount:    0,
+				SharedJpegCount:       0,
+				SharedOfaCount:        0,
+			},
 		},
 		nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV1: {
 			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE: {
 				Id:                    nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE,
+				SliceCount:            1,
+				InstanceCount:         1,
+				MultiprocessorCount:   14,
+				SharedCopyEngineCount: 1,
+				SharedDecoderCount:    1,
+				SharedEncoderCount:    0,
+				SharedJpegCount:       1,
+				SharedOfaCount:        1,
+			},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {
+				Id:                    nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1,
 				SliceCount:            1,
 				InstanceCount:         1,
 				MultiprocessorCount:   14,
@@ -158,10 +179,32 @@ var MIGProfiles = struct {
 				SharedJpegCount:       0,
 				SharedOfaCount:        0,
 			},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {
+				Id:                    nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1,
+				SliceCount:            1,
+				InstanceCount:         1,
+				MultiprocessorCount:   14,
+				SharedCopyEngineCount: 1,
+				SharedDecoderCount:    1,
+				SharedEncoderCount:    0,
+				SharedJpegCount:       0,
+				SharedOfaCount:        0,
+			},
 		},
 		nvml.GPU_INSTANCE_PROFILE_2_SLICE: {
 			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE: {
 				Id:                    nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE,
+				SliceCount:            1,
+				InstanceCount:         2,
+				MultiprocessorCount:   14,
+				SharedCopyEngineCount: 2,
+				SharedDecoderCount:    1,
+				SharedEncoderCount:    0,
+				SharedJpegCount:       0,
+				SharedOfaCount:        0,
+			},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {
+				Id:                    nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1,
 				SliceCount:            1,
 				InstanceCount:         2,
 				MultiprocessorCount:   14,
@@ -186,6 +229,17 @@ var MIGProfiles = struct {
 		nvml.GPU_INSTANCE_PROFILE_3_SLICE: {
 			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE: {
 				Id:                    nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE,
+				SliceCount:            1,
+				InstanceCount:         3,
+				MultiprocessorCount:   14,
+				SharedCopyEngineCount: 3,
+				SharedDecoderCount:    2,
+				SharedEncoderCount:    0,
+				SharedJpegCount:       0,
+				SharedOfaCount:        0,
+			},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {
+				Id:                    nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1,
 				SliceCount:            1,
 				InstanceCount:         3,
 				MultiprocessorCount:   14,
@@ -230,6 +284,17 @@ var MIGProfiles = struct {
 				SharedJpegCount:       0,
 				SharedOfaCount:        0,
 			},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {
+				Id:                    nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1,
+				SliceCount:            1,
+				InstanceCount:         4,
+				MultiprocessorCount:   14,
+				SharedCopyEngineCount: 4,
+				SharedDecoderCount:    2,
+				SharedEncoderCount:    0,
+				SharedJpegCount:       0,
+				SharedOfaCount:        0,
+			},
 			nvml.COMPUTE_INSTANCE_PROFILE_2_SLICE: {
 				Id:                    nvml.COMPUTE_INSTANCE_PROFILE_2_SLICE,
 				SliceCount:            2,
@@ -256,6 +321,17 @@ var MIGProfiles = struct {
 		nvml.GPU_INSTANCE_PROFILE_7_SLICE: {
 			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE: {
 				Id:                    nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE,
+				SliceCount:            1,
+				InstanceCount:         7,
+				MultiprocessorCount:   14,
+				SharedCopyEngineCount: 7,
+				SharedDecoderCount:    5,
+				SharedEncoderCount:    0,
+				SharedJpegCount:       1,
+				SharedOfaCount:        1,
+			},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {
+				Id:                    nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1,
 				SliceCount:            1,
 				InstanceCount:         7,
 				MultiprocessorCount:   14,
@@ -438,34 +514,41 @@ var MIGPlacements = struct {
 	// TODO: Fill out ComputeInstancePossiblePlacements
 	ComputeInstancePossiblePlacements: map[int]map[int][]nvml.ComputeInstancePlacement{
 		nvml.GPU_INSTANCE_PROFILE_1_SLICE: {
-			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE: {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE:      {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {},
 		},
 		nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV1: {
-			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE: {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE:      {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {},
 		},
 		nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV2: {
-			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE: {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE:      {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {},
 		},
 		nvml.GPU_INSTANCE_PROFILE_2_SLICE: {
-			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE: {},
-			nvml.COMPUTE_INSTANCE_PROFILE_2_SLICE: {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE:      {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {},
+			nvml.COMPUTE_INSTANCE_PROFILE_2_SLICE:      {},
 		},
 		nvml.GPU_INSTANCE_PROFILE_3_SLICE: {
-			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE: {},
-			nvml.COMPUTE_INSTANCE_PROFILE_2_SLICE: {},
-			nvml.COMPUTE_INSTANCE_PROFILE_3_SLICE: {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE:      {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {},
+			nvml.COMPUTE_INSTANCE_PROFILE_2_SLICE:      {},
+			nvml.COMPUTE_INSTANCE_PROFILE_3_SLICE:      {},
 		},
 		nvml.GPU_INSTANCE_PROFILE_4_SLICE: {
-			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE: {},
-			nvml.COMPUTE_INSTANCE_PROFILE_2_SLICE: {},
-			nvml.COMPUTE_INSTANCE_PROFILE_4_SLICE: {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE:      {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {},
+			nvml.COMPUTE_INSTANCE_PROFILE_2_SLICE:      {},
+			nvml.COMPUTE_INSTANCE_PROFILE_4_SLICE:      {},
 		},
 		nvml.GPU_INSTANCE_PROFILE_7_SLICE: {
-			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE: {},
-			nvml.COMPUTE_INSTANCE_PROFILE_2_SLICE: {},
-			nvml.COMPUTE_INSTANCE_PROFILE_3_SLICE: {},
-			nvml.COMPUTE_INSTANCE_PROFILE_4_SLICE: {},
-			nvml.COMPUTE_INSTANCE_PROFILE_7_SLICE: {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE:      {},
+			nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1: {},
+			nvml.COMPUTE_INSTANCE_PROFILE_2_SLICE:      {},
+			nvml.COMPUTE_INSTANCE_PROFILE_3_SLICE:      {},
+			nvml.COMPUTE_INSTANCE_PROFILE_4_SLICE:      {},
+			nvml.COMPUTE_INSTANCE_PROFILE_7_SLICE:      {},
 		},
 	},
 }
