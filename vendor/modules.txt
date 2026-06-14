@@ -77,7 +77,7 @@ github.com/moby/sys/symlink
 # github.com/opencontainers/cgroups v0.0.6
 ## explicit; go 1.23.0
 github.com/opencontainers/cgroups/devices/config
-# github.com/opencontainers/runc v1.4.2
+# github.com/opencontainers/runc v1.4.3
 ## explicit; go 1.24.0
 github.com/opencontainers/runc/internal/linux
 github.com/opencontainers/runc/internal/pathrs
