@@ -12,7 +12,7 @@ require (
 	github.com/moby/sys/reexec v0.1.0
 	github.com/moby/sys/symlink v0.3.0
 	github.com/opencontainers/cgroups v0.0.6
-	github.com/opencontainers/runc v1.4.0
+	github.com/opencontainers/runc v1.4.2
 	github.com/opencontainers/runtime-spec v1.3.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/prometheus/procfs v0.19.2
@@ -27,7 +27,7 @@ require (
 )
 
 require (
-	cyphar.com/go-pathrs v0.2.1 // indirect
+	cyphar.com/go-pathrs v0.2.4 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/ttrpc v1.2.7 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
