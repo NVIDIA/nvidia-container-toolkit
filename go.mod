@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/NVIDIA/go-nvlib v0.9.1-0.20251202135446-d0f42ba016dd
 	github.com/NVIDIA/go-nvml v0.13.0-1.0.20260212130905-92cf8c963449
-	github.com/containerd/nri v0.11.0
+	github.com/containerd/nri v0.12.0
 	github.com/cyphar/filepath-securejoin v0.6.1
 	github.com/google/uuid v1.6.0
 	github.com/moby/sys/mountinfo v0.7.2
@@ -39,7 +39,7 @@ require (
 	github.com/opencontainers/runtime-tools v0.9.1-0.20251114084447-edf4cb3d2116 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
-	github.com/tetratelabs/wazero v1.10.1 // indirect
+	github.com/tetratelabs/wazero v1.11.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/grpc v1.79.3 // indirect

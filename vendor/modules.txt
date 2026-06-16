@@ -21,7 +21,7 @@ github.com/NVIDIA/go-nvml/pkg/nvml/mock/dgxa100
 # github.com/containerd/log v0.1.0
 ## explicit; go 1.20
 github.com/containerd/log
-# github.com/containerd/nri v0.11.0
+# github.com/containerd/nri v0.12.0
 ## explicit; go 1.24.0
 github.com/containerd/nri/pkg/api
 github.com/containerd/nri/pkg/log
@@ -29,6 +29,7 @@ github.com/containerd/nri/pkg/net
 github.com/containerd/nri/pkg/net/multiplex
 github.com/containerd/nri/pkg/plugin
 github.com/containerd/nri/pkg/stub
+github.com/containerd/nri/pkg/version
 # github.com/containerd/ttrpc v1.2.7
 ## explicit; go 1.19
 github.com/containerd/ttrpc
@@ -115,8 +116,8 @@ github.com/sirupsen/logrus/hooks/test
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/assert/yaml
 github.com/stretchr/testify/require
-# github.com/tetratelabs/wazero v1.10.1
-## explicit; go 1.23.0
+# github.com/tetratelabs/wazero v1.11.0
+## explicit; go 1.24.0
 github.com/tetratelabs/wazero
 github.com/tetratelabs/wazero/api
 github.com/tetratelabs/wazero/experimental
@@ -165,6 +166,7 @@ github.com/urfave/cli/v3
 golang.org/x/mod/semver
 # golang.org/x/sys v0.41.0
 ## explicit; go 1.24.0
+golang.org/x/sys/cpu
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217
