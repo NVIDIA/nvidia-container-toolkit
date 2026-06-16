@@ -27,8 +27,6 @@ on:
         required: true
       AWS_SSH_KEY:
         required: true
-      E2E_SSH_USER:
-        required: true
       SLACK_BOT_TOKEN:
         required: true
       SLACK_CHANNEL_ID:
