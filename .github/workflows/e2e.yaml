@@ -85,7 +85,7 @@ jobs:
           E2E_INSTALL_CTK: "true"
           E2E_IMAGE_NAME: ghcr.io/nvidia/container-toolkit
           E2E_IMAGE_TAG: ${{ inputs.version }}
-          E2E_SSH_USER: ${{ secrets.E2E_SSH_USER }}
+          E2E_SSH_USER: "ubuntu"
           E2E_SSH_HOST: ${{ steps.holodeck_public_dns_name.outputs.result }}
         run: |
           e2e_ssh_key=$(mktemp)
