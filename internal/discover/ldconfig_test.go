@@ -41,15 +41,8 @@ func TestLDCacheUpdateHook(t *testing.T) {
 		expectedHooks []Hook
 	}{
 		{
-			description: "empty mounts",
-			expectedHooks: []Hook{
-				{
-					Lifecycle: "createContainer",
-					Path:      testNvidiaCDIHookPath,
-					Args:      []string{"nvidia-cdi-hook", "update-ldcache"},
-					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
-				},
-			},
+			description:   "empty mounts",
+			expectedHooks: nil,
 		},
 		{
 			description:   "mount error",
@@ -101,11 +94,16 @@ func TestLDCacheUpdateHook(t *testing.T) {
 		{
 			description:  "explicit ldconfig path is passed",
 			ldconfigPath: testLdconfigPath,
+			mounts: []Mount{
+				{
+					Path: "/usr/local/lib/libfoo.so",
+				},
+			},
 			expectedHooks: []Hook{
 				{
 					Lifecycle: "createContainer",
 					Path:      testNvidiaCDIHookPath,
-					Args:      []string{"nvidia-cdi-hook", "update-ldcache", "--ldconfig-path", testLdconfigPath},
+					Args:      []string{"nvidia-cdi-hook", "update-ldcache", "--ldconfig-path", testLdconfigPath, "--folder", "/usr/local/lib"},
 					Env:       []string{"NVIDIA_CTK_DEBUG=false"},
 				},
 			},
