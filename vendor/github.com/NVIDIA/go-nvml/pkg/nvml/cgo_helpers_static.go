@@ -18,6 +18,9 @@ import (
 	"unsafe"
 )
 
+/*
+#include <stdlib.h>
+*/
 import "C"
 
 var cgoAllocsUnknown = new(struct{})
@@ -55,6 +58,17 @@ func convertSlice[T any, I any](input []T) []I {
 	return output
 }
 
+func int32SliceToMask255(s []int32) Mask255 {
+	var m Mask255
+	for _, p := range s {
+		if p < 0 || p >= 255 {
+			continue
+		}
+		m.Mask[p/32] |= 1 << (uint32(p) % 32)
+	}
+	return m
+}
+
 // packPCharString creates a Go string backed by *C.char and avoids copying.
 func packPCharString(p *C.char) (raw string) {
 	if p != nil && *p != 0 {
@@ -72,4 +86,38 @@ func packPCharString(p *C.char) (raw string) {
 func unpackPCharString(str string) (*C.char, *struct{}) {
 	h := (*stringHeader)(unsafe.Pointer(&str))
 	return (*C.char)(h.Data), cgoAllocsUnknown
+}
+
+func malloc(size uintptr) unsafe.Pointer {
+	return C.malloc(C.size_t(size))
+}
+
+func free(ptr unsafe.Pointer) {
+	C.free(ptr)
+}
+
+// int8SliceToString converts a NUL-terminated C char array (typed as []int8)
+// into a Go string, stopping at the first NUL.
+func int8SliceToString(s []int8) string {
+	buf := make([]byte, len(s))
+	for i, c := range s {
+		buf[i] = byte(c)
+	}
+	return string(buf[:clen(buf)])
+}
+
+// stringToInt8Slice copies s into out as a NUL-terminated C string. At most
+// len(out)-1 bytes are written so the final byte is always a NUL terminator;
+// remaining bytes in out are zeroed.
+func stringToInt8Slice(s string, out []int8) {
+	n := len(s)
+	if n > len(out)-1 {
+		n = len(out) - 1
+	}
+	for i := 0; i < n; i++ {
+		out[i] = int8(s[i])
+	}
+	for i := n; i < len(out); i++ {
+		out[i] = 0
+	}
 }
