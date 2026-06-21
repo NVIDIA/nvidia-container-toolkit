@@ -74,8 +74,8 @@ github.com/moby/sys/reexec
 # github.com/moby/sys/symlink v0.3.0
 ## explicit; go 1.17
 github.com/moby/sys/symlink
-# github.com/opencontainers/cgroups v0.0.6
-## explicit; go 1.23.0
+# github.com/opencontainers/cgroups v0.0.7
+## explicit; go 1.24.0
 github.com/opencontainers/cgroups/devices/config
 # github.com/opencontainers/runc v1.4.2
 ## explicit; go 1.24.0
