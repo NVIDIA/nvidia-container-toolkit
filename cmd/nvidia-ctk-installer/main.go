@@ -47,10 +47,11 @@ type options struct {
 	sourceRoot  string
 	packageType string
 
-	enableNRIPlugin bool
-	nriPluginIndex  uint
-	nriSocket       string
-	nriNamespace    string
+	enableNRIPlugin                  bool
+	nriPluginIndex                   uint
+	nriSocket                        string
+	nriNamespace                     string
+	nriManagementCDIDeviceNamespaces []string
 
 	toolkitOptions toolkit.Options
 
@@ -158,6 +159,13 @@ func (a app) build() *cli.Command {
 				Usage:       "Specify the kubernetes namespace the toolkit's NRI plugin is running in.",
 				Destination: &options.nriNamespace,
 				Sources:     cli.EnvVars("NRI_NAMESPACE"),
+			},
+			&cli.StringSliceFlag{
+				Name: "nri-management-cdi-device-namespaces",
+				Usage: "Specify the list of kubernetes namespaces (in addition to the nri-namespace) that are" +
+					" allowed to receive management CDI devices through the NRI plugin",
+				Destination: &options.nriManagementCDIDeviceNamespaces,
+				Sources:     cli.EnvVars("NRI_MANAGEMENT_CDI_DEVICE_NAMESPACES"),
 			},
 			&cli.StringFlag{
 				Name:    "runtime",
@@ -383,7 +391,8 @@ func (a *app) waitForSignal() error {
 func (a *app) startNRIPluginServer(ctx context.Context, opts *options) (*nri.Plugin, error) {
 	a.logger.Infof("Starting the NRI Plugin server....")
 
-	plugin := nri.NewPlugin(ctx, a.logger, opts.nriNamespace)
+	nriNamespaces := append([]string{opts.nriNamespace}, opts.nriManagementCDIDeviceNamespaces...)
+	plugin := nri.NewPlugin(ctx, a.logger, nriNamespaces)
 	err := plugin.Start(ctx, opts.nriSocket, fmt.Sprintf("%02d", opts.nriPluginIndex))
 	if err != nil {
 		return nil, err

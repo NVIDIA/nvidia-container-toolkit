@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -48,8 +49,8 @@ type Plugin struct {
 	ctx    context.Context
 	logger logger.Interface
 
-	namespace string
-	stub      stub.Stub
+	namespaces []string
+	stub       stub.Stub
 
 	// stopped is set before Stop() so OnClose does not reconnect during shutdown.
 	stopped atomic.Bool
@@ -58,11 +59,11 @@ type Plugin struct {
 }
 
 // NewPlugin creates a new NRI plugin for injecting CDI devices
-func NewPlugin(ctx context.Context, logger logger.Interface, namespace string) *Plugin {
+func NewPlugin(ctx context.Context, logger logger.Interface, namespaces []string) *Plugin {
 	return &Plugin{
-		ctx:       ctx,
-		logger:    logger,
-		namespace: namespace,
+		ctx:        ctx,
+		logger:     logger,
+		namespaces: namespaces,
 	}
 }
 
@@ -107,9 +108,9 @@ func (p *Plugin) parseCDIDevices(pod *api.PodSandbox, key, container string) []s
 	}
 
 	if strings.Contains(cdiDeviceNames, "management.nvidia.com/gpu") {
-		if p.namespace != pod.Namespace {
-			p.logger.Infof("pod %s/%s is requesting one or more management CDI devices, but it is outside of the toolkit's "+
-				"namespace %s. Skipping CDI device injection...", pod.Namespace, pod.Name, p.namespace)
+		if !slices.Contains(p.namespaces, pod.Namespace) {
+			p.logger.Infof("pod %s/%s is requesting one or more management CDI devices, but it is not in one of the allowed "+
+				"namespaces %s. Skipping CDI device injection...", pod.Namespace, pod.Name, strings.Join(p.namespaces, ", "))
 			return nil
 		}
 	}
