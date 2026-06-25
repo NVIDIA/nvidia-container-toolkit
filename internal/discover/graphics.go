@@ -67,6 +67,7 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, h
 			"nvidia/nvoptix.bin",
 			"X11/xorg.conf.d/10-nvidia.conf",
 			"X11/xorg.conf.d/nvidia-drm-outputclass.conf",
+			"OpenCL/vendors/nvidia.icd",
 		},
 	)
 
