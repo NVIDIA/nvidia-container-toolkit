@@ -50,6 +50,9 @@ func (d ldconfig) Hooks() ([]Hook, error) {
 	}
 
 	libraryFolders := uniqueFolders(getLibraryPaths(mounts))
+	if len(libraryFolders) == 0 {
+		return nil, nil
+	}
 
 	return d.hookCreator.Create(UpdateLDCacheHook, libraryFolders...).Hooks()
 }
