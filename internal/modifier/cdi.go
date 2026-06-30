@@ -82,6 +82,7 @@ func (f *Factory) newJitCDIModifier(automaticDevices []string) (oci.SpecModifier
 	if f.image != nil {
 		automaticDevices = append(automaticDevices, withUniqueDevices(gatedDevices(*f.image)).DeviceRequests()...)
 		automaticDevices = append(automaticDevices, withUniqueDevices(imexDevices(*f.image)).DeviceRequests()...)
+		automaticDevices = append(automaticDevices, withUniqueDevices(migCapDevices(*f.image)).DeviceRequests()...)
 	}
 	return f.newAutomaticCDISpecModifier(automaticDevices)
 }
@@ -153,6 +154,27 @@ func (d imexDevices) DeviceRequests() []string {
 	i := (image.CUDA)(d)
 	for _, channelID := range i.ImexChannelRequests() {
 		devices = append(devices, "mode=imex,id="+channelID)
+	}
+	return devices
+}
+
+type migCapDevices image.CUDA
+
+// DeviceRequests returns device requests for MIG config and monitor capability devices.
+// These devices require a privileged container.
+func (m migCapDevices) DeviceRequests() []string {
+	i := (image.CUDA)(m)
+
+	if !i.IsPrivileged() {
+		return nil
+	}
+
+	var devices []string
+	if i.Getenv(image.EnvVarNvidiaMigConfigDevices) != "" {
+		devices = append(devices, "mode=mig-config")
+	}
+	if i.Getenv(image.EnvVarNvidiaMigMonitorDevices) != "" {
+		devices = append(devices, "mode=mig-monitor")
 	}
 	return devices
 }

@@ -61,6 +61,10 @@ func (l *gatedlib) getModeDiscoverer() (discover.Discover, error) {
 		return discover.NewGDRCopyDiscoverer(l.logger, l.driver)
 	case ModeGds:
 		return discover.NewGDSDiscoverer(l.logger, l.driver)
+	case ModeMigConfig:
+		return discover.NewMigConfigDiscoverer(l.logger, l.driver)
+	case ModeMigMonitor:
+		return discover.NewMigMonitorDiscoverer(l.logger, l.driver)
 	case ModeMofed:
 		return discover.NewMOFEDDiscoverer(l.logger, l.driver)
 	case ModeNvswitch:
