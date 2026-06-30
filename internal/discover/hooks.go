@@ -34,6 +34,9 @@ const (
 	//
 	// Deprecated: The chmod hook is deprecated and will be removed in a future release.
 	ChmodHook = HookName("chmod")
+	// A CheckRequirementsHook is used to enforce NVIDIA_REQUIRE_* constraints
+	// from the container image.
+	CheckRequirementsHook = HookName("check-requirements")
 	// A CreateSymlinksHook is used to create symlinks in the container.
 	CreateSymlinksHook = HookName("create-symlinks")
 	// DisableDeviceNodeModificationHook refers to the hook used to ensure that
