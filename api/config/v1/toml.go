@@ -98,8 +98,31 @@ func (o options) loadConfigToml() (*Toml, error) {
 	}
 	defer tomlFile.Close()
 
-	return loadConfigTomlFrom(tomlFile)
+	t, err := loadConfigTomlFrom(tomlFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load specified config file: %w", err)
+	}
 
+	for _, key := range t.tree.Keys() {
+		t.markKeysSet(key, "")
+	}
+	return t, nil
+}
+
+func (t *Toml) markKeysSet(key string, prefix string) {
+	fullKey := key
+	if prefix != "" {
+		fullKey = prefix + "." + key
+	}
+
+	t.valuesSet[fullKey] = true
+
+	subTree := t.tree.Get(fullKey)
+	if nextTree, ok := subTree.(*toml.Tree); ok {
+		for _, nextKey := range nextTree.Keys() {
+			t.markKeysSet(nextKey, fullKey)
+		}
+	}
 }
 
 func defaultToml() (*Toml, error) {
