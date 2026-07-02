@@ -3261,6 +3261,16 @@ func (device nvmlDevice) GetGpuFabricInfoV() GpuFabricInfoHandler {
 	return GpuFabricInfoHandler{device}
 }
 
+func (l *library) DeviceGetGpuFabricInfo_v4(device Device) (GpuFabricInfo_v4, Return) {
+	return device.GetGpuFabricInfo_v4()
+}
+
+func (device nvmlDevice) GetGpuFabricInfo_v4() (GpuFabricInfo_v4, Return) {
+	var info GpuFabricInfo_v4
+	ret := nvmlDeviceGetGpuFabricInfo_v4(device, &info)
+	return info, ret
+}
+
 // nvml.DeviceGetProcessesUtilizationInfo()
 func (l *library) DeviceGetProcessesUtilizationInfo(device Device) (ProcessesUtilizationInfo, Return) {
 	return device.GetProcessesUtilizationInfo()
@@ -3830,4 +3840,89 @@ func (l *library) GpuInstanceSetVgpuSchedulerState_v2(gpuInstance GpuInstance, s
 
 func (gpuInstance nvmlGpuInstance) SetVgpuSchedulerState_v2(schedulerState *VgpuSchedulerState_v2) Return {
 	return nvmlGpuInstanceSetVgpuSchedulerState_v2(gpuInstance, schedulerState)
+}
+
+func (l *library) DeviceSetMemoryLimits_v1(device Device, namespace string, requests int, limits int) Return {
+	return device.SetMemoryLimits_v1(namespace, requests, limits)
+}
+
+func (device nvmlDevice) SetMemoryLimits_v1(namespace string, requests int, limits int) Return {
+	d := &SetMemoryLimits_v1{}
+	cptr := stringToCPtr(namespace)
+	defer free(cptr)
+	d.NameSpace = (*int8)(cptr)
+	d.SoftLimit = uint64(requests)
+	d.HardLimit = uint64(limits)
+	return nvmlDeviceSetMemoryLimits_v1(device, d)
+}
+
+func (l *library) DeviceGetMemoryLimits_v1(device Device, namespace string) (GetMemoryLimits_v1, Return) {
+	return device.GetMemoryLimits_v1(namespace)
+}
+
+func (device nvmlDevice) GetMemoryLimits_v1(namespace string) (GetMemoryLimits_v1, Return) {
+	d := &GetMemoryLimits_v1{}
+	cptr := stringToCPtr(namespace)
+	defer free(cptr)
+	d.NameSpace = (*int8)(cptr)
+	ret := nvmlDeviceGetMemoryLimits_v1(device, d)
+	return *d, ret
+}
+
+// nvml.DeviceSetAdaptiveTgpMode_v1()
+func (l *library) DeviceSetAdaptiveTgpMode_v1(device Device, mode EnableState) Return {
+	return device.SetAdaptiveTgpMode_v1(mode)
+}
+
+func (device nvmlDevice) SetAdaptiveTgpMode_v1(mode EnableState) Return {
+	return nvmlDeviceSetAdaptiveTgpMode_v1(device, mode)
+}
+
+// nvml.DeviceGetAdaptiveTgpModeInfo_v1()
+func (l *library) DeviceGetAdaptiveTgpModeInfo_v1(device Device) (AdaptiveTgpModeInfo_v1, Return) {
+	return device.GetAdaptiveTgpModeInfo_v1()
+}
+
+func (device nvmlDevice) GetAdaptiveTgpModeInfo_v1() (AdaptiveTgpModeInfo_v1, Return) {
+	var info AdaptiveTgpModeInfo_v1
+	ret := nvmlDeviceGetAdaptiveTgpModeInfo_v1(device, &info)
+	return info, ret
+}
+
+// nvml.DevicePerfMetricsGetSamples_v1()
+func (l *library) DevicePerfMetricsGetSamples_v1(device Device, samples *PerfMetricsSamples_v1) Return {
+	return device.PerfMetricsGetSamples_v1(samples)
+}
+
+func (device nvmlDevice) PerfMetricsGetSamples_v1(samples *PerfMetricsSamples_v1) Return {
+	return nvmlDevicePerfMetricsGetSamples_v1(device, samples)
+}
+
+// nvml.DeviceSetNvlinkBwModeAsync_v1()
+func (l *library) DeviceSetNvlinkBwModeAsync_v1(device Device, setBwModeAsync *NvlinkSetBwModeAsync_v1) Return {
+	return device.SetNvlinkBwModeAsync_v1(setBwModeAsync)
+}
+
+func (device nvmlDevice) SetNvlinkBwModeAsync_v1(setBwModeAsync *NvlinkSetBwModeAsync_v1) Return {
+	return nvmlDeviceSetNvlinkBwModeAsync_v1(device, setBwModeAsync)
+}
+
+// nvml.DeviceGetNvLinkTelemetrySamples_v1()
+func (l *library) DeviceGetNvLinkTelemetrySamples_v1(device Device, samples *NvlinkTelemetrySamples_v1) Return {
+	return device.GetNvLinkTelemetrySamples_v1(samples)
+}
+
+func (device nvmlDevice) GetNvLinkTelemetrySamples_v1(samples *NvlinkTelemetrySamples_v1) Return {
+	return nvmlDeviceGetNvLinkTelemetrySamples_v1(device, samples)
+}
+
+// nvml.DeviceGetBankRemapperStatus_v1()
+func (l *library) DeviceGetBankRemapperStatus_v1(device Device) (EccBankRemapperStatus_v1, Return) {
+	return device.GetBankRemapperStatus_v1()
+}
+
+func (device nvmlDevice) GetBankRemapperStatus_v1() (EccBankRemapperStatus_v1, Return) {
+	var status EccBankRemapperStatus_v1
+	ret := nvmlDeviceGetBankRemapperStatus_v1(device, &status)
+	return status, ret
 }
