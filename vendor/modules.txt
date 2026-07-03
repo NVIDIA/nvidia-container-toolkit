@@ -4,6 +4,9 @@ cyphar.com/go-pathrs
 cyphar.com/go-pathrs/internal/fdutils
 cyphar.com/go-pathrs/internal/libpathrs
 cyphar.com/go-pathrs/procfs
+# github.com/Masterminds/semver/v3 v3.5.0
+## explicit; go 1.21
+github.com/Masterminds/semver/v3
 # github.com/NVIDIA/go-nvlib v0.9.1-0.20251202135446-d0f42ba016dd
 ## explicit; go 1.20
 github.com/NVIDIA/go-nvlib/pkg/nvlib/device

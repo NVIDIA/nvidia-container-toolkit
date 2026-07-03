@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/uuid"
 	"github.com/urfave/cli/v3"
 
@@ -190,13 +190,36 @@ func (m command) getContainerForwardCompatDir(containerRoot *root, o *options) (
 }
 
 func (m command) useCompatLibraries(libcudaCompatFile *os.File, hostDriverVersion string, hostCUDAVersion string) (bool, error) {
+	compatDriverVersion := strings.TrimPrefix(filepath.Base(libcudaCompatFile.Name()), "libcuda.so.")
+
+	// Parse the version strings up front so that the checks below -- both against
+	// the ELF header and the fallback major-version comparison -- operate on
+	// well-formed semantic versions. If a version string cannot be parsed we log
+	// a warning and leave it unset; the checks below account for missing versions.
+	compatDriverSemver, err := semver.NewVersion(compatDriverVersion)
+	if err != nil {
+		m.logger.Warningf("failed to parse compat driver version %q: %v", compatDriverVersion, err)
+	}
+
+	hostDriverSemver, err := semver.NewVersion(hostDriverVersion)
+	if err != nil {
+		m.logger.Warningf("failed to parse host driver version %q: %v", hostDriverVersion, err)
+	}
+
+	hostCUDASemver, err := semver.NewVersion(hostCUDAVersion)
+	if err != nil {
+		m.logger.Warningf("failed to parse host CUDA version %q: %v", hostCUDAVersion, err)
+	}
+
 	// First check the ELF header of the libcuda.so included in the compat directory.
 	// If this is present, we use the ELF header to determine whether the CUDA compat
 	// libraries in the container should be used over the host driver libraries.
-	compatDriverVersion := strings.TrimPrefix(filepath.Base(libcudaCompatFile.Name()), "libcuda.so.")
-	cudaCompatHeader, _ := GetCUDACompatElfHeaderFromReader(libcudaCompatFile)
+	cudaCompatHeader, err := GetCUDACompatElfHeaderFromReader(libcudaCompatFile)
+	if err != nil {
+		m.logger.Warningf("failed to get ELF header from CUDA compat library: %w", err)
+	}
 	if cudaCompatHeader != nil {
-		return cudaCompatHeader.UseCompat(compatDriverVersion, hostDriverVersion, hostCUDAVersion), nil
+		return cudaCompatHeader.UseCompat(compatDriverSemver, hostDriverSemver, hostCUDASemver), nil
 	}
 
 	// If the host CUDA version is specified, we need to inspect the ELF header
@@ -206,26 +229,16 @@ func (m command) useCompatLibraries(libcudaCompatFile *os.File, hostDriverVersio
 		return false, nil
 	}
 
-	// If neither a host driver version nor a host CUDA version is specified,
-	// we don't use the CUDA compat libraries in the container.
-	if hostDriverVersion == "" {
+	// If we could not determine the host driver version or the compat driver
+	// version, we don't use the CUDA compat libraries in the container.
+	if hostDriverSemver == nil || compatDriverSemver == nil {
 		return false, nil
 	}
 
-	// If we reach this point, it means we could not read the ELf header but
+	// If we reach this point, it means we could not read the ELF header but
 	// the host driver version is specified. We fall back to comparing the major
 	// versions of the host driver and compat driver.
-	driverMajor, err := extractMajorVersion(hostDriverVersion)
-	if err != nil {
-		return false, fmt.Errorf("failed to extract major version from %q: %v", hostDriverVersion, err)
-	}
-
-	compatMajor, err := extractMajorVersion(compatDriverVersion)
-	if err != nil {
-		return false, fmt.Errorf("failed to extract major version from %q: %v", compatDriverVersion, err)
-	}
-
-	if driverMajor < compatMajor {
+	if hostDriverSemver.Major() < compatDriverSemver.Major() {
 		return true, nil
 	}
 
@@ -274,13 +287,4 @@ func (m command) createLdsoconfdFile(root *root, pattern string, dirs ...string)
 	}
 
 	return nil
-}
-
-// extractMajorVersion parses a version string and returns the major version as an int.
-func extractMajorVersion(version string) (int, error) {
-	if version == "" {
-		return 0, nil
-	}
-	majorString := strings.SplitN(version, ".", 2)[0]
-	return strconv.Atoi(majorString)
 }
