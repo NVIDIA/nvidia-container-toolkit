@@ -258,6 +258,18 @@ func TestCDIHookCreator_Create(t *testing.T) {
 			},
 		},
 		{
+			name:        "ApplicationProfileHook",
+			hookCreator: NewHookCreator(WithNVIDIACDIHookPath(defaultNvidiaCDIHookPath)),
+			hookName:    ApplicationProfileHook,
+			args:        []string{},
+			expectedHook: &Hook{
+				Lifecycle: "createContainer",
+				Path:      defaultNvidiaCDIHookPath,
+				Args:      []string{"nvidia-cdi-hook", "update-application-profile"},
+				Env:       []string{"NVIDIA_CTK_DEBUG=false"},
+			},
+		},
+		{
 			name:        "nvidia-ctk binary uses different args format",
 			hookCreator: NewHookCreator(WithNVIDIACDIHookPath("/usr/bin/nvidia-ctk")),
 			hookName:    UpdateLDCacheHook,

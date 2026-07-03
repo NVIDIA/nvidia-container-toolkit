@@ -42,6 +42,10 @@ const (
 	// AllHooks is a special hook name that allows all hooks to be matched.
 	AllHooks = HookName("all")
 
+	// An ApplicationProfileHook updates driver settings through "application
+	// profiles". It currently restricts EGL/Vulkan GPU visibility inside the
+	// container to the GPUs actually mounted.
+	ApplicationProfileHook = HookName("update-application-profile")
 	// A ChmodHook is used to set the file mode of the specified paths.
 	//
 	// Deprecated: The chmod hook is deprecated and will be removed in a future release.
@@ -216,7 +220,7 @@ func (c cdiHookCreator) Create(name HookName, args ...string) *Hook {
 
 func (c cdiHookCreator) getOCIHookType(name HookName) OCIHookType {
 	switch name {
-	case CreateSymlinksHook, ChmodHook, DisableDeviceNodeModificationHook, EnableCudaCompatHook, UpdateLDCacheHook:
+	case CreateSymlinksHook, ChmodHook, DisableDeviceNodeModificationHook, EnableCudaCompatHook, UpdateLDCacheHook, ApplicationProfileHook:
 		return OCIHookTypeCreateContainer
 	default:
 		return OCIHookTypeCreateContainer
