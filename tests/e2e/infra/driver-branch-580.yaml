@@ -29,4 +29,8 @@ spec:
     install: true
     source: package
     package:
-      branch: "580"
+      # We pin the version here to allow us to test CUDA Minor Version Compatibility.
+      # If we deploy a CUDA 13.0.3+ container (associated with NVIDIA Linux Driver
+      # version 580.126.20), NVIDIA Container Toolkit should use the CUDA compat
+      # libraries in the container instead of the 580.105.08 libraries on the host.
+      version: "580.105.08"

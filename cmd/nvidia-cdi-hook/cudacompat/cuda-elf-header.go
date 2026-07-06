@@ -24,9 +24,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
+	"slices"
 
-	"golang.org/x/mod/semver"
+	"github.com/Masterminds/semver/v3"
 )
 
 type compatElfHeader struct {
@@ -123,28 +123,41 @@ func getCUDAFwdCompatibilitySection(lib *elf.File) *elf.Section {
 
 // UseCompat checks whether the CUDA compat libraries with the specified elf
 // header should be used given the specified host versions.
-// This is done by comparing the host CUDA version with the CUDA version
-// specified in the ELF header.
-func (h *compatElfHeader) UseCompat(hostCUDAVersion string) bool {
+// If the host driver version is specified, we check if the driver version
+// is supported in the ELF header. If no host driver version is provided, we
+// fall back to checking the CUDA version specified in the ELF header.
+func (h *compatElfHeader) UseCompat(compatDriverVersion *semver.Version, hostDriverVersion *semver.Version, hostCUDAVersion *semver.Version) bool {
 	if h == nil {
 		return false
 	}
 
-	return h.CUDAVersion.UseCompat(hostCUDAVersion)
+	if compatDriverVersion == nil || hostDriverVersion == nil {
+		if hostCUDAVersion != nil {
+			return h.CUDAVersion.UseCompat(hostCUDAVersion)
+		}
+		return false
+	}
+
+	if !slices.Contains(h.Driver, int(hostDriverVersion.Major())) {
+		return false
+	}
+
+	return compatDriverVersion.Compare(hostDriverVersion) > 0
 }
 
 type cudaVersion string
 
 // UseCompat is true if the container CUDA version is strictly greater than the
 // host CUDA version.
-func (containerVersion cudaVersion) UseCompat(hostVersion string) bool {
-	if containerVersion == "" || hostVersion == "" {
+func (containerVersion cudaVersion) UseCompat(hostVersion *semver.Version) bool {
+	if containerVersion == "" || hostVersion == nil {
 		return false
 	}
 
-	return semver.Compare(normalizeVersion(containerVersion), normalizeVersion(hostVersion)) > 0
-}
+	containerCUDAVersion, err := semver.NewVersion(string(containerVersion))
+	if err != nil {
+		return false
+	}
 
-func normalizeVersion[T string | cudaVersion](v T) string {
-	return "v" + strings.TrimPrefix(string(v), "v")
+	return containerCUDAVersion.Compare(hostVersion) > 0
 }
