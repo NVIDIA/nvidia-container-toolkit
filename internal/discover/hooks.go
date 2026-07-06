@@ -26,6 +26,18 @@ import (
 // A HookName represents a supported CDI hooks.
 type HookName string
 
+// An OCIHookType is the OCI lifecycle stage at which a CDI hook runs.
+type OCIHookType string
+
+const (
+	// OCIHookTypeCreateRuntime runs in the runtime namespace before the container is created.
+	OCIHookTypeCreateRuntime = OCIHookType(cdi.CreateRuntimeHook)
+	// OCIHookTypeCreateContainer runs in the container mount namespace before pivot_root.
+	OCIHookTypeCreateContainer = OCIHookType(cdi.CreateContainerHook)
+	// OCIHookTypeStartContainer runs in the container namespace after the container is started.
+	OCIHookTypeStartContainer = OCIHookType(cdi.StartContainerHook)
+)
+
 const (
 	// AllHooks is a special hook name that allows all hooks to be matched.
 	AllHooks = HookName("all")
@@ -195,10 +207,19 @@ func (c cdiHookCreator) Create(name HookName, args ...string) *Hook {
 	}
 
 	return &Hook{
-		Lifecycle: cdi.CreateContainerHook,
+		Lifecycle: string(c.getOCIHookType(name)),
 		Path:      c.nvidiaCDIHookPath,
 		Args:      append(c.requiredArgs(name), c.transformArgs(name, args...)...),
 		Env:       []string{fmt.Sprintf("NVIDIA_CTK_DEBUG=%v", c.debugLogging)},
+	}
+}
+
+func (c cdiHookCreator) getOCIHookType(name HookName) OCIHookType {
+	switch name {
+	case CreateSymlinksHook, ChmodHook, DisableDeviceNodeModificationHook, EnableCudaCompatHook, UpdateLDCacheHook:
+		return OCIHookTypeCreateContainer
+	default:
+		return OCIHookTypeCreateContainer
 	}
 }
 
