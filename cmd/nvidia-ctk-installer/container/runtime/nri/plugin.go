@@ -88,7 +88,7 @@ func (p *Plugin) injectCDIDevices(pod *api.PodSandbox, ctr *api.Container, a *ap
 		return nil
 	}
 
-	pluginLogger.Infof(ctx, "%s: injecting CDI devices %v...", containerName(pod, ctr), devices)
+	pluginLogger.Debugf(ctx, "%s: injecting CDI devices %v...", containerName(pod, ctr), devices)
 	for _, name := range devices {
 		a.AddCDIDevice(
 			&api.CDIDevice{
