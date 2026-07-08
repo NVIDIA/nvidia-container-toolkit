@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/onsi/ginkgo/v2 v2.28.1
-	github.com/onsi/gomega v1.39.1
+	github.com/onsi/gomega v1.42.1
 	github.com/pelletier/go-toml v1.9.5
 	golang.org/x/crypto v0.53.0
 	golang.org/x/mod v0.38.0
