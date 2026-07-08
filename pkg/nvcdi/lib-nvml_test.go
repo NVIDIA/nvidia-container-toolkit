@@ -23,6 +23,7 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	mocknvml "github.com/NVIDIA/go-nvml/pkg/nvml/mock"
 	"github.com/NVIDIA/go-nvml/pkg/nvml/mock/dgxa100"
+	mockserver "github.com/NVIDIA/go-nvml/pkg/nvml/mock/server"
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
@@ -32,7 +33,7 @@ func TestNvmllibGetDeviceSpecGeneratorsForIDs(t *testing.T) {
 	testCases := []struct {
 		name               string
 		ids                []string
-		setupMock          func(*dgxa100.Server)
+		setupMock          func(*mockserver.Server)
 		expectedError      error
 		expectedLength     int
 		expectedGenerators DeviceSpecGenerators
@@ -46,10 +47,10 @@ func TestNvmllibGetDeviceSpecGeneratorsForIDs(t *testing.T) {
 		{
 			name: "single GPU index",
 			ids:  []string{"0"},
-			setupMock: func(server *dgxa100.Server) {
+			setupMock: func(server *mockserver.Server) {
 				for _, d := range server.Devices {
 					// TODO: This is not implemented in the mock.
-					(d.(*dgxa100.Device)).IsMigDeviceHandleFunc = func() (bool, nvml.Return) {
+					(d.(*mockserver.Device)).IsMigDeviceHandleFunc = func() (bool, nvml.Return) {
 						return false, nvml.SUCCESS
 					}
 				}
@@ -60,10 +61,10 @@ func TestNvmllibGetDeviceSpecGeneratorsForIDs(t *testing.T) {
 		{
 			name: "single UUID",
 			ids:  []string{"GPU-12345678-1234-1234-1234-123456789abc"},
-			setupMock: func(server *dgxa100.Server) {
+			setupMock: func(server *mockserver.Server) {
 				for _, d := range server.Devices {
 					// TODO: This is not implemented in the mock.
-					(d.(*dgxa100.Device)).IsMigDeviceHandleFunc = func() (bool, nvml.Return) {
+					(d.(*mockserver.Device)).IsMigDeviceHandleFunc = func() (bool, nvml.Return) {
 						return false, nvml.SUCCESS
 					}
 				}
@@ -80,7 +81,7 @@ func TestNvmllibGetDeviceSpecGeneratorsForIDs(t *testing.T) {
 		{
 			name: "MIG device index",
 			ids:  []string{"0:0"},
-			setupMock: func(server *dgxa100.Server) {
+			setupMock: func(server *mockserver.Server) {
 				mig := &mocknvml.Device{
 					IsMigDeviceHandleFunc: func() (bool, nvml.Return) {
 						return true, nvml.SUCCESS
@@ -96,7 +97,7 @@ func TestNvmllibGetDeviceSpecGeneratorsForIDs(t *testing.T) {
 					},
 				}
 
-				server.Devices[0].(*dgxa100.Device).GetMigDeviceHandleByIndexFunc = func(n int) (nvml.Device, nvml.Return) {
+				server.Devices[0].(*mockserver.Device).GetMigDeviceHandleByIndexFunc = func(n int) (nvml.Device, nvml.Return) {
 					if n != 0 {
 						return nil, nvml.ERROR_INVALID_ARGUMENT
 					}
@@ -143,17 +144,17 @@ func TestNvmllibGetDeviceSpecGeneratorsForIDs(t *testing.T) {
 }
 
 // TODO: These need to be implemented in go-nvlib
-func mockOverrides(server *dgxa100.Server) {
+func mockOverrides(server *mockserver.Server) {
 	for i, d := range server.Devices {
 		// TODO: This is not implemented in the mock.
-		(d.(*dgxa100.Device)).GetMaxMigDeviceCountFunc = func() (int, nvml.Return) {
+		(d.(*mockserver.Device)).GetMaxMigDeviceCountFunc = func() (int, nvml.Return) {
 			return 0, nvml.SUCCESS
 		}
-		(d.(*dgxa100.Device)).GetIndexFunc = func() (int, nvml.Return) {
+		(d.(*mockserver.Device)).GetIndexFunc = func() (int, nvml.Return) {
 			return i, nvml.SUCCESS
 		}
-		(d.(*dgxa100.Device)).GetUUIDFunc = func() (string, nvml.Return) {
-			return d.(*dgxa100.Device).UUID, nvml.SUCCESS
+		(d.(*mockserver.Device)).GetUUIDFunc = func() (string, nvml.Return) {
+			return d.(*mockserver.Device).UUID, nvml.SUCCESS
 		}
 	}
 }
