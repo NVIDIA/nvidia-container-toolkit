@@ -4,8 +4,8 @@ github.com/Masterminds/semver/v3 v3.5.0 h1:kQceYJfbupGfZOKZQg0kou0DgAKhzDg2NZPAw
 github.com/Masterminds/semver/v3 v3.5.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/NVIDIA/go-nvlib v0.9.1-0.20251202135446-d0f42ba016dd h1:MC1w/VYuo9Zt0se4SSx9BVid4a46ai+voN3knRvVWjE=
 github.com/NVIDIA/go-nvlib v0.9.1-0.20251202135446-d0f42ba016dd/go.mod h1:7mzx9FSdO9fXWP9NKuZmWkCwhkEcSWQFe2tmFwtLb9c=
-github.com/NVIDIA/go-nvml v0.13.0-1.0.20260212130905-92cf8c963449 h1:UrArFAaPhj9av2yzEN35CvzWw68BeQjp2MaQFUIoJSU=
-github.com/NVIDIA/go-nvml v0.13.0-1.0.20260212130905-92cf8c963449/go.mod h1:ahi2psRYoa+wYUBIrZPRO+wJs9lcvMhxSSkjjvsJJNQ=
+github.com/NVIDIA/go-nvml v0.13.3-0 h1:oJZ4+VTtPI/XT7XCfo5NvE9XTNrH8I3/KHy89rHxDxY=
+github.com/NVIDIA/go-nvml v0.13.3-0/go.mod h1:ahi2psRYoa+wYUBIrZPRO+wJs9lcvMhxSSkjjvsJJNQ=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/brianvoe/gofakeit/v7 v7.12.1 h1:df1tiI4SL1dR5Ix4D/r6a3a+nXBJ/OBGU5jEKRBmmqg=
