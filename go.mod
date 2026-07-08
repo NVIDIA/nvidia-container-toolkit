@@ -16,7 +16,7 @@ require (
 	github.com/opencontainers/runc v1.4.3
 	github.com/opencontainers/runtime-spec v1.3.0
 	github.com/pelletier/go-toml v1.9.5
-	github.com/prometheus/procfs v0.20.1
+	github.com/prometheus/procfs v0.21.1
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli-altsrc/v3 v3.1.0
