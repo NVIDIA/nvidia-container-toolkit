@@ -7,8 +7,8 @@ cyphar.com/go-pathrs/procfs
 # github.com/Masterminds/semver/v3 v3.5.0
 ## explicit; go 1.21
 github.com/Masterminds/semver/v3
-# github.com/NVIDIA/go-nvlib v0.9.1-0.20251202135446-d0f42ba016dd
-## explicit; go 1.20
+# github.com/NVIDIA/go-nvlib v0.11.0
+## explicit; go 1.25.0
 github.com/NVIDIA/go-nvlib/pkg/nvlib/device
 github.com/NVIDIA/go-nvlib/pkg/nvlib/info
 github.com/NVIDIA/go-nvlib/pkg/nvpci

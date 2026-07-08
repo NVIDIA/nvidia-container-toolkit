@@ -41,6 +41,9 @@ var _ Interface = &InterfaceMock{}
 //			GetNetworkControllersFunc: func() ([]*NvidiaPCIDevice, error) {
 //				panic("mock out the GetNetworkControllers method")
 //			},
+//			GetNvidiaDeviceByPciBusIDFunc: func(s string) (*NvidiaPCIDevice, error) {
+//				panic("mock out the GetNvidiaDeviceByPciBusID method")
+//			},
 //			GetPciBridgesFunc: func() ([]*NvidiaPCIDevice, error) {
 //				panic("mock out the GetPciBridges method")
 //			},
@@ -78,6 +81,9 @@ type InterfaceMock struct {
 	// GetNetworkControllersFunc mocks the GetNetworkControllers method.
 	GetNetworkControllersFunc func() ([]*NvidiaPCIDevice, error)
 
+	// GetNvidiaDeviceByPciBusIDFunc mocks the GetNvidiaDeviceByPciBusID method.
+	GetNvidiaDeviceByPciBusIDFunc func(s string) (*NvidiaPCIDevice, error)
+
 	// GetPciBridgesFunc mocks the GetPciBridges method.
 	GetPciBridgesFunc func() ([]*NvidiaPCIDevice, error)
 
@@ -114,6 +120,11 @@ type InterfaceMock struct {
 		// GetNetworkControllers holds details about calls to the GetNetworkControllers method.
 		GetNetworkControllers []struct {
 		}
+		// GetNvidiaDeviceByPciBusID holds details about calls to the GetNvidiaDeviceByPciBusID method.
+		GetNvidiaDeviceByPciBusID []struct {
+			// S is the s argument value.
+			S string
+		}
 		// GetPciBridges holds details about calls to the GetPciBridges method.
 		GetPciBridges []struct {
 		}
@@ -121,16 +132,17 @@ type InterfaceMock struct {
 		GetVGAControllers []struct {
 		}
 	}
-	lockGet3DControllers      sync.RWMutex
-	lockGetAllDevices         sync.RWMutex
-	lockGetDPUs               sync.RWMutex
-	lockGetGPUByIndex         sync.RWMutex
-	lockGetGPUByPciBusID      sync.RWMutex
-	lockGetGPUs               sync.RWMutex
-	lockGetNVSwitches         sync.RWMutex
-	lockGetNetworkControllers sync.RWMutex
-	lockGetPciBridges         sync.RWMutex
-	lockGetVGAControllers     sync.RWMutex
+	lockGet3DControllers          sync.RWMutex
+	lockGetAllDevices             sync.RWMutex
+	lockGetDPUs                   sync.RWMutex
+	lockGetGPUByIndex             sync.RWMutex
+	lockGetGPUByPciBusID          sync.RWMutex
+	lockGetGPUs                   sync.RWMutex
+	lockGetNVSwitches             sync.RWMutex
+	lockGetNetworkControllers     sync.RWMutex
+	lockGetNvidiaDeviceByPciBusID sync.RWMutex
+	lockGetPciBridges             sync.RWMutex
+	lockGetVGAControllers         sync.RWMutex
 }
 
 // Get3DControllers calls Get3DControllersFunc.
@@ -356,6 +368,38 @@ func (mock *InterfaceMock) GetNetworkControllersCalls() []struct {
 	mock.lockGetNetworkControllers.RLock()
 	calls = mock.calls.GetNetworkControllers
 	mock.lockGetNetworkControllers.RUnlock()
+	return calls
+}
+
+// GetNvidiaDeviceByPciBusID calls GetNvidiaDeviceByPciBusIDFunc.
+func (mock *InterfaceMock) GetNvidiaDeviceByPciBusID(s string) (*NvidiaPCIDevice, error) {
+	if mock.GetNvidiaDeviceByPciBusIDFunc == nil {
+		panic("InterfaceMock.GetNvidiaDeviceByPciBusIDFunc: method is nil but Interface.GetNvidiaDeviceByPciBusID was just called")
+	}
+	callInfo := struct {
+		S string
+	}{
+		S: s,
+	}
+	mock.lockGetNvidiaDeviceByPciBusID.Lock()
+	mock.calls.GetNvidiaDeviceByPciBusID = append(mock.calls.GetNvidiaDeviceByPciBusID, callInfo)
+	mock.lockGetNvidiaDeviceByPciBusID.Unlock()
+	return mock.GetNvidiaDeviceByPciBusIDFunc(s)
+}
+
+// GetNvidiaDeviceByPciBusIDCalls gets all the calls that were made to GetNvidiaDeviceByPciBusID.
+// Check the length with:
+//
+//	len(mockedInterface.GetNvidiaDeviceByPciBusIDCalls())
+func (mock *InterfaceMock) GetNvidiaDeviceByPciBusIDCalls() []struct {
+	S string
+} {
+	var calls []struct {
+		S string
+	}
+	mock.lockGetNvidiaDeviceByPciBusID.RLock()
+	calls = mock.calls.GetNvidiaDeviceByPciBusID
+	mock.lockGetNvidiaDeviceByPciBusID.RUnlock()
 	return calls
 }
 
