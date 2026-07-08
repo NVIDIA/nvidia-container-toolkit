@@ -25,6 +25,7 @@ import (
 
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"github.com/NVIDIA/go-nvml/pkg/nvml/mock/dgxa100"
+	mockserver "github.com/NVIDIA/go-nvml/pkg/nvml/mock/server"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 	"tags.cncf.io/container-device-interface/specs-go"
@@ -502,7 +503,7 @@ containerEdits:
 			}
 			for _, d := range server.Devices {
 				// TODO: This is not implemented in the mock.
-				(d.(*dgxa100.Device)).GetMaxMigDeviceCountFunc = func() (int, nvml.Return) {
+				(d.(*mockserver.Device)).GetMaxMigDeviceCountFunc = func() (int, nvml.Return) {
 					return 0, nvml.SUCCESS
 				}
 			}

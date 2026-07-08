@@ -762,9 +762,6 @@ typedef enum
     NVML_THERMAL_CONTROLLER_UNKNOWN = -1,
 } nvmlThermalController_t;
 
-/**
- * Struct to hold the thermal sensor settings
- */
 typedef struct {
     nvmlThermalController_t controller;
     int defaultMinTemp;
@@ -773,6 +770,9 @@ typedef struct {
     nvmlThermalTarget_t target;
 } nvmlGpuThermalSettingsSensor_t;
 
+/**
+ * Struct to hold the thermal sensor settings
+ */
 typedef struct
 {
     unsigned int   count;
@@ -2031,9 +2031,6 @@ typedef nvmlVgpuRuntimeState_v1_t nvmlVgpuRuntimeState_t;
 #define NVML_VGPU_SCHEDULER_ENGINE_TYPE_NVENC1    2 //!< NVENC1
 #define NVML_VGPU_SCHEDULER_ENGINE_TYPE_NVENC0    3 //!< NVENC0
 
-/**
- * Union to represent the vGPU Scheduler Parameters
- */
 typedef struct {
     unsigned int avgFactor;
     unsigned int timeslice;
@@ -2043,6 +2040,9 @@ typedef struct {
     unsigned int timeslice;
 } nvmlVgpuSchedulerParamsVgpuSchedData_t;
 
+/**
+ * Union to represent the vGPU Scheduler Parameters
+ */
 typedef union
 {
     nvmlVgpuSchedulerParamsVgpuSchedDataWithARR_t vgpuSchedDataWithARR;
@@ -2087,9 +2087,6 @@ typedef struct nvmlVgpuSchedulerGetState_st
     nvmlVgpuSchedulerParams_t   schedulerParams;
 } nvmlVgpuSchedulerGetState_t;
 
-/**
- * Union to represent the vGPU Scheduler set Parameters
- */
 typedef struct {
     unsigned int avgFactor;
     unsigned int frequency;
@@ -2099,6 +2096,9 @@ typedef struct {
     unsigned int timeslice;
 } nvmlVgpuSchedulerSetParamsVgpuSchedData_t;
 
+/**
+ * Union to represent the vGPU Scheduler set Parameters
+ */
 typedef union
 {
     nvmlVgpuSchedulerSetParamsVgpuSchedDataWithARR_t vgpuSchedDataWithARR;
@@ -13825,15 +13825,15 @@ typedef struct
     struct nvmlGpmSample_st* handle;
 } nvmlGpmSample_t;
 
-/**
- * GPM metric information.
- */
 typedef struct {
     char *shortName;
     char *longName;
     char *unit;
 } nvmlGpmMetricMetricInfo_t;
 
+/**
+ * GPM metric information.
+ */
 typedef struct
 {
     unsigned int metricId;   //!<  IN: NVML_GPM_METRIC_? define of which metric to retrieve
