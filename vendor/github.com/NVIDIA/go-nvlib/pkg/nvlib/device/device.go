@@ -18,6 +18,7 @@ package device
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
@@ -48,6 +49,7 @@ type device struct {
 }
 
 var _ Device = &device{}
+var pciBusIDPrefixRE = regexp.MustCompile(`^0{4}[0-9a-f]{4}:`)
 
 // NewDevice builds a new Device from an nvml.Device.
 func (d *devicelib) NewDevice(dev nvml.Device) (Device, error) {
@@ -149,7 +151,11 @@ func (d *device) GetBrandAsString() (string, error) {
 
 // GetAddressingModeAsString returns the Device addressing mode as a string.
 func (d *device) GetAddressingModeAsString() (string, error) {
-	mode, ret := d.GetAddressingMode()
+	if !d.lib.hasSymbol("nvmlDeviceGetAddressingMode") {
+		return "", nil
+	}
+
+	mode, ret := nvml.Device(d).GetAddressingMode()
 
 	switch ret {
 	case nvml.SUCCESS:
@@ -189,7 +195,7 @@ func (d *device) GetPCIBusID() (string, error) {
 	}
 	id := strings.ToLower(string(bytes))
 
-	if id != "0000" {
+	if pciBusIDPrefixRE.MatchString(id) {
 		id = strings.TrimPrefix(id, "0000")
 	}
 
@@ -373,8 +379,8 @@ func (d *device) VisitMigProfiles(visit func(MigProfile) error) error {
 			return fmt.Errorf("error getting GPU Instance profile info: %v", ret)
 		}
 
-		for j := 0; j < nvml.COMPUTE_INSTANCE_PROFILE_COUNT; j++ {
-			for k := 0; k < nvml.COMPUTE_INSTANCE_ENGINE_PROFILE_COUNT; k++ {
+		for j := nvml.COMPUTE_INSTANCE_PROFILE_COUNT - 1; j >= 0; j-- {
+			for k := nvml.COMPUTE_INSTANCE_ENGINE_PROFILE_COUNT - 1; k >= 0; k-- {
 				p, err := d.lib.NewMigProfile(i, j, k, giProfileInfo.MemorySizeMB, memory.Total)
 				if err != nil {
 					return fmt.Errorf("error creating MIG profile: %v", err)
@@ -394,6 +400,25 @@ func (d *device) VisitMigProfiles(visit func(MigProfile) error) error {
 					continue
 				}
 				if (pi.C < pi.G) && ((pi.C * 2) > (pi.G + 1)) {
+					continue
+				}
+				// NOTE: As we iterate through the profiles by GPU instance count and Compute instance count, we will find revisions
+				// of the COMPUTE_INSTANCE_PROFILE that have the same slice count. In these cases, we need to ensure that we pick the
+				// COMPUTE_INSTANCE_PROFILE with the maximum multiprocessor (SM) count, that is still valid for the GPU instance profile.
+				//
+				// For example: On systems like the H100, the MIG profiles 1g.12gb and 1g.24gb are both supported and will have one cislice.
+				// Given the higher memory capacity, the 1g.24gb profile would be compatible with both the COMPUTE_INSTANCE_PROFILE_1_SLICE
+				// and the COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1. However, the 1g.12gb profile would only be compatible with the
+				// COMPUTE_INSTANCE_PROFILE_1_SLICE. To ensure that we have the CI profile with the maximum compatible SM count, the 1g.12gb
+				// should use the COMPUTE_INSTANCE_PROFILE_1_SLICE and 1g.24gb should use the COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1.
+				//
+				// While iterating through the GPU instance profiles (d.GetGpuInstanceProfileInfo(i)), we need to ensure that we pick the
+				// correct CI profile/revision. For the above example, we will find that GPU_INSTANCE_PROFILE_1_SLICE is only compatible with
+				// COMPUTE_INSTANCE_PROFILE_1_SLICE. The GPU_INSTANCE_PROFILE_1_SLICE_REV2 (when available for systems like the H100) can be
+				// deployed with both COMPUTE_INSTANCE_PROFILE_1_SLICE and COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1, but to maximize performance,
+				// we should pick the COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1 profile. The following check is a temporary workaround to ensure
+				// that we pick the correct COMPUTE_INSTANCE_PROFILE revision.
+				if pi.CIProfileID == nvml.COMPUTE_INSTANCE_PROFILE_1_SLICE_REV1 && pi.GIProfileID != nvml.GPU_INSTANCE_PROFILE_1_SLICE_REV2 {
 					continue
 				}
 
