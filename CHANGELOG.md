@@ -1,5 +1,32 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.20.0-rc.1
+- Validate imex channels for CDI/JIT-CDI mode
+- [wsl2] discover all .so, .bin, and .dll files at nvidia driver store path
+- [nri plugin] move cdi inject info log to debug level
+- [CDI Hooks] add ability to specify OCI hook type
+- [cudacompat] use Masterminds/semver for parsing/comparing versions
+- Expand cudacompat hook to always inspect libcuda.so ELF header if available
+- Add libnvidia-nvvm70.so library to CDI spec
+- fix: prevent config option from reverting modified configurations
+- [nri-plugin] support injection of management CDI devices in multiple namespaces
+- docker.mk: Add Podman support and fix volume/artifact handling
+- Only generate update-ldcache hook if libraries are discovered
+- Mount nvidia.icd file needed by OpenCL
+- Update SECURITY.md
+- Allow multiple driver library paths
+- import text/template instead of html/template
+- feat: drop `nvidia-cdi-hook` shell shim
+- Fix nvidia-cdi-refresh systemd packaging
+- Add ability to disable CDI hooks in jit-cdi mode
+- [nri] only restrict management CDI devices to the toolkit namespace
+
+### Changes in the Toolkit Container
+- Ship static busybox shell in container-toolkit image
+
+### Changes in libnvidia-container
+- refactor: Use version script instead of linker script for library symbols
+
 ## v1.19.0
 - Promote v1.19.0-rc.7 to v1.19.0
 
