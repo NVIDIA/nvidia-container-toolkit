@@ -79,3 +79,60 @@ containerEdits:
 	require.NoError(t, err)
 	require.Equal(t, expectedSpec, b.String())
 }
+
+func TestImexChannelValidation(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	moduleRoot, err := test.GetModuleRoot()
+	require.NoError(t, err)
+	hostRoot := filepath.Join(moduleRoot, "testdata", "lookup", "rootfs-1")
+
+	testCases := []struct {
+		description string
+		ids         []string
+		expectedErr string
+	}{
+		{
+			description: "valid channel",
+			ids:         []string{"0"},
+		},
+		{
+			description: "valid channel with prefix",
+			ids:         []string{"channel0"},
+		},
+		{
+			description: "non-numeric channel is rejected",
+			ids:         []string{"bogus"},
+			expectedErr: "invalid channel ID",
+		},
+		{
+			description: "channel above maximum is rejected",
+			ids:         []string{"1048576"},
+			expectedErr: "must be in the range [0, 1048575]",
+		},
+		{
+			description: "non-existent channel node is rejected",
+			ids:         []string{"5"},
+			expectedErr: "not found",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			lib, err := New(
+				WithLogger(logger),
+				WithMode(ModeImex),
+				WithDriverRoot(hostRoot),
+			)
+			require.NoError(t, err)
+
+			_, err = lib.GetDeviceSpecsByID(tc.ids...)
+
+			if tc.expectedErr != "" {
+				require.ErrorContains(t, err, tc.expectedErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
