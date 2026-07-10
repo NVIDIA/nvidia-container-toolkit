@@ -105,6 +105,14 @@ containerEdits:
           path: {{ .toolkitRoot }}/nvidia-cdi-hook
           args:
             - nvidia-cdi-hook
+            - enable-cuda-compat
+            - --host-driver-version=999.88.77
+          env:
+            - NVIDIA_CTK_DEBUG=false
+        - hookName: createContainer
+          path: {{ .toolkitRoot }}/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
             - update-ldcache
             - --folder
             - /lib/x86_64-linux-gnu

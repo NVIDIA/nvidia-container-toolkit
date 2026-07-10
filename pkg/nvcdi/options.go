@@ -114,9 +114,8 @@ func populateOptions(opts ...Option) *options {
 	}
 
 	if o.mode == ModeManagement {
-		// For management mode we explicitly disable the hooks that enable CUDA
-		// compatibility and disable device node modifications.
-		o.disabledHooks = append(o.disabledHooks, HookEnableCudaCompat, DisableDeviceNodeModificationHook)
+		// For management mode we explicitly disable the hook that disables device node modifications.
+		o.disabledHooks = append(o.disabledHooks, DisableDeviceNodeModificationHook)
 	}
 
 	if o.editsFactory == nil {

@@ -206,6 +206,12 @@ func TestNew(t *testing.T) {
 						{
 							HookName: "createContainer",
 							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-driver-version=999.88.77"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
 							Args:     []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/lib/x86_64-linux-gnu", "--folder", "/lib/x86_64-linux-gnu/vdpau"},
 							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
 						},
@@ -250,6 +256,12 @@ func TestNew(t *testing.T) {
 							HookName: "createContainer",
 							Path:     "/usr/bin/nvidia-cdi-hook",
 							Args:     []string{"nvidia-cdi-hook", "create-symlinks", "--link", "libcuda.so.1::/lib/x86_64-linux-gnu/libcuda.so"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-driver-version=999.88.77"},
 							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
 						},
 						{
