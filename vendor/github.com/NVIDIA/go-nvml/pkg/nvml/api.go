@@ -27,7 +27,7 @@ type ExtendedInterface interface {
 	LookupSymbol(string) error
 }
 
-// libraryOptions hold the paramaters than can be set by a LibraryOption
+// libraryOptions hold the parameters that can be set by a LibraryOption
 type libraryOptions struct {
 	path  string
 	flags int
