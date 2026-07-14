@@ -317,6 +317,7 @@ func WithDisabledHooks[T string | HookName](hooks ...T) Option {
 }
 
 // WithEnabledHooks explicitly enables a specific set of hooks.
+// Permanently disabled hooks cannot be enabled with this option.
 // If a hook is explicitly enabled, this takes precedence over it being disabled.
 func WithEnabledHooks[T string | HookName](hooks ...T) Option {
 	return func(o *options) {

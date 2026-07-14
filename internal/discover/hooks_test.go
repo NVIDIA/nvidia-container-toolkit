@@ -76,7 +76,7 @@ func TestNewHookCreator(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple hooks disabled and enabled",
+			name: "permanently disabled hooks cannot be enabled",
 			opts: []Option{
 				WithDisabledHooks(UpdateLDCacheHook, CreateSymlinksHook, EnableCudaCompatHook, DisableDeviceNodeModificationHook),
 				WithEnabledHooks(ChmodHook, UpdateLDCacheHook),
@@ -88,7 +88,7 @@ func TestNewHookCreator(t *testing.T) {
 					UpdateLDCacheHook:                 false,
 					CreateSymlinksHook:                true,
 					EnableCudaCompatHook:              true,
-					ChmodHook:                         false,
+					ChmodHook:                         true,
 					DisableDeviceNodeModificationHook: true,
 				},
 			},
@@ -112,7 +112,7 @@ func TestNewHookCreator(t *testing.T) {
 			},
 		},
 		{
-			name: "WithEnabledHooks overrides defaultDisabledHooks",
+			name: "WithEnabledHooks does not override permanently disabled hooks",
 			opts: []Option{
 				WithEnabledHooks(ChmodHook),
 			},
@@ -120,7 +120,7 @@ func TestNewHookCreator(t *testing.T) {
 				nvidiaCDIHookPath: defaultNvidiaCDIHookPath,
 				fixedArgs:         []string{"nvidia-cdi-hook"},
 				disabledHooks: map[HookName]bool{
-					ChmodHook: false, // ChmodHook is enabled
+					ChmodHook: true,
 				},
 			},
 		},
@@ -188,19 +188,14 @@ func TestCDIHookCreator_Create(t *testing.T) {
 			expectedHook: nil,
 		},
 		{
-			name: "ChmodHook with args (when enabled)",
+			name: "ChmodHook with args cannot be enabled",
 			hookCreator: NewHookCreator(
 				WithNVIDIACDIHookPath(defaultNvidiaCDIHookPath),
 				WithEnabledHooks(ChmodHook),
 			),
-			hookName: ChmodHook,
-			args:     []string{"/path/to/file1", "/path/to/file2"},
-			expectedHook: &Hook{
-				Lifecycle: "createContainer",
-				Path:      defaultNvidiaCDIHookPath,
-				Args:      []string{"nvidia-cdi-hook", "chmod", "--mode", "755", "--path", "/path/to/file1", "--path", "/path/to/file2"},
-				Env:       []string{"NVIDIA_CTK_DEBUG=false"},
-			},
+			hookName:     ChmodHook,
+			args:         []string{"/path/to/file1", "/path/to/file2"},
+			expectedHook: nil,
 		},
 		{
 			name:         "ChmodHook disabled by default returns nil",
@@ -345,12 +340,12 @@ func TestCDIHookCreator_isDisabled(t *testing.T) {
 			expectedResult: true, // ChmodHook is disabled by default and explicitly disabled
 		},
 		{
-			name:           "hook explicitly enabled overrides disabled",
+			name:           "permanently disabled hook cannot be explicitly enabled",
 			disabledHooks:  []HookName{ChmodHook},
 			enabledHooks:   []HookName{ChmodHook},
 			hookName:       ChmodHook,
 			args:           []string{"/path/to/file"},
-			expectedResult: false,
+			expectedResult: true,
 		},
 		{
 			name:           "hook not in disabled map and not AllHooks disabled",
@@ -381,12 +376,12 @@ func TestCDIHookCreator_isDisabled(t *testing.T) {
 			expectedResult: true,
 		},
 		{
-			name:           "ChmodHook requires args - args provided",
+			name:           "ChmodHook remains disabled with args",
 			disabledHooks:  []HookName{},
-			enabledHooks:   []HookName{ChmodHook}, // Enable ChmodHook since it's disabled by default
+			enabledHooks:   []HookName{ChmodHook},
 			hookName:       ChmodHook,
 			args:           []string{"/path/to/file"},
-			expectedResult: false,
+			expectedResult: true,
 		},
 		{
 			name:           "UpdateLDCacheHook doesn't require args - no args provided",
@@ -440,12 +435,12 @@ func TestCDIHookCreator_isDisabled(t *testing.T) {
 			expectedResult: false,
 		},
 		{
-			name:           "ChmodHook with multiple args",
+			name:           "ChmodHook with multiple args remains disabled",
 			disabledHooks:  []HookName{},
-			enabledHooks:   []HookName{ChmodHook}, // Enable ChmodHook since it's disabled by default
+			enabledHooks:   []HookName{ChmodHook},
 			hookName:       ChmodHook,
 			args:           []string{"/path1", "/path2"},
-			expectedResult: false,
+			expectedResult: true,
 		},
 		{
 			name:           "UpdateLDCacheHook with multiple args",

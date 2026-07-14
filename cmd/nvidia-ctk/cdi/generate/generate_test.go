@@ -388,7 +388,7 @@ containerEdits:
 `,
 		},
 		{
-			description: "enableChmodHook",
+			description: "cannotEnableChmodHook",
 			options: options{
 				format:        "yaml",
 				mode:          "management",
@@ -427,18 +427,6 @@ devices:
               hostPath: {{ .driverRoot }}/dev/nvidia-caps-imex-channels/channel2047
             - path: /dev/nvidia-caps/nvidia-cap1
               hostPath: {{ .driverRoot }}/dev/nvidia-caps/nvidia-cap1
-        hooks:
-            - hookName: createContainer
-              path: /usr/bin/nvidia-cdi-hook
-              args:
-                - nvidia-cdi-hook
-                - chmod
-                - --mode
-                - "755"
-                - --path
-                - /dev/nvidia-caps
-              env:
-                - NVIDIA_CTK_DEBUG=false
 containerEdits:
     env:
         - NVIDIA_CTK_LIBCUDA_DIR=/lib/x86_64-linux-gnu
