@@ -23,6 +23,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/chmod"
+	checkrequirements "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/check-requirements"
 	symlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/create-symlinks"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/cudacompat"
 	disabledevicenodemodification "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/disable-device-node-modification"
@@ -85,6 +86,7 @@ func ConfigureCDIHookCommand(logger logger.Interface, base *cli.Command) *cli.Co
 
 	// Define the supported hooks.
 	base.Commands = []*cli.Command{
+		checkrequirements.NewCommand(logger),
 		ldcache.NewCommand(logger),
 		symlinks.NewCommand(logger),
 		chmod.NewCommand(logger),

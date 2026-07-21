@@ -23,6 +23,8 @@ import (
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/spec"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi/transform"
 )
@@ -34,6 +36,9 @@ type wrapper struct {
 	class  string
 
 	mergedDeviceOptions []transform.MergedDeviceOption
+
+	editsFactory          edits.Factory
+	additionalCommonEdits []discover.Discover
 }
 
 // TODO: Rename this type
@@ -95,6 +100,16 @@ func (m *wrapper) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	edits, err := m.factory.GetCommonEdits()
 	if err != nil {
 		return nil, err
+	}
+	for _, discoverer := range m.additionalCommonEdits {
+		if discoverer == nil {
+			continue
+		}
+		additionalEdits, err := m.editsFactory.FromDiscoverer(discoverer)
+		if err != nil {
+			return nil, err
+		}
+		edits.Append(additionalEdits)
 	}
 	edits.Env = append(edits.Env, image.EnvVarNvidiaVisibleDevices+"=void")
 

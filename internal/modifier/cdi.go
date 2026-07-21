@@ -26,6 +26,7 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/modifier/cdi"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/requirements"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
 )
@@ -51,6 +52,14 @@ func (f *Factory) newCDIModifier(isJitCDI bool) (oci.SpecModifier, error) {
 		defaultKind,
 	)
 	devices := deviceRequestor.DeviceRequests()
+
+	// Run before the empty-device return so NVIDIA_REQUIRE_* is still enforced when
+	// len(devices)==0 (e.g. CRI CDI injection without matching spec signals). When
+	// there are no requirements, checkRequirements returns immediately.
+	if err := requirements.CheckImage(f.logger, f.image, f.driver); err != nil {
+		return nil, fmt.Errorf("requirements not met: %w", err)
+	}
+
 	if len(devices) == 0 {
 		f.logger.Debugf("No devices requested; no modification required.")
 		return nil, nil
