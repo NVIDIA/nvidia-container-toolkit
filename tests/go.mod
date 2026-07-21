@@ -3,8 +3,8 @@ module github.com/NVIDIA/nvidia-container-toolkit/tests
 go 1.25.0
 
 require (
-	github.com/onsi/ginkgo/v2 v2.28.1
-	github.com/onsi/gomega v1.39.1
+	github.com/onsi/ginkgo/v2 v2.32.0
+	github.com/onsi/gomega v1.40.0
 	github.com/pelletier/go-toml v1.9.5
 	golang.org/x/crypto v0.53.0
 	golang.org/x/mod v0.38.0
@@ -15,7 +15,7 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/pprof v0.0.0-20260115054156-294ebfa9ad83 // indirect
+	github.com/google/pprof v0.0.0-20260402051712-545e8a4df936 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
