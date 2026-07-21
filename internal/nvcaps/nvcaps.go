@@ -69,12 +69,18 @@ func (m MigCaps) GetCapDevicePath(cap MigCap) (string, error) {
 
 // NewMigCaps creates a MigCaps structure based on the contents of the MIG minors file.
 func NewMigCaps() (MigCaps, error) {
-	// Open nvcapsMigMinorsPath for walking.
+	return NewMigCapsFromRoot("")
+}
+
+// NewMigCapsFromRoot creates a MigCaps structure based on the contents of the MIG
+// minors file resolved relative to the specified root. A root of "" reads the
+// host's MIG minors file.
+func NewMigCapsFromRoot(root string) (MigCaps, error) {
 	// If the nvcapsMigMinorsPath does not exist, then we are not on a MIG
 	// capable machine, so there is nothing to do.
 	// The format of this file is discussed in:
 	//     https://docs.nvidia.com/datacenter/tesla/mig-user-guide/index.html#unique_1576522674
-	minorsFile, err := os.Open(nvcapsMigMinorsPath)
+	minorsFile, err := os.Open(filepath.Join(root, nvcapsMigMinorsPath))
 	if os.IsNotExist(err) {
 		return nil, nil
 	}
