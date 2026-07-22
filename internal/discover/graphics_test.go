@@ -109,6 +109,25 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 			},
 		},
 		{
+			description: "libnvidia-allocator not filtered out when version does not equal driver version",
+			libraries: &DiscoverMock{
+				MountsFunc: func() ([]Mount, error) {
+					mounts := []Mount{
+						{
+							Path: "/usr/lib64/libnvidia-allocator.so.999.99.99",
+						},
+					}
+					return mounts, nil
+				},
+			},
+			expectedMounts: []Mount{
+				{
+					Path: "/usr/lib64/libnvidia-allocator.so.999.99.99",
+				},
+			},
+			expectedHooks: nil,
+		},
+		{
 			description: "libnvidia-allocator and libnvidia-vulkan-producer discovered",
 			libraries: &DiscoverMock{
 				MountsFunc: func() ([]Mount, error) {
@@ -145,9 +164,10 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			d := &graphicsDriverLibraries{
-				Discover:    tc.libraries,
-				logger:      logger,
-				hookCreator: hookCreator,
+				Discover:      tc.libraries,
+				logger:        logger,
+				hookCreator:   hookCreator,
+				driverVersion: "123.45.67",
 			}
 
 			devices, err := d.Devices()
@@ -247,5 +267,47 @@ func TestDrmDevicesByPath(t *testing.T) {
 
 			require.EqualValues(t, tc.expectedHooks, hooks)
 		})
+	}
+}
+
+func TestIsDriverLibrary(t *testing.T) {
+	testCases := []struct {
+		description    string
+		filename       string
+		libraryName    string
+		driverVersion  string
+		expectedResult bool
+	}{
+		{
+			description:    "driver library file matched",
+			libraryName:    "libnvidia-vulkan-producer.so",
+			filename:       "libnvidia-vulkan-producer.so.123.45.67",
+			driverVersion:  "123.45.67",
+			expectedResult: true,
+		},
+		{
+			description:    "driver library file matched with extraneous \".\"",
+			libraryName:    "libnvidia-vulkan-producer.so.",
+			filename:       "libnvidia-vulkan-producer.so.123.45.67",
+			driverVersion:  "123.45.67",
+			expectedResult: true,
+		},
+		{
+			description:    "driver library file not matched due to mismatching driver version",
+			libraryName:    "libnvidia-vulkan-producer.so",
+			filename:       "libnvidia-vulkan-producer.so.123.45.67",
+			driverVersion:  "999.99.99",
+			expectedResult: false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			gdl := graphicsDriverLibraries{
+				driverVersion: tc.driverVersion,
+			}
+			result := gdl.isDriverLibrary(tc.filename, tc.libraryName)
+			require.Equal(t, tc.expectedResult, result)
+		})
+
 	}
 }
