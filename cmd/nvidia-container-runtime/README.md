@@ -204,7 +204,15 @@ curl -sS http://cdimage.ubuntu.com/ubuntu-base/releases/16.04/release/ubuntu-bas
 nvidia-container-runtime spec
 sed -i 's;"sh";"nvidia-smi";' config.json
 sed -i 's;\("TERM=xterm"\);\1, "NVIDIA_VISIBLE_DEVICES=0";' config.json
+sed -i 's;"terminal":true;"terminal":false;' config.json
 
-# Run the container
-sudo nvidia-container-runtime run nvidia_smi
+# Create and start the container
+sudo nvidia-container-runtime create nvidia_smi > nvidia_smi.log 2>&1
+sudo nvidia-container-runtime start nvidia_smi
+
+# View the nvidia-smi output
+cat nvidia_smi.log
+
+# Delete the container
+sudo nvidia-container-runtime delete nvidia_smi
 ```
