@@ -22,6 +22,6 @@ RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.n
 ARG arch
 ENV arch=${arch}
 CMD for src_package in $(ls *.rpm); do \
-        rpmrebuild -pn --directory=/updated --define "_build_id_links none" ${src_package}; \
+        rpmrebuild -pn --directory=/updated --define "_build_id_links none" --define "_binary_payload w2.xzdio" ${src_package}; \
     done; \
     cp -f /updated/${arch}/*.rpm /dist/
