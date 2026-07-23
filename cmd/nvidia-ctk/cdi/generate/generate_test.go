@@ -146,6 +146,13 @@ containerEdits:
             - disable-device-node-modification
           env:
             - NVIDIA_CTK_DEBUG=false
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - update-application-profile
+          env:
+            - NVIDIA_CTK_DEBUG=false
     mounts:
         - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
           containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
@@ -233,6 +240,13 @@ containerEdits:
             - disable-device-node-modification
           env:
             - NVIDIA_CTK_DEBUG=false
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - update-application-profile
+          env:
+            - NVIDIA_CTK_DEBUG=false
     mounts:
         - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
           containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
@@ -307,6 +321,13 @@ containerEdits:
           args:
             - nvidia-cdi-hook
             - disable-device-node-modification
+          env:
+            - NVIDIA_CTK_DEBUG=false
+        - hookName: createContainer
+          path: /usr/bin/nvidia-cdi-hook
+          args:
+            - nvidia-cdi-hook
+            - update-application-profile
           env:
             - NVIDIA_CTK_DEBUG=false
     mounts:

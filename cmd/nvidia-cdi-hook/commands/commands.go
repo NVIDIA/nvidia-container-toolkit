@@ -26,6 +26,7 @@ import (
 	symlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/create-symlinks"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/cudacompat"
 	disabledevicenodemodification "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/disable-device-node-modification"
+	updateapplicationprofile "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/update-application-profile"
 	ldcache "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/update-ldcache"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 )
@@ -90,6 +91,7 @@ func ConfigureCDIHookCommand(logger logger.Interface, base *cli.Command) *cli.Co
 		chmod.NewCommand(logger),
 		cudacompat.NewCommand(logger),
 		disabledevicenodemodification.NewCommand(logger),
+		updateapplicationprofile.NewCommand(logger),
 		{
 			Name:   "noop",
 			Usage:  "The noop hook performs no actions and is only added to facilitate basic testing of the CLI",

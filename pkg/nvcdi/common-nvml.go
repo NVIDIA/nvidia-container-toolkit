@@ -37,10 +37,13 @@ func (l *nvmllib) newCommonNVMLDiscoverer() (discover.Discover, error) {
 		return nil, fmt.Errorf("failed to create discoverer for driver files: %v", err)
 	}
 
+	applicationProfileHook := discover.NewApplicationProfileHookDiscoverer(l.hookCreator)
+
 	d := discover.Merge(
 		metaDevices,
 		graphicsMounts,
 		driverFiles,
+		applicationProfileHook,
 	)
 
 	return d, nil
