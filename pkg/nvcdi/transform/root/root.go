@@ -39,9 +39,21 @@ func New(opts ...Option) transform.Transformer {
 }
 
 func (t transformer) transformPath(path string) string {
-	if !strings.HasPrefix(path, t.root) {
+	// Ensure that the root ends with a path separator so that the prefix
+	// comparison below only matches at a path component boundary. Without this
+	// a root of /driver would also match a path such as /driver-backup/lib.so
+	// and transform it to {targetRoot}/-backup/lib.so.
+	root := t.root
+	if !strings.HasSuffix(root, string(filepath.Separator)) {
+		root += string(filepath.Separator)
+	}
+
+	// The path is compared with a trailing separator too so that a path equal
+	// to the root is also matched and transformed to the target root.
+	pathWithSeparator := path + string(filepath.Separator)
+	if !strings.HasPrefix(pathWithSeparator, root) {
 		return path
 	}
 
-	return filepath.Join(t.targetRoot, strings.TrimPrefix(path, t.root))
+	return filepath.Join(t.targetRoot, strings.TrimPrefix(pathWithSeparator, root))
 }
