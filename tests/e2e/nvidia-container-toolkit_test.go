@@ -456,7 +456,7 @@ var _ = Describe("docker", Ordered, ContinueOnFailure, func() {
             --build-arg RM_VERSION="$(basename $(ls -d /lib/firmware/nvidia/*.*))" \
             --build-arg CURRENT_DIR="` + outputDir + `" \
             - <<EOF
-FROM ubuntu
+FROM ubuntu:24.04
 RUN mkdir -p /lib/firmware/nvidia/
 ARG RM_VERSION
 ARG CURRENT_DIR
@@ -538,14 +538,14 @@ EOF`)
 
 			// Create the local Dockerfile
 			_, _, err = runner.Run(`cat <<EOF > Dockerfile.nvidiascape
-FROM ubuntu AS build
+FROM ubuntu:24.04 AS build
 RUN apt-get update && \
-	apt-get install -y gcc \
+	apt-get install -y gcc libc6-dev \
 	&& \
 	rm -rf /var/lib/apt/lists/*
 ADD poc.c .
 RUN gcc -shared -fPIC -o poc.so poc.c
-FROM ubuntu
+FROM ubuntu:24.04
 ENV LD_PRELOAD=/proc/self/cwd/poc.so
 COPY --from=build poc.so /
 EOF`)
@@ -627,7 +627,7 @@ EOF`)
 		BeforeAll(func(ctx context.Context) {
 			_, _, err := runner.Run(`docker build -t libordering \
             - <<EOF
-FROM ubuntu
+FROM ubuntu:24.04
 ENV NVIDIA_VISIBLE_DEVICES=all
 RUN mkdir -p /extra/lib
 RUN cp /usr/lib/$(uname -m)-linux-gnu/libc.so.? /extra/lib/
