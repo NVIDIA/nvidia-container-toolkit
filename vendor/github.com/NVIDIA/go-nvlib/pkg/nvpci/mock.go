@@ -79,7 +79,7 @@ func (m *MockNvpci) AddMockA100(address string, numaNode int, sriov *SriovInfo) 
 		return err
 	}
 
-	err = createNVIDIAgpuFiles(deviceDir)
+	err = CreateMockA100SysfsFiles(deviceDir)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,11 @@ func (m *MockNvpci) AddMockA100(address string, numaNode int, sriov *SriovInfo) 
 	return nil
 }
 
-func createNVIDIAgpuFiles(deviceDir string) error {
+// CreateMockA100SysfsFiles populates deviceDir with the sysfs attribute files
+// of an A100-like GPU (vendor, class, device, subsystem ids, driver symlink,
+// config space, and resources). It is shared by mock packages that need an
+// NVIDIA PCI device fixture, such as nvmdev.
+func CreateMockA100SysfsFiles(deviceDir string) error {
 	vendor, err := os.Create(filepath.Join(deviceDir, "vendor"))
 	if err != nil {
 		return err
@@ -163,6 +167,24 @@ func createNVIDIAgpuFiles(deviceDir string) error {
 		return err
 	}
 	_, err = device.WriteString("0x20bf")
+	if err != nil {
+		return err
+	}
+
+	subsystemVendor, err := os.Create(filepath.Join(deviceDir, "subsystem_vendor"))
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(subsystemVendor, "0x%x", PCINvidiaVendorID)
+	if err != nil {
+		return err
+	}
+
+	subsystemDevice, err := os.Create(filepath.Join(deviceDir, "subsystem_device"))
+	if err != nil {
+		return err
+	}
+	_, err = subsystemDevice.WriteString("0x16c0")
 	if err != nil {
 		return err
 	}
@@ -233,7 +255,7 @@ func (m *MockNvpci) createVf(pfAddress string, id, iommu_group, numaNode int) er
 		return err
 	}
 
-	err = createNVIDIAgpuFiles(deviceDir)
+	err = CreateMockA100SysfsFiles(deviceDir)
 	if err != nil {
 		return err
 	}

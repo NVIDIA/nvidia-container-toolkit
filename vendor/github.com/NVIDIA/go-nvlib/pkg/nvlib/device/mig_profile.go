@@ -101,7 +101,8 @@ func (d *devicelib) NewMigProfile(giProfileID, ciProfileID, ciEngProfileID int, 
 		ciSlices = 4
 	case nvml.COMPUTE_INSTANCE_PROFILE_6_SLICE:
 		ciSlices = 6
-	case nvml.COMPUTE_INSTANCE_PROFILE_7_SLICE:
+	case nvml.COMPUTE_INSTANCE_PROFILE_7_SLICE,
+		nvml.COMPUTE_INSTANCE_PROFILE_7_SLICE_NVL:
 		ciSlices = 7
 	case nvml.COMPUTE_INSTANCE_PROFILE_8_SLICE:
 		ciSlices = 8
