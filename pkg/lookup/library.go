@@ -19,8 +19,13 @@ package lookup
 // NewLibraryLocator creates a library locator using the specified options.
 // If search paths (WithSearchPaths(path1, path2, ...)) are explicitly specified
 // a library locator using these as absolute paths are used. Otherwise the
-// library is constructed by combining results from a set of predefined search
-// paths and the ldcache.
+// library locator combines unique matches from the following sources, in
+// precedence order:
+//   - predefined search paths
+//   - 64-bit entries from the ldcache
+//   - 32-bit entries from the ldcache
+//
+// If multiple sources return the same path, the first occurrence is kept.
 func NewLibraryLocator(opts ...Option) Locator {
 	f := NewFactory(opts...)
 
