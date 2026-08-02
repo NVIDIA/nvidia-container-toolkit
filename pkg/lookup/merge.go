@@ -21,6 +21,7 @@ import (
 )
 
 type first []Locator
+type merged []Locator
 
 type unique struct {
 	locator Locator
@@ -38,6 +39,18 @@ func First(locators ...Locator) Locator {
 	return f
 }
 
+// Merge returns a locator that combines the matches from all supplied locators.
+func Merge(locators ...Locator) Locator {
+	var m merged
+	for _, l := range locators {
+		if l == nil {
+			continue
+		}
+		m = append(m, l)
+	}
+	return m
+}
+
 // Locate returns the results for the first locator that returns a non-empty non-error result.
 func (f first) Locate(pattern string) ([]string, error) {
 	var allErrors []error
@@ -53,6 +66,26 @@ func (f first) Locate(pattern string) ([]string, error) {
 		if len(candidates) > 0 {
 			return candidates, nil
 		}
+	}
+
+	return nil, errors.Join(allErrors...)
+}
+
+// Locate returns the combined results from all locators that return matches.
+func (m merged) Locate(pattern string) ([]string, error) {
+	var candidates []string
+	var allErrors []error
+	for _, l := range m {
+		matches, err := l.Locate(pattern)
+		if err != nil {
+			allErrors = append(allErrors, err)
+			continue
+		}
+		candidates = append(candidates, matches...)
+	}
+
+	if len(candidates) > 0 {
+		return candidates, nil
 	}
 
 	return nil, errors.Join(allErrors...)
