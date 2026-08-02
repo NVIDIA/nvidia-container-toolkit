@@ -39,7 +39,10 @@ func First(locators ...Locator) Locator {
 	return f
 }
 
-// Merge returns a locator that combines the matches from all supplied locators.
+// Merge returns a locator that combines matches from all supplied locators in
+// argument order. Nil locators are ignored. If at least one locator returns a
+// match, errors from the other locators are ignored; otherwise, all locator
+// errors are joined and returned.
 func Merge(locators ...Locator) Locator {
 	var m merged
 	for _, l := range locators {
