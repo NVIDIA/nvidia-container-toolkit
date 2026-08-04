@@ -73,6 +73,47 @@ func TestAddRuntime(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			description: "empty runtime_type copied from runc options is replaced with default",
+			config: `
+			version = 2
+			[plugins]
+			[plugins."io.containerd.grpc.v1.cri"]
+				[plugins."io.containerd.grpc.v1.cri".containerd]
+				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+					privileged_without_host_devices = false
+					runtime_engine = ""
+					runtime_root = ""
+					runtime_type = ""
+					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+						BinaryName = "/usr/bin/runc"
+						SystemdCgroup = true
+			`,
+			expectedConfig: `
+			version = 2
+			[plugins]
+			[plugins."io.containerd.grpc.v1.cri"]
+				[plugins."io.containerd.grpc.v1.cri".containerd]
+				[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+					privileged_without_host_devices = false
+					runtime_engine = ""
+					runtime_root = ""
+					runtime_type = ""
+					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+						BinaryName = "/usr/bin/runc"
+						SystemdCgroup = true
+					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test]
+					privileged_without_host_devices = false
+					runtime_engine = ""
+					runtime_root = ""
+					runtime_type = "io.containerd.runc.v2"
+					[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test.options]
+						BinaryName = "/usr/bin/test"
+						SystemdCgroup = true
+			`,
+		},
+		{
 			description: "options from runc are imported",
 			config: `
 			version = 2
