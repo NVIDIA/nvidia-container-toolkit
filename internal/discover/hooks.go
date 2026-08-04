@@ -67,10 +67,9 @@ const (
 	defaultNvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
 )
 
-// defaultDisabledHooks defines hooks that are disabled by default.
-// These hooks can be explicitly enabled using the WithEnabledHooks option.
+// defaultDisabledHooks defines hooks that cannot be enabled.
 var defaultDisabledHooks = []HookName{
-	// ChmodHook is disabled by default as it was a workaround for older
+	// ChmodHook is disabled as it was a workaround for older
 	// versions of crun that has since been fixed.
 	ChmodHook,
 }
@@ -150,6 +149,7 @@ func WithDisabledHooks(hooks ...HookName) Option {
 
 // WithEnabledHooks explicitly enables the specified hooks.
 // This is useful for enabling hooks that are disabled by default.
+// Permanently disabled hooks cannot be enabled with this option.
 func WithEnabledHooks(hooks ...HookName) Option {
 	return func(c *hookCreatorOptions) {
 		c.enabledHooks = append(c.enabledHooks, hooks...)
@@ -189,6 +189,9 @@ func NewHookCreator(opts ...Option) HookCreator {
 	}
 
 	for _, h := range o.enabledHooks {
+		if h == ChmodHook {
+			continue
+		}
 		disabledHooks[h] = false
 	}
 
@@ -228,6 +231,10 @@ func (c cdiHookCreator) getOCIHookType(name HookName) OCIHookType {
 }
 
 func (c cdiHookCreator) isDisabled(name HookName, args ...string) bool {
+	if name == ChmodHook {
+		return true
+	}
+
 	disabled, ok := c.disabledHooks[name]
 	if ok {
 		return disabled
