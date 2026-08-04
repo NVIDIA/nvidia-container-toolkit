@@ -44,6 +44,7 @@ variables:
 
 stages:
   - pull
+  - test
   - scan
   - release
   - ngc-publish
