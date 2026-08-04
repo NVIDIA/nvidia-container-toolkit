@@ -68,6 +68,10 @@ func (c *Config) AddRuntimeWithOptions(name string, path string, setAsDefault bo
 		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name, "container_annotations"}, annotations)
 	}
 
+	if runtimeType, _ := config.GetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name, "runtime_type"}).(string); runtimeType == "" && c.RuntimeType != "" {
+		config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name, "runtime_type"}, c.RuntimeType)
+	}
+
 	config.SetPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name, "options", "BinaryName"}, path)
 
 	if setAsDefault {
