@@ -215,6 +215,69 @@ func TestDeviceRequests(t *testing.T) {
 	}
 }
 
+func TestMigCapsDeviceRequests(t *testing.T) {
+	testCases := []struct {
+		description     string
+		env             []string
+		expectedDevices []string
+	}{
+		{
+			description: "no MIG envvars yields no devices",
+		},
+		{
+			description:     "monitor devices requested",
+			env:             []string{"NVIDIA_MIG_MONITOR_DEVICES=all"},
+			expectedDevices: []string{"mode=mig-caps,id=monitor"},
+		},
+		{
+			description:     "config devices requested",
+			env:             []string{"NVIDIA_MIG_CONFIG_DEVICES=all"},
+			expectedDevices: []string{"mode=mig-caps,id=config"},
+		},
+		{
+			description:     "both config and monitor requested",
+			env:             []string{"NVIDIA_MIG_CONFIG_DEVICES=all", "NVIDIA_MIG_MONITOR_DEVICES=all"},
+			expectedDevices: []string{"mode=mig-caps,id=config", "mode=mig-caps,id=monitor"},
+		},
+		{
+			description: "empty value yields no devices",
+			env:         []string{"NVIDIA_MIG_MONITOR_DEVICES="},
+		},
+		{
+			description: "non-all value is ignored",
+			env:         []string{"NVIDIA_MIG_MONITOR_DEVICES=0", "NVIDIA_MIG_CONFIG_DEVICES=0,1"},
+		},
+		{
+			description:     "allowed with whole-GPU visibility",
+			env:             []string{"NVIDIA_VISIBLE_DEVICES=0", "NVIDIA_MIG_MONITOR_DEVICES=all"},
+			expectedDevices: []string{"mode=mig-caps,id=monitor"},
+		},
+		{
+			description: "ignored when scoped to specific MIG devices (index)",
+			env:         []string{"NVIDIA_VISIBLE_DEVICES=0:0", "NVIDIA_MIG_MONITOR_DEVICES=all"},
+		},
+		{
+			description: "ignored when scoped to specific MIG devices (UUID)",
+			env:         []string{"NVIDIA_VISIBLE_DEVICES=MIG-GPU-b1028956-cfa2-0990-bf4a-5da9abb51763/3/0", "NVIDIA_MIG_CONFIG_DEVICES=all"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			img, err := image.NewCUDAImageFromSpec(
+				&specs.Spec{
+					Process: &specs.Process{Env: tc.env},
+				},
+				image.WithAcceptEnvvarUnprivileged(true),
+			)
+			require.NoError(t, err)
+
+			devices := migCapsDevices(img).DeviceRequests()
+			require.EqualValues(t, tc.expectedDevices, devices)
+		})
+	}
+}
+
 func Test_cdiModeIdentfiersFromDevices(t *testing.T) {
 	testCases := []struct {
 		description string
