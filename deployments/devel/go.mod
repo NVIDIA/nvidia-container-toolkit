@@ -1,8 +1,8 @@
 module github.com/NVIDIA/k8s-device-plugin/deployments/devel
 
-go 1.25
+go 1.26
 
-require github.com/matryer/moq v0.6.0
+require github.com/matryer/moq v0.7.1
 
 require (
 	github.com/google/go-cmp v0.7.0 // indirect
