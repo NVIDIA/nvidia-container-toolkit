@@ -84,7 +84,7 @@ func New(opts ...Option) (Interface, error) {
 		factory = (*nvmllib)(l)
 	case ModeWsl:
 		factory = (*wsllib)(l)
-	case ModeGdrcopy, ModeGds, ModeMofed, ModeNvswitch:
+	case ModeGdrcopy, ModeGds, ModeMigConfig, ModeMigMonitor, ModeMofed, ModeNvswitch:
 		factory = &gatedlib{
 			nvcdilib: l,
 			mode:     o.mode,

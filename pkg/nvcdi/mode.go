@@ -46,6 +46,10 @@ const (
 	ModeImex = Mode("imex")
 	// ModeNvswitch configures the CDI spec generator to generate a spec for the available nvswitch devices.
 	ModeNvswitch = Mode("nvswitch")
+	// ModeMigConfig configures the CDI spec generator to generate a spec for the MIG config capability device.
+	ModeMigConfig = Mode("mig-config")
+	// ModeMigMonitor configures the CDI spec generator to generate a spec for the MIG monitor capability device.
+	ModeMigMonitor = Mode("mig-monitor")
 )
 
 type modeConstraint interface {
@@ -69,6 +73,8 @@ func getModes() modes {
 			ModeGds,
 			ModeImex,
 			ModeManagement,
+			ModeMigConfig,
+			ModeMigMonitor,
 			ModeMofed,
 			ModeNvml,
 			ModeNvswitch,

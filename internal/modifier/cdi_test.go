@@ -215,6 +215,72 @@ func TestDeviceRequests(t *testing.T) {
 	}
 }
 
+func TestMigCapDevicesDeviceRequests(t *testing.T) {
+	testCases := []struct {
+		description     string
+		env             []string
+		privileged      bool
+		expectedDevices []string
+	}{
+		{
+			description: "no env vars, unprivileged: no devices",
+		},
+		{
+			description: "no env vars, privileged: no devices",
+			privileged:  true,
+		},
+		{
+			description:     "mig-config set, privileged: returns mig-config mode",
+			env:             []string{"NVIDIA_MIG_CONFIG_DEVICES=all"},
+			privileged:      true,
+			expectedDevices: []string{"mode=mig-config"},
+		},
+		{
+			description:     "mig-monitor set, privileged: returns mig-monitor mode",
+			env:             []string{"NVIDIA_MIG_MONITOR_DEVICES=all"},
+			privileged:      true,
+			expectedDevices: []string{"mode=mig-monitor"},
+		},
+		{
+			description:     "both set, privileged: returns both modes",
+			env:             []string{"NVIDIA_MIG_CONFIG_DEVICES=all", "NVIDIA_MIG_MONITOR_DEVICES=all"},
+			privileged:      true,
+			expectedDevices: []string{"mode=mig-config", "mode=mig-monitor"},
+		},
+		{
+			description: "mig-config set, unprivileged: no devices",
+			env:         []string{"NVIDIA_MIG_CONFIG_DEVICES=all"},
+		},
+		{
+			description: "mig-monitor set, unprivileged: no devices",
+			env:         []string{"NVIDIA_MIG_MONITOR_DEVICES=all"},
+		},
+		{
+			description: "both set, unprivileged: no devices",
+			env:         []string{"NVIDIA_MIG_CONFIG_DEVICES=all", "NVIDIA_MIG_MONITOR_DEVICES=all"},
+		},
+		{
+			description:     "specific device ID is treated as non-empty value",
+			env:             []string{"NVIDIA_MIG_CONFIG_DEVICES=0"},
+			privileged:      true,
+			expectedDevices: []string{"mode=mig-config"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			img, err := image.New(
+				image.WithEnv(tc.env),
+				image.WithPrivileged(tc.privileged),
+			)
+			require.NoError(t, err)
+
+			devices := migCapDevices(img).DeviceRequests()
+			require.EqualValues(t, tc.expectedDevices, devices)
+		})
+	}
+}
+
 func Test_cdiModeIdentfiersFromDevices(t *testing.T) {
 	testCases := []struct {
 		description string
@@ -294,6 +360,33 @@ func Test_cdiModeIdentfiersFromDevices(t *testing.T) {
 			expected: &cdiModeIdentifiers{
 				modes:             []string{"auto"},
 				idsByMode:         map[string][]string{"auto": {"none"}},
+				deviceClassByMode: map[string]string{"auto": "gpu"},
+			},
+		},
+		{
+			description: "mig-config mode only",
+			devices:     []string{"mode=mig-config"},
+			expected: &cdiModeIdentifiers{
+				modes:             []string{"mig-config"},
+				idsByMode:         map[string][]string{},
+				deviceClassByMode: map[string]string{"auto": "gpu"},
+			},
+		},
+		{
+			description: "mig-monitor mode only",
+			devices:     []string{"mode=mig-monitor"},
+			expected: &cdiModeIdentifiers{
+				modes:             []string{"mig-monitor"},
+				idsByMode:         map[string][]string{},
+				deviceClassByMode: map[string]string{"auto": "gpu"},
+			},
+		},
+		{
+			description: "mig-config and mig-monitor together with auto devices",
+			devices:     []string{"runtime.nvidia.com/gpu=all", "mode=mig-config", "mode=mig-monitor"},
+			expected: &cdiModeIdentifiers{
+				modes:             []string{"auto", "mig-config", "mig-monitor"},
+				idsByMode:         map[string][]string{"auto": {"all"}},
 				deviceClassByMode: map[string]string{"auto": "gpu"},
 			},
 		},
