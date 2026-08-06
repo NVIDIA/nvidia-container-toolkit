@@ -27,7 +27,14 @@ import (
 )
 
 // State stores an OCI container state. This includes the spec path and the environment
-type State specs.State
+type State struct {
+	specs.State
+	// Root is a non-standard extension included in the container state JSON by some
+	// OCI runtimes (e.g., crun). When present it provides the rootfs path directly,
+	// avoiding the need to open config.json — which may be permission-denied when
+	// running with user namespaces such as --userns=nomap (issue #648).
+	Root string `json:"root,omitempty"`
+}
 
 // LoadContainerState loads the container state from the specified filename. If the filename is empty or '-' the state is loaded from STDIN
 func LoadContainerState(filename string) (*State, error) {
@@ -56,17 +63,26 @@ func ReadContainerState(reader io.Reader) (*State, error) {
 	return &s, nil
 }
 
-// GetContainerRoot returns the root for the container from the associated spec. If the spec is not yet loaded, it is
-// loaded and cached.
-func (s *State) GetContainerRoot() (string, error) {
+func (s *State) getRoot() (string, error) {
+	if s.Root != "" {
+		return s.Root, nil
+	}
 	spec, err := s.loadMinimalSpec()
 	if err != nil {
 		return "", err
 	}
-
-	var containerRoot string
 	if spec.Root != nil {
-		containerRoot = spec.Root.Path
+		return spec.Root.Path, nil
+	}
+	return "", nil
+}
+
+// GetContainerRoot returns the root for the container from the associated spec. If the spec is not yet loaded, it is
+// loaded and cached.
+func (s *State) GetContainerRoot() (string, error) {
+	containerRoot, err := s.getRoot()
+	if err != nil {
+		return "", err
 	}
 
 	if filepath.IsAbs(containerRoot) {
