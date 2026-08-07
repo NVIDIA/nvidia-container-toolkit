@@ -9,3 +9,5 @@
 /release-*
 /bin
 /toolkit-test
+# Scratch tree written by hack/generate-notices.sh.
+/.licenses-cache

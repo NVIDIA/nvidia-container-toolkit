@@ -21,5 +21,6 @@ package main
 
 // Define the tooling required to build the device plugin.
 import (
+	_ "github.com/google/go-licenses/v2"
 	_ "github.com/matryer/moq"
 )

@@ -40,8 +40,14 @@ echo "Uploading release artifacts for ${VERSION}"
 
 PACKAGE_ROOT=release-${VERSION}-${REPO}
 
+# THIRD_PARTY_NOTICES.md is attached to the release rather than added to the
+# packages or the image: the notices can be distributed alongside the artifacts,
+# and this keeps the package and image contents unchanged. It is generated and
+# committed from this tree, so the copy uploaded here is the one that describes
+# the tagged commit.
 gh release upload ${VERSION} \
     ${PACKAGE_ROOT}/nvidia-container-toolkit_${VERSION#v}_*.tar.gz \
     ${PACKAGE_ROOT}/nvidia-container-toolkit_${VERSION#v}_checksums.txt \
+    THIRD_PARTY_NOTICES.md \
     --clobber \
     -R ${REPOSITORY}

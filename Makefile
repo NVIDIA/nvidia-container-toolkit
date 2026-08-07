@@ -39,7 +39,7 @@ CMDS := $(patsubst ./cmd/%/,%,$(sort $(dir $(wildcard ./cmd/*/))))
 CMD_TARGETS := $(patsubst %,cmd-%, $(CMDS))
 
 CHECK_TARGETS := lint
-MAKE_TARGETS := binaries build check fmt test examples cmds coverage generate licenses vendor check-vendor $(CHECK_TARGETS)
+MAKE_TARGETS := binaries build check fmt test examples cmds coverage generate licenses notices notices-check vendor check-vendor $(CHECK_TARGETS)
 
 TARGETS := $(MAKE_TARGETS) $(EXAMPLE_TARGETS) $(CMD_TARGETS)
 
@@ -119,6 +119,31 @@ check-vendor: vendor
 
 licenses:
 	go-licenses csv $(MODULE)/...
+
+# Regenerate THIRD_PARTY_NOTICES.md: the index and full license text of every Go
+# module linked into the released commands, plus the build toolchain.
+# go-licenses is pinned in deployments/devel alongside the other build tools;
+# install it into ./bin rather than the shared GOBIN so the pinned version is
+# the one that runs.
+DEVEL_DIR := $(CURDIR)/deployments/devel
+
+bin/go-licenses: $(DEVEL_DIR)/go.mod $(DEVEL_DIR)/go.sum
+	GOBIN=$(CURDIR)/bin go -C $(DEVEL_DIR) install -mod=readonly github.com/google/go-licenses/v2
+
+notices: bin/go-licenses
+	@bash hack/generate-notices.sh
+
+# Verify THIRD_PARTY_NOTICES.md is in sync with the dependency tree.
+notices-check:
+	@echo "- Checking if THIRD_PARTY_NOTICES.md is up to date..."
+	@# Cheap gate first, before spending minutes regenerating. git diff reports
+	@# nothing for an untracked path, so an uncommitted notices file would
+	@# otherwise pass this gate silently.
+	@git ls-files --error-unmatch THIRD_PARTY_NOTICES.md >/dev/null 2>&1 \
+		|| { echo "ERROR: THIRD_PARTY_NOTICES.md is not tracked. Run 'make notices' and commit the result."; exit 1; }
+	@$(MAKE) notices
+	@git diff --exit-code -- THIRD_PARTY_NOTICES.md \
+		|| { echo "ERROR: THIRD_PARTY_NOTICES.md is stale. Run 'make notices' and commit the change."; exit 1; }
 
 COVERAGE_FILE := coverage.out
 test: build cmds
