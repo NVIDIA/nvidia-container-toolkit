@@ -85,6 +85,7 @@ ARG GIT_COMMIT
 ARG GIT_COMMIT_SHORT
 ARG SOURCE_DATE_EPOCH
 ARG VERSION
+ARG BUILD_TIMESTAMP
 
 # Create a manifest.txt file with the absolute paths of all deb and rpm packages in the container
 RUN echo "#IMAGE_EPOCH=$(date '+%s')" > /artifacts/manifest.txt && \
@@ -97,6 +98,15 @@ LABEL version="${VERSION}"
 LABEL release="N/A"
 LABEL summary="deb and rpm packages for the NVIDIA Container Toolkit"
 LABEL description="See summary"
+
+LABEL org.opencontainers.image.source="https://github.com/NVIDIA/nvidia-container-toolkit.git"
+LABEL org.opencontainers.image.documentation="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit"
+LABEL org.opencontainers.image.created="${BUILD_TIMESTAMP}"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
+LABEL org.opencontainers.image.title="NVIDIA Container Toolkit Packages"
+LABEL org.opencontainers.image.vendor="NVIDIA"
+LABEL org.opencontainers.base.name="nvcr.io/nvidia/distroless/go"
 
 COPY LICENSE /licenses/
 
@@ -177,13 +187,24 @@ WORKDIR /work
 ENV PATH=/work:$PATH
 
 ARG VERSION
-LABEL io.k8s.display-name="NVIDIA Container Runtime Config"
-LABEL name="NVIDIA Container Runtime Config"
+ARG GIT_COMMIT
+ARG BUILD_TIMESTAMP
+LABEL io.k8s.display-name="NVIDIA Container Toolkit Installer"
+LABEL name="NVIDIA Container Toolkit Installer"
 LABEL vendor="NVIDIA"
 LABEL version="${VERSION}"
 LABEL release="N/A"
-LABEL summary="Automatically Configure your Container Runtime for GPU support."
+LABEL summary="Enables GPU support in container runtimes"
 LABEL description="See summary"
+
+LABEL org.opencontainers.image.source="https://github.com/NVIDIA/nvidia-container-toolkit.git"
+LABEL org.opencontainers.image.documentation="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit"
+LABEL org.opencontainers.image.created="${BUILD_TIMESTAMP}"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
+LABEL org.opencontainers.image.title="NVIDIA Container Toolkit Installer"
+LABEL org.opencontainers.image.vendor="NVIDIA"
+LABEL org.opencontainers.base.name="nvcr.io/nvidia/distroless/go"
 
 COPY LICENSE /licenses/
 
