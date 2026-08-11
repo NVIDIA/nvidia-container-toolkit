@@ -1,5 +1,11 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.20.0
+- Add `enable-cuda-compat` hook to management CDI specs
+- Add `update-application-profile` CDI hook for EGL/Vulkan use case
+- Use xz compression when building rpm packages
+- fix: populate `runtime_type` field in containerd runtime config if not present
+
 ## v1.20.0-rc.1
 - Validate imex channels for CDI/JIT-CDI mode
 - [wsl2] discover all .so, .bin, and .dll files at nvidia driver store path
