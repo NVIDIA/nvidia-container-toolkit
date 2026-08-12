@@ -90,6 +90,7 @@ $(IMAGE_TARGETS): image-%: $(ARTIFACTS_ROOT)
 		--build-arg GIT_COMMIT_SHORT="$(GIT_COMMIT_SHORT)" \
 		--build-arg GIT_BRANCH="$(GIT_BRANCH)" \
 		--build-arg SOURCE_DATE_EPOCH="$(SOURCE_DATE_EPOCH)" \
+		--build-arg BUILD_TIMESTAMP="$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")" \
 		--build-arg GOPROXY="$(GOPROXY)" \
 		-f $(DOCKERFILE) \
 		$(CURDIR)
