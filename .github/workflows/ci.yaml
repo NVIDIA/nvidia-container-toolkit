@@ -38,6 +38,9 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/golang.yaml
 
+  third-party-notices:
+    uses: ./.github/workflows/third-party-notices-check.yaml
+
   image:
     uses: ./.github/workflows/image.yaml
     needs: [variables, golang, code-scanning]
