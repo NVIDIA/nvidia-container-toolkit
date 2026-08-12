@@ -9,3 +9,4 @@
 /release-*
 /bin
 /toolkit-test
+/.licenses-cache
