@@ -93,6 +93,13 @@ EOF
 	fi
 	`
 
+	nvidiaCdiRefreshUdevRulesInstalledTemplate = `
+	if [ ! -f /lib/udev/rules.d/99-nvidia-cdi-refresh.rules ]; then
+		echo "99-nvidia-cdi-refresh.rules is not installed"
+		exit 1
+	fi
+	`
+
 	nvidiaCdiRefreshFileExistsTemplate = `
 	# is /var/run/cdi/nvidia.yaml exists? and exit with 0 if it does not exist
 	if [ ! -f /var/run/cdi/nvidia.yaml ]; then
@@ -209,6 +216,11 @@ var _ = Describe("nvidia-cdi-refresh", Ordered, ContinueOnFailure, Label("system
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should install the nvidia-cdi-refresh udev rules", func(ctx context.Context) {
+			_, _, err := systemdRunner.Run(nvidiaCdiRefreshUdevRulesInstalledTemplate)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("should generate the nvidia.yaml file", func(ctx context.Context) {
 			_, _, err := systemdRunner.Run(nvidiaCdiRefreshFileExistsTemplate)
 			Expect(err).ToNot(HaveOccurred())
@@ -255,6 +267,11 @@ var _ = Describe("nvidia-cdi-refresh", Ordered, ContinueOnFailure, Label("system
 
 		It("should load the nvidia-cdi-refresh.service unit", func(ctx context.Context) {
 			_, _, err := systemdRunner.Run(nvidiaCdiRefreshServiceLoadedTemplate)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should install the nvidia-cdi-refresh udev rules", func(ctx context.Context) {
+			_, _, err := systemdRunner.Run(nvidiaCdiRefreshUdevRulesInstalledTemplate)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
