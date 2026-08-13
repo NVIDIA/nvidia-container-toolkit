@@ -106,7 +106,8 @@ LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
 LABEL org.opencontainers.image.title="NVIDIA Container Toolkit Packages"
 LABEL org.opencontainers.image.vendor="NVIDIA"
-LABEL org.opencontainers.base.name="nvcr.io/nvidia/distroless/go"
+LABEL org.opencontainers.image.url="https://catalog.ngc.nvidia.com/orgs/nvidia/k8s/containers/container-toolkit"
+LABEL org.opencontainers.image.base.name="nvcr.io/nvidia/distroless/go"
 
 COPY LICENSE /licenses/
 
@@ -204,7 +205,8 @@ LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
 LABEL org.opencontainers.image.title="NVIDIA Container Toolkit Installer"
 LABEL org.opencontainers.image.vendor="NVIDIA"
-LABEL org.opencontainers.base.name="nvcr.io/nvidia/distroless/go"
+LABEL org.opencontainers.image.url="https://catalog.ngc.nvidia.com/orgs/nvidia/k8s/containers/container-toolkit"
+LABEL org.opencontainers.image.base.name="nvcr.io/nvidia/distroless/go"
 
 COPY LICENSE /licenses/
 
