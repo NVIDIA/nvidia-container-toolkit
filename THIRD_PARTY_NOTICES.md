@@ -19,48 +19,48 @@ busybox binary is added to the image, which is licensed under GPLv2.
 
 ## Go Module Index
 
-| Package | License | Module |
-|---------|---------|--------|
-| `github.com/Masterminds/semver/v3` | MIT | `github.com/Masterminds/semver/v3@v3.5.0` |
-| `github.com/NVIDIA/go-nvlib/pkg` | Apache-2.0 | `github.com/NVIDIA/go-nvlib@v0.12.0` |
-| `github.com/NVIDIA/go-nvml/pkg` | Apache-2.0 | `github.com/NVIDIA/go-nvml@v0.13.3-1` |
-| `github.com/containerd/log` | Apache-2.0 | `github.com/containerd/log@v0.1.0` |
-| `github.com/containerd/nri/pkg` | Apache-2.0 | `github.com/containerd/nri@v0.12.1` |
-| `github.com/containerd/ttrpc` | Apache-2.0 | `github.com/containerd/ttrpc@v1.2.7` |
-| `github.com/cyphar/filepath-securejoin` | BSD-3-Clause / MPL-2.0 | `github.com/cyphar/filepath-securejoin@v0.7.0` |
-| `github.com/fsnotify/fsnotify` | BSD-3-Clause | `github.com/fsnotify/fsnotify@v1.7.0` |
-| `github.com/google/uuid` | BSD-3-Clause | `github.com/google/uuid@v1.6.0` |
-| `github.com/knqyf263/go-plugin/wasm` | MIT | `github.com/knqyf263/go-plugin@v0.9.0` |
-| `github.com/moby/sys/capability` | BSD-2-Clause | `github.com/moby/sys/capability@v0.4.0` |
-| `github.com/moby/sys/mountinfo` | Apache-2.0 | `github.com/moby/sys/mountinfo@v0.7.2` |
-| `github.com/moby/sys/reexec` | Apache-2.0 | `github.com/moby/sys/reexec@v0.1.0` |
-| `github.com/opencontainers/cgroups/devices/config` | Apache-2.0 | `github.com/opencontainers/cgroups@v0.0.7` |
-| `github.com/opencontainers/runc` | Apache-2.0 | `github.com/opencontainers/runc@v1.4.3` |
-| `github.com/opencontainers/runtime-spec/specs-go` | Apache-2.0 | `github.com/opencontainers/runtime-spec@v1.3.0` |
-| `github.com/opencontainers/runtime-tools` | Apache-2.0 | `github.com/opencontainers/runtime-tools@v0.9.1-0.20251114084447-edf4cb3d2116` |
-| `github.com/pelletier/go-toml` | Apache-2.0 / MIT | `github.com/pelletier/go-toml@v1.9.5` |
-| `github.com/prometheus/procfs` | Apache-2.0 | `github.com/prometheus/procfs@v0.21.1` |
-| `github.com/sirupsen/logrus` | MIT | `github.com/sirupsen/logrus@v1.9.4` |
-| `github.com/tetratelabs/wazero` | Apache-2.0 | `github.com/tetratelabs/wazero@v1.11.0` |
-| `github.com/urfave/cli-altsrc/v3` | MIT | `github.com/urfave/cli-altsrc/v3@v3.1.0` |
-| `github.com/urfave/cli/v3` | MIT | `github.com/urfave/cli/v3@v3.10.1` |
-| `golang.org/x/mod/semver` | BSD-3-Clause | `golang.org/x/mod@v0.38.0` |
-| `golang.org/x/sys` | BSD-3-Clause | `golang.org/x/sys@v0.47.0` |
-| `google.golang.org/genproto/googleapis/rpc/status` | Apache-2.0 | `google.golang.org/genproto/googleapis/rpc@v0.0.0-20260414002931-afd174a4e478` |
-| `google.golang.org/grpc` | Apache-2.0 | `google.golang.org/grpc@v1.82.1` |
-| `google.golang.org/protobuf` | BSD-3-Clause | `google.golang.org/protobuf@v1.36.11` |
-| `gopkg.in/yaml.v3` | MIT | `gopkg.in/yaml.v3@v3.0.1` |
-| `sigs.k8s.io/yaml` | Apache-2.0 / BSD-3-Clause / MIT | `sigs.k8s.io/yaml@v1.4.0` |
-| `sigs.k8s.io/yaml/goyaml.v2` | Apache-2.0 | `sigs.k8s.io/yaml@v1.4.0` |
-| `tags.cncf.io/container-device-interface` | Apache-2.0 | `tags.cncf.io/container-device-interface@v1.1.0` |
-| `tags.cncf.io/container-device-interface/specs-go` | Apache-2.0 | `tags.cncf.io/container-device-interface/specs-go@v1.1.0` |
+| Package | License | Dependency |
+|---------|---------|------------|
+| `github.com/Masterminds/semver/v3` | MIT | `github.com/Masterminds/semver/v3` |
+| `github.com/NVIDIA/go-nvlib/pkg` | Apache-2.0 | `github.com/NVIDIA/go-nvlib` |
+| `github.com/NVIDIA/go-nvml/pkg` | Apache-2.0 | `github.com/NVIDIA/go-nvml` |
+| `github.com/containerd/log` | Apache-2.0 | `github.com/containerd/log` |
+| `github.com/containerd/nri/pkg` | Apache-2.0 | `github.com/containerd/nri` |
+| `github.com/containerd/ttrpc` | Apache-2.0 | `github.com/containerd/ttrpc` |
+| `github.com/cyphar/filepath-securejoin` | BSD-3-Clause / MPL-2.0 | `github.com/cyphar/filepath-securejoin` |
+| `github.com/fsnotify/fsnotify` | BSD-3-Clause | `github.com/fsnotify/fsnotify` |
+| `github.com/google/uuid` | BSD-3-Clause | `github.com/google/uuid` |
+| `github.com/knqyf263/go-plugin/wasm` | MIT | `github.com/knqyf263/go-plugin` |
+| `github.com/moby/sys/capability` | BSD-2-Clause | `github.com/moby/sys/capability` |
+| `github.com/moby/sys/mountinfo` | Apache-2.0 | `github.com/moby/sys/mountinfo` |
+| `github.com/moby/sys/reexec` | Apache-2.0 | `github.com/moby/sys/reexec` |
+| `github.com/opencontainers/cgroups/devices/config` | Apache-2.0 | `github.com/opencontainers/cgroups` |
+| `github.com/opencontainers/runc` | Apache-2.0 | `github.com/opencontainers/runc` |
+| `github.com/opencontainers/runtime-spec/specs-go` | Apache-2.0 | `github.com/opencontainers/runtime-spec` |
+| `github.com/opencontainers/runtime-tools` | Apache-2.0 | `github.com/opencontainers/runtime-tools` |
+| `github.com/pelletier/go-toml` | Apache-2.0 / MIT | `github.com/pelletier/go-toml` |
+| `github.com/prometheus/procfs` | Apache-2.0 | `github.com/prometheus/procfs` |
+| `github.com/sirupsen/logrus` | MIT | `github.com/sirupsen/logrus` |
+| `github.com/tetratelabs/wazero` | Apache-2.0 | `github.com/tetratelabs/wazero` |
+| `github.com/urfave/cli-altsrc/v3` | MIT | `github.com/urfave/cli-altsrc/v3` |
+| `github.com/urfave/cli/v3` | MIT | `github.com/urfave/cli/v3` |
+| `golang.org/x/mod/semver` | BSD-3-Clause | `golang.org/x/mod` |
+| `golang.org/x/sys` | BSD-3-Clause | `golang.org/x/sys` |
+| `google.golang.org/genproto/googleapis/rpc/status` | Apache-2.0 | `google.golang.org/genproto/googleapis/rpc` |
+| `google.golang.org/grpc` | Apache-2.0 | `google.golang.org/grpc` |
+| `google.golang.org/protobuf` | BSD-3-Clause | `google.golang.org/protobuf` |
+| `gopkg.in/yaml.v3` | MIT | `gopkg.in/yaml.v3` |
+| `sigs.k8s.io/yaml` | Apache-2.0 / BSD-3-Clause / MIT | `sigs.k8s.io/yaml` |
+| `sigs.k8s.io/yaml/goyaml.v2` | Apache-2.0 | `sigs.k8s.io/yaml` |
+| `tags.cncf.io/container-device-interface` | Apache-2.0 | `tags.cncf.io/container-device-interface` |
+| `tags.cncf.io/container-device-interface/specs-go` | Apache-2.0 | `tags.cncf.io/container-device-interface/specs-go` |
 
 ## Go Module License Texts
 
 ### github.com/Masterminds/semver/v3
 
 * License: MIT
-* Module: github.com/Masterminds/semver/v3@v3.5.0
+* Module: github.com/Masterminds/semver/v3
 
 #### LICENSE.txt
 
@@ -91,7 +91,7 @@ THE SOFTWARE.
 ### github.com/NVIDIA/go-nvlib/pkg
 
 * License: Apache-2.0
-* Module: github.com/NVIDIA/go-nvlib@v0.12.0
+* Module: github.com/NVIDIA/go-nvlib
 
 #### LICENSE
 
@@ -315,7 +315,7 @@ the PCI ID Project at https://pci-ids.ucw.cz/.
 ### github.com/NVIDIA/go-nvml/pkg
 
 * License: Apache-2.0
-* Module: github.com/NVIDIA/go-nvml@v0.13.3-1
+* Module: github.com/NVIDIA/go-nvml
 
 #### LICENSE
 
@@ -529,7 +529,7 @@ the PCI ID Project at https://pci-ids.ucw.cz/.
 ### github.com/containerd/log
 
 * License: Apache-2.0
-* Module: github.com/containerd/log@v0.1.0
+* Module: github.com/containerd/log
 
 #### LICENSE
 
@@ -732,7 +732,7 @@ the PCI ID Project at https://pci-ids.ucw.cz/.
 ### github.com/containerd/nri/pkg
 
 * License: Apache-2.0
-* Module: github.com/containerd/nri@v0.12.1
+* Module: github.com/containerd/nri
 
 #### LICENSE
 
@@ -945,7 +945,7 @@ the PCI ID Project at https://pci-ids.ucw.cz/.
 ### github.com/containerd/ttrpc
 
 * License: Apache-2.0
-* Module: github.com/containerd/ttrpc@v1.2.7
+* Module: github.com/containerd/ttrpc
 
 #### LICENSE
 
@@ -1158,7 +1158,7 @@ the PCI ID Project at https://pci-ids.ucw.cz/.
 ### github.com/cyphar/filepath-securejoin
 
 * License: BSD-3-Clause / MPL-2.0
-* Module: github.com/cyphar/filepath-securejoin@v0.7.0
+* Module: github.com/cyphar/filepath-securejoin
 
 #### COPYING.md
 
@@ -2030,7 +2030,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 ### github.com/fsnotify/fsnotify
 
 * License: BSD-3-Clause
-* Module: github.com/fsnotify/fsnotify@v1.7.0
+* Module: github.com/fsnotify/fsnotify
 
 #### LICENSE
 
@@ -2067,7 +2067,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### github.com/google/uuid
 
 * License: BSD-3-Clause
-* Module: github.com/google/uuid@v1.6.0
+* Module: github.com/google/uuid
 
 #### LICENSE
 
@@ -2106,7 +2106,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### github.com/knqyf263/go-plugin/wasm
 
 * License: MIT
-* Module: github.com/knqyf263/go-plugin@v0.9.0
+* Module: github.com/knqyf263/go-plugin
 
 #### LICENSE
 
@@ -2139,7 +2139,7 @@ SOFTWARE.
 ### github.com/moby/sys/capability
 
 * License: BSD-2-Clause
-* Module: github.com/moby/sys/capability@v0.4.0
+* Module: github.com/moby/sys/capability
 
 #### LICENSE
 
@@ -2176,7 +2176,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### github.com/moby/sys/mountinfo
 
 * License: Apache-2.0
-* Module: github.com/moby/sys/mountinfo@v0.7.2
+* Module: github.com/moby/sys/mountinfo
 
 #### LICENSE
 
@@ -2390,7 +2390,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### github.com/moby/sys/reexec
 
 * License: Apache-2.0
-* Module: github.com/moby/sys/reexec@v0.1.0
+* Module: github.com/moby/sys/reexec
 
 #### LICENSE
 
@@ -2604,7 +2604,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### github.com/opencontainers/cgroups/devices/config
 
 * License: Apache-2.0
-* Module: github.com/opencontainers/cgroups@v0.0.7
+* Module: github.com/opencontainers/cgroups
 
 #### LICENSE
 
@@ -2817,7 +2817,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### github.com/opencontainers/runc
 
 * License: Apache-2.0
-* Module: github.com/opencontainers/runc@v1.4.3
+* Module: github.com/opencontainers/runc
 
 #### LICENSE
 
@@ -3043,7 +3043,7 @@ See also http://www.apache.org/dev/crypto.html and/or seek legal counsel.
 ### github.com/opencontainers/runtime-spec/specs-go
 
 * License: Apache-2.0
-* Module: github.com/opencontainers/runtime-spec@v1.3.0
+* Module: github.com/opencontainers/runtime-spec
 
 #### LICENSE
 
@@ -3246,7 +3246,7 @@ See also http://www.apache.org/dev/crypto.html and/or seek legal counsel.
 ### github.com/opencontainers/runtime-tools
 
 * License: Apache-2.0
-* Module: github.com/opencontainers/runtime-tools@v0.9.1-0.20251114084447-edf4cb3d2116
+* Module: github.com/opencontainers/runtime-tools
 
 #### LICENSE
 
@@ -3449,7 +3449,7 @@ See also http://www.apache.org/dev/crypto.html and/or seek legal counsel.
 ### github.com/pelletier/go-toml
 
 * License: Apache-2.0 / MIT
-* Module: github.com/pelletier/go-toml@v1.9.5
+* Module: github.com/pelletier/go-toml
 
 #### LICENSE
 
@@ -3708,7 +3708,7 @@ License:
 ### github.com/prometheus/procfs
 
 * License: Apache-2.0
-* Module: github.com/prometheus/procfs@v0.21.1
+* Module: github.com/prometheus/procfs
 
 #### LICENSE
 
@@ -3934,7 +3934,7 @@ SoundCloud Ltd. (http://soundcloud.com/).
 ### github.com/sirupsen/logrus
 
 * License: MIT
-* Module: github.com/sirupsen/logrus@v1.9.4
+* Module: github.com/sirupsen/logrus
 
 #### LICENSE
 
@@ -3967,7 +3967,7 @@ THE SOFTWARE.
 ### github.com/tetratelabs/wazero
 
 * License: Apache-2.0
-* Module: github.com/tetratelabs/wazero@v1.11.0
+* Module: github.com/tetratelabs/wazero
 
 #### LICENSE
 
@@ -4188,7 +4188,7 @@ Copyright 2020-2023 wazero authors
 ### github.com/urfave/cli-altsrc/v3
 
 * License: MIT
-* Module: github.com/urfave/cli-altsrc/v3@v3.1.0
+* Module: github.com/urfave/cli-altsrc/v3
 
 #### LICENSE
 
@@ -4221,7 +4221,7 @@ SOFTWARE.
 ### github.com/urfave/cli/v3
 
 * License: MIT
-* Module: github.com/urfave/cli/v3@v3.10.1
+* Module: github.com/urfave/cli/v3
 
 #### LICENSE
 
@@ -4254,7 +4254,7 @@ SOFTWARE.
 ### golang.org/x/mod/semver
 
 * License: BSD-3-Clause
-* Module: golang.org/x/mod@v0.38.0
+* Module: golang.org/x/mod
 
 #### LICENSE
 
@@ -4293,7 +4293,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### golang.org/x/sys
 
 * License: BSD-3-Clause
-* Module: golang.org/x/sys@v0.47.0
+* Module: golang.org/x/sys
 
 #### LICENSE
 
@@ -4332,7 +4332,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### google.golang.org/genproto/googleapis/rpc/status
 
 * License: Apache-2.0
-* Module: google.golang.org/genproto/googleapis/rpc@v0.0.0-20260414002931-afd174a4e478
+* Module: google.golang.org/genproto/googleapis/rpc
 
 #### LICENSE
 
@@ -4546,7 +4546,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### google.golang.org/grpc
 
 * License: Apache-2.0
-* Module: google.golang.org/grpc@v1.82.1
+* Module: google.golang.org/grpc
 
 #### LICENSE
 
@@ -4779,7 +4779,7 @@ limitations under the License.
 ### google.golang.org/protobuf
 
 * License: BSD-3-Clause
-* Module: google.golang.org/protobuf@v1.36.11
+* Module: google.golang.org/protobuf
 
 #### LICENSE
 
@@ -4818,7 +4818,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### gopkg.in/yaml.v3
 
 * License: MIT
-* Module: gopkg.in/yaml.v3@v3.0.1
+* Module: gopkg.in/yaml.v3
 
 #### LICENSE
 
@@ -4899,7 +4899,7 @@ limitations under the License.
 ### sigs.k8s.io/yaml
 
 * License: Apache-2.0 / BSD-3-Clause / MIT
-* Module: sigs.k8s.io/yaml@v1.4.0
+* Module: sigs.k8s.io/yaml
 
 #### LICENSE
 
@@ -5217,7 +5217,7 @@ Apache license:
 ### sigs.k8s.io/yaml/goyaml.v2
 
 * License: Apache-2.0
-* Module: sigs.k8s.io/yaml@v1.4.0
+* Module: sigs.k8s.io/yaml
 
 #### LICENSE
 
@@ -5449,7 +5449,7 @@ limitations under the License.
 ### tags.cncf.io/container-device-interface
 
 * License: Apache-2.0
-* Module: tags.cncf.io/container-device-interface@v1.1.0
+* Module: tags.cncf.io/container-device-interface
 
 #### LICENSE
 
@@ -5662,7 +5662,7 @@ limitations under the License.
 ### tags.cncf.io/container-device-interface/specs-go
 
 * License: Apache-2.0
-* Module: tags.cncf.io/container-device-interface/specs-go@v1.1.0
+* Module: tags.cncf.io/container-device-interface/specs-go
 
 #### LICENSE
 
