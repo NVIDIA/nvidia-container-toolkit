@@ -37,11 +37,11 @@ func (c *ConfigV1) AddRuntime(name string, path string, setAsDefault bool) error
 	return c.AddRuntimeWithOptions(name, path, setAsDefault, defaultRuntimeOptions)
 }
 
-func (c *ConfigV1) GetDefaultRuntimeOptions() interface{} {
+func (c *ConfigV1) GetDefaultRuntimeOptions() any {
 	return (*Config)(c).GetDefaultRuntimeOptions()
 }
 
-func (c *ConfigV1) AddRuntimeWithOptions(name string, path string, setAsDefault bool, options interface{}) error {
+func (c *ConfigV1) AddRuntimeWithOptions(name string, path string, setAsDefault bool, options any) error {
 	if err := (*Config)(c).AddRuntimeWithOptions(name, path, setAsDefault && !c.UseLegacyConfig, options); err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (c *ConfigV1) RemoveRuntime(name string) error {
 	}
 
 	runtimeConfigPath := []string{"plugins", "cri", "containerd", "runtimes", name}
-	for i := 0; i < len(runtimeConfigPath); i++ {
+	for i := range runtimeConfigPath {
 		if runtimes, ok := config.GetPath(runtimeConfigPath[:len(runtimeConfigPath)-i]).(*toml.Tree); ok {
 			if len(runtimes.Keys()) == 0 {
 				config.DeletePath(runtimeConfigPath[:len(runtimeConfigPath)-i])

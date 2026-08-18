@@ -39,7 +39,6 @@ func (r remove) Transform(spec *specs.Spec) error {
 	}
 
 	for _, device := range spec.Devices {
-		device := device
 		if err := r.transformEdits(&device.ContainerEdits); err != nil {
 			return fmt.Errorf("failed to remove edits from device %q: %w", device.Name, err)
 		}

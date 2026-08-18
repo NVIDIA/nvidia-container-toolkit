@@ -162,7 +162,7 @@ var errInvalidFormat = errors.New("invalid format")
 // setFlagToKeyValue converts a --set flag to a key-value pair.
 // The set flag is of the form key[=value], with the value being optional if key refers to a
 // boolean config option.
-func setFlagToKeyValue(setFlag string, setListSeparator string) (string, interface{}, error) {
+func setFlagToKeyValue(setFlag string, setListSeparator string) (string, any, error) {
 	setParts := strings.SplitN(setFlag, "=", 2)
 	key := setParts[0]
 
@@ -222,7 +222,7 @@ func setFlagToKeyValue(setFlag string, setListSeparator string) (string, interfa
 }
 
 func getField(key string) (reflect.Type, error) {
-	s, err := getStruct(reflect.TypeOf(config.Config{}), strings.Split(key, ".")...)
+	s, err := getStruct(reflect.TypeFor[config.Config](), strings.Split(key, ".")...)
 	if err != nil {
 		return nil, err
 	}

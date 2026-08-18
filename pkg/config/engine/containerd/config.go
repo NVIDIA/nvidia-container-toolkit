@@ -32,7 +32,7 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	return c.AddRuntimeWithOptions(name, path, setAsDefault, defaultRuntimeOptions)
 }
 
-func (c *Config) GetDefaultRuntimeOptions() interface{} {
+func (c *Config) GetDefaultRuntimeOptions() any {
 	runtimeNamesForConfig := engine.GetLowLevelRuntimes(c)
 	for _, r := range runtimeNamesForConfig {
 		options := c.GetSubtreeByPath([]string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", r})
@@ -42,7 +42,7 @@ func (c *Config) GetDefaultRuntimeOptions() interface{} {
 		}
 	}
 	c.Logger.Warningf("Could not infer options from runtimes %v", runtimeNamesForConfig)
-	options, _ := toml.TreeFromMap(map[string]interface{}{
+	options, _ := toml.TreeFromMap(map[string]any{
 		"runtime_type":                    c.RuntimeType,
 		"runtime_root":                    "",
 		"runtime_engine":                  "",
@@ -51,7 +51,7 @@ func (c *Config) GetDefaultRuntimeOptions() interface{} {
 	return options
 }
 
-func (c *Config) AddRuntimeWithOptions(name string, path string, setAsDefault bool, options interface{}) error {
+func (c *Config) AddRuntimeWithOptions(name string, path string, setAsDefault bool, options any) error {
 	config := *c.Tree
 
 	config.Set("version", c.Version)
@@ -95,7 +95,7 @@ func (c *Config) getStringArrayValue(path []string) ([]string, error) {
 	if !config.HasPath(path) {
 		return nil, nil
 	}
-	annotationsI, ok := config.GetPath(path).([]interface{})
+	annotationsI, ok := config.GetPath(path).([]any)
 	if !ok {
 		return nil, fmt.Errorf("invalid annotations: %v", annotationsI)
 	}
@@ -143,7 +143,7 @@ func (c *Config) RemoveRuntime(name string) error {
 	}
 
 	runtimePath := []string{"plugins", c.CRIRuntimePluginName, "containerd", "runtimes", name}
-	for i := 0; i < len(runtimePath); i++ {
+	for i := range runtimePath {
 		if runtimes, ok := config.GetPath(runtimePath[:len(runtimePath)-i]).(*toml.Tree); ok {
 			if len(runtimes.Keys()) == 0 {
 				config.DeletePath(runtimePath[:len(runtimePath)-i])

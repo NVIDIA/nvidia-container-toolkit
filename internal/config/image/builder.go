@@ -158,8 +158,8 @@ func WithPreferredVisibleDevicesEnvVars(preferredVisibleDeviceEnvVars ...string)
 	return func(b *builder) error {
 		var normalized []string
 		for _, e := range preferredVisibleDeviceEnvVars {
-			candidates := strings.Split(e, ",")
-			for _, c := range candidates {
+			candidates := strings.SplitSeq(e, ",")
+			for c := range candidates {
 				trimmed := strings.TrimSpace(c)
 				if len(trimmed) > 0 {
 					normalized = append(normalized, trimmed)

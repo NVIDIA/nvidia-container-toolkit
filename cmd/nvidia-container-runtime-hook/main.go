@@ -135,7 +135,7 @@ func doPrestart() {
 		args = append(args, fmt.Sprintf("--imex-channel=%s", imexString))
 	}
 
-	for _, cap := range strings.Split(nvidia.DriverCapabilities, ",") {
+	for cap := range strings.SplitSeq(nvidia.DriverCapabilities, ",") {
 		if len(cap) == 0 {
 			break
 		}
@@ -198,6 +198,6 @@ type logInterceptor struct {
 	logger.NullLogger
 }
 
-func (l *logInterceptor) Infof(format string, args ...interface{}) {
+func (l *logInterceptor) Infof(format string, args ...any) {
 	log.Printf(format, args...)
 }

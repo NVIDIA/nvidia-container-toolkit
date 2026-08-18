@@ -69,7 +69,7 @@ func getHookConfig() (*hookConfig, error) {
 // getConfigOption returns the toml config option associated with the
 // specified struct field.
 func (c *hookConfig) getConfigOption(fieldName string) string {
-	t := reflect.TypeOf(&c)
+	t := reflect.TypeFor[**hookConfig]()
 	f, ok := t.FieldByName(fieldName)
 	if !ok {
 		return fieldName

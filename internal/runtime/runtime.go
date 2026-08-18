@@ -91,13 +91,13 @@ func (r rt) Run(argv []string) (rerr error) {
 	return runtime.Exec(argv)
 }
 
-func (r rt) Errorf(format string, args ...interface{}) {
+func (r rt) Errorf(format string, args ...any) {
 	r.logger.Errorf(format, args...)
 }
 
 // TODO: This should be refactored / combined with parseArgs in logger.
 func hasVersionFlag(args []string) bool {
-	for i := 0; i < len(args); i++ {
+	for i := range args {
 		param := args[i]
 
 		parts := strings.SplitN(param, "=", 2)

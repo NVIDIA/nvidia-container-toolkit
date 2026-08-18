@@ -68,9 +68,9 @@ func (r factory) newConstraintFromRequirement(requirement string) (Constraint, e
 	}
 
 	var terms []Constraint
-	for _, term := range strings.Split(requirement, orSeparator) {
+	for term := range strings.SplitSeq(requirement, orSeparator) {
 		var factors []Constraint
-		for _, factor := range strings.Split(term, andSeparator) {
+		for factor := range strings.SplitSeq(term, andSeparator) {
 			f, err := r.parse(factor)
 			if err != nil {
 				return nil, err

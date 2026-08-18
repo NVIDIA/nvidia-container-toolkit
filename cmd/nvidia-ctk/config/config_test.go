@@ -28,7 +28,7 @@ func TestSetFlagToKeyValue(t *testing.T) {
 		setFlag          string
 		setListSeparator string
 		expectedKey      string
-		expectedValue    interface{}
+		expectedValue    any
 		expectedError    error
 	}{
 		{

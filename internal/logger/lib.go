@@ -29,16 +29,16 @@ type NullLogger struct{}
 var _ Interface = (*NullLogger)(nil)
 
 // Debugf is a no-op for the null logger
-func (l *NullLogger) Debugf(string, ...interface{}) {}
+func (l *NullLogger) Debugf(string, ...any) {}
 
 // Errorf is a no-op for the null logger
-func (l *NullLogger) Errorf(string, ...interface{}) {}
+func (l *NullLogger) Errorf(string, ...any) {}
 
 // Infof is a no-op for the null logger
-func (l *NullLogger) Infof(string, ...interface{}) {}
+func (l *NullLogger) Infof(string, ...any) {}
 
 // Warningf is a no-op for the null logger
-func (l *NullLogger) Warningf(string, ...interface{}) {}
+func (l *NullLogger) Warningf(string, ...any) {}
 
 // Tracef is a no-op for the null logger
-func (l *NullLogger) Tracef(string, ...interface{}) {}
+func (l *NullLogger) Tracef(string, ...any) {}

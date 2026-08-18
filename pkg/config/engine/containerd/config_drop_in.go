@@ -20,6 +20,7 @@ package containerd
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
@@ -204,11 +205,8 @@ func (c *topLevelConfig) ensureImports(dropInFilename string) {
 	currentImports := c.getCurrentImports()
 
 	requiredImport := c.importPattern(dropInFilename)
-	for _, currentImport := range currentImports {
-		// If the requiredImport is already present, then we need not update the config.
-		if currentImport == requiredImport {
-			return
-		}
+	if slices.Contains(currentImports, requiredImport) {
+		return
 	}
 
 	currentImports = append(currentImports, requiredImport)

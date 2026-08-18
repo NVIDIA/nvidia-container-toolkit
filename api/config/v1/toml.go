@@ -181,7 +181,7 @@ func (t *Toml) configNoOverrides() (*Config, error) {
 }
 
 // Unmarshal wraps the toml.Tree Unmarshal function.
-func (t *Toml) Unmarshal(v interface{}) error {
+func (t *Toml) Unmarshal(v any) error {
 	return t.tree.Unmarshal(v)
 }
 
@@ -226,17 +226,17 @@ func (t *Toml) Delete(key string) error {
 }
 
 // Get returns the value for the specified key.
-func (t *Toml) Get(key string) interface{} {
+func (t *Toml) Get(key string) any {
 	return t.tree.Get(key)
 }
 
 // GetDefault returns the value for the specified key and falls back to the default value if the Get call fails
-func (t *Toml) GetDefault(key string, def interface{}) interface{} {
+func (t *Toml) GetDefault(key string, def any) any {
 	return t.tree.GetDefault(key, def)
 }
 
 // Set sets the specified key to the specified value in the TOML config.
-func (t *Toml) Set(key string, value interface{}) {
+func (t *Toml) Set(key string, value any) {
 	t.tree.Set(key, value)
 	t.valuesSet[key] = true
 }
@@ -250,7 +250,7 @@ func (t *Toml) WriteTo(w io.Writer) (int64, error) {
 // commentDefaults applies the required comments for default values to the Toml.
 func (t *Toml) commentDefaults() *Toml {
 	asToml := t.tree
-	commentedDefaults := map[string]interface{}{
+	commentedDefaults := map[string]any{
 		"swarm-resource": "DOCKER_RESOURCE_GPU",
 		"accept-nvidia-visible-devices-envvar-when-unprivileged": true,
 		"accept-nvidia-visible-devices-as-volume-mounts":         false,
@@ -278,7 +278,7 @@ func (t *Toml) commentDefaults() *Toml {
 	return t
 }
 
-func shouldComment(key string, defaultValue interface{}, setTo interface{}) bool {
+func shouldComment(key string, defaultValue any, setTo any) bool {
 	if key == "nvidia-container-cli.user" && defaultValue == setTo && isSuse() {
 		return false
 	}

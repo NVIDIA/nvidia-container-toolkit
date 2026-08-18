@@ -18,9 +18,9 @@ package logger
 
 // Interface defines the API for the logger package
 type Interface interface {
-	Debugf(string, ...interface{})
-	Errorf(string, ...interface{})
-	Infof(string, ...interface{})
-	Warningf(string, ...interface{})
-	Tracef(string, ...interface{})
+	Debugf(string, ...any)
+	Errorf(string, ...any)
+	Infof(string, ...any)
+	Warningf(string, ...any)
+	Tracef(string, ...any)
 }
