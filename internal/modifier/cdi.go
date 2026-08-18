@@ -18,8 +18,10 @@ package modifier
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"tags.cncf.io/container-device-interface/pkg/parser"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
@@ -82,6 +84,7 @@ func (f *Factory) newJitCDIModifier(automaticDevices []string) (oci.SpecModifier
 	if f.image != nil {
 		automaticDevices = append(automaticDevices, withUniqueDevices(gatedDevices(*f.image)).DeviceRequests()...)
 		automaticDevices = append(automaticDevices, withUniqueDevices(imexDevices(*f.image)).DeviceRequests()...)
+		automaticDevices = append(automaticDevices, withUniqueDevices(migCapsDevices(*f.image)).DeviceRequests()...)
 	}
 	return f.newAutomaticCDISpecModifier(automaticDevices)
 }
@@ -155,6 +158,51 @@ func (d imexDevices) DeviceRequests() []string {
 		devices = append(devices, "mode=imex,id="+channelID)
 	}
 	return devices
+}
+
+type migCapsDevices image.CUDA
+
+// DeviceRequests returns the MIG management capabilities requested through the
+// NVIDIA_MIG_CONFIG_DEVICES and NVIDIA_MIG_MONITOR_DEVICES envvars.
+//
+// Only the value "all" is meaningful here: it maps to the global MIG config /
+// monitor capability nodes (nvidia-cap<config>, nvidia-cap<monitor>).
+func (d migCapsDevices) DeviceRequests() []string {
+	i := (image.CUDA)(d)
+
+	var devices []string
+	if strings.EqualFold(i.Getenv(image.EnvVarNvidiaMigConfigDevices), "all") {
+		devices = append(devices, "mode=mig-caps,id=config")
+	}
+	if strings.EqualFold(i.Getenv(image.EnvVarNvidiaMigMonitorDevices), "all") {
+		devices = append(devices, "mode=mig-caps,id=monitor")
+	}
+	if len(devices) == 0 {
+		return nil
+	}
+	// The global MIG config/monitor capability grants GPU-wide access and would
+	// expose sibling MIG instances on the same GPU. Do not grant it to a container
+	// that is scoped to specific MIG devices.
+	if requestsSpecificMigDevices(i) {
+		return nil
+	}
+	return devices
+}
+
+// requestsSpecificMigDevices reports whether the visible device list selects one
+// or more specific MIG devices rather than whole GPUs or "all".
+func requestsSpecificMigDevices(i image.CUDA) bool {
+	visibleDevices := i.VisibleDevices()
+	if slices.Contains(visibleDevices, "all") {
+		return false
+	}
+	for _, d := range visibleDevices {
+		id := device.Identifier(d)
+		if id.IsMigUUID() || id.IsMigIndex() {
+			return true
+		}
+	}
+	return false
 }
 
 // filterAutomaticDevices searches for "automatic" device names in the input slice.
