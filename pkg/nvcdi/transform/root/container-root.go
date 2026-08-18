@@ -38,7 +38,6 @@ func (t containerRootTransformer) Transform(spec *specs.Spec) error {
 	}
 
 	for _, d := range spec.Devices {
-		d := d
 		if err := t.applyToEdits(&d.ContainerEdits); err != nil {
 			return fmt.Errorf("failed to apply root transform to device %s: %w", d.Name, err)
 		}

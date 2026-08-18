@@ -219,7 +219,7 @@ func TestGetFormattedConfig(t *testing.T) {
 func TestTomlContents(t *testing.T) {
 	testCases := []struct {
 		description string
-		contents    map[string]interface{}
+		contents    map[string]any
 		expected    string
 	}{
 		{
@@ -262,7 +262,7 @@ func TestConfigFromToml(t *testing.T) {
 
 	testCases := []struct {
 		description    string
-		contents       map[string]interface{}
+		contents       map[string]any
 		expectedError  error
 		expectedConfig *Config
 	}{
@@ -276,8 +276,8 @@ func TestConfigFromToml(t *testing.T) {
 		},
 		{
 			description: "contents overrides default",
-			contents: map[string]interface{}{
-				"nvidia-container-runtime": map[string]interface{}{
+			contents: map[string]any{
+				"nvidia-container-runtime": map[string]any{
 					"debug": "/some/log/file.log",
 					"mode":  "csv",
 				},
@@ -291,8 +291,8 @@ func TestConfigFromToml(t *testing.T) {
 		},
 		{
 			description: "invalid ldconfig value raises error",
-			contents: map[string]interface{}{
-				"nvidia-container-cli": map[string]interface{}{
+			contents: map[string]any{
+				"nvidia-container-cli": map[string]any{
 					"ldconfig": "/some/ldconfig/path",
 				},
 			},
@@ -300,11 +300,11 @@ func TestConfigFromToml(t *testing.T) {
 		},
 		{
 			description: "feature allows ldconfig override",
-			contents: map[string]interface{}{
-				"nvidia-container-cli": map[string]interface{}{
+			contents: map[string]any{
+				"nvidia-container-cli": map[string]any{
 					"ldconfig": "/some/ldconfig/path",
 				},
-				"features": map[string]interface{}{
+				"features": map[string]any{
 					"allow-ldconfig-from-container": true,
 				},
 			},

@@ -51,7 +51,7 @@ func (c *configAsValueSource) ValueFrom(key string) cli.ValueSource {
 	}
 }
 
-func (c *configAsValueSource) Get(key string) interface{} {
+func (c *configAsValueSource) Get(key string) any {
 	c.Lock()
 	defer c.Unlock()
 

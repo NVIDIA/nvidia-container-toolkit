@@ -16,7 +16,7 @@
 
 package toml
 
-type tomlMap map[string]interface{}
+type tomlMap map[string]any
 
 var _ Loader = (*tomlFile)(nil)
 

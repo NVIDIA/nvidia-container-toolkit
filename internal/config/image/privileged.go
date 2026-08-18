@@ -17,6 +17,8 @@
 package image
 
 import (
+	"slices"
+
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
@@ -37,13 +39,7 @@ func IsPrivileged(s CapabilitiesGetter) bool {
 	if s == nil {
 		return false
 	}
-	for _, c := range s.GetCapabilities() {
-		if c == capSysAdmin {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(s.GetCapabilities(), capSysAdmin)
 }
 
 func (s OCISpec) GetCapabilities() []string {

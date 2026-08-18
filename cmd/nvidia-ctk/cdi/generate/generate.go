@@ -302,10 +302,8 @@ func (m command) validateFlags(c *cli.Command, opts *options) error {
 		return fmt.Errorf("invalid CDI class name: %v", err)
 	}
 
-	for _, hook := range opts.enabledHooks {
-		if hook == "all" {
-			return fmt.Errorf("enabling all hooks is not supported")
-		}
+	if slices.Contains(opts.enabledHooks, "all") {
+		return fmt.Errorf("enabling all hooks is not supported")
 	}
 
 	if slices.Contains(opts.deviceIDs, "none") && !opts.noAllDevice {

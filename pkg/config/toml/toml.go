@@ -56,19 +56,19 @@ func (t *Tree) HasPath(keys []string) bool {
 	return (*toml.Tree)(t).HasPath(keys)
 }
 
-func (t *Tree) Get(key string) interface{} {
+func (t *Tree) Get(key string) any {
 	return toTreeFromRaw((*toml.Tree)(t).Get(key))
 }
 
-func (t *Tree) GetPath(keys []string) interface{} {
+func (t *Tree) GetPath(keys []string) any {
 	return toTreeFromRaw((*toml.Tree)(t).GetPath(keys))
 }
 
-func (t *Tree) SetPath(keys []string, value interface{}) {
+func (t *Tree) SetPath(keys []string, value any) {
 	(*toml.Tree)(t).SetPath(keys, toRawFromTree(value))
 }
 
-func (t *Tree) Set(key string, value interface{}) {
+func (t *Tree) Set(key string, value any) {
 	(*toml.Tree)(t).Set(key, toRawFromTree(value))
 }
 
@@ -84,7 +84,7 @@ func (t *Tree) String() string {
 	return (*toml.Tree)(t).String()
 }
 
-func (t *Tree) ToMap() map[string]interface{} {
+func (t *Tree) ToMap() map[string]any {
 	return (*toml.Tree)(t).ToMap()
 }
 
@@ -92,21 +92,21 @@ func (t *Tree) Raw() *toml.Tree {
 	return (*toml.Tree)(t)
 }
 
-func toRawFromTree(value interface{}) interface{} {
+func toRawFromTree(value any) any {
 	if tree, ok := value.(*Tree); ok {
 		return (*toml.Tree)(tree)
 	}
 	return value
 }
 
-func toTreeFromRaw(value interface{}) interface{} {
+func toTreeFromRaw(value any) any {
 	if tree, ok := value.(*toml.Tree); ok {
 		return (*Tree)(tree)
 	}
 	return value
 }
 
-func TreeFromMap(m map[string]interface{}) (*Tree, error) {
+func TreeFromMap(m map[string]any) (*Tree, error) {
 	return new(func() (*toml.Tree, error) {
 		return toml.TreeFromMap(m)
 	})
@@ -130,11 +130,11 @@ func LoadFile(path string) (*Tree, error) {
 	})
 }
 
-func LoadMap(m map[string]interface{}) (*Tree, error) {
+func LoadMap(m map[string]any) (*Tree, error) {
 	return TreeFromMap(m)
 }
 
-func Marshal(v interface{}) ([]byte, error) {
+func Marshal(v any) ([]byte, error) {
 	return toml.Marshal(v)
 }
 

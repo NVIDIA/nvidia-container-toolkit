@@ -32,7 +32,7 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 	testCases := []struct {
 		setAsDefault               bool
 		runtimeName                string
-		expectedDefaultRuntimeName interface{}
+		expectedDefaultRuntimeName any
 	}{
 		{},
 		{
@@ -58,7 +58,7 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 			SetAsDefault: tc.setAsDefault,
 		}
 
-		config := docker.Config(map[string]interface{}{})
+		config := docker.Config(map[string]any{})
 
 		err := o.UpdateConfig(&config)
 		require.NoError(t, err, "%d: %v", i, tc)
@@ -75,22 +75,22 @@ func TestUpdateConfig(t *testing.T) {
 		config         docker.Config
 		setAsDefault   bool
 		runtimeName    string
-		expectedConfig map[string]interface{}
+		expectedConfig map[string]any
 	}{
 		{
-			config:       map[string]interface{}{},
+			config:       map[string]any{},
 			setAsDefault: false,
-			expectedConfig: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
+			expectedConfig: map[string]any{
+				"runtimes": map[string]any{
+					"nvidia": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
-					"nvidia-cdi": map[string]interface{}{
+					"nvidia-cdi": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.cdi",
 						"args": []string{},
 					},
-					"nvidia-legacy": map[string]interface{}{
+					"nvidia-legacy": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.legacy",
 						"args": []string{},
 					},
@@ -98,20 +98,20 @@ func TestUpdateConfig(t *testing.T) {
 			},
 		},
 		{
-			config:       map[string]interface{}{},
+			config:       map[string]any{},
 			setAsDefault: false,
 			runtimeName:  "NAME",
-			expectedConfig: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"NAME": map[string]interface{}{
+			expectedConfig: map[string]any{
+				"runtimes": map[string]any{
+					"NAME": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
-					"nvidia-cdi": map[string]interface{}{
+					"nvidia-cdi": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.cdi",
 						"args": []string{},
 					},
-					"nvidia-legacy": map[string]interface{}{
+					"nvidia-legacy": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.legacy",
 						"args": []string{},
 					},
@@ -119,26 +119,26 @@ func TestUpdateConfig(t *testing.T) {
 			},
 		},
 		{
-			config: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
+			config: map[string]any{
+				"runtimes": map[string]any{
+					"nvidia": map[string]any{
 						"path": "nvidia-container-runtime",
 						"args": []string{},
 					},
 				},
 			},
 			setAsDefault: false,
-			expectedConfig: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
+			expectedConfig: map[string]any{
+				"runtimes": map[string]any{
+					"nvidia": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
-					"nvidia-cdi": map[string]interface{}{
+					"nvidia-cdi": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.cdi",
 						"args": []string{},
 					},
-					"nvidia-legacy": map[string]interface{}{
+					"nvidia-legacy": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.legacy",
 						"args": []string{},
 					},
@@ -146,29 +146,29 @@ func TestUpdateConfig(t *testing.T) {
 			},
 		},
 		{
-			config: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"not-nvidia": map[string]interface{}{
+			config: map[string]any{
+				"runtimes": map[string]any{
+					"not-nvidia": map[string]any{
 						"path": "some-other-path",
 						"args": []string{},
 					},
 				},
 			},
-			expectedConfig: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"not-nvidia": map[string]interface{}{
+			expectedConfig: map[string]any{
+				"runtimes": map[string]any{
+					"not-nvidia": map[string]any{
 						"path": "some-other-path",
 						"args": []string{},
 					},
-					"nvidia": map[string]interface{}{
+					"nvidia": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
-					"nvidia-cdi": map[string]interface{}{
+					"nvidia-cdi": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.cdi",
 						"args": []string{},
 					},
-					"nvidia-legacy": map[string]interface{}{
+					"nvidia-legacy": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.legacy",
 						"args": []string{},
 					},
@@ -176,23 +176,23 @@ func TestUpdateConfig(t *testing.T) {
 			},
 		},
 		{
-			config: map[string]interface{}{
+			config: map[string]any{
 				"default-runtime": "runc",
 			},
 			setAsDefault: true,
 			runtimeName:  "nvidia",
-			expectedConfig: map[string]interface{}{
+			expectedConfig: map[string]any{
 				"default-runtime": "nvidia",
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
+				"runtimes": map[string]any{
+					"nvidia": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
-					"nvidia-cdi": map[string]interface{}{
+					"nvidia-cdi": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.cdi",
 						"args": []string{},
 					},
-					"nvidia-legacy": map[string]interface{}{
+					"nvidia-legacy": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.legacy",
 						"args": []string{},
 					},
@@ -200,7 +200,7 @@ func TestUpdateConfig(t *testing.T) {
 			},
 		},
 		{
-			config: map[string]interface{}{
+			config: map[string]any{
 				"exec-opts":  []string{"native.cgroupdriver=systemd"},
 				"log-driver": "json-file",
 				"log-opts": map[string]string{
@@ -208,23 +208,23 @@ func TestUpdateConfig(t *testing.T) {
 				},
 				"storage-driver": "overlay2",
 			},
-			expectedConfig: map[string]interface{}{
+			expectedConfig: map[string]any{
 				"exec-opts":  []string{"native.cgroupdriver=systemd"},
 				"log-driver": "json-file",
 				"log-opts": map[string]string{
 					"max-size": "100m",
 				},
 				"storage-driver": "overlay2",
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
+				"runtimes": map[string]any{
+					"nvidia": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
-					"nvidia-cdi": map[string]interface{}{
+					"nvidia-cdi": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.cdi",
 						"args": []string{},
 					},
-					"nvidia-legacy": map[string]interface{}{
+					"nvidia-legacy": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.legacy",
 						"args": []string{},
 					},
@@ -234,7 +234,6 @@ func TestUpdateConfig(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		tc := tc
 
 		o := &container.Options{
 			RuntimeName:  tc.runtimeName,
@@ -258,97 +257,97 @@ func TestUpdateConfig(t *testing.T) {
 func TestRevertConfig(t *testing.T) {
 	testCases := []struct {
 		config         docker.Config
-		expectedConfig map[string]interface{}
+		expectedConfig map[string]any
 	}{
 		{
-			config:         map[string]interface{}{},
-			expectedConfig: map[string]interface{}{},
+			config:         map[string]any{},
+			expectedConfig: map[string]any{},
 		},
 		{
-			config: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
+			config: map[string]any{
+				"runtimes": map[string]any{
+					"nvidia": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
 				},
 			},
-			expectedConfig: map[string]interface{}{},
+			expectedConfig: map[string]any{},
 		},
 		{
-			config: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
+			config: map[string]any{
+				"runtimes": map[string]any{
+					"nvidia": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
 				},
 			},
-			expectedConfig: map[string]interface{}{},
+			expectedConfig: map[string]any{},
 		},
 		{
-			config: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
+			config: map[string]any{
+				"runtimes": map[string]any{
+					"nvidia": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
-					"nvidia-cdi": map[string]interface{}{
+					"nvidia-cdi": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.cdi",
 						"args": []string{},
 					},
-					"nvidia-legacy": map[string]interface{}{
+					"nvidia-legacy": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime.legacy",
 						"args": []string{},
 					},
 				},
 			},
-			expectedConfig: map[string]interface{}{},
+			expectedConfig: map[string]any{},
 		},
 		{
-			config: map[string]interface{}{
+			config: map[string]any{
 				"default-runtime": "nvidia",
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
+				"runtimes": map[string]any{
+					"nvidia": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
 				},
 			},
-			expectedConfig: map[string]interface{}{
+			expectedConfig: map[string]any{
 				"default-runtime": "runc",
 			},
 		},
 		{
-			config: map[string]interface{}{
+			config: map[string]any{
 				"default-runtime": "not-nvidia",
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
+				"runtimes": map[string]any{
+					"nvidia": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
 				},
 			},
-			expectedConfig: map[string]interface{}{
+			expectedConfig: map[string]any{
 				"default-runtime": "not-nvidia",
 			},
 		},
 		{
-			config: map[string]interface{}{
+			config: map[string]any{
 				"exec-opts":  []string{"native.cgroupdriver=systemd"},
 				"log-driver": "json-file",
 				"log-opts": map[string]string{
 					"max-size": "100m",
 				},
 				"storage-driver": "overlay2",
-				"runtimes": map[string]interface{}{
-					"nvidia": map[string]interface{}{
+				"runtimes": map[string]any{
+					"nvidia": map[string]any{
 						"path": "/test/runtime/dir/nvidia-container-runtime",
 						"args": []string{},
 					},
 				},
 			},
-			expectedConfig: map[string]interface{}{
+			expectedConfig: map[string]any{
 				"exec-opts":  []string{"native.cgroupdriver=systemd"},
 				"log-driver": "json-file",
 				"log-opts": map[string]string{
@@ -360,7 +359,6 @@ func TestRevertConfig(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		tc := tc
 		o := &container.Options{}
 		err := o.RevertConfig(&tc.config)
 

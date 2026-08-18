@@ -190,8 +190,8 @@ var getDistIDLike = func() []string {
 	scanner := bufio.NewScanner(releaseFile)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "ID_LIKE=") {
-			value := strings.Trim(strings.TrimPrefix(line, "ID_LIKE="), "\"")
+		if after, ok := strings.CutPrefix(line, "ID_LIKE="); ok {
+			value := strings.Trim(after, "\"")
 			return strings.Split(value, " ")
 		}
 	}

@@ -33,14 +33,14 @@ type Config struct {
 type RuntimeConfigSource interface {
 	DefaultRuntime() string
 	GetRuntimeConfig(string) (RuntimeConfig, error)
-	GetDefaultRuntimeOptions() interface{}
+	GetDefaultRuntimeOptions() any
 	String() string
 }
 
 // A RuntimeConfigDestination allows a runtime with specific settings to be
 // WRITTEN to a config.
 type RuntimeConfigDestination interface {
-	AddRuntimeWithOptions(string, string, bool, interface{}) error
+	AddRuntimeWithOptions(string, string, bool, any) error
 	EnableCDI()
 	RemoveRuntime(string) error
 	UpdateDefaultRuntime(string, string) error
