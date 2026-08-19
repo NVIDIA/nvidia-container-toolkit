@@ -48,7 +48,7 @@ func FromFile(path string) Loader {
 
 // FromMap creates a TOML source for the specified map.
 // If an empty map is passed and empty tomly config is used.
-func FromMap(m map[string]interface{}) Loader {
+func FromMap(m map[string]any) Loader {
 	if m == nil {
 		return Empty
 	}

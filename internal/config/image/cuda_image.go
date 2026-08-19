@@ -154,7 +154,7 @@ func (i CUDA) devicesFromEnvvars(envVars ...string) []string {
 	for _, envVar := range envVars {
 		if devs, ok := i.env[envVar]; ok {
 			isSet = true
-			for _, d := range strings.Split(devs, ",") {
+			for d := range strings.SplitSeq(devs, ",") {
 				trimmed := strings.TrimSpace(d)
 				if len(trimmed) == 0 {
 					continue
@@ -183,7 +183,7 @@ func (i CUDA) GetDriverCapabilities() DriverCapabilities {
 	env := i.env[EnvVarNvidiaDriverCapabilities]
 
 	capabilities := make(DriverCapabilities)
-	for _, c := range strings.Split(env, ",") {
+	for c := range strings.SplitSeq(env, ",") {
 		capabilities[DriverCapability(c)] = true
 	}
 

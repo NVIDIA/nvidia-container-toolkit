@@ -313,11 +313,11 @@ runtime_type = "oci"
 				content, err := os.ReadFile(configPath)
 				require.NoError(t, err)
 
-				var dockerConfig map[string]interface{}
+				var dockerConfig map[string]any
 				err = json.Unmarshal(content, &dockerConfig)
 				require.NoError(t, err)
 
-				runtimes := dockerConfig["runtimes"].(map[string]interface{})
+				runtimes := dockerConfig["runtimes"].(map[string]any)
 				require.Contains(t, runtimes, "nvidia")
 				// Should NOT have legacy runtimes - only the single specified runtime is added
 				require.NotContains(t, runtimes, "nvidia-cdi")
@@ -337,7 +337,7 @@ runtime_type = "oci"
 				configPath := filepath.Join(testRoot, "etc/docker/daemon.json")
 				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
 
-				existingConfig := map[string]interface{}{
+				existingConfig := map[string]any{
 					"log-driver": "json-file",
 					"log-opts": map[string]string{
 						"max-size": "100m",
@@ -355,7 +355,7 @@ runtime_type = "oci"
 				content, err := os.ReadFile(configPath)
 				require.NoError(t, err)
 
-				var dockerConfig map[string]interface{}
+				var dockerConfig map[string]any
 				err = json.Unmarshal(content, &dockerConfig)
 				require.NoError(t, err)
 
@@ -365,7 +365,7 @@ runtime_type = "oci"
 
 				// Verify nvidia runtime added and set as default
 				require.Equal(t, "nvidia", dockerConfig["default-runtime"])
-				runtimes := dockerConfig["runtimes"].(map[string]interface{})
+				runtimes := dockerConfig["runtimes"].(map[string]any)
 				require.Contains(t, runtimes, "nvidia")
 
 				return nil
@@ -383,11 +383,11 @@ runtime_type = "oci"
 				content, err := os.ReadFile(configPath)
 				require.NoError(t, err)
 
-				var dockerConfig map[string]interface{}
+				var dockerConfig map[string]any
 				err = json.Unmarshal(content, &dockerConfig)
 				require.NoError(t, err)
 
-				features := dockerConfig["features"].(map[string]interface{})
+				features := dockerConfig["features"].(map[string]any)
 				require.Equal(t, true, features["cdi"])
 
 				return nil
@@ -408,17 +408,17 @@ runtime_type = "oci"
 				content, err := os.ReadFile(hookPath)
 				require.NoError(t, err)
 
-				var hook map[string]interface{}
+				var hook map[string]any
 				err = json.Unmarshal(content, &hook)
 				require.NoError(t, err)
 
 				require.Equal(t, "1.0.0", hook["version"])
 				require.Contains(t, hook["stages"], "prestart")
 
-				hookSpec := hook["hook"].(map[string]interface{})
+				hookSpec := hook["hook"].(map[string]any)
 				require.Equal(t, defaultNVIDIARuntimeHookExpecutablePath, hookSpec["path"])
 
-				when := hook["when"].(map[string]interface{})
+				when := hook["when"].(map[string]any)
 				require.Equal(t, true, when["always"])
 
 				return nil
@@ -467,12 +467,12 @@ runtime_type = "oci"
 				content, err := os.ReadFile(configPath)
 				require.NoError(t, err)
 
-				var dockerConfig map[string]interface{}
+				var dockerConfig map[string]any
 				err = json.Unmarshal(content, &dockerConfig)
 				require.NoError(t, err)
 
 				// Should have nvidia runtime added
-				runtimes := dockerConfig["runtimes"].(map[string]interface{})
+				runtimes := dockerConfig["runtimes"].(map[string]any)
 				require.Contains(t, runtimes, "nvidia")
 
 				return nil

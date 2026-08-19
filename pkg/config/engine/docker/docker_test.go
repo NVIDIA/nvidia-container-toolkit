@@ -29,7 +29,7 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 		config                     Config
 		runtimeName                string
 		setAsDefault               bool
-		expectedDefaultRuntimeName interface{}
+		expectedDefaultRuntimeName any
 	}{
 		{
 			setAsDefault:               false,
@@ -41,7 +41,7 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 			expectedDefaultRuntimeName: "NAME",
 		},
 		{
-			config: map[string]interface{}{
+			config: map[string]any{
 				"default-runtime": "ALREADY_SET",
 			},
 			runtimeName:                "NAME",
@@ -49,7 +49,7 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 			expectedDefaultRuntimeName: "ALREADY_SET",
 		},
 		{
-			config: map[string]interface{}{
+			config: map[string]any{
 				"default-runtime": "ALREADY_SET",
 			},
 			runtimeName:                "NAME",
@@ -61,7 +61,7 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("test case %d", i), func(t *testing.T) {
 			if tc.config == nil {
-				tc.config = make(map[string]interface{})
+				tc.config = make(map[string]any)
 			}
 			err := tc.config.AddRuntime(tc.runtimeName, "", tc.setAsDefault)
 			require.NoError(t, err)
@@ -76,21 +76,21 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 	testCases := []struct {
 		config         Config
 		runtimes       map[string]string
-		expectedConfig map[string]interface{}
+		expectedConfig map[string]any
 	}{
 		{
-			config: map[string]interface{}{},
+			config: map[string]any{},
 			runtimes: map[string]string{
 				"runtime1": "/test/runtime/dir/runtime1",
 				"runtime2": "/test/runtime/dir/runtime2",
 			},
-			expectedConfig: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"runtime1": map[string]interface{}{
+			expectedConfig: map[string]any{
+				"runtimes": map[string]any{
+					"runtime1": map[string]any{
 						"path": "/test/runtime/dir/runtime1",
 						"args": []string{},
 					},
-					"runtime2": map[string]interface{}{
+					"runtime2": map[string]any{
 						"path": "/test/runtime/dir/runtime2",
 						"args": []string{},
 					},
@@ -98,9 +98,9 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 			},
 		},
 		{
-			config: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"runtime1": map[string]interface{}{
+			config: map[string]any{
+				"runtimes": map[string]any{
+					"runtime1": map[string]any{
 						"path": "runtime1",
 						"args": []string{},
 					},
@@ -110,13 +110,13 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 				"runtime1": "/test/runtime/dir/runtime1",
 				"runtime2": "/test/runtime/dir/runtime2",
 			},
-			expectedConfig: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"runtime1": map[string]interface{}{
+			expectedConfig: map[string]any{
+				"runtimes": map[string]any{
+					"runtime1": map[string]any{
 						"path": "/test/runtime/dir/runtime1",
 						"args": []string{},
 					},
-					"runtime2": map[string]interface{}{
+					"runtime2": map[string]any{
 						"path": "/test/runtime/dir/runtime2",
 						"args": []string{},
 					},
@@ -124,9 +124,9 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 			},
 		},
 		{
-			config: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"not-nvidia": map[string]interface{}{
+			config: map[string]any{
+				"runtimes": map[string]any{
+					"not-nvidia": map[string]any{
 						"path": "some-other-path",
 						"args": []string{},
 					},
@@ -135,13 +135,13 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 			runtimes: map[string]string{
 				"runtime1": "/test/runtime/dir/runtime1",
 			},
-			expectedConfig: map[string]interface{}{
-				"runtimes": map[string]interface{}{
-					"not-nvidia": map[string]interface{}{
+			expectedConfig: map[string]any{
+				"runtimes": map[string]any{
+					"not-nvidia": map[string]any{
 						"path": "some-other-path",
 						"args": []string{},
 					},
-					"runtime1": map[string]interface{}{
+					"runtime1": map[string]any{
 						"path": "/test/runtime/dir/runtime1",
 						"args": []string{},
 					},
@@ -149,7 +149,7 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 			},
 		},
 		{
-			config: map[string]interface{}{
+			config: map[string]any{
 				"exec-opts":  []string{"native.cgroupdriver=systemd"},
 				"log-driver": "json-file",
 				"log-opts": map[string]string{
@@ -160,15 +160,15 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 			runtimes: map[string]string{
 				"runtime1": "/test/runtime/dir/runtime1",
 			},
-			expectedConfig: map[string]interface{}{
+			expectedConfig: map[string]any{
 				"exec-opts":  []string{"native.cgroupdriver=systemd"},
 				"log-driver": "json-file",
 				"log-opts": map[string]string{
 					"max-size": "100m",
 				},
 				"storage-driver": "overlay2",
-				"runtimes": map[string]interface{}{
-					"runtime1": map[string]interface{}{
+				"runtimes": map[string]any{
+					"runtime1": map[string]any{
 						"path": "/test/runtime/dir/runtime1",
 						"args": []string{},
 					},
@@ -176,7 +176,7 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 			},
 		},
 		{
-			config: map[string]interface{}{
+			config: map[string]any{
 				"exec-opts":  []string{"native.cgroupdriver=systemd"},
 				"log-driver": "json-file",
 				"log-opts": map[string]string{
@@ -184,7 +184,7 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 				},
 				"storage-driver": "overlay2",
 			},
-			expectedConfig: map[string]interface{}{
+			expectedConfig: map[string]any{
 				"exec-opts":  []string{"native.cgroupdriver=systemd"},
 				"log-driver": "json-file",
 				"log-opts": map[string]string{
@@ -215,9 +215,9 @@ func TestUpdateConfigRuntimes(t *testing.T) {
 }
 
 func TestGetRuntimeConfig(t *testing.T) {
-	c := map[string]interface{}{
-		"runtimes": map[string]interface{}{
-			"nvidia": map[string]interface{}{
+	c := map[string]any{
+		"runtimes": map[string]any{
+			"nvidia": map[string]any{
 				"path": "nvidia-container-runtime",
 				"args": []string{},
 			},

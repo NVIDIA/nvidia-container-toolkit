@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -59,11 +60,8 @@ func generateOciHook(executablePath string) podmanHook {
 
 	dir := filepath.Dir(executablePath)
 	var found bool
-	for _, pathPart := range pathParts {
-		if pathPart == dir {
-			found = true
-			break
-		}
+	if slices.Contains(pathParts, dir) {
+		found = true
 	}
 	if !found {
 		pathParts = append(pathParts, dir)

@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"maps"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -106,9 +107,7 @@ func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 				"PATH": strings.Join([]string{destDir, "$PATH"}, ":"),
 			},
 		}
-		for k, v := range executable.env {
-			w.Envvars[k] = v
-		}
+		maps.Copy(w.Envvars, executable.env)
 
 		if len(t.defaultRuntimeExecutablePath) > 0 {
 			w.DefaultRuntimeExecutablePath = t.defaultRuntimeExecutablePath

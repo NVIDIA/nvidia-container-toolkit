@@ -31,11 +31,11 @@ const (
 
 // Config defines a docker config file.
 // TODO: This should not be public, but we need to access it from the tests in tools/container/docker
-type Config map[string]interface{}
+type Config map[string]any
 
 var _ engine.Interface = (*Config)(nil)
 
-type dockerRuntime map[string]interface{}
+type dockerRuntime map[string]any
 
 var _ engine.RuntimeConfig = (*dockerRuntime)(nil)
 
@@ -73,13 +73,13 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	config := *c
 
 	// Read the existing runtimes
-	runtimes := make(map[string]interface{})
+	runtimes := make(map[string]any)
 	if _, exists := config["runtimes"]; exists {
-		runtimes = config["runtimes"].(map[string]interface{})
+		runtimes = config["runtimes"].(map[string]any)
 	}
 
 	// Add / update the runtime definitions
-	runtimes[name] = map[string]interface{}{
+	runtimes[name] = map[string]any{
 		"path": path,
 		"args": []string{},
 	}
@@ -136,7 +136,7 @@ func (c *Config) RemoveRuntime(name string) error {
 	}
 
 	if _, exists := config["runtimes"]; exists {
-		runtimes := config["runtimes"].(map[string]interface{})
+		runtimes := config["runtimes"].(map[string]any)
 
 		delete(runtimes, name)
 
@@ -202,11 +202,11 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 
 	cfg := *c
 
-	var runtimes map[string]interface{}
+	var runtimes map[string]any
 	if _, ok := cfg["runtimes"]; ok {
-		runtimes = cfg["runtimes"].(map[string]interface{})
+		runtimes = cfg["runtimes"].(map[string]any)
 		if r, ok := runtimes[name]; ok {
-			dr := dockerRuntime(r.(map[string]interface{}))
+			dr := dockerRuntime(r.(map[string]any))
 			return &dr, nil
 		}
 	}

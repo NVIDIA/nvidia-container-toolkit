@@ -164,8 +164,8 @@ func TestCompatLibs(t *testing.T) {
 				target := filepath.Join(containerRootDir, name)
 				require.NoError(t, os.MkdirAll(filepath.Dir(target), 0755))
 
-				if strings.HasPrefix(contents, "symlink=") {
-					require.NoError(t, os.Symlink(strings.TrimPrefix(contents, "symlink="), target))
+				if after, ok := strings.CutPrefix(contents, "symlink="); ok {
+					require.NoError(t, os.Symlink(after, target))
 					continue
 				}
 

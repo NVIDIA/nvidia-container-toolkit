@@ -102,7 +102,7 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 	return c.AddRuntimeWithOptions(name, path, setAsDefault, defaultRuntimeOptions)
 }
 
-func (c *Config) GetDefaultRuntimeOptions() interface{} {
+func (c *Config) GetDefaultRuntimeOptions() any {
 	runtimeNamesForConfig := engine.GetLowLevelRuntimes(c)
 	for _, r := range runtimeNamesForConfig {
 		options := c.GetSubtreeByPath([]string{"crio", "runtime", "runtimes", r})
@@ -115,7 +115,7 @@ func (c *Config) GetDefaultRuntimeOptions() interface{} {
 	return nil
 }
 
-func (c *Config) AddRuntimeWithOptions(name string, path string, setAsDefault bool, options interface{}) error {
+func (c *Config) AddRuntimeWithOptions(name string, path string, setAsDefault bool, options any) error {
 	config := *c.Tree
 
 	if options != nil {
@@ -163,7 +163,7 @@ func (c *Config) RemoveRuntime(name string) error {
 
 	runtimeClassPath := []string{"crio", "runtime", "runtimes", name}
 	config.DeletePath(runtimeClassPath)
-	for i := 0; i < len(runtimeClassPath); i++ {
+	for i := range runtimeClassPath {
 		remainingPath := runtimeClassPath[:len(runtimeClassPath)-i]
 		if entry, ok := config.GetPath(remainingPath).(*toml.Tree); ok {
 			if len(entry.Keys()) != 0 {

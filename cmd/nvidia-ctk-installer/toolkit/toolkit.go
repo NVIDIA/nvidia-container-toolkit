@@ -408,7 +408,7 @@ func (t *Installer) installToolkitConfig(c *cli.Command, opts *Options) error {
 	// Use the driver run root as the root:
 	driverLdconfigPath := config.NormalizeLDConfigPath("@" + filepath.Join(opts.DriverRoot, strings.TrimPrefix(ldconfigPath, "@/")))
 
-	configValues := map[string]interface{}{
+	configValues := map[string]any{
 		// Set the options in the root toml table
 		"accept-nvidia-visible-devices-envvar-when-unprivileged": opts.acceptNVIDIAVisibleDevicesWhenUnprivileged,
 		"accept-nvidia-visible-devices-as-volume-mounts":         opts.acceptNVIDIAVisibleDevicesAsVolumeMounts,
@@ -437,7 +437,7 @@ func (t *Installer) installToolkitConfig(c *cli.Command, opts *Options) error {
 	}
 
 	// Set the optional config options
-	optionalConfigValues := map[string]interface{}{
+	optionalConfigValues := map[string]any{
 		"nvidia-container-runtime.debug":                         opts.ContainerRuntimeDebug,
 		"nvidia-container-runtime.log-level":                     opts.ContainerRuntimeLogLevel,
 		"nvidia-container-runtime.mode":                          opts.ContainerRuntimeMode,

@@ -150,12 +150,12 @@ func (o *Options) containerAnnotationsFromCDIPrefixes() []string {
 	return annotations
 }
 
-func (o *Options) runtimeConfigOverride() (map[string]interface{}, error) {
+func (o *Options) runtimeConfigOverride() (map[string]any, error) {
 	if o.runtimeConfigOverrideJSON == "" {
 		return nil, nil
 	}
 
-	runtimeOptions := make(map[string]interface{})
+	runtimeOptions := make(map[string]any)
 	if err := json.Unmarshal([]byte(o.runtimeConfigOverrideJSON), &runtimeOptions); err != nil {
 		return nil, fmt.Errorf("failed to read %v as JSON: %w", o.runtimeConfigOverrideJSON, err)
 	}

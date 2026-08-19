@@ -17,6 +17,7 @@
 package image
 
 import (
+	"maps"
 	"path/filepath"
 	"testing"
 
@@ -674,9 +675,7 @@ func TestVisibleDevices(t *testing.T) {
 			if tc.envvarDevices != "" {
 				env[EnvVarNvidiaVisibleDevices] = tc.envvarDevices
 			}
-			for k, v := range tc.env {
-				env[k] = v
-			}
+			maps.Copy(env, tc.env)
 
 			image, err := New(
 				WithEnvMap(env),

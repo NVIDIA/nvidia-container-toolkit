@@ -91,7 +91,7 @@ func (m allPossible) DeviceNodes() ([]deviceNode, error) {
 		return nil, fmt.Errorf("failed to get control device nodes: %v", err)
 	}
 
-	for gpu := 0; gpu < count; gpu++ {
+	for gpu := range count {
 		deviceNodes = append(deviceNodes, m.getGPUDeviceNodes(gpu)...)
 		deviceNodes = append(deviceNodes, m.getNVCapDeviceNodes(gpu)...)
 	}

@@ -26,7 +26,7 @@ func TestRuntimeOptions(t *testing.T) {
 	testCases := []struct {
 		description   string
 		options       Options
-		expected      map[string]interface{}
+		expected      map[string]any
 		expectedError error
 	}{
 		{
@@ -37,7 +37,7 @@ func TestRuntimeOptions(t *testing.T) {
 			options: Options{
 				runtimeConfigOverrideJSON: "{}",
 			},
-			expected:      map[string]interface{}{},
+			expected:      map[string]any{},
 			expectedError: nil,
 		},
 		{
@@ -45,7 +45,7 @@ func TestRuntimeOptions(t *testing.T) {
 			options: Options{
 				runtimeConfigOverrideJSON: "{\"SystemdCgroup\": true}",
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"SystemdCgroup": true,
 			},
 			expectedError: nil,
@@ -55,7 +55,7 @@ func TestRuntimeOptions(t *testing.T) {
 			options: Options{
 				runtimeConfigOverrideJSON: "{\"SystemdCgroup\": false}",
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"SystemdCgroup": false,
 			},
 			expectedError: nil,

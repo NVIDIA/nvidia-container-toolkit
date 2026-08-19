@@ -17,6 +17,7 @@
 package image
 
 import (
+	"slices"
 	"sort"
 	"strings"
 )
@@ -51,7 +52,7 @@ var (
 func NewDriverCapabilities(capabilities ...string) DriverCapabilities {
 	dc := make(DriverCapabilities)
 	for _, capability := range capabilities {
-		for _, c := range strings.Split(capability, ",") {
+		for c := range strings.SplitSeq(capability, ",") {
 			trimmed := strings.TrimSpace(c)
 			if trimmed == "" {
 				continue
@@ -78,12 +79,7 @@ func (c DriverCapabilities) Any(capabilities ...DriverCapability) bool {
 	if c.IsAll() {
 		return true
 	}
-	for _, cap := range capabilities {
-		if c.Has(cap) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(capabilities, c.Has)
 }
 
 // List returns the list of driver capabilities.
