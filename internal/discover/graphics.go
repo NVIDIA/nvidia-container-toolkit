@@ -55,29 +55,58 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, h
 		return nil, fmt.Errorf("failed to construct discoverer for graphics libraries: %w", err)
 	}
 
-	configs := NewMounts(
+	binaries := NewMounts(
 		logger,
-		driver.Configs(),
+		lookup.NewExecutableLocator(logger, driver.Root),
 		driver.Root,
 		[]string{
-			"glvnd/egl_vendor.d/10_nvidia.json",
-			"egl/egl_external_platform.d/15_nvidia_gbm.json",
-			"egl/egl_external_platform.d/10_nvidia_wayland.json",
-			"egl/egl_external_platform.d/09_nvidia_wayland2.json",
-			"nvidia/nvoptix.bin",
-			"X11/xorg.conf.d/10-nvidia.conf",
-			"X11/xorg.conf.d/nvidia-drm-outputclass.conf",
-			"OpenCL/vendors/nvidia.icd",
+			"nvidia-xconfig",
 		},
 	)
 
 	discover := Merge(
 		libraries,
-		configs,
+		binaries,
+		newGraphicsConfigsDiscoverer(logger, driver),
 		newVulkanConfigsDiscover(logger, driver),
 	)
 
 	return discover, nil
+}
+
+// newGraphicsConfigsDiscoverer creates a discoverer for graphics-related config
+// files such as the EGL vendor and external platform ICD files.
+// The config files are mounted at the standard locations in the container so
+// that they are discovered by the loaders in the container even if they are
+// installed at non-standard locations on the host.
+func newGraphicsConfigsDiscoverer(logger logger.Interface, driver *root.Driver) Discover {
+	shareConfigs := WithCache(&mountsToContainerPath{
+		logger:  logger,
+		locator: driver.Configs(),
+		required: []string{
+			"glvnd/egl_vendor.d/10_nvidia.json",
+			"egl/egl_external_platform.d/15_nvidia_gbm.json",
+			"egl/egl_external_platform.d/10_nvidia_wayland.json",
+			"egl/egl_external_platform.d/09_nvidia_wayland2.json",
+			"egl/egl_external_platform.d/20_nvidia_xcb.json",
+			"egl/egl_external_platform.d/20_nvidia_xlib.json",
+			"nvidia/nvoptix.bin",
+			"X11/xorg.conf.d/10-nvidia.conf",
+			"X11/xorg.conf.d/nvidia-drm-outputclass.conf",
+		},
+		containerRoot: "/usr/share",
+	})
+
+	etcConfigs := WithCache(&mountsToContainerPath{
+		logger:  logger,
+		locator: driver.Configs(),
+		required: []string{
+			"OpenCL/vendors/nvidia.icd",
+		},
+		containerRoot: "/etc",
+	})
+
+	return Merge(shareConfigs, etcConfigs)
 }
 
 // newVulkanConfigsDiscover creates a discoverer for vulkan ICD files.
@@ -101,12 +130,12 @@ func newVulkanConfigsDiscover(logger logger.Interface, driver *root.Driver) Disc
 	case "arm64":
 		required = append(required, "vulkan/icd.d/nvidia_icd.aarch64.json")
 	}
-	return &mountsToContainerPath{
+	return WithCache(&mountsToContainerPath{
 		logger:        logger,
 		locator:       locator,
 		required:      required,
 		containerRoot: "/etc",
-	}
+	})
 }
 
 type graphicsDriverLibraries struct {
@@ -135,11 +164,14 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 		driver.Libraries(),
 		driver.Root,
 		[]string{
-			// The libnvidia-egl-gbm and libnvidia-egl-wayland libraries do not
-			// have the RM version. Use the *.* pattern to match X.Y.Z versions.
+			// The EGL platform libraries such as libnvidia-egl-gbm and
+			// libnvidia-egl-wayland do not have the RM version. Use the *.*
+			// pattern to match X.Y.Z versions.
 			"libnvidia-egl-gbm.so.*.*",
 			"libnvidia-egl-wayland.so.*.*",
 			"libnvidia-egl-wayland2.so.*.*",
+			"libnvidia-egl-xcb.so.*.*",
+			"libnvidia-egl-xlib.so.*.*",
 			// We include the following libraries to have them available for
 			// symlink creation below:
 			// If CDI injection is used, these should already be detected as:
@@ -151,6 +183,10 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 		},
 	)
 
+	// The X.Org driver modules are mounted at their host paths. This keeps any
+	// ModulePath specified in the xorg.conf.d config file that is mounted into
+	// the container valid and means that modules installed to the default X.Org
+	// module path on the host are also found there in the container.
 	xorgLibraries := NewMounts(
 		logger,
 		lookup.NewFileLocator(
@@ -231,7 +267,7 @@ func (d graphicsDriverLibraries) Hooks() ([]Hook, error) {
 		return nil, nil
 	}
 
-	hook := d.hookCreator.Create("create-symlinks", links...)
+	hook := d.hookCreator.Create(CreateSymlinksHook, links...)
 
 	return hook.Hooks()
 }
