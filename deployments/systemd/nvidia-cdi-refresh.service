@@ -29,6 +29,13 @@ Environment=NVIDIA_CTK_CDI_OUTPUT_FILE_PATH=/var/run/cdi/nvidia.yaml
 EnvironmentFile=-/etc/nvidia-container-toolkit/nvidia-cdi-refresh.env
 ExecCondition=/bin/sh -c '/usr/bin/grep -qE "/(nvidia|nvidia-current)[.]ko" /lib/modules/%v/modules.dep || [ -e /dev/dxg ]'
 ExecStart=/bin/sh -c '/usr/bin/nvidia-smi -L || /usr/sbin/nvidia-smi -L || /usr/lib/wsl/lib/nvidia-smi -L'
+# Create any missing NVIDIA control device nodes (loading the kernel modules
+# they require) before generating the CDI specification; nothing else is
+# guaranteed to create them. Best-effort, and skipped on WSL where /dev/dxg is
+# used instead, as well as on Tegra platforms using the nvgpu kernel module.
+# If module loading fails (for example while a driver upgrade has replaced the
+# on-disk modules) still create the nodes for the modules that are loaded.
+ExecStart=-/bin/sh -c '[ -e /dev/dxg ] || /usr/bin/grep -q "^nvgpu " /proc/modules || /usr/bin/nvidia-ctk system create-device-nodes --control-devices --load-kernel-modules || /usr/bin/nvidia-ctk system create-device-nodes --control-devices'
 ExecStart=/usr/bin/nvidia-ctk cdi generate
 CapabilityBoundingSet=CAP_SYS_MODULE CAP_SYS_ADMIN CAP_MKNOD
 # We set the service to restart on failure to ensure that a CDI spec is
