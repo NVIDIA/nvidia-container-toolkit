@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"golang.org/x/mod/semver"
+	"github.com/Masterminds/semver/v3"
 )
 
 // Integration tests for Docker runtime
@@ -491,7 +491,7 @@ EOF`)
 
 		It("should fail when using the nvidia-container-runtime-hook", Label("legacy"), func(ctx context.Context) {
 			// Prior to Docker v29.2.0, the --gpus flag would inject the nvidia-container-runtime-hook.
-			if semver.Compare(dockerVersion, "v29.2.0") >= 0 {
+			if semver.MustParse(dockerVersion).Compare(semver.MustParse("v29.2.0")) >= 0 {
 				Skip(fmt.Sprintf("This test requires Docker < v29.2.0. Found %s", dockerVersion))
 			}
 			output, stderr, err := runner.Run("docker run --rm --runtime=runc --gpus=all firmware-test")
@@ -503,7 +503,7 @@ EOF`)
 		It("should not fail when the --gpus flag is handled as a CDI request", func(ctx context.Context) {
 			// As of Docker v29.2.0, the --gpus flag is handled as a CDI
 			// device request if CDI specs are available.
-			if semver.Compare(dockerVersion, "v29.2.0") < 0 {
+			if semver.MustParse(dockerVersion).Compare(semver.MustParse("v29.2.0")) < 0 {
 				Skip(fmt.Sprintf("This test requires Docker >= v29.2.0. Found %s", dockerVersion))
 			}
 			output, stderr, err := runner.Run("docker run --rm --runtime=runc --gpus=all firmware-test")

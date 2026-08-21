@@ -18,9 +18,8 @@ package constraints
 
 import (
 	"fmt"
-	"strings"
 
-	"golang.org/x/mod/semver"
+	"github.com/Masterminds/semver/v3"
 )
 
 // Property represents a property that is used to check requirements
@@ -111,20 +110,23 @@ func (p versionProperty) CompareTo(other string) (int, error) {
 		return 0, fmt.Errorf("invailid value for %v: %v", p.name, err)
 	}
 
-	vValue := ensurePrefix(p.value, "v")
-	vOther := ensurePrefix(other, "v")
-	return semver.Compare(vValue, vOther), nil
+	value, err := semver.NewVersion(p.value)
+	if err != nil {
+		return 0, fmt.Errorf("invalid value for %v: %w", p.name, err)
+	}
+	otherVersion, err := semver.NewVersion(other)
+	if err != nil {
+		return 0, fmt.Errorf("invalid value for %v: %w", p.name, err)
+	}
+	return value.Compare(otherVersion), nil
 }
 
 // Validate checks whether the supplied value is a valid semantic version
 func (p versionProperty) Validate(value string) error {
-	if !semver.IsValid(ensurePrefix(value, "v")) {
-		return fmt.Errorf("invailid value %v; expected a valid version string", value)
+	_, err := semver.NewVersion(value)
+	if err != nil {
+		return fmt.Errorf("invalid version string: %w", err)
 	}
 
 	return nil
-}
-
-func ensurePrefix(s string, prefix string) string {
-	return prefix + strings.TrimPrefix(s, prefix)
 }
