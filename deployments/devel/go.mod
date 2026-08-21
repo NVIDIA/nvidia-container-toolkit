@@ -1,6 +1,6 @@
 module github.com/NVIDIA/k8s-device-plugin/deployments/devel
 
-go 1.25
+go 1.26
 
 require (
 	github.com/google/go-licenses/v2 v2.0.1
