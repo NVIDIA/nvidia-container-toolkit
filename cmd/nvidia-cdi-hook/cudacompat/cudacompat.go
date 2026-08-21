@@ -155,7 +155,7 @@ func (m command) getContainerForwardCompatDir(containerRoot *root, o *options) (
 
 	libs, err := containerRoot.globFiles(filepath.Join(o.cudaCompatContainerRoot, "libcuda.so.*.*"))
 	if err != nil {
-		m.logger.Warningf("Failed to find CUDA compat library: %w", err)
+		m.logger.Warningf("Failed to find CUDA compat library: %v", err)
 		return "", nil
 	}
 
@@ -216,7 +216,7 @@ func (m command) useCompatLibraries(libcudaCompatFile *os.File, hostDriverVersio
 	// libraries in the container should be used over the host driver libraries.
 	cudaCompatHeader, err := GetCUDACompatElfHeaderFromReader(libcudaCompatFile)
 	if err != nil {
-		m.logger.Warningf("failed to get ELF header from CUDA compat library: %w", err)
+		m.logger.Warningf("failed to get ELF header from CUDA compat library: %v", err)
 	}
 	if cudaCompatHeader != nil {
 		return cudaCompatHeader.UseCompat(compatDriverSemver, hostDriverSemver, hostCUDASemver), nil
