@@ -17,6 +17,7 @@
 package discover
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -25,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -185,6 +187,78 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 			require.EqualValues(t, tc.expectedHooks, hooks)
 			require.Len(t, tc.libraries.calls.Mounts, 2)
 			require.Len(t, tc.libraries.calls.Hooks, 0)
+		})
+	}
+}
+
+func TestGraphicsConfigsDiscoverer(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	testCases := []struct {
+		description string
+		files       []string
+		// expected maps the path of the file in the driver root to the path
+		// that it is expected to be mounted at in the container.
+		expected map[string]string
+	}{
+		{
+			description: "config files in the standard locations",
+			files: []string{
+				"/usr/share/glvnd/egl_vendor.d/10_nvidia.json",
+				"/usr/share/egl/egl_external_platform.d/20_nvidia_xcb.json",
+				"/usr/share/X11/xorg.conf.d/10-nvidia.conf",
+				"/etc/OpenCL/vendors/nvidia.icd",
+			},
+			expected: map[string]string{
+				"/usr/share/glvnd/egl_vendor.d/10_nvidia.json":              "/usr/share/glvnd/egl_vendor.d/10_nvidia.json",
+				"/usr/share/egl/egl_external_platform.d/20_nvidia_xcb.json": "/usr/share/egl/egl_external_platform.d/20_nvidia_xcb.json",
+				"/usr/share/X11/xorg.conf.d/10-nvidia.conf":                 "/usr/share/X11/xorg.conf.d/10-nvidia.conf",
+				"/etc/OpenCL/vendors/nvidia.icd":                            "/etc/OpenCL/vendors/nvidia.icd",
+			},
+		},
+		{
+			description: "config files in non-standard locations are mounted at the standard locations",
+			files: []string{
+				"/usr/local/share/glvnd/egl_vendor.d/10_nvidia.json",
+				"/usr/local/share/egl/egl_external_platform.d/20_nvidia_xlib.json",
+				"/etc/X11/xorg.conf.d/nvidia-drm-outputclass.conf",
+			},
+			expected: map[string]string{
+				"/usr/local/share/glvnd/egl_vendor.d/10_nvidia.json":               "/usr/share/glvnd/egl_vendor.d/10_nvidia.json",
+				"/usr/local/share/egl/egl_external_platform.d/20_nvidia_xlib.json": "/usr/share/egl/egl_external_platform.d/20_nvidia_xlib.json",
+				"/etc/X11/xorg.conf.d/nvidia-drm-outputclass.conf":                 "/usr/share/X11/xorg.conf.d/nvidia-drm-outputclass.conf",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			// The config search paths include the XDG data dirs. These are
+			// set explicitly to ensure that the test is not affected by the
+			// environment that it is run in.
+			t.Setenv("XDG_DATA_DIRS", "/usr/local/share:/usr/share")
+
+			driverRoot := t.TempDir()
+			for _, f := range tc.files {
+				path := filepath.Join(driverRoot, f)
+				require.NoError(t, os.MkdirAll(filepath.Dir(path), 0755))
+				require.NoError(t, os.WriteFile(path, []byte{}, 0600))
+			}
+
+			driver := root.New(
+				root.WithLogger(logger),
+				root.WithDriverRoot(driverRoot),
+			)
+
+			mounts, err := newGraphicsConfigsDiscoverer(logger, driver).Mounts()
+			require.NoError(t, err)
+
+			discovered := make(map[string]string)
+			for _, mount := range mounts {
+				hostPath := strings.TrimPrefix(mount.HostPath, driverRoot)
+				discovered[hostPath] = mount.Path
+			}
+			require.EqualValues(t, tc.expected, discovered)
 		})
 	}
 }
