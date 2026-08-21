@@ -121,3 +121,17 @@ func stringToInt8Slice(s string, out []int8) {
 		out[i] = 0
 	}
 }
+
+func int8PtrToString(p *int8) string {
+	goString := C.GoString((*C.char)(unsafe.Pointer(p)))
+	return goString
+}
+
+func stringToCPtr(s string) unsafe.Pointer {
+	// s is a Go string
+	cstr := C.CString(s)
+
+	// Cast *C.char to *int8 if your struct requires it
+	p := unsafe.Pointer(cstr)
+	return p
+}

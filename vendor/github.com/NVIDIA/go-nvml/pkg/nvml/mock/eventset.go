@@ -21,8 +21,26 @@ var _ nvml.EventSet = &EventSet{}
 //			FreeFunc: func() nvml.Return {
 //				panic("mock out the Free method")
 //			},
+//			GetContextCount_v1Func: func() (uint32, nvml.Return) {
+//				panic("mock out the GetContextCount_v1 method")
+//			},
+//			GetContextData_v1Func: func(v uint32, bytes []byte) (uint32, nvml.Return) {
+//				panic("mock out the GetContextData_v1 method")
+//			},
+//			GetContextInfo_v1Func: func(v uint32) (nvml.OperationalEventContextInfo_v1, nvml.Return) {
+//				panic("mock out the GetContextInfo_v1 method")
+//			},
+//			GetGpuOperationalEventContextLegacyXid_v1Func: func(v uint32) (nvml.GpuOperationalEventContextLegacyXid_v1, nvml.Return) {
+//				panic("mock out the GetGpuOperationalEventContextLegacyXid_v1 method")
+//			},
+//			RegisterGpuOperationalEvents_v1Func: func(gpuOperationalEventConfig_v1 *nvml.GpuOperationalEventConfig_v1) nvml.Return {
+//				panic("mock out the RegisterGpuOperationalEvents_v1 method")
+//			},
 //			WaitFunc: func(v uint32) (nvml.EventData, nvml.Return) {
 //				panic("mock out the Wait method")
+//			},
+//			Wait_v3Func: func(v uint32) (nvml.EventData_v2, nvml.Return) {
+//				panic("mock out the Wait_v3 method")
 //			},
 //		}
 //
@@ -34,22 +52,76 @@ type EventSet struct {
 	// FreeFunc mocks the Free method.
 	FreeFunc func() nvml.Return
 
+	// GetContextCount_v1Func mocks the GetContextCount_v1 method.
+	GetContextCount_v1Func func() (uint32, nvml.Return)
+
+	// GetContextData_v1Func mocks the GetContextData_v1 method.
+	GetContextData_v1Func func(v uint32, bytes []byte) (uint32, nvml.Return)
+
+	// GetContextInfo_v1Func mocks the GetContextInfo_v1 method.
+	GetContextInfo_v1Func func(v uint32) (nvml.OperationalEventContextInfo_v1, nvml.Return)
+
+	// GetGpuOperationalEventContextLegacyXid_v1Func mocks the GetGpuOperationalEventContextLegacyXid_v1 method.
+	GetGpuOperationalEventContextLegacyXid_v1Func func(v uint32) (nvml.GpuOperationalEventContextLegacyXid_v1, nvml.Return)
+
+	// RegisterGpuOperationalEvents_v1Func mocks the RegisterGpuOperationalEvents_v1 method.
+	RegisterGpuOperationalEvents_v1Func func(gpuOperationalEventConfig_v1 *nvml.GpuOperationalEventConfig_v1) nvml.Return
+
 	// WaitFunc mocks the Wait method.
 	WaitFunc func(v uint32) (nvml.EventData, nvml.Return)
+
+	// Wait_v3Func mocks the Wait_v3 method.
+	Wait_v3Func func(v uint32) (nvml.EventData_v2, nvml.Return)
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// Free holds details about calls to the Free method.
 		Free []struct {
 		}
+		// GetContextCount_v1 holds details about calls to the GetContextCount_v1 method.
+		GetContextCount_v1 []struct {
+		}
+		// GetContextData_v1 holds details about calls to the GetContextData_v1 method.
+		GetContextData_v1 []struct {
+			// V is the v argument value.
+			V uint32
+			// Bytes is the bytes argument value.
+			Bytes []byte
+		}
+		// GetContextInfo_v1 holds details about calls to the GetContextInfo_v1 method.
+		GetContextInfo_v1 []struct {
+			// V is the v argument value.
+			V uint32
+		}
+		// GetGpuOperationalEventContextLegacyXid_v1 holds details about calls to the GetGpuOperationalEventContextLegacyXid_v1 method.
+		GetGpuOperationalEventContextLegacyXid_v1 []struct {
+			// V is the v argument value.
+			V uint32
+		}
+		// RegisterGpuOperationalEvents_v1 holds details about calls to the RegisterGpuOperationalEvents_v1 method.
+		RegisterGpuOperationalEvents_v1 []struct {
+			// GpuOperationalEventConfig_v1 is the gpuOperationalEventConfig_v1 argument value.
+			GpuOperationalEventConfig_v1 *nvml.GpuOperationalEventConfig_v1
+		}
 		// Wait holds details about calls to the Wait method.
 		Wait []struct {
 			// V is the v argument value.
 			V uint32
 		}
+		// Wait_v3 holds details about calls to the Wait_v3 method.
+		Wait_v3 []struct {
+			// V is the v argument value.
+			V uint32
+		}
 	}
-	lockFree sync.RWMutex
-	lockWait sync.RWMutex
+	lockFree                                      sync.RWMutex
+	lockGetContextCount_v1                        sync.RWMutex
+	lockGetContextData_v1                         sync.RWMutex
+	lockGetContextInfo_v1                         sync.RWMutex
+	lockGetGpuOperationalEventContextLegacyXid_v1 sync.RWMutex
+	lockRegisterGpuOperationalEvents_v1           sync.RWMutex
+	lockWait                                      sync.RWMutex
+	lockWait_v3                                   sync.RWMutex
 }
 
 // Free calls FreeFunc.
@@ -76,6 +148,165 @@ func (mock *EventSet) FreeCalls() []struct {
 	mock.lockFree.RLock()
 	calls = mock.calls.Free
 	mock.lockFree.RUnlock()
+	return calls
+}
+
+// GetContextCount_v1 calls GetContextCount_v1Func.
+func (mock *EventSet) GetContextCount_v1() (uint32, nvml.Return) {
+	if mock.GetContextCount_v1Func == nil {
+		panic("EventSet.GetContextCount_v1Func: method is nil but EventSet.GetContextCount_v1 was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetContextCount_v1.Lock()
+	mock.calls.GetContextCount_v1 = append(mock.calls.GetContextCount_v1, callInfo)
+	mock.lockGetContextCount_v1.Unlock()
+	return mock.GetContextCount_v1Func()
+}
+
+// GetContextCount_v1Calls gets all the calls that were made to GetContextCount_v1.
+// Check the length with:
+//
+//	len(mockedEventSet.GetContextCount_v1Calls())
+func (mock *EventSet) GetContextCount_v1Calls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetContextCount_v1.RLock()
+	calls = mock.calls.GetContextCount_v1
+	mock.lockGetContextCount_v1.RUnlock()
+	return calls
+}
+
+// GetContextData_v1 calls GetContextData_v1Func.
+func (mock *EventSet) GetContextData_v1(v uint32, bytes []byte) (uint32, nvml.Return) {
+	if mock.GetContextData_v1Func == nil {
+		panic("EventSet.GetContextData_v1Func: method is nil but EventSet.GetContextData_v1 was just called")
+	}
+	callInfo := struct {
+		V     uint32
+		Bytes []byte
+	}{
+		V:     v,
+		Bytes: bytes,
+	}
+	mock.lockGetContextData_v1.Lock()
+	mock.calls.GetContextData_v1 = append(mock.calls.GetContextData_v1, callInfo)
+	mock.lockGetContextData_v1.Unlock()
+	return mock.GetContextData_v1Func(v, bytes)
+}
+
+// GetContextData_v1Calls gets all the calls that were made to GetContextData_v1.
+// Check the length with:
+//
+//	len(mockedEventSet.GetContextData_v1Calls())
+func (mock *EventSet) GetContextData_v1Calls() []struct {
+	V     uint32
+	Bytes []byte
+} {
+	var calls []struct {
+		V     uint32
+		Bytes []byte
+	}
+	mock.lockGetContextData_v1.RLock()
+	calls = mock.calls.GetContextData_v1
+	mock.lockGetContextData_v1.RUnlock()
+	return calls
+}
+
+// GetContextInfo_v1 calls GetContextInfo_v1Func.
+func (mock *EventSet) GetContextInfo_v1(v uint32) (nvml.OperationalEventContextInfo_v1, nvml.Return) {
+	if mock.GetContextInfo_v1Func == nil {
+		panic("EventSet.GetContextInfo_v1Func: method is nil but EventSet.GetContextInfo_v1 was just called")
+	}
+	callInfo := struct {
+		V uint32
+	}{
+		V: v,
+	}
+	mock.lockGetContextInfo_v1.Lock()
+	mock.calls.GetContextInfo_v1 = append(mock.calls.GetContextInfo_v1, callInfo)
+	mock.lockGetContextInfo_v1.Unlock()
+	return mock.GetContextInfo_v1Func(v)
+}
+
+// GetContextInfo_v1Calls gets all the calls that were made to GetContextInfo_v1.
+// Check the length with:
+//
+//	len(mockedEventSet.GetContextInfo_v1Calls())
+func (mock *EventSet) GetContextInfo_v1Calls() []struct {
+	V uint32
+} {
+	var calls []struct {
+		V uint32
+	}
+	mock.lockGetContextInfo_v1.RLock()
+	calls = mock.calls.GetContextInfo_v1
+	mock.lockGetContextInfo_v1.RUnlock()
+	return calls
+}
+
+// GetGpuOperationalEventContextLegacyXid_v1 calls GetGpuOperationalEventContextLegacyXid_v1Func.
+func (mock *EventSet) GetGpuOperationalEventContextLegacyXid_v1(v uint32) (nvml.GpuOperationalEventContextLegacyXid_v1, nvml.Return) {
+	if mock.GetGpuOperationalEventContextLegacyXid_v1Func == nil {
+		panic("EventSet.GetGpuOperationalEventContextLegacyXid_v1Func: method is nil but EventSet.GetGpuOperationalEventContextLegacyXid_v1 was just called")
+	}
+	callInfo := struct {
+		V uint32
+	}{
+		V: v,
+	}
+	mock.lockGetGpuOperationalEventContextLegacyXid_v1.Lock()
+	mock.calls.GetGpuOperationalEventContextLegacyXid_v1 = append(mock.calls.GetGpuOperationalEventContextLegacyXid_v1, callInfo)
+	mock.lockGetGpuOperationalEventContextLegacyXid_v1.Unlock()
+	return mock.GetGpuOperationalEventContextLegacyXid_v1Func(v)
+}
+
+// GetGpuOperationalEventContextLegacyXid_v1Calls gets all the calls that were made to GetGpuOperationalEventContextLegacyXid_v1.
+// Check the length with:
+//
+//	len(mockedEventSet.GetGpuOperationalEventContextLegacyXid_v1Calls())
+func (mock *EventSet) GetGpuOperationalEventContextLegacyXid_v1Calls() []struct {
+	V uint32
+} {
+	var calls []struct {
+		V uint32
+	}
+	mock.lockGetGpuOperationalEventContextLegacyXid_v1.RLock()
+	calls = mock.calls.GetGpuOperationalEventContextLegacyXid_v1
+	mock.lockGetGpuOperationalEventContextLegacyXid_v1.RUnlock()
+	return calls
+}
+
+// RegisterGpuOperationalEvents_v1 calls RegisterGpuOperationalEvents_v1Func.
+func (mock *EventSet) RegisterGpuOperationalEvents_v1(gpuOperationalEventConfig_v1 *nvml.GpuOperationalEventConfig_v1) nvml.Return {
+	if mock.RegisterGpuOperationalEvents_v1Func == nil {
+		panic("EventSet.RegisterGpuOperationalEvents_v1Func: method is nil but EventSet.RegisterGpuOperationalEvents_v1 was just called")
+	}
+	callInfo := struct {
+		GpuOperationalEventConfig_v1 *nvml.GpuOperationalEventConfig_v1
+	}{
+		GpuOperationalEventConfig_v1: gpuOperationalEventConfig_v1,
+	}
+	mock.lockRegisterGpuOperationalEvents_v1.Lock()
+	mock.calls.RegisterGpuOperationalEvents_v1 = append(mock.calls.RegisterGpuOperationalEvents_v1, callInfo)
+	mock.lockRegisterGpuOperationalEvents_v1.Unlock()
+	return mock.RegisterGpuOperationalEvents_v1Func(gpuOperationalEventConfig_v1)
+}
+
+// RegisterGpuOperationalEvents_v1Calls gets all the calls that were made to RegisterGpuOperationalEvents_v1.
+// Check the length with:
+//
+//	len(mockedEventSet.RegisterGpuOperationalEvents_v1Calls())
+func (mock *EventSet) RegisterGpuOperationalEvents_v1Calls() []struct {
+	GpuOperationalEventConfig_v1 *nvml.GpuOperationalEventConfig_v1
+} {
+	var calls []struct {
+		GpuOperationalEventConfig_v1 *nvml.GpuOperationalEventConfig_v1
+	}
+	mock.lockRegisterGpuOperationalEvents_v1.RLock()
+	calls = mock.calls.RegisterGpuOperationalEvents_v1
+	mock.lockRegisterGpuOperationalEvents_v1.RUnlock()
 	return calls
 }
 
@@ -108,5 +339,37 @@ func (mock *EventSet) WaitCalls() []struct {
 	mock.lockWait.RLock()
 	calls = mock.calls.Wait
 	mock.lockWait.RUnlock()
+	return calls
+}
+
+// Wait_v3 calls Wait_v3Func.
+func (mock *EventSet) Wait_v3(v uint32) (nvml.EventData_v2, nvml.Return) {
+	if mock.Wait_v3Func == nil {
+		panic("EventSet.Wait_v3Func: method is nil but EventSet.Wait_v3 was just called")
+	}
+	callInfo := struct {
+		V uint32
+	}{
+		V: v,
+	}
+	mock.lockWait_v3.Lock()
+	mock.calls.Wait_v3 = append(mock.calls.Wait_v3, callInfo)
+	mock.lockWait_v3.Unlock()
+	return mock.Wait_v3Func(v)
+}
+
+// Wait_v3Calls gets all the calls that were made to Wait_v3.
+// Check the length with:
+//
+//	len(mockedEventSet.Wait_v3Calls())
+func (mock *EventSet) Wait_v3Calls() []struct {
+	V uint32
+} {
+	var calls []struct {
+		V uint32
+	}
+	mock.lockWait_v3.RLock()
+	calls = mock.calls.Wait_v3
+	mock.lockWait_v3.RUnlock()
 	return calls
 }

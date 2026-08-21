@@ -14,6 +14,8 @@
 
 package nvml
 
+import "unsafe"
+
 // EventData includes an interface type for Device instead of nvmlDevice
 type EventData struct {
 	Device            Device
@@ -79,4 +81,72 @@ func (l *library) SystemRegisterEvents(request *SystemRegisterEventRequest) Retu
 // nvml.SystemEventSetWait()
 func (l *library) SystemEventSetWait(request *SystemEventSetWaitRequest) Return {
 	return nvmlSystemEventSetWait(request)
+}
+
+// nvml.EventSetRegisterGpuOperationalEvents_v1()
+func (l *library) EventSetRegisterGpuOperationalEvents_v1(set EventSet, config *GpuOperationalEventConfig_v1) Return {
+	return set.RegisterGpuOperationalEvents_v1(config)
+}
+
+func (set nvmlEventSet) RegisterGpuOperationalEvents_v1(config *GpuOperationalEventConfig_v1) Return {
+	return nvmlEventSetRegisterGpuOperationalEvents_v1(set, config)
+}
+
+// nvml.EventSetWait_v3()
+func (l *library) EventSetWait_v3(set EventSet, timeoutms uint32) (EventData_v2, Return) {
+	return set.Wait_v3(timeoutms)
+}
+
+func (set nvmlEventSet) Wait_v3(timeoutms uint32) (EventData_v2, Return) {
+	var data EventData_v2
+	ret := nvmlEventSetWait_v3(set, &data, timeoutms)
+	return data, ret
+}
+
+// nvml.EventSetGetContextCount_v1()
+func (l *library) EventSetGetContextCount_v1(set EventSet) (uint32, Return) {
+	return set.GetContextCount_v1()
+}
+
+func (set nvmlEventSet) GetContextCount_v1() (uint32, Return) {
+	var count uint32
+	ret := nvmlEventSetGetContextCount_v1(set, &count)
+	return count, ret
+}
+
+// nvml.EventSetGetContextInfo_v1()
+func (l *library) EventSetGetContextInfo_v1(set EventSet, index uint32) (OperationalEventContextInfo_v1, Return) {
+	return set.GetContextInfo_v1(index)
+}
+
+func (set nvmlEventSet) GetContextInfo_v1(index uint32) (OperationalEventContextInfo_v1, Return) {
+	var info OperationalEventContextInfo_v1
+	ret := nvmlEventSetGetContextInfo_v1(set, index, &info)
+	return info, ret
+}
+
+// nvml.EventSetGetContextData_v1()
+func (l *library) EventSetGetContextData_v1(set EventSet, index uint32, data []byte) (uint32, Return) {
+	return set.GetContextData_v1(index, data)
+}
+
+func (set nvmlEventSet) GetContextData_v1(index uint32, data []byte) (uint32, Return) {
+	dataSize := uint32(len(data))
+	var ptr unsafe.Pointer
+	if len(data) > 0 {
+		ptr = unsafe.Pointer(&data[0])
+	}
+	ret := nvmlEventSetGetContextData_v1(set, index, ptr, &dataSize)
+	return dataSize, ret
+}
+
+// nvml.EventSetGetGpuOperationalEventContextLegacyXid_v1()
+func (l *library) EventSetGetGpuOperationalEventContextLegacyXid_v1(set EventSet, index uint32) (GpuOperationalEventContextLegacyXid_v1, Return) {
+	return set.GetGpuOperationalEventContextLegacyXid_v1(index)
+}
+
+func (set nvmlEventSet) GetGpuOperationalEventContextLegacyXid_v1(index uint32) (GpuOperationalEventContextLegacyXid_v1, Return) {
+	var xid GpuOperationalEventContextLegacyXid_v1
+	ret := nvmlEventSetGetGpuOperationalEventContextLegacyXid_v1(set, index, &xid)
+	return xid, ret
 }
