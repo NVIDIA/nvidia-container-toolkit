@@ -5,6 +5,12 @@ set -e
 case "$1" in
     configure)
         /usr/bin/nvidia-ctk --quiet config --config-file=/etc/nvidia-container-runtime/config.toml --in-place
+
+        # Reload udev rules so that the nvidia-cdi-refresh rules take effect
+        # without a reboot.
+        if command -v udevadm >/dev/null 2>&1; then
+            udevadm control --reload-rules >/dev/null 2>&1 || true
+        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

@@ -21,12 +21,17 @@ Source7: nvidia-cdi-refresh.service
 Source8: nvidia-cdi-refresh.path
 Source9: nvidia-cdi-refresh.env
 Source10: 90-nvidia-container-toolkit.preset
+Source11: 99-nvidia-cdi-refresh.rules
 
 %if 0%{?rhel} == 7 || 0%{?amzn} == 2
 BuildRequires: systemd
 %else
 BuildRequires: systemd-rpm-macros
 %endif
+
+# Distributions that don't define the udev rules directory macro fall back to
+# the default location.
+%{!?_udevrulesdir: %global _udevrulesdir %{_prefix}/lib/udev/rules.d}
 
 Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook <= 1.4.0-2
 Provides: nvidia-container-runtime
@@ -38,12 +43,13 @@ Requires: nvidia-container-toolkit-base == %{version}-%{release}
 Provides tools and utilities to enable GPU support in containers.
 
 %prep
-cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} %{SOURCE7} %{SOURCE8} %{SOURCE9} %{SOURCE10} .
+cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} %{SOURCE7} %{SOURCE8} %{SOURCE9} %{SOURCE10} %{SOURCE11} .
 
 %install
 mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_unitdir}
 mkdir -p %{buildroot}%{_presetdir}
+mkdir -p %{buildroot}%{_udevrulesdir}
 mkdir -p %{buildroot}%{_sysconfdir}/nvidia-container-toolkit
 
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime-hook
@@ -55,6 +61,7 @@ install -m 755 -t %{buildroot}%{_bindir} nvidia-cdi-hook
 install -m 644 -t %{buildroot}%{_unitdir} nvidia-cdi-refresh.service
 install -m 644 -t %{buildroot}%{_unitdir} nvidia-cdi-refresh.path
 install -m 644 -t %{buildroot}%{_presetdir} 90-nvidia-container-toolkit.preset
+install -m 644 -t %{buildroot}%{_udevrulesdir} 99-nvidia-cdi-refresh.rules
 install -m 644 -t %{buildroot}%{_sysconfdir}/nvidia-container-toolkit nvidia-cdi-refresh.env
 
 %post
@@ -129,6 +136,12 @@ for unit in nvidia-cdi-refresh.path nvidia-cdi-refresh.service; do
   fi
 done
 
+# Reload udev rules so that the nvidia-cdi-refresh rules take effect without a
+# reboot.
+if command -v udevadm >/dev/null 2>&1; then
+  udevadm control --reload-rules >/dev/null 2>&1 || :
+fi
+
 # Trigger CDI refresh on running systemd hosts without making install depend on
 # the current system state.
 if command -v systemctl >/dev/null 2>&1; then
@@ -148,6 +161,7 @@ fi
 %{_unitdir}/nvidia-cdi-refresh.service
 %{_unitdir}/nvidia-cdi-refresh.path
 %{_presetdir}/90-nvidia-container-toolkit.preset
+%{_udevrulesdir}/99-nvidia-cdi-refresh.rules
 %config(noreplace) %{_sysconfdir}/nvidia-container-toolkit/nvidia-cdi-refresh.env
 
 # The OPERATOR EXTENSIONS package consists of components that are required to enable GPU support in Kubernetes.
