@@ -17,3 +17,4 @@ override_dh_fixperms:
 	chmod 644 debian/$(shell dh_listpackages)/lib/systemd/system/nvidia-cdi-refresh.service || true
 	chmod 644 debian/$(shell dh_listpackages)/lib/systemd/system/nvidia-cdi-refresh.path || true
 	chmod 644 debian/$(shell dh_listpackages)/lib/udev/rules.d/99-nvidia-cdi-refresh.rules || true
+	chmod 644 debian/$(shell dh_listpackages)/lib/systemd/system/nvidia-cdi-refresh.service.d/10-container-engines.conf || true
