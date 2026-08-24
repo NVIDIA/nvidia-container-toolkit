@@ -103,6 +103,7 @@ func (t *ToolkitInstaller) collectExecutables(destDir string) ([]Installer, erro
 			Source:            executablePath,
 			WrappedExecutable: dotRealFilename,
 			CheckModules:      executable.requiresKernelModule,
+			ConfigFilePath:    executable.env[config.FilePathOverrideEnvVar],
 			Envvars: map[string]string{
 				"PATH": strings.Join([]string{destDir, "$PATH"}, ":"),
 			},
@@ -147,6 +148,7 @@ type wrapper struct {
 	WrappedExecutable            string
 	CheckModules                 bool
 	DefaultRuntimeExecutablePath string
+	ConfigFilePath               string
 }
 
 type render struct {
@@ -180,6 +182,12 @@ func (w *render) render() (io.Reader, error) {
 cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
 if [ "${?}" != "0" ]; then
 	echo "nvidia driver modules are not yet loaded, invoking {{ .DefaultRuntimeExecutablePath }} directly" >&2
+	exec {{ .DefaultRuntimeExecutablePath }} "$@"
+fi
+{{- end }}
+{{- if and .CheckModules .ConfigFilePath }}
+if [ ! -f "{{ .ConfigFilePath }}" ]; then
+	echo "nvidia toolkit config {{ .ConfigFilePath }} is missing, invoking {{ .DefaultRuntimeExecutablePath }} directly" >&2
 	exec {{ .DefaultRuntimeExecutablePath }} "$@"
 fi
 {{- end }}

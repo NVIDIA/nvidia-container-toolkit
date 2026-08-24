@@ -59,6 +59,59 @@ fi
 `,
 		},
 		{
+			description: "config check is added when a config path is set",
+			w: &wrapper{
+				WrappedExecutable:            "some-runtime",
+				CheckModules:                 true,
+				DefaultRuntimeExecutablePath: "runc",
+				ConfigFilePath:               "/dest-dir/.config/nvidia-container-runtime/config.toml",
+			},
+			expected: `#! /bin/sh
+cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
+if [ "${?}" != "0" ]; then
+	echo "nvidia driver modules are not yet loaded, invoking runc directly" >&2
+	exec runc "$@"
+fi
+if [ ! -f "/dest-dir/.config/nvidia-container-runtime/config.toml" ]; then
+	echo "nvidia toolkit config /dest-dir/.config/nvidia-container-runtime/config.toml is missing, invoking runc directly" >&2
+	exec runc "$@"
+fi
+	/dest-dir/some-runtime \
+		"$@"
+`,
+		},
+		{
+			description: "config check is not added without the module check",
+			w: &wrapper{
+				WrappedExecutable:            "some-hook",
+				CheckModules:                 false,
+				DefaultRuntimeExecutablePath: "runc",
+				ConfigFilePath:               "/dest-dir/.config/nvidia-container-runtime/config.toml",
+			},
+			expected: `#! /bin/sh
+	/dest-dir/some-hook \
+		"$@"
+`,
+		},
+		{
+			description: "config check is not added without a config path",
+			w: &wrapper{
+				WrappedExecutable:            "some-runtime",
+				CheckModules:                 true,
+				DefaultRuntimeExecutablePath: "runc",
+				ConfigFilePath:               "",
+			},
+			expected: `#! /bin/sh
+cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
+if [ "${?}" != "0" ]; then
+	echo "nvidia driver modules are not yet loaded, invoking runc directly" >&2
+	exec runc "$@"
+fi
+	/dest-dir/some-runtime \
+		"$@"
+`,
+		},
+		{
 			description: "environment is added",
 			w: &wrapper{
 				WrappedExecutable: "some-runtime",
