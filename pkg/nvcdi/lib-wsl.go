@@ -18,6 +18,7 @@ package nvcdi
 
 import (
 	"fmt"
+	"slices"
 
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
@@ -27,7 +28,10 @@ type wsllib nvcdilib
 
 var _ deviceSpecGeneratorFactory = (*wsllib)(nil)
 
-func (l *wsllib) DeviceSpecGenerators(...string) (DeviceSpecGenerator, error) {
+func (l *wsllib) DeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, error) {
+	if slices.Contains(ids, "none") {
+		return emptyDeviceSpecGenerator("none"), nil
+	}
 	return l, nil
 }
 
