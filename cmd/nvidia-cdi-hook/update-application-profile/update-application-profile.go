@@ -19,9 +19,11 @@ package updateapplicationprofile
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
+	"syscall"
 
 	"github.com/urfave/cli/v3"
 
@@ -125,12 +127,19 @@ func run(_ context.Context, _ *cli.Command, cfg *options, logger logger.Interfac
 		return nil
 	}
 
-	if err := containerRoot.MkdirAll(applicationProfileDir, 0555); err != nil {
-		return fmt.Errorf("failed to create application profiles directory: %w", err)
-	}
-
-	if err := containerRoot.WriteFile(applicationProfileFile, buildApplicationProfileConfig(mask), 0444); err != nil {
-		return fmt.Errorf("failed to write application profile: %w", err)
+	if err = func() error {
+		if err := containerRoot.MkdirAll(applicationProfileDir, 0555); err != nil {
+			return fmt.Errorf("failed to create application profiles directory: %w", err)
+		}
+		if err := containerRoot.WriteFile(applicationProfileFile, buildApplicationProfileConfig(mask), 0444); err != nil {
+			return fmt.Errorf("failed to write application profile: %w", err)
+		}
+		return nil
+	}(); err != nil {
+		if !errors.Is(err, syscall.EROFS) {
+			return err
+		}
+		logger.Warningf("Ignoring read-only filesystem error: %v", err)
 	}
 
 	return nil
