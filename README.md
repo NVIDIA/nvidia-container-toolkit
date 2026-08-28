@@ -29,3 +29,4 @@ The [user guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolk
 
 * Please let us know by [filing a new issue](https://github.com/NVIDIA/nvidia-container-toolkit/issues/new)
 * You can contribute by creating a [pull request](https://github.com/NVIDIA/nvidia-container-toolkit/compare) to our public GitHub repository
+* Contributions must adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).

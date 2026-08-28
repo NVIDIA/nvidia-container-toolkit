@@ -3,6 +3,8 @@
 Want to hack on the NVIDIA Container Toolkit Project? Awesome!
 We only require you to sign your work, the below section describes this!
 
+All contributions must adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Sign your work
 
 The sign-off is a simple line at the end of the explanation for the patch. Your
