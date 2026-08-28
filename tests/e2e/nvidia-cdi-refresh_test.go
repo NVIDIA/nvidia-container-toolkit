@@ -100,6 +100,17 @@ EOF
 	fi
 	`
 
+	nvidiaCdiRefreshOrderingDropInInstalledTemplate = `
+	if [ ! -f /lib/systemd/system/nvidia-cdi-refresh.service.d/10-container-engines.conf ]; then
+		echo "10-container-engines.conf is not installed"
+		exit 1
+	fi
+	if ! systemctl show nvidia-cdi-refresh.service -p Before | grep -q docker.service; then
+		echo "nvidia-cdi-refresh.service is not ordered before docker.service"
+		exit 1
+	fi
+	`
+
 	nvidiaCdiRefreshFileExistsTemplate = `
 	# is /var/run/cdi/nvidia.yaml exists? and exit with 0 if it does not exist
 	if [ ! -f /var/run/cdi/nvidia.yaml ]; then
@@ -221,6 +232,11 @@ var _ = Describe("nvidia-cdi-refresh", Ordered, ContinueOnFailure, Label("system
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should install the container engine ordering drop-in", func(ctx context.Context) {
+			_, _, err := systemdRunner.Run(nvidiaCdiRefreshOrderingDropInInstalledTemplate)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("should generate the nvidia.yaml file", func(ctx context.Context) {
 			_, _, err := systemdRunner.Run(nvidiaCdiRefreshFileExistsTemplate)
 			Expect(err).ToNot(HaveOccurred())
@@ -272,6 +288,11 @@ var _ = Describe("nvidia-cdi-refresh", Ordered, ContinueOnFailure, Label("system
 
 		It("should install the nvidia-cdi-refresh udev rules", func(ctx context.Context) {
 			_, _, err := systemdRunner.Run(nvidiaCdiRefreshUdevRulesInstalledTemplate)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should install the container engine ordering drop-in", func(ctx context.Context) {
+			_, _, err := systemdRunner.Run(nvidiaCdiRefreshOrderingDropInInstalledTemplate)
 			Expect(err).ToNot(HaveOccurred())
 		})
 

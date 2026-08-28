@@ -5,3 +5,4 @@ nvidia-cdi-refresh.service /lib/systemd/system/
 nvidia-cdi-refresh.path /lib/systemd/system/
 nvidia-cdi-refresh.env /etc/nvidia-container-toolkit/
 99-nvidia-cdi-refresh.rules /lib/udev/rules.d/
+10-container-engines.conf /lib/systemd/system/nvidia-cdi-refresh.service.d/
