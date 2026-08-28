@@ -22,6 +22,7 @@ Source8: nvidia-cdi-refresh.path
 Source9: nvidia-cdi-refresh.env
 Source10: 90-nvidia-container-toolkit.preset
 Source11: 99-nvidia-cdi-refresh.rules
+Source12: 10-container-engines.conf
 
 %if 0%{?rhel} == 7 || 0%{?amzn} == 2
 BuildRequires: systemd
@@ -43,13 +44,14 @@ Requires: nvidia-container-toolkit-base == %{version}-%{release}
 Provides tools and utilities to enable GPU support in containers.
 
 %prep
-cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} %{SOURCE7} %{SOURCE8} %{SOURCE9} %{SOURCE10} %{SOURCE11} .
+cp %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} %{SOURCE7} %{SOURCE8} %{SOURCE9} %{SOURCE10} %{SOURCE11} %{SOURCE12} .
 
 %install
 mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_unitdir}
 mkdir -p %{buildroot}%{_presetdir}
 mkdir -p %{buildroot}%{_udevrulesdir}
+mkdir -p %{buildroot}%{_unitdir}/nvidia-cdi-refresh.service.d
 mkdir -p %{buildroot}%{_sysconfdir}/nvidia-container-toolkit
 
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime-hook
@@ -62,6 +64,7 @@ install -m 644 -t %{buildroot}%{_unitdir} nvidia-cdi-refresh.service
 install -m 644 -t %{buildroot}%{_unitdir} nvidia-cdi-refresh.path
 install -m 644 -t %{buildroot}%{_presetdir} 90-nvidia-container-toolkit.preset
 install -m 644 -t %{buildroot}%{_udevrulesdir} 99-nvidia-cdi-refresh.rules
+install -m 644 -t %{buildroot}%{_unitdir}/nvidia-cdi-refresh.service.d 10-container-engines.conf
 install -m 644 -t %{buildroot}%{_sysconfdir}/nvidia-container-toolkit nvidia-cdi-refresh.env
 
 %post
@@ -162,6 +165,7 @@ fi
 %{_unitdir}/nvidia-cdi-refresh.path
 %{_presetdir}/90-nvidia-container-toolkit.preset
 %{_udevrulesdir}/99-nvidia-cdi-refresh.rules
+%{_unitdir}/nvidia-cdi-refresh.service.d/10-container-engines.conf
 %config(noreplace) %{_sysconfdir}/nvidia-container-toolkit/nvidia-cdi-refresh.env
 
 # The OPERATOR EXTENSIONS package consists of components that are required to enable GPU support in Kubernetes.
