@@ -125,6 +125,9 @@ func (m command) run(_ *cli.Command, o *options) error {
 	if err != nil {
 		return fmt.Errorf("failed to determined container root: %w", err)
 	}
+	if containerRootDir == "" || containerRootDir == "/" {
+		return fmt.Errorf("invalid container root: %q", containerRootDir)
+	}
 
 	containerRoot, err := newRoot(containerRootDir)
 	if err != nil {

@@ -117,8 +117,8 @@ func (m command) run(_ *cli.Command, cfg *config) error {
 	if err != nil {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
-	if containerRoot == "" {
-		return fmt.Errorf("empty container root detected")
+	if containerRoot == "" || containerRoot == "/" {
+		return fmt.Errorf("invalid container root: %q", containerRoot)
 	}
 
 	paths := m.getPaths(containerRoot, cfg.paths, cfg.mode)

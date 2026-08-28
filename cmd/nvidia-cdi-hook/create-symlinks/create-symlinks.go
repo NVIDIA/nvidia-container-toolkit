@@ -87,6 +87,9 @@ func (m command) run(_ *cli.Command, cfg *config) error {
 	if err != nil {
 		return fmt.Errorf("failed to determined container root: %v", err)
 	}
+	if containerRoot == "" || containerRoot == "/" {
+		return fmt.Errorf("invalid container root: %q", containerRoot)
+	}
 
 	created := make(map[string]bool)
 	for _, l := range cfg.links {

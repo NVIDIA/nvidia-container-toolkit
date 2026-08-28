@@ -95,6 +95,9 @@ func run(_ context.Context, _ *cli.Command, cfg *options, logger logger.Interfac
 	if err != nil {
 		return fmt.Errorf("failed to determine container root: %w", err)
 	}
+	if containerRootDirPath == "" || containerRootDirPath == "/" {
+		return fmt.Errorf("invalid container root: %q", containerRootDirPath)
+	}
 
 	containerRoot, err := os.OpenRoot(containerRootDirPath)
 	if err != nil {
