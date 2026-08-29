@@ -63,6 +63,8 @@ const (
 	// An UpdateLDCacheHook is the hook used to update the ldcache in the
 	// container. This allows injected libraries to be discoverable.
 	UpdateLDCacheHook = HookName("update-ldcache")
+	// ApplyCudaMemoryLimitsHook is used to assign soft and hard limits of CUDA memory usage to a container
+	ApplyCudaMemoryLimitsHook = HookName("apply-cuda-memory-limits")
 
 	defaultNvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
 )
@@ -222,6 +224,8 @@ func (c cdiHookCreator) getOCIHookType(name HookName) OCIHookType {
 	switch name {
 	case CreateSymlinksHook, ChmodHook, DisableDeviceNodeModificationHook, EnableCudaCompatHook, UpdateLDCacheHook, ApplicationProfileHook:
 		return OCIHookTypeCreateContainer
+	case ApplyCudaMemoryLimitsHook:
+		return OCIHookTypeCreateRuntime
 	default:
 		return OCIHookTypeCreateContainer
 	}
@@ -238,7 +242,7 @@ func (c cdiHookCreator) isDisabled(name HookName, args ...string) bool {
 
 	// still reject hooks that require args if none were provided
 	switch name {
-	case CreateSymlinksHook, ChmodHook:
+	case CreateSymlinksHook, ChmodHook, ApplyCudaMemoryLimitsHook:
 		return len(args) == 0
 	}
 	return false
@@ -266,6 +270,11 @@ func (c cdiHookCreator) transformArgs(name HookName, args ...string) []string {
 		}
 		for _, arg := range args {
 			transformedArgs = append(transformedArgs, "--folder", arg)
+		}
+	case ApplyCudaMemoryLimitsHook:
+		transformedArgs = append(transformedArgs, "--driver-root", args[0])
+		for _, arg := range args[1:] {
+			transformedArgs = append(transformedArgs, "--gpu-id", arg)
 		}
 	default:
 		return args

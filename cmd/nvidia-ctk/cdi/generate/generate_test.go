@@ -98,11 +98,35 @@ devices:
         deviceNodes:
             - path: /dev/nvidia0
               hostPath: {{ .driverRoot }}/dev/nvidia0
+        hooks:
+            - hookName: createRuntime
+              path: /usr/bin/nvidia-cdi-hook
+              args:
+                - nvidia-cdi-hook
+                - apply-cuda-memory-limits
+                - --driver-root
+                - {{ .driverRoot }}
+                - --gpu-id
+                - {{ .gpuID }}
+              env:
+                - NVIDIA_CTK_DEBUG=false
     - name: all
       containerEdits:
         deviceNodes:
             - path: /dev/nvidia0
               hostPath: {{ .driverRoot }}/dev/nvidia0
+        hooks:
+            - hookName: createRuntime
+              path: /usr/bin/nvidia-cdi-hook
+              args:
+                - nvidia-cdi-hook
+                - apply-cuda-memory-limits
+                - --driver-root
+                - {{ .driverRoot }}
+                - --gpu-id
+                - {{ .gpuID }}
+              env:
+                - NVIDIA_CTK_DEBUG=false
 containerEdits:
     env:
         - NVIDIA_CTK_LIBCUDA_DIR=/lib/x86_64-linux-gnu
@@ -180,7 +204,7 @@ containerEdits:
 				vendor:        "example.com",
 				class:         "device",
 				driverRoot:    driverRoot,
-				disabledHooks: []string{"enable-cuda-compat"},
+				disabledHooks: []string{"enable-cuda-compat", "apply-cuda-memory-limits"},
 			},
 			expectedOptions: options{
 				format:            "yaml",
@@ -189,7 +213,7 @@ containerEdits:
 				class:             "device",
 				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
 				driverRoot:        driverRoot,
-				disabledHooks:     []string{"enable-cuda-compat"},
+				disabledHooks:     []string{"enable-cuda-compat", "apply-cuda-memory-limits"},
 			},
 			expectedSpec: `---
 cdiVersion: 0.5.0
@@ -274,7 +298,7 @@ containerEdits:
 				vendor:        "example.com",
 				class:         "device",
 				driverRoot:    driverRoot,
-				disabledHooks: []string{"enable-cuda-compat", "update-ldcache"},
+				disabledHooks: []string{"enable-cuda-compat", "apply-cuda-memory-limits", "update-ldcache"},
 			},
 			expectedOptions: options{
 				format:            "yaml",
@@ -283,7 +307,7 @@ containerEdits:
 				class:             "device",
 				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
 				driverRoot:        driverRoot,
-				disabledHooks:     []string{"enable-cuda-compat", "update-ldcache"},
+				disabledHooks:     []string{"enable-cuda-compat", "apply-cuda-memory-limits", "update-ldcache"},
 			},
 			expectedSpec: `---
 cdiVersion: 0.5.0
@@ -539,7 +563,13 @@ containerEdits:
 				require.NoError(t, err)
 			}
 
-			require.Equal(t, strings.ReplaceAll(tc.expectedSpec, "{{ .driverRoot }}", driverRoot), buf.String())
+			gpuID, ret := server.Devices[0].GetUUID()
+			require.True(t, ret == nvml.SUCCESS, gpuID)
+
+			expected := strings.ReplaceAll(tc.expectedSpec, "{{ .driverRoot }}", driverRoot)
+			expected = strings.ReplaceAll(expected, "{{ .gpuID }}", gpuID)
+
+			require.Equal(t, expected, buf.String())
 		})
 	}
 }
