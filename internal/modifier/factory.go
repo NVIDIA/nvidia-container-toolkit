@@ -126,6 +126,12 @@ func (f *Factory) create() (oci.SpecModifier, error) {
 				return nil, err
 			}
 			modifiers = append(modifiers, featureGatedModifier)
+		case "rlimits":
+			rlimitModifier, err := f.newRlimitModifier()
+			if err != nil {
+				return nil, err
+			}
+			modifiers = append(modifiers, rlimitModifier)
 		default:
 			f.logger.Debugf("Ignoring unknown modifier type %q", modifierType)
 		}

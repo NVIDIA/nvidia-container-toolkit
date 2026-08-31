@@ -63,6 +63,8 @@ type Options struct {
 
 	ContainerRuntimeRuntimes []string
 
+	ContainerRuntimeRlimits []string
+
 	ContainerRuntimeHookSkipModeDetection bool
 
 	ContainerCLIDebug string
@@ -140,6 +142,12 @@ func Flags(opts *Options) []cli.Flag {
 			Name:        "nvidia-container-runtime.runtimes",
 			Destination: &opts.ContainerRuntimeRuntimes,
 			Sources:     cli.EnvVars("NVIDIA_CONTAINER_RUNTIME_RUNTIMES"),
+		},
+		&cli.StringSliceFlag{
+			Name:        "nvidia-container-runtime.rlimits",
+			Usage:       "Specify POSIX rlimits (e.g. memlock=unlimited) that the NVIDIA Container Runtime applies to the containers it handles",
+			Destination: &opts.ContainerRuntimeRlimits,
+			Sources:     cli.EnvVars("NVIDIA_CONTAINER_RUNTIME_RLIMITS"),
 		},
 		&cli.BoolFlag{
 			Name:        "nvidia-container-runtime-hook.skip-mode-detection",
@@ -444,6 +452,7 @@ func (t *Installer) installToolkitConfig(c *cli.Command, opts *Options) error {
 		"nvidia-container-runtime.modes.cdi.annotation-prefixes": opts.ContainerRuntimeModesCDIAnnotationPrefixes,
 		"nvidia-container-runtime.modes.cdi.default-kind":        opts.ContainerRuntimeModesCdiDefaultKind,
 		"nvidia-container-runtime.runtimes":                      opts.ContainerRuntimeRuntimes,
+		"nvidia-container-runtime.rlimits":                       opts.ContainerRuntimeRlimits,
 		"nvidia-container-cli.debug":                             opts.ContainerCLIDebug,
 	}
 
@@ -467,6 +476,10 @@ func (t *Installer) installToolkitConfig(c *cli.Command, opts *Options) error {
 				continue
 			}
 			value = v.Value()
+		case []string:
+			if len(v) == 0 {
+				continue
+			}
 		default:
 			t.logger.Warningf("Unexpected type for option %v=%v: %T", key, value, v)
 		}
