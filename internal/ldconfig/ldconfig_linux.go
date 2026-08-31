@@ -32,9 +32,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/moby/sys/mountinfo"
 	"github.com/moby/sys/reexec"
-
-	"github.com/opencontainers/runc/libcontainer/utils"
 	"golang.org/x/sys/unix"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/utils"
 )
 
 // pivotRoot will call pivot_root such that rootfs becomes the new root
@@ -185,7 +185,6 @@ func chroot() error {
 // We use WithProcfd to perform the mount operations to ensure that the changes
 // are persisted across the pivot root.
 func mountLdConfig(hostLdconfigPath string, containerRoot *os.Root) (string, error) {
-	containerRootDirPath := containerRoot.Name()
 
 	hostLdconfigInfo, err := os.Stat(hostLdconfigPath)
 	if err != nil {
@@ -198,23 +197,24 @@ func mountLdConfig(hostLdconfigPath string, containerRoot *os.Root) (string, err
 		return "", fmt.Errorf("error creating hook scratch folder: %w", err)
 	}
 
-	//nolint:staticcheck // TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
-	err = utils.WithProcfd(containerRootDirPath, hookScratchDirPath, func(hookScratchDirFdPath string) error {
-		return createTmpFs(hookScratchDirFdPath, int(hostLdconfigInfo.Size()))
-	})
+	hookScratchDir, err := containerRoot.Open(hookScratchDirPath[1:])
 	if err != nil {
+		return "", fmt.Errorf("error opening hook scratch folder: %w", err)
+	}
+	defer hookScratchDir.Close()
+
+	if err := createTmpFs(utils.GetProcFdPath(hookScratchDir), int(hostLdconfigInfo.Size())); err != nil {
 		return "", fmt.Errorf("error creating tmpfs: %w", err)
 	}
 
-	if _, err := containerRoot.OpenFile(ldconfigPath[1:], os.O_CREATE|os.O_RDWR|os.O_TRUNC, hostLdconfigInfo.Mode()); err != nil {
+	ldconfigFile, err := containerRoot.OpenFile(ldconfigPath[1:], os.O_CREATE|os.O_RDWR|os.O_TRUNC, hostLdconfigInfo.Mode())
+	if err != nil {
 		return "", fmt.Errorf("error creating ldconfig: %w", err)
 	}
+	defer ldconfigFile.Close()
 
-	//nolint:staticcheck // TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
-	err = utils.WithProcfd(containerRootDirPath, ldconfigPath, func(ldconfigFdPath string) error {
-		return unix.Mount(hostLdconfigPath, ldconfigFdPath, "", unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_PRIVATE|unix.MS_NOSYMFOLLOW, "")
-	})
-	if err != nil {
+	if err := unix.Mount(hostLdconfigPath, utils.GetProcFdPath(ldconfigFile), "",
+		unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_PRIVATE|unix.MS_NOSYMFOLLOW, ""); err != nil {
 		return "", fmt.Errorf("error bind mounting host ldconfig: %w", err)
 	}
 

@@ -9,11 +9,12 @@ require (
 	github.com/containerd/nri v0.12.1
 	github.com/cyphar/filepath-securejoin v0.7.0
 	github.com/google/uuid v1.6.0
+	github.com/moby/sys/devices v0.1.0
 	github.com/moby/sys/mountinfo v0.7.2
 	github.com/moby/sys/reexec v0.1.0
 	github.com/moby/sys/symlink v0.3.0
 	github.com/opencontainers/cgroups v0.0.7
-	github.com/opencontainers/runc v1.4.3
+	github.com/opencontainers/runc v1.5.1
 	github.com/opencontainers/runtime-spec v1.3.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/prometheus/procfs v0.21.1
