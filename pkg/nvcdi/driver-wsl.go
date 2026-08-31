@@ -53,7 +53,7 @@ func (l *wsllib) newWSLDriverDiscoverer() (discover.Discover, error) {
 	}
 	defer func() {
 		if err := dxcore.Shutdown(); err != nil {
-			l.logger.Warningf("failed to shutdown dxcore: %w", err)
+			l.logger.Warningf("failed to shutdown dxcore: %v", err)
 		}
 	}()
 
