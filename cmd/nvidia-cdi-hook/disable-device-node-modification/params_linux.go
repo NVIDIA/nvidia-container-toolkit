@@ -25,55 +25,47 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
-	"github.com/opencontainers/runc/libcontainer/utils"
 	"golang.org/x/sys/unix"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/utils"
 )
 
 func createParamsFileInContainer(containerRoot *os.Root, contents []byte) error {
-	containerRootDirPath := containerRoot.Name()
 
 	hookScratchDirPath := "/run/nvidia-ctk-hook" + uuid.NewString()
 	if err := containerRoot.MkdirAll(hookScratchDirPath[1:], 0755); err != nil {
 		return fmt.Errorf("error creating hook scratch folder: %w", err)
 	}
 
-	//nolint:staticcheck // TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
-	err := utils.WithProcfd(containerRootDirPath, hookScratchDirPath, func(hookScratchDirFdPath string) error {
-		return createTmpFs(hookScratchDirFdPath, len(contents))
-	})
+	hookScratchDir, err := containerRoot.Open(hookScratchDirPath[1:])
 	if err != nil {
+		return fmt.Errorf("error opening hook scratch folder: %w", err)
+	}
+	defer hookScratchDir.Close()
+	if err := createTmpFs(utils.GetProcFdPath(hookScratchDir), len(contents)); err != nil {
 		return fmt.Errorf("failed to create tmpfs mount for params file: %w", err)
 	}
 
 	modifiedParamsFilePath := filepath.Join(hookScratchDirPath, "nvct-params")
-	if _, err := containerRoot.OpenFile(modifiedParamsFilePath[1:], os.O_CREATE|os.O_RDONLY|os.O_TRUNC, 0444); err != nil {
+	modifiedParamsFile, err := containerRoot.OpenFile(modifiedParamsFilePath[1:], os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0444)
+	if err != nil {
 		return fmt.Errorf("error creating modified params file: %w", err)
 	}
+	defer modifiedParamsFile.Close()
 
-	//nolint:staticcheck // TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
-	err = utils.WithProcfd(containerRootDirPath, modifiedParamsFilePath, func(modifiedParamsFileFdPath string) error {
-		modifiedParamsFile, err := os.OpenFile(modifiedParamsFileFdPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0444)
-		if err != nil {
-			return fmt.Errorf("failed to open modified params file: %w", err)
-		}
-		defer modifiedParamsFile.Close()
+	if _, err := modifiedParamsFile.Write(contents); err != nil {
+		return fmt.Errorf("failed to write temporary params file: %w", err)
+	}
 
-		if _, err := modifiedParamsFile.Write(contents); err != nil {
-			return fmt.Errorf("failed to write temporary params file: %w", err)
-		}
-
-		//nolint:staticcheck // TODO (ArangoGutierrez): Remove the nolint:staticcheck and properly fix the deprecation warning.
-		err = utils.WithProcfd(containerRootDirPath, nvidiaDriverParamsPath, func(nvidiaDriverParamsFdPath string) error {
-			return unix.Mount(modifiedParamsFileFdPath, nvidiaDriverParamsFdPath, "", unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_PRIVATE|unix.MS_NOSYMFOLLOW, "")
-		})
-		if err != nil {
-			return fmt.Errorf("failed to mount modified params file: %w", err)
-		}
-
-		return nil
-	})
+	nvidiaDriverParamsFile, err := containerRoot.OpenFile(nvidiaDriverParamsPath[1:], os.O_RDONLY, 0)
 	if err != nil {
-		return err
+		return fmt.Errorf("error opening nvidia driver params file: %w", err)
+	}
+	defer nvidiaDriverParamsFile.Close()
+
+	if err := unix.Mount(utils.GetProcFdPath(modifiedParamsFile), utils.GetProcFdPath(nvidiaDriverParamsFile), "",
+		unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_PRIVATE|unix.MS_NOSYMFOLLOW, ""); err != nil {
+		return fmt.Errorf("failed to mount modified params file: %w", err)
 	}
 
 	return nil
