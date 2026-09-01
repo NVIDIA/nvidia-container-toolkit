@@ -37,6 +37,7 @@ require (
 	github.com/knqyf263/go-plugin v0.9.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/moby/sys/capability v0.4.0 // indirect
+	github.com/moby/sys/devices v0.1.0 // indirect
 	github.com/opencontainers/runtime-tools v0.9.1-0.20251114084447-edf4cb3d2116 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
