@@ -191,7 +191,7 @@ func mountLdConfig(hostLdconfigPath string, containerRoot *os.Root) (string, err
 		return "", fmt.Errorf("error reading host ldconfig: %w", err)
 	}
 
-	hookScratchDirPath := "/run/nvidia-ctk-hook/" + uuid.NewString()
+	hookScratchDirPath := filepath.Join("/run/nvidia-ctk-hook", uuid.NewString())
 	ldconfigPath := filepath.Join(hookScratchDirPath, "ldconfig")
 	if err := containerRoot.MkdirAll(hookScratchDirPath[1:], 0755); err != nil {
 		return "", fmt.Errorf("error creating hook scratch folder: %w", err)
