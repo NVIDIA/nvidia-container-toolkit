@@ -46,8 +46,8 @@ busybox binary is added to the image, which is licensed under GPLv2.
 | `github.com/urfave/cli/v3` | MIT | `github.com/urfave/cli/v3@v3.10.1` |
 | `golang.org/x/mod/semver` | BSD-3-Clause | `golang.org/x/mod@v0.38.0` |
 | `golang.org/x/sys` | BSD-3-Clause | `golang.org/x/sys@v0.47.0` |
-| `google.golang.org/genproto/googleapis/rpc/status` | Apache-2.0 | `google.golang.org/genproto/googleapis/rpc@v0.0.0-20260414002931-afd174a4e478` |
-| `google.golang.org/grpc` | Apache-2.0 | `google.golang.org/grpc@v1.82.1` |
+| `google.golang.org/genproto/googleapis/rpc/status` | Apache-2.0 | `google.golang.org/genproto/googleapis/rpc@v0.0.0-20260526163538-3dc84a4a5aaa` |
+| `google.golang.org/grpc` | Apache-2.0 | `google.golang.org/grpc@v1.83.1` |
 | `google.golang.org/protobuf` | BSD-3-Clause | `google.golang.org/protobuf@v1.36.11` |
 | `gopkg.in/yaml.v3` | MIT | `gopkg.in/yaml.v3@v3.0.1` |
 | `sigs.k8s.io/yaml` | Apache-2.0 / BSD-3-Clause / MIT | `sigs.k8s.io/yaml@v1.4.0` |
@@ -4332,7 +4332,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### google.golang.org/genproto/googleapis/rpc/status
 
 * License: Apache-2.0
-* Module: google.golang.org/genproto/googleapis/rpc@v0.0.0-20260414002931-afd174a4e478
+* Module: google.golang.org/genproto/googleapis/rpc@v0.0.0-20260526163538-3dc84a4a5aaa
 
 #### LICENSE
 
@@ -4546,7 +4546,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### google.golang.org/grpc
 
 * License: Apache-2.0
-* Module: google.golang.org/grpc@v1.82.1
+* Module: google.golang.org/grpc@v1.83.1
 
 #### LICENSE
 
