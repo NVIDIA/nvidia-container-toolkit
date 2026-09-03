@@ -1,7 +1,14 @@
 # Contribute to the NVIDIA Container Toolkit
 
-Want to hack on the NVIDIA Container Toolkit Project? Awesome!
-We only require you to sign your work, the below section describes this!
+To file feature requests, bugs, or questions, submit an issue at https://github.com/NVIDIA/nvidia-container-toolkit/issues
+
+To contribute to the project, file a Pull Request at https://github.com/NVIDIA/nvidia-container-toolkit/pulls.
+Contributions do not require explicit contributor license agreements (CLA), but we expect
+contributors to sign their work.
+
+Before beginning implementation or opening a Pull Request for a significant change, first open an
+issue describing the problem or proposal. A significant change includes, but is not limited to,
+architectural changes, new features, breaking changes to API or behavior, and non-trivial bug fixes.
 
 All contributions must adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
