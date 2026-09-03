@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/NVIDIA/go-nvlib v0.12.0
 	github.com/NVIDIA/go-nvml v0.13.3-1
-	github.com/containerd/nri v0.12.1
+	github.com/containerd/nri v0.12.2
 	github.com/cyphar/filepath-securejoin v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/moby/sys/mountinfo v0.7.2
