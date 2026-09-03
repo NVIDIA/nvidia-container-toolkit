@@ -175,6 +175,10 @@ if [ "${?}" != "0" ]; then
 	echo "nvidia driver modules are not yet loaded, invoking runc directly" >&2
 	exec runc "$@"
 fi
+if [ ! -f "/foo/bar/baz/.config/nvidia-container-runtime/config.toml" ]; then
+	echo "nvidia toolkit config /foo/bar/baz/.config/nvidia-container-runtime/config.toml is missing, invoking runc directly" >&2
+	exec runc "$@"
+fi
 NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
 PATH=/foo/bar/baz:$PATH \
 	/foo/bar/baz/nvidia-container-runtime.real \
@@ -190,6 +194,10 @@ if [ "${?}" != "0" ]; then
 	echo "nvidia driver modules are not yet loaded, invoking runc directly" >&2
 	exec runc "$@"
 fi
+if [ ! -f "/foo/bar/baz/.config/nvidia-container-runtime/config.toml" ]; then
+	echo "nvidia toolkit config /foo/bar/baz/.config/nvidia-container-runtime/config.toml is missing, invoking runc directly" >&2
+	exec runc "$@"
+fi
 NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
 PATH=/foo/bar/baz:$PATH \
 	/foo/bar/baz/nvidia-container-runtime.cdi.real \
@@ -203,6 +211,10 @@ PATH=/foo/bar/baz:$PATH \
 cat /proc/modules | grep -e "^nvidia " >/dev/null 2>&1
 if [ "${?}" != "0" ]; then
 	echo "nvidia driver modules are not yet loaded, invoking runc directly" >&2
+	exec runc "$@"
+fi
+if [ ! -f "/foo/bar/baz/.config/nvidia-container-runtime/config.toml" ]; then
+	echo "nvidia toolkit config /foo/bar/baz/.config/nvidia-container-runtime/config.toml is missing, invoking runc directly" >&2
 	exec runc "$@"
 fi
 NVIDIA_CTK_CONFIG_FILE_PATH=/foo/bar/baz/.config/nvidia-container-runtime/config.toml \
