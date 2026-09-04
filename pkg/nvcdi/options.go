@@ -155,7 +155,7 @@ func (o *options) getClassOrDefault() string {
 	switch o.mode {
 	case ModeImex:
 		return classImexChannel
-	case ModeGdrcopy, ModeGds, ModeMofed, ModeNvswitch:
+	case ModeGdrcopy, ModeGds, ModeMofed, ModeNvswitch, ModeMigCaps:
 		return string(o.mode)
 	default:
 		return "gpu"

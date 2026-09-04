@@ -91,6 +91,8 @@ func New(opts ...Option) (Interface, error) {
 		}
 	case ModeImex:
 		factory = (*imexlib)(l)
+	case ModeMigCaps:
+		factory = (*migCapsLib)(l)
 	default:
 		return nil, fmt.Errorf("unknown mode %q", o.mode)
 	}

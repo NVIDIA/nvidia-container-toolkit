@@ -18,8 +18,10 @@ package modifier
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
+	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"tags.cncf.io/container-device-interface/pkg/parser"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
@@ -82,6 +84,12 @@ func (f *Factory) newJitCDIModifier(automaticDevices []string) (oci.SpecModifier
 	if f.image != nil {
 		automaticDevices = append(automaticDevices, withUniqueDevices(gatedDevices(*f.image)).DeviceRequests()...)
 		automaticDevices = append(automaticDevices, withUniqueDevices(imexDevices(*f.image)).DeviceRequests()...)
+
+		migCaps := migCapsDevices(*f.image)
+		if err := migCaps.Validate(); err != nil {
+			return nil, fmt.Errorf("invalid MIG capability request: %w", err)
+		}
+		automaticDevices = append(automaticDevices, withUniqueDevices(migCaps).DeviceRequests()...)
 	}
 	return f.newAutomaticCDISpecModifier(automaticDevices)
 }
@@ -155,6 +163,66 @@ func (d imexDevices) DeviceRequests() []string {
 		devices = append(devices, "mode=imex,id="+channelID)
 	}
 	return devices
+}
+
+type migCapsDevices image.CUDA
+
+func (d migCapsDevices) Validate() error {
+	i := (image.CUDA)(d)
+
+	migConfig := i.Getenv(image.EnvVarNvidiaMigConfigDevices)
+	migMonitor := i.Getenv(image.EnvVarNvidiaMigMonitorDevices)
+
+	if migConfig == "" && migMonitor == "" {
+		return nil
+	}
+	// Only the value "all" is currently supported for either envvar.
+	if migConfig != "" && !strings.EqualFold(migConfig, "all") {
+		return fmt.Errorf("invalid NVIDIA_MIG_CONFIG_DEVICES %q: only \"all\" is supported", migConfig)
+	}
+	if migMonitor != "" && !strings.EqualFold(migMonitor, "all") {
+		return fmt.Errorf("invalid NVIDIA_MIG_MONITOR_DEVICES %q: only \"all\" is supported", migMonitor)
+	}
+	if !i.IsPrivileged() {
+		return fmt.Errorf("cannot set NVIDIA_MIG_CONFIG_DEVICES or NVIDIA_MIG_MONITOR_DEVICES in a non-privileged container")
+	}
+	if requestsSpecificMigDevices(i) {
+		return fmt.Errorf("cannot request MIG config/monitor devices for a container scoped to specific MIG devices")
+	}
+	return nil
+}
+
+func (d migCapsDevices) DeviceRequests() []string {
+	i := (image.CUDA)(d)
+
+	if err := d.Validate(); err != nil {
+		return nil
+	}
+	var devices []string
+	if i.Getenv(image.EnvVarNvidiaMigConfigDevices) != "" {
+		devices = append(devices, "mode=mig-caps,id=config")
+	}
+	if i.Getenv(image.EnvVarNvidiaMigMonitorDevices) != "" {
+		devices = append(devices, "mode=mig-caps,id=monitor")
+	}
+	return devices
+}
+
+// requestsSpecificMigDevices reports whether the visible device list selects one
+// or more specific MIG devices rather than whole GPUs or "all".
+func requestsSpecificMigDevices(i image.CUDA) bool {
+	visibleDevices := i.VisibleDevices()
+	if slices.Contains(visibleDevices, "all") {
+		return false
+	}
+	for _, d := range visibleDevices {
+		_, _, name := parser.ParseDevice(d)
+		id := device.Identifier(name)
+		if id.IsMigUUID() || id.IsMigIndex() {
+			return true
+		}
+	}
+	return false
 }
 
 // filterAutomaticDevices searches for "automatic" device names in the input slice.
