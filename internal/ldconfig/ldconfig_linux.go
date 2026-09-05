@@ -213,9 +213,20 @@ func mountLdConfig(hostLdconfigPath string, containerRoot *os.Root) (string, err
 	}
 	defer ldconfigFile.Close()
 
-	if err := unix.Mount(hostLdconfigPath, utils.GetProcFdPath(ldconfigFile), "",
-		unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_PRIVATE|unix.MS_NOSYMFOLLOW, ""); err != nil {
+	// The MS_RDONLY, MS_NODEV and MS_NOSYMFOLLOW flags are ignored by mount(2) when
+	// they are supplied alongside MS_BIND; they only take effect on a subsequent
+	// MS_REMOUNT. MS_PRIVATE likewise has to be applied in its own call. Without
+	// these follow-up calls the bind mount is created read-write.
+	target := utils.GetProcFdPath(ldconfigFile)
+	if err := unix.Mount(hostLdconfigPath, target, "", unix.MS_BIND, ""); err != nil {
 		return "", fmt.Errorf("error bind mounting host ldconfig: %w", err)
+	}
+	if err := unix.Mount("", target, "",
+		unix.MS_REMOUNT|unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_NOSYMFOLLOW, ""); err != nil {
+		return "", fmt.Errorf("error remounting host ldconfig as read-only: %w", err)
+	}
+	if err := unix.Mount("", target, "", unix.MS_PRIVATE, ""); err != nil {
+		return "", fmt.Errorf("error making host ldconfig mount private: %w", err)
 	}
 
 	return ldconfigPath, nil
