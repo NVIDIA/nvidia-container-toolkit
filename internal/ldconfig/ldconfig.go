@@ -182,8 +182,11 @@ func (l *Ldconfig) UpdateLDCache() error {
 		return fmt.Errorf("failed to write %s drop-in: %w", ldsoconfdSystemDirsFilenamePattern, err)
 	}
 
-	// Also output the folders to the alpine .path file as required.
-	if err := createMuslPathFileIfRequired(append(filteredDirectories, systemSearchPaths...)...); err != nil {
+	// Also output the folders to the musl .path files as required.
+	// Note that musl does not process the ld.so.conf files and the unfiltered
+	// list of directories is therefore used here. Since we have pivoted to the
+	// container root, these paths are resolved relative to "/".
+	if err := createMuslPathFilesIfRequired("/", l.directories, systemSearchPaths); err != nil {
 		return fmt.Errorf("failed to update .path file for musl: %w", err)
 	}
 
@@ -372,45 +375,6 @@ func processLdsoconfFile(ldsoconfFilename string) ([]string, []string, error) {
 		}
 	}
 	return directories, includedFilenames, nil
-}
-
-// createMuslPathFileIfRequired creates a musl .path file that allows libraries
-// from the specified directories to be discovered on the system.
-// This is required because systems that use musl do not rely on the ldcache to
-// discover libraries.
-func createMuslPathFileIfRequired(dirs ...string) error {
-	if len(dirs) == 0 || !isMusl() {
-		return nil
-	}
-
-	var pathFileName string
-	switch runtime.GOARCH {
-	case "amd64":
-		pathFileName = "/etc/ld-musl-x86_64.path"
-	case "arm64":
-		pathFileName = "/etc/ld-musl-aarch64.path"
-	}
-
-	pathFile, err := os.OpenFile(pathFileName, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
-	if err != nil {
-		return fmt.Errorf("could not open .path file: %w", err)
-	}
-	defer func() {
-		_ = pathFile.Close()
-	}()
-
-	return outputListToFile(pathFile, dirs...)
-}
-
-// isMusl checks whether the container is running musl instead of glibc.
-// Note that for the time being we only check whether `/etc/alpine-release` is
-// present in the container.
-func isMusl() bool {
-	info, err := os.Stat("/etc/alpine-release")
-	if err != nil {
-		return false
-	}
-	return !info.IsDir()
 }
 
 // isDebianLike returns true if a Debian-like distribution is detected.
