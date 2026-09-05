@@ -19,6 +19,8 @@ package docker
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -245,5 +247,35 @@ func TestGetRuntimeConfig(t *testing.T) {
 		rc, err := cfg.GetRuntimeConfig(tc.runtime)
 		require.NoError(t, err)
 		require.Equal(t, tc.expected, rc.GetBinaryPath())
+	}
+}
+
+func TestEnableCDIPreservesFeaturesFromFile(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"missing features", `{}`, `{"features":{"cdi":true}}`},
+		{"empty features", `{"features":{}}`, `{"features":{"cdi":true}}`},
+		{"existing flags", `{"features":{"containerd-snapshotter":true,"buildkit":false},"debug":true}`, `{"features":{"cdi":true,"containerd-snapshotter":true,"buildkit":false},"debug":true}`},
+		{"CDI disabled", `{"features":{"cdi":false,"containerd-snapshotter":true}}`, `{"features":{"cdi":true,"containerd-snapshotter":true}}`},
+		{"CDI enabled", `{"features":{"cdi":true,"containerd-snapshotter":true}}`, `{"features":{"cdi":true,"containerd-snapshotter":true}}`},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "daemon.json")
+			require.NoError(t, os.WriteFile(path, []byte(tc.input), 0o600))
+			for i := 0; i < 2; i++ {
+				cfg, err := New(WithPath(path))
+				require.NoError(t, err)
+				cfg.EnableCDI()
+				_, err = cfg.Save(path)
+				require.NoError(t, err)
+				contents, err := os.ReadFile(path)
+				require.NoError(t, err)
+				require.JSONEq(t, tc.expected, string(contents))
+			}
+		})
 	}
 }
