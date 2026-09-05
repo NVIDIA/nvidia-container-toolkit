@@ -27,6 +27,15 @@ type RuntimeConfig struct {
 	Runtimes []string    `toml:"runtimes"`
 	Mode     string      `toml:"mode"`
 	Modes    modesConfig `toml:"modes"`
+	// Rlimits defines POSIX resource limits to apply to the OCI runtime
+	// specification of containers handled by the NVIDIA Container Runtime.
+	// Each entry has the form NAME=SOFT[:HARD], where NAME is an rlimit name
+	// with or without the RLIMIT_ prefix (case-insensitive, e.g. "memlock" or
+	// "RLIMIT_MEMLOCK") and the values are non-negative integers or
+	// "unlimited"/"infinity". If HARD is omitted, it is set to SOFT.
+	// A configured entry replaces an rlimit of the same type already present
+	// in the incoming OCI specification.
+	Rlimits []string `toml:"rlimits,omitempty"`
 }
 
 // modesConfig defines (optional) per-mode configs
