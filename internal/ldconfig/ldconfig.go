@@ -140,10 +140,11 @@ ldconfig in the container. Such differences include system search paths.`)
 }
 
 func (l *Ldconfig) UpdateLDCache() error {
-	ldconfigPath, err := l.prepareRoot()
+	memfd, err := l.prepareRoot()
 	if err != nil {
 		return err
 	}
+	defer memfd.Close()
 
 	// `prepareRoot` pivots to the container root, so can now set the container "debian-ness".
 	l.isDebianLikeContainer = isDebianLike()
@@ -160,7 +161,7 @@ func (l *Ldconfig) UpdateLDCache() error {
 	}
 
 	args := []string{
-		filepath.Base(ldconfigPath),
+		filepath.Base(l.ldconfigPath),
 		"-f", defaultTopLevelLdsoconfFilePath,
 		"-C", "/etc/ld.so.cache",
 	}
@@ -187,36 +188,47 @@ func (l *Ldconfig) UpdateLDCache() error {
 		return fmt.Errorf("failed to update .path file for musl: %w", err)
 	}
 
-	return SafeExec(ldconfigPath, args, nil)
+	return SafeExec(memfd, args, nil)
 }
 
-func (l *Ldconfig) prepareRoot() (string, error) {
+// prepareRoot copies the host ldconfig binary's contents into a sealed,
+// anonymous memfd (an in-memory file with no path of its own) and pivots
+// into the container root, returning the memfd for UpdateLDCache to exec by
+// descriptor (see SafeExec).
+func (l *Ldconfig) prepareRoot() (_ *os.File, rerr error) {
+	// Clone before touching the root: no TOCTOU race on l.ldconfigPath, and
+	// the memfd survives the pivot below untouched.
+	memfd, err := cloneLdconfigIntoMemfd(l.ldconfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("error cloning host ldconfig: %w", err)
+	}
+	defer func() {
+		if rerr != nil {
+			memfd.Close()
+		}
+	}()
+
+	// Scopes paths to l.inRoot, so a rootfs symlink can't escape it.
 	root, err := os.OpenRoot(l.inRoot)
 	if err != nil {
-		return "", fmt.Errorf("failed to open root: %w", err)
+		return nil, fmt.Errorf("failed to open root: %w", err)
 	}
 	defer root.Close()
 
-	// To prevent leaking the parent proc filesystem, we create a new proc mount
-	// in the specified root.
-	if err := mountProc(root); err != nil {
-		return "", fmt.Errorf("error mounting /proc: %w", err)
-	}
-
-	// We mount the host ldconfig before we pivot root since host paths are not
-	// visible after the pivot root operation.
-	ldconfigPath, err := mountLdConfig(l.ldconfigPath, root)
-	if err != nil {
-		return "", fmt.Errorf("error mounting host ldconfig: %w", err)
+	// ldconfig doesn't need /proc or /sys; masking both makes any stale or
+	// baked-in content there unreadable, rather than trusting ldconfig never
+	// reads them.
+	if err := maskPseudoFilesystems(root); err != nil {
+		return nil, fmt.Errorf("error masking pseudo-filesystems: %w", err)
 	}
 
 	// We pivot to the container root for the new process, this further limits
 	// access to the host.
 	if err := l.pivotRoot(root); err != nil {
-		return "", fmt.Errorf("error running pivot_root: %w", err)
+		return nil, fmt.Errorf("error running pivot_root: %w", err)
 	}
 
-	return ldconfigPath, nil
+	return memfd, nil
 }
 
 func (l *Ldconfig) filterDirectories(configFilePath string, directories ...string) ([]string, error) {
