@@ -37,7 +37,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/edits"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/test/to"
 )
 
 func TestDeviceSpecGenerators(t *testing.T) {
@@ -186,7 +185,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 						DeviceNodes: []*specs.DeviceNode{
 							{Path: "/dev/nvidia0", HostPath: "/dev/nvidia0"},
 							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
-							{Path: "/dev/nvmap", HostPath: "/dev/nvmap", FileMode: to.Ptr(os.FileMode(0400)), Permissions: "rwm", GID: to.Ptr[uint32](44)},
+							{Path: "/dev/nvmap", HostPath: "/dev/nvmap", FileMode: new(os.FileMode(0400)), Permissions: "rwm", GID: new(uint32(44))},
 							{Path: "/dev/nvidia2", HostPath: "/dev/nvidia2"},
 						},
 					},
@@ -198,7 +197,7 @@ func TestDeviceSpecGenerators(t *testing.T) {
 						DeviceNodes: []*specs.DeviceNode{
 							{Path: "/dev/nvidia1", HostPath: "/dev/nvidia1"},
 							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
-							{Path: "/dev/nvmap", HostPath: "/dev/nvmap", FileMode: to.Ptr(os.FileMode(0400)), Permissions: "rwm", GID: to.Ptr[uint32](44)},
+							{Path: "/dev/nvmap", HostPath: "/dev/nvmap", FileMode: new(os.FileMode(0400)), Permissions: "rwm", GID: new(uint32(44))},
 						},
 					},
 				},
