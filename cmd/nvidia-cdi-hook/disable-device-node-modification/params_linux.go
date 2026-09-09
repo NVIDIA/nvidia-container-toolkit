@@ -63,9 +63,20 @@ func createParamsFileInContainer(containerRoot *os.Root, contents []byte) error 
 	}
 	defer nvidiaDriverParamsFile.Close()
 
-	if err := unix.Mount(utils.GetProcFdPath(modifiedParamsFile), utils.GetProcFdPath(nvidiaDriverParamsFile), "",
-		unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_PRIVATE|unix.MS_NOSYMFOLLOW, ""); err != nil {
+	// The MS_RDONLY, MS_NODEV and MS_NOSYMFOLLOW flags are ignored by mount(2) when
+	// they are supplied alongside MS_BIND; they only take effect on a subsequent
+	// MS_REMOUNT. MS_PRIVATE likewise has to be applied in its own call. Without
+	// these follow-up calls the bind mount is created read-write.
+	target := utils.GetProcFdPath(nvidiaDriverParamsFile)
+	if err := unix.Mount(utils.GetProcFdPath(modifiedParamsFile), target, "", unix.MS_BIND, ""); err != nil {
 		return fmt.Errorf("failed to mount modified params file: %w", err)
+	}
+	if err := unix.Mount("", target, "",
+		unix.MS_REMOUNT|unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_NOSYMFOLLOW, ""); err != nil {
+		return fmt.Errorf("failed to remount modified params file as read-only: %w", err)
+	}
+	if err := unix.Mount("", target, "", unix.MS_PRIVATE, ""); err != nil {
+		return fmt.Errorf("failed to make modified params file mount private: %w", err)
 	}
 
 	return nil
