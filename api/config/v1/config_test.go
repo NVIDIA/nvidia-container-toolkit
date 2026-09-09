@@ -23,8 +23,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/test/to"
 )
 
 func TestGetConfigWithCustomConfig(t *testing.T) {
@@ -217,7 +215,7 @@ func TestGetConfig(t *testing.T) {
 					Path: "nvidia-ctk",
 				},
 				Features: features{
-					AllowLDConfigFromContainer: to.Ptr(feature(true)),
+					AllowLDConfigFromContainer: new(feature(true)),
 				},
 			},
 		},
@@ -435,7 +433,7 @@ func TestAssertValid(t *testing.T) {
 					Ldconfig: "/non/host/path",
 				},
 				Features: features{
-					AllowLDConfigFromContainer: to.Ptr(feature(true)),
+					AllowLDConfigFromContainer: new(feature(true)),
 				},
 			},
 		},

@@ -23,8 +23,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/test/to"
 )
 
 func TestTomlSave(t *testing.T) {
@@ -311,7 +309,7 @@ func TestConfigFromToml(t *testing.T) {
 			expectedConfig: func() *Config {
 				c, _ := GetDefault()
 				c.NVIDIAContainerCLIConfig.Ldconfig = "/some/ldconfig/path"
-				c.Features.AllowLDConfigFromContainer = to.Ptr(feature(true))
+				c.Features.AllowLDConfigFromContainer = new(feature(true))
 				return c
 			}(),
 		},

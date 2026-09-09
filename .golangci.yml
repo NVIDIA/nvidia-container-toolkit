@@ -20,6 +20,7 @@ linters:
     - gocritic
     - gosec
     - misspell
+    - modernize
     - unconvert
   exclusions:
     generated: lax

@@ -28,7 +28,6 @@ import (
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/test/to"
 )
 
 func TestDeviceToEdits(t *testing.T) {
@@ -86,7 +85,7 @@ func TestDeviceToEdits(t *testing.T) {
 							Permissions: "w",
 							Major:       100,
 							Minor:       200,
-							FileMode:    to.Ptr(0660 & os.ModePerm),
+							FileMode:    new(0660 & os.ModePerm),
 							GID:         ptrIfNonZero[uint32](44),
 						},
 					},
@@ -203,7 +202,7 @@ func TestDeviceToSpec(t *testing.T) {
 				Permissions: "w",
 				Major:       100,
 				Minor:       200,
-				FileMode:    to.Ptr(0660 | os.ModeCharDevice),
+				FileMode:    new(0660 | os.ModeCharDevice),
 				GID:         ptrIfNonZero[uint32](44),
 			},
 		},
@@ -239,38 +238,38 @@ func TestGetAdditionalGIDs(t *testing.T) {
 			description: "device node has zero GID",
 			device:      &device{},
 			deviceNode: &specs.DeviceNode{
-				GID: to.Ptr[uint32](0),
+				GID: new(uint32(0)),
 			},
 		},
 		{
 			description: "filemode not specified",
 			device:      &device{},
 			deviceNode: &specs.DeviceNode{
-				GID: to.Ptr[uint32](1),
+				GID: new(uint32(1)),
 			},
 		},
 		{
 			description: "device node is not a character device",
 			device:      &device{},
 			deviceNode: &specs.DeviceNode{
-				GID:      to.Ptr[uint32](1),
-				FileMode: to.Ptr(0666 | os.ModeSymlink),
+				GID:      new(uint32(1)),
+				FileMode: new(0666 | os.ModeSymlink),
 			},
 		},
 		{
 			description: "character device is world read-writeable",
 			device:      &device{},
 			deviceNode: &specs.DeviceNode{
-				GID:      to.Ptr[uint32](1),
-				FileMode: to.Ptr(0666 | os.ModeCharDevice),
+				GID:      new(uint32(1)),
+				FileMode: new(0666 | os.ModeCharDevice),
 			},
 		},
 		{
 			description: "character device is only world readable",
 			device:      &device{},
 			deviceNode: &specs.DeviceNode{
-				GID:      to.Ptr[uint32](1),
-				FileMode: to.Ptr(0664 | os.ModeCharDevice),
+				GID:      new(uint32(1)),
+				FileMode: new(0664 | os.ModeCharDevice),
 			},
 			expectedAdditionalGIDs: []uint32{1},
 		},
@@ -278,8 +277,8 @@ func TestGetAdditionalGIDs(t *testing.T) {
 			description: "character device is only world writeable",
 			device:      &device{},
 			deviceNode: &specs.DeviceNode{
-				GID:      to.Ptr[uint32](1),
-				FileMode: to.Ptr(0662 | os.ModeCharDevice),
+				GID:      new(uint32(1)),
+				FileMode: new(0662 | os.ModeCharDevice),
 			},
 			expectedAdditionalGIDs: []uint32{1},
 		},
@@ -287,8 +286,8 @@ func TestGetAdditionalGIDs(t *testing.T) {
 			description: "character device is not world read-writeable",
 			device:      &device{},
 			deviceNode: &specs.DeviceNode{
-				GID:      to.Ptr[uint32](1),
-				FileMode: to.Ptr(0660 | os.ModeCharDevice),
+				GID:      new(uint32(1)),
+				FileMode: new(0660 | os.ModeCharDevice),
 			},
 			expectedAdditionalGIDs: []uint32{1},
 		},

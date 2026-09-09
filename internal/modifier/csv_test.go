@@ -29,7 +29,6 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/test/to"
 )
 
 func TestNewCSVModifier(t *testing.T) {
@@ -95,7 +94,7 @@ func TestNewCSVModifier(t *testing.T) {
 					},
 					Resources: &specs.LinuxResources{
 						Devices: []specs.LinuxDeviceCgroup{
-							{Allow: true, Type: "c", Major: to.Ptr[int64](99), Minor: to.Ptr[int64](0), Access: "rwm"},
+							{Allow: true, Type: "c", Major: new(int64(99)), Minor: new(int64(0)), Access: "rwm"},
 						},
 					},
 				},

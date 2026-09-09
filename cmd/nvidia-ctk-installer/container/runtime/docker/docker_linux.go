@@ -91,7 +91,7 @@ func SignalDocker(socket string) error {
 
 	// Try to send a SIGHUP up to maxReloadAttempts times
 	var err error
-	for i := 0; i < maxReloadAttempts; i++ {
+	for i := range maxReloadAttempts {
 		err = retriable()
 		if err == nil {
 			break
