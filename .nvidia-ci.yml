@@ -150,12 +150,13 @@ pull-images:
     - echo "Skipped in internal CI"
 
 # The .scan step forms the base of the image scan operation performed before releasing
-# images.
+# images. pulse-cli pulls from the registry directly, so DinD is not required.
 scan-images:
   stage: scan
   needs:
   - pull-images
   image: "${PULSE_IMAGE}"
+  services: []
   parallel:
     matrix:
       - TAG_SUFFIX: [""]
@@ -164,30 +165,27 @@ scan-images:
         PLATFORM: "linux/amd64"
   variables:
     IMAGE: "${CI_REGISTRY_IMAGE}/container-toolkit:${CI_COMMIT_SHORT_SHA}"
-    IMAGE_ARCHIVE: "container-toolkit-${CI_JOB_ID}.tar"
   allow_failure: true
   script:
     - |
-      docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
+      mkdir -p "$HOME/.docker"
+      chmod 700 "$HOME/.docker"
+      REGISTRY_AUTH="$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')"
+      jq -n --arg registry "$CI_REGISTRY" --arg auth "$REGISTRY_AUTH" '{auths: {($registry): {auth: $auth}}}' > "$HOME/.docker/config.json"
+      chmod 600 "$HOME/.docker/config.json"
+      export REGISTRY_AUTH_FILE="$HOME/.docker/config.json"
       export SCAN_IMAGE=${IMAGE}${TAG_SUFFIX}
       echo "Scanning image ${SCAN_IMAGE} for ${PLATFORM}"
-      docker pull --platform="${PLATFORM}" "${SCAN_IMAGE}"
-      docker save "${SCAN_IMAGE}" -o "${IMAGE_ARCHIVE}"
       AuthHeader=$(echo -n $SSA_CLIENT_ID:$SSA_CLIENT_SECRET | base64 -w0)
       export SSA_TOKEN=$(curl --request POST --header "Authorization: Basic $AuthHeader" --header "Content-Type: application/x-www-form-urlencoded" ${SSA_ISSUER_URL} | jq ".access_token" |  tr -d '"')
       if [ -z "$SSA_TOKEN" ]; then exit 1; else echo "SSA_TOKEN set!"; fi
 
-      pulse-cli -n $NSPECT_ID --ssa $SSA_TOKEN scan -i $IMAGE_ARCHIVE -p $CONTAINER_POLICY -o
-      rm -f "${IMAGE_ARCHIVE}"
+      pulse-cli -n "${NSPECT_ID}" scan-image -i "${SCAN_IMAGE}" --platform "${PLATFORM}" -p "${CONTAINER_POLICY}" --output-dir="scan-results" -o
   artifacts:
     when: always
     expire_in: 1 week
     paths:
-      - pulse-cli.log
-      - licenses.json
-      - sbom.json
-      - vulns.json
-      - policy_evaluation.json
+      - scan-results/**/*
 
 upload-kitmaker-packages:
   stage: release
