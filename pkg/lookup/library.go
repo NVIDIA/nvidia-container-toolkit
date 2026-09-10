@@ -19,13 +19,17 @@ package lookup
 // NewLibraryLocator creates a library locator using the specified options.
 // If search paths (WithSearchPaths(path1, path2, ...)) are explicitly specified
 // a library locator using these as absolute paths are used. Otherwise the
-// library locator combines unique matches from the following sources, in
+// library locator combines the unique matches from the following sources, in
 // precedence order:
-//   - predefined search paths
-//   - 64-bit entries from the ldcache
-//   - 32-bit entries from the ldcache
+//   - a set of predefined search paths
+//   - the 64-bit entries of the ldcache
+//   - the 32-bit entries of the ldcache
 //
-// If multiple sources return the same path, the first occurrence is kept.
+// A 32-bit library is typically in a directory that is not in the predefined
+// search paths, so the ldcache is consulted even if one of these already
+// provided a match. If 32-bit libraries are excluded
+// (WithCompat32Libraries(false)), the first source with a match is used
+// instead.
 func NewLibraryLocator(opts ...Option) Locator {
 	f := NewFactory(opts...)
 
@@ -52,9 +56,15 @@ func NewLibraryLocator(opts ...Option) Locator {
 			"/lib/aarch64-linux-gnu/nvidia/current",
 		}...),
 	)
-	l := AsUnique(Merge(
+	if !f.compat32 {
+		return First(
+			NewSymlinkLocator(opts...),
+			f.newLdcacheLocator(),
+		)
+	}
+
+	return AsUnique(Merge(
 		NewSymlinkLocator(opts...),
 		f.newLdcacheLocator(),
 	))
-	return l
 }

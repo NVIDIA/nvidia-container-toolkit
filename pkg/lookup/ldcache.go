@@ -47,9 +47,16 @@ func (f *Factory) newLdcacheLocator() Locator {
 }
 
 func (f *Factory) newLdcacheLocatorFrom(cache ldcache.LDCache) Locator {
-	var libraries []string
 	libs32, libs64 := cache.List()
-	for _, libs := range [][]string{libs64, libs32} {
+	// The 32-bit libraries are searched after the native ones, and only if
+	// these are not explicitly excluded.
+	libraryLists := [][]string{libs64}
+	if f.compat32 {
+		libraryLists = append(libraryLists, libs32)
+	}
+
+	var libraries []string
+	for _, libs := range libraryLists {
 		for _, library := range libs {
 			chain, err := symlinks.ResolveChain(library)
 			if err != nil {
