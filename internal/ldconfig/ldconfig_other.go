@@ -29,15 +29,19 @@ func pivotRoot(newroot string) error {
 	return fmt.Errorf("not supported")
 }
 
+func maskPseudoFilesystems(root *os.Root) error {
+	return fmt.Errorf("not supported")
+}
+
 func msMoveRoot(rootfs string) error {
 	return fmt.Errorf("not supported")
 }
 
-func mountLdConfig(hostLdconfigPath string, containerRoot *os.Root) (string, error) {
-	return "", fmt.Errorf("not supported")
+func cloneLdconfigIntoMemfd(hostLdconfigPath string) (*os.File, error) {
+	return nil, fmt.Errorf("not supported")
 }
 
-func mountProc(newroot *os.Root) error {
+func SafeExec(file *os.File, argv []string, envv []string) error {
 	return fmt.Errorf("not supported")
 }
 
