@@ -28,7 +28,10 @@ type options struct {
 	librarySearchPaths []string
 	// configSearchPaths specified explicit search paths for discovering driver config files.
 	configSearchPaths []string
-	versioner         Versioner
+	// compat32 indicates whether the 32-bit driver libraries are also
+	// discovered.
+	compat32  bool
+	versioner Versioner
 }
 
 type Option func(*options)
@@ -60,6 +63,14 @@ func WithLibrarySearchPaths(paths ...string) Option {
 func WithConfigSearchPaths(paths ...string) Option {
 	return func(o *options) {
 		o.configSearchPaths = paths
+	}
+}
+
+// WithCompat32Libraries controls whether the 32-bit driver libraries are also
+// discovered. These are discovered by default.
+func WithCompat32Libraries(compat32 bool) Option {
+	return func(o *options) {
+		o.compat32 = compat32
 	}
 }
 

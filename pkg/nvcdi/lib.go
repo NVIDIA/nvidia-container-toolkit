@@ -222,6 +222,7 @@ func (o *options) getDriverOptions() []root.Option {
 		root.WithDevRoot(o.devRoot),
 		root.WithLibrarySearchPaths(o.librarySearchPaths...),
 		root.WithConfigSearchPaths(o.configSearchPaths...),
+		root.WithCompat32Libraries(!o.featureFlags[FeatureDisableCompat32Libraries]),
 		root.WithVersioner(
 			root.FirstOf(
 				nvsandboxutilslibWithVersion(o.nvsandboxutilslib),

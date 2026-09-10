@@ -26,6 +26,7 @@ import (
 	"github.com/moby/sys/reexec"
 	"github.com/urfave/cli/v3"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldconfig"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
@@ -119,12 +120,33 @@ func (m command) run(_ *cli.Command, cfg *options) error {
 		reexecUpdateLdCacheCommandName,
 		cfg.ldconfigPath,
 		containerRootDir,
+		m.compat32Requested(s),
 		cfg.folders...,
 	)
 	if err != nil {
 		return err
 	}
 	return runner.Run()
+}
+
+// compat32Requested checks whether the container requested the compat32
+// driver capability. This mirrors the nvidia-container-cli, where the 32-bit
+// libraries are associated with this capability.
+// Note that the environment of the container is read from its OCI spec, which
+// is not always accessible, and a container whose capabilities cannot be
+// determined is treated as not having requested this one.
+func (m command) compat32Requested(s *oci.State) bool {
+	env, err := s.GetEnv()
+	if err != nil {
+		m.logger.Debugf("Failed to get the container environment: %v", err)
+		return false
+	}
+	containerImage, err := image.New(image.WithEnv(env))
+	if err != nil {
+		m.logger.Debugf("Failed to construct image from the container environment: %v", err)
+		return false
+	}
+	return containerImage.GetDriverCapabilities().Has(image.DriverCapabilityCompat32)
 }
 
 // updateLdCacheHandler wraps updateLdCache with error handling.

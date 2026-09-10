@@ -18,7 +18,6 @@
 package ldconfig
 
 import (
-	"debug/elf"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -27,13 +26,12 @@ import (
 	"strings"
 )
 
-// muslArchs maps the platform to the musl architecture names of the native
-// dynamic linker and of the 32-bit dynamic linker the platform can also run.
-// These name the linker, /lib/ld-musl-<arch>.so.1, and its .path file,
+// muslArchs maps the platform to the musl architecture name, which names the
+// dynamic linker, /lib/ld-musl-<arch>.so.1, and its .path file,
 // /etc/ld-musl-<arch>.path.
-var muslArchs = map[string]struct{ native, compat32 string }{
-	"amd64": {"x86_64", "i386"},
-	"arm64": {"aarch64", "armhf"},
+var muslArchs = map[string]string{
+	"amd64": "x86_64",
+	"arm64": "aarch64",
 }
 
 // muslDefaultSearchPath is searched by musl when no .path file exists.
@@ -48,47 +46,25 @@ func muslPathFile(root, arch string) string {
 	return filepath.Join(root, "/etc/ld-musl-"+arch+".path")
 }
 
-// createMuslPathFilesIfRequired adds the specified directories to the musl
-// .path files in the specified root, which musl searches instead of an ldcache.
-//
-// Unlike the ldcache, a .path file carries no architecture information: musl
-// loads the first file matching the requested name and fails instead of
-// searching on if that file is of another ELF class. Each directory is
-// therefore added only to the .path file of the class of its libraries, and
-// the driver directories are searched before the directories that may hold
-// files of the same names for another class.
-func createMuslPathFilesIfRequired(root string, driverDirs []string, systemDirs []string) error {
-	archs, ok := muslArchs[runtime.GOARCH]
-	if !ok || !isMusl(root, archs.native) {
+// createMuslPathFileIfRequired adds the specified directories to the musl
+// .path file in the specified root, which musl searches instead of an ldcache.
+func createMuslPathFileIfRequired(root string, driverDirs []string, systemDirs []string) error {
+	arch, ok := muslArchs[runtime.GOARCH]
+	if !ok || !isMusl(root, arch) {
 		return nil
 	}
 
-	// Both supported platforms are 64-bit. Directories holding no libraries
-	// are added to the native .path file.
-	var nativeDirs, compat32Dirs []string
-	for _, dir := range driverDirs {
-		classes := libraryClasses(filepath.Join(root, dir))
-		if len(classes) == 0 || classes[elf.ELFCLASS64] {
-			nativeDirs = append(nativeDirs, dir)
-		}
-		if classes[elf.ELFCLASS32] {
-			compat32Dirs = append(compat32Dirs, dir)
-		}
-	}
-
-	if err := updateMuslPathFile(muslPathFile(root, archs.native), nativeDirs, systemDirs); err != nil {
-		return err
-	}
-	// 32-bit libraries are only of use to a 32-bit dynamic linker.
-	if len(compat32Dirs) == 0 || !isFile(muslLoader(root, archs.compat32)) {
-		return nil
-	}
-	return updateMuslPathFile(muslPathFile(root, archs.compat32), compat32Dirs, nil)
+	return updateMuslPathFile(muslPathFile(root, arch), driverDirs, systemDirs)
 }
 
 // updateMuslPathFile writes the driver directories that are not searched
 // already, then the existing entries, then the system directories to the
 // specified .path file. The default search path stands in for a missing file.
+//
+// The driver directories are searched first so that an injected library wins a
+// name lookup against a file of the same name that happens to sit in a
+// directory that is searched already. This is the precedence that the glibc
+// path gives these directories through the 00-nvcr-*.conf drop-in.
 func updateMuslPathFile(path string, driverDirs []string, systemDirs []string) error {
 	if len(driverDirs) == 0 && len(systemDirs) == 0 {
 		return nil
@@ -119,22 +95,6 @@ func updateMuslPathFile(path string, driverDirs []string, systemDirs []string) e
 	}()
 
 	return outputListToFile(pathFile, dirs...)
-}
-
-// libraryClasses returns the ELF classes of the libraries in the specified
-// directory. Files that are not ELF files are ignored.
-func libraryClasses(dir string) map[elf.Class]bool {
-	classes := make(map[elf.Class]bool)
-	libraries, _ := filepath.Glob(filepath.Join(dir, "lib?*.so*"))
-	for _, library := range libraries {
-		f, err := elf.Open(library)
-		if err != nil {
-			continue
-		}
-		classes[f.Class] = true
-		_ = f.Close()
-	}
-	return classes
 }
 
 // isMusl checks whether the container is running musl instead of glibc: its
