@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/moby/sys/devices"
 	"github.com/opencontainers/cgroups/devices/config"
-	"github.com/opencontainers/runc/libcontainer/devices"
 )
 
 type Device config.Device
