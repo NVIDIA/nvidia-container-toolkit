@@ -32,7 +32,7 @@ import (
 
 func createParamsFileInContainer(containerRoot *os.Root, contents []byte) error {
 
-	hookScratchDirPath := "/run/nvidia-ctk-hook" + uuid.NewString()
+	hookScratchDirPath := filepath.Join("/run/nvidia-ctk-hook", uuid.NewString())
 	if err := containerRoot.MkdirAll(hookScratchDirPath[1:], 0755); err != nil {
 		return fmt.Errorf("error creating hook scratch folder: %w", err)
 	}
