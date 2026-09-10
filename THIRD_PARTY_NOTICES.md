@@ -19,43 +19,6 @@ busybox binary is added to the image, which is licensed under GPLv2.
 
 ## Go Module Index
 
-<<<<<<< HEAD
-| Package | License | Module |
-|---------|---------|--------|
-| `github.com/Masterminds/semver/v3` | MIT | `github.com/Masterminds/semver/v3@v3.5.0` |
-| `github.com/NVIDIA/go-nvlib/pkg` | Apache-2.0 | `github.com/NVIDIA/go-nvlib@v0.12.0` |
-| `github.com/NVIDIA/go-nvml/pkg` | Apache-2.0 | `github.com/NVIDIA/go-nvml@v0.13.3-1` |
-| `github.com/containerd/log` | Apache-2.0 | `github.com/containerd/log@v0.1.0` |
-| `github.com/containerd/nri/pkg` | Apache-2.0 | `github.com/containerd/nri@v0.12.1` |
-| `github.com/containerd/ttrpc` | Apache-2.0 | `github.com/containerd/ttrpc@v1.2.7` |
-| `github.com/cyphar/filepath-securejoin` | BSD-3-Clause / MPL-2.0 | `github.com/cyphar/filepath-securejoin@v0.7.0` |
-| `github.com/fsnotify/fsnotify` | BSD-3-Clause | `github.com/fsnotify/fsnotify@v1.7.0` |
-| `github.com/google/uuid` | BSD-3-Clause | `github.com/google/uuid@v1.6.0` |
-| `github.com/knqyf263/go-plugin/wasm` | MIT | `github.com/knqyf263/go-plugin@v0.9.0` |
-| `github.com/moby/sys/capability` | BSD-2-Clause | `github.com/moby/sys/capability@v0.4.0` |
-| `github.com/moby/sys/mountinfo` | Apache-2.0 | `github.com/moby/sys/mountinfo@v0.7.2` |
-| `github.com/moby/sys/reexec` | Apache-2.0 | `github.com/moby/sys/reexec@v0.1.0` |
-| `github.com/opencontainers/cgroups/devices/config` | Apache-2.0 | `github.com/opencontainers/cgroups@v0.0.7` |
-| `github.com/opencontainers/runc` | Apache-2.0 | `github.com/opencontainers/runc@v1.4.3` |
-| `github.com/opencontainers/runtime-spec/specs-go` | Apache-2.0 | `github.com/opencontainers/runtime-spec@v1.3.0` |
-| `github.com/opencontainers/runtime-tools` | Apache-2.0 | `github.com/opencontainers/runtime-tools@v0.9.1-0.20251114084447-edf4cb3d2116` |
-| `github.com/pelletier/go-toml` | Apache-2.0 / MIT | `github.com/pelletier/go-toml@v1.9.5` |
-| `github.com/prometheus/procfs` | Apache-2.0 | `github.com/prometheus/procfs@v0.21.1` |
-| `github.com/sirupsen/logrus` | MIT | `github.com/sirupsen/logrus@v1.9.4` |
-| `github.com/tetratelabs/wazero` | Apache-2.0 | `github.com/tetratelabs/wazero@v1.11.0` |
-| `github.com/urfave/cli-altsrc/v3` | MIT | `github.com/urfave/cli-altsrc/v3@v3.1.0` |
-| `github.com/urfave/cli/v3` | MIT | `github.com/urfave/cli/v3@v3.10.1` |
-| `golang.org/x/mod/semver` | BSD-3-Clause | `golang.org/x/mod@v0.38.0` |
-| `golang.org/x/sys` | BSD-3-Clause | `golang.org/x/sys@v0.47.0` |
-| `google.golang.org/genproto/googleapis/rpc/status` | Apache-2.0 | `google.golang.org/genproto/googleapis/rpc@v0.0.0-20260526163538-3dc84a4a5aaa` |
-| `google.golang.org/grpc` | Apache-2.0 | `google.golang.org/grpc@v1.83.1` |
-| `google.golang.org/protobuf` | BSD-3-Clause | `google.golang.org/protobuf@v1.36.11` |
-| `gopkg.in/yaml.v3` | MIT | `gopkg.in/yaml.v3@v3.0.1` |
-| `sigs.k8s.io/yaml` | Apache-2.0 / BSD-3-Clause / MIT | `sigs.k8s.io/yaml@v1.4.0` |
-| `sigs.k8s.io/yaml/goyaml.v2` | Apache-2.0 | `sigs.k8s.io/yaml@v1.4.0` |
-| `tags.cncf.io/container-device-interface` | Apache-2.0 | `tags.cncf.io/container-device-interface@v1.1.0` |
-| `tags.cncf.io/container-device-interface/specs-go` | Apache-2.0 | `tags.cncf.io/container-device-interface/specs-go@v1.1.0` |
-=======
 | Package | License | Dependency |
 |---------|---------|------------|
 | `github.com/Masterminds/semver/v3` | MIT | `github.com/Masterminds/semver/v3` |
@@ -91,7 +54,6 @@ busybox binary is added to the image, which is licensed under GPLv2.
 | `sigs.k8s.io/yaml/goyaml.v2` | Apache-2.0 | `sigs.k8s.io/yaml` |
 | `tags.cncf.io/container-device-interface` | Apache-2.0 | `tags.cncf.io/container-device-interface` |
 | `tags.cncf.io/container-device-interface/specs-go` | Apache-2.0 | `tags.cncf.io/container-device-interface/specs-go` |
->>>>>>> b911681d (Remove Go module versions from rendered TPN document)
 
 ## Go Module License Texts
 
@@ -4370,11 +4332,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### google.golang.org/genproto/googleapis/rpc/status
 
 * License: Apache-2.0
-<<<<<<< HEAD
-* Module: google.golang.org/genproto/googleapis/rpc@v0.0.0-20260526163538-3dc84a4a5aaa
-=======
 * Module: google.golang.org/genproto/googleapis/rpc
->>>>>>> b911681d (Remove Go module versions from rendered TPN document)
 
 #### LICENSE
 
@@ -4588,11 +4546,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### google.golang.org/grpc
 
 * License: Apache-2.0
-<<<<<<< HEAD
-* Module: google.golang.org/grpc@v1.83.1
-=======
 * Module: google.golang.org/grpc
->>>>>>> b911681d (Remove Go module versions from rendered TPN document)
 
 #### LICENSE
 
