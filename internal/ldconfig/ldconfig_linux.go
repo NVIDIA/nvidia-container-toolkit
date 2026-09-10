@@ -24,14 +24,15 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
+	"unsafe"
 
-	"github.com/google/uuid"
 	"github.com/moby/sys/mountinfo"
 	"github.com/moby/sys/reexec"
+	"github.com/opencontainers/runc/libcontainer/exeseal"
 	"golang.org/x/sys/unix"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/utils"
@@ -171,6 +172,33 @@ func msMoveRoot(rootfs string) error {
 	return chroot()
 }
 
+// maskPseudoFilesystems mounts an empty tmpfs over root/proc and root/sys,
+// if present, before pivoting into root. ldconfig does not need either
+// filesystem for its own operation, so rather than relying on that (an
+// assumption about the behavior of an unaudited third-party binary, today
+// and in every future version of it), this makes both unconditionally
+// inert: whatever either path might otherwise expose post-pivot (a stale
+// mount carried in from outside, or static content baked into the
+// container image itself) can never be read by anything running in the
+// isolated namespaces below, because there is nothing real there to read.
+func maskPseudoFilesystems(root *os.Root) error {
+	for _, name := range []string{"proc", "sys"} {
+		f, err := root.Open(name)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return fmt.Errorf("error opening %s: %w", name, err)
+		}
+		defer f.Close()
+
+		if err := unix.Mount("tmpfs", utils.GetProcFdPath(f), "tmpfs", 0, ""); err != nil {
+			return fmt.Errorf("error masking %s: %w", name, err)
+		}
+	}
+	return nil
+}
+
 func chroot() error {
 	if err := unix.Chroot("."); err != nil {
 		return &os.PathError{Op: "chroot", Path: ".", Err: err}
@@ -181,59 +209,66 @@ func chroot() error {
 	return nil
 }
 
-// mountLdConfig mounts the host ldconfig to the mount namespace of the hook.
-// We use WithProcfd to perform the mount operations to ensure that the changes
-// are persisted across the pivot root.
-func mountLdConfig(hostLdconfigPath string, containerRoot *os.Root) (string, error) {
-
-	hostLdconfigInfo, err := os.Stat(hostLdconfigPath)
+// cloneLdconfigIntoMemfd copies the contents of hostLdconfigPath into a
+// sealed, anonymous memfd (falling back to an unlinked tmpfile only if
+// memfd_create is unavailable), via libcontainer/exeseal.CloneBinary. Done
+// before any namespace changes or pivot -- nothing attacker-controlled is
+// reachable yet, so there is no TOCTOU race on hostLdconfigPath itself.
+//
+// The returned file has no underlying path or mount-namespace membership:
+// it survives pivot_root untouched and can be exec'd directly by
+// descriptor (see SafeExec).
+func cloneLdconfigIntoMemfd(hostLdconfigPath string) (*os.File, error) {
+	src, err := os.Open(hostLdconfigPath)
 	if err != nil {
-		return "", fmt.Errorf("error reading host ldconfig: %w", err)
+		return nil, fmt.Errorf("error opening host ldconfig: %w", err)
 	}
+	defer src.Close()
 
-	hookScratchDirPath := filepath.Join("/run/nvidia-ctk-hook", uuid.NewString())
-	ldconfigPath := filepath.Join(hookScratchDirPath, "ldconfig")
-	if err := containerRoot.MkdirAll(hookScratchDirPath[1:], 0755); err != nil {
-		return "", fmt.Errorf("error creating hook scratch folder: %w", err)
-	}
-
-	hookScratchDir, err := containerRoot.Open(hookScratchDirPath[1:])
+	info, err := src.Stat()
 	if err != nil {
-		return "", fmt.Errorf("error opening hook scratch folder: %w", err)
-	}
-	defer hookScratchDir.Close()
-
-	if err := createTmpFs(utils.GetProcFdPath(hookScratchDir), int(hostLdconfigInfo.Size())); err != nil {
-		return "", fmt.Errorf("error creating tmpfs: %w", err)
+		return nil, fmt.Errorf("error statting host ldconfig: %w", err)
 	}
 
-	ldconfigFile, err := containerRoot.OpenFile(ldconfigPath[1:], os.O_CREATE|os.O_RDWR|os.O_TRUNC, hostLdconfigInfo.Mode())
-	if err != nil {
-		return "", fmt.Errorf("error creating ldconfig: %w", err)
-	}
-	defer ldconfigFile.Close()
-
-	if err := unix.Mount(hostLdconfigPath, utils.GetProcFdPath(ldconfigFile), "",
-		unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_PRIVATE|unix.MS_NOSYMFOLLOW, ""); err != nil {
-		return "", fmt.Errorf("error bind mounting host ldconfig: %w", err)
-	}
-
-	return ldconfigPath, nil
+	return exeseal.CloneBinary(src, info.Size(), "ldconfig", os.TempDir())
 }
 
-// mountProc mounts a clean proc filesystem in the new root.
-func mountProc(newroot *os.Root) error {
-	if err := newroot.MkdirAll("proc", 0755); err != nil {
+// SafeExec replaces the calling process with the program held in file (a
+// sealed memfd, see cloneLdconfigIntoMemfd), executed by descriptor via
+// execveat(fd, "", argv, envp, AT_EMPTY_PATH) -- no path lookup, so this
+// works identically whether or not /proc is mounted anywhere in the
+// caller's current namespaces. Never returns on success.
+func SafeExec(file *os.File, argv []string, envv []string) error {
+	argvp, err := syscall.SlicePtrFromStrings(argv)
+	if err != nil {
+		return fmt.Errorf("error converting argv: %w", err)
+	}
+	envvp, err := syscall.SlicePtrFromStrings(envv)
+	if err != nil {
+		return fmt.Errorf("error converting envp: %w", err)
+	}
+	emptyPath, err := unix.BytePtrFromString("")
+	if err != nil {
 		return err
 	}
 
-	target := filepath.Join(newroot.Name(), "proc")
-	return unix.Mount("proc", target, "proc", 0, "")
-}
-
-// createTmpFs creates a tmpfs at the specified location with the specified size.
-func createTmpFs(target string, size int) error {
-	return unix.Mount("tmpfs", target, "tmpfs", 0, fmt.Sprintf("size=%d", size))
+	_, _, errno := unix.Syscall6(
+		unix.SYS_EXECVEAT,
+		file.Fd(),
+		uintptr(unsafe.Pointer(emptyPath)),
+		uintptr(unsafe.Pointer(&argvp[0])),
+		uintptr(unsafe.Pointer(&envvp[0])),
+		uintptr(unix.AT_EMPTY_PATH),
+		0,
+	)
+	// file.Fd() only returns the raw descriptor number; keep file itself
+	// reachable until the syscall above completes, otherwise the GC could
+	// finalize (and close) it mid-syscall.
+	runtime.KeepAlive(file)
+	if errno != 0 {
+		return fmt.Errorf("execveat: %w", errno)
+	}
+	return nil
 }
 
 // createReexecCommand creates a command that can be used to trigger the reexec
