@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/NVIDIA/go-nvlib v0.12.0
 	github.com/NVIDIA/go-nvml v0.13.3-1
-	github.com/containerd/nri v0.12.1
+	github.com/containerd/nri v0.12.3
 	github.com/cyphar/filepath-securejoin v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/moby/sys/devices v0.1.0
@@ -36,7 +36,6 @@ require (
 	github.com/tetratelabs/wazero v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/mod v0.38.0 // indirect
-	golang.org/x/tools v0.48.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/grpc v1.83.2 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
