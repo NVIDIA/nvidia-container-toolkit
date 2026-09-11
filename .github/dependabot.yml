@@ -12,6 +12,9 @@ updates:
     - "tests"
     schedule:
       interval: "daily"
+    cooldown:
+      exclude:
+      - github.com/NVIDIA/*
     open-pull-requests-limit: 10
     labels:
     - dependencies
