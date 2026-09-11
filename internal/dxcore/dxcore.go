@@ -52,8 +52,8 @@ func (c context) getAdapterCount() int {
 }
 
 func (c context) getAdapter(index int) adapter {
-	arrayPointer := (*[1 << 30]C.struct_dxcore_adapter)(unsafe.Pointer(c.adapterList))
-	return adapter(arrayPointer[index])
+	adapters := unsafe.Slice(c.adapterList, c.adapterCount)
+	return adapter(adapters[index])
 }
 
 func (a adapter) getDriverStorePath() string {
