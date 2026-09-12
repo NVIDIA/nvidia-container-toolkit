@@ -44,6 +44,8 @@ const (
 	DEVICE_PCI_BUS_ID_LEGACY_FMT = "%04X:%02X:%02X.0"
 	// DEVICE_PCI_BUS_ID_FMT as defined in nvml/nvml.h
 	DEVICE_PCI_BUS_ID_FMT = "%08X:%02X:%02X.0"
+	// DEVICE_MEMORY_LIMIT_MAX as defined in nvml/nvml.h
+	DEVICE_MEMORY_LIMIT_MAX = 18446744073709551615
 	// NVLINK_MAX_LINKS as defined in nvml/nvml.h
 	NVLINK_MAX_LINKS = 36
 	// TOPOLOGY_CPU as defined in nvml/nvml.h
@@ -56,6 +58,32 @@ const (
 	DEVICE_UUID_ASCII_LEN = 41
 	// DEVICE_UUID_BINARY_LEN as defined in nvml/nvml.h
 	DEVICE_UUID_BINARY_LEN = 16
+	// PERF_METRICS_PWR_MODEL_DLPPM_1X_MAX_CORE_RAILS as defined in nvml/nvml.h
+	PERF_METRICS_PWR_MODEL_DLPPM_1X_MAX_CORE_RAILS = 2
+	// PERF_METRICS_NNE_DESC_INFERENCE_LOOPS_MAX as defined in nvml/nvml.h
+	PERF_METRICS_NNE_DESC_INFERENCE_LOOPS_MAX = 8
+	// PERF_METRICS_PWR_MODEL_METRICS_DLPPM_1X_OBESRVED_INTIAL_DRAMCLK_ESTIMATES_MAX as defined in nvml/nvml.h
+	PERF_METRICS_PWR_MODEL_METRICS_DLPPM_1X_OBESRVED_INTIAL_DRAMCLK_ESTIMATES_MAX = 3
+	// PERF_METRICS_CONTROLLER_DLPPC_2X_PWR_POLICY_RELATIONSHIP_SET_LIMITS_MAX as defined in nvml/nvml.h
+	PERF_METRICS_CONTROLLER_DLPPC_2X_PWR_POLICY_RELATIONSHIP_SET_LIMITS_MAX = 4
+	// PERF_METRICS_CONTROLLER_STATUS_DLPPC_2X_DRAMCLK_NUM as defined in nvml/nvml.h
+	PERF_METRICS_CONTROLLER_STATUS_DLPPC_2X_DRAMCLK_NUM = 3
+	// PERF_METRICS_CONTROLLER_SAMPLE_CONTROLLER_MAX_NUM as defined in nvml/nvml.h
+	PERF_METRICS_CONTROLLER_SAMPLE_CONTROLLER_MAX_NUM = 4
+	// PERF_METRICS_SAMPLE_COUNT as defined in nvml/nvml.h
+	PERF_METRICS_SAMPLE_COUNT = 13
+	// PERF_METRICS_PWR_MODEL_SCALE_LOOPS_MAX_PFPP_1X as defined in nvml/nvml.h
+	PERF_METRICS_PWR_MODEL_SCALE_LOOPS_MAX_PFPP_1X = 32
+	// PERF_METRICS_PWR_MODEL_SCALE_METRICS_INPUT_MAX as defined in nvml/nvml.h
+	PERF_METRICS_PWR_MODEL_SCALE_METRICS_INPUT_MAX = 16
+	// PERF_METRICS_CONTROLLER_TYPE_DLPPC_2X as defined in nvml/nvml.h
+	PERF_METRICS_CONTROLLER_TYPE_DLPPC_2X = 0
+	// PERF_METRICS_CONTROLLER_TYPE_PFPP_1X as defined in nvml/nvml.h
+	PERF_METRICS_CONTROLLER_TYPE_PFPP_1X = 1
+	// PERF_METRICS_PWR_MODEL_SCALE_METRICS_PFPP_1X_GPCCLK_IDX as defined in nvml/nvml.h
+	PERF_METRICS_PWR_MODEL_SCALE_METRICS_PFPP_1X_GPCCLK_IDX = 0
+	// PERF_CF_PM_SENSOR_MAX_SIGNALS as defined in nvml/nvml.h
+	PERF_CF_PM_SENSOR_MAX_SIGNALS = 1024
 	// FlagDefault as defined in nvml/nvml.h
 	FlagDefault = 0
 	// FlagForce as defined in nvml/nvml.h
@@ -118,8 +146,14 @@ const (
 	DEVICE_ARCH_HOPPER = 9
 	// DEVICE_ARCH_BLACKWELL as defined in nvml/nvml.h
 	DEVICE_ARCH_BLACKWELL = 10
+	// DEVICE_ARCH_DLA as defined in nvml/nvml.h
+	DEVICE_ARCH_DLA = 11
+	// DEVICE_ARCH_DLA2 as defined in nvml/nvml.h
+	DEVICE_ARCH_DLA2 = 12
 	// DEVICE_ARCH_RUBIN as defined in nvml/nvml.h
 	DEVICE_ARCH_RUBIN = 13
+	// DEVICE_ARCH_NPU3 as defined in nvml/nvml.h
+	DEVICE_ARCH_NPU3 = 15
 	// DEVICE_ARCH_UNKNOWN as defined in nvml/nvml.h
 	DEVICE_ARCH_UNKNOWN = 4294967295
 	// BUS_TYPE_UNKNOWN as defined in nvml/nvml.h
@@ -854,8 +888,18 @@ const (
 	FI_DEV_REMAPPED_ROWS_COR_INACTIVE = 301
 	// FI_DEV_REMAPPED_ROWS_UNC_INACTIVE as defined in nvml/nvml.h
 	FI_DEV_REMAPPED_ROWS_UNC_INACTIVE = 302
+	// FI_DEV_ACTIVE_BANK_REMAPPINGS as defined in nvml/nvml.h
+	FI_DEV_ACTIVE_BANK_REMAPPINGS = 303
+	// FI_DEV_INACTIVE_BANK_REMAPPINGS as defined in nvml/nvml.h
+	FI_DEV_INACTIVE_BANK_REMAPPINGS = 304
+	// FI_DEV_BANK_REMAPPER_HISTOGRAM_MAX as defined in nvml/nvml.h
+	FI_DEV_BANK_REMAPPER_HISTOGRAM_MAX = 305
+	// FI_DEV_BANK_REMAPPER_HISTOGRAM_NONE as defined in nvml/nvml.h
+	FI_DEV_BANK_REMAPPER_HISTOGRAM_NONE = 306
+	// FI_DEV_PENDING_BANK_REMAPPING as defined in nvml/nvml.h
+	FI_DEV_PENDING_BANK_REMAPPING = 307
 	// FI_MAX as defined in nvml/nvml.h
-	FI_MAX = 303
+	FI_MAX = 308
 	// MCLK_SWITCH_TYPE_NOT_SUPPORTED as defined in nvml/nvml.h
 	MCLK_SWITCH_TYPE_NOT_SUPPORTED = 0
 	// MCLK_SWITCH_TYPE_DEFERRED as defined in nvml/nvml.h
@@ -914,6 +958,30 @@ const (
 	EventTypeGpuRecoveryAction = 32768
 	// EventTypeAll as defined in nvml/nvml.h
 	EventTypeAll = 65439
+	// GPU_INSTANCE_ID_ANY as defined in nvml/nvml.h
+	GPU_INSTANCE_ID_ANY = 4294967295
+	// COMPUTE_INSTANCE_ID_ANY as defined in nvml/nvml.h
+	COMPUTE_INSTANCE_ID_ANY = 4294967295
+	// OPERATIONAL_EVENT_ATTR_UNCONTAINED as defined in nvml/nvml.h
+	OPERATIONAL_EVENT_ATTR_UNCONTAINED = 1
+	// OPERATIONAL_EVENT_ATTR_LATENT as defined in nvml/nvml.h
+	OPERATIONAL_EVENT_ATTR_LATENT = 2
+	// OPERATIONAL_EVENT_ATTR_PROPAGATED as defined in nvml/nvml.h
+	OPERATIONAL_EVENT_ATTR_PROPAGATED = 4
+	// OPERATIONAL_EVENT_ATTR_COMPONENT_RESET as defined in nvml/nvml.h
+	OPERATIONAL_EVENT_ATTR_COMPONENT_RESET = 8
+	// OPERATIONAL_EVENT_ATTR_THRESHOLD_EXCEEDED as defined in nvml/nvml.h
+	OPERATIONAL_EVENT_ATTR_THRESHOLD_EXCEEDED = 16
+	// OPERATIONAL_EVENT_ATTR_PRIMARY as defined in nvml/nvml.h
+	OPERATIONAL_EVENT_ATTR_PRIMARY = 32
+	// OPERATIONAL_EVENT_ATTR_OVERFLOW as defined in nvml/nvml.h
+	OPERATIONAL_EVENT_ATTR_OVERFLOW = 64
+	// OPERATIONAL_EVENT_GROUP_ATTR_RECOVERED as defined in nvml/nvml.h
+	OPERATIONAL_EVENT_GROUP_ATTR_RECOVERED = 1
+	// OPERATIONAL_EVENT_GROUP_ATTR_PREVERR as defined in nvml/nvml.h
+	OPERATIONAL_EVENT_GROUP_ATTR_PREVERR = 2
+	// OPERATIONAL_EVENT_GROUP_ATTR_SIMULATED as defined in nvml/nvml.h
+	OPERATIONAL_EVENT_GROUP_ATTR_SIMULATED = 4
 	// SystemEventTypeGpuDriverUnbind as defined in nvml/nvml.h
 	SystemEventTypeGpuDriverUnbind = 1
 	// SystemEventTypeGpuDriverBind as defined in nvml/nvml.h
@@ -940,10 +1008,14 @@ const (
 	ClocksThrottleReasonHwPowerBrakeSlowdown = 128
 	// ClocksEventReasonDisplayClockSetting as defined in nvml/nvml.h
 	ClocksEventReasonDisplayClockSetting = 256
+	// ClocksEventReasonBoardLimit as defined in nvml/nvml.h
+	ClocksEventReasonBoardLimit = 512
+	// ClocksEventReasonReliability as defined in nvml/nvml.h
+	ClocksEventReasonReliability = 1024
 	// ClocksEventReasonNone as defined in nvml/nvml.h
 	ClocksEventReasonNone = 0
 	// ClocksEventReasonAll as defined in nvml/nvml.h
-	ClocksEventReasonAll = 511
+	ClocksEventReasonAll = 2047
 	// ClocksThrottleReasonGpuIdle as defined in nvml/nvml.h
 	ClocksThrottleReasonGpuIdle = 1
 	// ClocksThrottleReasonApplicationsClocksSetting as defined in nvml/nvml.h
@@ -959,7 +1031,7 @@ const (
 	// ClocksThrottleReasonNone as defined in nvml/nvml.h
 	ClocksThrottleReasonNone = 0
 	// ClocksThrottleReasonAll as defined in nvml/nvml.h
-	ClocksThrottleReasonAll = 511
+	ClocksThrottleReasonAll = 2047
 	// NVFBC_SESSION_FLAG_DIFFMAP_ENABLED as defined in nvml/nvml.h
 	NVFBC_SESSION_FLAG_DIFFMAP_ENABLED = 1
 	// NVFBC_SESSION_FLAG_CLASSIFICATIONMAP_ENABLED as defined in nvml/nvml.h
@@ -1108,6 +1180,16 @@ const (
 	GPU_FABRIC_HEALTH_MASK_SHIFT_PARTITION_ASSIGNED = 12
 	// GPU_FABRIC_HEALTH_MASK_WIDTH_PARTITION_ASSIGNED as defined in nvml/nvml.h
 	GPU_FABRIC_HEALTH_MASK_WIDTH_PARTITION_ASSIGNED = 3
+	// GPU_FABRIC_HEALTH_MASK_GFM_STATE_NOT_SUPPORTED as defined in nvml/nvml.h
+	GPU_FABRIC_HEALTH_MASK_GFM_STATE_NOT_SUPPORTED = 0
+	// GPU_FABRIC_HEALTH_MASK_GFM_STATE_CONNECTED as defined in nvml/nvml.h
+	GPU_FABRIC_HEALTH_MASK_GFM_STATE_CONNECTED = 1
+	// GPU_FABRIC_HEALTH_MASK_GFM_STATE_DISCONNECTED as defined in nvml/nvml.h
+	GPU_FABRIC_HEALTH_MASK_GFM_STATE_DISCONNECTED = 2
+	// GPU_FABRIC_HEALTH_MASK_SHIFT_GFM_STATE as defined in nvml/nvml.h
+	GPU_FABRIC_HEALTH_MASK_SHIFT_GFM_STATE = 14
+	// GPU_FABRIC_HEALTH_MASK_WIDTH_GFM_STATE as defined in nvml/nvml.h
+	GPU_FABRIC_HEALTH_MASK_WIDTH_GFM_STATE = 3
 	// GPU_FABRIC_HEALTH_SUMMARY_NOT_SUPPORTED as defined in nvml/nvml.h
 	GPU_FABRIC_HEALTH_SUMMARY_NOT_SUPPORTED = 0
 	// GPU_FABRIC_HEALTH_SUMMARY_HEALTHY as defined in nvml/nvml.h
@@ -1116,6 +1198,16 @@ const (
 	GPU_FABRIC_HEALTH_SUMMARY_UNHEALTHY = 2
 	// GPU_FABRIC_HEALTH_SUMMARY_LIMITED_CAPACITY as defined in nvml/nvml.h
 	GPU_FABRIC_HEALTH_SUMMARY_LIMITED_CAPACITY = 3
+	// GPU_FABRIC_CLIQUE_MAX as defined in nvml/nvml.h
+	GPU_FABRIC_CLIQUE_MAX = 64
+	// GPU_FABRIC_CLIQUE_TYPE_UNICAST_POINTER as defined in nvml/nvml.h
+	GPU_FABRIC_CLIQUE_TYPE_UNICAST_POINTER = 0
+	// GPU_FABRIC_CLIQUE_TYPE_MULTICAST_POINTER as defined in nvml/nvml.h
+	GPU_FABRIC_CLIQUE_TYPE_MULTICAST_POINTER = 1
+	// GPU_FABRIC_CLIQUE_TYPE_UNICAST_LOGICAL_ENDPOINT as defined in nvml/nvml.h
+	GPU_FABRIC_CLIQUE_TYPE_UNICAST_LOGICAL_ENDPOINT = 2
+	// GPU_FABRIC_CLIQUE_TYPE_MULTICAST_LOGICAL_ENDPOINT as defined in nvml/nvml.h
+	GPU_FABRIC_CLIQUE_TYPE_MULTICAST_LOGICAL_ENDPOINT = 3
 	// INIT_FLAG_NO_GPUS as defined in nvml/nvml.h
 	INIT_FLAG_NO_GPUS = 1
 	// INIT_FLAG_NO_ATTACH as defined in nvml/nvml.h
@@ -1162,6 +1254,8 @@ const (
 	NVLINK_STATE_ACTIVE = 1
 	// NVLINK_STATE_SLEEP as defined in nvml/nvml.h
 	NVLINK_STATE_SLEEP = 2
+	// NVLINK_STATE_ACTIVE_TRAFFIC_DISABLED as defined in nvml/nvml.h
+	NVLINK_STATE_ACTIVE_TRAFFIC_DISABLED = 3
 	// NVLINK_TOTAL_SUPPORTED_BW_MODES as defined in nvml/nvml.h
 	NVLINK_TOTAL_SUPPORTED_BW_MODES = 23
 	// NVLINK_FIRMWARE_UCODE_TYPE_MSE as defined in nvml/nvml.h
@@ -1527,7 +1621,10 @@ const (
 	BRAND_NVIDIA              BrandType = 14
 	BRAND_GEFORCE_RTX         BrandType = 15
 	BRAND_TITAN_RTX           BrandType = 16
-	BRAND_COUNT               BrandType = 18
+	BRAND_NVIDIA_DLA          BrandType = 17
+	BRAND_NVIDIA_VGAMEDEV     BrandType = 18
+	BRAND_NVIDIA_NPU          BrandType = 19
+	BRAND_COUNT               BrandType = 20
 )
 
 // TemperatureThresholds as declared in nvml/nvml.h
@@ -1551,8 +1648,9 @@ type TemperatureSensors int32
 
 // TemperatureSensors enumeration from nvml/nvml.h
 const (
-	TEMPERATURE_GPU   TemperatureSensors = iota
-	TEMPERATURE_COUNT TemperatureSensors = 1
+	TEMPERATURE_GPU     TemperatureSensors = iota
+	TEMPERATURE_GPU_MAX TemperatureSensors = 1
+	TEMPERATURE_COUNT   TemperatureSensors = 2
 )
 
 // ComputeMode as declared in nvml/nvml.h
@@ -1847,6 +1945,8 @@ const (
 	GPU_RECOVERY_ACTION_DRAIN_P2P           DeviceGpuRecoveryAction = 3
 	GPU_RECOVERY_ACTION_DRAIN_AND_RESET     DeviceGpuRecoveryAction = 4
 	GPU_RECOVERY_ACTION_RECOVER_IMEX_DOMAIN DeviceGpuRecoveryAction = 5
+	GPU_RECOVERY_ACTION_BUS_RESET           DeviceGpuRecoveryAction = 6
+	GPU_RECOVERY_ACTION_SYSTEM_REBOOT       DeviceGpuRecoveryAction = 7
 )
 
 // FanState as declared in nvml/nvml.h
@@ -2032,6 +2132,50 @@ const (
 	GRID_LICENSE_FEATURE_CODE_VWORKSTATION GridLicenseFeatureCode = 2
 	GRID_LICENSE_FEATURE_CODE_GAMING       GridLicenseFeatureCode = 3
 	GRID_LICENSE_FEATURE_CODE_COMPUTE      GridLicenseFeatureCode = 4
+	GRID_LICENSE_FEATURE_CODE_VGAMEDEV     GridLicenseFeatureCode = 5
+)
+
+// GpuOperationalEventLogLevel as declared in nvml/nvml.h
+type GpuOperationalEventLogLevel int32
+
+// GpuOperationalEventLogLevel enumeration from nvml/nvml.h
+const (
+	GPU_OPERATIONAL_EVENT_LOG_LEVEL_ALL       GpuOperationalEventLogLevel = iota
+	GPU_OPERATIONAL_EVENT_LOG_LEVEL_TELEMETRY GpuOperationalEventLogLevel = 10
+	GPU_OPERATIONAL_EVENT_LOG_LEVEL_DIAG      GpuOperationalEventLogLevel = 20
+	GPU_OPERATIONAL_EVENT_LOG_LEVEL_NOTICE    GpuOperationalEventLogLevel = 30
+	GPU_OPERATIONAL_EVENT_LOG_LEVEL_WARNING   GpuOperationalEventLogLevel = 40
+	GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR     GpuOperationalEventLogLevel = 50
+)
+
+// OperationalEventSeverity as declared in nvml/nvml.h
+type OperationalEventSeverity int32
+
+// OperationalEventSeverity enumeration from nvml/nvml.h
+const (
+	OPERATIONAL_EVENT_SEVERITY_ALL           OperationalEventSeverity = iota
+	OPERATIONAL_EVENT_SEVERITY_INFORMATIONAL OperationalEventSeverity = 10
+	OPERATIONAL_EVENT_SEVERITY_CORRECTED     OperationalEventSeverity = 20
+	OPERATIONAL_EVENT_SEVERITY_RECOVERABLE   OperationalEventSeverity = 30
+	OPERATIONAL_EVENT_SEVERITY_FATAL         OperationalEventSeverity = 40
+)
+
+// EventDataType as declared in nvml/nvml.h
+type EventDataType int32
+
+// EventDataType enumeration from nvml/nvml.h
+const (
+	EVENT_DATA_TYPE_NVML_EVENT            EventDataType = iota
+	EVENT_DATA_TYPE_GPU_OPERATIONAL_EVENT EventDataType = 1
+)
+
+// GpuOperationalEventContextType as declared in nvml/nvml.h
+type GpuOperationalEventContextType int32
+
+// GpuOperationalEventContextType enumeration from nvml/nvml.h
+const (
+	GPU_OPERATIONAL_EVENT_CONTEXT_TYPE_UNKNOWN    GpuOperationalEventContextType = iota
+	GPU_OPERATIONAL_EVENT_CONTEXT_TYPE_LEGACY_XID GpuOperationalEventContextType = 1
 )
 
 // CPERType as declared in nvml/nvml.h
@@ -2042,26 +2186,44 @@ const (
 	CPER_ACCESS_TYPE_GPU CPERType = 1
 )
 
+// NvlinkTelemetrySampleType as declared in nvml/nvml.h
+type NvlinkTelemetrySampleType int32
+
+// NvlinkTelemetrySampleType enumeration from nvml/nvml.h
+const (
+	NVLINK_TELEMETRY_SAMPLE_TYPE_THROUGHPUT_RAW_TX NvlinkTelemetrySampleType = iota
+	NVLINK_TELEMETRY_SAMPLE_TYPE_THROUGHPUT_RAW_RX NvlinkTelemetrySampleType = 1
+	NVLINK_TELEMETRY_SAMPLE_TYPE_COUNT             NvlinkTelemetrySampleType = 2
+)
+
 // PRMCounterId as declared in nvml/nvml.h
 type PRMCounterId int32
 
 // PRMCounterId enumeration from nvml/nvml.h
 const (
-	PRM_COUNTER_ID_NONE                                                 PRMCounterId = iota
-	PRM_COUNTER_ID_PPCNT_PHYSICAL_LAYER_CTRS_LINK_DOWN_EVENTS           PRMCounterId = 1
-	PRM_COUNTER_ID_PPCNT_PHYSICAL_LAYER_CTRS_SUCCESSFUL_RECOVERY_EVENTS PRMCounterId = 2
-	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_TOTAL_SUCCESSFUL_RECOVERY_EVENTS PRMCounterId = 101
-	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_TIME_SINCE_LAST_RECOVERY         PRMCounterId = 102
-	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_TIME_BETWEEN_LAST_TWO_RECOVERIES PRMCounterId = 103
-	PRM_COUNTER_ID_PPCNT_PORTCOUNTERS_PORT_XMIT_WAIT                    PRMCounterId = 201
-	PRM_COUNTER_ID_PPCNT_PLR_RCV_CODES                                  PRMCounterId = 301
-	PRM_COUNTER_ID_PPCNT_PLR_RCV_CODE_ERR                               PRMCounterId = 302
-	PRM_COUNTER_ID_PPCNT_PLR_RCV_UNCORRECTABLE_CODE                     PRMCounterId = 303
-	PRM_COUNTER_ID_PPCNT_PLR_XMIT_CODES                                 PRMCounterId = 304
-	PRM_COUNTER_ID_PPCNT_PLR_XMIT_RETRY_CODES                           PRMCounterId = 305
-	PRM_COUNTER_ID_PPCNT_PLR_XMIT_RETRY_EVENTS                          PRMCounterId = 306
-	PRM_COUNTER_ID_PPCNT_PLR_SYNC_EVENTS                                PRMCounterId = 307
-	PRM_COUNTER_ID_PPRM_OPER_RECOVERY                                   PRMCounterId = 1001
+	PRM_COUNTER_ID_NONE                                                                PRMCounterId = iota
+	PRM_COUNTER_ID_PPCNT_PHYSICAL_LAYER_CTRS_LINK_DOWN_EVENTS                          PRMCounterId = 1
+	PRM_COUNTER_ID_PPCNT_PHYSICAL_LAYER_CTRS_SUCCESSFUL_RECOVERY_EVENTS                PRMCounterId = 2
+	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_TOTAL_SUCCESSFUL_RECOVERY_EVENTS                PRMCounterId = 101
+	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_TIME_SINCE_LAST_RECOVERY                        PRMCounterId = 102
+	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_TIME_BETWEEN_LAST_TWO_RECOVERIES                PRMCounterId = 103
+	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_TIME_IN_LAST_HOST_SERDES_FEQ_RECOVERY           PRMCounterId = 104
+	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_TOTAL_TIME_IN_HOST_SERDES_FEQ_RECOVERY          PRMCounterId = 105
+	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_TOTAL_HOST_SERDES_FEQ_RECOVERY_COUNT            PRMCounterId = 106
+	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_TOTAL_HOST_SERDES_FEQ_SUCCESSFUL_RECOVERY_COUNT PRMCounterId = 107
+	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_LAST_HOST_SERDES_FEQ_ATTEMPTS_COUNT             PRMCounterId = 108
+	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_LAST_SUCCESSFUL_RECOVERY_STEP_ATTEMPTS          PRMCounterId = 109
+	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_LAST_SUCCESSFUL_RECOVERY_TIME                   PRMCounterId = 110
+	PRM_COUNTER_ID_PPCNT_RECOVERY_CTRS_TOTAL_SUCCESSFUL_RECOVERY_TIME                  PRMCounterId = 111
+	PRM_COUNTER_ID_PPCNT_PORTCOUNTERS_PORT_XMIT_WAIT                                   PRMCounterId = 201
+	PRM_COUNTER_ID_PPCNT_PLR_RCV_CODES                                                 PRMCounterId = 301
+	PRM_COUNTER_ID_PPCNT_PLR_RCV_CODE_ERR                                              PRMCounterId = 302
+	PRM_COUNTER_ID_PPCNT_PLR_RCV_UNCORRECTABLE_CODE                                    PRMCounterId = 303
+	PRM_COUNTER_ID_PPCNT_PLR_XMIT_CODES                                                PRMCounterId = 304
+	PRM_COUNTER_ID_PPCNT_PLR_XMIT_RETRY_CODES                                          PRMCounterId = 305
+	PRM_COUNTER_ID_PPCNT_PLR_XMIT_RETRY_EVENTS                                         PRMCounterId = 306
+	PRM_COUNTER_ID_PPCNT_PLR_SYNC_EVENTS                                               PRMCounterId = 307
+	PRM_COUNTER_ID_PPRM_OPER_RECOVERY                                                  PRMCounterId = 1001
 )
 
 // GpmMetricId as declared in nvml/nvml.h
@@ -2371,7 +2533,151 @@ const (
 	GPM_METRIC_NVLINK_L34_TX               GpmMetricId = 330
 	GPM_METRIC_NVLINK_L35_RX               GpmMetricId = 331
 	GPM_METRIC_NVLINK_L35_TX               GpmMetricId = 332
-	GPM_METRIC_MAX                         GpmMetricId = 333
+	GPM_METRIC_NVLINK_L36_RX               GpmMetricId = 333
+	GPM_METRIC_NVLINK_L36_TX               GpmMetricId = 334
+	GPM_METRIC_NVLINK_L37_RX               GpmMetricId = 335
+	GPM_METRIC_NVLINK_L37_TX               GpmMetricId = 336
+	GPM_METRIC_NVLINK_L38_RX               GpmMetricId = 337
+	GPM_METRIC_NVLINK_L38_TX               GpmMetricId = 338
+	GPM_METRIC_NVLINK_L39_RX               GpmMetricId = 339
+	GPM_METRIC_NVLINK_L39_TX               GpmMetricId = 340
+	GPM_METRIC_NVLINK_L40_RX               GpmMetricId = 341
+	GPM_METRIC_NVLINK_L40_TX               GpmMetricId = 342
+	GPM_METRIC_NVLINK_L41_RX               GpmMetricId = 343
+	GPM_METRIC_NVLINK_L41_TX               GpmMetricId = 344
+	GPM_METRIC_NVLINK_L42_RX               GpmMetricId = 345
+	GPM_METRIC_NVLINK_L42_TX               GpmMetricId = 346
+	GPM_METRIC_NVLINK_L43_RX               GpmMetricId = 347
+	GPM_METRIC_NVLINK_L43_TX               GpmMetricId = 348
+	GPM_METRIC_NVLINK_L44_RX               GpmMetricId = 349
+	GPM_METRIC_NVLINK_L44_TX               GpmMetricId = 350
+	GPM_METRIC_NVLINK_L45_RX               GpmMetricId = 351
+	GPM_METRIC_NVLINK_L45_TX               GpmMetricId = 352
+	GPM_METRIC_NVLINK_L46_RX               GpmMetricId = 353
+	GPM_METRIC_NVLINK_L46_TX               GpmMetricId = 354
+	GPM_METRIC_NVLINK_L47_RX               GpmMetricId = 355
+	GPM_METRIC_NVLINK_L47_TX               GpmMetricId = 356
+	GPM_METRIC_NVLINK_L48_RX               GpmMetricId = 357
+	GPM_METRIC_NVLINK_L48_TX               GpmMetricId = 358
+	GPM_METRIC_NVLINK_L49_RX               GpmMetricId = 359
+	GPM_METRIC_NVLINK_L49_TX               GpmMetricId = 360
+	GPM_METRIC_NVLINK_L50_RX               GpmMetricId = 361
+	GPM_METRIC_NVLINK_L50_TX               GpmMetricId = 362
+	GPM_METRIC_NVLINK_L51_RX               GpmMetricId = 363
+	GPM_METRIC_NVLINK_L51_TX               GpmMetricId = 364
+	GPM_METRIC_NVLINK_L52_RX               GpmMetricId = 365
+	GPM_METRIC_NVLINK_L52_TX               GpmMetricId = 366
+	GPM_METRIC_NVLINK_L53_RX               GpmMetricId = 367
+	GPM_METRIC_NVLINK_L53_TX               GpmMetricId = 368
+	GPM_METRIC_NVLINK_L54_RX               GpmMetricId = 369
+	GPM_METRIC_NVLINK_L54_TX               GpmMetricId = 370
+	GPM_METRIC_NVLINK_L55_RX               GpmMetricId = 371
+	GPM_METRIC_NVLINK_L55_TX               GpmMetricId = 372
+	GPM_METRIC_NVLINK_L56_RX               GpmMetricId = 373
+	GPM_METRIC_NVLINK_L56_TX               GpmMetricId = 374
+	GPM_METRIC_NVLINK_L57_RX               GpmMetricId = 375
+	GPM_METRIC_NVLINK_L57_TX               GpmMetricId = 376
+	GPM_METRIC_NVLINK_L58_RX               GpmMetricId = 377
+	GPM_METRIC_NVLINK_L58_TX               GpmMetricId = 378
+	GPM_METRIC_NVLINK_L59_RX               GpmMetricId = 379
+	GPM_METRIC_NVLINK_L59_TX               GpmMetricId = 380
+	GPM_METRIC_NVLINK_L60_RX               GpmMetricId = 381
+	GPM_METRIC_NVLINK_L60_TX               GpmMetricId = 382
+	GPM_METRIC_NVLINK_L61_RX               GpmMetricId = 383
+	GPM_METRIC_NVLINK_L61_TX               GpmMetricId = 384
+	GPM_METRIC_NVLINK_L62_RX               GpmMetricId = 385
+	GPM_METRIC_NVLINK_L62_TX               GpmMetricId = 386
+	GPM_METRIC_NVLINK_L63_RX               GpmMetricId = 387
+	GPM_METRIC_NVLINK_L63_TX               GpmMetricId = 388
+	GPM_METRIC_NVLINK_L64_RX               GpmMetricId = 389
+	GPM_METRIC_NVLINK_L64_TX               GpmMetricId = 390
+	GPM_METRIC_NVLINK_L65_RX               GpmMetricId = 391
+	GPM_METRIC_NVLINK_L65_TX               GpmMetricId = 392
+	GPM_METRIC_NVLINK_L66_RX               GpmMetricId = 393
+	GPM_METRIC_NVLINK_L66_TX               GpmMetricId = 394
+	GPM_METRIC_NVLINK_L67_RX               GpmMetricId = 395
+	GPM_METRIC_NVLINK_L67_TX               GpmMetricId = 396
+	GPM_METRIC_NVLINK_L68_RX               GpmMetricId = 397
+	GPM_METRIC_NVLINK_L68_TX               GpmMetricId = 398
+	GPM_METRIC_NVLINK_L69_RX               GpmMetricId = 399
+	GPM_METRIC_NVLINK_L69_TX               GpmMetricId = 400
+	GPM_METRIC_NVLINK_L70_RX               GpmMetricId = 401
+	GPM_METRIC_NVLINK_L70_TX               GpmMetricId = 402
+	GPM_METRIC_NVLINK_L71_RX               GpmMetricId = 403
+	GPM_METRIC_NVLINK_L71_TX               GpmMetricId = 404
+	GPM_METRIC_NVLINK_L36_RX_PER_SEC       GpmMetricId = 405
+	GPM_METRIC_NVLINK_L36_TX_PER_SEC       GpmMetricId = 406
+	GPM_METRIC_NVLINK_L37_RX_PER_SEC       GpmMetricId = 407
+	GPM_METRIC_NVLINK_L37_TX_PER_SEC       GpmMetricId = 408
+	GPM_METRIC_NVLINK_L38_RX_PER_SEC       GpmMetricId = 409
+	GPM_METRIC_NVLINK_L38_TX_PER_SEC       GpmMetricId = 410
+	GPM_METRIC_NVLINK_L39_RX_PER_SEC       GpmMetricId = 411
+	GPM_METRIC_NVLINK_L39_TX_PER_SEC       GpmMetricId = 412
+	GPM_METRIC_NVLINK_L40_RX_PER_SEC       GpmMetricId = 413
+	GPM_METRIC_NVLINK_L40_TX_PER_SEC       GpmMetricId = 414
+	GPM_METRIC_NVLINK_L41_RX_PER_SEC       GpmMetricId = 415
+	GPM_METRIC_NVLINK_L41_TX_PER_SEC       GpmMetricId = 416
+	GPM_METRIC_NVLINK_L42_RX_PER_SEC       GpmMetricId = 417
+	GPM_METRIC_NVLINK_L42_TX_PER_SEC       GpmMetricId = 418
+	GPM_METRIC_NVLINK_L43_RX_PER_SEC       GpmMetricId = 419
+	GPM_METRIC_NVLINK_L43_TX_PER_SEC       GpmMetricId = 420
+	GPM_METRIC_NVLINK_L44_RX_PER_SEC       GpmMetricId = 421
+	GPM_METRIC_NVLINK_L44_TX_PER_SEC       GpmMetricId = 422
+	GPM_METRIC_NVLINK_L45_RX_PER_SEC       GpmMetricId = 423
+	GPM_METRIC_NVLINK_L45_TX_PER_SEC       GpmMetricId = 424
+	GPM_METRIC_NVLINK_L46_RX_PER_SEC       GpmMetricId = 425
+	GPM_METRIC_NVLINK_L46_TX_PER_SEC       GpmMetricId = 426
+	GPM_METRIC_NVLINK_L47_RX_PER_SEC       GpmMetricId = 427
+	GPM_METRIC_NVLINK_L47_TX_PER_SEC       GpmMetricId = 428
+	GPM_METRIC_NVLINK_L48_RX_PER_SEC       GpmMetricId = 429
+	GPM_METRIC_NVLINK_L48_TX_PER_SEC       GpmMetricId = 430
+	GPM_METRIC_NVLINK_L49_RX_PER_SEC       GpmMetricId = 431
+	GPM_METRIC_NVLINK_L49_TX_PER_SEC       GpmMetricId = 432
+	GPM_METRIC_NVLINK_L50_RX_PER_SEC       GpmMetricId = 433
+	GPM_METRIC_NVLINK_L50_TX_PER_SEC       GpmMetricId = 434
+	GPM_METRIC_NVLINK_L51_RX_PER_SEC       GpmMetricId = 435
+	GPM_METRIC_NVLINK_L51_TX_PER_SEC       GpmMetricId = 436
+	GPM_METRIC_NVLINK_L52_RX_PER_SEC       GpmMetricId = 437
+	GPM_METRIC_NVLINK_L52_TX_PER_SEC       GpmMetricId = 438
+	GPM_METRIC_NVLINK_L53_RX_PER_SEC       GpmMetricId = 439
+	GPM_METRIC_NVLINK_L53_TX_PER_SEC       GpmMetricId = 440
+	GPM_METRIC_NVLINK_L54_RX_PER_SEC       GpmMetricId = 441
+	GPM_METRIC_NVLINK_L54_TX_PER_SEC       GpmMetricId = 442
+	GPM_METRIC_NVLINK_L55_RX_PER_SEC       GpmMetricId = 443
+	GPM_METRIC_NVLINK_L55_TX_PER_SEC       GpmMetricId = 444
+	GPM_METRIC_NVLINK_L56_RX_PER_SEC       GpmMetricId = 445
+	GPM_METRIC_NVLINK_L56_TX_PER_SEC       GpmMetricId = 446
+	GPM_METRIC_NVLINK_L57_RX_PER_SEC       GpmMetricId = 447
+	GPM_METRIC_NVLINK_L57_TX_PER_SEC       GpmMetricId = 448
+	GPM_METRIC_NVLINK_L58_RX_PER_SEC       GpmMetricId = 449
+	GPM_METRIC_NVLINK_L58_TX_PER_SEC       GpmMetricId = 450
+	GPM_METRIC_NVLINK_L59_RX_PER_SEC       GpmMetricId = 451
+	GPM_METRIC_NVLINK_L59_TX_PER_SEC       GpmMetricId = 452
+	GPM_METRIC_NVLINK_L60_RX_PER_SEC       GpmMetricId = 453
+	GPM_METRIC_NVLINK_L60_TX_PER_SEC       GpmMetricId = 454
+	GPM_METRIC_NVLINK_L61_RX_PER_SEC       GpmMetricId = 455
+	GPM_METRIC_NVLINK_L61_TX_PER_SEC       GpmMetricId = 456
+	GPM_METRIC_NVLINK_L62_RX_PER_SEC       GpmMetricId = 457
+	GPM_METRIC_NVLINK_L62_TX_PER_SEC       GpmMetricId = 458
+	GPM_METRIC_NVLINK_L63_RX_PER_SEC       GpmMetricId = 459
+	GPM_METRIC_NVLINK_L63_TX_PER_SEC       GpmMetricId = 460
+	GPM_METRIC_NVLINK_L64_RX_PER_SEC       GpmMetricId = 461
+	GPM_METRIC_NVLINK_L64_TX_PER_SEC       GpmMetricId = 462
+	GPM_METRIC_NVLINK_L65_RX_PER_SEC       GpmMetricId = 463
+	GPM_METRIC_NVLINK_L65_TX_PER_SEC       GpmMetricId = 464
+	GPM_METRIC_NVLINK_L66_RX_PER_SEC       GpmMetricId = 465
+	GPM_METRIC_NVLINK_L66_TX_PER_SEC       GpmMetricId = 466
+	GPM_METRIC_NVLINK_L67_RX_PER_SEC       GpmMetricId = 467
+	GPM_METRIC_NVLINK_L67_TX_PER_SEC       GpmMetricId = 468
+	GPM_METRIC_NVLINK_L68_RX_PER_SEC       GpmMetricId = 469
+	GPM_METRIC_NVLINK_L68_TX_PER_SEC       GpmMetricId = 470
+	GPM_METRIC_NVLINK_L69_RX_PER_SEC       GpmMetricId = 471
+	GPM_METRIC_NVLINK_L69_TX_PER_SEC       GpmMetricId = 472
+	GPM_METRIC_NVLINK_L70_RX_PER_SEC       GpmMetricId = 473
+	GPM_METRIC_NVLINK_L70_TX_PER_SEC       GpmMetricId = 474
+	GPM_METRIC_NVLINK_L71_RX_PER_SEC       GpmMetricId = 475
+	GPM_METRIC_NVLINK_L71_TX_PER_SEC       GpmMetricId = 476
+	GPM_METRIC_MAX                         GpmMetricId = 477
 )
 
 // PowerProfileType as declared in nvml/nvml.h
@@ -2379,22 +2685,32 @@ type PowerProfileType int32
 
 // PowerProfileType enumeration from nvml/nvml.h
 const (
-	POWER_PROFILE_MAX_P         PowerProfileType = iota
-	POWER_PROFILE_MAX_Q         PowerProfileType = 1
-	POWER_PROFILE_COMPUTE       PowerProfileType = 2
-	POWER_PROFILE_MEMORY_BOUND  PowerProfileType = 3
-	POWER_PROFILE_NETWORK       PowerProfileType = 4
-	POWER_PROFILE_BALANCED      PowerProfileType = 5
-	POWER_PROFILE_LLM_INFERENCE PowerProfileType = 6
-	POWER_PROFILE_LLM_TRAINING  PowerProfileType = 7
-	POWER_PROFILE_RBM           PowerProfileType = 8
-	POWER_PROFILE_DCPCIE        PowerProfileType = 9
-	POWER_PROFILE_HMMA_SPARSE   PowerProfileType = 10
-	POWER_PROFILE_HMMA_DENSE    PowerProfileType = 11
-	POWER_PROFILE_SYNC_BALANCED PowerProfileType = 12
-	POWER_PROFILE_HPC           PowerProfileType = 13
-	POWER_PROFILE_MIG           PowerProfileType = 14
-	POWER_PROFILE_MAX           PowerProfileType = 15
+	POWER_PROFILE_MAX_P                       PowerProfileType = iota
+	POWER_PROFILE_MAX_Q                       PowerProfileType = 1
+	POWER_PROFILE_COMPUTE                     PowerProfileType = 2
+	POWER_PROFILE_MEMORY_BOUND                PowerProfileType = 3
+	POWER_PROFILE_NETWORK                     PowerProfileType = 4
+	POWER_PROFILE_BALANCED                    PowerProfileType = 5
+	POWER_PROFILE_LLM_INFERENCE               PowerProfileType = 6
+	POWER_PROFILE_LLM_TRAINING                PowerProfileType = 7
+	POWER_PROFILE_RBM                         PowerProfileType = 8
+	POWER_PROFILE_DCPCIE                      PowerProfileType = 9
+	POWER_PROFILE_HMMA_SPARSE                 PowerProfileType = 10
+	POWER_PROFILE_HMMA_DENSE                  PowerProfileType = 11
+	POWER_PROFILE_SYNC_BALANCED               PowerProfileType = 12
+	POWER_PROFILE_HPC                         PowerProfileType = 13
+	POWER_PROFILE_MIG                         PowerProfileType = 14
+	POWER_PROFILE_MAX_Q_1                     PowerProfileType = 15
+	POWER_PROFILE_NETWORK_BOUND               PowerProfileType = 16
+	POWER_PROFILE_HIGH_THROUGHPUT_INFERENCE   PowerProfileType = 17
+	POWER_PROFILE_MEDIUM_THROUGHPUT_INFERENCE PowerProfileType = 18
+	POWER_PROFILE_LOW_LATENCY_INFERENCE       PowerProfileType = 19
+	POWER_PROFILE_TRAINING                    PowerProfileType = 20
+	POWER_PROFILE_INFERENCE                   PowerProfileType = 21
+	POWER_PROFILE_MAX_Q_2                     PowerProfileType = 22
+	POWER_PROFILE_MAX_Q_3                     PowerProfileType = 23
+	POWER_PROFILE_LOW_PRIORITY_BACKGROUND     PowerProfileType = 24
+	POWER_PROFILE_MAX                         PowerProfileType = 25
 )
 
 // PowerProfileOperation as declared in nvml/nvml.h
