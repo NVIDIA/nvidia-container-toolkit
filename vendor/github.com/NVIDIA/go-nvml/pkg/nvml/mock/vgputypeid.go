@@ -42,6 +42,9 @@ var _ nvml.VgpuTypeId = &VgpuTypeId{}
 //			GetGpuInstanceProfileIdFunc: func() (uint32, nvml.Return) {
 //				panic("mock out the GetGpuInstanceProfileId method")
 //			},
+//			GetIDFunc: func() uint32 {
+//				panic("mock out the GetID method")
+//			},
 //			GetLicenseFunc: func() (string, nvml.Return) {
 //				panic("mock out the GetLicense method")
 //			},
@@ -94,6 +97,9 @@ type VgpuTypeId struct {
 	// GetGpuInstanceProfileIdFunc mocks the GetGpuInstanceProfileId method.
 	GetGpuInstanceProfileIdFunc func() (uint32, nvml.Return)
 
+	// GetIDFunc mocks the GetID method.
+	GetIDFunc func() uint32
+
 	// GetLicenseFunc mocks the GetLicense method.
 	GetLicenseFunc func() (string, nvml.Return)
 
@@ -145,6 +151,9 @@ type VgpuTypeId struct {
 		// GetGpuInstanceProfileId holds details about calls to the GetGpuInstanceProfileId method.
 		GetGpuInstanceProfileId []struct {
 		}
+		// GetID holds details about calls to the GetID method.
+		GetID []struct {
+		}
 		// GetLicense holds details about calls to the GetLicense method.
 		GetLicense []struct {
 		}
@@ -181,6 +190,7 @@ type VgpuTypeId struct {
 	lockGetFrameRateLimit       sync.RWMutex
 	lockGetFramebufferSize      sync.RWMutex
 	lockGetGpuInstanceProfileId sync.RWMutex
+	lockGetID                   sync.RWMutex
 	lockGetLicense              sync.RWMutex
 	lockGetMaxInstances         sync.RWMutex
 	lockGetMaxInstancesPerVm    sync.RWMutex
@@ -413,6 +423,33 @@ func (mock *VgpuTypeId) GetGpuInstanceProfileIdCalls() []struct {
 	mock.lockGetGpuInstanceProfileId.RLock()
 	calls = mock.calls.GetGpuInstanceProfileId
 	mock.lockGetGpuInstanceProfileId.RUnlock()
+	return calls
+}
+
+// GetID calls GetIDFunc.
+func (mock *VgpuTypeId) GetID() uint32 {
+	if mock.GetIDFunc == nil {
+		panic("VgpuTypeId.GetIDFunc: method is nil but VgpuTypeId.GetID was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetID.Lock()
+	mock.calls.GetID = append(mock.calls.GetID, callInfo)
+	mock.lockGetID.Unlock()
+	return mock.GetIDFunc()
+}
+
+// GetIDCalls gets all the calls that were made to GetID.
+// Check the length with:
+//
+//	len(mockedVgpuTypeId.GetIDCalls())
+func (mock *VgpuTypeId) GetIDCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetID.RLock()
+	calls = mock.calls.GetID
+	mock.lockGetID.RUnlock()
 	return calls
 }
 

@@ -136,6 +136,7 @@ func (l *library) SystemGetConfComputeSettings() (SystemConfComputeSettings, Ret
 
 // nvml.SystemSetConfComputeKeyRotationThresholdInfo()
 func (l *library) SystemSetConfComputeKeyRotationThresholdInfo(keyRotationThresholdInfo ConfComputeSetKeyRotationThresholdInfo) Return {
+	keyRotationThresholdInfo.Version = STRUCT_VERSION(keyRotationThresholdInfo, 1)
 	return nvmlSystemSetConfComputeKeyRotationThresholdInfo(&keyRotationThresholdInfo)
 }
 
