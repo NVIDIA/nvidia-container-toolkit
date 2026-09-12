@@ -22,8 +22,12 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/urfave/cli-altsrc/v3 v3.1.0
 	github.com/urfave/cli/v3 v3.10.1
+<<<<<<< HEAD
 	golang.org/x/mod v0.38.0
 	golang.org/x/sys v0.47.0
+=======
+	golang.org/x/sys v0.48.0
+>>>>>>> 52a11a57 (build(deps): Bump golang.org/x/sys from 0.47.0 to 0.48.0)
 	tags.cncf.io/container-device-interface v1.1.1
 	tags.cncf.io/container-device-interface/specs-go v1.1.1
 )
