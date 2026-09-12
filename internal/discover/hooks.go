@@ -46,10 +46,6 @@ const (
 	// profiles". It currently restricts EGL/Vulkan GPU visibility inside the
 	// container to the GPUs actually mounted.
 	ApplicationProfileHook = HookName("update-application-profile")
-	// A ChmodHook is used to set the file mode of the specified paths.
-	//
-	// Deprecated: The chmod hook is deprecated and will be removed in a future release.
-	ChmodHook = HookName("chmod")
 	// A CreateSymlinksHook is used to create symlinks in the container.
 	CreateSymlinksHook = HookName("create-symlinks")
 	// DisableDeviceNodeModificationHook refers to the hook used to ensure that
@@ -66,14 +62,6 @@ const (
 
 	defaultNvidiaCDIHookPath = "/usr/bin/nvidia-cdi-hook"
 )
-
-// defaultDisabledHooks defines hooks that are disabled by default.
-// These hooks can be explicitly enabled using the WithEnabledHooks option.
-var defaultDisabledHooks = []HookName{
-	// ChmodHook is disabled by default as it was a workaround for older
-	// versions of crun that has since been fixed.
-	ChmodHook,
-}
 
 var _ Discover = (*Hook)(nil)
 
@@ -149,7 +137,7 @@ func WithDisabledHooks(hooks ...HookName) Option {
 }
 
 // WithEnabledHooks explicitly enables the specified hooks.
-// This is useful for enabling hooks that are disabled by default.
+// This is useful for overriding hooks passed to WithDisabledHooks.
 func WithEnabledHooks(hooks ...HookName) Option {
 	return func(c *hookCreatorOptions) {
 		c.enabledHooks = append(c.enabledHooks, hooks...)
@@ -176,8 +164,6 @@ func NewHookCreator(opts ...Option) HookCreator {
 	for _, opt := range opts {
 		opt(o)
 	}
-
-	o.disabledHooks = append(o.disabledHooks, defaultDisabledHooks...)
 
 	disabledHooks := make(map[HookName]bool)
 	for _, h := range o.disabledHooks {
@@ -220,7 +206,7 @@ func (c cdiHookCreator) Create(name HookName, args ...string) *Hook {
 
 func (c cdiHookCreator) getOCIHookType(name HookName) OCIHookType {
 	switch name {
-	case CreateSymlinksHook, ChmodHook, DisableDeviceNodeModificationHook, EnableCudaCompatHook, UpdateLDCacheHook, ApplicationProfileHook:
+	case CreateSymlinksHook, DisableDeviceNodeModificationHook, EnableCudaCompatHook, UpdateLDCacheHook, ApplicationProfileHook:
 		return OCIHookTypeCreateContainer
 	default:
 		return OCIHookTypeCreateContainer
@@ -237,8 +223,7 @@ func (c cdiHookCreator) isDisabled(name HookName, args ...string) bool {
 	}
 
 	// still reject hooks that require args if none were provided
-	switch name {
-	case CreateSymlinksHook, ChmodHook:
+	if name == CreateSymlinksHook {
 		return len(args) == 0
 	}
 	return false
@@ -254,11 +239,6 @@ func (c cdiHookCreator) transformArgs(name HookName, args ...string) []string {
 	case CreateSymlinksHook:
 		for _, arg := range args {
 			transformedArgs = append(transformedArgs, "--link", arg)
-		}
-	case ChmodHook:
-		transformedArgs = append(transformedArgs, "--mode", "755")
-		for _, arg := range args {
-			transformedArgs = append(transformedArgs, "--path", arg)
 		}
 	case UpdateLDCacheHook:
 		if c.ldconfigPath != "" {

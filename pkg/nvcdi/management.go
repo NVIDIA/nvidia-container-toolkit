@@ -108,13 +108,8 @@ func (l *managementlib) newManagementDeviceDiscoverer() (discover.Discover, erro
 		},
 	)
 
-	deviceFolderPermissionHooks := (*nvcdilib)(l).newDeviceFolderPermissionHookDiscoverer(
-		deviceNodes,
-	)
-
 	d := discover.Merge(
 		&managementDiscoverer{deviceNodes},
-		deviceFolderPermissionHooks,
 	)
 	return d, nil
 }
