@@ -48,6 +48,9 @@ func (m command) createSymlinkInRoot(containerRootDir string, targetPath string,
 			return fmt.Errorf("failed to open parent dir of link in root: %w", err)
 		}
 	}
+	// Keeps the *os.File alive while its raw fd is in use; otherwise the GC's
+	// finalizer can close it between Symlinkat and Renameat (EBADF).
+	defer linkDirInRoot.Close()
 	linkDirFd := int(linkDirInRoot.Fd())
 
 	m.logger.Infof("Symlinking %v to %v", filepath.Join(linkDirInRoot.Name(), filepath.Base(linkPath)), targetPath)
