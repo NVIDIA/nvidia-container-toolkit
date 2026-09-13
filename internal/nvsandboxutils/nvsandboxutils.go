@@ -20,9 +20,10 @@
 package nvsandboxutils
 
 /*
-#cgo linux LDFLAGS: -Wl,--export-dynamic -Wl,--unresolved-symbols=ignore-in-object-files
+#cgo linux LDFLAGS: -Wl,--export-dynamic
 #cgo darwin LDFLAGS: -Wl,-undefined,dynamic_lookup
 #include "nvsandboxutils.h"
+#include "dlsym_static.h"
 #include <stdlib.h>
 #include "cgo_helpers.h"
 */
@@ -32,14 +33,14 @@ import "unsafe"
 // nvSandboxUtilsInit function as declared in nvsandboxutils/nvsandboxutils.h
 func nvSandboxUtilsInit(Input *InitInput) Ret {
 	cInput, _ := (*C.nvSandboxUtilsInitInput_t)(unsafe.Pointer(Input)), cgoAllocsUnknown
-	__ret := C.nvSandboxUtilsInit(cInput)
+	__ret := C.nvSandboxUtilsInit_dl(cInput)
 	__v := (Ret)(__ret)
 	return __v
 }
 
 // nvSandboxUtilsShutdown function as declared in nvsandboxutils/nvsandboxutils.h
 func nvSandboxUtilsShutdown() Ret {
-	__ret := C.nvSandboxUtilsShutdown()
+	__ret := C.nvSandboxUtilsShutdown_dl()
 	__v := (Ret)(__ret)
 	return __v
 }
@@ -48,7 +49,7 @@ func nvSandboxUtilsShutdown() Ret {
 func nvSandboxUtilsGetDriverVersion(Version *byte, Length uint32) Ret {
 	cVersion, _ := (*C.char)(unsafe.Pointer(Version)), cgoAllocsUnknown
 	cLength, _ := (C.uint)(Length), cgoAllocsUnknown
-	__ret := C.nvSandboxUtilsGetDriverVersion(cVersion, cLength)
+	__ret := C.nvSandboxUtilsGetDriverVersion_dl(cVersion, cLength)
 	__v := (Ret)(__ret)
 	return __v
 }
@@ -56,7 +57,7 @@ func nvSandboxUtilsGetDriverVersion(Version *byte, Length uint32) Ret {
 // nvSandboxUtilsGetGpuResource function as declared in nvsandboxutils/nvsandboxutils.h
 func nvSandboxUtilsGetGpuResource(Request *GpuRes) Ret {
 	cRequest, _ := (*C.nvSandboxUtilsGpuRes_t)(unsafe.Pointer(Request)), cgoAllocsUnknown
-	__ret := C.nvSandboxUtilsGetGpuResource(cRequest)
+	__ret := C.nvSandboxUtilsGetGpuResource_dl(cRequest)
 	__v := (Ret)(__ret)
 	return __v
 }
@@ -66,7 +67,7 @@ func nvSandboxUtilsGetFileContent(FilePath *byte, Content *byte, ContentSize *ui
 	cFilePath, _ := (*C.char)(unsafe.Pointer(FilePath)), cgoAllocsUnknown
 	cContent, _ := (*C.char)(unsafe.Pointer(Content)), cgoAllocsUnknown
 	cContentSize, _ := (*C.uint)(unsafe.Pointer(ContentSize)), cgoAllocsUnknown
-	__ret := C.nvSandboxUtilsGetFileContent(cFilePath, cContent, cContentSize)
+	__ret := C.nvSandboxUtilsGetFileContent_dl(cFilePath, cContent, cContentSize)
 	__v := (Ret)(__ret)
 	return __v
 }
