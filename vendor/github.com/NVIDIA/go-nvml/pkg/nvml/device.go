@@ -817,6 +817,60 @@ func (device nvmlDevice) GetEnforcedPowerLimit() (uint32, Return) {
 	return limit, ret
 }
 
+func (l *library) DeviceSetMemoryLimits_v1(device Device, namespace string, requests uint64, limits uint64) Return {
+	return device.SetMemoryLimits_v1(namespace, requests, limits)
+}
+
+func (device nvmlDevice) SetMemoryLimits_v1(namespace string, requests uint64, limits uint64) Return {
+	d := &SetMemoryLimits_v1{}
+	cptr := stringToCPtr(namespace)
+	defer free(cptr)
+	d.NameSpace = (*int8)(cptr)
+	d.SoftLimit = requests
+	d.HardLimit = limits
+	return nvmlDeviceSetMemoryLimits_v1(device, d)
+}
+
+// nvml.DeviceGetMemoryLimits_v1()
+func (l *library) DeviceGetMemoryLimits_v1(device Device, namespace string) (MemoryLimits_v1, Return) {
+	return device.GetMemoryLimits_v1(namespace)
+}
+
+func (device nvmlDevice) GetMemoryLimits_v1(namespace string) (MemoryLimits_v1, Return) {
+	d := &GetMemoryLimits_v1{}
+	cptr := stringToCPtr(namespace)
+	defer free(cptr)
+	d.NameSpace = (*int8)(cptr)
+	ret := nvmlDeviceGetMemoryLimits_v1(device, d)
+	resp := MemoryLimits_v1{
+		NameSpace:   int8PtrToString(d.NameSpace),
+		SoftLimit:   d.SoftLimit,
+		HardLimit:   d.HardLimit,
+		CurrentUsed: d.CurrentUsed,
+	}
+	return resp, ret
+}
+
+// nvml.DeviceSetAdaptiveTgpMode_v1()
+func (l *library) DeviceSetAdaptiveTgpMode_v1(device Device, mode EnableState) Return {
+	return device.SetAdaptiveTgpMode_v1(mode)
+}
+
+func (device nvmlDevice) SetAdaptiveTgpMode_v1(mode EnableState) Return {
+	return nvmlDeviceSetAdaptiveTgpMode_v1(device, mode)
+}
+
+// nvml.DeviceGetAdaptiveTgpModeInfo_v1()
+func (l *library) DeviceGetAdaptiveTgpModeInfo_v1(device Device) (AdaptiveTgpModeInfo_v1, Return) {
+	return device.GetAdaptiveTgpModeInfo_v1()
+}
+
+func (device nvmlDevice) GetAdaptiveTgpModeInfo_v1() (AdaptiveTgpModeInfo_v1, Return) {
+	var info AdaptiveTgpModeInfo_v1
+	ret := nvmlDeviceGetAdaptiveTgpModeInfo_v1(device, &info)
+	return info, ret
+}
+
 // nvml.DeviceGetGpuOperationMode()
 func (l *library) DeviceGetGpuOperationMode(device Device) (GpuOperationMode, GpuOperationMode, Return) {
 	return device.GetGpuOperationMode()
@@ -1416,6 +1470,16 @@ func (device nvmlDevice) GetHostname_v1() (string, Return) {
 	var hostName Hostname_v1
 	ret := nvmlDeviceGetHostname_v1(device, &hostName)
 	return int8SliceToString(hostName.Value[:]), ret
+}
+
+func (l *library) DevicePerfMetricsGetSamples_v1(device Device) (PerfMetricsSamples_v1, Return) {
+	return device.PerfMetricsGetSamples_v1()
+}
+
+func (device nvmlDevice) PerfMetricsGetSamples_v1() (PerfMetricsSamples_v1, Return) {
+	var samples PerfMetricsSamples_v1
+	ret := nvmlDevicePerfMetricsGetSamples_v1(device, &samples)
+	return samples, ret
 }
 
 // nvml.DeviceGetAccountingStats()
@@ -2376,6 +2440,9 @@ func (device nvmlDevice) GetGpuInstances(info *GpuInstanceProfileInfo) ([]GpuIns
 		return nil, ERROR_INVALID_ARGUMENT
 	}
 	var count = info.InstanceCount
+	if count == 0 {
+		return nil, ERROR_INVALID_ARGUMENT
+	}
 	gpuInstances := make([]nvmlGpuInstance, count)
 	ret := nvmlDeviceGetGpuInstances(device, info.Id, &gpuInstances[0], &count)
 	return convertSlice[nvmlGpuInstance, GpuInstance](gpuInstances[:count]), ret
@@ -2494,6 +2561,9 @@ func (gpuInstance nvmlGpuInstance) GetComputeInstances(info *ComputeInstanceProf
 		return nil, ERROR_INVALID_ARGUMENT
 	}
 	var count = info.InstanceCount
+	if count == 0 {
+		return nil, ERROR_INVALID_ARGUMENT
+	}
 	computeInstances := make([]nvmlComputeInstance, count)
 	ret := nvmlGpuInstanceGetComputeInstances(gpuInstance, info.Id, &computeInstances[0], &count)
 	return convertSlice[nvmlComputeInstance, ComputeInstance](computeInstances[:count]), ret
@@ -2734,7 +2804,7 @@ func (l *library) DeviceGetSupportedPerformanceStates(device Device) ([]Pstates,
 
 func (device nvmlDevice) GetSupportedPerformanceStates() ([]Pstates, Return) {
 	pstates := make([]Pstates, MAX_GPU_PERF_PSTATES)
-	ret := nvmlDeviceGetSupportedPerformanceStates(device, &pstates[0], MAX_GPU_PERF_PSTATES)
+	ret := nvmlDeviceGetSupportedPerformanceStates(device, &pstates[0], MAX_GPU_PERF_PSTATES*uint32(unsafe.Sizeof(Pstates(0))))
 	for i := 0; i < MAX_GPU_PERF_PSTATES; i++ {
 		if pstates[i] == PSTATE_UNKNOWN {
 			return pstates[0:i], ret
@@ -3261,6 +3331,16 @@ func (device nvmlDevice) GetGpuFabricInfoV() GpuFabricInfoHandler {
 	return GpuFabricInfoHandler{device}
 }
 
+func (l *library) DeviceGetGpuFabricInfo_v4(device Device) (GpuFabricInfo_v4, Return) {
+	return device.GetGpuFabricInfo_v4()
+}
+
+func (device nvmlDevice) GetGpuFabricInfo_v4() (GpuFabricInfo_v4, Return) {
+	var info GpuFabricInfo_v4
+	ret := nvmlDeviceGetGpuFabricInfo_v4(device, &info)
+	return info, ret
+}
+
 // nvml.DeviceGetProcessesUtilizationInfo()
 func (l *library) DeviceGetProcessesUtilizationInfo(device Device) (ProcessesUtilizationInfo, Return) {
 	return device.GetProcessesUtilizationInfo()
@@ -3291,6 +3371,7 @@ func (l *library) DeviceSetVgpuHeterogeneousMode(device Device, heterogeneousMod
 }
 
 func (device nvmlDevice) SetVgpuHeterogeneousMode(heterogeneousMode VgpuHeterogeneousMode) Return {
+	heterogeneousMode.Version = STRUCT_VERSION(heterogeneousMode, 1)
 	ret := nvmlDeviceSetVgpuHeterogeneousMode(device, &heterogeneousMode)
 	return ret
 }
@@ -3391,6 +3472,7 @@ func (l *library) DeviceSetClockOffsets(device Device, info ClockOffset) Return 
 }
 
 func (device nvmlDevice) SetClockOffsets(info ClockOffset) Return {
+	info.Version = STRUCT_VERSION(info, 1)
 	return nvmlDeviceSetClockOffsets(device, &info)
 }
 
@@ -3564,6 +3646,14 @@ func (device nvmlDevice) SetNvlinkBwMode(setBwMode *NvlinkSetBwMode) Return {
 	return nvmlDeviceSetNvlinkBwMode(device, setBwMode)
 }
 
+func (l *library) DeviceSetNvlinkBwModeAsync_v1(device Device, setBwMode *NvlinkSetBwModeAsync_v1) Return {
+	return device.SetNvlinkBwModeAsync_v1(setBwMode)
+}
+
+func (device nvmlDevice) SetNvlinkBwModeAsync_v1(setBwMode *NvlinkSetBwModeAsync_v1) Return {
+	return nvmlDeviceSetNvlinkBwModeAsync_v1(device, setBwMode)
+}
+
 func (l *library) DeviceGetNvLinkInfo(device Device) NvLinkInfoHandler {
 	return device.GetNvLinkInfo()
 }
@@ -3590,6 +3680,28 @@ func (handler NvLinkInfoHandler) V2() (NvLinkInfo_v2, Return) {
 	ret := nvmlDeviceGetNvLinkInfo(handler.device, (*NvLinkInfo)(unsafe.Pointer(&info)))
 
 	return info, ret
+}
+
+// nvml.DeviceGetNvLinkTelemetrySamples_v1()
+func (l *library) DeviceGetNvLinkTelemetrySamples_v1(device Device, samples NvlinkTelemetrySamples_v1) (NvlinkTelemetrySamples_v1, Return) {
+	return device.GetNvLinkTelemetrySamples_v1(samples)
+}
+
+func (device nvmlDevice) GetNvLinkTelemetrySamples_v1(samples NvlinkTelemetrySamples_v1) (NvlinkTelemetrySamples_v1, Return) {
+	var pinner runtime.Pinner
+	defer pinner.Unpin()
+
+	if samples.TelemetrySamples != nil && samples.TelemetryCount > 0 {
+		pinner.Pin(samples.TelemetrySamples)
+		entries := unsafe.Slice(samples.TelemetrySamples, samples.TelemetryCount)
+		for _, entry := range entries {
+			if entry.Samples != nil && entry.SampleCount > 0 {
+				pinner.Pin(entry.Samples)
+			}
+		}
+	}
+	ret := nvmlDeviceGetNvLinkTelemetrySamples_v1(device, &samples)
+	return samples, ret
 }
 
 // nvml.DeviceWorkloadPowerProfileGetProfilesInfo()
@@ -3692,9 +3804,21 @@ func (device nvmlDevice) GetSramUniqueUncorrectedEccErrorCounts(errorCounts *Ecc
 func (l *library) DeviceSetRusdSettings_v1(device Device, settings RusdSettings_v1) Return {
 	return device.SetRusdSettings_v1(settings)
 }
+
 func (device nvmlDevice) SetRusdSettings_v1(settings RusdSettings_v1) Return {
 	settings.Version = STRUCT_VERSION(settings, 1)
 	return nvmlDeviceSetRusdSettings_v1(device, &settings)
+}
+
+// nvml.DeviceGetBankRemapperStatus_v1()
+func (l *library) DeviceGetBankRemapperStatus_v1(device Device) (EccBankRemapperStatus_v1, Return) {
+	return device.GetBankRemapperStatus_v1()
+}
+
+func (device nvmlDevice) GetBankRemapperStatus_v1() (EccBankRemapperStatus_v1, Return) {
+	var status EccBankRemapperStatus_v1
+	ret := nvmlDeviceGetBankRemapperStatus_v1(device, &status)
+	return status, ret
 }
 
 func (l *library) DeviceGetRemappedRows_v2(device Device) (RemappedRowsInfo_v2, Return) {

@@ -121,3 +121,14 @@ func stringToInt8Slice(s string, out []int8) {
 		out[i] = 0
 	}
 }
+
+func int8PtrToString(p *int8) string {
+	goString := C.GoString((*C.char)(unsafe.Pointer(p)))
+	return goString
+}
+
+func stringToCPtr(s string) unsafe.Pointer {
+	cstr := C.CString(s)
+	p := unsafe.Pointer(cstr)
+	return p
+}

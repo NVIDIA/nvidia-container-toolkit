@@ -42,6 +42,19 @@ func (vgpuTypeId nvmlVgpuTypeId) GetClass() (string, Return) {
 	return string(vgpuTypeClass[:clen(vgpuTypeClass)]), ret
 }
 
+// nvml.VgpuTypeGetID()
+// It doesn't have an NVML C API symbol because the base type `nvmlVgpuTypeId`
+// is a non-exported type defined as `uint32`. When using the `VgpuTypeId` type,
+// it is not possible to read the underlying value without using reflection.
+// This method adds an idiomatic Go getter to access the type's value.
+func (l *library) VgpuTypeGetID(vgpuTypeId VgpuTypeId) uint32 {
+	return vgpuTypeId.GetID()
+}
+
+func (vgpuTypeId nvmlVgpuTypeId) GetID() uint32 {
+	return uint32(vgpuTypeId)
+}
+
 // nvml.VgpuTypeGetName()
 func (l *library) VgpuTypeGetName(vgpuTypeId VgpuTypeId) (string, Return) {
 	return vgpuTypeId.GetName()
