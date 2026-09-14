@@ -249,22 +249,23 @@ func getCustomFirmwareClassPath(logger logger.Interface) string {
 	return strings.TrimSpace(string(customFirmwareClassPath))
 }
 
-// newDriverFirmwareDiscoverer creates a discoverer for GSP firmware associated with the specified driver version.
+// newDriverFirmwareDiscoverer creates a discoverer for the GSP and ucode firmware associated with the specified driver version.
 func (l *nvcdilib) newDriverFirmwareDiscoverer(version string) (discover.Discover, error) {
-	gspFirmwareSearchPaths, err := getFirmwareSearchPaths(l.logger)
+	firmwareSearchPaths, err := getFirmwareSearchPaths(l.logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get firmware search paths: %v", err)
 	}
 	gspFirmwarePaths := filepath.Join("nvidia", version, "gsp*.bin")
+	ucodeFirmwarePaths := filepath.Join("nvidia", version, "ucodes*.bin")
 	return discover.NewMounts(
 		l.logger,
 		lookup.NewFileLocator(
 			lookup.WithLogger(l.logger),
 			lookup.WithRoot(l.driver.Root),
-			lookup.WithSearchPaths(gspFirmwareSearchPaths...),
+			lookup.WithSearchPaths(firmwareSearchPaths...),
 		),
 		l.driver.Root,
-		[]string{gspFirmwarePaths},
+		[]string{gspFirmwarePaths, ucodeFirmwarePaths},
 	), nil
 }
 
