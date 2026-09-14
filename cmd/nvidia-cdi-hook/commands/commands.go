@@ -22,6 +22,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	cudamemorylimits "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/apply-cuda-memory-limits"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/chmod"
 	symlinks "github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/create-symlinks"
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-cdi-hook/cudacompat"
@@ -91,6 +92,7 @@ func ConfigureCDIHookCommand(logger logger.Interface, base *cli.Command) *cli.Co
 		chmod.NewCommand(logger),
 		cudacompat.NewCommand(logger),
 		disabledevicenodemodification.NewCommand(logger),
+		cudamemorylimits.NewCommand(logger),
 		updateapplicationprofile.NewCommand(logger),
 		{
 			Name:   "noop",
