@@ -110,9 +110,9 @@ func (c *Config) EnableCDI() {
 	}
 	config := *c
 
-	features, ok := config["features"].(map[string]bool)
+	features, ok := config["features"].(map[string]any)
 	if !ok {
-		features = make(map[string]bool)
+		features = make(map[string]any)
 	}
 	features["cdi"] = true
 
