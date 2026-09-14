@@ -200,6 +200,14 @@ func TestDeviceSpecGenerators(t *testing.T) {
 							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
 							{Path: "/dev/nvmap", HostPath: "/dev/nvmap", FileMode: to.Ptr(os.FileMode(0400)), Permissions: "rwm", GID: to.Ptr[uint32](44)},
 						},
+						Hooks: []*specs.Hook{
+							{
+								HookName: "createRuntime",
+								Path:     "/usr/bin/nvidia-cdi-hook",
+								Args:     []string{"nvidia-cdi-hook", "apply-cuda-memory-limits", "--driver-root", "", "--gpu-id", "GPU-1"},
+								Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+							},
+						},
 					},
 				},
 			},
