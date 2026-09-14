@@ -1,5 +1,35 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.20.1
+- Add ucode_*.bin firmware files to CDI spec introduced in R615
+- fix: preserve Docker feature flags when enabling CDI
+- feat: add new CDI hook to set CUDA memory limits
+- Adding missing cdi-hooks in readme
+- build(deps): Bump golang.org/x/sys from 0.47.0 to 0.48.0
+- Fix intermittent EBADF in create-symlinks hook
+- build(deps): Bump github.com/NVIDIA/go-nvml from 0.13.3-1 to 0.13.4-0
+- internal/dxcore: Fix build on 32-bit targets
+- build(deps): Bump github.com/opencontainers/cgroups from 0.0.7 to 0.0.9
+- update-ldcache hook: exec ldconfig from a sealed memfd
+- fix malformed hookscratch dir names
+- bump runc to v1.5.1 and remove deprecated methods
+- build(deps): Bump tags.cncf.io/container-device-interface
+- build(deps): Bump github.com/containerd/nri from 0.12.1 to 0.12.3
+- Remove Go module versions from rendered TPN document
+- build(deps): Bump golang to 1.27.1 in /deployments/devel
+- Enable JIT-CDI to inject MIG management capability devices
+- build(deps): Bump google.golang.org/grpc from 1.82.1 to 1.83.1
+- Update minimum go toolchain to 1.26
+- fix: Order container engines after nvidia-cdi-refresh.service
+- wsl: honor none value for NVIDIA_VISIBLE_DEVICES envvar
+- fix: Create NVIDIA control device nodes in nvidia-cdi-refresh.service
+- fix: NVIDIA X.Org driver modules mount fixes
+- Try parsing rootfs from container state JSON
+
+### Changes in the Toolkit Container
+
+- build(deps): Bump nvidia/distroless/go to `v4.1.3` in /deployments/container
+
 ## v1.20.0
 - Add `enable-cuda-compat` hook to management CDI specs
 - Add `update-application-profile` CDI hook for EGL/Vulkan use case
