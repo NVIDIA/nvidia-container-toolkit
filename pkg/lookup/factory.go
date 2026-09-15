@@ -26,12 +26,16 @@ type Factory struct {
 	searchPaths []string
 	filter      func(string) error
 	count       int
+	compat32    bool
 }
 
 type Option func(*Factory)
 
 func NewFactory(opts ...Option) *Factory {
-	o := &Factory{}
+	// The 32-bit libraries on the host are considered unless a caller opts out.
+	o := &Factory{
+		compat32: true,
+	}
 	for _, opt := range opts {
 		opt(o)
 	}
@@ -77,5 +81,13 @@ func WithFilter(assert func(string) error) Option {
 func WithCount(count int) Option {
 	return func(f *Factory) {
 		f.count = count
+	}
+}
+
+// WithCompat32Libraries controls whether 32-bit libraries are also considered
+// when locating libraries. These are included by default.
+func WithCompat32Libraries(compat32 bool) Option {
+	return func(f *Factory) {
+		f.compat32 = compat32
 	}
 }
