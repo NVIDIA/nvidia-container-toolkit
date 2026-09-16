@@ -7,8 +7,8 @@ import (
 	"os"
 	"path"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	"golang.org/x/mod/semver"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 )
@@ -107,8 +107,12 @@ func (s *Spec) GetCapabilities() []string {
 	var caps []string
 	// If v1.0.0-rc1 <= OCI version < v1.0.0-rc5 parse s.Process.Capabilities as:
 	// github.com/opencontainers/runtime-spec/blob/v1.0.0-rc1/specs-go/config.go#L30-L54
-	rc1cmp := semver.Compare("v"+*s.Version, "v1.0.0-rc1")
-	rc5cmp := semver.Compare("v"+*s.Version, "v1.0.0-rc5")
+	sv, err := semver.NewVersion(*s.Version)
+	if err != nil {
+		sv = semver.MustParse("0.0.0")
+	}
+	rc1cmp := sv.Compare(semver.MustParse("v1.0.0-rc1"))
+	rc5cmp := sv.Compare(semver.MustParse("v1.0.0-rc5"))
 	if (rc1cmp == 1 || rc1cmp == 0) && (rc5cmp == -1) {
 		err := json.Unmarshal(*s.Process.Capabilities, &caps)
 		if err != nil {
@@ -120,7 +124,7 @@ func (s *Spec) GetCapabilities() []string {
 	// Otherwise, parse s.Process.Capabilities as:
 	// github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L30-L54
 	capabilities := specs.LinuxCapabilities{}
-	err := json.Unmarshal(*s.Process.Capabilities, &capabilities)
+	err = json.Unmarshal(*s.Process.Capabilities, &capabilities)
 	if err != nil {
 		log.Panicln("could not decode Process.Capabilities in OCI spec:", err)
 	}
