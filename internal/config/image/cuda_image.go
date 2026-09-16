@@ -23,8 +23,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	"golang.org/x/mod/semver"
 	"tags.cncf.io/container-device-interface/pkg/parser"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -201,16 +201,13 @@ func (i CUDA) legacyVersion() (string, error) {
 }
 
 func parseMajorMinorVersion(version string) (string, error) {
-	vVersion := "v" + strings.TrimPrefix(version, "v")
-
-	if !semver.IsValid(vVersion) {
-		return "", fmt.Errorf("invalid version string")
+	sv, err := semver.NewVersion(version)
+	if err != nil {
+		return "", fmt.Errorf("invalid version string: %w", err)
 	}
-
-	majorMinor := strings.TrimPrefix(semver.MajorMinor(vVersion), "v")
+	majorMinor := fmt.Sprintf("%d.%d", sv.Major(), sv.Minor())
 	parts := strings.Split(majorMinor, ".")
 
-	var err error
 	_, err = strconv.ParseUint(parts[0], 10, 32)
 	if err != nil {
 		return "", fmt.Errorf("invalid major version")
@@ -219,6 +216,7 @@ func parseMajorMinorVersion(version string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("invalid minor version")
 	}
+
 	return majorMinor, nil
 }
 
