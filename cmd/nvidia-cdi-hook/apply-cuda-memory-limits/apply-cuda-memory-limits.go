@@ -115,7 +115,8 @@ func (m command) run(_ *cli.Command, cfg *config) error {
 	fs := oci.NewFileSpec(specFilePath, false)
 	_, err = fs.Load()
 	if err != nil {
-		return fmt.Errorf("failed to load OCI container spec: %w", err)
+		m.logger.Warningf("skipping apply-cuda-memory-limits; failed to load OCI container spec: %v", err)
+		return nil
 	}
 
 	memReqStr, hasRequest := fs.LookupEnv(GPUMemoryRequestEnvName)
