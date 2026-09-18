@@ -234,6 +234,9 @@ func getStruct(current reflect.Type, paths ...string) (reflect.StructField, erro
 		return reflect.StructField{}, fmt.Errorf("%w: no fields selected", errUndefinedField)
 	}
 	tomlField := paths[0]
+	if current.Kind() != reflect.Struct {
+		return reflect.StructField{}, fmt.Errorf("%w: %q", errUndefinedField, tomlField)
+	}
 	for f := range current.Fields() {
 		v, ok := f.Tag.Lookup("toml")
 		if !ok {
