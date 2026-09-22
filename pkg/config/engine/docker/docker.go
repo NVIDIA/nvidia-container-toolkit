@@ -74,7 +74,7 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 
 	// Read the existing runtimes
 	runtimes := make(map[string]any)
-	if _, exists := config["runtimes"]; exists {
+	if config["runtimes"] != nil {
 		runtimes = config["runtimes"].(map[string]any)
 	}
 
@@ -135,7 +135,7 @@ func (c *Config) RemoveRuntime(name string) error {
 		}
 	}
 
-	if _, exists := config["runtimes"]; exists {
+	if config["runtimes"] != nil {
 		runtimes := config["runtimes"].(map[string]any)
 
 		delete(runtimes, name)
@@ -203,7 +203,7 @@ func (c *Config) GetRuntimeConfig(name string) (engine.RuntimeConfig, error) {
 	cfg := *c
 
 	var runtimes map[string]any
-	if _, ok := cfg["runtimes"]; ok {
+	if cfg["runtimes"] != nil {
 		runtimes = cfg["runtimes"].(map[string]any)
 		if r, ok := runtimes[name]; ok {
 			dr := dockerRuntime(r.(map[string]any))
