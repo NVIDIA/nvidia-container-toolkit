@@ -250,6 +250,39 @@ func TestGetRuntimeConfig(t *testing.T) {
 	}
 }
 
+func TestNullRuntimesFromFile(t *testing.T) {
+	for _, action := range []string{"add", "remove", "get"} {
+		t.Run(action, func(t *testing.T) {
+			configPath := filepath.Join(t.TempDir(), "daemon.json")
+			require.NoError(t, os.WriteFile(configPath, []byte(`{"runtimes":null,"log-driver":"json-file"}`), 0600))
+			config, err := New(WithPath(configPath))
+			require.NoError(t, err)
+
+			switch action {
+			case "add":
+				require.NoError(t, config.AddRuntime("nvidia", "/usr/bin/nvidia-container-runtime", false))
+				runtime, err := config.GetRuntimeConfig("nvidia")
+				require.NoError(t, err)
+				require.Equal(t, "/usr/bin/nvidia-container-runtime", runtime.GetBinaryPath())
+			case "remove":
+				require.NoError(t, config.RemoveRuntime("nvidia"))
+			case "get":
+				runtime, err := config.GetRuntimeConfig("nvidia")
+				require.NoError(t, err)
+				require.Empty(t, runtime.GetBinaryPath())
+			}
+
+			_, err = config.Save(configPath)
+			require.NoError(t, err)
+			contents, err := os.ReadFile(configPath)
+			require.NoError(t, err)
+			var saved map[string]any
+			require.NoError(t, json.Unmarshal(contents, &saved))
+			require.Equal(t, "json-file", saved["log-driver"])
+		})
+	}
+}
+
 func TestEnableCDIPreservesFeaturesFromFile(t *testing.T) {
 	tests := []struct {
 		name     string
