@@ -26,9 +26,9 @@ on generating a CDI file.
 
 The `nvidia-cdi-hook` CLI provides the following functionality:
 
-* `chmod` - Change the permissions of a file or directory inside the directory path to be mounted into a container.
 * `create-symlinks` - Create symlinks inside the directory path to be mounted into a container.
 * `update-ldcache` - Update the dynamic linker cache inside the directory path to be mounted into a container.
 * `enable-cuda-compat` - Ensure that the directory containing the CUDA compat libraries is added to the ldconfig search path if required.
 * `disable-device-node-modification` - Ensure that the `/proc/driver/nvidia/params` file present in the container does not allow device node modifications.
 * `update-application-profile` - Update driver settings through "application profiles". Currently, this hook sets `EGLVisibleDGPUDevices` to restrict EGL/Vulkan GPU visibility inside the container.
+* `apply-cuda-memory-limits` - Set the soft and hard limits of CUDA memory usage on GPU device(s) in the container.

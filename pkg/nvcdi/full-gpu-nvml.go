@@ -169,15 +169,16 @@ func (l *fullGPUDeviceSpecGenerator) newFullGPUDiscoverer(d device.Device) (disc
 		return nil, fmt.Errorf("failed to create device discoverer: %v", err)
 	}
 
-	deviceFolderPermissionHooks := (*nvcdilib)(l.nvmllib).newDeviceFolderPermissionHookDiscoverer(
-		deviceNodes,
-	)
+	cudaMemoryLimitsHook, err := (*nvcdilib)(l.nvmllib).newCudaMemoryLimits(d)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cuda memory limits discoverer: %w", err)
+	}
 
 	var discoverers []discover.Discover
 
 	discoverers = append(discoverers,
 		deviceNodes,
-		deviceFolderPermissionHooks,
+		cudaMemoryLimitsHook,
 	)
 
 	discoverers = append(discoverers, l.additionalDiscoverers...)
