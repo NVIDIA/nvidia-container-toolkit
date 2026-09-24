@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         name: Check out code
 
       - name: Set up QEMU
@@ -67,7 +67,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         name: Check out code
 
       - name: Set up QEMU
@@ -101,7 +101,7 @@ jobs:
       - amd64-packages
       - arm64-packages
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         name: Check out code
 
       - name: Calculate build vars
@@ -160,7 +160,7 @@ jobs:
       - amd64-packages
       - arm64-packages
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         name: Check out code
 
       - name: Calculate build vars
@@ -209,7 +209,7 @@ jobs:
       - application-image
     runs-on: linux-amd64-cpu4
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         name: Check out code
 
       - name: Calculate build vars
