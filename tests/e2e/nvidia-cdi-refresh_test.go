@@ -109,6 +109,18 @@ EOF
 		echo "nvidia-cdi-refresh.service is not ordered before docker.service"
 		exit 1
 	fi
+	if ! systemctl show nvidia-cdi-refresh.service -p TimeoutStartUSec | grep -q "TimeoutStartUSec=1min 30s"; then
+		echo "nvidia-cdi-refresh.service does not have the expected 90s start timeout"
+		exit 1
+	fi
+	if ! systemctl cat nvidia-cdi-refresh.service | grep -q "^StartLimitBurst=5$"; then
+		echo "nvidia-cdi-refresh.service does not have the expected restart burst"
+		exit 1
+	fi
+	if ! systemctl cat nvidia-cdi-refresh.service | grep -q "^StartLimitInterval=10min$"; then
+		echo "nvidia-cdi-refresh.service does not have the expected restart interval"
+		exit 1
+	fi
 	`
 
 	nvidiaCdiRefreshFileExistsTemplate = `
