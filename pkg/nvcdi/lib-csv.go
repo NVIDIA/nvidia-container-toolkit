@@ -476,7 +476,7 @@ func (l *csvlib) getEnableCUDACompatHookOptions() (*discover.EnableCUDACompatHoo
 
 	hostCUDAVersion, err := l.getCUDAVersionString()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get host CUDA version: %v", ret)
+		return nil, fmt.Errorf("failed to get host CUDA version: %w", err)
 	}
 
 	f := &discover.EnableCUDACompatHookOptions{
