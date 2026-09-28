@@ -353,3 +353,20 @@ func TestStortMounts(t *testing.T) {
 		})
 	}
 }
+
+func TestNewSorterReturnsAUsableTransformer(t *testing.T) {
+	// The constructor is the only way to get a sorter from outside the package,
+	// and a nil Transformer panics on the first call.
+	s := NewSorter()
+	require.NotNil(t, s)
+
+	spec := &specs.Spec{
+		Devices: []specs.Device{
+			{Name: "gpu1"},
+			{Name: "gpu0"},
+		},
+	}
+	require.NoError(t, s.Transform(spec))
+	require.Equal(t, "gpu0", spec.Devices[0].Name)
+	require.Equal(t, "gpu1", spec.Devices[1].Name)
+}

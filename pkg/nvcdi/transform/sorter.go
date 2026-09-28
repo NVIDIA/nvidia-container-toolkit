@@ -31,7 +31,7 @@ var _ Transformer = (*sorter)(nil)
 
 // NewSorter creates a transformer that sorts container edits.
 func NewSorter() Transformer {
-	return nil
+	return sorter{}
 }
 
 // Transform sorts the entities in the specified CDI specification.
