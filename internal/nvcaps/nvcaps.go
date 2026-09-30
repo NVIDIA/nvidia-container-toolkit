@@ -136,14 +136,15 @@ func (m MigCap) isValid() bool {
 		var gpu int
 		var gi int
 		var ci int
-		// Look for a CI access file
+		// Look for a CI access file. Sscanf stops at the first mismatch, so the
+		// reconstructed name has to be the whole token.
 		n, _ := fmt.Sscanf(cap, "gpu%d/gi%d/ci%d/access", &gpu, &gi, &ci)
-		if n == 3 {
+		if n == 3 && cap == fmt.Sprintf("gpu%d/gi%d/ci%d/access", gpu, gi, ci) {
 			return true
 		}
 		// Look for a GI access file
-		n, _ = fmt.Sscanf(cap, "gpu%d/gi%d/access %d", &gpu, &gi)
-		if n == 2 {
+		n, _ = fmt.Sscanf(cap, "gpu%d/gi%d/access", &gpu, &gi)
+		if n == 2 && cap == fmt.Sprintf("gpu%d/gi%d/access", gpu, gi) {
 			return true
 		}
 	}

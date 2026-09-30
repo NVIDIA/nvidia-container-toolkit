@@ -56,6 +56,8 @@ func TestProcessMigMinorsLine(t *testing.T) {
 		{"monitor 2", "monitor", 2, false},
 		{"gpu0/gi0/access 3", "gpu0/gi0/access", 3, false},
 		{"gpu0/gi0/ci0/access 4", "gpu0/gi0/ci0/access", 4, false},
+		{"gpu0/gi0/accessEXTRA 3", "", 0, true},
+		{"gpu0/gi0/ci0/accessEXTRA 4", "", 0, true},
 		{"notconfig 99", "", 0, true},
 		{"config notanint", "", 0, true},
 		{"", "", 0, true},
