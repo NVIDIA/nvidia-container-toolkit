@@ -405,3 +405,30 @@ func mockIGXServer() nvml.Interface {
 		},
 	}
 }
+
+func TestGetEnableCUDACompatHookOptionsReportsWhyTheVersionFailed(t *testing.T) {
+	// The message used to interpolate the NVML return of the Init call above it,
+	// which is always SUCCESS by then, so the real failure was dropped.
+	nvmllib := &mock.Interface{
+		InitFunc:     func() nvml.Return { return nvml.SUCCESS },
+		ShutdownFunc: func() nvml.Return { return nvml.SUCCESS },
+		SystemGetCudaDriverVersionFunc: func() (int, nvml.Return) {
+			return 0, nvml.ERROR_NOT_SUPPORTED
+		},
+		DeviceGetCountFunc: func() (int, nvml.Return) { return 0, nvml.SUCCESS },
+	}
+
+	l := &csvlib{
+		platformlibs: platformlibs{
+			infolib: &infoInterfaceMock{
+				HasNvmlFunc: func() (bool, string) { return true, "forced" },
+			},
+			nvmllib:   nvmllib,
+			devicelib: device.New(nvmllib),
+		},
+	}
+
+	_, err := l.getEnableCUDACompatHookOptions()
+	require.ErrorContains(t, err, nvml.ERROR_NOT_SUPPORTED.Error())
+	require.NotContains(t, err.Error(), nvml.SUCCESS.Error())
+}
