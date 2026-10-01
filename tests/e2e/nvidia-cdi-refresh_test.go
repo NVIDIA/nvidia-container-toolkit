@@ -109,15 +109,20 @@ EOF
 		echo "nvidia-cdi-refresh.service is not ordered before docker.service"
 		exit 1
 	fi
-	if ! systemctl show nvidia-cdi-refresh.service -p TimeoutStartUSec | grep -q "TimeoutStartUSec=1min 30s"; then
+	# Read the effective settings: unit text can be ignored or overridden by a drop-in.
+	if ! settings=$(systemctl show nvidia-cdi-refresh.service -p TimeoutStartUSec -p StartLimitBurst -p StartLimitIntervalUSec); then
+		echo "Could not read nvidia-cdi-refresh.service restart settings"
+		exit 1
+	fi
+	if ! printf '%s\n' "$settings" | grep -qx "TimeoutStartUSec=1min 30s"; then
 		echo "nvidia-cdi-refresh.service does not have the expected 90s start timeout"
 		exit 1
 	fi
-	if ! systemctl cat nvidia-cdi-refresh.service | grep -q "^StartLimitBurst=5$"; then
+	if ! printf '%s\n' "$settings" | grep -qx "StartLimitBurst=5"; then
 		echo "nvidia-cdi-refresh.service does not have the expected restart burst"
 		exit 1
 	fi
-	if ! systemctl cat nvidia-cdi-refresh.service | grep -q "^StartLimitInterval=10min$"; then
+	if ! printf '%s\n' "$settings" | grep -qx "StartLimitIntervalUSec=10min"; then
 		echo "nvidia-cdi-refresh.service does not have the expected restart interval"
 		exit 1
 	fi
