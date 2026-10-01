@@ -76,6 +76,7 @@ func (f *Factory) newCDIModifier(isJitCDI bool) (oci.SpecModifier, error) {
 		cdi.WithLogger(f.logger),
 		cdi.WithDevices(devices...),
 		cdi.WithSpecDirs(f.cfg.NVIDIAContainerRuntimeConfig.Modes.CDI.SpecDirs...),
+		cdi.WithDeviceRequestSource(f.image.DeviceRequestSource()),
 	)
 }
 
