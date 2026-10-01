@@ -111,8 +111,11 @@ func (m command) run(_ *cli.Command, cfg *options) error {
 	}
 
 	containerRootDir, err := s.GetContainerRoot()
-	if err != nil || containerRootDir == "" || containerRootDir == "/" {
-		return fmt.Errorf("failed to determined container root: %v", err)
+	if err != nil {
+		return fmt.Errorf("failed to determine container root: %w", err)
+	}
+	if containerRootDir == "" || containerRootDir == "/" {
+		return errors.New("failed to determine container root: invalid root")
 	}
 
 	runner, err := ldconfig.NewRunner(
