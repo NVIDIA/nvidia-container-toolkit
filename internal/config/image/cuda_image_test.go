@@ -417,6 +417,22 @@ func TestGetDevicesFromEnvvar(t *testing.T) {
 			},
 			expectedDevices: []string{anotherGPUID},
 		},
+		{
+			description: "repeated device in NVIDIA_VISIBLE_DEVICES is returned once",
+			env: map[string]string{
+				EnvVarNvidiaVisibleDevices: gpuID + "," + anotherGPUID + "," + gpuID,
+			},
+			expectedDevices: []string{gpuID, anotherGPUID},
+		},
+		{
+			description:                   "device repeated across swarm resource envvars is returned once",
+			preferredVisibleDeviceEnvVars: []string{"DOCKER_RESOURCE_GPUS", "DOCKER_RESOURCE_GPUS_ADDITIONAL"},
+			env: map[string]string{
+				"DOCKER_RESOURCE_GPUS":            gpuID,
+				"DOCKER_RESOURCE_GPUS_ADDITIONAL": gpuID,
+			},
+			expectedDevices: []string{gpuID},
+		},
 	}
 
 	for _, tc := range tests {

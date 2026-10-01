@@ -93,6 +93,9 @@ func newDevices(idOrCommaSeparated ...string) devices {
 	i := 0
 	for _, commaSeparated := range idOrCommaSeparated {
 		for id := range strings.SplitSeq(commaSeparated, ",") {
+			if _, exists := lookup[id]; exists {
+				continue
+			}
 			lookup[id] = i
 			i++
 		}
