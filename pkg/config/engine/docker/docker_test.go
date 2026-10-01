@@ -24,6 +24,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/engine"
 )
 
 func TestUpdateConfigDefaultRuntime(t *testing.T) {
@@ -247,6 +249,88 @@ func TestGetRuntimeConfig(t *testing.T) {
 		rc, err := cfg.GetRuntimeConfig(tc.runtime)
 		require.NoError(t, err)
 		require.Equal(t, tc.expected, rc.GetBinaryPath())
+	}
+}
+
+func TestNullRuntimesFromFile(t *testing.T) {
+	for _, action := range []string{"add", "remove", "get"} {
+		t.Run(action, func(t *testing.T) {
+			configPath := filepath.Join(t.TempDir(), "daemon.json")
+			require.NoError(t, os.WriteFile(configPath, []byte(`{"runtimes":null,"log-driver":"json-file"}`), 0600))
+			config, err := New(WithPath(configPath))
+			require.NoError(t, err)
+
+			switch action {
+			case "add":
+				require.NoError(t, config.AddRuntime("nvidia", "/usr/bin/nvidia-container-runtime", false))
+				runtime, err := config.GetRuntimeConfig("nvidia")
+				require.NoError(t, err)
+				require.Equal(t, "/usr/bin/nvidia-container-runtime", runtime.GetBinaryPath())
+			case "remove":
+				require.NoError(t, config.RemoveRuntime("nvidia"))
+			case "get":
+				runtime, err := config.GetRuntimeConfig("nvidia")
+				require.NoError(t, err)
+				require.Empty(t, runtime.GetBinaryPath())
+			}
+
+			_, err = config.Save(configPath)
+			require.NoError(t, err)
+			contents, err := os.ReadFile(configPath)
+			require.NoError(t, err)
+			var saved map[string]any
+			require.NoError(t, json.Unmarshal(contents, &saved))
+			require.Equal(t, "json-file", saved["log-driver"])
+		})
+	}
+}
+
+func TestNullRuntimeFieldsFromFile(t *testing.T) {
+	testCases := map[string]struct {
+		input    string
+		action   string
+		expected string
+	}{
+		"remove with null default runtime": {
+			input:    `{"default-runtime":null,"runtimes":{"nvidia":{"path":"nvidia-container-runtime"}},"log-driver":"json-file"}`,
+			action:   "remove",
+			expected: `{"default-runtime":null,"log-driver":"json-file"}`,
+		},
+		"unset null default runtime": {
+			input:    `{"default-runtime":null,"runtimes":{"nvidia":{"path":"nvidia-container-runtime"}},"log-driver":"json-file"}`,
+			action:   "unset",
+			expected: `{"default-runtime":null,"runtimes":{"nvidia":{"path":"nvidia-container-runtime"}},"log-driver":"json-file"}`,
+		},
+		"get null runtime definition": {
+			input:    `{"runtimes":{"nvidia":null},"log-driver":"json-file"}`,
+			action:   "get",
+			expected: `{"runtimes":{"nvidia":null},"log-driver":"json-file"}`,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			configPath := filepath.Join(t.TempDir(), "daemon.json")
+			require.NoError(t, os.WriteFile(configPath, []byte(tc.input), 0o600))
+			config, err := New(WithPath(configPath))
+			require.NoError(t, err)
+
+			switch tc.action {
+			case "remove":
+				require.NoError(t, config.RemoveRuntime("nvidia"))
+			case "unset":
+				require.NoError(t, config.UpdateDefaultRuntime("nvidia", engine.UpdateActionUnset))
+			case "get":
+				runtime, err := config.GetRuntimeConfig("nvidia")
+				require.NoError(t, err)
+				require.Empty(t, runtime.GetBinaryPath())
+			}
+
+			_, err = config.Save(configPath)
+			require.NoError(t, err)
+			contents, err := os.ReadFile(configPath)
+			require.NoError(t, err)
+			require.JSONEq(t, tc.expected, string(contents))
+		})
 	}
 }
 
