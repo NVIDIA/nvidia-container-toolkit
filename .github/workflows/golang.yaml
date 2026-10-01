@@ -75,6 +75,9 @@ jobs:
       - name: Run unit tests and generate coverage report
         run: make coverage
 
+      - name: Check CDI refresh assertions without a systemd host
+        run: go -C tests test ./e2e -run '^TestNvidiaCdiRefreshEffectiveRestartLimits$' -count=1
+
       - name: Upload to Coveralls
         continue-on-error: true
         uses: coverallsapp/github-action@v2
