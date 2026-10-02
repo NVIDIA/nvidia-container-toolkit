@@ -77,6 +77,19 @@ func (s *State) getRoot() (string, error) {
 	return "", nil
 }
 
+// GetEnv returns the environment of the container process from the associated
+// spec.
+func (s *State) GetEnv() ([]string, error) {
+	spec, err := s.loadMinimalSpec()
+	if err != nil {
+		return nil, err
+	}
+	if spec.Process == nil {
+		return nil, nil
+	}
+	return spec.Process.Env, nil
+}
+
 // GetContainerRoot returns the root for the container from the associated spec. If the spec is not yet loaded, it is
 // loaded and cached.
 func (s *State) GetContainerRoot() (string, error) {
@@ -114,4 +127,13 @@ func (s *State) loadMinimalSpec() (*minimalSpec, error) {
 type minimalSpec struct {
 	// Root configures the container's root filesystem.
 	Root *specs.Root `json:"root,omitempty"`
+	// Process configures the container process.
+	Process *minimalProcess `json:"process,omitempty"`
+}
+
+// A minimalProcess includes the properties of the container process that are
+// required by container lifecycle hooks.
+type minimalProcess struct {
+	// Env is the environment of the container process.
+	Env []string `json:"env,omitempty"`
 }

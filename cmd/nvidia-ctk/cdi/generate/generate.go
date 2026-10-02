@@ -67,7 +67,8 @@ type options struct {
 	disabledHooks      []string
 	enabledHooks       []string
 
-	featureFlags []string
+	disableCompat32 bool
+	featureFlags    []string
 
 	csv struct {
 		files               []string
@@ -236,6 +237,16 @@ func (m command) build() *cli.Command {
 				Destination: &opts.enabledHooks,
 				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_ENABLED_HOOKS"),
 			},
+			&cli.BoolFlag{
+				Name: "disable-compat32",
+				Usage: "Exclude the 32-bit compatibility driver libraries installed on the host from the " +
+					"generated CDI specification. These are included by default and are only exposed to a " +
+					"container that can run 32-bit applications: one that requests the 'compat32' driver " +
+					"capability or ships a 32-bit dynamic linker, and never a container that uses musl. " +
+					"This is equivalent to specifying the '" + string(nvcdi.FeatureDisableCompat32Libraries) + "' feature flag.",
+				Destination: &opts.disableCompat32,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_DISABLE_COMPAT32"),
+			},
 			&cli.StringSliceFlag{
 				Name:        "feature-flag",
 				Aliases:     []string{"feature-flags"},
@@ -397,6 +408,10 @@ func (m command) generateSpecs(opts *options) ([]generatedSpecs, error) {
 		nvcdi.WithFeatureFlags(opts.featureFlags...),
 		// We set the following to allow for dependency injection:
 		nvcdi.WithNvmlLib(opts.nvmllib),
+	}
+
+	if opts.disableCompat32 {
+		cdiOptions = append(cdiOptions, nvcdi.WithFeatureFlags(nvcdi.FeatureDisableCompat32Libraries))
 	}
 
 	cdilib, err := nvcdi.New(cdiOptions...)

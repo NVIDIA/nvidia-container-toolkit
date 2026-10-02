@@ -24,6 +24,8 @@ import (
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
 func TestLibraryLocator(t *testing.T) {
@@ -126,6 +128,67 @@ func TestLibraryLocator(t *testing.T) {
 
 			candidates, err := lut.Locate(tc.libname)
 			require.ErrorIs(t, err, tc.expectedError)
+
+			var cleanedCandidates []string
+			for _, c := range candidates {
+				// On MacOS /var and /tmp symlink to /private/var and /private/tmp which is included in the resolved path.
+				cleanedCandidates = append(cleanedCandidates, strings.TrimPrefix(c, "/private"))
+			}
+			require.EqualValues(t, tc.expected, cleanedCandidates)
+		})
+	}
+}
+
+func TestLibraryLocatorCompat32(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	moduleRoot, err := test.GetModuleRoot()
+	require.NoError(t, err)
+
+	// We construct a root with a library in one of the predefined search paths
+	// and an ldcache -- from the rootfs-2 testdata -- that instead refers to
+	// libraries in /var/lib/nvidia/lib64.
+	root := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "/etc"), 0o755))
+	require.NoError(t, os.Symlink(
+		filepath.Join(moduleRoot, "testdata/lookup/rootfs-2/etc/ld.so.cache"),
+		filepath.Join(root, "/etc/ld.so.cache"),
+	))
+
+	inSearchPath := filepath.Join(root, "/usr/lib64/libcuda.so.999.88.77")
+	inLdcache := filepath.Join(root, "/var/lib/nvidia/lib64/libcuda.so.999.88.77")
+	for _, library := range []string{inSearchPath, inLdcache} {
+		require.NoError(t, os.MkdirAll(filepath.Dir(library), 0o755))
+		require.NoError(t, os.WriteFile(library, nil, 0o600))
+		require.NoError(t, os.Symlink(library, filepath.Join(filepath.Dir(library), "libcuda.so.1")))
+	}
+
+	testCases := []struct {
+		description string
+		exclude     bool
+		expected    []string
+	}{
+		{
+			description: "the ldcache is also consulted for 32-bit libraries",
+			expected:    []string{inSearchPath, inLdcache},
+		},
+		{
+			description: "the ldcache is not consulted if a search path matches and 32-bit libraries are excluded",
+			exclude:     true,
+			expected:    []string{inSearchPath},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			lut := NewLibraryLocator(
+				WithLogger(logger),
+				WithRoot(root),
+				WithCompat32Libraries(!tc.exclude),
+			)
+
+			candidates, err := lut.Locate("libcuda.so.1")
+			require.NoError(t, err)
 
 			var cleanedCandidates []string
 			for _, c := range candidates {

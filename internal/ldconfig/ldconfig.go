@@ -63,11 +63,14 @@ type Ldconfig struct {
 	isDebianLikeHost      bool
 	isDebianLikeContainer bool
 	noPivotRoot           bool
+	compat32Requested     bool
 	directories           []string
 }
 
 // NewRunner creates an exec.Cmd that can be used to run ldconfig.
-func NewRunner(id string, ldconfigPath string, containerRoot string, additionalargs ...string) (*exec.Cmd, error) {
+// The compat32Requested argument indicates that the container requested the
+// compat32 driver capability.
+func NewRunner(id string, ldconfigPath string, containerRoot string, compat32Requested bool, additionalargs ...string) (*exec.Cmd, error) {
 	args := []string{
 		id,
 		"--ldconfig-path", strings.TrimPrefix(config.NormalizeLDConfigPath("@"+ldconfigPath), "@"),
@@ -79,6 +82,10 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 
 	if noPivotRoot() {
 		args = append(args, "--no-pivot")
+	}
+
+	if compat32Requested {
+		args = append(args, "--compat32")
 	}
 
 	args = append(args, additionalargs...)
@@ -104,6 +111,7 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 //	                     	as opposed to non-Debian-like (e.g. RHEL, Fedora)
 //	                     	See https://github.com/NVIDIA/nvidia-container-toolkit/pull/1444
 //	--no-pivot           	pivot_root should not be used to provide process isolation.
+//	--compat32           	the container requested the compat32 driver capability.
 //
 // The remaining args are folders where soname symlinks need to be created.
 func NewFromArgs(args ...string) (*Ldconfig, error) {
@@ -118,6 +126,7 @@ This allows us to handle the case where there are  differences in behavior
 between the ldconfig from the host (as executed from an update-ldcache hook) and
 ldconfig in the container. Such differences include system search paths.`)
 	noPivot := fs.Bool("no-pivot", false, "don't use pivot_root to perform isolation")
+	compat32 := fs.Bool("compat32", false, "the container requested the compat32 driver capability")
 	if err := fs.Parse(args[1:]); err != nil {
 		return nil, err
 	}
@@ -130,11 +139,12 @@ ldconfig in the container. Such differences include system search paths.`)
 	}
 
 	l := &Ldconfig{
-		ldconfigPath:     *ldconfigPath,
-		inRoot:           *containerRoot,
-		isDebianLikeHost: *isDebianLikeHost,
-		noPivotRoot:      *noPivot,
-		directories:      fs.Args(),
+		ldconfigPath:      *ldconfigPath,
+		inRoot:            *containerRoot,
+		isDebianLikeHost:  *isDebianLikeHost,
+		noPivotRoot:       *noPivot,
+		compat32Requested: *compat32,
+		directories:       fs.Args(),
 	}
 	return l, nil
 }
@@ -155,7 +165,16 @@ func (l *Ldconfig) UpdateLDCache() error {
 		return fmt.Errorf("failed to ensure ld.so.conf file: %w", err)
 	}
 
-	filteredDirectories, err := l.filterDirectories(defaultTopLevelLdsoconfFilePath, l.directories...)
+	// The 32-bit libraries are only of use to a container that can run 32-bit
+	// applications and are left out of the search paths of the others. Since
+	// we have pivoted to the container root, these paths are resolved
+	// relative to "/".
+	directories := l.directories
+	if !allowsCompat32("/", l.compat32Requested) {
+		directories = excludeCompat32Directories("/", directories)
+	}
+
+	filteredDirectories, err := l.filterDirectories(defaultTopLevelLdsoconfFilePath, directories...)
 	if err != nil {
 		return err
 	}
@@ -183,8 +202,10 @@ func (l *Ldconfig) UpdateLDCache() error {
 		return fmt.Errorf("failed to write %s drop-in: %w", ldsoconfdSystemDirsFilenamePattern, err)
 	}
 
-	// Also output the folders to the alpine .path file as required.
-	if err := createMuslPathFileIfRequired(append(filteredDirectories, systemSearchPaths...)...); err != nil {
+	// Also output the folders to the musl .path file as required.
+	// Note that musl does not process the ld.so.conf files and the directories
+	// that were filtered against these are therefore included here too.
+	if err := createMuslPathFileIfRequired("/", directories, systemSearchPaths); err != nil {
 		return fmt.Errorf("failed to update .path file for musl: %w", err)
 	}
 
@@ -384,45 +405,6 @@ func processLdsoconfFile(ldsoconfFilename string) ([]string, []string, error) {
 		}
 	}
 	return directories, includedFilenames, nil
-}
-
-// createMuslPathFileIfRequired creates a musl .path file that allows libraries
-// from the specified directories to be discovered on the system.
-// This is required because systems that use musl do not rely on the ldcache to
-// discover libraries.
-func createMuslPathFileIfRequired(dirs ...string) error {
-	if len(dirs) == 0 || !isMusl() {
-		return nil
-	}
-
-	var pathFileName string
-	switch runtime.GOARCH {
-	case "amd64":
-		pathFileName = "/etc/ld-musl-x86_64.path"
-	case "arm64":
-		pathFileName = "/etc/ld-musl-aarch64.path"
-	}
-
-	pathFile, err := os.OpenFile(pathFileName, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
-	if err != nil {
-		return fmt.Errorf("could not open .path file: %w", err)
-	}
-	defer func() {
-		_ = pathFile.Close()
-	}()
-
-	return outputListToFile(pathFile, dirs...)
-}
-
-// isMusl checks whether the container is running musl instead of glibc.
-// Note that for the time being we only check whether `/etc/alpine-release` is
-// present in the container.
-func isMusl() bool {
-	info, err := os.Stat("/etc/alpine-release")
-	if err != nil {
-		return false
-	}
-	return !info.IsDir()
 }
 
 // isDebianLike returns true if a Debian-like distribution is detected.
