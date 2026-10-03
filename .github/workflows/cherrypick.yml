@@ -48,7 +48,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Add labels and handle backport
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const run = require('./.github/scripts/add-labels-from-comment.js');
@@ -73,7 +73,7 @@ jobs:
 
       - name: Extract target branches from PR labels
         id: extract-branches
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const run = require('./.github/scripts/extract-branches.js');
@@ -88,7 +88,7 @@ jobs:
       - name: Backport to release branches
         id: backport
         if: steps.extract-branches.outputs.result != '[]'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           BRANCHES_JSON: ${{ steps.extract-branches.outputs.result }}
         with:
