@@ -39,7 +39,7 @@ func (dl *DynamicLibrary) Path() (string, error) {
 		return "", fmt.Errorf("%v not opened", dl.Name)
 	}
 
-	libParentPathBuffer := C.CBytes(make([]byte, 0, C.PATH_MAX))
+	libParentPathBuffer := C.CBytes(make([]byte, C.PATH_MAX))
 	defer C.free(unsafe.Pointer(libParentPathBuffer))
 
 	var libPath string

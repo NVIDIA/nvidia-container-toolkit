@@ -1,5 +1,5 @@
-/*** NVML VERSION: 13.4.61 ***/
-/*** From https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvml_dev/linux-x86_64/cuda_nvml_dev-linux-x86_64-13.4.61-archive.tar.xz ***/
+/*** NVML VERSION: 13.4.92 ***/
+/*** From https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvml_dev/linux-x86_64/cuda_nvml_dev-linux-x86_64-13.4.92-archive.tar.xz ***/
 /*
  * Copyright 1993-2026 NVIDIA Corporation.  All rights reserved.
  *
@@ -706,16 +706,16 @@ typedef enum nvmlPcieUtilCounter_enum
  */
 typedef enum nvmlValueType_enum
 {
-    NVML_VALUE_TYPE_DOUBLE = 0,
-    NVML_VALUE_TYPE_UNSIGNED_INT = 1,
-    NVML_VALUE_TYPE_UNSIGNED_LONG = 2,
-    NVML_VALUE_TYPE_UNSIGNED_LONG_LONG = 3,
-    NVML_VALUE_TYPE_SIGNED_LONG_LONG = 4,
-    NVML_VALUE_TYPE_SIGNED_INT = 5,
-    NVML_VALUE_TYPE_UNSIGNED_SHORT = 6,
+    NVML_VALUE_TYPE_DOUBLE = 0,                  //!< Double-precision floating-point value
+    NVML_VALUE_TYPE_UNSIGNED_INT = 1,            //!< Unsigned 32-bit integer value
+    NVML_VALUE_TYPE_UNSIGNED_LONG = 2,           //!< Unsigned long integer value
+    NVML_VALUE_TYPE_UNSIGNED_LONG_LONG = 3,      //!< Unsigned 64-bit integer value
+    NVML_VALUE_TYPE_SIGNED_LONG_LONG = 4,        //!< Signed 64-bit integer value
+    NVML_VALUE_TYPE_SIGNED_INT = 5,              //!< Signed 32-bit integer value
+    NVML_VALUE_TYPE_UNSIGNED_SHORT = 6,          //!< Unsigned 16-bit integer value
 
     // Keep this last
-    NVML_VALUE_TYPE_COUNT
+    NVML_VALUE_TYPE_COUNT                        //!< Maximum value above +1
 }nvmlValueType_t;
 
 /**
@@ -1698,11 +1698,11 @@ typedef struct
 typedef nvmlPlatformInfo_v2_t nvmlPlatformInfo_t;
 #define nvmlPlatformInfo_v2 NVML_STRUCT_VERSION(PlatformInfo, 2) //!< Version macro for \a nvmlPlatformInfo_v2_t
 
-/**
- * Structure to store hostname information
- */
 #define NVML_DEVICE_HOSTNAME_BUFFER_SIZE 64 //!< Buffer size for hostname string.
 
+/**
+ * Stores the hostname string assigned to a GPU device.
+ */
 typedef struct
 {
     char value[NVML_DEVICE_HOSTNAME_BUFFER_SIZE];   //!< null-terminated hostname string
@@ -1750,6 +1750,9 @@ typedef struct nvmlRemappedRowsInfo_v2_t
 #define NVML_RUSD_POLL_PROC_UTIL   0x80                  //!< Enable RUSD polling on process utilization group
 #define NVML_RUSD_POLL_ALL         0xFFFFFFFFFFFFFFFF    //!< Enable RUSD polling on all groups
 
+/**
+ * Stores RUSD polling configuration for a GPU.
+ */
 typedef struct
 {
     unsigned int version;
@@ -1897,6 +1900,9 @@ typedef struct
 
 #define nvmlPowerValue_v2 NVML_STRUCT_VERSION(PowerValue, 2) //!< Version macro for \a nvmlPowerValue_v2_t
 
+/**
+ * Stores Adaptive TGP Mode state and telemetry for a GPU.
+ */
 typedef struct
 {
     nvmlEnableState_t inBandEnableRequest;    //!< [out] In-band enable requested (NVML_FEATURE_ENABLED) or not requested (NVML_FEATURE_DISABLED)
@@ -3551,7 +3557,7 @@ typedef enum
 #define NVML_OPERATIONAL_EVENT_ATTR_COMPONENT_RESET    (1u << 3) //!< Event involved a component reset.
 #define NVML_OPERATIONAL_EVENT_ATTR_THRESHOLD_EXCEEDED (1u << 4) //!< Event reports an exceeded threshold.
 #define NVML_OPERATIONAL_EVENT_ATTR_PRIMARY            (1u << 5) //!< Event is the primary event in its group.
-#define NVML_OPERATIONAL_EVENT_ATTR_OVERFLOW           (1u << 6) //!< One or more events or associated payloads were dropped before this event was returned.
+#define NVML_OPERATIONAL_EVENT_ATTR_OVERFLOW           (1u << 6) //!< Source reported that event records were dropped at the source.
 
 #define NVML_OPERATIONAL_EVENT_GROUP_ATTR_RECOVERED    (1u << 0) //!< Event group reports a recovered condition.
 #define NVML_OPERATIONAL_EVENT_GROUP_ATTR_PREVERR      (1u << 1) //!< Event group reports a previous error condition.
@@ -4626,7 +4632,7 @@ typedef struct
     unsigned int        moduleInstance;                        //!< [out] Structured event module instance identifier. 0 for NVML event-bit events.
     unsigned int        chipletId;                             //!< [out] Structured event chiplet identifier. 0 for NVML event-bit events.
     unsigned int        logLevel;                              //!< [out] \ref nvmlGpuOperationalEventLogLevel_t value for structured GPU Operational Events. May contain newer log-level values not named in this header. \c NVML_GPU_OPERATIONAL_EVENT_LOG_LEVEL_ALL for NVML event-bit events.
-    unsigned int        attributes;                            //!< [out] Bitmask of \c NVML_OPERATIONAL_EVENT_ATTR_* values for structured events. May contain newer bits not named in this header. 0 for NVML event-bit events. May include \c NVML_OPERATIONAL_EVENT_ATTR_OVERFLOW if events or associated payloads were dropped.
+    unsigned int        attributes;                            //!< [out] Bitmask of \c NVML_OPERATIONAL_EVENT_ATTR_* values for structured events. May contain newer bits not named in this header. 0 for NVML event-bit events.
     unsigned int        groupCperSize;                         //!< [out] Associated CPER record size in bytes. 0 when unavailable.
     unsigned int        groupAttributes;                       //!< [out] Bitmask of \c NVML_OPERATIONAL_EVENT_GROUP_ATTR_* values for structured events. May contain newer bits not named in this header. 0 for NVML event-bit events.
     unsigned char       groupSize;                             //!< [out] Total number of events in the structured event group. 0 for NVML event-bit events.
@@ -4733,7 +4739,7 @@ nvmlReturn_t DECLDIR nvmlSystemGetNVMLVersion(char *version, unsigned int length
  *
  * For all products.
  *
- * The CUDA driver version returned will be retreived from the currently installed version of CUDA.
+ * The CUDA driver version returned will be retrieved from the currently installed version of CUDA.
  * If the cuda library is not found, this function will return a known supported version number.
  *
  * @param cudaDriverVersion                    Reference in which to return the version identifier
@@ -8421,7 +8427,7 @@ nvmlReturn_t DECLDIR nvmlDeviceGetAdaptiveClockInfoStatus(nvmlDevice_t device, u
  * @param type                                 The PCI Bus type
  *
  * return
- *         - \ref NVML_SUCCESS                 if the bus \a type is successfully retreived
+ *         - \ref NVML_SUCCESS                 if the bus \a type is successfully retrieved
  *         - \ref NVML_ERROR_UNINITIALIZED     if the library has not been successfully initialized
  *         - \ref NVML_ERROR_INVALID_ARGUMENT  if \a device is invalid or \a type is NULL
  *         - \ref NVML_ERROR_UNKNOWN           on any unexpected error
@@ -8695,7 +8701,7 @@ nvmlReturn_t DECLDIR nvmlSystemSetConfComputeGpusReadyState(unsigned int isAccep
  * @param pKeyRotationThrInfo                  Reference to the key rotation threshold data
  *
  * @return
- *         - \ref NVML_SUCCESS                 if \a key rotation threashold max attacker advantage has been set
+ *         - \ref NVML_SUCCESS                 if \a key rotation threshold max attacker advantage has been set
  *         - \ref NVML_ERROR_UNINITIALIZED     if the library has not been successfully initialized
  *         - \ref NVML_ERROR_INVALID_ARGUMENT  if \a device is invalid or \a memory is NULL
  *         - \ref NVML_ERROR_INVALID_STATE     if confidential compute GPU ready state is enabled
@@ -8734,7 +8740,7 @@ nvmlReturn_t DECLDIR nvmlSystemGetConfComputeSettings(nvmlSystemConfComputeSetti
  * @param version                              The retrieved GSP firmware version
  *
  * @return
- *         - \ref NVML_SUCCESS                 if GSP firmware version is sucessfully retrieved
+ *         - \ref NVML_SUCCESS                 if GSP firmware version is successfully retrieved
  *         - \ref NVML_ERROR_INVALID_ARGUMENT  if \a device is invalid or GSP \a version pointer is NULL
  *         - \ref NVML_ERROR_NOT_SUPPORTED     if GSP firmware is not enabled for GPU
  *         - \ref NVML_ERROR_UNKNOWN           on any unexpected error
@@ -8752,7 +8758,7 @@ nvmlReturn_t DECLDIR nvmlDeviceGetGspFirmwareVersion(nvmlDevice_t device, char *
  * @param defaultMode                          Pointer to specify if GSP firmware is supported by default on \a device
  *
  * @return
- *         - \ref NVML_SUCCESS                 if GSP firmware mode is sucessfully retrieved
+ *         - \ref NVML_SUCCESS                 if GSP firmware mode is successfully retrieved
  *         - \ref NVML_ERROR_INVALID_ARGUMENT  if \a device is invalid or any of \a isEnabled or \a defaultMode is NULL
  *         - \ref NVML_ERROR_NOT_SUPPORTED     if GSP firmware is not enabled for GPU
  *         - \ref NVML_ERROR_UNKNOWN           on any unexpected error
@@ -10872,10 +10878,8 @@ nvmlReturn_t DECLDIR nvmlEventSetGetContextCount_v1(nvmlEventSet_t set,
  *
  * The returned metadata identifies the NVML public interpretation, the source-defined context payload
  * type, payload size, and payload format version. The raw payload for any context record can be
- * copied with \ref nvmlEventSetGetContextData_v1 and decoded using the public operational event
- * schema or documentation for
- * \ref nvmlEventSetGetContextInfo_v1_t::sourceEventContextType. When
- * \c nvmlGpuOperationalEventContextType names a type-specific accessor, callers may use that
+ * copied with \ref nvmlEventSetGetContextData_v1.
+ * When \c nvmlGpuOperationalEventContextType names a type-specific accessor, callers may use that
  * accessor instead. Metadata is replaced by the next successful call to \ref nvmlEventSetWait_v3
  * on the same event set.
  *
@@ -12211,7 +12215,7 @@ nvmlReturn_t DECLDIR nvmlVgpuInstanceGetGpuInstanceId(nvmlVgpuInstance_t vgpuIns
 * @param length                               Size of the vgpuPciId buffer
 *
 * @return
-*         - \ref NVML_SUCCESS                 if vGPU PCI Id is sucessfully retrieved
+*         - \ref NVML_SUCCESS                 if vGPU PCI Id is successfully retrieved
 *         - \ref NVML_ERROR_UNINITIALIZED     if the library has not been successfully initialized
 *         - \ref NVML_ERROR_INVALID_ARGUMENT  if \a vgpuInstance is 0, or \a vgpuPciId is NULL
 *         - \ref NVML_ERROR_NOT_FOUND         if \a vgpuInstance does not match a valid active vGPU instance on the system
@@ -13354,7 +13358,7 @@ typedef struct
  *
  * Supported on Linux only.
  *
- * @param device                                        Identifer of target GPU device
+ * @param device                                        Identifier of target GPU device
  * @param buffer                                        Structure holding the input data in TLV format as well as
  *                                                      the PRM register contents in TLV format (in the case of a successful
  *                                                      read operation).
@@ -13454,7 +13458,7 @@ typedef struct
  *
  * Supported on Linux only.
  *
- * @param device                                    Identifer of target GPU device
+ * @param device                                    Identifier of target GPU device
  * @param counterList                               Structure holding the input parameters as well as the retrieved counter values
  *
  * @return
@@ -15208,6 +15212,9 @@ typedef struct
  */
 /***************************************************************************************************/
 #define NVML_WORKLOAD_POWER_MAX_PROFILES        (255)
+/**
+ * Workload power profile identifiers.
+ */
 typedef enum
 {
     NVML_POWER_PROFILE_MAX_P                       = 0,
@@ -15481,7 +15488,7 @@ typedef struct
     unsigned int version; //!< the API version number
 
     unsigned int profileId; //!< The requested profile ID
-    unsigned int paramId;   //!< The requested paramater ID
+    unsigned int paramId;   //!< The requested parameter ID
     double value;           //!< The requested value for the given parameter
 } nvmlPowerSmoothingProfile_v1_t;
 typedef nvmlPowerSmoothingProfile_v1_t  nvmlPowerSmoothingProfile_t;
@@ -15566,6 +15573,9 @@ nvmlReturn_t  DECLDIR nvmlDevicePowerSmoothingSetState(nvmlDevice_t device,
                                                        nvmlPowerSmoothingState_t *state);
 /** @} */ // @defgroup
 
+/** @addtogroup nvmlDeviceQueries
+ *  @{
+ */
 /**
  * Retrieves the counts of SRAM unique uncorrected ECC errors
  *
@@ -15604,7 +15614,11 @@ nvmlReturn_t  DECLDIR nvmlDevicePowerSmoothingSetState(nvmlDevice_t device,
  */
 nvmlReturn_t DECLDIR nvmlDeviceGetSramUniqueUncorrectedEccErrorCounts(nvmlDevice_t device,
                                                                       nvmlEccSramUniqueUncorrectedErrorCounts_t *errorCounts);
+/** @} */
 
+/** @addtogroup nvmlDeviceQueries
+ *  @{
+ */
 /**
  * Get the status of row remapper.
  *
@@ -15623,7 +15637,11 @@ nvmlReturn_t DECLDIR nvmlDeviceGetSramUniqueUncorrectedEccErrorCounts(nvmlDevice
  *         - \ref NVML_ERROR_UNKNOWN           Unexpected error
  */
 nvmlReturn_t DECLDIR nvmlDeviceGetRemappedRows_v2(nvmlDevice_t device, nvmlRemappedRowsInfo_v2_t *info);
+/** @} */
 
+/** @addtogroup nvmlDeviceCommands
+ *  @{
+ */
 /**
  * Set Read-only user shared data (RUSD) settings for GPU.
  * Requires root/admin permissions.
@@ -15640,7 +15658,11 @@ nvmlReturn_t DECLDIR nvmlDeviceGetRemappedRows_v2(nvmlDevice_t device, nvmlRemap
  *
  **/
 nvmlReturn_t DECLDIR nvmlDeviceSetRusdSettings_v1(nvmlDevice_t device, nvmlRusdSettings_v1_t *settings);
+/** @} */
 
+/** @addtogroup nvmlDeviceStructs
+ *  @{
+ */
 /**
  * Structure to store bank remapper histogram
  */
@@ -15660,14 +15682,18 @@ typedef struct
     unsigned int bPending;                              //!< Whether there exists any pending bank remapping. 0 for no pending remapping, 1 for pending remapping.
     nvmlEccBankRemapperHistogram_v1_t histogram;        //!< Bank remapper histogram
 } nvmlEccBankRemapperStatus_v1_t;
+/** @} */
 
+/** @addtogroup nvmlDeviceQueries
+ *  @{
+ */
 /**
  * Get bank remapper status.
  *
  * %RUBIN_OR_NEWER%
  *
  * @param device                 The identifier of the target device
- * @param pBankRemapperStatus    Reference to \a nvmlEccBankRemapperStatus_t
+ * @param pBankRemapperStatus    Reference to \ref nvmlEccBankRemapperStatus_v1_t
  *
  * @return
  * - \ref NVML_SUCCESS if \a pBankRemapperStatus was populated
@@ -15679,6 +15705,7 @@ typedef struct
  */
 nvmlReturn_t DECLDIR nvmlDeviceGetBankRemapperStatus_v1(nvmlDevice_t device,
                                                         nvmlEccBankRemapperStatus_v1_t *pBankRemapperStatus);
+/** @} */
 
 /**
  * NVML API versioning support

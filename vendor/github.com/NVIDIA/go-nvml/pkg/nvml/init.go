@@ -34,12 +34,19 @@ func (l *library) InitWithFlags(flags uint32) Return {
 
 // nvml.Shutdown()
 func (l *library) Shutdown() Return {
+	l.Lock()
+	defer l.Unlock()
+
+	if l.refcount == 0 {
+		return ERROR_UNINITIALIZED
+	}
+
 	ret := nvmlShutdown()
 	if ret != SUCCESS {
 		return ret
 	}
 
-	err := l.close()
+	err := l.closeLocked()
 	if err != nil {
 		return ERROR_UNKNOWN
 	}
