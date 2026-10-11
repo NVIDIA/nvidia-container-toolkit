@@ -125,10 +125,14 @@ func (l *library) load() (rerr error) {
 // close the underlying library and ensure that the global pointer to the
 // library is set to nil to ensure that subsequent calls to open will reinitialize it.
 // Multiple calls to an already closed nvml library will return without error.
-func (l *library) close() (rerr error) {
+func (l *library) close() error {
 	l.Lock()
 	defer l.Unlock()
 
+	return l.closeLocked()
+}
+
+func (l *library) closeLocked() (rerr error) {
 	defer func() { l.refcount.DecOnNoError(rerr) }()
 	if l.refcount != 1 {
 		return nil
