@@ -133,6 +133,7 @@ func (o *options) driverLibraryLocator() lookup.Locator {
 		lookup.WithLogger(o.logger),
 		lookup.WithRoot(o.driverRoot),
 		lookup.WithSearchPaths(o.librarySearchPaths...),
+		lookup.WithCompat32Libraries(!o.featureFlags[FeatureDisableCompat32Libraries]),
 	)
 }
 

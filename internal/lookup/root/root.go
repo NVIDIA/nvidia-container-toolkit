@@ -41,6 +41,9 @@ type Driver struct {
 	librarySearchPaths []string
 	// configSearchPaths specified explicit search paths for discovering driver config files.
 	configSearchPaths []string
+	// compat32 indicates whether the 32-bit driver libraries are also
+	// discovered.
+	compat32 bool
 
 	// version caches the driver version.
 	version string
@@ -50,7 +53,10 @@ type Driver struct {
 
 // New creates a new Driver root using the specified options.
 func New(opts ...Option) *Driver {
-	o := &options{}
+	// The 32-bit driver libraries are discovered unless a caller opts out.
+	o := &options{
+		compat32: true,
+	}
 	for _, opt := range opts {
 		opt(o)
 	}
@@ -76,6 +82,7 @@ func New(opts ...Option) *Driver {
 		DevRoot:              o.DevRoot,
 		librarySearchPaths:   o.librarySearchPaths,
 		configSearchPaths:    o.configSearchPaths,
+		compat32:             o.compat32,
 		version:              driverVersion,
 		driverLibDirectories: nil,
 	}
@@ -230,6 +237,7 @@ func (r *Driver) Libraries() lookup.Locator {
 		lookup.WithLogger(r.logger),
 		lookup.WithRoot(r.Root),
 		lookup.WithSearchPaths(r.librarySearchPaths...),
+		lookup.WithCompat32Libraries(r.compat32),
 	)
 }
 

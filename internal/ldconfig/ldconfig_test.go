@@ -26,6 +26,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewFromArgs(t *testing.T) {
+	requiredArgs := []string{
+		"reexec-update-ldcache",
+		"--ldconfig-path", "/sbin/ldconfig",
+		"--container-root", "/container/root",
+	}
+
+	testCases := []struct {
+		description               string
+		args                      []string
+		expectedCompat32Requested bool
+		expectedDirectories       []string
+	}{
+		{
+			description:         "folders are parsed",
+			args:                []string{"/usr/lib/x86_64-linux-gnu", "/usr/lib/i386-linux-gnu"},
+			expectedDirectories: []string{"/usr/lib/x86_64-linux-gnu", "/usr/lib/i386-linux-gnu"},
+		},
+		{
+			description:               "compat32 is requested",
+			args:                      []string{"--compat32", "/usr/lib/i386-linux-gnu"},
+			expectedCompat32Requested: true,
+			expectedDirectories:       []string{"/usr/lib/i386-linux-gnu"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			l, err := NewFromArgs(append(requiredArgs, tc.args...)...)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expectedCompat32Requested, l.compat32Requested)
+			require.Equal(t, tc.expectedDirectories, l.directories)
+		})
+	}
+}
+
 func TestFilterDirectories(t *testing.T) {
 	const topLevelConf = "TOPLEVEL.conf"
 

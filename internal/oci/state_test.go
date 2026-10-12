@@ -209,6 +209,58 @@ func TestGetContainerRoot(t *testing.T) {
 	}
 }
 
+func TestGetEnv(t *testing.T) {
+	testCases := []struct {
+		description string
+		specJSON    string
+		writeSpec   bool
+		isError     bool
+		expectedEnv []string
+	}{
+		{
+			description: "returns an error when the spec file cannot be loaded",
+			writeSpec:   false,
+			isError:     true,
+		},
+		{
+			description: "returns nil when the spec has no process",
+			writeSpec:   true,
+			specJSON:    `{}`,
+		},
+		{
+			description: "returns nil when the process has no environment",
+			writeSpec:   true,
+			specJSON:    `{"process": {}}`,
+		},
+		{
+			description: "returns the environment of the container process",
+			writeSpec:   true,
+			specJSON:    `{"process": {"env": ["PATH=/usr/bin", "NVIDIA_DRIVER_CAPABILITIES=compute,compat32"]}}`,
+			expectedEnv: []string{"PATH=/usr/bin", "NVIDIA_DRIVER_CAPABILITIES=compute,compat32"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			dir := t.TempDir()
+			if tc.writeSpec {
+				require.NoError(t, os.WriteFile(GetSpecFilePath(dir), []byte(tc.specJSON), 0600))
+			}
+			s := &State{State: specs.State{Bundle: dir}}
+
+			env, err := s.GetEnv()
+
+			if tc.isError {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedEnv, env)
+		})
+	}
+}
+
 func TestLoadMinimalSpec(t *testing.T) {
 	testCases := []struct {
 		description  string

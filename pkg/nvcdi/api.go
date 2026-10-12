@@ -100,4 +100,10 @@ const (
 	// FeatureDisableIPCDiscoverer disables the inclusion of IPC sockets
 	// (nvidia-persistenced, nvidia-fabricmanager, MPS) in the CDI spec.
 	FeatureDisableIPCDiscoverer = FeatureFlag("disable-ipc-discoverer")
+
+	// FeatureDisableCompat32Libraries disables the inclusion of the 32-bit
+	// compatibility driver libraries installed on the host.
+	// These are included by default and are only exposed to a container that
+	// can run 32-bit applications. See the update-ldcache hook.
+	FeatureDisableCompat32Libraries = FeatureFlag("disable-compat32-libraries")
 )

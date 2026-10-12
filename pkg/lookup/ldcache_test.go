@@ -1,12 +1,15 @@
 package lookup
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -73,5 +76,55 @@ func TestLDCacheLookup(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestLDCacheLookup32BitLibraries(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+	root := t.TempDir()
+
+	lib64 := filepath.Join(root, "usr/lib64/libcuda.so.999.88.77")
+	lib32 := filepath.Join(root, "usr/lib/libcuda.so.999.88.77")
+	require.NoError(t, os.MkdirAll(filepath.Dir(lib64), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Dir(lib32), 0o755))
+	require.NoError(t, os.WriteFile(lib64, nil, 0o600))
+	require.NoError(t, os.WriteFile(lib32, nil, 0o600))
+
+	testCases := []struct {
+		description string
+		exclude     bool
+		expected    []string
+	}{
+		{
+			description: "32-bit libraries are included after the 64-bit ones",
+			expected:    []string{lib64, lib32},
+		},
+		{
+			description: "32-bit libraries can be excluded",
+			exclude:     true,
+			expected:    []string{lib64},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			cache := &ldcache.LDCacheMock{
+				ListFunc: func() ([]string, []string) {
+					return []string{lib32}, []string{lib64}
+				},
+			}
+			l := NewFactory(
+				WithLogger(logger),
+				WithRoot(root),
+				WithCompat32Libraries(!tc.exclude),
+			).newLdcacheLocatorFrom(cache)
+
+			candidates, err := l.Locate("libcuda.so.*")
+			require.NoError(t, err)
+			for i := range candidates {
+				candidates[i] = strings.TrimPrefix(candidates[i], "/private")
+			}
+			require.Equal(t, tc.expected, candidates)
+		})
 	}
 }
