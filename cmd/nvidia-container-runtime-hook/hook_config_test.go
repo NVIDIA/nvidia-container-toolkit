@@ -106,3 +106,28 @@ func TestGetHookConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestGetConfigOption(t *testing.T) {
+	// The panic for an unsupported capability names the config option, and the
+	// name comes from the toml tag on the struct field.
+	testCases := map[string]struct {
+		fieldName string
+		expected  string
+	}{
+		"a field with a toml tag": {
+			fieldName: "SupportedDriverCapabilities",
+			expected:  "supported-driver-capabilities",
+		},
+		"a field that does not exist": {
+			fieldName: "NoSuchField",
+			expected:  "NoSuchField",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			c := &hookConfig{}
+			require.Equal(t, tc.expected, c.getConfigOption(tc.fieldName))
+		})
+	}
+}
