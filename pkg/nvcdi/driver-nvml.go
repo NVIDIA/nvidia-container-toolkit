@@ -85,6 +85,10 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover
 	if err != nil {
 		return nil, fmt.Errorf("failed to get legacy nvvm library mounts: %w", err)
 	}
+	nvsdmLibraryMounts, err := l.getNVSDMLibraryMounts()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get nvsdm library mounts: %w", err)
+	}
 	explicitLibraryMounts, err := l.getExplicitDriverLibraryMounts()
 	if err != nil {
 		return nil, err
@@ -93,6 +97,7 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string) (discover.Discover
 	libraries := discover.Merge(
 		versionSuffixLibraryMounts,
 		legacyNVVMLibraryMounts,
+		nvsdmLibraryMounts,
 		explicitLibraryMounts,
 	)
 
@@ -205,6 +210,21 @@ func (l *nvcdilib) getLegacyNVVMLibraryMounts() (discover.Discover, error) {
 	)
 
 	return mounts, nil
+}
+
+// getNVSDMLibraryMounts discovers libnvsdm, which is versioned independently of
+// the driver (libnvsdm.so.1) and is therefore missed by the driver version suffix match
+func (l *nvcdilib) getNVSDMLibraryMounts() (discover.Discover, error) {
+	driverLibraryLocator, err := l.driver.DriverLibraryLocator()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get driver library locator: %w", err)
+	}
+	return discover.NewMounts(
+		l.logger,
+		driverLibraryLocator,
+		l.driver.Root,
+		[]string{"libnvsdm.so.1"},
+	), nil
 }
 
 func getUTSRelease() (string, error) {
