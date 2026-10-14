@@ -49,9 +49,11 @@ func NewIPCDiscoverer(logger logger.Interface, driverRoot string) (Discover, err
 		},
 	)
 
+	// The MPS pipe directory is a directory, so a directory locator is used.
+	// The default file locator filter rejects directories.
 	mps := newMounts(
 		logger,
-		lookup.NewFileLocator(
+		lookup.NewDirectoryLocator(
 			lookup.WithLogger(logger),
 			lookup.WithRoot(driverRoot),
 			lookup.WithCount(1),
