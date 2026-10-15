@@ -83,6 +83,7 @@ func (s *spec) WriteTo(w io.Writer) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	defer tmpFile.Close()
 	tmpDir, tmpFileName := filepath.Split(tmpFile.Name())
 
 	tmpDirRoot, err := os.OpenRoot(tmpDir)
