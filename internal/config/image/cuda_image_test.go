@@ -723,6 +723,24 @@ func TestImexChannelsFromEnvVar(t *testing.T) {
 			},
 			expected: []string{"3", "4"},
 		},
+		{
+			description: "none requests no imex channels",
+			env: []string{
+				"NVIDIA_IMEX_CHANNELS=none",
+			},
+		},
+		{
+			description: "none wins over a channel listed beside it",
+			env: []string{
+				"NVIDIA_IMEX_CHANNELS=none,3",
+			},
+		},
+		{
+			description: "empty value requests no imex channels",
+			env: []string{
+				"NVIDIA_IMEX_CHANNELS=",
+			},
+		},
 	}
 
 	for _, tc := range testCases {
