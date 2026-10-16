@@ -18,6 +18,7 @@ package spec
 
 import (
 	"fmt"
+	"maps"
 	"os"
 
 	"tags.cncf.io/container-device-interface/pkg/parser"
@@ -33,6 +34,7 @@ type builder struct {
 	class       string
 	deviceSpecs []cdi.Device
 	edits       cdi.ContainerEdits
+	annotations map[string]string
 	format      string
 
 	mergedDeviceOptions []transform.MergedDeviceOption
@@ -96,6 +98,15 @@ func (o *builder) Build() (*spec, error) {
 		raw.Version = o.version
 	}
 
+	if len(o.annotations) > 0 {
+		// Each spec gets its own map so that specs built from a shared set of
+		// options do not alias each other's annotations.
+		if raw.Annotations == nil {
+			raw.Annotations = make(map[string]string, len(o.annotations))
+		}
+		maps.Copy(raw.Annotations, o.annotations)
+	}
+
 	if !o.noSimplify {
 		err := transform.NewSimplifier().Transform(raw)
 		if err != nil {
@@ -136,6 +147,15 @@ func WithDeviceSpecs(deviceSpecs []cdi.Device) Option {
 func WithEdits(edits cdi.ContainerEdits) Option {
 	return func(o *builder) {
 		o.edits = edits
+	}
+}
+
+// WithAnnotations sets spec-level annotations for the spec builder.
+// Note that spec-level annotations require a CDI spec version of at least
+// v0.6.0.
+func WithAnnotations(annotations map[string]string) Option {
+	return func(o *builder) {
+		o.annotations = annotations
 	}
 }
 
