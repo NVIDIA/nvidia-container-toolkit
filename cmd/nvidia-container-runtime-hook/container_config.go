@@ -171,8 +171,6 @@ func (hookConfig *hookConfig) getDriverCapabilities(cudaImage image.CUDA, legacy
 		envCapabilities := image.NewDriverCapabilities(capsEnv)
 		capabilities = supportedDriverCapabilities.Intersection(envCapabilities)
 		if !envCapabilities.IsAll() && len(capabilities) != len(envCapabilities) {
-			// The allowed set is what the config permits, not the part of the
-			// request that happened to be in it.
 			log.Panicln(fmt.Errorf("unsupported capabilities found in '%v' (allowed '%v')", envCapabilities, supportedDriverCapabilities))
 		}
 	}
