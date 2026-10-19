@@ -390,6 +390,44 @@ func TestMigCapsDeviceRequests(t *testing.T) {
 	}
 }
 
+func TestImexDeviceRequests(t *testing.T) {
+	testCases := []struct {
+		description     string
+		env             []string
+		expectedDevices []string
+	}{
+		{
+			description: "no imex envvar yields no devices",
+		},
+		{
+			description:     "channels requested",
+			env:             []string{"NVIDIA_IMEX_CHANNELS=0,1"},
+			expectedDevices: []string{"mode=imex,id=0", "mode=imex,id=1"},
+		},
+		{
+			description: "none yields no devices",
+			env:         []string{"NVIDIA_IMEX_CHANNELS=none"},
+		},
+		{
+			description: "empty value yields no devices",
+			env:         []string{"NVIDIA_IMEX_CHANNELS="},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			img, err := image.NewCUDAImageFromSpec(
+				&specs.Spec{Process: &specs.Process{Env: tc.env}},
+				image.WithAcceptEnvvarUnprivileged(true),
+			)
+			require.NoError(t, err)
+
+			devices := imexDevices(img).DeviceRequests()
+			require.EqualValues(t, tc.expectedDevices, devices)
+		})
+	}
+}
+
 func TestNewJitCDIModifierRejectsInvalidMigCapsRequest(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
@@ -491,6 +529,18 @@ func Test_cdiModeIdentfiersFromDevices(t *testing.T) {
 			expected: &cdiModeIdentifiers{
 				modes:             []string{"auto"},
 				idsByMode:         map[string][]string{"auto": {"none"}},
+				deviceClassByMode: map[string]string{"auto": "gpu"},
+			},
+		},
+		{
+			// An empty id contributes no id at all, and a mode with no ids means
+			// every device of that mode once it reaches GetSpec. No device
+			// requestor may emit one.
+			description: "an empty id is dropped and leaves the mode unqualified",
+			devices:     []string{"mode=imex,id="},
+			expected: &cdiModeIdentifiers{
+				modes:             []string{"imex"},
+				idsByMode:         map[string][]string{},
 				deviceClassByMode: map[string]string{"auto": "gpu"},
 			},
 		},

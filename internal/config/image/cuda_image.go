@@ -448,7 +448,10 @@ func (i CUDA) ImexChannelRequests() []string {
 // imexChannelsFromEnvVar returns the list of IMEX channels requested for the image.
 func (i CUDA) imexChannelsFromEnvVar() []string {
 	imexChannels := i.devicesFromEnvvars(EnvVarNvidiaImexChannels)
-	if len(imexChannels) == 1 && imexChannels[0] == "all" {
+	// "all" is what a legacy image defaults to, and "none" comes back as a single
+	// empty ID. Neither names a channel, and an empty ID would reach GetSpec as no
+	// ID at all, which it reads as a request for every channel.
+	if len(imexChannels) == 1 && (imexChannels[0] == "all" || imexChannels[0] == "") {
 		return nil
 	}
 	return imexChannels
