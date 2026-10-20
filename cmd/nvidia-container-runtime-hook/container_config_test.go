@@ -642,3 +642,25 @@ func TestGetDriverCapabilities(t *testing.T) {
 		})
 	}
 }
+
+func TestUnsupportedDriverCapabilitiesPanicNamesTheAllowedSet(t *testing.T) {
+	// The message is all the user gets to learn which capabilities they may
+	// ask for, so it has to name the configured set and not the part of their
+	// own request that was in it.
+	c := hookConfig{
+		Config: &config.Config{
+			SupportedDriverCapabilities: "compute,display,utility,video",
+		},
+	}
+	i, err := image.New(
+		image.WithEnvMap(map[string]string{
+			image.EnvVarNvidiaDriverCapabilities: "compute,utility,grahics",
+		}),
+	)
+	require.NoError(t, err)
+
+	require.PanicsWithValue(t,
+		"unsupported capabilities found in 'compute,grahics,utility' (allowed 'compute,display,utility,video')\n",
+		func() { c.getDriverCapabilities(i, false) },
+	)
+}
