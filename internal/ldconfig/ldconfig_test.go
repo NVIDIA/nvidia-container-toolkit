@@ -20,10 +20,13 @@ package ldconfig
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
 
 func TestFilterDirectories(t *testing.T) {
@@ -243,6 +246,36 @@ func TestEnsureLdsoconfFile(t *testing.T) {
 			content, err := os.ReadFile(confFilePath)
 			require.NoError(t, err)
 			require.Equal(t, tc.expectedContent, string(content))
+		})
+	}
+}
+
+func TestMuslPathDirectories(t *testing.T) {
+	testCases := []struct {
+		description string
+		input       []string
+		expected    []string
+	}{
+		{
+			description: "no directories",
+		},
+		{
+			description: "native directories are kept",
+			input:       []string{"/usr/lib/x86_64-linux-gnu", "/usr/lib"},
+			expected:    []string{"/usr/lib/x86_64-linux-gnu", "/usr/lib"},
+		},
+		{
+			description: "the compat32 directory is dropped",
+			input:       []string{"/usr/lib/x86_64-linux-gnu", discover.Compat32Directory, "/usr/lib"},
+			expected:    []string{"/usr/lib/x86_64-linux-gnu", "/usr/lib"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			input := slices.Clone(tc.input)
+			require.Equal(t, tc.expected, muslPathDirectories(input))
+			require.Equal(t, tc.input, input)
 		})
 	}
 }

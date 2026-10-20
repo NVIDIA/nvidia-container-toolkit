@@ -26,11 +26,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/prometheus/procfs"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 )
 
 const (
@@ -391,6 +393,7 @@ func processLdsoconfFile(ldsoconfFilename string) ([]string, []string, error) {
 // This is required because systems that use musl do not rely on the ldcache to
 // discover libraries.
 func createMuslPathFileIfRequired(dirs ...string) error {
+	dirs = muslPathDirectories(dirs)
 	if len(dirs) == 0 || !isMusl() {
 		return nil
 	}
@@ -412,6 +415,16 @@ func createMuslPathFileIfRequired(dirs ...string) error {
 	}()
 
 	return outputListToFile(pathFile, dirs...)
+}
+
+// muslPathDirectories returns the directories to add to a musl .path file:
+// all but discover.Compat32Directory, since the file carries no architecture
+// and musl's dynamic linker fails on the first file of the requested name
+// instead of searching on.
+func muslPathDirectories(dirs []string) []string {
+	return slices.DeleteFunc(slices.Clone(dirs), func(dir string) bool {
+		return dir == discover.Compat32Directory
+	})
 }
 
 // isMusl checks whether the container is running musl instead of glibc.
