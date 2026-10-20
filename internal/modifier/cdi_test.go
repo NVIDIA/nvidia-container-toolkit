@@ -390,6 +390,45 @@ func TestMigCapsDeviceRequests(t *testing.T) {
 	}
 }
 
+func TestCompat32DeviceRequests(t *testing.T) {
+	testCases := []struct {
+		description     string
+		env             []string
+		expectedDevices []string
+	}{
+		{
+			description: "no capabilities yield no devices",
+		},
+		{
+			description: "other capabilities yield no devices",
+			env:         []string{"NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics"},
+		},
+		{
+			description:     "compat32 requested",
+			env:             []string{"NVIDIA_DRIVER_CAPABILITIES=compute,compat32"},
+			expectedDevices: []string{"mode=compat32"},
+		},
+		{
+			description:     "all requested",
+			env:             []string{"NVIDIA_DRIVER_CAPABILITIES=all"},
+			expectedDevices: []string{"mode=compat32"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			img, err := image.NewCUDAImageFromSpec(
+				&specs.Spec{Process: &specs.Process{Env: tc.env}},
+				image.WithAcceptEnvvarUnprivileged(true),
+			)
+			require.NoError(t, err)
+
+			devices := compat32Devices(img).DeviceRequests()
+			require.EqualValues(t, tc.expectedDevices, devices)
+		})
+	}
+}
+
 func TestImexDeviceRequests(t *testing.T) {
 	testCases := []struct {
 		description     string

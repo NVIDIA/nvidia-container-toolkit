@@ -27,6 +27,9 @@ type Mode string
 const (
 	// ModeAuto configures the CDI spec generator to automatically detect the system configuration
 	ModeAuto = Mode("auto")
+	// ModeCompat32 configures the CDI spec generator to generate a spec for the
+	// driver's 32-bit libraries, which a container requests in addition to its devices.
+	ModeCompat32 = Mode("compat32")
 	// ModeNvml configures the CDI spec generator to use the NVML library.
 	ModeNvml = Mode("nvml")
 	// ModeWsl configures the CDI spec generator to generate a WSL spec.
@@ -67,6 +70,7 @@ func getModes() modes {
 	validModesOnce.Do(func() {
 		all := []Mode{
 			ModeAuto,
+			ModeCompat32,
 			ModeCSV,
 			ModeGdrcopy,
 			ModeGds,
