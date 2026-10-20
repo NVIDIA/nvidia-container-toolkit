@@ -216,6 +216,56 @@ func TestGetRequirements(t *testing.T) {
 	}
 }
 
+func TestGetDriverCapabilities(t *testing.T) {
+	testCases := []struct {
+		description string
+		env         map[string]string
+		expected    []string
+	}{
+		{
+			description: "envvar unset",
+			expected:    nil,
+		},
+		{
+			description: "envvar empty",
+			env: map[string]string{
+				EnvVarNvidiaDriverCapabilities: "",
+			},
+			expected: nil,
+		},
+		{
+			description: "comma-separated capabilities",
+			env: map[string]string{
+				EnvVarNvidiaDriverCapabilities: "compute,graphics",
+			},
+			expected: []string{"compute", "graphics"},
+		},
+		{
+			description: "whitespace around capabilities is trimmed",
+			env: map[string]string{
+				EnvVarNvidiaDriverCapabilities: " compute , graphics ",
+			},
+			expected: []string{"compute", "graphics"},
+		},
+		{
+			description: "empty entries are ignored",
+			env: map[string]string{
+				EnvVarNvidiaDriverCapabilities: "compute,,utility,",
+			},
+			expected: []string{"compute", "utility"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			image, err := New(WithEnvMap(tc.env))
+			require.NoError(t, err)
+
+			require.EqualValues(t, tc.expected, image.GetDriverCapabilities().List())
+		})
+	}
+}
+
 func TestGetDevicesFromEnvvar(t *testing.T) {
 	envDockerResourceGPUs := "DOCKER_RESOURCE_GPUS"
 	gpuID := "GPU-12345"

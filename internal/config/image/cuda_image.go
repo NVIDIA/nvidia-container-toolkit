@@ -180,14 +180,7 @@ func (i CUDA) devicesFromEnvvars(envVars ...string) []string {
 
 // GetDriverCapabilities returns the requested driver capabilities.
 func (i CUDA) GetDriverCapabilities() DriverCapabilities {
-	env := i.env[EnvVarNvidiaDriverCapabilities]
-
-	capabilities := make(DriverCapabilities)
-	for c := range strings.SplitSeq(env, ",") {
-		capabilities[DriverCapability(c)] = true
-	}
-
-	return capabilities
+	return NewDriverCapabilities(i.env[EnvVarNvidiaDriverCapabilities])
 }
 
 func (i CUDA) legacyVersion() (string, error) {
