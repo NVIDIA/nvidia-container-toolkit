@@ -83,6 +83,9 @@ func (s *spec) WriteTo(w io.Writer) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	if err := tmpFile.Close(); err != nil {
+		return 0, fmt.Errorf("failed to close temporary file: %w", err)
+	}
 	tmpDir, tmpFileName := filepath.Split(tmpFile.Name())
 
 	tmpDirRoot, err := os.OpenRoot(tmpDir)
@@ -96,10 +99,6 @@ func (s *spec) WriteTo(w io.Writer) (int64, error) {
 
 	if err := s.Save(tmpFile.Name()); err != nil {
 		return 0, err
-	}
-
-	if err := tmpFile.Close(); err != nil {
-		return 0, fmt.Errorf("failed to close temporary file: %w", err)
 	}
 
 	savedFile, err := tmpDirRoot.Open(tmpFileName)
