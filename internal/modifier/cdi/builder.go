@@ -27,10 +27,11 @@ import (
 )
 
 type builder struct {
-	logger   logger.Interface
-	specDirs []string
-	devices  []string
-	cdiSpec  *specs.Spec
+	logger              logger.Interface
+	specDirs            []string
+	devices             []string
+	cdiSpec             *specs.Spec
+	deviceRequestSource string
 }
 
 // Option represents a functional option for creating a CDI mofifier.
@@ -70,9 +71,10 @@ func (m builder) build() (oci.SpecModifier, error) {
 	}
 
 	modifier := fromRegistry{
-		logger:   m.logger,
-		registry: registry,
-		devices:  m.devices,
+		logger:              m.logger,
+		registry:            registry,
+		devices:             m.devices,
+		deviceRequestSource: m.deviceRequestSource,
 	}
 
 	return modifier, nil
@@ -103,5 +105,13 @@ func WithDevices(devices ...string) Option {
 func WithSpec(spec *specs.Spec) Option {
 	return func(b *builder) {
 		b.cdiSpec = spec
+	}
+}
+
+// WithDeviceRequestSource sets a description of the mechanism the device names
+// were requested through. It is only used to explain resolution failures.
+func WithDeviceRequestSource(source string) Option {
+	return func(b *builder) {
+		b.deviceRequestSource = source
 	}
 }

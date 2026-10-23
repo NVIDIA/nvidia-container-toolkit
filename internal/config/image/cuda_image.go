@@ -35,6 +35,12 @@ const (
 
 	volumeMountDevicePrefixCDI  = "cdi/"
 	volumeMountDevicePrefixImex = "imex/"
+
+	// The mechanisms through which a container can request devices, in the
+	// order that VisibleDevices considers them.
+	DeviceRequestSourceAnnotations  = "CDI annotations"
+	DeviceRequestSourceVolumeMounts = "volume mounts"
+	DeviceRequestSourceEnvvar       = EnvVarNvidiaVisibleDevices
 )
 
 // CUDA represents a CUDA image that can be used for GPU computing. This wraps
@@ -254,30 +260,44 @@ func (i CUDA) visibleEnvVars() []string {
 // In cases where environment variable requests required privileged containers,
 // such devices requests are ignored.
 func (i CUDA) VisibleDevices() []string {
+	devices, _ := i.visibleDevices()
+	return devices
+}
+
+// DeviceRequestSource describes where VisibleDevices read the device list from.
+// It is empty when no devices were requested.
+func (i CUDA) DeviceRequestSource() string {
+	_, source := i.visibleDevices()
+	return source
+}
+
+// visibleDevices returns the requested devices along with a description of the
+// mechanism they were requested through.
+func (i CUDA) visibleDevices() ([]string, string) {
 	// If annotation device requests are present, these are preferred.
 	annotationDeviceRequests := i.cdiDeviceRequestsFromAnnotations()
 	if len(annotationDeviceRequests) > 0 {
-		return annotationDeviceRequests
+		return annotationDeviceRequests, DeviceRequestSourceAnnotations
 	}
 
 	// If enabled, try and get the device list from volume mounts first
 	if i.acceptDeviceListAsVolumeMounts {
 		volumeMountDeviceRequests := i.visibleDevicesFromMounts()
 		if len(volumeMountDeviceRequests) > 0 {
-			return volumeMountDeviceRequests
+			return volumeMountDeviceRequests, DeviceRequestSourceVolumeMounts
 		}
 	}
 
 	// Get the Fallback to reading from the environment variable if privileges are correct
 	envVarDeviceRequests := i.visibleDevicesFromEnvVar()
 	if len(envVarDeviceRequests) == 0 {
-		return nil
+		return nil, ""
 	}
 
 	// If the container is privileged, or environment variable requests are
 	// allowed for unprivileged containers, these devices are returned.
 	if i.isPrivileged || i.acceptEnvvarUnprivileged {
-		return envVarDeviceRequests
+		return envVarDeviceRequests, DeviceRequestSourceEnvvar
 	}
 
 	// We log a warning if we are ignoring the environment variable requests.
@@ -286,7 +306,7 @@ func (i CUDA) VisibleDevices() []string {
 		i.logger.Warningf("Ignoring devices requested by environment variable(s) in unprivileged container: %v", envVars)
 	}
 
-	return nil
+	return nil, ""
 }
 
 // cdiDeviceRequestsFromAnnotations returns a list of devices specified in the
