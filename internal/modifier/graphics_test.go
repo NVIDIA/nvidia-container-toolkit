@@ -71,6 +71,14 @@ func TestGraphicsModifier(t *testing.T) {
 			expectedDevices: []string{"all"},
 		},
 		{
+			description: "devices with whitespace around graphics capability creates modifier",
+			envmap: map[string]string{
+				"NVIDIA_VISIBLE_DEVICES":     "all",
+				"NVIDIA_DRIVER_CAPABILITIES": "compute, graphics",
+			},
+			expectedDevices: []string{"all"},
+		},
+		{
 			description: "devices with display capability creates modifier",
 			envmap: map[string]string{
 				"NVIDIA_VISIBLE_DEVICES":     "all",
