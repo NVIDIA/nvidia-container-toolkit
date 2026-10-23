@@ -20,6 +20,7 @@
 package disabledevicenodemodification
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -63,11 +64,68 @@ func createParamsFileInContainer(containerRoot *os.Root, contents []byte) error 
 	}
 	defer nvidiaDriverParamsFile.Close()
 
-	if err := unix.Mount(utils.GetProcFdPath(modifiedParamsFile), utils.GetProcFdPath(nvidiaDriverParamsFile), "",
-		unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_PRIVATE|unix.MS_NOSYMFOLLOW, ""); err != nil {
+	err = bindMountReadOnly(modifiedParamsFile, nvidiaDriverParamsFile)
+	if errors.Is(err, unix.ENOSYS) {
+		return bindMountReadOnlyLegacy(containerRoot, modifiedParamsFile, nvidiaDriverParamsFile, nvidiaDriverParamsPath[1:])
+	}
+	return err
+}
+
+func bindMountReadOnly(source *os.File, target *os.File) error {
+	treeFd, err := unix.OpenTree(int(source.Fd()), "",
+		unix.AT_EMPTY_PATH|unix.OPEN_TREE_CLONE|unix.OPEN_TREE_CLOEXEC)
+	if err != nil {
+		return fmt.Errorf("failed to clone modified params file mount: %w", err)
+	}
+	defer unix.Close(treeFd)
+
+	if err := unix.MountSetattr(treeFd, "",
+		unix.AT_EMPTY_PATH,
+		&unix.MountAttr{
+			Attr_set: unix.MOUNT_ATTR_RDONLY | unix.MOUNT_ATTR_NODEV,
+		},
+	); err != nil {
+		return fmt.Errorf("failed to set attributes on modified params file mount: %w", err)
+	}
+
+	if err := unix.MoveMount(treeFd, "", int(target.Fd()), "",
+		unix.MOVE_MOUNT_F_EMPTY_PATH|unix.MOVE_MOUNT_T_EMPTY_PATH); err != nil {
+		return fmt.Errorf("failed to attach modified params file mount: %w", err)
+	}
+
+	// A shared parent overrides propagation set before attaching, so we have to set it to private afterwards.
+	if err := unix.MountSetattr(treeFd, "",
+		unix.AT_EMPTY_PATH,
+		&unix.MountAttr{
+			Propagation: unix.MS_PRIVATE,
+		},
+	); err != nil {
+		return fmt.Errorf("failed to make modified params file mount private: %w", err)
+	}
+
+	return nil
+}
+
+func bindMountReadOnlyLegacy(containerRoot *os.Root, source *os.File, target *os.File, targetPath string) error {
+	// mount(2) ignores MS_RDONLY, MS_NODEV and MS_NOSYMFOLLOW alongside MS_BIND.
+	if err := unix.Mount(utils.GetProcFdPath(source), utils.GetProcFdPath(target), "", unix.MS_BIND, ""); err != nil {
 		return fmt.Errorf("failed to mount modified params file: %w", err)
 	}
 
+	// target still refers to the file beneath the new mount.
+	mounted, err := containerRoot.OpenFile(targetPath, os.O_RDONLY, 0)
+	if err != nil {
+		return fmt.Errorf("error reopening mounted params file: %w", err)
+	}
+	defer mounted.Close()
+
+	if err := unix.Mount("", utils.GetProcFdPath(mounted), "",
+		unix.MS_REMOUNT|unix.MS_BIND|unix.MS_RDONLY|unix.MS_NODEV|unix.MS_NOSYMFOLLOW, ""); err != nil {
+		return fmt.Errorf("failed to remount modified params file as read-only: %w", err)
+	}
+	if err := unix.Mount("", utils.GetProcFdPath(mounted), "", unix.MS_PRIVATE, ""); err != nil {
+		return fmt.Errorf("failed to make modified params file mount private: %w", err)
+	}
 	return nil
 }
 
