@@ -370,8 +370,11 @@ func (i CUDA) requestsFromMounts() []string {
 		}
 		seen[destination] = true
 
-		// Only consider container mount points that begin with 'root'
-		if !strings.HasPrefix(destination, root) {
+		// Only consider container mount points below 'root'. The separator is
+		// required: without it a sibling path such as
+		// /var/run/nvidia-container-devices-backup/GPU0 has the same prefix,
+		// and the remainder is read as a device request.
+		if !strings.HasPrefix(destination, root+"/") {
 			continue
 		}
 
