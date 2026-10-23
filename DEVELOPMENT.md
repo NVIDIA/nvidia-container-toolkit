@@ -1,13 +1,10 @@
 # NVIDIA Container Toolkit Release Tooling
 
 This repository allows for the components of the NVIDIA container stack to be
-built and released as the NVIDIA Container Toolkit from a single repository. The components:
-* `libnvidia-container`
-* `nvidia-container-runtime`
-* `nvidia-docker`
-are included as submodules in the `third_party` folder.
-
-The `nvidia-container-toolkit` resides in this repo directly.
+built and released as the NVIDIA Container Toolkit from a single repository.
+The `libnvidia-container` component is included as a submodule at
+`third_party/libnvidia-container`. The `nvidia-container-toolkit` components,
+including `nvidia-container-runtime`, are built from this repository directly.
 
 ## Building
 
@@ -27,10 +24,10 @@ The packages are generated in the `dist` folder.
 
 ## Testing local changes
 
-In oder to use the same build logic to be used to generate packages with local changes,
-the location of the individual components can be overridded using the: `LIBNVIDIA_CONTAINER_ROOT`,
-`NVIDIA_CONTAINER_TOOLKIT_ROOT`, `NVIDIA_CONTAINER_RUNTIME_ROOT`, and `NVIDIA_DOCKER_ROOT`
-environment variables.
+To generate packages with local changes from another checkout, override the
+source directories using the `LIBNVIDIA_CONTAINER_ROOT` and
+`NVIDIA_CONTAINER_TOOLKIT_ROOT` environment variables. They default to
+`third_party/libnvidia-container` and this repository's root, respectively.
 
 ## Testing packages locally
 
