@@ -38,15 +38,36 @@ var _ Locator = (*ldcacheLocator)(nil)
 // newLdcacheLocator creates a locator that allows libraries to be found using
 // the ldcache.
 func (f *Factory) newLdcacheLocator() Locator {
+	return f.newLdcacheLocatorFor(64)
+}
+
+// newLdcache32Locator creates a locator that allows 32-bit libraries to be
+// found using the ldcache.
+func (f *Factory) newLdcache32Locator() Locator {
+	return f.newLdcacheLocatorFor(32)
+}
+
+func (f *Factory) newLdcacheLocatorFor(bits int) Locator {
 	cache, err := ldcache.New(f.logger, f.root)
 	if err != nil {
 		f.logger.Warningf("Failed to load ldcache: %v", err)
 		return notFound
 	}
+	return f.newLdcacheLocatorFrom(cache, bits)
+}
+
+// newLdcacheLocatorFrom creates a locator for the libraries of the specified
+// word size (32 or 64 bits) in the ldcache, and the symlinks they resolve
+// through.
+func (f *Factory) newLdcacheLocatorFrom(cache ldcache.LDCache, bits int) Locator {
+	libs32, libs64 := cache.List()
+	cached := libs64
+	if bits == 32 {
+		cached = libs32
+	}
 
 	var libraries []string
-	_, libs64 := cache.List()
-	for _, library := range libs64 {
+	for _, library := range cached {
 		chain, err := symlinks.ResolveChain(library)
 		if err != nil {
 			f.logger.Warningf("Failed to resolve symlink chain for library %q: %v", library, err)
