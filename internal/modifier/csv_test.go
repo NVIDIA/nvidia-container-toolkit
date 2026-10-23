@@ -71,6 +71,7 @@ func TestNewCSVModifier(t *testing.T) {
 					Env: []string{"NVIDIA_VISIBLE_DEVICES=void"},
 				},
 				Mounts: []specs.Mount{
+					{Source: "/dev/null", Destination: "/var/run/nvidia-container-devices/void", Options: []string{"ro", "nosuid", "nodev", "bind"}},
 					{Source: "/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so.1.1", Destination: "/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so.1.1", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
 					{Source: "/usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ml.so.1", Destination: "/usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ml.so.1", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
 				},
