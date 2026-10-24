@@ -39,7 +39,7 @@ func NewForDevice(d device.Device, opts ...Option) (discover.Discover, error) {
 	var errs error
 	nvsandboxutilsDiscoverer, err := o.newNvsandboxutilsDGPUDiscoverer(d)
 	if err != nil {
-		// TODO: Log a warning
+		o.logger.Warningf("Failed to create nvsandboxutils device discoverer: %v", err)
 		errs = errors.Join(errs, err)
 	} else if nvsandboxutilsDiscoverer != nil {
 		discoverers = append(discoverers, nvsandboxutilsDiscoverer)
@@ -47,7 +47,7 @@ func NewForDevice(d device.Device, opts ...Option) (discover.Discover, error) {
 
 	nvmlDiscoverer, err := o.newNvmlDGPUDiscoverer(&toRequiredInfo{d})
 	if err != nil {
-		// TODO: Log a warning
+		o.logger.Warningf("Failed to create NVML device discoverer: %v", err)
 		errs = errors.Join(errs, err)
 	} else if nvmlDiscoverer != nil {
 		discoverers = append(discoverers, nvmlDiscoverer)
@@ -82,7 +82,7 @@ func NewForMigDevice(d device.Device, mig device.MigDevice, opts ...Option) (dis
 	var errs error
 	nvsandboxutilsDiscoverer, err := o.newNvsandboxutilsDGPUDiscoverer(mig)
 	if err != nil {
-		// TODO: Log a warning
+		o.logger.Warningf("Failed to create nvsandboxutils MIG device discoverer: %v", err)
 		errs = errors.Join(errs, err)
 	} else if nvsandboxutilsDiscoverer != nil {
 		discoverers = append(discoverers, nvsandboxutilsDiscoverer)
@@ -95,7 +95,7 @@ func NewForMigDevice(d device.Device, mig device.MigDevice, opts ...Option) (dis
 		},
 	)
 	if err != nil {
-		// TODO: Log a warning
+		o.logger.Warningf("Failed to create NVML MIG device discoverer: %v", err)
 		errs = errors.Join(errs, err)
 	} else if nvmlDiscoverer != nil {
 		discoverers = append(discoverers, nvmlDiscoverer)
