@@ -79,12 +79,34 @@ func (l *managementlib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 		return nil, fmt.Errorf("failed to create driver library discoverer: %v", err)
 	}
 
-	edits, err := l.editsFactory.FromDiscoverer(driver)
+	nvsdmLibraries, err := l.newNVSDMLibraryDiscoverer()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create nvsdm library discoverer: %w", err)
+	}
+
+	edits, err := l.editsFactory.FromDiscoverer(discover.Merge(driver, nvsdmLibraries))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create edits from discoverer: %v", err)
 	}
 
 	return edits, nil
+}
+
+// newNVSDMLibraryDiscoverer discovers libnvsdm and its dependencies libibumad
+// and libibmad, which management applications such as DCGM need to initialize
+// NVSDM. None of them are versioned with the driver, so they are missed by the
+// driver version suffix match.
+func (l *managementlib) newNVSDMLibraryDiscoverer() (discover.Discover, error) {
+	driverLibraryLocator, err := l.driver.DriverLibraryLocator()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get driver library locator: %w", err)
+	}
+	return discover.NewMounts(
+		l.logger,
+		driverLibraryLocator,
+		l.driver.Root,
+		[]string{"libnvsdm.so.1", "libibumad.so.3", "libibmad.so.5"},
+	), nil
 }
 
 type managementDiscoverer struct {
