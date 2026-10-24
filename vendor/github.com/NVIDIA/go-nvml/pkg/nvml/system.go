@@ -77,6 +77,9 @@ func (l *library) SystemGetTopologyGpuSet(cpuNumber int) ([]Device, Return) {
 	}
 	deviceArray := make([]nvmlDevice, count)
 	ret = nvmlSystemGetTopologyGpuSet(uint32(cpuNumber), &count, &deviceArray[0])
+	if ret == SUCCESS {
+		deviceArray = deviceArray[:count]
+	}
 	return convertSlice[nvmlDevice, Device](deviceArray), ret
 }
 

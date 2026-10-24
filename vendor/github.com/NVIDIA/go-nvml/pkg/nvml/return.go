@@ -95,6 +95,14 @@ var defaultErrorStringFunc = func(r Return) string {
 		return "ERROR_ARGUMENT_VERSION_MISMATCH"
 	case ERROR_DEPRECATED:
 		return "ERROR_DEPRECATED"
+	case ERROR_NOT_READY:
+		return "ERROR_NOT_READY"
+	case ERROR_GPU_NOT_FOUND:
+		return "ERROR_GPU_NOT_FOUND"
+	case ERROR_INVALID_STATE:
+		return "ERROR_INVALID_STATE"
+	case ERROR_RESET_TYPE_NOT_SUPPORTED:
+		return "ERROR_RESET_TYPE_NOT_SUPPORTED"
 	case ERROR_UNKNOWN:
 		return "ERROR_UNKNOWN"
 	default:
