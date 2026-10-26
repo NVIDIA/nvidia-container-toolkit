@@ -271,6 +271,9 @@ func (device nvmlDevice) GetTopologyNearestGpus(level GpuTopologyLevel) ([]Devic
 	}
 	deviceArray := make([]nvmlDevice, count)
 	ret = nvmlDeviceGetTopologyNearestGpus(device, level, &count, &deviceArray[0])
+	if ret == SUCCESS {
+		deviceArray = deviceArray[:count]
+	}
 	return convertSlice[nvmlDevice, Device](deviceArray), ret
 }
 
@@ -1336,6 +1339,9 @@ func (device nvmlDevice) GetSamples(samplingType SamplingType, lastSeenTimestamp
 	}
 	samples := make([]Sample, sampleCount)
 	ret = nvmlDeviceGetSamples(device, samplingType, lastSeenTimestamp, &sampleValType, &sampleCount, &samples[0])
+	if ret == SUCCESS {
+		samples = samples[:sampleCount]
+	}
 	return sampleValType, samples, ret
 }
 
@@ -1945,6 +1951,9 @@ func (l *library) DeviceGetFieldValues(device Device, values []FieldValue) Retur
 
 func (device nvmlDevice) GetFieldValues(values []FieldValue) Return {
 	valuesCount := len(values)
+	if valuesCount == 0 {
+		return ERROR_INVALID_ARGUMENT
+	}
 	return nvmlDeviceGetFieldValues(device, int32(valuesCount), &values[0])
 }
 
@@ -2907,6 +2916,9 @@ func (l *library) DeviceClearFieldValues(device Device, values []FieldValue) Ret
 
 func (device nvmlDevice) ClearFieldValues(values []FieldValue) Return {
 	valuesCount := len(values)
+	if valuesCount == 0 {
+		return ERROR_INVALID_ARGUMENT
+	}
 	return nvmlDeviceClearFieldValues(device, int32(valuesCount), &values[0])
 }
 
