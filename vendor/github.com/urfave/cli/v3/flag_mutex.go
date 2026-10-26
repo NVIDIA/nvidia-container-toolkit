@@ -14,33 +14,61 @@ type MutuallyExclusiveFlags struct {
 
 	// Category to apply to all flags within group
 	Category string
+
+	// Stringer overrides how each flag within this group is displayed in
+	// help output. If nil, flags use [FlagStringer] as usual.
+	//
+	// The returned string must be unique per flag within the group (the
+	// default [stringifyFlag] guarantees this by embedding the flag's
+	// name). Help rendering keys flags by their String() output
+	// (flagCategories.AddFlag), so a Stringer that returns identical text
+	// for two or more flags in the same category will cause the later
+	// flag to silently overwrite the earlier one in help output.
+	Stringer FlagStringFunc `json:"-"`
 }
 
 func (grp MutuallyExclusiveFlags) check(_ *Command) error {
-	oneSet := false
 	e := &mutuallyExclusiveGroup{}
 
-	for _, grpf := range grp.Flags {
-		for _, f := range grpf {
-			if f.IsSet() {
-				if oneSet {
-					e.flag2Name = f.Names()[0]
-					return e
-				}
-				e.flag1Name = f.Names()[0]
-				oneSet = true
-				break
-			}
-			if oneSet {
-				break
+	// Check for the use of a mutually-exclusive flag, starting at
+	// the first group.
+	name, i, ok := grp.findSetFlag(0)
+	if ok {
+		e.flag1Name = name
+		i++
+
+		// Check for the use of a flag in a mutually exclusive
+		// relationship with the one we just found.
+		if name2, _, ok := grp.findSetFlag(i); ok {
+			e.flag2Name = name2
+			return e
+		}
+	}
+
+	if !ok && grp.Required {
+		return &mutuallyExclusiveGroupRequiredFlag{flags: &grp}
+	}
+
+	return nil
+}
+
+// findSetFlag is used in [MutuallyExclusiveFlags.check] to find
+// whether at least one flag inside a mutually exclusive flag group is
+// set. If so, return the flag name, position at which it's set, and
+// Boolean true (indicating that a flag was found.) Else, return all
+// zero values.
+func (grp MutuallyExclusiveFlags) findSetFlag(startIdx int) (string, int, bool) {
+	for i := startIdx; i < len(grp.Flags); i++ {
+		flags := grp.Flags[i]
+
+		for _, flg := range flags {
+			if flg.IsSet() {
+				return flg.Names()[0], i, true
 			}
 		}
 	}
 
-	if !oneSet && grp.Required {
-		return &mutuallyExclusiveGroupRequiredFlag{flags: &grp}
-	}
-	return nil
+	return "", 0, false
 }
 
 func (grp MutuallyExclusiveFlags) propagateCategory() {
@@ -48,6 +76,25 @@ func (grp MutuallyExclusiveFlags) propagateCategory() {
 		for _, f := range grpf {
 			if cf, ok := f.(CategorizableFlag); ok {
 				cf.SetCategory(grp.Category)
+			}
+		}
+	}
+}
+
+// propagateStringer applies [MutuallyExclusiveFlags.Stringer], if set, to
+// every flag within the group that supports a [StringerSetter]. Like
+// [MutuallyExclusiveFlags.propagateCategory], this only runs during command
+// setup, so mutating Stringer between runs of a reused [Command] will not
+// re-propagate the change.
+func (grp MutuallyExclusiveFlags) propagateStringer() {
+	if grp.Stringer == nil {
+		return
+	}
+
+	for _, grpf := range grp.Flags {
+		for _, f := range grpf {
+			if sf, ok := f.(StringerSetter); ok {
+				sf.SetStringer(grp.Stringer)
 			}
 		}
 	}
