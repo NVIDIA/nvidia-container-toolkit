@@ -24,7 +24,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"syscall"
 	"unsafe"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -105,18 +104,7 @@ func New(logger logger.Interface, root string) (LDCache, error) {
 	path := filepath.Join(root, ldcachePath)
 
 	logger.Debugf("Opening ld.conf at %v", path)
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, err
-	}
-	d, err := syscall.Mmap(int(f.Fd()), 0, int(fi.Size()),
-		syscall.PROT_READ, syscall.MAP_PRIVATE)
+	d, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -128,10 +116,6 @@ func New(logger logger.Interface, root string) (LDCache, error) {
 		logger: logger,
 	}
 	return cache, cache.parse()
-}
-
-func (c *ldcache) Close() error {
-	return syscall.Munmap(c.data)
 }
 
 func (c *ldcache) Magic() string {
