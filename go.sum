@@ -28,8 +28,8 @@ github.com/knqyf263/go-plugin v0.9.0 h1:CQs2+lOPIlkZVtcb835ZYDEoyyWJWLbSTWeCs0Ew
 github.com/knqyf263/go-plugin v0.9.0/go.mod h1:2z5lCO1/pez6qGo8CvCxSlBFSEat4MEp1DrnA+f7w8Q=
 github.com/moby/sys/devices v0.1.1 h1:BhY4BsFgUKIGVMgke3/CMrOCxy2RXUrl7SJwKh3VVV8=
 github.com/moby/sys/devices v0.1.1/go.mod h1:nIV6AO7t0DY2ObAm1GfL4AX9mBRqzxzHwGfvNCR9lfI=
-github.com/moby/sys/mountinfo v0.7.2 h1:1shs6aH5s4o5H2zQLn796ADW1wMrIwHsyJ2v9KouLrg=
-github.com/moby/sys/mountinfo v0.7.2/go.mod h1:1YOa8w8Ih7uW0wALDUgT1dTTSBrZ+HiBLGws92L2RU4=
+github.com/moby/sys/mountinfo v0.7.3 h1:e0lin8d05kLgtUES/4cS/F70KlbZX/G3aZjLsV7WAgA=
+github.com/moby/sys/mountinfo v0.7.3/go.mod h1:dEJRr+H+hx0lNG0BE+Smz95u/FDzjJv4/RjA2I456Iw=
 github.com/moby/sys/reexec v0.1.0 h1:RrBi8e0EBTLEgfruBOFcxtElzRGTEUkeIFaVXgU7wok=
 github.com/moby/sys/reexec v0.1.0/go.mod h1:EqjBg8F3X7iZe5pU6nRZnYCMUTXoxsjiIfHup5wYIN8=
 github.com/moby/sys/symlink v0.3.0 h1:GZX89mEZ9u53f97npBy4Rc3vJKj7JBDj/PN2I22GrNU=
