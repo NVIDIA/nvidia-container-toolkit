@@ -496,6 +496,11 @@ func TestGetVisibleDevicesFromMounts(t *testing.T) {
 			mounts:          makeTestMounts("GPU0", "imex/0", "GPU1"),
 			expectedDevices: []string{"GPU0", "GPU1"},
 		},
+		{
+			description:     "void device results in no devices",
+			mounts:          makeTestMounts("GPU0", "void", "GPU1"),
+			expectedDevices: nil,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
@@ -598,6 +603,20 @@ func TestVisibleDevices(t *testing.T) {
 			acceptUnprivileged: false,
 			acceptMounts:       false,
 			expectedDevices:    nil,
+		},
+		{
+			description:     "Void mount device",
+			mountDevices:    makeTestMounts("GPU0", "GPU1", "void"),
+			acceptMounts:    true,
+			expectedDevices: nil,
+		},
+		{
+			description:        "Void mount device, unprivileged, accept unprivileged",
+			mountDevices:       makeTestMounts("GPU0", "GPU1", "void"),
+			envvarDevices:      "all",
+			acceptUnprivileged: true,
+			acceptMounts:       true,
+			expectedDevices:    []string{"all"},
 		},
 		// New test cases for visibleEnvVars functionality
 		{
