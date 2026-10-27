@@ -35,6 +35,8 @@ const (
 
 	volumeMountDevicePrefixCDI  = "cdi/"
 	volumeMountDevicePrefixImex = "imex/"
+
+	volumeMountDeviceVoid = "void"
 )
 
 // CUDA represents a CUDA image that can be used for GPU computing. This wraps
@@ -331,10 +333,13 @@ func (i CUDA) visibleDevicesFromEnvVar() []string {
 }
 
 // visibleDevicesFromMounts returns the set of visible devices requested as mounts.
+// If the void device is requested, no devices are returned.
 func (i CUDA) visibleDevicesFromMounts() []string {
 	var devices []string
 	for _, device := range i.requestsFromMounts() {
 		switch {
+		case device == volumeMountDeviceVoid:
+			return nil
 		case strings.HasPrefix(device, volumeMountDevicePrefixImex):
 			continue
 		case strings.HasPrefix(device, volumeMountDevicePrefixCDI):
