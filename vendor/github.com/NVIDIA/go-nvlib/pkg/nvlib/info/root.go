@@ -18,6 +18,7 @@ package info
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/NVIDIA/go-nvml/pkg/dl"
@@ -66,6 +67,10 @@ func (r root) tryResolveLibrary(libraryName string) string {
 		l := r.join(d, libraryName)
 		resolved, err := resolveLink(l)
 		if err != nil {
+			continue
+		}
+		info, err := os.Stat(resolved)
+		if err != nil || !info.Mode().IsRegular() {
 			continue
 		}
 		return resolved
