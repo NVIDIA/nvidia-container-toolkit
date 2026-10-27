@@ -56,3 +56,12 @@ func NewLibraryLocator(opts ...Option) Locator {
 	)
 	return l
 }
+
+// NewLibrary32Locator creates a locator for 32-bit libraries, found through
+// the 32-bit entries of the root's ldcache: those of /usr/lib/i386-linux-gnu,
+// /usr/lib32, or /usr/lib beside /usr/lib64, as the system's multilib layout
+// has it. The search paths of NewLibraryLocator hold the native libraries, so
+// none are used here.
+func NewLibrary32Locator(opts ...Option) Locator {
+	return NewFactory(opts...).newLdcache32Locator()
+}

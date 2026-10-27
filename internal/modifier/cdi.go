@@ -83,6 +83,7 @@ func (f *Factory) newCDIModifier(isJitCDI bool) (oci.SpecModifier, error) {
 func (f *Factory) newJitCDIModifier(automaticDevices []string) (oci.SpecModifier, error) {
 	if f.image != nil {
 		automaticDevices = append(automaticDevices, withUniqueDevices(gatedDevices(*f.image)).DeviceRequests()...)
+		automaticDevices = append(automaticDevices, withUniqueDevices(compat32Devices(*f.image)).DeviceRequests()...)
 		automaticDevices = append(automaticDevices, withUniqueDevices(imexDevices(*f.image)).DeviceRequests()...)
 
 		migCaps := migCapsDevices(*f.image)
@@ -152,6 +153,19 @@ func (g gatedDevices) DeviceRequests() []string {
 	}
 
 	return devices
+}
+
+type compat32Devices image.CUDA
+
+// DeviceRequests returns the device for the driver's 32-bit libraries when the
+// container requests the compat32 driver capability, by name or through "all",
+// as the legacy runtime passes --compat32 to nvidia-container-cli then.
+func (d compat32Devices) DeviceRequests() []string {
+	i := (image.CUDA)(d)
+	if !i.GetDriverCapabilities().Has(image.DriverCapabilityCompat32) {
+		return nil
+	}
+	return []string{"mode=compat32"}
 }
 
 type imexDevices image.CUDA
