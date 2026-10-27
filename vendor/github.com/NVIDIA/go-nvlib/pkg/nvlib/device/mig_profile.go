@@ -19,6 +19,7 @@ package device
 import (
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -238,10 +239,12 @@ func matchAttributes(attrs1, attrs2 []string) bool {
 	if len(attrs1) != len(attrs2) {
 		return false
 	}
-	sort.Strings(attrs1)
-	sort.Strings(attrs2)
-	for i, a := range attrs2 {
-		if a != attrs1[i] {
+	left := slices.Clone(attrs1)
+	right := slices.Clone(attrs2)
+	sort.Strings(left)
+	sort.Strings(right)
+	for i, a := range right {
+		if a != left[i] {
 			return false
 		}
 	}
