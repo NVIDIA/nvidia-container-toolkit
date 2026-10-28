@@ -70,7 +70,7 @@ RUN /tmp/check-busybox-prefer-applets.sh /busybox/busybox
 
 # The packaging stage collects the deb and rpm packages built for
 # supported architectures.
-FROM nvcr.io/nvidia/distroless/go:v4.1.7 AS packaging
+FROM nvcr.io/nvidia/distroless/go:v4.1.8 AS packaging
 
 USER 0:0
 
@@ -172,7 +172,7 @@ COPY --from=build /artifacts/bin /artifacts/build
 
 # The application stage contains the application used as a GPU Operator
 # operand.
-FROM nvcr.io/nvidia/distroless/go:v4.1.7 AS application
+FROM nvcr.io/nvidia/distroless/go:v4.1.8 AS application
 
 USER 0:0
 
