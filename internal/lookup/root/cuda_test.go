@@ -33,10 +33,11 @@ func TestLocate(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
 	testCases := []struct {
-		description   string
-		libPaths      []string
-		expected      []string
-		expectedError error
+		description      string
+		libPaths         []string
+		driverRootSuffix string
+		expected         []string
+		expectedError    error
 	}{
 		{
 			description:   "no libcuda does not resolve library",
@@ -68,6 +69,13 @@ func TestLocate(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			description:      "driver root with a trailing slash returns absolute directories",
+			libPaths:         []string{"/usr/lib64/libcuda.so.123.34"},
+			driverRootSuffix: "/",
+			expected:         []string{"/usr/lib64"},
+			expectedError:    nil,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -77,7 +85,7 @@ func TestLocate(t *testing.T) {
 
 			l := New(
 				WithLogger(logger),
-				WithDriverRoot(driverRoot),
+				WithDriverRoot(driverRoot+tc.driverRootSuffix),
 			)
 
 			driverLibraryPaths, err := l.GetDriverLibDirectories()
