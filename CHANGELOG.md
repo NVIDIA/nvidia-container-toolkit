@@ -1,5 +1,21 @@
 # NVIDIA Container Toolkit Changelog
 
+## v1.20.2
+
+- Add 'void' volume-mount device in CDI spec
+- build(deps): Bump github.com/containerd/nri from 0.12.3 to 0.12.5
+- use Masterminds/semver instead of x/mod
+- build(deps): Bump golang from 1.27.1 to 1.27.3 in /deployments/devel
+- fix: include nvsdm lib in toolkit container adjustments
+- Mount the driver params file read-only
+- build(deps): Bump github.com/NVIDIA/go-nvml from 0.13.4-0 to 0.13.4-1
+- build(deps): Bump github.com/opencontainers/runc from 1.5.1 to 1.5.2
+
+### Changes in the Toolkit Container
+
+- build(deps): Bump nvidia/distroless/go to `v4.1.8` in /deployments/container
+- Use official busybox docker image instead of busybox-static debian
+
 ## v1.20.1
 - Add ucode_*.bin firmware files to CDI spec introduced in R615
 - fix: preserve Docker feature flags when enabling CDI
