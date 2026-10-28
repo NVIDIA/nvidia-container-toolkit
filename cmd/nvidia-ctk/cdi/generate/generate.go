@@ -75,8 +75,9 @@ type options struct {
 		CompatContainerRoot string
 	}
 
-	noAllDevice bool
-	deviceIDs   []string
+	noIPCSockets bool
+	noAllDevice  bool
+	deviceIDs    []string
 
 	// the following are used for dependency injection during spec generation.
 	nvmllib nvml.Interface
@@ -244,6 +245,13 @@ func (m command) build() *cli.Command {
 				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_FEATURE_FLAGS"),
 			},
 			&cli.BoolFlag{
+				Name:        "no-ipc-sockets",
+				Aliases:     []string{"disable-ipc-sockets", "disable-ipc-discoverer"},
+				Usage:       "Do not include NVIDIA IPC sockets (nvidia-persistenced, nvidia-fabricmanager, MPS) in the generated CDI specification",
+				Destination: &opts.noIPCSockets,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_NO_IPC_SOCKETS"),
+			},
+			&cli.BoolFlag{
 				Name:        "no-all-device",
 				Usage:       "Don't generate an `all` device for the resultant spec",
 				Destination: &opts.noAllDevice,
@@ -309,6 +317,10 @@ func (m command) validateFlags(c *cli.Command, opts *options) error {
 	if slices.Contains(opts.deviceIDs, "none") && !opts.noAllDevice {
 		m.logger.Warningf("Disabling generation of 'all' device")
 		opts.noAllDevice = true
+	}
+
+	if opts.noIPCSockets && !slices.Contains(opts.featureFlags, string(nvcdi.FeatureDisableIPCDiscoverer)) {
+		opts.featureFlags = append(opts.featureFlags, string(nvcdi.FeatureDisableIPCDiscoverer))
 	}
 	return nil
 }

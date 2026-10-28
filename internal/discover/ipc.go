@@ -32,7 +32,7 @@ var ipcMountOptions = []string{
 
 type ipcMounts mounts
 
-// NewIPCDiscoverer creats a discoverer for NVIDIA IPC sockets.
+// NewIPCDiscoverer creates a discoverer for NVIDIA IPC sockets.
 func NewIPCDiscoverer(logger logger.Interface, driverRoot string) (Discover, error) {
 	sockets := newMounts(
 		logger,
