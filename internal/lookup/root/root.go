@@ -57,6 +57,11 @@ func New(opts ...Option) *Driver {
 	if o.logger == nil {
 		o.logger = logger.New()
 	}
+	// A root such as /run/nvidia/driver/ would otherwise leave relative paths
+	// when the root is trimmed from located paths.
+	if o.Root != "" {
+		o.Root = filepath.Clean(o.Root)
+	}
 	if o.DevRoot == "" {
 		o.DevRoot = o.Root
 	}
