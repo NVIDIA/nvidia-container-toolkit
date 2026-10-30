@@ -22,9 +22,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"syscall"
 
+	"github.com/google/uuid"
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -131,18 +133,53 @@ func run(_ context.Context, _ *cli.Command, cfg *options, logger logger.Interfac
 		if err := containerRoot.MkdirAll(applicationProfileDir, 0555); err != nil {
 			return fmt.Errorf("failed to create application profiles directory: %w", err)
 		}
-		if err := containerRoot.WriteFile(applicationProfileFile, buildApplicationProfileConfig(mask), 0444); err != nil {
+		if err := writeApplicationProfile(containerRoot, buildApplicationProfileConfig(mask)); err != nil {
 			return fmt.Errorf("failed to write application profile: %w", err)
 		}
 		return nil
 	}(); err != nil {
-		if !errors.Is(err, syscall.EROFS) {
+		if !isIgnorableWriteError(err) {
 			return err
 		}
-		logger.Warningf("Ignoring read-only filesystem error: %v", err)
+		logger.Warningf("Ignoring error writing application profile: %v", err)
 	}
 
 	return nil
+}
+
+func isIgnorableWriteError(err error) bool {
+	return errors.Is(err, syscall.EROFS) || errors.Is(err, syscall.EBUSY)
+}
+
+func writeApplicationProfile(containerRoot *os.Root, contents []byte) (rerr error) {
+	profileDir, err := containerRoot.OpenRoot(applicationProfileDir)
+	if err != nil {
+		return err
+	}
+	defer profileDir.Close()
+
+	profileFileName := filepath.Base(applicationProfileFile)
+	tmpFileName := profileFileName + "-" + uuid.NewString()
+
+	tmpFile, err := profileDir.OpenFile(tmpFileName, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0444)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if rerr != nil {
+			_ = profileDir.Remove(tmpFileName)
+		}
+	}()
+
+	if _, err := tmpFile.Write(contents); err != nil {
+		_ = tmpFile.Close()
+		return err
+	}
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+
+	return profileDir.Rename(tmpFileName, profileFileName)
 }
 
 // buildApplicationProfileConfig returns the contents of the NVIDIA driver application profile.
