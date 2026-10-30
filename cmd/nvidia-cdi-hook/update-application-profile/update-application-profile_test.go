@@ -18,6 +18,8 @@
 package updateapplicationprofile
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -113,6 +115,110 @@ func TestBuildApplicationProfileConfig(t *testing.T) {
 	for description, tc := range testCases {
 		t.Run(description, func(t *testing.T) {
 			require.EqualValues(t, tc.expected, string(buildApplicationProfileConfig(tc.mask)))
+		})
+	}
+}
+
+func TestWriteApplicationProfile(t *testing.T) {
+	const contents = "profile"
+
+	testCases := map[string]struct {
+		setup         func(t *testing.T, root string)
+		profileDir    string
+		expectedError bool
+		expectedFiles map[string]string
+	}{
+		"profile does not exist": {
+			setup: func(t *testing.T, root string) {
+				require.NoError(t, os.MkdirAll(filepath.Join(root, applicationProfileDir), 0755))
+			},
+			profileDir: applicationProfileDir,
+			expectedFiles: map[string]string{
+				applicationProfileFile: contents,
+			},
+		},
+		"existing profile is replaced": {
+			setup: func(t *testing.T, root string) {
+				require.NoError(t, os.MkdirAll(filepath.Join(root, applicationProfileDir), 0755))
+				require.NoError(t, os.WriteFile(filepath.Join(root, applicationProfileFile), []byte("stale"), 0600))
+			},
+			profileDir: applicationProfileDir,
+			expectedFiles: map[string]string{
+				applicationProfileFile: contents,
+			},
+		},
+		"symlink at profile path is replaced without writing to its target": {
+			setup: func(t *testing.T, root string) {
+				require.NoError(t, os.MkdirAll(filepath.Join(root, applicationProfileDir), 0755))
+				require.NoError(t, os.WriteFile(filepath.Join(root, "target"), []byte("target"), 0600))
+				require.NoError(t, os.Symlink("../../../target", filepath.Join(root, applicationProfileFile)))
+			},
+			profileDir: applicationProfileDir,
+			expectedFiles: map[string]string{
+				applicationProfileFile: contents,
+				"target":               "target",
+			},
+		},
+		"dangling symlink at profile path is replaced": {
+			setup: func(t *testing.T, root string) {
+				require.NoError(t, os.MkdirAll(filepath.Join(root, applicationProfileDir), 0755))
+				require.NoError(t, os.Symlink("../../../missing", filepath.Join(root, applicationProfileFile)))
+			},
+			profileDir: applicationProfileDir,
+			expectedFiles: map[string]string{
+				applicationProfileFile: contents,
+			},
+		},
+		"profile directory is a relative symlink": {
+			setup: func(t *testing.T, root string) {
+				require.NoError(t, os.MkdirAll(filepath.Join(root, "opt/profiles"), 0755))
+				require.NoError(t, os.MkdirAll(filepath.Join(root, "etc/nvidia"), 0755))
+				require.NoError(t, os.Symlink("../../opt/profiles", filepath.Join(root, applicationProfileDir)))
+			},
+			profileDir: "opt/profiles",
+			expectedFiles: map[string]string{
+				"opt/profiles/10-container.conf": contents,
+			},
+		},
+		"directory at profile path is not replaced": {
+			setup: func(t *testing.T, root string) {
+				require.NoError(t, os.MkdirAll(filepath.Join(root, applicationProfileFile, "child"), 0755))
+			},
+			profileDir:    applicationProfileDir,
+			expectedError: true,
+		},
+	}
+
+	for description, tc := range testCases {
+		t.Run(description, func(t *testing.T) {
+			root := t.TempDir()
+			tc.setup(t, root)
+
+			containerRoot, err := os.OpenRoot(root)
+			require.NoError(t, err)
+			defer containerRoot.Close()
+
+			err = writeApplicationProfile(containerRoot, []byte(contents))
+			if tc.expectedError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			for path, expected := range tc.expectedFiles {
+				info, err := os.Lstat(filepath.Join(root, path))
+				require.NoError(t, err)
+				require.True(t, info.Mode().IsRegular(), "%s is not a regular file", path)
+
+				actual, err := os.ReadFile(filepath.Join(root, path))
+				require.NoError(t, err)
+				require.Equal(t, expected, string(actual))
+			}
+
+			entries, err := os.ReadDir(filepath.Join(root, tc.profileDir))
+			require.NoError(t, err)
+			require.Len(t, entries, 1)
+			require.Equal(t, filepath.Base(applicationProfileFile), entries[0].Name())
 		})
 	}
 }
