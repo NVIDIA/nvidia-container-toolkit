@@ -55,10 +55,14 @@ nvidia-ctk cdi generate
 
 The default is to print the specification to STDOUT and a filename can be specified using the `--output` flag.
 
-The specification will contain a device entries as follows (where applicable):
-* An `nvidia.com/gpu=gpu{INDEX}` device for each non-MIG-enabled full GPU in the system
-* An `nvidia.com/gpu=mig{GPU_INDEX}:{MIG_INDEX}` device for each MIG-device in the system
+By default, the specification includes both index-based and UUID-based device names (where applicable):
+* An `nvidia.com/gpu={INDEX}` device for each non-MIG-enabled full GPU in the system
+* An `nvidia.com/gpu={GPU_INDEX}:{MIG_INDEX}` device for each MIG-device in the system
+* An `nvidia.com/gpu={UUID}` device for each full GPU or MIG-device, using its GPU or MIG UUID
 * A special device called `nvidia.com/gpu=all` which represents all available devices.
+
+The `--device-name-strategy=type-index` option generates names such as
+`nvidia.com/gpu=gpu0` and `nvidia.com/gpu=mig0:0` instead of the default names.
 
 For example, to generate the CDI specification in the default location where CDI-enabled tools such as `podman`, `containerd`, `cri-o`, or the NVIDIA Container Runtime can be configured to load it, the following command can be run:
 
@@ -69,5 +73,5 @@ sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
 
 With the specification generated, a GPU can be requested by specifying the fully-qualified CDI device name. With `podman` as an exmaple:
 ```bash
-podman run --rm -ti --device=nvidia.com/gpu=gpu0 ubuntu nvidia-smi -L
+podman run --rm -ti --device=nvidia.com/gpu=0 ubuntu nvidia-smi -L
 ```
