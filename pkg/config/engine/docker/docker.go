@@ -88,6 +88,8 @@ func (c *Config) AddRuntime(name string, path string, setAsDefault bool) error {
 
 	if setAsDefault {
 		config["default-runtime"] = name
+	} else if defaultRuntime, ok := config["default-runtime"].(string); ok && defaultRuntime == name {
+		delete(config, "default-runtime")
 	}
 
 	*c = config

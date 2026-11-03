@@ -60,6 +60,14 @@ func TestUpdateConfigDefaultRuntime(t *testing.T) {
 			setAsDefault:               true,
 			expectedDefaultRuntimeName: "NAME",
 		},
+		{
+			config: map[string]any{
+				"default-runtime": "NAME",
+			},
+			runtimeName:                "NAME",
+			setAsDefault:               false,
+			expectedDefaultRuntimeName: nil,
+		},
 	}
 
 	for i, tc := range testCases {
