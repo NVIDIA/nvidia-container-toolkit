@@ -294,14 +294,6 @@ func (t *Installer) Install(cli *cli.Command, opts *Options, runtime string) err
 	}
 	t.logger.Infof("Installing NVIDIA container toolkit to '%v'", t.toolkitRoot)
 
-	t.logger.Infof("Removing existing NVIDIA container toolkit installation")
-	err := os.RemoveAll(t.toolkitRoot)
-	if err != nil && !opts.ignoreErrors {
-		return fmt.Errorf("error removing toolkit directory: %v", err)
-	} else if err != nil {
-		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error removing toolkit directory: %v", err))
-	}
-
 	var defaultRuntimeExecutable string
 	if len(opts.ContainerRuntimeRuntimes) > 0 {
 		defaultRuntimeExecutable = opts.ContainerRuntimeRuntimes[0]
