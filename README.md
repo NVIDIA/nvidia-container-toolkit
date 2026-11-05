@@ -28,5 +28,7 @@ The [user guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolk
 [Checkout the Contributing document!](CONTRIBUTING.md)
 
 * Please let us know by [filing a new issue](https://github.com/NVIDIA/nvidia-container-toolkit/issues/new)
-* You can contribute by creating a [pull request](https://github.com/NVIDIA/nvidia-container-toolkit/compare) to our public GitHub repository
 * Contributions must adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Support and Getting Help
+Please start [a discussion on the GitHub project](https://github.com/NVIDIA/nvidia-container-toolkit/discussions) for any questions. You can also join our [community Slack](https://inviter.co/dsx-ai-factory). Your feedback is appreciated.

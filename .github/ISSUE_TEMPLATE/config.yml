@@ -1,1 +1,8 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Question / General Discussion
+    url: https://github.com/NVIDIA/nvidia-container-toolkit/discussions
+    about: Ask a question or raise a discussion related to NVIDIA Container Toolkit
+  - name: Community Slack (#gpu-operator)
+    url: https://inviter.co/dsx-ai-factory
+    about: Chat with the GPU Operator team and community
