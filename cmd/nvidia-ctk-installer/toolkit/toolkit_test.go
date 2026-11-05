@@ -230,6 +230,34 @@ containerEdits:
 	}
 }
 
+func TestInstallFailureKeepsExistingInstallation(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	toolkitRoot := filepath.Join(t.TempDir(), "toolkit")
+	require.NoError(t, os.MkdirAll(toolkitRoot, 0755))
+	existingRuntime := filepath.Join(toolkitRoot, "nvidia-container-runtime")
+	require.NoError(t, os.WriteFile(existingRuntime, []byte("existing"), 0600))
+
+	ti := NewInstaller(
+		WithLogger(logger),
+		WithToolkitRoot(toolkitRoot),
+		WithSourceRoot(t.TempDir()),
+	)
+	options := Options{
+		CDI: cdiOptions{
+			kind: "example.com/class",
+		},
+	}
+	require.NoError(t, ti.ValidateOptions(&options))
+
+	err := ti.Install(&cli.Command{}, &options, "containerd")
+	require.ErrorContains(t, err, "failed to collect libraries")
+
+	contents, err := os.ReadFile(existingRuntime)
+	require.NoError(t, err)
+	require.Equal(t, "existing", string(contents))
+}
+
 func requireWrappedExecutable(t *testing.T, toolkitRoot string, expectedExecutable string) {
 	requireExecutable(t, toolkitRoot, expectedExecutable)
 	requireExecutable(t, toolkitRoot, expectedExecutable+".real")

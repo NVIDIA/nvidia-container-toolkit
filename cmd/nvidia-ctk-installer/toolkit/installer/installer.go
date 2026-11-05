@@ -92,6 +92,14 @@ func (t *ToolkitInstaller) Install(destDir string) error {
 	}
 	installers = append(installers, executables...)
 
+	t.logger.Infof("Removing existing NVIDIA container toolkit installation")
+	if err := os.RemoveAll(destDir); err != nil {
+		if !t.ignoreErrors {
+			return fmt.Errorf("error removing toolkit directory: %v", err)
+		}
+		t.logger.Errorf("Ignoring error: %v", fmt.Errorf("error removing toolkit directory: %v", err))
+	}
+
 	var errs error
 	for _, i := range installers {
 		errs = errors.Join(errs, i.Install(destDir))
