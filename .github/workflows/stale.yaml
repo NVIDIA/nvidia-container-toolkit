@@ -17,9 +17,24 @@ jobs:
       with:
         stale-issue-message: 'This issue is stale because it has been open 90 days with no activity. This issue will be closed in 30 days unless new comments are made or the stale label is removed. To skip these checks, apply the "lifecycle/frozen" label.'
         stale-issue-label: 'lifecycle/stale'
-        exempt-issue-labels: 'lifecycle/frozen,feature,enhancement'
+        exempt-issue-labels: 'lifecycle/frozen,feature,enhancement,accepted'
         days-before-stale: 90
         close-issue-message: 'This issue was automatically closed due to inactivity.'
         days-before-issue-close: 30
+        remove-stale-when-updated: true
+        operations-per-run: 1000
+    - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93 # v11
+      with:
+        only-issue-labels: 'needs-more-info'
+        # Triage policy start date.
+        start-date: '2026-10-27T00:00:00Z'
+        stale-issue-message: 'This issue has been waiting for more information for 23 days with no activity. It will be closed in 7 days unless the requested information is provided.'
+        stale-issue-label: 'lifecycle/stale'
+        exempt-issue-labels: 'lifecycle/frozen'
+        days-before-issue-stale: 23
+        close-issue-message: 'This issue was automatically closed because the requested information was not provided within 30 days.'
+        days-before-issue-close: 7
+        days-before-pr-stale: -1
+        days-before-pr-close: -1
         remove-stale-when-updated: true
         operations-per-run: 1000

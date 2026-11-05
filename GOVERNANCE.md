@@ -48,9 +48,8 @@ report issues, and engage in discussions.
 
 ### Routine Decisions
 
-Routine decisions — bug fixes, minor features, documentation, dependency updates — proceed
-via a PR. At least one maintainer approval is required for technical acceptance; a maintainer
-then merges after verifying project requirements are met.
+Routine decisions — bug fixes, minor features, documentation, dependency updates — proceed via a PR. External contributions first follow the contribution workflow referenced in [CONTRIBUTING.md](CONTRIBUTING.md), which requires maintainer approval on an issue before implementation begins.
+A maintainer then approves and merges PRs after verifying project requirements are met.
 
 ### Core Decisions
 
@@ -68,7 +67,7 @@ considered, and the impact on existing contributors and users.
 Core decisions are made by the maintainers. For contributors who want to propose and contribute
 a major change, the process is as follows:
 
-- A proposal for a major change will be submitted as an issue.
+- A proposal for a major change will be submitted as a [feature request](.github/ISSUE_TEMPLATE/feature_request.md).
 - The maintainers will discuss the proposal and seek feedback from the community.
 - Once the discussion is concluded, maintainers will make the final decision.
 

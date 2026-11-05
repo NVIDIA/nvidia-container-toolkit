@@ -1,0 +1,62 @@
+# Copyright NVIDIA CORPORATION
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Issue State Labels
+
+on:
+  issues:
+    types: [labeled]
+
+permissions: {}
+
+concurrency:
+  group: issue-state-${{ github.event.issue.number }}
+
+jobs:
+  single-state:
+    name: Keep one state label per issue
+    if: contains(fromJSON('["needs-triage","needs-more-info","accepted"]'), github.event.label.name)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const stateLabels = ['needs-triage', 'needs-more-info', 'accepted'];
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.issue.number;
+            const added = context.payload.label.name;
+            if (!stateLabels.includes(added)) {
+              return;
+            }
+
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({ owner, repo, issue_number });
+            const current = labels.map((label) => label.name);
+            // Adding two state labels at once starts two runs; a later run must not undo an earlier one.
+            if (!current.includes(added)) {
+              return;
+            }
+
+            for (const name of current.filter((label) => stateLabels.includes(label) && label !== added)) {
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name });
+                core.info(`Removed ${name}: ${added} replaces it.`);
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+              }
+            }

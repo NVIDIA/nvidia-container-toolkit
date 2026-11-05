@@ -1,0 +1,98 @@
+# Copyright NVIDIA CORPORATION
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Assign
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  assign:
+    name: Assign issue from /assign comment
+    if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/assign') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { comment, issue } = context.payload;
+            const react = (content) =>
+              github.rest.reactions.createForIssueComment({ owner, repo, comment_id: comment.id, content });
+
+            const firstLine = comment.body.split(/\r?\n/, 1)[0].trim();
+            if (!/^\/assign(\s|$)/.test(firstLine)) {
+              return;
+            }
+
+            // Matches GitHub's own rule: assigning requires the triage role or higher.
+            const { data: perm } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner,
+              repo,
+              username: comment.user.login,
+            });
+            const canAssign = ['admin', 'maintain', 'write', 'triage'].includes(perm.role_name)
+              || ['admin', 'write'].includes(perm.permission);
+            if (!canAssign) {
+              return react('-1');
+            }
+
+            const match = firstLine.match(/^\/assign(?:\s+@?([A-Za-z0-9-]+))?$/);
+            if (!match || !issue.labels.some((label) => label.name === 'accepted')) {
+              return react('confused');
+            }
+
+            const assignee = match[1] ?? comment.user.login;
+            const { data: updated } = await github.rest.issues.addAssignees({
+              owner,
+              repo,
+              issue_number: issue.number,
+              assignees: [assignee],
+            });
+            // GitHub silently skips users it cannot assign, such as people who have not commented on the issue.
+            if (!updated.assignees.some((a) => a.login.toLowerCase() === assignee.toLowerCase())) {
+              return react('confused');
+            }
+
+            // The PR gatekeeper accepts any assignee, so a new claimant must replace the previous ones.
+            // Maintainers stay assigned because the gatekeeper does not apply to them.
+            const previousClaimants = [];
+            for (const { login } of updated.assignees) {
+              if (login.toLowerCase() === assignee.toLowerCase()) {
+                continue;
+              }
+              const { data: level } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner,
+                repo,
+                username: login,
+              });
+              if (!['admin', 'maintain', 'write'].includes(level.permission)) {
+                previousClaimants.push(login);
+              }
+            }
+            if (previousClaimants.length > 0) {
+              await github.rest.issues.removeAssignees({
+                owner,
+                repo,
+                issue_number: issue.number,
+                assignees: previousClaimants,
+              });
+            }
+            return react('+1');
