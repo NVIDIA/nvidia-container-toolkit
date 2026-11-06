@@ -56,7 +56,7 @@ RUN make PREFIX=/artifacts/bin cmd-nvidia-ctk-installer
 # Build a static busybox layout: one binary plus applet symlinks (sh, rm,
 # ln, sleep, cat, ...) so PATH-resolved commands in init-container wrappers
 # and lifecycle hooks keep working on the non-*-dev* distroless base.
-FROM busybox:1.37.0-musl AS shell
+FROM busybox:1.38.0-musl AS shell
 RUN mkdir /busybox \
  && cp /bin/busybox /busybox/busybox \
  && /busybox/busybox --install -s /busybox
