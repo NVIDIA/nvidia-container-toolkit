@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"tags.cncf.io/container-device-interface/specs-go"
 )
 
 func TestTransformPath(t *testing.T) {
@@ -89,6 +90,56 @@ func TestTransformPath(t *testing.T) {
 				targetRoot: tc.targetRoot,
 			}
 			require.Equal(t, tc.expectedPath, tr.transformPath(tc.path))
+		})
+	}
+}
+
+func TestNewWithUnsetRoots(t *testing.T) {
+	// The --to flag and WithTargetRoot both default to the empty string, which
+	// filepath.Join turns into a relative path, so a spec would come out with
+	// host paths such as dev/nvidia0 instead of /dev/nvidia0.
+	testCases := []struct {
+		description  string
+		root         string
+		targetRoot   string
+		path         string
+		expectedPath string
+	}{
+		{
+			description:  "unset target root",
+			root:         "/run/nvidia/driver",
+			targetRoot:   "",
+			path:         "/run/nvidia/driver/dev/nvidia0",
+			expectedPath: "/dev/nvidia0",
+		},
+		{
+			description:  "unset root",
+			root:         "",
+			targetRoot:   "/host",
+			path:         "/dev/nvidia0",
+			expectedPath: "/host/dev/nvidia0",
+		},
+		{
+			description:  "both unset",
+			root:         "",
+			targetRoot:   "",
+			path:         "/dev/nvidia0",
+			expectedPath: "/dev/nvidia0",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			spec := &specs.Spec{
+				ContainerEdits: specs.ContainerEdits{
+					DeviceNodes: []*specs.DeviceNode{{HostPath: tc.path, Path: tc.path}},
+				},
+			}
+
+			tr := New(WithRoot(tc.root), WithTargetRoot(tc.targetRoot))
+			require.NoError(t, tr.Transform(spec))
+
+			require.Equal(t, tc.expectedPath, spec.ContainerEdits.DeviceNodes[0].HostPath)
 		})
 	}
 }
