@@ -20,9 +20,10 @@
 package nvsandboxutils
 
 /*
-#cgo linux LDFLAGS: -Wl,--export-dynamic -Wl,--unresolved-symbols=ignore-in-object-files
+#cgo linux LDFLAGS: -Wl,--export-dynamic
 #cgo darwin LDFLAGS: -Wl,-undefined,dynamic_lookup
 #include "nvsandboxutils.h"
+#include "dlsym_static.h"
 #include <stdlib.h>
 #include "cgo_helpers.h"
 */
