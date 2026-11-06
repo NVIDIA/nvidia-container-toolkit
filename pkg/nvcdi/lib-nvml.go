@@ -17,6 +17,7 @@
 package nvcdi
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -50,7 +51,22 @@ func (l *nvmllib) GetCommonEdits() (*cdi.ContainerEdits, error) {
 // * a UUID of a GPU or MIG device
 // * the special ID 'all'
 func (l *nvmllib) DeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, error) {
+	var specialID string
+	for _, id := range ids {
+		if id == "all" || id == "none" {
+			specialID = id
+			break
+		}
+	}
+
+	if specialID == "none" {
+		return emptyDeviceSpecGenerator("none"), nil
+	}
+
 	if err := l.init(); err != nil {
+		if specialID == "all" && errors.Is(err, nvml.ERROR_DRIVER_NOT_LOADED) {
+			return emptyDeviceSpecGenerator("all"), nil
+		}
 		return nil, err
 	}
 	defer l.tryShutdown()
