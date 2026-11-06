@@ -23,9 +23,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldconfig"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/oci"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup/symlinks"
@@ -99,8 +101,10 @@ func (m command) run(_ *cli.Command, cfg *config) error {
 			return fmt.Errorf("invalid symlink specification %v", l)
 		}
 
-		err := m.createLink(containerRoot, parts[0], parts[1])
-		if err != nil {
+		if err := m.createLink(containerRoot, parts[0], parts[1]); err != nil {
+			if errors.Is(err, syscall.EROFS) {
+				return fmt.Errorf("failed to create link %v: %w: %w", parts, ldconfig.ErrReadOnlyRootfs, err)
+			}
 			return fmt.Errorf("failed to create link %v: %w", parts, err)
 		}
 		created[l] = true
