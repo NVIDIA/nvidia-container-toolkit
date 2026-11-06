@@ -149,6 +149,69 @@ containerEdits:
 `,
 		},
 		{
+			description: "spec annotations use 0.6.0 version",
+			options: []Option{
+				WithDeviceSpecs([]specs.Device{
+					{
+						Name: "one",
+						ContainerEdits: specs.ContainerEdits{
+							Env: []string{"DEVICE_FOO=bar"},
+						},
+					},
+				}),
+				WithAnnotations(map[string]string{
+					"cdi.nvidia.com/generator": "nvidia-ctk",
+				}),
+			},
+			expectedSpec: `---
+cdiVersion: 0.6.0
+kind: nvidia.com/gpu
+annotations:
+    cdi.nvidia.com/generator: nvidia-ctk
+devices:
+    - name: one
+      containerEdits:
+        env:
+            - DEVICE_FOO=bar
+`,
+		},
+		{
+			description: "spec annotations are merged into raw spec",
+			options: []Option{
+				WithRawSpec(
+					&specs.Spec{
+						Kind: "nvidia.com/gpu",
+						Annotations: map[string]string{
+							"example.com/existing": "value",
+						},
+						Devices: []specs.Device{
+							{
+								Name: "one",
+								ContainerEdits: specs.ContainerEdits{
+									Env: []string{"DEVICE_FOO=bar"},
+								},
+							},
+						},
+					},
+				),
+				WithAnnotations(map[string]string{
+					"cdi.nvidia.com/generator": "nvidia-ctk",
+				}),
+			},
+			expectedSpec: `---
+cdiVersion: 0.6.0
+kind: nvidia.com/gpu
+annotations:
+    cdi.nvidia.com/generator: nvidia-ctk
+    example.com/existing: value
+devices:
+    - name: one
+      containerEdits:
+        env:
+            - DEVICE_FOO=bar
+`,
+		},
+		{
 			description: "transformed spec uses minimum version",
 			options: []Option{WithRawSpec(
 				&specs.Spec{
@@ -214,4 +277,18 @@ containerEdits:
 			require.EqualValues(t, tc.expectedSpec, buf.String())
 		})
 	}
+}
+
+func TestWithAnnotationsCopiesAnnotations(t *testing.T) {
+	annotations := map[string]string{"cdi.nvidia.com/generator": "nvidia-ctk"}
+
+	first, err := New(WithAnnotations(annotations))
+	require.NoError(t, err)
+	second, err := New(WithAnnotations(annotations))
+	require.NoError(t, err)
+
+	first.Raw().Annotations["cdi.nvidia.com/generator"] = "modified"
+
+	require.Equal(t, "nvidia-ctk", annotations["cdi.nvidia.com/generator"])
+	require.Equal(t, "nvidia-ctk", second.Raw().Annotations["cdi.nvidia.com/generator"])
 }
