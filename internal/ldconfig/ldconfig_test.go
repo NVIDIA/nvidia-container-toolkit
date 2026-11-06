@@ -246,3 +246,121 @@ func TestEnsureLdsoconfFile(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessLdsoconfFile(t *testing.T) {
+	testCases := []struct {
+		description string
+		// files are created relative to a temporary directory. The entry
+		// "ld.so.conf" is the file that is read.
+		files               map[string]string
+		expectedDirectories []string
+		expectedIncludes    []string
+	}{
+		{
+			description: "a comment at the end of a line is not part of the directory",
+			files: map[string]string{
+				"ld.so.conf": "/usr/local/lib # vendor libraries\n/opt/lib\t# and these\n",
+			},
+			expectedDirectories: []string{"/usr/local/lib", "/opt/lib"},
+		},
+		{
+			description: "a comment at the end of an include is not part of the pattern",
+			files: map[string]string{
+				"ld.so.conf":          "include ld.so.conf.d/*.conf # the distro's\n",
+				"ld.so.conf.d/a.conf": "/dir-a\n",
+			},
+			expectedIncludes: []string{"ld.so.conf.d/a.conf"},
+		},
+		{
+			description: "a line that is only a comment is ignored",
+			files: map[string]string{
+				"ld.so.conf": "# nothing here\n   # nor here\n/dir-a\n",
+			},
+			expectedDirectories: []string{"/dir-a"},
+		},
+		{
+			description: "an include separated by a tab is a directive",
+			files: map[string]string{
+				"ld.so.conf":          "include\tld.so.conf.d/*.conf\n",
+				"ld.so.conf.d/a.conf": "/dir-a\n",
+			},
+			expectedIncludes: []string{"ld.so.conf.d/a.conf"},
+		},
+		{
+			description: "every pattern of an include is used",
+			files: map[string]string{
+				"ld.so.conf":  "include first.conf \t second.conf  third.conf\n",
+				"first.conf":  "/dir-a\n",
+				"second.conf": "/dir-b\n",
+				"third.conf":  "/dir-c\n",
+			},
+			expectedIncludes: []string{"first.conf", "second.conf", "third.conf"},
+		},
+		{
+			description: "a relative include resolves against the directory of the file",
+			files: map[string]string{
+				"etc/ld.so.conf":          "include ld.so.conf.d/*.conf\n",
+				"etc/ld.so.conf.d/a.conf": "/dir-a\n",
+			},
+			expectedIncludes: []string{"etc/ld.so.conf.d/a.conf"},
+		},
+		{
+			description: "an absolute include is used as it is",
+			files: map[string]string{
+				"ld.so.conf": "include {{TMPDIR}}/other.conf\n",
+				"other.conf": "/dir-a\n",
+			},
+			expectedIncludes: []string{"other.conf"},
+		},
+		{
+			description: "a hwcap directive is not a directory",
+			files: map[string]string{
+				"ld.so.conf": "hwcap 1 nosegneg\nHWCAP 0 something\n/dir-a\n",
+			},
+			expectedDirectories: []string{"/dir-a"},
+		},
+		{
+			description: "a line that only looks like a directive is a directory",
+			files: map[string]string{
+				"ld.so.conf": "include\n/includes\n/hwcapsomething\n",
+			},
+			expectedDirectories: []string{"include", "/includes", "/hwcapsomething"},
+		},
+		{
+			description: "an include that matches nothing is not an error",
+			files: map[string]string{
+				"ld.so.conf": "include ld.so.conf.d/*.conf\n/dir-a\n",
+			},
+			expectedDirectories: []string{"/dir-a"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			tmpDir := t.TempDir()
+
+			var configFile string
+			for name, contents := range tc.files {
+				path := filepath.Join(tmpDir, name)
+				require.NoError(t, os.MkdirAll(filepath.Dir(path), 0755))
+				contents = strings.ReplaceAll(contents, "{{TMPDIR}}", tmpDir)
+				require.NoError(t, os.WriteFile(path, []byte(contents), 0600))
+				if filepath.Base(name) == "ld.so.conf" {
+					configFile = path
+				}
+			}
+			require.NotEmpty(t, configFile)
+
+			directories, includes, err := processLdsoconfFile(configFile)
+			require.NoError(t, err)
+
+			var expectedIncludes []string
+			for _, include := range tc.expectedIncludes {
+				expectedIncludes = append(expectedIncludes, filepath.Join(tmpDir, include))
+			}
+
+			require.EqualValues(t, tc.expectedDirectories, directories)
+			require.EqualValues(t, expectedIncludes, includes)
+		})
+	}
+}
