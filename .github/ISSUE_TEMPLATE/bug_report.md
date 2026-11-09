@@ -12,8 +12,8 @@ type: bug
 **Motivation**
 <!-- A clear and concise description of your motivation: is this a real issue you ran into while using the product? -->
 
-**Check here if you would like to work on this issue**
-- [ ]
+<!-- Check here if you would like to work on this issue -->
+- [ ] I would like to work on this issue.
 
 **Describe the bug**
 <!-- A clear and concise description of what the bug is. -->
