@@ -103,12 +103,42 @@ func (s fileSpec) Flush() error {
 		return fmt.Errorf("no OCI specification loaded")
 	}
 
-	dir := filepath.Dir(s.path)
+	// Resolve symlinks so we write through to the target, preserving the
+	// os.Create semantics of following symlinks rather than replacing them.
+	writePath := s.path
+	if info, err := os.Lstat(s.path); err == nil && info.Mode()&os.ModeSymlink != 0 {
+		if resolved, err := filepath.EvalSymlinks(s.path); err == nil {
+			writePath = resolved
+		}
+	}
+
+	dir := filepath.Dir(writePath)
+
+	// Stat the original file (if it exists) so its mode can be preserved on the
+	// temp file. os.CreateTemp creates the temp with 0600; without this, a
+	// successful os.Rename would downgrade the spec (e.g. 0644 -> 0600) and drop
+	// the original owner, which is a mode regression on top of the data-loss fix.
+	var originalMode os.FileMode
+	if info, err := os.Stat(writePath); err == nil {
+		originalMode = info.Mode().Perm()
+	}
+
 	tmpFile, err := os.CreateTemp(dir, ".oci-spec-*.tmp")
 	if err != nil {
 		return fmt.Errorf("error creating temp OCI specification file: %v", err)
 	}
 	tmpPath := tmpFile.Name()
+
+	// Restore the original mode on the temp file before it replaces the
+	// original. On Windows only the write bit is meaningful; other bits are
+	// ignored by the OS.
+	if originalMode != 0 {
+		if err := os.Chmod(tmpPath, originalMode); err != nil {
+			tmpFile.Close()
+			os.Remove(tmpPath)
+			return fmt.Errorf("error setting temp OCI specification file mode: %v", err)
+		}
+	}
 
 	err = flushTo(s.Spec, tmpFile)
 	if err != nil {
@@ -122,7 +152,7 @@ func (s fileSpec) Flush() error {
 		return fmt.Errorf("error closing temp OCI specification file: %v", err)
 	}
 
-	if err := os.Rename(tmpPath, s.path); err != nil {
+	if err := os.Rename(tmpPath, writePath); err != nil {
 		os.Remove(tmpPath)
 		return fmt.Errorf("error replacing OCI specification file: %v", err)
 	}
