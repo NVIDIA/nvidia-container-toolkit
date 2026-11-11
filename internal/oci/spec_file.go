@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
@@ -95,19 +96,68 @@ func (s *fileSpec) Modify(m SpecModifier) error {
 }
 
 // Flush writes the stored OCI specification to the filepath specified by the path member.
-// The file is truncated upon opening, overwriting any existing contents.
+// The file is written to a temporary file first and then atomically replaced,
+// preventing data loss if the write operation fails mid-way.
 func (s fileSpec) Flush() error {
 	if s.Spec == nil {
 		return fmt.Errorf("no OCI specification loaded")
 	}
 
-	specFile, err := os.Create(s.path)
-	if err != nil {
-		return fmt.Errorf("error opening OCI specification file: %v", err)
+	// Resolve symlinks so we write through to the target, preserving the
+	// os.Create semantics of following symlinks rather than replacing them.
+	writePath := s.path
+	if info, err := os.Lstat(s.path); err == nil && info.Mode()&os.ModeSymlink != 0 {
+		if resolved, err := filepath.EvalSymlinks(s.path); err == nil {
+			writePath = resolved
+		}
 	}
-	defer specFile.Close()
 
-	return flushTo(s.Spec, specFile)
+	dir := filepath.Dir(writePath)
+
+	// Stat the original file (if it exists) so its mode can be preserved on the
+	// temp file. os.CreateTemp creates the temp with 0600; without this, a
+	// successful os.Rename would downgrade the spec (e.g. 0644 -> 0600) and drop
+	// the original owner, which is a mode regression on top of the data-loss fix.
+	var originalMode os.FileMode
+	if info, err := os.Stat(writePath); err == nil {
+		originalMode = info.Mode().Perm()
+	}
+
+	tmpFile, err := os.CreateTemp(dir, ".oci-spec-*.tmp")
+	if err != nil {
+		return fmt.Errorf("error creating temp OCI specification file: %v", err)
+	}
+	tmpPath := tmpFile.Name()
+
+	// Restore the original mode on the temp file before it replaces the
+	// original. On Windows only the write bit is meaningful; other bits are
+	// ignored by the OS.
+	if originalMode != 0 {
+		if err := os.Chmod(tmpPath, originalMode); err != nil {
+			tmpFile.Close()
+			os.Remove(tmpPath)
+			return fmt.Errorf("error setting temp OCI specification file mode: %v", err)
+		}
+	}
+
+	err = flushTo(s.Spec, tmpFile)
+	if err != nil {
+		tmpFile.Close()
+		os.Remove(tmpPath)
+		return fmt.Errorf("error writing OCI specification: %v", err)
+	}
+
+	if err := tmpFile.Close(); err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("error closing temp OCI specification file: %v", err)
+	}
+
+	if err := os.Rename(tmpPath, writePath); err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("error replacing OCI specification file: %v", err)
+	}
+
+	return nil
 }
 
 // flushTo writes the stored OCI specification to the specified io.Writer.
