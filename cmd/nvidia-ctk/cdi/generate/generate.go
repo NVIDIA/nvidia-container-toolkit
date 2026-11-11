@@ -33,6 +33,7 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/platform-support/tegra/csv"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/nvcdi"
@@ -42,6 +43,15 @@ import (
 
 const (
 	allDeviceName = "all"
+
+	// The following spec-level annotations record how a CDI spec was
+	// generated. They are only added if requested since spec-level
+	// annotations require a v0.6.0 CDI spec.
+	generatorAnnotation        = "cdi.nvidia.com/generator"
+	generatorVersionAnnotation = "cdi.nvidia.com/generator-version"
+	generatorModeAnnotation    = "cdi.nvidia.com/mode"
+
+	generatorName = "nvidia-ctk"
 )
 
 type command struct {
@@ -75,8 +85,9 @@ type options struct {
 		CompatContainerRoot string
 	}
 
-	noAllDevice bool
-	deviceIDs   []string
+	noAllDevice  bool
+	deviceIDs    []string
+	withMetadata bool
 
 	// the following are used for dependency injection during spec generation.
 	nvmllib nvml.Interface
@@ -248,6 +259,13 @@ func (m command) build() *cli.Command {
 				Usage:       "Don't generate an `all` device for the resultant spec",
 				Destination: &opts.noAllDevice,
 				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_NO_ALL_DEVICE"),
+			},
+			&cli.BoolFlag{
+				Name: "with-metadata",
+				Usage: "Add spec-level annotations that record the generator, its version, and the discovery mode used to generate the CDI specification. " +
+					"Note that this requires a CDI specification version of at least v0.6.0.",
+				Destination: &opts.withMetadata,
+				Sources:     cli.EnvVars("NVIDIA_CTK_CDI_GENERATE_WITH_METADATA"),
 			},
 			&cli.StringSliceFlag{
 				Name:        "device-id",
@@ -421,6 +439,12 @@ func (m command) generateSpecs(opts *options) ([]generatedSpecs, error) {
 		spec.WithPermissions(0644),
 	}
 
+	if opts.withMetadata {
+		commonSpecOptions = append(commonSpecOptions,
+			spec.WithAnnotations(generatorMetadata(opts)),
+		)
+	}
+
 	if !opts.noAllDevice {
 		commonSpecOptions = append(commonSpecOptions,
 			spec.WithMergedDeviceOptions(
@@ -475,6 +499,16 @@ func (m command) generateSpecs(opts *options) ([]generatedSpecs, error) {
 	}
 
 	return allSpecs, nil
+}
+
+// generatorMetadata returns the annotations that record how a CDI spec was
+// generated.
+func generatorMetadata(opts *options) map[string]string {
+	return map[string]string{
+		generatorAnnotation:        generatorName,
+		generatorVersionAnnotation: info.GetVersionParts()[0],
+		generatorModeAnnotation:    opts.mode,
+	}
 }
 
 type deviceSpecs []specs.Device

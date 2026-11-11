@@ -31,6 +31,7 @@ import (
 	"tags.cncf.io/container-device-interface/specs-go"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/devices"
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/info"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -443,6 +444,71 @@ containerEdits:
 `,
 		},
 		{
+			description: "withMetadata",
+			options: options{
+				format:        "yaml",
+				mode:          "nvml",
+				vendor:        "example.com",
+				class:         "device",
+				driverRoot:    driverRoot,
+				disabledHooks: []string{"all"},
+				withMetadata:  true,
+			},
+			expectedOptions: options{
+				format:            "yaml",
+				mode:              "nvml",
+				vendor:            "example.com",
+				class:             "device",
+				nvidiaCDIHookPath: "/usr/bin/nvidia-cdi-hook",
+				driverRoot:        driverRoot,
+				disabledHooks:     []string{"all"},
+				withMetadata:      true,
+			},
+			expectedSpec: `---
+cdiVersion: 0.6.0
+kind: example.com/device
+annotations:
+    cdi.nvidia.com/generator: nvidia-ctk
+    cdi.nvidia.com/generator-version: {{ .version }}
+    cdi.nvidia.com/mode: nvml
+devices:
+    - name: "0"
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
+    - name: all
+      containerEdits:
+        deviceNodes:
+            - path: /dev/nvidia0
+              hostPath: {{ .driverRoot }}/dev/nvidia0
+containerEdits:
+    env:
+        - NVIDIA_CTK_LIBCUDA_DIR=/lib/x86_64-linux-gnu
+        - NVIDIA_VISIBLE_DEVICES=void
+    deviceNodes:
+        - path: /dev/nvidiactl
+          hostPath: {{ .driverRoot }}/dev/nvidiactl
+    mounts:
+        - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/libcuda.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - rbind
+            - rprivate
+        - hostPath: {{ .driverRoot }}/lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77
+          containerPath: /lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77
+          options:
+            - ro
+            - nosuid
+            - nodev
+            - rbind
+            - rprivate
+`,
+		},
+		{
 			description: "disableHooksAll",
 			options: options{
 				format:        "yaml",
@@ -559,6 +625,7 @@ containerEdits:
 
 			expected := strings.ReplaceAll(tc.expectedSpec, "{{ .driverRoot }}", driverRoot)
 			expected = strings.ReplaceAll(expected, "{{ .gpuID }}", gpuID)
+			expected = strings.ReplaceAll(expected, "{{ .version }}", info.GetVersionParts()[0])
 
 			require.Equal(t, expected, buf.String())
 		})
