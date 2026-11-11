@@ -66,6 +66,27 @@ func New(opts ...Option) (engine.Interface, error) {
 	if err != nil {
 		return nil, err
 	}
+	source := &Config{
+		Tree:   sourceConfig,
+		Logger: b.logger,
+	}
+	if b.disableDropInConfig {
+		b.logger.Infof("Drop-in config files are disabled. Modifying the source config directly.")
+		destinationConfig := sourceConfig
+		if b.configDestination != nil {
+			destinationConfig, err = b.configDestination.Load()
+			if err != nil {
+				return nil, err
+			}
+		}
+		return &engine.Config{
+			Source: source,
+			Destination: &Config{
+				Tree:   destinationConfig,
+				Logger: b.logger,
+			},
+		}, nil
+	}
 
 	var destinationConfig *toml.Tree
 	if b.configDestination != nil {
@@ -78,10 +99,7 @@ func New(opts ...Option) (engine.Interface, error) {
 	}
 
 	cfg := &engine.Config{
-		Source: &Config{
-			Tree:   sourceConfig,
-			Logger: b.logger,
-		},
+		Source: source,
 		Destination: &Config{
 			Tree:   destinationConfig,
 			Logger: b.logger,

@@ -28,6 +28,82 @@ import (
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
 )
 
+func TestSetupConfigWithoutDropInUpdatesTopLevelConfig(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "crio.conf")
+	initialConfig := `[crio.runtime]
+default_runtime = "crun"
+
+[crio.runtime.runtimes.crun]
+runtime_path = "/usr/bin/crun"
+runtime_type = "oci"
+`
+	require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+
+	options := &container.Options{
+		TopLevelConfigPath: configPath,
+		ConfigSources:      []string{"file"},
+		RuntimeName:        "nvidia",
+		RuntimeDir:         "/usr/bin",
+		RestartMode:        "none",
+	}
+	require.NoError(t, setupConfig(options))
+
+	updated, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+	require.Contains(t, string(updated), `default_runtime = "crun"`)
+	require.Contains(t, string(updated), "nvidia-container-runtime")
+}
+
+func TestCleanupWithoutDropInPreservesTopLevelConfig(t *testing.T) {
+	testRoot := t.TempDir()
+	configPath := filepath.Join(testRoot, "crio.conf")
+	sourcePath := filepath.Join(testRoot, "source.conf")
+	initialConfig := `[crio]
+top_level_marker = "keep"
+
+[crio.runtime]
+default_runtime = "runc"
+
+[crio.runtime.runtimes.runc]
+runtime_path = "/usr/bin/runc"
+runtime_type = "oci"
+
+[crio.runtime.runtimes.nvidia]
+runtime_path = "/usr/bin/nvidia-container-runtime"
+runtime_type = "oci"
+`
+	sourceConfig := `[crio]
+source_marker = "do not copy"
+
+[crio.runtime]
+default_runtime = "runc"
+
+[crio.runtime.runtimes.runc]
+runtime_path = "/usr/bin/runc"
+runtime_type = "oci"
+`
+	require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+	require.NoError(t, os.WriteFile(sourcePath, []byte(sourceConfig), 0600))
+
+	options := &container.Options{
+		TopLevelConfigPath: configPath,
+		DropInConfig:       "",
+		ConfigSources:      []string{"file=" + sourcePath},
+		RuntimeName:        "nvidia",
+		RuntimeDir:         "/usr/bin",
+		RestartMode:        "none",
+	}
+	cfg, err := getRuntimeConfig(options, true)
+	require.NoError(t, err)
+	require.NoError(t, options.Unconfigure(cfg))
+
+	updated, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+	require.Contains(t, string(updated), `top_level_marker = "keep"`)
+	require.NotContains(t, string(updated), "nvidia-container-runtime")
+	require.NotContains(t, string(updated), "source_marker")
+}
+
 // TestCrioConfigLifecycle tests the complete Setup->Cleanup lifecycle for both config and hook modes
 func TestCrioConfigLifecycle(t *testing.T) {
 	c := &cli.Command{

@@ -522,6 +522,73 @@ runtime_type = "oci"
 	}
 }
 
+func TestConfigureWithoutDropInUpdatesSourceConfig(t *testing.T) {
+	defer devices.SetAllForTest()()
+
+	logger, _ := testlog.NewNullLogger()
+
+	testCases := []struct {
+		name          string
+		runtime       string
+		configPath    string
+		initialConfig string
+		preserved     string
+	}{
+		{
+			name:       "containerd",
+			runtime:    "containerd",
+			configPath: "etc/containerd/config.toml",
+			initialConfig: `version = 2
+
+[plugins."io.containerd.grpc.v1.cri".containerd]
+  default_runtime_name = "runc"
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+  runtime_type = "io.containerd.runc.v2"
+`,
+			preserved: `default_runtime_name = "runc"`,
+		},
+		{
+			name:       "crio",
+			runtime:    "crio",
+			configPath: "etc/crio/crio.conf",
+			initialConfig: `[crio.runtime]
+default_runtime = "crun"
+
+[crio.runtime.runtimes.crun]
+runtime_path = "/usr/bin/crun"
+runtime_type = "oci"
+`,
+			preserved: `default_runtime = "crun"`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testRoot := t.TempDir()
+			configPath := filepath.Join(testRoot, tc.configPath)
+			require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+			require.NoError(t, os.WriteFile(configPath, []byte(tc.initialConfig), 0600))
+
+			cmd := NewCommand(logger)
+			app := &cli.Command{Name: "test", Commands: []*cli.Command{cmd}}
+			err := app.Run(context.Background(), []string{
+				"test", "configure",
+				"--runtime", tc.runtime,
+				"--config", configPath,
+				"--drop-in-config=",
+			})
+			require.NoError(t, err)
+
+			updated, err := os.ReadFile(configPath)
+			require.NoError(t, err)
+			require.Contains(t, string(updated), tc.preserved)
+			require.Contains(t, string(updated), "nvidia-container-runtime")
+			require.NotContains(t, string(updated), "imports =")
+		})
+	}
+}
+
 // TestConfigureCommandLineSource tests using command source for config
 func TestConfigureCommandLineSource(t *testing.T) {
 	defer devices.SetAllForTest()()
