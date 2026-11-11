@@ -143,6 +143,69 @@ func TestNvmllibGetDeviceSpecGeneratorsForIDs(t *testing.T) {
 	}
 }
 
+func TestNvmllibDeviceSpecGeneratorsWithoutNVIDIADevices(t *testing.T) {
+	testCases := []struct {
+		name               string
+		ids                []string
+		initResult         nvml.Return
+		expectedDeviceName string
+		expectedInitCalls  int
+		expectedError      error
+	}{
+		{
+			name:               "all devices when the driver is not loaded",
+			ids:                []string{"all"},
+			initResult:         nvml.ERROR_DRIVER_NOT_LOADED,
+			expectedDeviceName: "all",
+			expectedInitCalls:  1,
+		},
+		{
+			name:               "no devices when the driver is not loaded",
+			ids:                []string{"none"},
+			initResult:         nvml.ERROR_DRIVER_NOT_LOADED,
+			expectedDeviceName: "none",
+		},
+		{
+			name:              "preserve other NVML initialization errors",
+			ids:               []string{"all"},
+			initResult:        nvml.ERROR_NO_PERMISSION,
+			expectedInitCalls: 1,
+			expectedError:     nvml.ERROR_NO_PERMISSION,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockNvml := dgxa100.New()
+			mockNvml.InitFunc = func() nvml.Return {
+				return tc.initResult
+			}
+
+			l := &nvmllib{
+				platformlibs: platformlibs{
+					nvmllib:   mockNvml,
+					devicelib: device.New(mockNvml),
+				},
+			}
+
+			generators, err := l.DeviceSpecGenerators(tc.ids...)
+			if tc.expectedError != nil {
+				require.ErrorIs(t, err, tc.expectedError)
+				require.Nil(t, generators)
+			} else {
+				require.NoError(t, err)
+				deviceSpecs, err := generators.GetDeviceSpecs()
+				require.NoError(t, err)
+				require.Len(t, deviceSpecs, 1)
+				require.Equal(t, tc.expectedDeviceName, deviceSpecs[0].Name)
+				require.Equal(t, []string{"NVCT_EMPTY_DEVICE="}, deviceSpecs[0].ContainerEdits.Env)
+			}
+
+			require.Len(t, mockNvml.InitCalls(), tc.expectedInitCalls)
+		})
+	}
+}
+
 // TODO: These need to be implemented in go-nvlib
 func mockOverrides(server *mockserver.Server) {
 	for i, d := range server.Devices {
