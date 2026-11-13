@@ -178,7 +178,7 @@ func TestFileSpecFlushFailurePreservesFile(t *testing.T) {
 
 	path := filepath.Join(dir, "config.json")
 	contents := `{"ociVersion":"1.0.0"}`
-	require.NoError(t, os.WriteFile(path, []byte(contents), 0644))
+	require.NoError(t, os.WriteFile(path, []byte(contents), 0644)) //nolint:gosec
 
 	// Make the directory read-only so that creating the temporary file fails. The
 	// existing file itself remains writable, which is what allowed the old
@@ -207,7 +207,7 @@ func TestFileSpecFlushWithoutLoad(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	contents := `{"ociVersion":"1.0.0"}`
-	require.NoError(t, os.WriteFile(path, []byte(contents), 0644))
+	require.NoError(t, os.WriteFile(path, []byte(contents), 0644)) //nolint:gosec
 
 	spec := NewFileSpec(path, true)
 	require.Error(t, spec.Flush())
