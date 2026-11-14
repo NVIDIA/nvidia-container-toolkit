@@ -1,12 +1,14 @@
 package lookup
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NVIDIA/nvidia-container-toolkit/internal/ldcache"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/test"
 )
 
@@ -73,5 +75,58 @@ func TestLDCacheLookup(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestLDCacheLookupByWordSize(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+
+	root := t.TempDir()
+	lib64 := filepath.Join(root, "usr/lib64/libcuda.so.999.88.77")
+	lib32 := filepath.Join(root, "usr/lib/libcuda.so.999.88.77")
+	for _, lib := range []string{lib64, lib32} {
+		require.NoError(t, os.MkdirAll(filepath.Dir(lib), 0o755))
+		require.NoError(t, os.WriteFile(lib, nil, 0o600))
+	}
+	// Symlinks are evaluated, and t.TempDir() can be below one (/var -> /private/var on macOS).
+	lib64, err := filepath.EvalSymlinks(lib64)
+	require.NoError(t, err)
+	lib32, err = filepath.EvalSymlinks(lib32)
+	require.NoError(t, err)
+
+	cache := &ldcache.LDCacheMock{
+		ListFunc: func() ([]string, []string) {
+			return []string{lib32}, []string{lib64}
+		},
+	}
+
+	testCases := []struct {
+		description string
+		bits        int
+		expected    []string
+	}{
+		{
+			description: "64-bit libraries",
+			bits:        64,
+			expected:    []string{lib64},
+		},
+		{
+			description: "32-bit libraries",
+			bits:        32,
+			expected:    []string{lib32},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			l := NewFactory(
+				WithLogger(logger),
+				WithRoot(root),
+			).newLdcacheLocatorFrom(cache, tc.bits)
+
+			candidates, err := l.Locate("libcuda.so.*")
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, candidates)
+		})
 	}
 }
