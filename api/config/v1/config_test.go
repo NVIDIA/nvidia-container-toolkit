@@ -437,6 +437,45 @@ func TestAssertValid(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "empty ldconfig path is invalid",
+			config: &Config{
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
+					Ldconfig: "",
+				},
+			},
+			expectedError: errInvalidConfig,
+		},
+		{
+			description: "bare @ host ldconfig path is invalid",
+			config: &Config{
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
+					Ldconfig: "@",
+				},
+			},
+			expectedError: errInvalidConfig,
+		},
+		{
+			description: "non-absolute host ldconfig path is invalid",
+			config: &Config{
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
+					Ldconfig: "@sbin/ldconfig",
+				},
+			},
+			expectedError: errInvalidConfig,
+		},
+		{
+			description: "non-absolute container ldconfig path is invalid even with feature flag",
+			config: &Config{
+				NVIDIAContainerCLIConfig: ContainerCLIConfig{
+					Ldconfig: "sbin/ldconfig",
+				},
+				Features: features{
+					AllowLDConfigFromContainer: new(feature(true)),
+				},
+			},
+			expectedError: errInvalidConfig,
+		},
 	}
 
 	for _, tc := range testCases {
