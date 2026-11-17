@@ -344,6 +344,52 @@ func (g ginkgoErrors) PushingCleanupInCleanupNode(cl CodeLocation) error {
 	}
 }
 
+func (g ginkgoErrors) PushingCleanupInOnFailureNode(cl CodeLocation) error {
+	return GinkgoError{
+		Heading:      "DeferCleanup cannot be called in a DeferOnFailure callback",
+		Message:      "DeferOnFailure callbacks run while the spec is failing, just before its teardown.  Register cleanup in the setup or subject node that created the resource instead.",
+		CodeLocation: cl,
+		DocLink:      "capturing-failure-state-deferonfailure",
+	}
+}
+
+/* DeferOnFailure errors */
+func (g ginkgoErrors) DeferOnFailureInvalidFunction(cl CodeLocation) error {
+	return GinkgoError{
+		Heading:      "DeferOnFailure requires a valid function",
+		Message:      "You must pass DeferOnFailure a function to invoke.  If the function's last return value is a non-nil error, the callback fails; any other return values are ignored.  The function can take arbitrarily many arguments and you should provide these to DeferOnFailure to pass along to the function.",
+		CodeLocation: cl,
+		DocLink:      "capturing-failure-state-deferonfailure",
+	}
+}
+
+func (g ginkgoErrors) PushingOnFailureNodeDuringTreeConstruction(cl CodeLocation) error {
+	return GinkgoError{
+		Heading:      "DeferOnFailure must be called inside a setup or subject node",
+		Message:      "You must call DeferOnFailure inside BeforeSuite, SynchronizedBeforeSuite (in the function that runs on all processes), BeforeAll, BeforeEach, JustBeforeEach, or It.  You can't call DeferOnFailure at the top-level or in a container node.",
+		CodeLocation: cl,
+		DocLink:      "capturing-failure-state-deferonfailure",
+	}
+}
+
+func (g ginkgoErrors) PushingOnFailureNodeInInvalidNode(cl CodeLocation, nodeType NodeType) error {
+	return GinkgoError{
+		Heading:      fmt.Sprintf("DeferOnFailure cannot be called in %s", nodeType),
+		Message:      "DeferOnFailure registers a callback that runs before teardown when a failure occurs.  It can only be called from BeforeSuite, SynchronizedBeforeSuite (in the function that runs on all processes), BeforeAll, BeforeEach, JustBeforeEach, or It - not from teardown, reporting, cleanup, or other DeferOnFailure callbacks.",
+		CodeLocation: cl,
+		DocLink:      "capturing-failure-state-deferonfailure",
+	}
+}
+
+func (g ginkgoErrors) PushingOnFailureNodeInSynchronizedBeforeSuiteProc1(cl CodeLocation) error {
+	return GinkgoError{
+		Heading:      "DeferOnFailure cannot be called in the first function passed to SynchronizedBeforeSuite",
+		Message:      "That function only runs on process #1, so a DeferOnFailure registered there would only cover the specs that run on process #1.  Call DeferOnFailure in the second function passed to SynchronizedBeforeSuite (which runs on all processes) instead.",
+		CodeLocation: cl,
+		DocLink:      "capturing-failure-state-deferonfailure",
+	}
+}
+
 /* ReportEntry errors */
 func (g ginkgoErrors) TooManyReportEntryValues(cl CodeLocation, arg any) error {
 	return GinkgoError{
@@ -455,7 +501,7 @@ func (g ginkgoErrors) InvalidEmptyComponentForSemVerConstraint(cl CodeLocation) 
 		Heading:      "Invalid Empty Component for ComponentSemVerConstraint",
 		Message:      "ComponentSemVerConstraint requires a non-empty component name",
 		CodeLocation: cl,
-		DocLink: "spec-semantic-version-filtering",
+		DocLink:      "spec-semantic-version-filtering",
 	}
 }
 
@@ -618,6 +664,21 @@ func (g ginkgoErrors) GracePeriodCannotBeZero() error {
 	return GinkgoError{
 		Heading: "Ginkgo requires a positive --grace-period.",
 		Message: "Please set --grace-period to a positive duration.  The default is 30s.",
+	}
+}
+
+func (g ginkgoErrors) InvalidSleepOnFailureConfiguration() error {
+	return GinkgoError{
+		Heading: "Ginkgo requires a non-negative --sleep-on-failure.",
+		Message: "Please set --sleep-on-failure to a positive duration (e.g. 5m), or 0 to disable it.",
+	}
+}
+
+func (g ginkgoErrors) SleepOnFailureInParallelConfiguration() error {
+	return GinkgoError{
+		Heading: "Ginkgo only supports --sleep-on-failure in serial mode.",
+		Message: "--sleep-on-failure pauses a failed spec on a live system for inspection, which only makes sense when the suite runs serially.  Please run again without -p or --procs, or unset --sleep-on-failure.",
+		DocLink: "spec-timeouts-and-interruptible-nodes",
 	}
 }
 

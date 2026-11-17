@@ -34,6 +34,7 @@ func GinkgoT(optionalOffset ...int) FullGinkgoTInterface {
 		Fail,
 		Skip,
 		DeferCleanup,
+		DeferOnFailure,
 		CurrentSpecReport,
 		AddReportEntry,
 		GinkgoRecover,
@@ -72,6 +73,7 @@ type GinkgoTInterface interface {
 	TempDir() string
 	Attr(key, value string)
 	Output() io.Writer
+	ArtifactDir() string
 }
 
 /*
@@ -99,6 +101,7 @@ type FullGinkgoTInterface interface {
 
 	GinkgoRecover()
 	DeferCleanup(args ...any)
+	DeferOnFailure(args ...any)
 
 	RandomSeed() int64
 	ParallelProcess() int
@@ -195,4 +198,7 @@ func (g *GinkgoTBWrapper) Attr(key, value string) {
 }
 func (g *GinkgoTBWrapper) Output() io.Writer {
 	return g.GinkgoT.Output()
+}
+func (g *GinkgoTBWrapper) ArtifactDir() string {
+	return g.GinkgoT.ArtifactDir()
 }
