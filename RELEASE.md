@@ -13,7 +13,8 @@ The NVIDIA Container Toolkit consists of the following artifacts:
 - [ ] Merge the release PR
 - [ ] Tag the release and push the tag to the `internal` mirror:
 - [ ] Wait for the image release to complete.
-- [ ] Push the tag to the the upstream GitHub repo.
+- [ ] Push the tag to the upstream GitHub repo.
+- [ ] Push the tag to the libnvidia-container repo.
 - [ ] Wait for the [`Release`](https://github.com/NVIDIA/nvidia-container-toolkit/actions/workflows/release.yaml) GitHub Action to complete
 - [ ] Publish the [draft release](https://github.com/NVIDIA/nvidia-container-toolkit/releases) created by the GitHub Action
 - [ ] Publish the packages to the gh-pages branch of the libnvidia-container repo
