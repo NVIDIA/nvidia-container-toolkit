@@ -30,12 +30,12 @@ GENERATOR:
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-  Includes: ["nvsandboxutils.h"]
+  Includes: ["nvsandboxutils.h", "dlsym_static.h"]
   FlagGroups:
-    - {name: "LDFLAGS", traits: ["linux"], flags: ["-Wl,--export-dynamic","-Wl,--unresolved-symbols=ignore-in-object-files"]}
+    - {name: "LDFLAGS", traits: ["linux"], flags: ["-Wl,--export-dynamic"]}
     - {name: "LDFLAGS", traits: ["darwin"], flags: ["-Wl,-undefined,dynamic_lookup"]}
 PARSER:
-  SourcesPaths: ["nvsandboxutils.h"]
+  SourcesPaths: ["nvsandboxutils.h", "dlsym_static.h"]
 TRANSLATOR:
   ConstRules:
     defines: eval
@@ -62,5 +62,6 @@ TRANSLATOR:
       - {action: replace, from: "_t$"}
       - {transform: export}
     function:
-      - {action: accept, from: "^nvSandboxUtils"}
+      - {action: accept, from: "^nvSandboxUtils[[:alpha:]]+_dl$"}
+      - {action: replace, from: "_dl$"}
       - {transform: unexport}
