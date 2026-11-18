@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/stale@v10
+    - uses: actions/stale@1e223db275d687790206a7acac4d1a11bd6fe629 # v10
       with:
         stale-issue-message: 'This issue is stale because it has been open 90 days with no activity. This issue will be closed in 30 days unless new comments are made or the stale label is removed. To skip these checks, apply the "lifecycle/frozen" label.'
         stale-issue-label: 'lifecycle/stale'

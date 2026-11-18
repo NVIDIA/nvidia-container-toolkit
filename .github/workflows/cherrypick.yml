@@ -37,7 +37,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -48,7 +48,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Add labels and handle backport
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
             const run = require('./.github/scripts/add-labels-from-comment.js');
@@ -65,7 +65,7 @@ jobs:
     
     steps:
       - name: Checkout base branch repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.base.ref }}
@@ -73,7 +73,7 @@ jobs:
 
       - name: Extract target branches from PR labels
         id: extract-branches
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
             const run = require('./.github/scripts/extract-branches.js');
@@ -88,7 +88,7 @@ jobs:
       - name: Backport to release branches
         id: backport
         if: steps.extract-branches.outputs.result != '[]'
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           BRANCHES_JSON: ${{ steps.extract-branches.outputs.result }}
         with:
