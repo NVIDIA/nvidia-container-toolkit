@@ -229,6 +229,7 @@ func getRuntimeConfig(o *container.Options, loadDestinationConfig bool) (engine.
 
 	options := []crio.Option{
 		crio.WithTopLevelConfigPath(o.TopLevelConfigPath),
+		crio.WithDisableDropInConfig(o.DropInConfig == ""),
 		crio.WithConfigSource(
 			toml.LoadFirst(
 				loaders...,
