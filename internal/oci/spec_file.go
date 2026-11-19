@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
@@ -95,19 +96,47 @@ func (s *fileSpec) Modify(m SpecModifier) error {
 }
 
 // Flush writes the stored OCI specification to the filepath specified by the path member.
-// The file is truncated upon opening, overwriting any existing contents.
+// The spec is written to a temporary file in the same directory and atomically renamed
+// into place, so a failed write leaves any existing file intact.
 func (s fileSpec) Flush() error {
 	if s.Spec == nil {
 		return fmt.Errorf("no OCI specification loaded")
 	}
 
-	specFile, err := os.Create(s.path)
-	if err != nil {
-		return fmt.Errorf("error opening OCI specification file: %v", err)
+	mode := os.FileMode(0644)
+	if info, err := os.Stat(s.path); err == nil {
+		mode = info.Mode().Perm()
 	}
-	defer specFile.Close()
 
-	return flushTo(s.Spec, specFile)
+	specFile, err := os.CreateTemp(filepath.Dir(s.path), ".oci-spec-*.tmp")
+	if err != nil {
+		return fmt.Errorf("error creating temporary OCI specification file: %v", err)
+	}
+	tempPath := specFile.Name()
+	defer func() {
+		_ = os.Remove(tempPath)
+	}()
+
+	if err := flushTo(s.Spec, specFile); err != nil {
+		_ = specFile.Close()
+		return err
+	}
+	if err := specFile.Sync(); err != nil {
+		_ = specFile.Close()
+		return fmt.Errorf("error syncing OCI specification file: %v", err)
+	}
+	if err := specFile.Close(); err != nil {
+		return fmt.Errorf("error closing OCI specification file: %v", err)
+	}
+	if err := os.Chmod(tempPath, mode); err != nil {
+		return fmt.Errorf("error setting permissions on OCI specification file: %v", err)
+	}
+
+	if err := os.Rename(tempPath, s.path); err != nil {
+		return fmt.Errorf("error replacing OCI specification file: %v", err)
+	}
+
+	return nil
 }
 
 // flushTo writes the stored OCI specification to the specified io.Writer.
