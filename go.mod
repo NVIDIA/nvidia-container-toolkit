@@ -13,7 +13,7 @@ require (
 	github.com/moby/sys/mountinfo v0.7.3
 	github.com/moby/sys/reexec v0.1.0
 	github.com/moby/sys/symlink v0.3.0
-	github.com/opencontainers/cgroups v0.1.0
+	github.com/opencontainers/cgroups v0.1.1
 	github.com/opencontainers/runc v1.5.2
 	github.com/opencontainers/runtime-spec v1.3.0
 	github.com/pelletier/go-toml v1.9.5
