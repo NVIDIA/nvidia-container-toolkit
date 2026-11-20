@@ -57,6 +57,8 @@ func (l *gatedlib) GetDeviceSpecs() ([]specs.Device, error) {
 
 func (l *gatedlib) getModeDiscoverer() (discover.Discover, error) {
 	switch l.mode {
+	case ModeCompat32:
+		return discover.NewCompat32Discoverer(l.logger, l.driver, l.hookCreator)
 	case ModeGdrcopy:
 		return discover.NewGDRCopyDiscoverer(l.logger, l.driver)
 	case ModeGds:
