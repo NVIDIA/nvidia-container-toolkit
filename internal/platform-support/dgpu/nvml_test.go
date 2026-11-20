@@ -22,12 +22,14 @@ import (
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	"github.com/NVIDIA/go-nvml/pkg/nvml/mock"
+	"github.com/sirupsen/logrus"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/lookup/root"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/nvcaps"
+	mocknvsandboxutils "github.com/NVIDIA/nvidia-container-toolkit/internal/nvsandboxutils/mock"
 )
 
 // TODO: In order to properly test this, we need a mechanism to inject /
@@ -237,4 +239,54 @@ func newNvmlMigDiscovererTestMocks() (parent *mock.Device, mig *mock.Device) {
 	}
 
 	return parent, mig
+}
+
+func TestNewForDeviceLogsDiscovererErrors(t *testing.T) {
+	log, hook := testlog.NewNullLogger()
+	devicelib := device.New(&mock.Interface{})
+	dev, err := devicelib.NewDevice(&mock.Device{
+		GetUUIDFunc:        func() (string, nvml.Return) { return "", nvml.ERROR_NOT_SUPPORTED },
+		GetMinorNumberFunc: func() (int, nvml.Return) { return 0, nvml.ERROR_NOT_SUPPORTED },
+	})
+	require.NoError(t, err)
+
+	_, err = NewForDevice(dev,
+		WithLogger(log),
+		WithDriver(root.New()),
+		WithNvsandboxuitilsLib(&mocknvsandboxutils.Interface{}),
+	)
+	require.Error(t, err)
+	require.Len(t, hook.Entries, 2)
+	require.Equal(t, logrus.WarnLevel, hook.Entries[0].Level)
+	require.Equal(t, logrus.WarnLevel, hook.Entries[1].Level)
+	require.Contains(t, hook.Entries[0].Message, "nvsandboxutils device discoverer: failed to get device UUID")
+	require.Contains(t, hook.Entries[1].Message, "NVML device discoverer: error getting device node path")
+}
+
+func TestNewForMigDeviceLogsDiscovererErrors(t *testing.T) {
+	log, hook := testlog.NewNullLogger()
+	devicelib := device.New(&mock.Interface{})
+	parentMock, migMock := newNvmlMigDiscovererTestMocks()
+	parentMock.GetMinorNumberFunc = func() (int, nvml.Return) { return 0, nvml.ERROR_NOT_SUPPORTED }
+	migMock.GetUUIDFunc = func() (string, nvml.Return) { return "", nvml.ERROR_NOT_SUPPORTED }
+	migMock.GetDeviceHandleFromMigDeviceHandleFunc = func() (nvml.Device, nvml.Return) {
+		return parentMock, nvml.SUCCESS
+	}
+	parent, err := devicelib.NewDevice(parentMock)
+	require.NoError(t, err)
+	mig, err := devicelib.NewMigDevice(migMock)
+	require.NoError(t, err)
+
+	_, err = NewForMigDevice(parent, mig,
+		WithLogger(log),
+		WithDriver(root.New()),
+		WithMIGCaps(nvcaps.MigCaps{}),
+		WithNvsandboxuitilsLib(&mocknvsandboxutils.Interface{}),
+	)
+	require.Error(t, err)
+	require.Len(t, hook.Entries, 2)
+	require.Equal(t, logrus.WarnLevel, hook.Entries[0].Level)
+	require.Equal(t, logrus.WarnLevel, hook.Entries[1].Level)
+	require.Contains(t, hook.Entries[0].Message, "nvsandboxutils MIG device discoverer: failed to get device UUID")
+	require.Contains(t, hook.Entries[1].Message, "NVML MIG device discoverer: error getting GPU device minor number")
 }
