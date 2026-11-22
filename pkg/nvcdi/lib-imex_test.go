@@ -60,14 +60,6 @@ devices:
 containerEdits:
     env:
         - NVIDIA_VISIBLE_DEVICES=void
-    mounts:
-        - hostPath: /dev/null
-          containerPath: /var/run/nvidia-container-devices/void
-          options:
-            - ro
-            - nosuid
-            - nodev
-            - bind
 `
 	expectedSpec = strings.ReplaceAll(expectedSpec, "{{ .hostRoot }}", hostRoot)
 
