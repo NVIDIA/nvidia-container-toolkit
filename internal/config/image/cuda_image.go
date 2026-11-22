@@ -260,8 +260,12 @@ func (i CUDA) VisibleDevices() []string {
 		return annotationDeviceRequests
 	}
 
-	// If enabled, try and get the device list from volume mounts first
-	if i.acceptDeviceListAsVolumeMounts {
+	// If enabled, try and get the device list from volume mounts first.
+	// An explicit request for the void device means that no devices
+	// should be injected, including those requested through volume mounts.
+	// This is relied upon by generated CDI specs, which set
+	// NVIDIA_VISIBLE_DEVICES=void to avoid duplicate device injection.
+	if i.acceptDeviceListAsVolumeMounts && !i.voidRequestedByEnvVar() {
 		volumeMountDeviceRequests := i.visibleDevicesFromMounts()
 		if len(volumeMountDeviceRequests) > 0 {
 			return volumeMountDeviceRequests
@@ -328,6 +332,19 @@ func (i CUDA) cdiDeviceRequestsFromAnnotations() []string {
 func (i CUDA) visibleDevicesFromEnvVar() []string {
 	envVars := i.visibleEnvVars()
 	return i.devicesFromEnvvars(envVars...)
+}
+
+// voidRequestedByEnvVar returns true if the 'void' device is explicitly requested
+func (i CUDA) voidRequestedByEnvVar() bool {
+	for _, envVar := range i.visibleEnvVars() {
+		for d := range strings.SplitSeq(i.env[envVar], ",") {
+			d = strings.TrimSpace(d)
+			if d == "void" || d == "none" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // visibleDevicesFromMounts returns the set of visible devices requested as mounts.
