@@ -116,6 +116,9 @@ type csvDeviceGenerator struct {
 	index int
 	uuid  string
 	mode  csvGeneratorMode
+	// minor is the device minor number of the GPU. It is only used for the
+	// iGPU mode, where it may differ from the NVML index.
+	minor int
 }
 
 type csvGeneratorMode string
@@ -204,11 +207,13 @@ func (l *csvDeviceGenerator) deviceNodeMountSpecs() tegra.MountSpecPathsByTyper 
 		return tegra.Merge(
 			tegra.Transform(
 				mountSpecs,
-				// We remove the /dev/nvidia1 device node.
-				// TODO: This assumes that the dGPU has the index 1 and remove
-				// it from the set of device nodes.
-				tegra.Without(tegra.DeviceNodes("/dev/nvidia1")),
+				// The CSV files hard-code the regular device nodes, but the
+				// minor number of the iGPU is not guaranteed to match its NVML
+				// index (e.g. when a dGPU enumerates first on the PCI bus), so
+				// we remove them all and add the node for this device below.
+				tegra.WithoutRegularDeviceNodes(),
 			),
+			tegra.DeviceNodes(fmt.Sprintf("/dev/nvidia%d", l.minor)),
 			// We add the display device from the iGPU.
 			tegra.DeviceNodes("/dev/nvidia2"),
 		)
@@ -309,7 +314,13 @@ func (l *mixedcsvlib) csvDeviceSpecGenerator(index int, uuid string, device nvml
 	}
 
 	if isIntegrated {
-		return l.iGPUDeviceSpecGenerator(index, uuid)
+		minor, ret := device.GetMinorNumber()
+		if ret != nvml.SUCCESS {
+			// Not all iGPUs (e.g. Orin) report a minor number.
+			l.logger.Warningf("Failed to get minor number for device (index=%v,uuid=%v), assuming it matches the index: %v", index, uuid, ret)
+			minor = index
+		}
+		return l.iGPUDeviceSpecGenerator(index, uuid, minor)
 	}
 
 	return l.dGPUDeviceSpecGenerator(index, uuid)
@@ -348,7 +359,7 @@ func (l *mixedcsvlib) dGPUDeviceSpecGenerator(index int, uuid string) (DeviceSpe
 	return dgpu, nil
 }
 
-func (l *mixedcsvlib) iGPUDeviceSpecGenerator(index int, uuid string) (DeviceSpecGenerator, error) {
+func (l *mixedcsvlib) iGPUDeviceSpecGenerator(index int, uuid string, minor int) (DeviceSpecGenerator, error) {
 	if index != 0 {
 		return nil, fmt.Errorf("unexpected device index for iGPU: %d", index)
 	}
@@ -357,6 +368,7 @@ func (l *mixedcsvlib) iGPUDeviceSpecGenerator(index int, uuid string) (DeviceSpe
 		index:  index,
 		uuid:   uuid,
 		mode:   iGPUGeneratorMode,
+		minor:  minor,
 	}
 	return g, nil
 }
