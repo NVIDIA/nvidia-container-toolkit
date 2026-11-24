@@ -183,9 +183,9 @@ func TestDeviceSpecGenerators(t *testing.T) {
 					ContainerEdits: specs.ContainerEdits{
 						AdditionalGIDs: []uint32{44},
 						DeviceNodes: []*specs.DeviceNode{
-							{Path: "/dev/nvidia0", HostPath: "/dev/nvidia0"},
 							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
 							{Path: "/dev/nvmap", HostPath: "/dev/nvmap", FileMode: new(os.FileMode(0400)), Permissions: "rwm", GID: new(uint32(44))},
+							{Path: "/dev/nvidia0", HostPath: "/dev/nvidia0"},
 							{Path: "/dev/nvidia2", HostPath: "/dev/nvidia2"},
 						},
 					},
@@ -196,6 +196,81 @@ func TestDeviceSpecGenerators(t *testing.T) {
 						AdditionalGIDs: []uint32{44},
 						DeviceNodes: []*specs.DeviceNode{
 							{Path: "/dev/nvidia1", HostPath: "/dev/nvidia1"},
+							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
+							{Path: "/dev/nvmap", HostPath: "/dev/nvmap", FileMode: new(os.FileMode(0400)), Permissions: "rwm", GID: new(uint32(44))},
+						},
+						Hooks: []*specs.Hook{
+							{
+								HookName: "createRuntime",
+								Path:     "/usr/bin/nvidia-cdi-hook",
+								Args:     []string{"nvidia-cdi-hook", "apply-cuda-memory-limits", "--driver-root", "", "--gpu-id", "GPU-1"},
+								Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+							},
+						},
+					},
+				},
+			},
+			expectedCommonEdits: &cdi.ContainerEdits{
+				ContainerEdits: &specs.ContainerEdits{
+					Mounts: []*specs.Mount{
+						{HostPath: "/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so.1.1", ContainerPath: "/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so.1.1", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
+						{HostPath: "/usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ml.so.1", ContainerPath: "/usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ml.so.1", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
+					},
+					Hooks: []*specs.Hook{
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "create-symlinks", "--link", "libcuda.so.1::/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "enable-cuda-compat", "--host-cuda-version=13.1"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
+						{
+							HookName: "createContainer",
+							Path:     "/usr/bin/nvidia-cdi-hook",
+							Args:     []string{"nvidia-cdi-hook", "update-ldcache", "--folder", "/usr/lib/aarch64-linux-gnu/nvidia"},
+							Env:      []string{"NVIDIA_CTK_DEBUG=false"},
+						},
+					},
+				},
+			},
+		},
+		{
+			// The iGPU has index 0 but device minor 1 because the dGPU
+			// enumerates first on the PCI bus.
+			description:  "thor igpu and dgpu with inverted device minors",
+			rootfsFolder: "rootfs-thor-dgpu",
+			lib: &csvlib{
+				platformlibs: platformlibs{
+					infolib: &infoInterfaceMock{
+						HasNvmlFunc: func() (bool, string) { return true, "forced" },
+					},
+					nvmllib: mockIGXServerWithMinors(1, 0),
+				},
+			},
+			expectedDeviceSpecs: []specs.Device{
+				{
+					Name: "0",
+					ContainerEdits: specs.ContainerEdits{
+						AdditionalGIDs: []uint32{44},
+						DeviceNodes: []*specs.DeviceNode{
+							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
+							{Path: "/dev/nvmap", HostPath: "/dev/nvmap", FileMode: new(os.FileMode(0400)), Permissions: "rwm", GID: new(uint32(44))},
+							{Path: "/dev/nvidia1", HostPath: "/dev/nvidia1"},
+							{Path: "/dev/nvidia2", HostPath: "/dev/nvidia2"},
+						},
+					},
+				},
+				{
+					Name: "1",
+					ContainerEdits: specs.ContainerEdits{
+						AdditionalGIDs: []uint32{44},
+						DeviceNodes: []*specs.DeviceNode{
+							{Path: "/dev/nvidia0", HostPath: "/dev/nvidia0"},
 							{Path: "/dev/nvidiactl", HostPath: "/dev/nvidiactl"},
 							{Path: "/dev/nvmap", HostPath: "/dev/nvmap", FileMode: new(os.FileMode(0400)), Permissions: "rwm", GID: new(uint32(44))},
 						},
@@ -339,6 +414,10 @@ func mockOrinServer() nvml.Interface {
 
 // TODO: We should move this mock to go-nvml/mock
 func mockIGXServer() nvml.Interface {
+	return mockIGXServerWithMinors(0, 1)
+}
+
+func mockIGXServerWithMinors(thorMinor, rtxMinor int) nvml.Interface {
 	thor := &mock.Device{
 		GetNameFunc: func() (string, nvml.Return) {
 			return "NVIDIA Thor", nvml.SUCCESS
@@ -350,6 +429,9 @@ func mockIGXServer() nvml.Interface {
 			return nvml.PciInfo{
 				Bus: 1,
 			}, nvml.SUCCESS
+		},
+		GetMinorNumberFunc: func() (int, nvml.Return) {
+			return thorMinor, nvml.SUCCESS
 		},
 	}
 	rtx := &mock.Device{
@@ -365,7 +447,7 @@ func mockIGXServer() nvml.Interface {
 			}, nvml.SUCCESS
 		},
 		GetMinorNumberFunc: func() (int, nvml.Return) {
-			return 1, nvml.SUCCESS
+			return rtxMinor, nvml.SUCCESS
 		},
 	}
 
