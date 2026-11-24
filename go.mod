@@ -9,7 +9,7 @@ require (
 	github.com/containerd/nri v0.12.5
 	github.com/cyphar/filepath-securejoin v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/moby/sys/devices v0.1.0
+	github.com/moby/sys/devices v0.1.1
 	github.com/moby/sys/mountinfo v0.7.2
 	github.com/moby/sys/reexec v0.1.0
 	github.com/moby/sys/symlink v0.3.0
