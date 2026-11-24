@@ -34,8 +34,8 @@ github.com/moby/sys/reexec v0.1.0 h1:RrBi8e0EBTLEgfruBOFcxtElzRGTEUkeIFaVXgU7wok
 github.com/moby/sys/reexec v0.1.0/go.mod h1:EqjBg8F3X7iZe5pU6nRZnYCMUTXoxsjiIfHup5wYIN8=
 github.com/moby/sys/symlink v0.3.0 h1:GZX89mEZ9u53f97npBy4Rc3vJKj7JBDj/PN2I22GrNU=
 github.com/moby/sys/symlink v0.3.0/go.mod h1:3eNdhduHmYPcgsJtZXW1W4XUJdZGBIkttZ8xKqPUJq0=
-github.com/opencontainers/cgroups v0.1.0 h1:6W05KiDvgj1yi/6D13SJCvYx8TAESz67szvHPxhfcrs=
-github.com/opencontainers/cgroups v0.1.0/go.mod h1:hPBRvnBhLZueEN0eJyozMeM3HeFGYlZW9KnO//px6G4=
+github.com/opencontainers/cgroups v0.1.1 h1:cDpVgO8TtSMUeXnv90RqRUpotYErQ3gctHUEqUjbB84=
+github.com/opencontainers/cgroups v0.1.1/go.mod h1:poXtN186fXDk0JyEZpB7wUaxMg83TYwp1Xreeq/eu+8=
 github.com/opencontainers/runc v1.5.2 h1:eUUowc2WJCnFYzI87C1WqRcu356Dk/wsoi90y+2wEfE=
 github.com/opencontainers/runc v1.5.2/go.mod h1:xGf9+KlNJkiI1y/C4rLIyLFckqs8WOMo4FFplswY9sw=
 github.com/opencontainers/runtime-spec v1.3.0 h1:YZupQUdctfhpZy3TM39nN9Ika5CBWT5diQ8ibYCRkxg=
@@ -44,8 +44,8 @@ github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3v
 github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/prometheus/procfs v0.21.1 h1:GljZCt+zSTS+NZq88cyQ1LjZ+RCHp3uVuabBWA5+OJI=
 github.com/prometheus/procfs v0.21.1/go.mod h1:aB55Cww9pdSJVHk0hUf0inxWyyjPogFIjmHKYgMKmtY=
-github.com/sirupsen/logrus v1.9.4 h1:TsZE7l11zFCLZnZ+teH4Umoq5BhEIfIzfRDZ1Uzql2w=
-github.com/sirupsen/logrus v1.9.4/go.mod h1:ftWc9WdOfJ0a92nsE2jF5u5ZwH8Bv2zdeOC42RjbV2g=
+github.com/sirupsen/logrus v1.10.2 h1:G2SED73/qrAu6YwbdxOD6peLkCBI3z7L+ykJFTXJBBo=
+github.com/sirupsen/logrus v1.10.2/go.mod h1:SLEg8TqYulVKKfIGHldVp2K2aYz2DKSVBq4g/H5bR7Q=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
 github.com/tetratelabs/wazero v1.11.0 h1:+gKemEuKCTevU4d7ZTzlsvgd1uaToIDtlQlmNbwqYhA=

@@ -73,8 +73,8 @@ github.com/moby/sys/reexec
 # github.com/moby/sys/symlink v0.3.0
 ## explicit; go 1.17
 github.com/moby/sys/symlink
-# github.com/opencontainers/cgroups v0.1.0
-## explicit; go 1.24.0
+# github.com/opencontainers/cgroups v0.1.1
+## explicit; go 1.25.0
 github.com/opencontainers/cgroups/devices/config
 # github.com/opencontainers/runc v1.5.2
 ## explicit; go 1.25.0
@@ -95,8 +95,8 @@ github.com/pelletier/go-toml
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/sirupsen/logrus v1.9.4
-## explicit; go 1.17
+# github.com/sirupsen/logrus v1.10.2
+## explicit; go 1.23
 github.com/sirupsen/logrus
 github.com/sirupsen/logrus/hooks/test
 # github.com/stretchr/testify v1.12.1
