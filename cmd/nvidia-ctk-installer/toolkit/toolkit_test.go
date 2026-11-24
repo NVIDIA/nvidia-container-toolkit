@@ -137,13 +137,6 @@ containerEdits:
             - nodev
             - rbind
             - rprivate
-        - hostPath: /dev/null
-          containerPath: /var/run/nvidia-container-devices/void
-          options:
-            - ro
-            - nosuid
-            - nodev
-            - bind
 `,
 		},
 	}
