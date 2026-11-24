@@ -14,10 +14,50 @@ Product documentation including an architecture overview, platform support, and 
 
 ## Getting Started
 
-**Make sure you have installed the [NVIDIA driver](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#nvidia-drivers) for your Linux Distribution**
-**Note that you do not need to install the CUDA Toolkit on the host system, but the NVIDIA driver needs to be installed**
+This section installs the NVIDIA Container Toolkit on Ubuntu or Debian and runs a GPU container with Docker.
 
-For instructions on getting started with the NVIDIA Container Toolkit, refer to the [installation guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installation-guide).
+Make sure your system meets the following prerequisites:
+
+* The [NVIDIA driver](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#prerequisites) for your Linux distribution is installed. You do not need to install the CUDA Toolkit on the host system.
+* Your platform is listed on the [supported platforms page](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/supported-platforms.html).
+* [Docker](https://docs.docker.com/engine/install/) is installed.
+
+**Step 1: Configure the production repository**
+
+```bash
+sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+   ca-certificates \
+   curl \
+   gnupg2
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+  && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+```
+
+**Step 2: Install the NVIDIA Container Toolkit packages**
+
+```bash
+sudo apt-get update
+sudo apt-get install -y nvidia-container-toolkit
+```
+
+**Step 3: Configure Docker**
+
+```bash
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+**Step 4: Run a sample workload**
+
+```bash
+sudo docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
+```
+
+The container prints the `nvidia-smi` table with the driver version, the CUDA version, and the GPUs it can access, as shown in the [sample workload guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/sample-workload.html).
+
+To install on other distributions such as RHEL, Fedora, or SUSE, or to configure other container runtimes such as containerd, CRI-O, or Podman, refer to the [installation guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
 ## Usage
 
