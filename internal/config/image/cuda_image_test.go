@@ -599,6 +599,29 @@ func TestVisibleDevices(t *testing.T) {
 			acceptMounts:       false,
 			expectedDevices:    nil,
 		},
+		{
+			description:     "Void envvar overrides mount devices, unprivileged",
+			mountDevices:    makeTestMounts("GPU0", "GPU1"),
+			envvarDevices:   "void",
+			acceptMounts:    true,
+			expectedDevices: nil,
+		},
+		{
+			description:        "Void envvar overrides mount devices, privileged",
+			mountDevices:       makeTestMounts("GPU0", "GPU1"),
+			envvarDevices:      "void",
+			privileged:         true,
+			acceptUnprivileged: true,
+			acceptMounts:       true,
+			expectedDevices:    nil,
+		},
+		{
+			description:     "Void envvar ignored when mounts not accepted",
+			mountDevices:    makeTestMounts("GPU0", "GPU1"),
+			envvarDevices:   "void",
+			acceptMounts:    false,
+			expectedDevices: nil,
+		},
 		// New test cases for visibleEnvVars functionality
 		{
 			description:                   "preferred env var set and present in env, privileged",
