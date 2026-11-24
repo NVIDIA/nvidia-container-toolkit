@@ -39,12 +39,6 @@ func TestNew(t *testing.T) {
 
 	lookupRoot := filepath.Join(moduleRoot, "testdata", "lookup")
 
-	voidMount := &specs.Mount{
-		HostPath:      "/dev/null",
-		ContainerPath: "/var/run/nvidia-container-devices/void",
-		Options:       []string{"ro", "nosuid", "nodev", "bind"},
-	}
-
 	testCases := []struct {
 		description       string
 		mode              string
@@ -88,7 +82,6 @@ func TestNew(t *testing.T) {
 					Env: []string{
 						"NVIDIA_VISIBLE_DEVICES=void",
 					},
-					Mounts: []*specs.Mount{voidMount},
 				},
 			},
 		},
@@ -117,7 +110,6 @@ func TestNew(t *testing.T) {
 					Env: []string{
 						"NVIDIA_VISIBLE_DEVICES=void",
 					},
-					Mounts: []*specs.Mount{voidMount},
 				},
 			},
 		},
@@ -145,7 +137,6 @@ func TestNew(t *testing.T) {
 					Env: []string{
 						"NVIDIA_VISIBLE_DEVICES=void",
 					},
-					Mounts: []*specs.Mount{voidMount},
 				},
 			},
 		},
@@ -171,7 +162,6 @@ func TestNew(t *testing.T) {
 					Env: []string{
 						"NVIDIA_VISIBLE_DEVICES=void",
 					},
-					Mounts: []*specs.Mount{voidMount},
 				},
 			},
 		},
@@ -205,7 +195,6 @@ func TestNew(t *testing.T) {
 					Mounts: []*specs.Mount{
 						{ContainerPath: "/lib/x86_64-linux-gnu/libcuda.so.999.88.77", HostPath: "/lib/x86_64-linux-gnu/libcuda.so.999.88.77", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
 						{ContainerPath: "/lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77", HostPath: "/lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
-						voidMount,
 					},
 					Hooks: []*specs.Hook{
 						{
@@ -261,7 +250,6 @@ func TestNew(t *testing.T) {
 					Mounts: []*specs.Mount{
 						{ContainerPath: "/lib/x86_64-linux-gnu/libcuda.so.999.88.77", HostPath: "/lib/x86_64-linux-gnu/libcuda.so.999.88.77", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
 						{ContainerPath: "/lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77", HostPath: "/lib/x86_64-linux-gnu/vdpau/libvdpau_nvidia.so.999.88.77", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
-						voidMount,
 					},
 					Hooks: []*specs.Hook{
 						{
@@ -329,8 +317,7 @@ func TestNew(t *testing.T) {
 					},
 				},
 				ContainerEdits: specs.ContainerEdits{
-					Env:    []string{"NVIDIA_VISIBLE_DEVICES=void"},
-					Mounts: []*specs.Mount{voidMount},
+					Env: []string{"NVIDIA_VISIBLE_DEVICES=void"},
 				},
 			},
 		},
@@ -360,7 +347,6 @@ func TestNew(t *testing.T) {
 				ContainerEdits: specs.ContainerEdits{
 					Env: []string{"NVIDIA_VISIBLE_DEVICES=void"},
 					Mounts: []*specs.Mount{
-						voidMount,
 						{HostPath: "/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so.1.1", ContainerPath: "/usr/lib/aarch64-linux-gnu/nvidia/libcuda.so.1.1", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
 						{HostPath: "/usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ml.so.1", ContainerPath: "/usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ml.so.1", Options: []string{"ro", "nosuid", "nodev", "rbind", "rprivate"}},
 					},
