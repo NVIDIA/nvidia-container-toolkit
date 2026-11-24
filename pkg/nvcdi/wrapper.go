@@ -18,7 +18,6 @@ package nvcdi
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"tags.cncf.io/container-device-interface/pkg/cdi"
 	"tags.cncf.io/container-device-interface/specs-go"
@@ -97,17 +96,7 @@ func (m *wrapper) GetCommonEdits() (*cdi.ContainerEdits, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Configure NVIDIA_VISIBLE_DEVICES=void to prevent duplicate device
-	// injection from NVIDIA Container Runtime.
 	edits.Env = append(edits.Env, image.EnvVarNvidiaVisibleDevices+"=void")
-	// Configure a void volume mount device to prevent duplicate device
-	// injection from NVIDIA Container Runtime when the 'volume-mounts'
-	// device strategy is enabled.
-	edits.Mounts = append(edits.Mounts, &specs.Mount{
-		HostPath:      "/dev/null",
-		ContainerPath: filepath.Join(image.DeviceListAsVolumeMountsRoot, "void"),
-		Options:       []string{"ro", "nosuid", "nodev", "bind"},
-	})
 
 	return edits, nil
 }

@@ -35,8 +35,6 @@ const (
 
 	volumeMountDevicePrefixCDI  = "cdi/"
 	volumeMountDevicePrefixImex = "imex/"
-
-	volumeMountDeviceVoid = "void"
 )
 
 // CUDA represents a CUDA image that can be used for GPU computing. This wraps
@@ -262,8 +260,12 @@ func (i CUDA) VisibleDevices() []string {
 		return annotationDeviceRequests
 	}
 
-	// If enabled, try and get the device list from volume mounts first
-	if i.acceptDeviceListAsVolumeMounts {
+	// If enabled, try and get the device list from volume mounts first.
+	// An explicit request for the void device means that no devices
+	// should be injected, including those requested through volume mounts.
+	// This is relied upon by generated CDI specs, which set
+	// NVIDIA_VISIBLE_DEVICES=void to avoid duplicate device injection.
+	if i.acceptDeviceListAsVolumeMounts && !i.voidRequestedByEnvVar() {
 		volumeMountDeviceRequests := i.visibleDevicesFromMounts()
 		if len(volumeMountDeviceRequests) > 0 {
 			return volumeMountDeviceRequests
@@ -332,14 +334,24 @@ func (i CUDA) visibleDevicesFromEnvVar() []string {
 	return i.devicesFromEnvvars(envVars...)
 }
 
+// voidRequestedByEnvVar returns true if the 'void' device is explicitly requested
+func (i CUDA) voidRequestedByEnvVar() bool {
+	for _, envVar := range i.visibleEnvVars() {
+		for d := range strings.SplitSeq(i.env[envVar], ",") {
+			d = strings.TrimSpace(d)
+			if d == "void" || d == "none" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // visibleDevicesFromMounts returns the set of visible devices requested as mounts.
-// If the void device is requested, no devices are returned.
 func (i CUDA) visibleDevicesFromMounts() []string {
 	var devices []string
 	for _, device := range i.requestsFromMounts() {
 		switch {
-		case device == volumeMountDeviceVoid:
-			return nil
 		case strings.HasPrefix(device, volumeMountDevicePrefixImex):
 			continue
 		case strings.HasPrefix(device, volumeMountDevicePrefixCDI):
