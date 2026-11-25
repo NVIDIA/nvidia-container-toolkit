@@ -191,6 +191,88 @@ func TestGraphicsLibrariesDiscoverer(t *testing.T) {
 	}
 }
 
+// TestGraphicsLibrariesDiscovererInANestedDriverRoot covers the scenario in
+// issue 554: a driver root that is not / and whose libraries are not under
+// /usr/lib/x86_64-linux-gnu, as happens when the toolkit runs inside a snap and
+// the host filesystem is mounted at /var/lib/snapd/hostfs. The X.Org search
+// paths are derived from the directories the versioned driver libraries were
+// actually found in, so the modules have to be discovered whatever the arch
+// directory is called, and the driver root has to be prepended exactly once.
+func TestGraphicsLibrariesDiscovererInANestedDriverRoot(t *testing.T) {
+	logger, _ := testlog.NewNullLogger()
+	hookCreator := NewHookCreator()
+
+	const driverVersion = "999.88.77"
+
+	testCases := []struct {
+		description string
+		libDir      string
+	}{
+		{
+			description: "x86_64 arch directory",
+			libDir:      "/usr/lib/x86_64-linux-gnu",
+		},
+		{
+			description: "aarch64 arch directory",
+			libDir:      "/usr/lib/aarch64-linux-gnu",
+		},
+		{
+			description: "lib64",
+			libDir:      "/usr/lib64",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			// A snap sees the host filesystem under a prefix, so the driver
+			// root is a directory rather than /. EvalSymlinks because the
+			// lookup resolves the paths it finds, and RelativeToRoot trims the
+			// root as a string: on a system where the temporary directory sits
+			// behind a symlink (macOS puts /var behind /private/var) an
+			// unresolved root would not match and the root would be prepended
+			// twice.
+			tempDir, err := filepath.EvalSymlinks(t.TempDir())
+			require.NoError(t, err)
+			hostfs := filepath.Join(tempDir, "var", "lib", "snapd", "hostfs")
+
+			files := []string{
+				filepath.Join(tc.libDir, "libcuda.so."+driverVersion),
+				filepath.Join(tc.libDir, "nvidia", "xorg", "nvidia_drv.so"),
+				filepath.Join(tc.libDir, "nvidia", "xorg", "libglxserver_nvidia.so."+driverVersion),
+			}
+			for _, f := range files {
+				path := filepath.Join(hostfs, f)
+				require.NoError(t, os.MkdirAll(filepath.Dir(path), 0755))
+				require.NoError(t, os.WriteFile(path, []byte{}, 0600))
+			}
+
+			driver := root.New(
+				root.WithLogger(logger),
+				root.WithDriverRoot(hostfs),
+			)
+
+			d, err := newGraphicsLibrariesDiscoverer(logger, driver, hookCreator)
+			require.NoError(t, err)
+
+			mounts, err := d.Mounts()
+			require.NoError(t, err)
+
+			discovered := make(map[string]string)
+			for _, mount := range mounts {
+				// A host path that still carries the driver root means the
+				// prefix was added once, which is what the container needs.
+				require.True(t, strings.HasPrefix(mount.HostPath, hostfs), "host path %q is outside the driver root", mount.HostPath)
+				discovered[strings.TrimPrefix(mount.HostPath, hostfs)] = mount.Path
+			}
+
+			require.EqualValues(t, map[string]string{
+				filepath.Join(tc.libDir, "nvidia", "xorg", "nvidia_drv.so"):                         filepath.Join(tc.libDir, "nvidia", "xorg", "nvidia_drv.so"),
+				filepath.Join(tc.libDir, "nvidia", "xorg", "libglxserver_nvidia.so."+driverVersion): filepath.Join(tc.libDir, "nvidia", "xorg", "libglxserver_nvidia.so."+driverVersion),
+			}, discovered)
+		})
+	}
+}
+
 func TestGraphicsConfigsDiscoverer(t *testing.T) {
 	logger, _ := testlog.NewNullLogger()
 
