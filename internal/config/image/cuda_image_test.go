@@ -513,12 +513,67 @@ func TestGetVisibleDevicesFromMounts(t *testing.T) {
 			mounts:          makeTestMounts("GPU0", "imex/0", "GPU1"),
 			expectedDevices: []string{"GPU0", "GPU1"},
 		},
+		{
+			description: "Container path is a sibling of 'root'",
+			mounts: []specs.Mount{
+				{
+					Source:      "/dev/null",
+					Destination: DeviceListAsVolumeMountsRoot + "-backup/GPU0",
+				},
+				{
+					Source:      "/dev/null",
+					Destination: DeviceListAsVolumeMountsRoot + ".old/GPU1",
+				},
+			},
+			expectedDevices: nil,
+		},
+		{
+			description: "A sibling of 'root' does not request a CDI device",
+			mounts: []specs.Mount{
+				{
+					Source:      "/dev/null",
+					Destination: DeviceListAsVolumeMountsRoot + "cdi/nvidia.com/gpu=0",
+				},
+			},
+			expectedDevices: nil,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			image, err := New(WithMounts(tc.mounts))
 			require.NoError(t, err)
 			require.Equal(t, tc.expectedDevices, image.visibleDevicesFromMounts())
+		})
+	}
+}
+
+func TestImexChannelsFromMounts(t *testing.T) {
+	var tests = []struct {
+		description      string
+		mounts           []specs.Mount
+		expectedChannels []string
+	}{
+		{
+			description:      "channels below 'root' are requested",
+			mounts:           makeTestMounts("imex/0", "GPU0", "imex/1"),
+			expectedChannels: []string{"0", "1"},
+		},
+		{
+			description: "a sibling of 'root' does not request a channel",
+			mounts: []specs.Mount{
+				{
+					Source:      "/dev/null",
+					Destination: DeviceListAsVolumeMountsRoot + "imex/0",
+				},
+			},
+			expectedChannels: nil,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			image, err := New(WithMounts(tc.mounts))
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedChannels, image.imexChannelsFromMounts())
 		})
 	}
 }
