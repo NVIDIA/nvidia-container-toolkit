@@ -19,6 +19,7 @@ package ldconfig
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -27,6 +28,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 
 	"github.com/prometheus/procfs"
 
@@ -139,7 +141,22 @@ ldconfig in the container. Such differences include system search paths.`)
 	return l, nil
 }
 
+// ErrReadOnlyRootfs is returned when the container root filesystem is already
+// read-only when the hook runs. Runtimes must apply the read-only remount
+// after createContainer hooks (runc, crun >= 1.26).
+var ErrReadOnlyRootfs = errors.New("container root filesystem is read-only during createContainer hooks; runc or crun >= 1.26 is required")
+
 func (l *Ldconfig) UpdateLDCache() error {
+	if err := l.updateLDCache(); err != nil {
+		if errors.Is(err, syscall.EROFS) {
+			return fmt.Errorf("%w: %w", ErrReadOnlyRootfs, err)
+		}
+		return err
+	}
+	return nil
+}
+
+func (l *Ldconfig) updateLDCache() error {
 	memfd, err := l.prepareRoot()
 	if err != nil {
 		return err
