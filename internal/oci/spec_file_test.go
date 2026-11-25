@@ -19,6 +19,8 @@ package oci
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
@@ -100,4 +102,117 @@ type errorWriter struct{}
 
 func (e errorWriter) Write([]byte) (int, error) {
 	return 0, fmt.Errorf("error writing")
+}
+
+func TestFileSpecFlush(t *testing.T) {
+	testCases := []struct {
+		name     string
+		contents string
+		mode     os.FileMode
+	}{
+		{
+			name:     "existing file",
+			contents: `{"ociVersion":"1.0.0"}`,
+			mode:     0600,
+		},
+		{
+			name:     "existing file with default mode",
+			contents: `{"ociVersion":"1.0.0"}`,
+			mode:     0644,
+		},
+		{
+			name:     "new file",
+			contents: "",
+			mode:     0644,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, "config.json")
+			if tc.contents != "" {
+				require.NoError(t, os.WriteFile(path, []byte(tc.contents), tc.mode))
+			}
+
+			spec := NewFileSpec(path, true).(*fileSpec)
+			if tc.contents != "" {
+				_, err := spec.Load()
+				require.NoError(t, err)
+			} else {
+				spec.Spec = &specs.Spec{Version: "1.0.0"}
+			}
+
+			require.NoError(t, spec.Modify(specModifierFunc(func(s *specs.Spec) error {
+				if s.Annotations == nil {
+					s.Annotations = map[string]string{}
+				}
+				s.Annotations["test"] = "annotation"
+				return nil
+			})))
+
+			require.NoError(t, spec.Flush())
+
+			contents, err := os.ReadFile(path)
+			require.NoError(t, err)
+			require.JSONEq(t, `{"ociVersion":"1.0.0","annotations":{"test":"annotation"}}`, string(contents))
+
+			info, err := os.Stat(path)
+			require.NoError(t, err)
+			require.Equal(t, tc.mode, info.Mode().Perm())
+
+			entries, err := os.ReadDir(dir)
+			require.NoError(t, err)
+			require.Len(t, entries, 1, "temporary file should not be left behind")
+		})
+	}
+}
+
+// TestFileSpecFlushFailurePreservesFile is a regression test: a failed Flush must not
+// truncate or otherwise modify an existing spec file.
+func TestFileSpecFlushFailurePreservesFile(t *testing.T) {
+	dir := t.TempDir()
+	t.Cleanup(func() {
+		_ = os.Chmod(dir, 0755)
+	})
+
+	path := filepath.Join(dir, "config.json")
+	contents := `{"ociVersion":"1.0.0"}`
+	require.NoError(t, os.WriteFile(path, []byte(contents), 0644)) //nolint:gosec
+
+	// Make the directory read-only so that creating the temporary file fails. The
+	// existing file itself remains writable, which is what allowed the old
+	// implementation to truncate it before the write failed.
+	require.NoError(t, os.Chmod(dir, 0555))
+
+	spec := NewFileSpec(path, true)
+	_, err := spec.Load()
+	require.NoError(t, err)
+
+	require.Error(t, spec.Flush())
+
+	actual, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, contents, string(actual))
+}
+
+// specModifierFunc adapts a function to the SpecModifier interface.
+type specModifierFunc func(*specs.Spec) error
+
+func (f specModifierFunc) Modify(s *specs.Spec) error {
+	return f(s)
+}
+
+func TestFileSpecFlushWithoutLoad(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	contents := `{"ociVersion":"1.0.0"}`
+	require.NoError(t, os.WriteFile(path, []byte(contents), 0644)) //nolint:gosec
+
+	spec := NewFileSpec(path, true)
+	require.Error(t, spec.Flush())
+
+	actual, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, contents, string(actual))
 }
