@@ -57,10 +57,20 @@ func (c *ContainerCLIConfig) NormalizeLDConfigPath() string {
 type ldconfigPath string
 
 func (p ldconfigPath) assertValid(allowContainerRelativePath bool) error {
+	if p == "" {
+		return fmt.Errorf("nvidia-container-cli.ldconfig cannot be empty")
+	}
 	if p.isHostRelative() {
+		hostPath := strings.TrimPrefix(string(p), "@")
+		if !strings.HasPrefix(hostPath, "/") {
+			return fmt.Errorf("nvidia-container-cli.ldconfig host-relative value %q must specify an absolute path", p)
+		}
 		return nil
 	}
 	if allowContainerRelativePath {
+		if !strings.HasPrefix(string(p), "/") {
+			return fmt.Errorf("nvidia-container-cli.ldconfig container value %q must specify an absolute path", p)
+		}
 		return nil
 	}
 	return fmt.Errorf("nvidia-container-cli.ldconfig value %q is not host-relative (does not start with a '@')", p)
