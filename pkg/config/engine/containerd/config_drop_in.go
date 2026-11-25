@@ -19,6 +19,7 @@ package containerd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 
@@ -123,7 +124,7 @@ func (c *topLevelConfig) simplify(dropInFilename string) {
 
 // removeImports removes the imports specified in the file if the only entry
 // corresponds to the path for the drop-in-file and the only other field in the
-// file is the version field.
+// file is the version field and no other drop-in files use the import.
 func (c *topLevelConfig) removeImports(dropInFilename string) {
 	if len(c.config.Keys()) != 2 {
 		return
@@ -140,6 +141,22 @@ func (c *topLevelConfig) removeImports(dropInFilename string) {
 	requiredImport := c.importPattern(dropInFilename)
 	if currentImports[0] != requiredImport {
 		return
+	}
+	// Keep the shared import unless the local directory can be inspected.
+	// Host paths may differ from the paths visible to the installer.
+	if dropInFilename == engine.SaveToSTDOUT {
+		return
+	}
+	dropInDir := filepath.Dir(dropInFilename)
+	entries, err := os.ReadDir(dropInDir)
+	if err != nil {
+		c.logger.Warningf("Unable to inspect drop-in directory %q: %v", dropInDir, err)
+		return
+	}
+	for _, entry := range entries {
+		if filepath.Ext(entry.Name()) == ".toml" {
+			return
+		}
 	}
 	c.config.Delete("imports")
 }
