@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"unicode"
 
 	"github.com/prometheus/procfs"
 
@@ -353,6 +354,9 @@ func (l *Ldconfig) getSystemSearchPaths() []string {
 
 // processLdsoconfFile extracts the list of directories and included configs
 // from the specified file.
+//
+// The file is read the way ldconfig reads it, see parse_conf and
+// parse_conf_include in glibc's elf/ldconfig.c.
 func processLdsoconfFile(ldsoconfFilename string) ([]string, []string, error) {
 	ldsoconf, err := os.Open(ldsoconfFilename)
 	if os.IsNotExist(err) {
@@ -367,23 +371,76 @@ func processLdsoconfFile(ldsoconfFilename string) ([]string, []string, error) {
 	var includedFilenames []string
 	scanner := bufio.NewScanner(ldsoconf)
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		switch {
-		case strings.HasPrefix(line, "#") || len(line) == 0:
-			continue
-		case strings.HasPrefix(line, "include "):
-			include, err := filepath.Glob(strings.TrimPrefix(line, "include "))
-			if err != nil {
-				// We ignore invalid includes.
-				// TODO: How does ldconfig handle this?
-				continue
-			}
-			includedFilenames = append(includedFilenames, include...)
-		default:
-			directories = append(directories, line)
+		// The format has no quoting, so ldconfig ends each line at the first
+		// '#' instead of only skipping lines that start with one.
+		line := scanner.Text()
+		if i := strings.IndexByte(line, '#'); i >= 0 {
+			line = line[:i]
 		}
+		// ldconfig removes leading whitespace and ignores the line if nothing
+		// is left.
+		line = strings.TrimLeftFunc(line, unicode.IsSpace)
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		if patterns, ok := ldsoconfDirective(line, "include"); ok {
+			for _, pattern := range strings.FieldsFunc(patterns, isBlank) {
+				include, err := filepath.Glob(resolveIncludePattern(ldsoconfFilename, pattern))
+				if err != nil {
+					// Only ErrBadPattern. ldconfig reports a malformed pattern
+					// as no match and carries on.
+					continue
+				}
+				includedFilenames = append(includedFilenames, include...)
+			}
+			continue
+		}
+		if _, ok := ldsoconfDirective(line, "hwcap"); ok {
+			// Not a directory. ldconfig has ignored this directive since 2.33
+			// and only reports it.
+			continue
+		}
+
+		directories = append(directories, strings.TrimSpace(line))
 	}
 	return directories, includedFilenames, nil
+}
+
+// isBlank matches the characters that separate the patterns of an include
+// directive, which are the ones C's isblank matches in the POSIX locale.
+func isBlank(r rune) bool {
+	return r == ' ' || r == '\t'
+}
+
+// ldsoconfDirective returns the remainder of the line if it names the specified
+// directive followed by a blank. ldconfig compares `include` as-is and `hwcap`
+// without regard to case.
+func ldsoconfDirective(line string, directive string) (string, bool) {
+	if len(line) <= len(directive) {
+		return "", false
+	}
+	name, rest := line[:len(directive)], line[len(directive):]
+	if directive == "hwcap" {
+		if !strings.EqualFold(name, directive) {
+			return "", false
+		}
+	} else if name != directive {
+		return "", false
+	}
+	if !isBlank(rune(rest[0])) {
+		return "", false
+	}
+	return rest[1:], true
+}
+
+// resolveIncludePattern resolves a relative include pattern against the
+// directory of the file that holds it, as ldconfig does.
+func resolveIncludePattern(ldsoconfFilename string, pattern string) string {
+	if filepath.IsAbs(pattern) || !strings.Contains(ldsoconfFilename, "/") {
+		return pattern
+	}
+	return filepath.Join(filepath.Dir(ldsoconfFilename), pattern)
 }
 
 // createMuslPathFileIfRequired creates a musl .path file that allows libraries
