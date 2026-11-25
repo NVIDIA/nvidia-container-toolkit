@@ -128,7 +128,7 @@ func (m command) build() *cli.Command {
 			},
 			&cli.StringFlag{
 				Name:        "drop-in-config",
-				Usage:       "path to the NVIDIA-specific config file to create. When specified, runtime configurations are saved to this file instead of modifying the main config file",
+				Usage:       "path to the NVIDIA-specific config file to create. When specified, runtime configurations are saved there; when empty, the main config is modified directly",
 				Value:       runtimeSpecificDefault,
 				Destination: &config.dropInConfigPath,
 			},
@@ -302,12 +302,14 @@ func (m command) configureConfigFile(config *config) error {
 			containerd.WithLogger(m.logger),
 			containerd.WithTopLevelConfigPath(config.configFilePath),
 			containerd.WithConfigSource(configSource),
+			containerd.WithDisableDropInConfig(config.dropInConfigPath == ""),
 		)
 	case "crio":
 		cfg, err = crio.New(
 			crio.WithLogger(m.logger),
 			crio.WithTopLevelConfigPath(config.configFilePath),
 			crio.WithConfigSource(configSource),
+			crio.WithDisableDropInConfig(config.dropInConfigPath == ""),
 		)
 	case "docker":
 		cfg, err = docker.New(

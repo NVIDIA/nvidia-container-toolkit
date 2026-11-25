@@ -17,10 +17,43 @@
 package containerd
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
 )
+
+func TestConfigureWithoutDropInUpdatesTopLevelConfig(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	initialConfig := `version = 2
+
+[plugins."io.containerd.grpc.v1.cri".containerd]
+  default_runtime_name = "runc"
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+  runtime_type = "io.containerd.runc.v2"
+`
+	require.NoError(t, os.WriteFile(configPath, []byte(initialConfig), 0600))
+
+	containerOptions := &container.Options{
+		TopLevelConfigPath: configPath,
+		ConfigSources:      []string{"file"},
+		RuntimeName:        "nvidia",
+		RuntimeDir:         "/usr/bin",
+	}
+	config, err := getRuntimeConfig(containerOptions, &Options{runtimeType: defaultRuntimeType})
+	require.NoError(t, err)
+	require.NoError(t, containerOptions.Configure(config))
+
+	updated, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+	require.Contains(t, string(updated), `default_runtime_name = "runc"`)
+	require.Contains(t, string(updated), "nvidia-container-runtime")
+	require.NotContains(t, string(updated), "imports =")
+}
 
 func TestRuntimeOptions(t *testing.T) {
 	testCases := []struct {
