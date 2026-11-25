@@ -83,15 +83,10 @@ func (f *Factory) getCudaCompatModeModifier() (oci.SpecModifier, error) {
 	}
 
 	// For legacy mode, we also need to inject a hook to update the LDCache
-	// after we have modifed the configuration.
-	ldcacheUpdateHookDiscoverer, err := discover.NewLDCacheUpdateHook(
-		f.logger,
-		discover.None{},
-		f.hookCreator,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct ldcache update discoverer: %w", err)
-	}
+	// after we have modifed the configuration. We inject this hook without any
+	// folders since the CUDA compat libraries are only added to the ldconfig
+	// search path by the enable-cuda-compat hook as the container starts.
+	ldcacheUpdateHookDiscoverer := f.hookCreator.Create(discover.UpdateLDCacheHook)
 
 	return f.newModifierFromDiscoverer(discover.Merge(compatLibHookDiscoverer, ldcacheUpdateHookDiscoverer))
 }
