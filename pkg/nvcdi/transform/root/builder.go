@@ -27,6 +27,16 @@ type builder struct {
 }
 
 func (b *builder) build() transform.Transformer {
+	// An unset root means /, and the paths a transform produces are joined onto
+	// the target root, so an unset target root has to mean / too or the join
+	// returns a relative path. NewDriverTransformer resolves the same defaults.
+	if b.root == "" {
+		b.root = "/"
+	}
+	if b.targetRoot == "" {
+		b.targetRoot = "/"
+	}
+
 	if b.root == b.targetRoot {
 		return noop.New()
 	}
